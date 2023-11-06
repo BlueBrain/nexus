@@ -1,0 +1,31 @@
+name: Delta Static analysis
+on:
+  pull_request:
+    paths:
+      - 'delta/**'
+      - 'build.sbt'
+      - 'project/**'
+      - '.github/workflows/ci-delta-static-analysis.yml'
+jobs:
+  run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Static analysis
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            static-analysis

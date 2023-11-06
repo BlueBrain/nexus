@@ -4,31 +4,21 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{AnnotatedSourceJson, CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.literal._
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Paths
 
-class ArchivesDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with IOValues
-    with EitherValuable
-    with TestHelpers
-    with RemoteContextResolutionFixture {
+class ArchivesDecodingSpec extends BioSpec with RemoteContextResolutionFixture {
 
   implicit private val uuidF: UUIDF   = UUIDF.random
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
@@ -140,11 +130,12 @@ class ArchivesDecodingSpec
 
       "having a resource reference with specific format" in {
         val map = Map(
-          "compacted" -> CompactedJsonLd,
-          "expanded"  -> ExpandedJsonLd,
-          "n-triples" -> NTriples,
-          "dot"       -> Dot,
-          "source"    -> SourceJson
+          "compacted"        -> CompactedJsonLd,
+          "expanded"         -> ExpandedJsonLd,
+          "n-triples"        -> NTriples,
+          "dot"              -> Dot,
+          "source"           -> SourceJson,
+          "annotated-source" -> AnnotatedSourceJson
         )
         forAll(map.toList) { case (format, expFormat) =>
           val resourceId = iri"http://localhost/${genString()}"

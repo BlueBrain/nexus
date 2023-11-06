@@ -3,32 +3,33 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
+import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
@@ -47,12 +48,12 @@ import scala.annotation.nowarn
 final class OrganizationsRoutes(
     identities: Identities,
     organizations: Organizations,
+    orgDeleter: OrganizationDeleter,
     aclCheck: AclCheck,
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -62,17 +63,26 @@ final class OrganizationsRoutes(
   import schemeDirectives._
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
-    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
-      OrganizationSearchParams(
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        label,
-        org => aclCheck.authorizeFor(org.label, orgs.read, fetchAllCached)
-      )
+    onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
+      (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+        OrganizationSearchParams(
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          org => aclCheck.authorizeFor(org.label, orgs.read, allAcls).toUIO
+        )
+      }
     }
+
+  private def emitMetadata(value: IO[OrganizationResource]) = {
+    emit(
+      value
+        .mapValue(_.metadata)
+        .attemptNarrow[OrganizationRejection]
+    )
+  }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -86,7 +96,12 @@ final class OrganizationsRoutes(
                   implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
                     searchResultsJsonLdEncoder(Organization.context, pagination, uri)
 
-                  emit(organizations.list(pagination, params, order).widen[SearchResults[OrganizationResource]])
+                  emit(
+                    organizations
+                      .list(pagination, params, order)
+                      .widen[SearchResults[OrganizationResource]]
+                      .attemptNarrow[OrganizationRejection]
+                  )
                 }
             },
             (resolveOrg & pathEndOrSingleSlash) { id =>
@@ -97,7 +112,10 @@ final class OrganizationsRoutes(
                       authorizeFor(id, orgs.write).apply {
                         // Update organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                          emit(organizations.update(id, description, rev).mapValue(_.metadata))
+                          emitMetadata(
+                            organizations
+                              .update(id, description, rev)
+                          )
                         }
                       }
                     }
@@ -106,18 +124,29 @@ final class OrganizationsRoutes(
                     authorizeFor(id, orgs.read).apply {
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch organization at specific revision
-                          emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
+                          emit(organizations.fetchAt(id, rev).attemptNarrow[OrganizationRejection])
                         case None      => // Fetch organization
-                          emit(organizations.fetch(id).leftWiden[OrganizationRejection])
+                          emit(organizations.fetch(id).attemptNarrow[OrganizationRejection])
 
                       }
                     }
                   },
-                  // Deprecate organization
+                  // Deprecate or delete organization
                   delete {
-                    authorizeFor(id, orgs.write).apply {
-                      parameter("rev".as[Int]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
-                    }
+                    concat(
+                      parameter("rev".as[Int]) { rev =>
+                        authorizeFor(id, orgs.write).apply {
+                          emitMetadata(
+                            organizations.deprecate(id, rev)
+                          )
+                        }
+                      },
+                      parameter("prune".requiredValue(true)) { _ =>
+                        authorizeFor(id, orgs.delete).apply {
+                          emit(orgDeleter.delete(id).attemptNarrow[OrganizationRejection])
+                        }
+                      }
+                    )
                   }
                 )
               }
@@ -127,7 +156,12 @@ final class OrganizationsRoutes(
                 (put & authorizeFor(label, orgs.create)) {
                   // Create organization
                   entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                    emit(StatusCodes.Created, organizations.create(label, description).mapValue(_.metadata))
+                    val response: IO[Either[OrganizationRejection, ResourceF[Organization.Metadata]]] =
+                      organizations.create(label, description).mapValue(_.metadata).attemptNarrow[OrganizationRejection]
+                    emit(
+                      StatusCodes.Created,
+                      response
+                    )
                   }
                 }
               }
@@ -154,15 +188,15 @@ object OrganizationsRoutes {
   def apply(
       identities: Identities,
       organizations: Organizations,
+      orgDeleter: OrganizationDeleter,
       aclCheck: AclCheck,
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations, aclCheck, schemeDirectives).routes
+    new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives).routes
 
 }

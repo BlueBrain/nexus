@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
@@ -8,24 +10,25 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, Task}
 
 import java.util.regex.Pattern.quote
 
@@ -45,7 +48,7 @@ trait BlazegraphViewsQuery {
       id: IdSegment,
       projectRef: ProjectRef,
       pagination: FromPagination
-  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]]
 
   /**
     * List outgoing links for a given resource.
@@ -64,7 +67,7 @@ trait BlazegraphViewsQuery {
       projectRef: ProjectRef,
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]]
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''. We check for the
@@ -84,7 +87,7 @@ trait BlazegraphViewsQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 }
 
 object BlazegraphViewsQuery {
@@ -94,34 +97,35 @@ object BlazegraphViewsQuery {
       fetchContext: FetchContext[BlazegraphViewRejection],
       views: BlazegraphViews,
       client: SparqlQueryClient,
+      logSlowQueries: BlazegraphSlowQueryLogger,
       prefix: String,
       xas: Transactors
-  ): Task[BlazegraphViewsQuery] = {
+  ): IO[BlazegraphViewsQuery] = {
     implicit val cl: ClassLoader = this.getClass.getClassLoader
     for {
       incomingQuery             <- ioContentOf("blazegraph/incoming.txt")
       outgoingWithExternalQuery <- ioContentOf("blazegraph/outgoing_include_external.txt")
       outgoingScopedQuery       <- ioContentOf("blazegraph/outgoing_scoped.txt")
       viewsStore                 = ViewsStore[BlazegraphViewRejection, BlazegraphViewState](
-                                     BlazegraphViews.entityType,
                                      BlazegraphViewState.serializer,
-                                     defaultViewId,
-                                     views.fetchState(_, _).map(_._2),
+                                     views.fetchState(_, _).toBIO[BlazegraphViewRejection],
                                      view =>
-                                       IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
-                                         view.value match {
-                                           case _: AggregateBlazegraphViewValue =>
-                                             Left(view.id)
-                                           case i: IndexingBlazegraphViewValue  =>
-                                             Right(
-                                               IndexingView(
-                                                 ViewRef(view.project, view.id),
-                                                 BlazegraphViews.namespace(view.uuid, view.indexingRev, prefix),
-                                                 i.permission
+                                       IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
+                                         .as {
+                                           view.value match {
+                                             case _: AggregateBlazegraphViewValue =>
+                                               Left(view.id)
+                                             case i: IndexingBlazegraphViewValue  =>
+                                               Right(
+                                                 IndexingView(
+                                                   ViewRef(view.project, view.id),
+                                                   BlazegraphViews.namespace(view.uuid, view.indexingRev, prefix),
+                                                   i.permission
+                                                 )
                                                )
-                                             )
+                                           }
                                          }
-                                       },
+                                         .toBIO[BlazegraphViewRejection],
                                      xas
                                    )
     } yield new BlazegraphViewsQuery {
@@ -137,13 +141,13 @@ object BlazegraphViewsQuery {
       override def incoming(id: IdSegment, projectRef: ProjectRef, pagination: FromPagination)(implicit
           caller: Caller,
           base: BaseUri
-      ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      ): IO[SearchResults[SparqlLink]] =
         for {
-          p        <- fetchContext.onRead(projectRef)
-          iri      <- expandIri(id, p)
+          p        <- fetchContext.onRead(projectRef).toCatsIO
+          iri      <- expandIri(id, p).toCatsIO
           q         = SparqlQuery(replace(incomingQuery, iri, pagination))
           bindings <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
-          links     = toSparqlLinks(bindings.value, p.apiMappings, p.base)
+          links     = toSparqlLinks(bindings.value)
         } yield links
 
       override def outgoing(
@@ -151,14 +155,14 @@ object BlazegraphViewsQuery {
           projectRef: ProjectRef,
           pagination: FromPagination,
           includeExternalLinks: Boolean
-      )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]] =
         for {
-          p            <- fetchContext.onRead(projectRef)
-          iri          <- expandIri(id, p)
+          p            <- fetchContext.onRead(projectRef).toCatsIO
+          iri          <- expandIri(id, p).toCatsIO
           queryTemplate = if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
           q             = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings     <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
-          links         = toSparqlLinks(bindings.value, p.apiMappings, p.base)
+          links         = toSparqlLinks(bindings.value)
         } yield links
 
       override def query[R <: SparqlQueryResponse](
@@ -166,32 +170,42 @@ object BlazegraphViewsQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
           view    <- viewsStore.fetch(id, project)
+          p       <- fetchContext.onRead(project)
+          iri     <- expandIri(id, p)
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck
-                           .authorizeForOr(i.ref.project, i.permission)(AuthorizationFailed)
+                           .authorizeForOr(i.ref.project, i.permission)(
+                             AuthorizationFailed(i.ref.project, i.permission)
+                           )
                            .as(Set(i.index))
+                           .toBIO[BlazegraphViewRejection]
                        case a: AggregateView =>
-                         aclCheck.mapFilter[IndexingView, String](
-                           a.views,
-                           v => ProjectAcl(v.ref.project) -> v.permission,
-                           _.index
-                         )
+                         aclCheck
+                           .mapFilter[IndexingView, String](
+                             a.views,
+                             v => ProjectAcl(v.ref.project) -> v.permission,
+                             _.index
+                           )
+                           .toUIO
                      }
-          qr      <- client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+          qr      <- logSlowQueries(
+                       BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
+                       client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+                     )
         } yield qr
 
-      private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit
+      private def toSparqlLinks(sparqlResults: SparqlResults)(implicit
           base: BaseUri
       ): SearchResults[SparqlLink] = {
         val (count, results) =
           sparqlResults.results.bindings
             .foldLeft((0L, List.empty[SparqlLink])) { case ((total, acc), bindings) =>
               val newTotal = bindings.get("total").flatMap(v => v.value.toLongOption).getOrElse(total)
-              val res      = (SparqlResourceLink(bindings, mappings, projectBase) orElse SparqlExternalLink(bindings))
+              val res      = (SparqlResourceLink(bindings) orElse SparqlExternalLink(bindings))
                 .map(_ :: acc)
                 .getOrElse(acc)
               (newTotal, res)
@@ -200,4 +214,6 @@ object BlazegraphViewsQuery {
       }
     }
   }
+
+  final case class BlazegraphQueryContext(view: ViewRef, query: SparqlQuery, subject: Subject)
 }

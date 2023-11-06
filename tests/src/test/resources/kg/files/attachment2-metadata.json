@@ -3,24 +3,24 @@
     "https://bluebrain.github.io/nexus/contexts/files.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "{{deltaUri}}/resources/{{projId}}/_/attachment2",
+  "@id": "{{id}}",
   "@type": "File",
   "_storage": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
     "@type" : "{{storageType}}",
     "_rev": 1
   },
-  "_bytes": 26,
+  "_bytes": 9,
   "_digest": {
     "_algorithm": "SHA-256",
-    "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
+    "_value": "2b67fbb2c302811c3e4941183b1b2037774ee7dfc8b633eef1afa2231d001615"
   },
   "_filename": "attachment2",
-  "_mediaType": "text/plain; charset=UTF-8",
+  "_mediaType": "application/octet-stream",
   "_origin" : "Client",
-  "_incoming": "{{deltaUri}}/files/{{projId}}/attachment2/incoming",
-  "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment2/outgoing",
-  "_self": "{{deltaUri}}/files/{{projId}}/attachment2",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
+  "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",
   "_rev": 1,

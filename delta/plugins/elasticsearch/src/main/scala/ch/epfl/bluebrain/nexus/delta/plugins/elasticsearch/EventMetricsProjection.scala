@@ -1,23 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import cats.effect.{ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EnvelopeStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
-import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
-import monix.bio.Task
+import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 
 trait EventMetricsProjection
 
@@ -33,10 +32,10 @@ object EventMetricsProjection {
     * @return
     *   creates the metrics index using the client
     */
-  def initMetricsIndex(client: ElasticSearchClient, index: IndexLabel): Task[Unit] =
+  def initMetricsIndex(client: ElasticSearchClient, index: IndexLabel): IO[Unit] =
     for {
-      mappings <- metricsMapping
-      settings <- metricsSettings
+      mappings <- metricsMapping.toBIO[ElasticSearchViewRejection]
+      settings <- metricsSettings.toBIO[ElasticSearchViewRejection]
       _        <- client.createIndex(index, Some(mappings), Some(settings))
     } yield ()
 
@@ -68,15 +67,14 @@ object EventMetricsProjection {
       batchConfig: BatchConfig,
       queryConfig: QueryConfig,
       indexPrefix: String
-  ): Task[EventMetricsProjection] = {
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
     implicit val multiDecoder: MultiDecoder[ProjectScopedMetric] =
       MultiDecoder(metricEncoders.map { encoder => encoder.entityType -> encoder.toMetric }.toMap)
 
     // define how to get metrics from a given offset
-    val metrics                                                  = (offset: Offset) =>
-      EventStreaming.fetchScoped(Predicate.root, allEntityTypes, offset, queryConfig, xas)
+    val metrics                                                  = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
 
     val index = eventMetricsIndex(indexPrefix)
 
@@ -93,23 +91,11 @@ object EventMetricsProjection {
       sink: Sink,
       supervisor: Supervisor,
       metrics: Offset => EnvelopeStream[ProjectScopedMetric],
-      init: Task[Unit]
-  ): Task[EventMetricsProjection] = {
+      init: IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
 
     val source = Source { (offset: Offset) =>
-      metrics(offset)
-        .map { envelope =>
-          val eventMetric = envelope.value
-          SuccessElem(
-            envelope.tpe,
-            eventMetric.resourceId,
-            Some(eventMetric.project),
-            eventMetric.instant,
-            envelope.offset,
-            eventMetric,
-            eventMetric.rev
-          )
-        }
+      metrics(offset).map { e => e.toElem { m => Some(m.project) } }
     }
 
     val compiledProjection =
@@ -122,7 +108,7 @@ object EventMetricsProjection {
       )
 
     for {
-      projection <- Task.fromEither(compiledProjection)
+      projection <- IO.fromEither(compiledProjection)
       _          <- supervisor.run(projection, init)
     } yield new EventMetricsProjection {}
   }

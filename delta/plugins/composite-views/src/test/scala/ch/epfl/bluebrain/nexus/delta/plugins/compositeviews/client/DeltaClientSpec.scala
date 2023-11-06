@@ -11,12 +11,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
@@ -26,13 +26,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -40,14 +39,11 @@ import scala.concurrent.duration._
 
 class DeltaClientSpec
     extends TestKit(ActorSystem("DeltaClientSpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with BioSpec
     with ScalaFutures
-    with OptionValues
-    with IOValues
+    with CatsRunContext
     with ConfigFixtures
     with BeforeAndAfterAll
-    with TestHelpers
     with QueryParamsUnmarshalling {
 
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
@@ -141,7 +137,8 @@ class DeltaClientSpec
   }
 
   implicit private val httpCfg: HttpClientConfig = httpClientConfig
-  private val deltaClient                        = DeltaClient(HttpClient(), 1.second)
+  private val deltaClient                        =
+    DeltaClient(HttpClient(), AuthTokenProvider.fixedForTest(token), Credentials.Anonymous, 1.second)
 
   private val source = RemoteProjectSource(
     iri"http://example.com/remote-project-source",
@@ -151,13 +148,10 @@ class DeltaClientSpec
     None,
     includeDeprecated = false,
     project,
-    Uri("http://localhost:8080/v1"),
-    Some(AccessToken(Secret(token)))
+    Uri("http://localhost:8080/v1")
   )
 
   private val unknownProjectSource = source.copy(project = ProjectRef.unsafe("org", "unknown"))
-
-  private val unknownToken = source.copy(token = Some(AccessToken(Secret("invalid"))))
 
   "Getting project statistics" should {
 
@@ -167,10 +161,6 @@ class DeltaClientSpec
 
     "fail if project is unknown" in {
       deltaClient.projectStatistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
-    }
-
-    "fail if token is invalid" in {
-      deltaClient.projectStatistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 
@@ -186,10 +176,6 @@ class DeltaClientSpec
         .rejected
         .errorCode
         .value shouldEqual StatusCodes.NotFound
-    }
-
-    "fail if token is invalid" in {
-      deltaClient.remaining(unknownToken, Offset.Start).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 
@@ -215,23 +201,11 @@ class DeltaClientSpec
     "return None if tag doesn't exist" in {
       deltaClient.resourceAsNQuads(source.copy(resourceTag = invalidTag), resourceId).accepted shouldEqual None
     }
-
-    "fail if token is invalid" in {
-      deltaClient
-        .resourceAsNQuads(unknownToken, resourceId)
-        .rejected
-        .errorCode
-        .value shouldEqual StatusCodes.Forbidden
-    }
   }
 
   "Checking elems" should {
     "work" in {
       deltaClient.checkElems(source).accepted
     }
-    "fail if token is invalid" in {
-      deltaClient.checkElems(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
-    }
   }
-
 }

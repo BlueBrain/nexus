@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "DifferentElasticSearchViewType",
+  "reason" : "Incorrect ElasticSearch view '{{view}}' type: '{{providedType}}' provided, expected '{{expectedType}}'."
+}

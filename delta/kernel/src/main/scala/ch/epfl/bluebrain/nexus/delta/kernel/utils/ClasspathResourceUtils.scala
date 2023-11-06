@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.handleBars
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
 import io.circe.parser.parse
-import io.circe.{Json, JsonObject, ParsingFailure}
-import monix.bio.IO
+import io.circe.{Json, JsonObject}
+import monix.bio.{IO => BIO}
 
 import java.io.InputStream
 import java.util.Properties
@@ -14,9 +15,8 @@ import scala.jdk.CollectionConverters._
 
 trait ClasspathResourceUtils {
 
-  final def absolutePath(resourcePath: String)(implicit classLoader: ClassLoader): IO[ResourcePathNotFound, String] =
-    IO.fromOption(
-      Option(getClass.getResource(resourcePath)) orElse Option(classLoader.getResource(resourcePath)),
+  final def absolutePath(resourcePath: String)(implicit classLoader: ClassLoader): IO[String] =
+    IO.fromOption(Option(getClass.getResource(resourcePath)) orElse Option(classLoader.getResource(resourcePath)))(
       ResourcePathNotFound(resourcePath)
     ).map(_.getPath)
 
@@ -29,11 +29,18 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the resource
     *   is not found
     */
-  def ioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): IO[ClasspathResourceError, InputStream] =
-    IO.deferAction { _ =>
+  def bioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): BIO[ClasspathResourceError, InputStream] =
+    BIO.deferAction { _ =>
       lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
       val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
-      IO.fromOption(fromClass orElse fromClassLoader, ResourcePathNotFound(resourcePath))
+      BIO.fromOption(fromClass orElse fromClassLoader, ResourcePathNotFound(resourcePath))
+    }
+
+  def ioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): IO[InputStream] =
+    IO.defer {
+      lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
+      val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
+      IO.fromOption(fromClass orElse fromClassLoader)(ResourcePathNotFound(resourcePath))
     }
 
   /**
@@ -46,10 +53,19 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a string or a [[ClasspathResourceError]] when the resource is not
     *   found
     */
+  final def bioContentOf(
+      resourcePath: String,
+      attributes: (String, Any)*
+  )(implicit classLoader: ClassLoader): BIO[ClasspathResourceError, String] =
+    bioResourceAsTextFrom(resourcePath).map {
+      case text if attributes.isEmpty => text
+      case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
+    }
+
   final def ioContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, String] =
+  )(implicit classLoader: ClassLoader): IO[String] =
     resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
       case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
@@ -67,8 +83,17 @@ trait ClasspathResourceUtils {
     */
   final def ioPropertiesOf(resourcePath: String)(implicit
       classLoader: ClassLoader
-  ): IO[ClasspathResourceError, Map[String, String]] =
+  ): IO[Map[String, String]] =
     ioStreamOf(resourcePath).map { is =>
+      val props = new Properties()
+      props.load(is)
+      props.asScala.toMap
+    }
+
+  final def bioPropertiesOf(resourcePath: String)(implicit
+      classLoader: ClassLoader
+  ): BIO[ClasspathResourceError, Map[String, String]] =
+    bioStreamOf(resourcePath).map { is =>
       val props = new Properties()
       props.load(is)
       props.asScala.toMap
@@ -84,13 +109,22 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a json value or an [[ClasspathResourceError]] when the resource is not
     *   found or is not a Json
     */
+  final def bioJsonContentOf(
+      resourcePath: String,
+      attributes: (String, Any)*
+  )(implicit classLoader: ClassLoader): BIO[ClasspathResourceError, Json] =
+    for {
+      text <- bioContentOf(resourcePath, attributes: _*)
+      json <- BIO.fromEither(parse(text)).mapError(InvalidJson(resourcePath, text, _))
+    } yield json
+
   final def ioJsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, Json] =
+  )(implicit classLoader: ClassLoader): IO[Json] =
     for {
       text <- ioContentOf(resourcePath, attributes: _*)
-      json <- IO.fromEither(parse(text)).mapError(InvalidJson(resourcePath, text, _))
+      json <- IO.fromEither(parse(text).left.map(InvalidJson(resourcePath, text, _)))
     } yield json
 
   /**
@@ -105,15 +139,28 @@ trait ClasspathResourceUtils {
     */
   final def ioJsonObjectContentOf(resourcePath: String, attributes: (String, Any)*)(implicit
       classLoader: ClassLoader
-  ): IO[ClasspathResourceError, JsonObject] =
+  ): IO[JsonObject] =
     for {
       json    <- ioJsonContentOf(resourcePath, attributes: _*)
-      jsonObj <- IO.fromOption(json.asObject, InvalidJsonObject(resourcePath))
+      jsonObj <- IO.fromOption(json.asObject)(InvalidJsonObject(resourcePath))
     } yield jsonObj
+
+  final def bioJsonObjectContentOf(resourcePath: String, attributes: (String, Any)*)(implicit
+      classLoader: ClassLoader
+  ): BIO[ClasspathResourceError, JsonObject] =
+    for {
+      json    <- bioJsonContentOf(resourcePath, attributes: _*)
+      jsonObj <- BIO.fromOption(json.asObject, InvalidJsonObject(resourcePath))
+    } yield jsonObj
+
+  private def bioResourceAsTextFrom(resourcePath: String)(implicit
+      classLoader: ClassLoader
+  ): BIO[ClasspathResourceError, String] =
+    bioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
 
   private def resourceAsTextFrom(resourcePath: String)(implicit
       classLoader: ClassLoader
-  ): IO[ClasspathResourceError, String] =
+  ): IO[String] =
     ioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
 }
 
@@ -122,36 +169,3 @@ object ClassPathResourceUtilsStatic {
 }
 
 object ClasspathResourceUtils extends ClasspathResourceUtils
-
-/**
-  * Enumeration of possible errors when retrieving resources from the classpath
-  */
-sealed abstract class ClasspathResourceError(reason: String) extends Exception with Product with Serializable {
-  override def fillInStackTrace(): ClasspathResourceError = this
-  override def getMessage: String                         = reason
-  override def toString: String                           = reason
-}
-
-object ClasspathResourceError {
-
-  /**
-    * A retrieved resource from the classpath is not a Json
-    */
-  final case class InvalidJson(resourcePath: String, raw: String, failure: ParsingFailure)
-      extends ClasspathResourceError(
-        s"The resource path '$resourcePath' could not be converted to Json because of failure: $failure.\nResource content is:\n$raw"
-      )
-
-  /**
-    * A retrieved resource from the classpath is not a Json object
-    */
-  final case class InvalidJsonObject(resourcePath: String)
-      extends ClasspathResourceError(s"The resource path '$resourcePath' could not be converted to Json object")
-
-  /**
-    * The resource cannot be found on the classpath
-    */
-  final case class ResourcePathNotFound(resourcePath: String)
-      extends ClasspathResourceError(s"The resource path '$resourcePath' could not be found")
-
-}

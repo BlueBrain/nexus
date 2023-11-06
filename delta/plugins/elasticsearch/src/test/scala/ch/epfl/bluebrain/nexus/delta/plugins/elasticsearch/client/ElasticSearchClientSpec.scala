@@ -1,21 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.{Json, JsonObject}
 import org.scalatest.{DoNotDiscover, OptionValues}
 import org.scalatest.concurrent.Eventually
@@ -30,14 +35,15 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     with AnyWordSpecLike
     with Matchers
     with ScalaTestElasticSearchClientSetup
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CirceLiteral
     with TestHelpers
-    with IOValues
+    with BIOValues
     with Eventually {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
+  implicit val baseUri: BaseUri                        = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val page = FromPagination(0, 100)
 
@@ -223,6 +229,62 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
+    }
+
+    "aggregate" in {
+      val index       = IndexLabel(genString()).rightValue
+      val operations  = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "_project": "proj1", "@type" : "Person" }"""),
+        ElasticSearchBulk.Index(index, "2", json"""{ "_project": "proj2", "@type" : "Person" }"""),
+        ElasticSearchBulk.Index(index, "3", json"""{ "_project": "proj3", "@type" : "Dog" }""")
+      )
+      val params      = ResourcesSearchParams()
+      val expectedAgg = jsonContentOf("elasticsearch-agg-results.json").asObject.get
+
+      val mapping =
+        json"""{ "properties": {
+               "@type": { "type": "keyword" },
+               "_project": { "type": "keyword" } } }""".asObject
+
+      val aggregate = for {
+        _   <- esClient.createIndex(index, mapping, None)
+        _   <- esClient.bulk(operations)
+        agg <- esClient.aggregate(params, Set(index.value), Query.Empty, 100)
+      } yield agg
+
+      eventually {
+        aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
+      }
+    }
+
+    "delete documents by" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "2", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+
+      {
+        for {
+          // Indexing and checking count
+          _        <- esClient.bulk(operations)
+          _        <- esClient.refresh(index)
+          original <- esClient.count(index.value)
+          _         = original shouldEqual 2L
+          // Deleting document matching the given query
+          query     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
+          _        <- esClient.deleteByQuery(query, index)
+          // Checking docs again
+          newCount <- esClient.count(index.value)
+          _         = newCount shouldEqual 1L
+          doc1     <- esClient.getSource[Json](index, "1").attempt
+          _         = doc1.rightValue
+          doc2     <- esClient.getSource[Json](index, "2").attempt
+          _         = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
+        } yield ()
+      }.accepted
     }
   }
 }

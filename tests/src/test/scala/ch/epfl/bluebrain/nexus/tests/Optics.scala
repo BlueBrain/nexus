@@ -14,18 +14,23 @@ object Optics extends Optics {
   def filterKey(key: String): Json => Json = filterKeys(Set(key))
 
   def filterKeys(keys: Set[String]): Json => Json =
-    keys.map { root.at(_).set(None) }.reduce(_ andThen _)
+    keys.map { root.at(_).replace(None) }.reduce(_ andThen _)
 
   def filterNestedKeys(keys: String*): Json => Json = {
     def inner(jsonObject: JsonObject): JsonObject = {
       val filtered = keys.foldLeft(jsonObject) { (o, k) => o.remove(k) }
       JsonObject.fromIterable(
         filtered.toList.map { case (k, v) =>
-          v.asObject.fold(k -> v) { o =>
-            k -> Json.fromJsonObject(
-              inner(o)
-            )
-          }
+          v.arrayOrObject(
+            k -> v,
+            a =>
+              k -> Json.fromValues(
+                a.map { element =>
+                  element.asObject.fold(element) { e => Json.fromJsonObject(inner(e)) }
+                }
+              ),
+            o => k -> Json.fromJsonObject(inner(o))
+          )
         }
       )
     }
@@ -47,8 +52,13 @@ object Optics extends Optics {
 
   val filterSearchMetadata: Json => Json = filterKey("_next") andThen filterResultMetadata
 
-  val `@id` = root.`@id`.string
-  val _uuid = root._uuid.string
+  private val linkKeys                           = Set("_self", "_incoming", "_outgoing")
+  val filterResultMetadataAndLinks: Json => Json = filterResults(metadataKeys ++ linkKeys)
+  val filterSearchMetadataAndLinks: Json => Json = filterKey("_next") andThen filterResultMetadataAndLinks
+
+  val `@id`   = root.`@id`.string
+  val `@type` = root.`@type`.string
+  val _uuid   = root._uuid.string
 
   val _total = root._total.long
 
@@ -65,6 +75,7 @@ object Optics extends Optics {
 
     val _label             = root._label.string
     val description        = root.description.string
+    val _constrainedBy     = root._constrainedBy.string
     val _rev               = root._rev.int
     val _deprecated        = root._deprecated.boolean
     val _markedForDeletion = root._markedForDeletion.boolean
@@ -146,9 +157,17 @@ object Optics extends Optics {
     val filterFields = filterKeys(Set("_instant", "_updatedAt"))
       .andThen(
         List("_location", "_uuid", "_path")
-          .map { root._attributes.at(_).set(None) }
+          .map { root._attributes.at(_).replace(None) }
           .reduce(_ andThen _)
       )
+  }
+
+  object supervision {
+
+    /**
+      * Getting the projects related to the running projections
+      */
+    val allProjects = root.projections.each.metadata.project
   }
 
 }

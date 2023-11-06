@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
@@ -28,7 +29,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ResourceRejection(val reason: String) extends Product with Serializable
+sealed abstract class ResourceRejection(val reason: String) extends Rejection
 
 object ResourceRejection {
 
@@ -79,6 +80,11 @@ object ResourceRejection {
       extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a resource while providing an id that is blank.
+    */
+  final case object BlankResourceId extends ResourceRejection(s"Resource identifier cannot be blank.")
+
+  /**
     * Rejection returned when attempting to create/update a resource with a reserved id.
     */
   final case class ReservedResourceId(id: Iri)
@@ -91,12 +97,10 @@ object ResourceRejection {
     *   the resource identifier
     * @param project
     *   the project it belongs to
-    * @param schemaOpt
-    *   the optional schema reference
     */
-  final case class ResourceNotFound(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef])
+  final case class ResourceNotFound(id: Iri, project: ProjectRef)
       extends ResourceFetchRejection(
-        s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")} in project '$project'."
+        s"Resource '$id' not found in project '$project'."
       )
 
   /**
@@ -173,6 +177,13 @@ object ResourceRejection {
   final case class ResourceIsDeprecated(id: Iri) extends ResourceRejection(s"Resource '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a resource that is not deprecated
+    * @param id
+    *   the resource identifier
+    */
+  final case class ResourceIsNotDeprecated(id: Iri) extends ResourceRejection(s"Resource '$id' is not deprecated.")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current resource, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -195,6 +206,12 @@ object ResourceRejection {
   final case class SchemaIsDeprecated(schemaId: Iri) extends ResourceRejection(s"Schema '$schemaId' is deprecated.")
 
   /**
+    * Rejection returned when attempting to do an operation that requires an explicit schema but the schema is not
+    * provided.
+    */
+  final case object NoSchemaProvided extends ResourceRejection(s"A schema is required but was not provided.")
+
+  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -209,6 +226,7 @@ object ResourceRejection {
   implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case BlankId                                           => BlankResourceId
   }
 
   implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
@@ -221,7 +239,8 @@ object ResourceRejection {
         case InvalidJsonLdFormat(_, rdf)                 => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)     =>
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
-        case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
+        case InvalidSchemaRejection(_, _, report)        =>
+          obj.addContext(contexts.resolvers).add("report", report.asJson)
         case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }
@@ -233,7 +252,7 @@ object ResourceRejection {
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =
     HttpResponseFields {
       case RevisionNotFound(_, _)          => StatusCodes.NotFound
-      case ResourceNotFound(_, _, _)       => StatusCodes.NotFound
+      case ResourceNotFound(_, _)          => StatusCodes.NotFound
       case TagNotFound(_)                  => StatusCodes.NotFound
       case InvalidSchemaRejection(_, _, _) => StatusCodes.NotFound
       case ProjectContextRejection(rej)    => rej.status

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -56,7 +56,7 @@ final case class ElasticSearchViewState(
     source: Json,
     tags: Tags,
     rev: Int,
-    indexingRev: Int,
+    indexingRev: IndexingRev,
     deprecated: Boolean,
     createdAt: Instant,
     createdBy: Subject,
@@ -95,8 +95,7 @@ final case class ElasticSearchViewState(
         context = context,
         permission = permission,
         tags = tags,
-        source = source,
-        indexingRev = indexingRev
+        source = source
       )
     case AggregateElasticSearchViewValue(name, description, views) =>
       AggregateElasticSearchView(
@@ -111,14 +110,12 @@ final case class ElasticSearchViewState(
   }
 
   def toResource(
-      mappings: ApiMappings,
-      base: ProjectBase,
       defaultMapping: JsonObject,
       defaultSettings: JsonObject
   ): ViewResource = {
     ResourceF(
       id = id,
-      uris = ResourceUris("views", project, id)(mappings, base),
+      uris = ResourceUris("views", project, id),
       rev = rev,
       types = types,
       deprecated = deprecated,
@@ -139,6 +136,6 @@ object ElasticSearchViewState {
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
     implicit val codec: Codec.AsObject[ElasticSearchViewState]      = deriveConfiguredCodec[ElasticSearchViewState]
-    Serializer.dropNulls()
+    Serializer.dropNullsInjectType()
   }
 }

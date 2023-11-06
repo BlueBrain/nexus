@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -87,7 +88,9 @@ object Arithmetic {
     }
   }
 
-  sealed trait ArithmeticRejection extends Product with Serializable
+  sealed trait ArithmeticRejection extends Rejection {
+    override def reason: String = this.toString
+  }
 
   object ArithmeticRejection {
     final case object NotFound                                          extends ArithmeticRejection

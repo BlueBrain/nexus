@@ -3,11 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
+class JsonLdContextSpec extends CatsEffectSpec with Fixtures {
 
   "A Json-LD context" should {
     val context = jsonContentOf("context.json").topContextValueOrEmpty

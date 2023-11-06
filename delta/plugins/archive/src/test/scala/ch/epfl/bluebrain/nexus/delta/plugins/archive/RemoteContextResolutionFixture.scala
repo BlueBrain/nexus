@@ -5,20 +5,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileCont
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 
-trait RemoteContextResolutionFixture extends IOValues {
+trait RemoteContextResolutionFixture {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json").accepted,
-    storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json").accepted,
-    fileContexts.files               -> ContextValue.fromFile("contexts/files.json").accepted,
-    contexts.archives                -> ContextValue.fromFile("contexts/archives.json").accepted,
-    contexts.archivesMetadata        -> ContextValue.fromFile("contexts/archives-metadata.json").accepted,
-    Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json").accepted,
-    Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json").accepted,
-    Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json").accepted
+  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
+    storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
+    storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json"),
+    fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
+    contexts.archives                -> ContextValue.fromFile("contexts/archives.json"),
+    contexts.archivesMetadata        -> ContextValue.fromFile("contexts/archives-metadata.json"),
+    Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
+    Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
+    Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json")
   )
 }
 

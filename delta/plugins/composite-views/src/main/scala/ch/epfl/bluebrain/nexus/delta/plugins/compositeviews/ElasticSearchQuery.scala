@@ -2,19 +2,22 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedElasticSearchClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewElasticSearchProjectionResource, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 
 trait ElasticSearchQuery {
 
@@ -39,7 +42,7 @@ trait ElasticSearchQuery {
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[CompositeViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
   /**
     * Queries all the Elasticsearch indices of the passed composite views' projection. We check for the caller to have
@@ -59,7 +62,7 @@ trait ElasticSearchQuery {
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[CompositeViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
 }
 
@@ -67,10 +70,6 @@ object ElasticSearchQuery {
 
   private[compositeviews] type ElasticSearchClientQuery =
     (JsonObject, Set[String], Query) => HttpResult[Json]
-  private[compositeviews] type FetchView                =
-    (IdSegmentRef, ProjectRef) => IO[CompositeViewRejection, ViewResource]
-  private[compositeviews] type FetchProjection          =
-    (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewElasticSearchProjectionResource]
 
   final def apply(
       aclCheck: AclCheck,
@@ -78,12 +77,12 @@ object ElasticSearchQuery {
       client: ElasticSearchClient,
       prefix: String
   ): ElasticSearchQuery =
-    apply(aclCheck, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty), prefix)
+    apply(aclCheck, views.fetchIndexingView, views.expand, client.search(_, _, _)(SortList.empty), prefix)
 
   private[compositeviews] def apply(
       aclCheck: AclCheck,
       fetchView: FetchView,
-      fetchProjection: FetchProjection,
+      expandId: ExpandId,
       elasticSearchQuery: ElasticSearchClientQuery,
       prefix: String
   ): ElasticSearchQuery =
@@ -95,14 +94,14 @@ object ElasticSearchQuery {
           project: ProjectRef,
           query: JsonObject,
           qp: Uri.Query
-      )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
+      )(implicit caller: Caller): IO[Json] =
         for {
-          viewRes           <- fetchProjection(id, projectionId, project)
-          _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          (view, projection) = viewRes.value
-          _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          index              = projectionIndex(projection, view.uuid, viewRes.rev, prefix).value
-          search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
+          view       <- fetchView(id, project)
+          projection <- fetchProjection(view, projectionId)
+          _          <-
+            aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
+          index       = projectionIndex(projection, view.uuid, prefix).value
+          search     <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
       override def queryProjections(
@@ -110,27 +109,31 @@ object ElasticSearchQuery {
           project: ProjectRef,
           query: JsonObject,
           qp: Uri.Query
-      )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
+      )(implicit caller: Caller): IO[Json] =
         for {
-          viewRes <- fetchView(id, project)
-          _       <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          view     = viewRes.value
-          indices <- allowedProjections(view, viewRes.rev, project)
+          view    <- fetchView(id, project)
+          indices <- allowedProjections(view, project)
           search  <- elasticSearchQuery(query, indices, qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
+      private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =
+        expandId(projectionId, view.project).flatMap { id =>
+          IO.fromEither(view.elasticsearchProjection(id))
+        }
+
       private def allowedProjections(
-          view: CompositeView,
-          rev: Int,
+          view: ActiveViewDef,
           project: ProjectRef
-      )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
+      )(implicit caller: Caller): IO[Set[String]] =
         aclCheck
           .mapFilterAtAddress[ElasticSearchProjection, String](
-            view.projections.collect { case p: ElasticSearchProjection => p },
+            view.elasticSearchProjections,
             project,
             p => p.permission,
-            p => projectionIndex(p, view.uuid, rev, prefix).value
+            p => projectionIndex(p, view.uuid, prefix).value
           )
-          .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
+          .flatTap { indices =>
+            IO.raiseWhen(indices.isEmpty)(AuthorizationFailed(s"No projection is accessible for view '${view.ref}'."))
+          }
     }
 }

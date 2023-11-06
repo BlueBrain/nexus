@@ -4,19 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class OrganizationSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with IOValues
-    with CirceLiteral
-    with OptionValues
-    with Fixtures {
+class OrganizationSpec extends BioSpec with CirceLiteral with Fixtures {
 
   "An Organization" should {
 

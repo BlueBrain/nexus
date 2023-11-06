@@ -1,38 +1,37 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import cats.effect.IO
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.IORef
-import monix.bio.{IO, UIO}
 
 /**
   * Simple implementation that records created orgs and projects
   */
 final class ScopeInitializationLog private (
-    val createdOrgs: IORef[Set[Label]],
-    val createdProjects: IORef[Set[ProjectRef]]
+    val createdOrgs: Ref[IO, Set[Label]],
+    val createdProjects: Ref[IO, Set[ProjectRef]]
 ) extends ScopeInitialization {
 
   override def onOrganizationCreation(
       organization: Organization,
       subject: Identity.Subject
-  ): IO[ServiceError.ScopeInitializationFailed, Unit] =
+  ): IO[Unit] =
     createdOrgs.update(_ + organization.label)
 
   override def onProjectCreation(
       project: Project,
       subject: Identity.Subject
-  ): IO[ServiceError.ScopeInitializationFailed, Unit] =
+  ): IO[Unit] =
     createdProjects.update(_ + project.ref)
 }
 
 object ScopeInitializationLog {
 
-  def apply(): UIO[ScopeInitializationLog] =
+  def apply(): IO[ScopeInitializationLog] =
     for {
-      createdOrgs     <- IORef.of(Set.empty[Label])
-      createdProjects <- IORef.of(Set.empty[ProjectRef])
+      createdOrgs     <- Ref.of[IO, Set[Label]](Set.empty)
+      createdProjects <- Ref.of[IO, Set[ProjectRef]](Set.empty)
     } yield new ScopeInitializationLog(createdOrgs, createdProjects)
 
 }

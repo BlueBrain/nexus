@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -19,7 +20,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class AclRejection(val reason: String) extends Product with Serializable
+sealed abstract class AclRejection(val reason: String) extends Rejection
 
 object AclRejection {
 

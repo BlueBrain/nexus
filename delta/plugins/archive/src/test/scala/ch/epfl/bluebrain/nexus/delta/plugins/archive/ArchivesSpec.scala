@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveNotFound, ProjectContextRejection}
@@ -16,14 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInP
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
-import monix.bio.IO
-import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -31,18 +31,10 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchivesSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with IOValues
-    with IOFixedClock
-    with EitherValuable
-    with TestHelpers
-    with RemoteContextResolutionFixture {
+class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with RemoteContextResolutionFixture {
 
-  private val uuid                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF  = UUIDF.random
-  implicit private val sc: Scheduler = Scheduler.global
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -60,14 +52,16 @@ class ArchivesSpec
     ProjectContextRejection
   )
 
-  private val cfg           = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
-  private val download      = new ArchiveDownload {
+  private val cfg      = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
+  private val download = new ArchiveDownload {
     override def apply(value: ArchiveValue, project: ProjectRef, ignoreNotFound: Boolean)(implicit
         caller: Caller
-    ): IO[ArchiveRejection, AkkaSource] =
+    ): IO[AkkaSource] =
       IO.pure(Source.empty)
   }
-  private lazy val archives = Archives(fetchContext, download, cfg, xas)
+
+  implicit val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
+  private lazy val archives            = Archives(fetchContext, download, cfg, xas)
 
   "An Archives module" should {
     "create an archive from source" in {
@@ -108,12 +102,10 @@ class ArchivesSpec
       resource.rev shouldEqual 1L
 
       val id        = resource.id
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.uris shouldEqual EphemeralResourceInProjectUris(
         project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
+        s"archives/${project.ref}/$encodedId"
       )
     }
 
@@ -180,31 +172,6 @@ class ArchivesSpec
       )
     }
 
-    "create an archive from value" in {
-      val resourceId = iri"http://localhost/${genString()}"
-      val fileId     = iri"http://localhost/${genString()}"
-      val value      = ArchiveValue.unsafe(
-        NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None),
-          FileReference(Latest(fileId), None, None)
-        )
-      )
-
-      val resource = archives.create(project.ref, value).accepted
-
-      val id        = resource.id
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
-      val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
-      resource.uris shouldEqual EphemeralResourceInProjectUris(
-        project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
-      )
-
-      resource.id shouldEqual id
-      resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
-    }
-
     "create an archive from value with a fixed id" in {
       val id         = iri"http://localhost/${genString()}"
       val resourceId = iri"http://localhost/${genString()}"
@@ -234,13 +201,11 @@ class ArchivesSpec
       archives.create(id, project.ref, value).accepted
 
       val resource  = archives.fetch(id, project.ref).accepted
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.id shouldEqual id
       resource.uris shouldEqual EphemeralResourceInProjectUris(
         project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
+        s"archives/${project.ref}/$encodedId"
       )
       resource.createdBy shouldEqual bob
       resource.updatedBy shouldEqual bob
@@ -253,7 +218,7 @@ class ArchivesSpec
       resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
     }
 
-    "download an existing archive" in {
+    "download an existing archive as zip" in {
       val id         = iri"http://localhost/base/${genString()}"
       val resourceId = iri"http://localhost/${genString()}"
       val fileId     = iri"http://localhost/${genString()}"

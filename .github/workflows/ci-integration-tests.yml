@@ -9,12 +9,18 @@ on:
       - 'project/**'
       - '.github/workflows/ci-integration-tests.yml'
 jobs:
-  review:
+  run:
     runs-on: it
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -26,9 +32,15 @@ jobs:
             app/Docker/publishLocal \
             storage/Docker/publishLocal
       - name: Start services
-        run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 60
+        run: docker-compose -f tests/docker/docker-compose.yml up -d
+      - name: Waiting for Delta to start
+        run: |
+          URL="http://localhost:8080/v1/version"
+          curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
       - name: Test
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
       - name: Stop & clean Docker
         if: ${{ always() }}
-        run: docker-compose -f tests/docker/docker-compose-ci.yml down --rmi "local" --volumes
+        run: |
+          docker-compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
+          docker system prune --force --volumes

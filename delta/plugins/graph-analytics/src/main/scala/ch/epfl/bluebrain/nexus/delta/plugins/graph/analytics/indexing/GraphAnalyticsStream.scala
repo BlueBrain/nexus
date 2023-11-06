@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.data.NonEmptyList
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -10,15 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import doobie._
 import doobie.implicits._
 import io.circe.Json
-import monix.bio.{Task, UIO}
 
 trait GraphAnalyticsStream {
 
@@ -40,7 +40,7 @@ object GraphAnalyticsStream {
   /**
     * We look for a resource with these ids in this project and return their types if it can be found
     */
-  private def query(project: ProjectRef, xas: Transactors)(nel: NonEmptyList[Iri]): UIO[Map[Iri, Set[Iri]]] = {
+  private def query(project: ProjectRef, xas: Transactors)(nel: NonEmptyList[Iri]): IO[Map[Iri, Set[Iri]]] = {
     val inIds = Fragments.in(fr"id", nel)
     sql"""
          | SELECT id, value->'types'
@@ -50,24 +50,25 @@ object GraphAnalyticsStream {
          | AND $inIds
          | AND tag = ${Tag.latest.value}
          |""".stripMargin
-      .query[(Iri, Json)]
+      .query[(Iri, Option[Json])]
       .to[List]
-      .transact(xas.streaming)
+      .transact(xas.streamingCE)
       .map { l =>
         l.foldLeft(emptyMapType) { case (acc, (id, json)) =>
-          acc ++ json.as[Set[Iri]].toOption.map(id -> _)
+          val types = json.flatMap(_.as[Set[Iri]].toOption).getOrElse(Set.empty)
+          acc + (id -> types)
         }
       }
-  }.hideErrors
+  }
 
   /**
     * We batch ids and looks for existing resources
     */
   private[indexing] def findRelationships(project: ProjectRef, xas: Transactors, batchSize: Int)(
       ids: Set[Iri]
-  ): UIO[Map[Iri, Set[Iri]]] = {
+  ): IO[Map[Iri, Set[Iri]]] = {
     val groupIds = NonEmptyList.fromList(ids.toList).map(_.grouped(batchSize).toList)
-    val noop     = UIO.pure(emptyMapType)
+    val noop     = IO.pure(emptyMapType)
     groupIds.fold(noop) { list =>
       list.foldLeftM(emptyMapType) { case (acc, l) =>
         query(project, xas)(l).map(_ ++ acc)
@@ -76,31 +77,62 @@ object GraphAnalyticsStream {
   }
 
   // $COVERAGE-OFF$
-  def apply(qc: QueryConfig, xas: Transactors): GraphAnalyticsStream = (project: ProjectRef, start: Offset) => {
+  def apply(qc: QueryConfig, xas: Transactors)(implicit timer: Timer[IO]): GraphAnalyticsStream =
+    (project: ProjectRef, start: Offset) => {
 
-    // This seems a reasonable value to batch relationship resolution for resources with a lot
-    // of references
-    val relationshipBatch = 500
+      // This seems a reasonable value to batch relationship resolution for resources with a lot
+      // of references
+      val relationshipBatch = 500
 
-    /**
-      * Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
-      */
-    def decode(entityType: EntityType, json: Json): Task[GraphAnalyticsResult] =
-      entityType match {
-        case Files.entityType     =>
-          Task.fromEither(FileState.serializer.codec.decodeJson(json)).map { s =>
-            UpdateByQuery(s.id, s.types)
-          }
-        case Resources.entityType =>
-          Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap { s =>
-            JsonLdDocument.fromExpanded(s.expanded, findRelationships(project, xas, relationshipBatch)).map { d =>
-              Index(s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
+      // Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
+      def decode(entityType: EntityType, json: Json): IO[GraphAnalyticsResult] =
+        entityType match {
+          case Files.entityType     =>
+            IO.fromEither(FileState.serializer.codec.decodeJson(json)).map { s =>
+              UpdateByQuery(s.id, s.types)
             }
-          }
-        case _                    => Task.pure(Noop)
-      }
+          case Resources.entityType =>
+            IO.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap {
+              case state if state.deprecated => deprecatedIndex(state)
+              case state                     =>
+                JsonLdDocument.fromExpanded(state.expanded, findRelationships(project, xas, relationshipBatch)).map {
+                  doc => activeIndex(state, doc)
+                }
+            }
+          case _                    => IO.pure(Noop)
+        }
 
-    StreamingQuery.elems(project, Tag.latest, start, qc, xas, decode)
-  }
+      StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, decode)
+    }
   // $COVERAGE-ON$
+
+  private def deprecatedIndex(state: ResourceState) =
+    IO.pure(
+      Index.deprecated(
+        state.project,
+        state.id,
+        state.remoteContexts,
+        state.rev,
+        state.types,
+        state.createdAt,
+        state.createdBy,
+        state.updatedAt,
+        state.updatedBy
+      )
+    )
+
+  private def activeIndex(state: ResourceState, doc: JsonLdDocument) =
+    Index.active(
+      state.project,
+      state.id,
+      state.remoteContexts,
+      state.rev,
+      state.types,
+      state.createdAt,
+      state.createdBy,
+      state.updatedAt,
+      state.updatedBy,
+      doc
+    )
+
 }

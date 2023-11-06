@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 
 trait LinkFile {
 
@@ -19,7 +19,7 @@ trait LinkFile {
     * @param description
     *   the file description
     */
-  def apply(sourcePath: Uri.Path, description: FileDescription): IO[StorageFileRejection, FileAttributes]
+  def apply(sourcePath: Uri.Path, description: FileDescription): IO[FileAttributes]
 }
 
 object LinkFile {
@@ -27,11 +27,14 @@ object LinkFile {
   /**
     * Construct a [[LinkFile]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): LinkFile =
+  def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
+      as: ActorSystem,
+      cs: ContextShift[IO]
+  ): LinkFile =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)
-      case storage: Storage.S3Storage         => storage.linkFile
-      case storage: Storage.RemoteDiskStorage => storage.linkFile
+      case storage: Storage.S3Storage         => storage.linkFile(config)
+      case storage: Storage.RemoteDiskStorage => storage.linkFile(client)
     }
 
   private def unsupported(storageType: StorageType): LinkFile =

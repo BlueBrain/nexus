@@ -1,57 +1,35 @@
-name: Delta Core
+name: Delta Core unit tests
 on:
   pull_request:
     paths:
-      - 'delta/**'
+      - 'delta/kernel/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sourcing-psql/**'
+      - 'delta/testkit/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-core.yml'
 jobs:
-  static-analysis:
-    if: github.event_name == 'pull_request'
-    runs-on: it
-    timeout-minutes: 10
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Static Analysis
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false \
-            "project delta" \
-            clean \
-            scalafmtCheck \
-            Test/scalafmtCheck \
-            scalafmtSbtCheck \
-            scapegoat
-  review:
+  run:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Tests
+      - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            coverage \
-            app/test \
-            kernel/test \
-            rdf/test \
-            sdk/test \
-            sourcingPsql/test \
-            testkit/test \
-            app/coverageReport \
-            kernel/coverageReport \
-            rdf/coverageReport \
-            sdk/coverageReport \
-            sourcingPsql/coverageReport \
-            testkit/coverageReport
+            core-unit-tests-with-coverage

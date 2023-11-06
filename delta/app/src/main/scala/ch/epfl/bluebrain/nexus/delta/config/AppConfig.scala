@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
@@ -17,10 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
-import monix.bio.{IO, UIO}
-import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -48,7 +46,6 @@ final case class AppConfig(
     schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig,
     sse: SseConfig,
-    encryption: EncryptionConfig,
     projections: ProjectionConfig,
     fusion: FusionConfig
 )
@@ -69,8 +66,8 @@ object AppConfig {
       externalConfigPath: Option[String] = None,
       pluginsConfigPaths: List[String] = List.empty,
       accClassLoader: ClassLoader = getClass.getClassLoader
-  ): IO[AppConfigError, (AppConfig, Config)] =
-    load(externalConfigPath, pluginsConfigPaths, accClassLoader).mapError(AppConfigError.apply)
+  ): IO[(AppConfig, Config)] =
+    load(externalConfigPath, pluginsConfigPaths, accClassLoader)
 
   /**
     * Loads the application in two steps:
@@ -83,7 +80,7 @@ object AppConfig {
       externalConfigPath: Option[String] = None,
       pluginsConfigPaths: List[String] = List.empty,
       accClassLoader: ClassLoader = getClass.getClassLoader
-  ): IO[ConfigReaderFailures, (AppConfig, Config)] = {
+  ): IO[(AppConfig, Config)] = {
 
     // Merge configs according to their order
     def merge(configs: Config*) = IO.fromEither {
@@ -91,14 +88,14 @@ object AppConfig {
         .foldLeft(ConfigFactory.defaultOverrides())(_ withFallback _)
         .withFallback(ConfigFactory.load())
         .resolve(resolverOptions)
-      ConfigSource.fromConfig(merged).at("app").load[AppConfig].map(_ -> merged)
+      ConfigSource.fromConfig(merged).at("app").load[AppConfig].map(_ -> merged).leftMap(AppConfigError(_))
     }
 
     for {
-      externalConfig            <- UIO.delay(externalConfigPath.fold(ConfigFactory.empty()) { p =>
+      externalConfig            <- IO.delay(externalConfigPath.fold(ConfigFactory.empty()) { p =>
                                      ConfigFactory.parseFile(new File(p), parseOptions)
                                    })
-      defaultConfig             <- UIO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
+      defaultConfig             <- IO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
       pluginConfigs              = pluginsConfigPaths.map { string =>
                                      ConfigFactory.parseReader(
                                        new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),

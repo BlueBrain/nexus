@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceInstanceFixture
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -17,117 +16,55 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class ResourceSerializationSuite extends SerializationSuite {
+class ResourceSerializationSuite extends SerializationSuite with ResourceInstanceFixture {
 
   private val sseEncoder = ResourceEvent.sseEncoder
 
-  val instant: Instant       = Instant.EPOCH
-  val realm: Label           = Label.unsafe("myrealm")
-  val subject: Subject       = User("username", realm)
-  val org: Label             = Label.unsafe("myorg")
-  val proj: Label            = Label.unsafe("myproj")
-  val projectRef: ProjectRef = ProjectRef(org, proj)
-  val myId: IriOrBNode.Iri   = nxv + "myId"
+  val instant: Instant = Instant.EPOCH
+  val realm: Label     = Label.unsafe("myrealm")
+  val subject: Subject = User("username", realm)
+  val tag: UserTag     = UserTag.unsafe("mytag")
 
-  val resource: Resource =
-    ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
-
-  private val created    =
-    ResourceCreated(
-      myId,
-      projectRef,
-      Revision(schemas.resources, 1),
-      projectRef,
-      Set(schema.Person),
-      resource.source,
-      resource.compacted,
-      resource.expanded,
-      1,
-      instant,
-      subject
-    )
-  private val updated    =
-    ResourceUpdated(
-      myId,
-      projectRef,
-      Revision(schemas.resources, 1),
-      projectRef,
-      Set(schema.Person),
-      resource.source,
-      resource.compacted,
-      resource.expanded,
-      2,
-      instant,
-      subject
-    )
-  private val refreshed  = ResourceRefreshed(
-    myId,
-    projectRef,
-    Revision(schemas.resources, 1),
-    projectRef,
-    Set(schema.Person),
-    resource.compacted,
-    resource.expanded,
-    2,
-    instant,
-    subject
-  )
-  private val tagged     =
-    ResourceTagAdded(
-      myId,
-      projectRef,
-      Set(schema.Person),
-      1,
-      UserTag.unsafe("mytag"),
-      3,
-      instant,
-      subject
-    )
-  private val deprecated =
-    ResourceDeprecated(
-      myId,
-      projectRef,
-      Set(schema.Person),
-      4,
-      instant,
-      subject
-    )
-  private val tagDeleted =
-    ResourceTagDeleted(
-      myId,
-      projectRef,
-      Set(schema.Person),
-      UserTag.unsafe("mytag"),
-      5,
-      instant,
-      subject
-    )
+  // format: off
+  private val created        = ResourceCreated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, source, compacted, expanded, remoteContextRefs, 1, instant, subject, None)
+  private val createdWithTag = created.copy(tag = Some(tag))
+  private val updated        = ResourceUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, source, compacted, expanded, remoteContextRefs, 2, instant, subject, Some(tag))
+  private val refreshed      = ResourceRefreshed(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, compacted, expanded, remoteContextRefs, 2, instant, subject)
+  private val tagged         = ResourceTagAdded(myId, projectRef, types, 1, UserTag.unsafe("mytag"), 3, instant, subject)
+  private val deprecated     = ResourceDeprecated(myId, projectRef, types, 4, instant, subject)
+  private val undeprecated   = ResourceUndeprecated(myId, projectRef, types, 5, instant, subject)
+  private val tagDeleted     = ResourceTagDeleted(myId, projectRef, types, tag, 5, instant, subject)
+  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, 6, instant, subject)
+  // format: on
 
   private val resourcesMapping = List(
     (created, loadEvents("resources", "resource-created.json"), Created),
+    (createdWithTag, loadEvents("resources", "resource-created-tagged.json"), Created),
     (updated, loadEvents("resources", "resource-updated.json"), Updated),
     (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
     (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
     (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
-    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted)
+    (undeprecated, loadEvents("resources", "resource-undeprecated.json"), Undeprecated),
+    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted),
+    (schemaUpdated, loadEvents("resources", "resource-schema-updated.json"), Updated)
   )
 
   resourcesMapping.foreach { case (event, (database, sse), action) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(ResourceEvent.serializer, event, database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName}") {
       assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} as an SSE") {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
       ResourceEvent.resourceEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,
@@ -144,17 +81,31 @@ class ResourceSerializationSuite extends SerializationSuite {
     }
   }
 
+  private val resourcesMappingNoRemoteContexts = List(
+    (created.noRemoteContext, jsonContentOf("resources/database/resource-created-no-remote-contexts.json")),
+    (updated.noRemoteContext, jsonContentOf("resources/database/resource-updated-no-remote-contexts.json")),
+    (refreshed.noRemoteContext, jsonContentOf("resources/database/resource-refreshed-no-remote-contexts.json"))
+  )
+
+  // TODO: Remove test after 1.10 migration.
+  resourcesMappingNoRemoteContexts.foreach { case (event, database) =>
+    test(s"Correctly deserialize a ${event.getClass.getSimpleName} with no RemoteContext") {
+      assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+  }
+
   private val state = ResourceState(
     myId,
     projectRef,
     projectRef,
-    resource.source,
-    resource.compacted,
-    resource.expanded,
+    source,
+    compacted,
+    expanded,
+    remoteContextRefs,
     rev = 2,
     deprecated = false,
     Revision(schemas.resources, 1),
-    Set(schema.Person),
+    types,
     Tags(UserTag.unsafe("mytag") -> 3),
     createdAt = instant,
     createdBy = subject,
@@ -162,7 +113,8 @@ class ResourceSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/resources/resource-state.json")
+  private val jsonState                = jsonContentOf("/resources/resource-state.json")
+  private val jsonStateNoRemoteContext = jsonContentOf("/resources/resource-state-no-remote-contexts.json")
 
   test(s"Correctly serialize a ResourceState") {
     assertOutput(ResourceState.serializer, state, jsonState)
@@ -170,6 +122,23 @@ class ResourceSerializationSuite extends SerializationSuite {
 
   test(s"Correctly deserialize a ResourceState") {
     assertEquals(ResourceState.serializer.codec.decodeJson(jsonState), Right(state))
+  }
+
+  // TODO: Remove test after 1.10 migration.
+  test("Correctly deserialize a ResourceState with no remote contexts") {
+    assertEquals(
+      ResourceState.serializer.codec.decodeJson(jsonStateNoRemoteContext),
+      Right(state.copy(remoteContexts = Set.empty))
+    )
+  }
+
+  implicit class ResourceEventTestOps(event: ResourceEvent) {
+    def noRemoteContext: ResourceEvent = event match {
+      case r: ResourceCreated   => r.copy(remoteContexts = Set.empty)
+      case r: ResourceUpdated   => r.copy(remoteContexts = Set.empty)
+      case r: ResourceRefreshed => r.copy(remoteContexts = Set.empty)
+      case r                    => r
+    }
   }
 
 }

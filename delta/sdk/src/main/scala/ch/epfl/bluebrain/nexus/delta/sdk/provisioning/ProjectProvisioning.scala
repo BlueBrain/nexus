@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
+import cats.effect.{ContextShift, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
@@ -8,10 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectAlreadyExists
-import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.ProjectProvisioningRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import monix.bio.{IO, UIO}
 
 /**
   * Automatic project provisioning for users.
@@ -24,7 +24,7 @@ trait ProjectProvisioning {
     * @param subject
     *   a user to provision a project for
     */
-  def apply(subject: Subject): IO[ProjectProvisioningRejection, Unit]
+  def apply(subject: Subject): IO[Unit]
 
 }
 
@@ -62,44 +62,49 @@ object ProjectProvisioning {
     *   provisioning configuration
     */
   def apply(
-      appendAcls: Acl => IO[AclRejection, Unit],
+      appendAcls: Acl => IO[Unit],
       projects: Projects,
       provisioningConfig: AutomaticProvisioningConfig
-  ): ProjectProvisioning = new ProjectProvisioning {
+  )(implicit contextShift: ContextShift[IO]): ProjectProvisioning = new ProjectProvisioning {
 
     private def provisionOnNotFound(
         projectRef: ProjectRef,
         user: User,
         provisioningConfig: AutomaticProvisioningConfig
-    ): IO[ProjectProvisioningRejection, Unit] = {
+    ): IO[Unit] = {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
       for {
         _ <- appendAcls(acl)
-               .onErrorRecover { case _: AclRejection.IncorrectRev | _: AclRejection.NothingToBeUpdated => () }
-               .mapError(UnableToSetAcls)
+               .recoverWith {
+                 case _: AclRejection.IncorrectRev       => IO.unit
+                 case _: AclRejection.NothingToBeUpdated => IO.unit
+               }
+               .adaptError { case r: AclRejection => UnableToSetAcls(r) }
         _ <- projects
                .create(
                  projectRef,
                  provisioningConfig.fields
-               )(user)
-               .onErrorRecover { case _: ProjectAlreadyExists => () }
-               .mapError(UnableToCreateProject)
+               )(user, contextShift)
+               .void
+               .recoverWith { case _: ProjectAlreadyExists => IO.unit }
+               .adaptError { case r: ProjectRejection => UnableToCreateProject(r) }
       } yield ()
     }
 
-    override def apply(subject: Subject): IO[ProjectProvisioningRejection, Unit] = subject match {
+    override def apply(subject: Subject): IO[Unit] = subject match {
       case user @ User(subject, realm) if provisioningConfig.enabled =>
         provisioningConfig.enabledRealms.get(realm) match {
           case Some(org) =>
             for {
-              proj      <- IO.fromEither(Label.sanitized(subject)).mapError(InvalidProjectLabel)
+              proj      <-
+                IO.fromEither(Label.sanitized(subject)).adaptError { case e: FormatError => InvalidProjectLabel(e) }
               projectRef = ProjectRef(org, proj)
-              exists    <- projects.fetch(projectRef).map(_ => true).onErrorHandle(_ => false)
-              _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, provisioningConfig))
+              exists    <- projects.fetch(projectRef).as(true).handleError(_ => false)
+              _         <- IO.whenA(!exists)(provisionOnNotFound(projectRef, user, provisioningConfig))
             } yield ()
           case None      => IO.unit
         }
-      case _                                                         => UIO.unit
+      case _                                                         => IO.unit
     }
   }
 
@@ -117,7 +122,7 @@ object ProjectProvisioning {
       projects: Projects,
       provisioningConfig: AutomaticProvisioningConfig,
       serviceAccount: ServiceAccount
-  ): ProjectProvisioning = {
+  )(implicit contextShift: ContextShift[IO]): ProjectProvisioning = {
     implicit val serviceAccountSubject: Subject = serviceAccount.subject
     apply(acls.append(_, 0).void, projects, provisioningConfig)
   }

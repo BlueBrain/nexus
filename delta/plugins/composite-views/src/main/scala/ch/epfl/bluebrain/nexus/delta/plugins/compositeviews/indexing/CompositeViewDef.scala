@@ -1,30 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import cats.data.NonEmptyChain
-import cats.effect.ExitCase
+import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
+import cats.data.{NonEmptyChain, NonEmptyMap}
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
 import cats.kernel.Semigroup
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, SourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.GraphResourceToDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.{Pipe, Stream}
-import monix.bio.{Task, UIO}
 
 import java.util.UUID
 
@@ -44,12 +43,83 @@ sealed trait CompositeViewDef extends Product with Serializable {
 
 object CompositeViewDef {
 
-  private val logger: Logger = Logger[CompositeViewDef]
+  private val logger = Logger.cats[CompositeViewDef]
 
   /**
     * Active view eligible to be run as a projection by the supervisor
     */
-  final case class ActiveViewDef(ref: ViewRef, uuid: UUID, rev: Int, value: CompositeViewValue) extends CompositeViewDef
+  final case class ActiveViewDef(ref: ViewRef, uuid: UUID, rev: Int, value: CompositeViewValue)
+      extends CompositeViewDef {
+
+    /**
+      * The id of the view
+      */
+    val id: Iri = ref.viewId
+
+    /**
+      * The project the view belongs to
+      */
+    val project: ProjectRef = ref.project
+
+    /**
+      * The indexing revision
+      */
+    val indexingRev: IndexingRev = value.sourceIndexingRev
+
+    val indexingRef: IndexingViewRef = IndexingViewRef(ref, value.sourceIndexingRev)
+
+    /**
+      * The projection name for this view
+      */
+    val projection = s"composite-views-${ref.project}-${ref.viewId}-${indexingRev.value}"
+
+    /**
+      * The projection metadata for this view
+      */
+    val metadata: ProjectionMetadata = ProjectionMetadata(
+      CompositeViews.entityType.value,
+      projection,
+      Some(ref.project),
+      Some(ref.viewId)
+    )
+
+    /**
+      * View projections
+      */
+    def projections: NonEmptyMap[Iri, CompositeViewProjection] = value.projections
+
+    /**
+      * Looks for Elasticsearch projections
+      */
+    def elasticSearchProjections: Set[ElasticSearchProjection] =
+      value.projections.foldLeft(Set.empty[ElasticSearchProjection]) { case (acc, projection) =>
+        acc ++ projection.asElasticSearch
+      }
+
+    /**
+      * Looks for Sparql projections
+      */
+    def sparqlProjections: Set[SparqlProjection] =
+      value.projections.foldLeft(Set.empty[SparqlProjection]) { case (acc, projection) =>
+        acc ++ projection.asSparql
+      }
+
+    def projection(id: Iri): Either[ProjectionNotFound, CompositeViewProjection] =
+      value.projections(id).toRight(ProjectionNotFound(ref, id))
+
+    def sparqlProjection(id: Iri): Either[ProjectionNotFound, SparqlProjection] =
+      projection(id).flatMap {
+        _.asSparql.toRight(ProjectionNotFound(ref, id, SparqlProjectionType))
+      }
+
+    def elasticsearchProjection(id: Iri): Either[ProjectionNotFound, ElasticSearchProjection] =
+      projection(id).flatMap {
+        _.asElasticSearch.toRight(ProjectionNotFound(ref, id, ElasticSearchProjectionType))
+      }
+
+    def source(id: Iri): Either[SourceNotFound, CompositeViewSource] =
+      value.sources(id).toRight(SourceNotFound(ref, id))
+  }
 
   /**
     * Deprecated view to be cleaned up and removed from the supervisor
@@ -99,8 +169,8 @@ object CompositeViewDef {
     *
     * @param view
     *   the definition
-    * @param spaces
-    *   provides dependencies to Elasticsearch and Blazegraph
+    * @param sinks
+    *   provides the necessary sinks for the view
     * @param compilePipeChain
     *   compile the pipe chain for sources and projections
     * @param graphStream
@@ -110,30 +180,31 @@ object CompositeViewDef {
     */
   def compile(
       view: ActiveViewDef,
-      spaces: CompositeSpaces,
+      sinks: CompositeSinks,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
-    val metadata                              = ProjectionMetadata(
-      CompositeViews.entityType.value,
-      s"composite-views-${view.ref.project}-${view.ref.viewId}-${view.rev}",
-      Some(view.ref.project),
-      Some(view.ref.viewId)
-    )
-    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.ref, view.rev)
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+    val metadata                             = view.metadata
+    val fetchProgress: IO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, spaces.commonSink)(_)
+      CompositeViewDef.compileSource(
+        view.ref.project,
+        compilePipeChain,
+        graphStream,
+        sinks.commonSink(view),
+        projectionTypes(view)
+      )(_)
 
-    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, spaces.queryPipe, spaces.targetSink)(_)
+    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
-    def compileAll(progressRef: Ref[Task, CompositeProgress]) = {
+    def compileAll(progressRef: Ref[IO, CompositeProgress]) = {
       def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
         view.ref,
         view.value.rebuildStrategy,
         CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
-        compositeProjections.resetRebuild(view.ref, view.rev)
+        compositeProjections.resetRebuild(view.ref)
       )
 
       compile(
@@ -143,7 +214,7 @@ object CompositeViewDef {
         compileTarget,
         rebuild,
         compositeProjections.handleRestarts(view.ref),
-        compositeProjections.saveOperation(metadata, view.ref, view.rev, _, _)
+        compositeProjections.saveOperation(view, _, _)
       ).map { stream =>
         CompiledProjection.fromStream(
           metadata,
@@ -154,8 +225,8 @@ object CompositeViewDef {
     }
 
     for {
-      initProgress <- fetchProgress.absorb
-      progressRef  <- Ref.of[Task, CompositeProgress](initProgress)
+      initProgress <- fetchProgress
+      progressRef  <- Ref.of[IO, CompositeProgress](initProgress)
       projection   <- compileAll(progressRef)
     } yield projection
   }
@@ -180,31 +251,30 @@ object CompositeViewDef {
     */
   def compile(
       view: ActiveViewDef,
-      fetchProgress: UIO[CompositeProgress],
-      compileSource: CompositeViewSource => Task[(Iri, Source, Source, Operation)],
-      compileTarget: CompositeViewProjection => Task[(Iri, Operation)],
+      fetchProgress: IO[CompositeProgress],
+      compileSource: CompositeViewSource => IO[(Iri, Source, Source, Operation)],
+      compileTarget: CompositeViewProjection => IO[(Iri, Operation)],
       rebuild: ElemPipe[Unit, Unit],
       restarts: ElemPipe[Unit, Unit],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): Task[ElemStream[Unit]] = {
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[ElemStream[Unit]] = {
     // We override the default implementation in FS2 (where it appends the two streams)
     implicit val semigroup: Semigroup[ElemStream[Unit]] = (x: ElemStream[Unit], y: ElemStream[Unit]) => x.merge(y)
 
-    val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNonEmptyList)
-    val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNonEmptyList)
+    val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNel.map(_._2))
+    val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNel.map(_._2))
 
-    def startLog(sourceId: Iri, branch: String)                                  =
-      Task.delay(logger.debug(s"Running '$branch' branch for source '{}' of composite view '{}'.", sourceId, view.ref))
-    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => Task[Unit] = {
+    def startLog(sourceId: Iri, branch: String)                                =
+      logger.debug(s"Running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
+    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => IO[Unit] = {
       case Completed =>
-        val message = "Completed '{}' branch for source '{}' of composite view '{}'."
-        Task.delay(logger.debug(message, branch, sourceId, view.ref))
+        logger.debug(s"Completed '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
       case Error(e)  =>
-        val message = s"Error raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
-        Task.delay(logger.error(message, e))
+        logger.error(
+          s"Error $e raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
+        )
       case Canceled  =>
-        val message = "Cancelled '{}' branch for source '{}' of composite view '{}'."
-        Task.delay(logger.debug(message, branch, sourceId, view.ref))
+        logger.debug(s"Cancelled '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     }
 
     for {
@@ -226,8 +296,8 @@ object CompositeViewDef {
                               }
                           )
       start             = Stream.eval(
-                            fetchProgress.tapEval { progress =>
-                              UIO.delay(logger.info(s"Starting composite view '${view.ref}' with offset $progress."))
+                            fetchProgress.flatTap { progress =>
+                              logger.info(s"Starting composite view '${view.ref}' with offset $progress.")
                             }
                           )
     } yield restarts(start >> (mains |+| rebuilds))
@@ -245,19 +315,19 @@ object CompositeViewDef {
   def rebuild[A](
       view: ViewRef,
       rebuildStrategy: Option[RebuildStrategy],
-      predicate: UIO[Boolean],
-      resetProgress: UIO[Unit]
-  ): Pipe[Task, A, A] = { stream =>
+      predicate: IO[Boolean],
+      resetProgress: IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Pipe[IO, A, A] = { stream =>
     rebuildStrategy match {
       case Some(Interval(fixedRate)) =>
-        val rebuildWhen       = Stream.awakeEvery[Task](fixedRate).flatMap(_ => Stream.eval(predicate))
-        val waitingForRebuild = Stream.never[Task].interruptWhen(rebuildWhen).drain
-        Stream.eval(Task.delay(logger.debug(s"Rebuild has been defined at $fixedRate for view '{}'.", view))) >>
+        val rebuildWhen       = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
+        val waitingForRebuild = Stream.never[IO].interruptWhen(rebuildWhen).drain
+        Stream.eval(logger.debug(s"Rebuild has been defined at $fixedRate for view '$view'.")) >>
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
-        Stream.eval(Task.delay(logger.debug(s"No rebuild strategy has been defined for view '{}'.", view))) >>
-          Stream.empty[Task]
+        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '$view'.")) >>
+          Stream.empty[IO]
     }
   }
 
@@ -271,20 +341,20 @@ object CompositeViewDef {
     */
   def rebuildWhen(
       view: ActiveViewDef,
-      progressRef: Ref[Task, CompositeProgress],
-      fetchProgress: UIO[CompositeProgress],
+      progressRef: Ref[IO, CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       graphStream: CompositeGraphStream
-  ): UIO[Boolean] = {
+  ): IO[Boolean] = {
 
-    def test(condition: Boolean, message: String): UIO[Boolean] =
-      UIO.when(condition)(UIO.delay(logger.info(message))).as(condition)
+    def test(condition: Boolean, message: String): IO[Boolean] =
+      IO.whenA(condition)(logger.debug(message)).as(condition)
 
     def checkSource(
         s: CompositeViewSource,
         progress: CompositeProgress,
         previousProgress: CompositeProgress
-    ): UIO[RebuildCondition] =
-      progress.sourceMainOffset(s.id).fold(UIO.pure(RebuildCondition.start)) { offset =>
+    ): IO[RebuildCondition] =
+      progress.sourceMainOffset(s.id).fold(IO.pure(RebuildCondition.start)) { offset =>
         for {
           diffMain    <- test(
                            !previousProgress.sourceMainOffset(s.id).contains(offset),
@@ -298,14 +368,14 @@ object CompositeViewDef {
           noRemaining <-
             if (diffOffset)
               graphStream.remaining(s, view.ref.project)(offset).map(r => r.isEmpty || r.exists(_.count == 0L))
-            else UIO.pure(false)
+            else IO.pure(false)
           _           <- test(noRemaining, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
         } yield RebuildCondition(diffOffset, noRemaining)
       }
 
     for {
       newProgress      <- fetchProgress
-      previousProgress <- progressRef.getAndSet(newProgress).hideErrors
+      previousProgress <- progressRef.getAndSet(newProgress)
       condition        <- view.value.sources
                             .reduceMapM(checkSource(_, newProgress, previousProgress))
                             .map { r => r.diffOffset && r.noRemaining }
@@ -346,9 +416,9 @@ object CompositeViewDef {
       source: Source,
       sourceOperation: Operation,
       targets: NonEmptyChain[(Iri, Operation)],
-      fetchProgress: UIO[CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): ElemStream[Unit] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceMainOffset(sourceId)
       val main         = for {
@@ -363,7 +433,7 @@ object CompositeViewDef {
         result      <- source.through(sourceOperation).flatMap(_.broadcastThrough(mainTargets))
       } yield result
       main match {
-        case Left(e)       => Stream.raiseError[Task](e)
+        case Left(e)       => Stream.raiseError[IO](e)
         case Right(source) => source.apply(sourceOffset.getOrElse(Offset.start))
       }
     }
@@ -385,9 +455,9 @@ object CompositeViewDef {
       sourceId: Iri,
       source: Source,
       targets: NonEmptyChain[(Iri, Operation)],
-      fetchProgress: UIO[CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): ElemStream[Unit] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceRebuildOffset(sourceId)
       val rebuild      = for {
@@ -402,7 +472,7 @@ object CompositeViewDef {
         result         <- source.broadcastThrough(rebuildTargets)
       } yield result
       rebuild match {
-        case Left(e)       => Stream.raiseError[Task](e)
+        case Left(e)       => Stream.raiseError[IO](e)
         case Right(source) =>
           source.apply(sourceOffset.getOrElse(Offset.start))
       }
@@ -445,88 +515,60 @@ object CompositeViewDef {
     *   generates the element stream for the source in the context of a branch
     * @param sink
     *   the sink for the common space
+    * @param projectionTypes
+    *   the view's projection resource types to use to filter the rebuild stream
     */
   def compileSource(
       project: ProjectRef,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
-      sink: Sink
-  )(source: CompositeViewSource): Task[(Iri, Source, Source, Operation)] = Task.fromEither {
-    for {
-      pipes        <- source.pipeChain.traverse(compilePipeChain)
-      // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
-      tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
-      chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
-      operation    <- Operation.merge(chain)
-      // We create the elem stream for the two types of branch
-      // The main source produces an infinite stream and waits for new elements
-      mainSource    = graphStream.main(source, project)
-      // The rebuild one a finite one with only the current elements
-      rebuildSource = graphStream.rebuild(source, project)
-    } yield (source.id, mainSource, rebuildSource, operation)
-  }
+      sink: Sink,
+      projectionTypes: Set[Iri]
+  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] =
+    IO.fromEither {
+      for {
+        pipes        <- source.pipeChain.traverse(compilePipeChain)
+        // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
+        tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
+        chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
+        operation    <- Operation.merge(chain)
+        // We create the elem stream for the two types of branch
+        // The main source produces an infinite stream and waits for new elements
+        mainSource    = graphStream.main(source, project)
+        // The rebuild one a finite one with only the current elements
+        rebuildSource = graphStream.rebuild(source, project, projectionTypes)
+      } yield (source.id, mainSource, rebuildSource, operation)
+    }
 
   /**
     * Compiles a composite projection into an operation
+    *
     * @param target
     *   the composite view projection
     * @param compilePipeChain
     *   how to compile the pipe chain of the composite view projection
-    * @param queryPipe
-    *   how to instantiate the query pipe at the beginning of the projection
     * @param targetSink
     *   how to instantiate the target sink
-    * @param cr
-    *   the remote context resolution for ES projections
     */
   def compileTarget(
       compilePipeChain: PipeChain.Compile,
-      queryPipe: SparqlConstructQuery => Operation,
       targetSink: CompositeViewProjection => Sink
-  )(target: CompositeViewProjection)(implicit cr: RemoteContextResolution): Task[(Iri, Operation)] = Task.fromEither {
-    val query = queryPipe(target.query)
-    val sink  = targetSink(target)
-    target match {
-      case e: ElasticSearchProjection => compileElasticsearch(e, compilePipeChain, query, sink)
-      case s: SparqlProjection        => compileSparql(s, compilePipeChain, query, sink)
-    }
-  }
-
-  // Compiling an Elasticsearch projection of a composite view
-  private def compileElasticsearch(
-      elasticsearch: ElasticSearchProjection,
-      compilePipeChain: PipeChain.Compile,
-      query: Operation,
-      sink: Sink
-  )(implicit cr: RemoteContextResolution) = {
-
-    // Getting from the common space, transforming to json and push to the sink
-    val tail =
-      NonEmptyChain(query, new GraphResourceToDocument(elasticsearch.context, elasticsearch.includeContext), sink)
+  )(target: CompositeViewProjection): IO[(Iri, Operation)] = IO.fromEither {
+    val sink = targetSink(target)
+    val tail = NonEmptyChain(sink: Operation)
 
     for {
-      pipes  <- elasticsearch.pipeChain.traverse(compilePipeChain)
+      pipes  <- target.pipeChain.traverse(compilePipeChain)
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
       result <- Operation.merge(chain)
-    } yield elasticsearch.id -> result
+    } yield target.id -> result
   }
 
-  // Compiling a Sparql projection of a composite view
-  private def compileSparql(
-      sparql: SparqlProjection,
-      compilePipeChain: PipeChain.Compile,
-      query: Operation,
-      sink: Sink
-  ) = {
-
-    // Getting from the common space, transforming to n-triples and push to the sink
-    val tail = NonEmptyChain(query, GraphResourceToNTriples, sink)
-
-    for {
-      pipes  <- sparql.pipeChain.traverse(compilePipeChain)
-      chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
-      result <- Operation.merge(chain)
-    } yield sparql.id -> result
+  /** Union of all resourceTypes specified in the view's projections */
+  private def projectionTypes(view: ActiveViewDef): Set[Iri] = {
+    val targets = view.value.projections
+    if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
+    else targets.foldLeft(Set.empty[Iri])(_ ++ _.resourceTypes)
   }
 
 }

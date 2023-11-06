@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -16,45 +18,41 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import monix.bio.IO
-import org.scalatest._
 
 import java.util.UUID
 
-class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtures {
+class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromMap {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem = system.toTyped
+  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   // TODO: sort out how we handle this in tests
-  implicit override def rcr: RemoteContextResolution = {
-    implicit val cl: ClassLoader = getClass.getClassLoader
-    RemoteContextResolution.fixed(
-      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json").accepted,
-      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json").accepted,
-      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json").accepted,
-      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json").accepted,
-      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json").accepted,
-      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json").accepted,
-      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json").accepted
+  implicit override def rcr: RemoteContextResolution =
+    RemoteContextResolution.fixedIO(
+      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json"),
+      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
+      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
+      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
+      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
-  }
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
@@ -92,8 +90,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     ProjectContextRejection
   )
 
-  implicit private val c: Crypto = crypto
-
   private val storageStatistics: StoragesStatistics =
     (storage, project) =>
       if (project.equals(projectRef) && storage.toString.equals("remote-disk-storage"))
@@ -104,10 +100,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val storages    = Storages(
     fetchContext,
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
+    ResolverContextResolution(rcr),
     IO.pure(perms),
     (_, _) => IO.unit,
-    crypto,
     xas,
     cfg,
     serviceAccount
@@ -117,17 +112,16 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val routes      =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
+      StoragesRoutes(identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
     )
 
   "Storage routes" should {
 
     "fail to create a storage without storages/write permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id"}"""
+      val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -135,7 +129,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       aclCheck
         .append(AclAddress.Root, Anonymous -> Set(permissions.write), caller.subject -> Set(permissions.write))
         .accepted
-      val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
+      val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage)
@@ -145,7 +139,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "create a storage with an authenticated user and provided id" in {
       Put(
         "/v1/storages/myorg/myproject/remote-disk-storage",
-        remoteFieldsJson.value.toEntity
+        remoteFieldsJson.toEntity
       ) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
@@ -154,7 +148,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the creation of a storage which already exists" in {
-      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("/storages/errors/already-exists.json", "id" -> s3Id)
       }
@@ -162,9 +156,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
     "fail to update a storage without storages/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
+        response.shouldBeForbidden
       }
     }
 
@@ -176,7 +169,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         // the starting revision is 2 because this storage has been updated to default = false
-        Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.value.toEntity) ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3)
         }
@@ -184,7 +177,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the update of a non-existent storage" in {
-      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
@@ -192,7 +185,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the update of a storage at a non-existent revision" in {
-      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("/storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
@@ -202,8 +195,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "fail to deprecate a storage without storages/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -249,8 +241,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.shouldBeForbidden
           }
         }
       }
@@ -260,7 +251,10 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/s3-storage") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/s3-storage-fetched.json")
+        response.asJson shouldEqual jsonContentOf(
+          "storages/s3-storage-fetched.json",
+          "self" -> self(s3Id)
+        )
       }
     }
 
@@ -280,14 +274,17 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("storages/remote-storage-fetched.json")
+            response.asJson shouldEqual jsonContentOf(
+              "storages/remote-storage-fetched.json",
+              "self" -> self(rdId)
+            )
           }
         }
       }
     }
 
     "fetch a storage original payload" in {
-      val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
+      val expectedSource = remoteFieldsJson deepMerge json"""{"default": false}"""
       val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
@@ -300,7 +297,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, crypto).success.value
+          response.asJson shouldEqual expectedSource
         }
       }
     }
@@ -315,31 +312,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, crypto).success.value
+            response.asJson shouldEqual remoteFieldsJson
           }
         }
-      }
-    }
-
-    "list storages" in {
-      Get("/v1/storages/myorg/myproject/caches") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list.json")
-      }
-    }
-
-    "list remote disk storages" in {
-      val encodedStorage = UrlUtils.encode(nxvStorage.toString)
-      Get(s"/v1/storages/myorg/myproject/caches?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
-      }
-    }
-
-    "list not deprecated storages" in {
-      Get("/v1/storages/myorg/myproject/caches?deprecated=false") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
       }
     }
 
@@ -389,8 +364,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "fail to get storage statistics for an existing entry without resources/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -424,6 +398,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       "updatedBy"  -> updatedBy.asIri,
       "type"       -> storageType,
       "algorithm"  -> DigestAlgorithm.default,
-      "label"      -> lastSegment(id)
+      "self"       -> self(id)
     )
+
+  def self(id: Iri): Uri = ResourceUris("storages", projectRef, id).accessUri
 }

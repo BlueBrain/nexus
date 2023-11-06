@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.Fetch
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, Fetch}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
-import monix.bio.{IO, UIO}
 
 object ResolverResolutionGen {
 
@@ -23,16 +23,18 @@ object ResolverResolutionGen {
   ): ResolverResolution[R] = {
     val resolver = ResolverGen.inProject(nxv + "in-project", projectRef)
 
+    val checkAcls     = (_: ProjectRef, _: Set[Identity]) => IO.pure(false)
+    val listResolvers = (_: ProjectRef) => IO.pure(List(resolver))
+    val fetchResolver = (resolverId: Iri, p: ProjectRef) =>
+      IO.raiseUnless(resolverId == resolver.id && p == resolver.project)(ResolverNotFound(resolverId, p)).as(resolver)
+
     new ResolverResolution(
-      (_: ProjectRef, _: Set[Identity]) => UIO.pure(false),
-      (_: ProjectRef) => IO.pure(List(resolver)),
-      (resolverId: Iri, p: ProjectRef) =>
-        if (resolverId == resolver.id && p == resolver.project)
-          IO.pure(resolver)
-        else
-          IO.raiseError(ResolverNotFound(resolverId, p)),
+      checkAcls,
+      listResolvers,
+      fetchResolver,
       fetch,
-      _ => Set.empty
+      _ => Set.empty,
+      DeprecationCheck(false, _ => false)
     )
 
   }

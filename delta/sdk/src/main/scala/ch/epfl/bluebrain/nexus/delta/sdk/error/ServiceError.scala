@@ -1,9 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -25,8 +29,27 @@ object ServiceError {
   /**
     * Signals that the authorization failed
     */
-  final case object AuthorizationFailed
+  final case class AuthorizationFailed(details: String)
       extends ServiceError("The supplied authentication is not authorized to access this resource.")
+
+  object AuthorizationFailed {
+
+    private def missingPermission(path: AclAddress, permission: Permission) =
+      s"Permission '$permission' is missing on '$path'."
+
+    private def onRequest(request: HttpRequest) = s"Incoming request was '${request.uri}' ('${request.method.value}')."
+
+    def apply(request: HttpRequest): AuthorizationFailed = AuthorizationFailed(onRequest(request))
+
+    def apply(request: HttpRequest, path: AclAddress, permission: Permission): AuthorizationFailed = {
+      val details = List(missingPermission(path, permission), onRequest(request)).mkString("\n")
+      AuthorizationFailed(details)
+    }
+
+    def apply(path: AclAddress, permission: Permission): AuthorizationFailed =
+      AuthorizationFailed(missingPermission(path, permission))
+
+  }
 
   /**
     * Signals that an organization or project initialization has failed.
@@ -73,4 +96,13 @@ object ServiceError {
 
   implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[IndexingFailed] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
+    HttpResponseFields {
+      case AuthorizationFailed(_)       => StatusCodes.Forbidden
+      case FetchContextFailed(_)        => StatusCodes.InternalServerError
+      case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
+      case IndexingFailed(_, _)         => StatusCodes.InternalServerError
+      case UnknownSseLabel(_)           => StatusCodes.InternalServerError
+    }
 }

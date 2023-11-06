@@ -8,25 +8,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
-import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
-class PermissionsImplSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with IOValues
-    with CancelAfterFailure
-    with IOFixedClock {
+class PermissionsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure {
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
-  implicit def scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Delay(100.millis)), 100.millis)
 

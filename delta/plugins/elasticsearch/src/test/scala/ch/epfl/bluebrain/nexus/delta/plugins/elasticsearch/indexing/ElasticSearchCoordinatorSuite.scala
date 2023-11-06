@@ -1,51 +1,60 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import io.circe.Json
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture with CirceLiteral with Fixtures {
+class ElasticSearchCoordinatorSuite
+    extends CatsEffectSuite
+    with SupervisorSetup.Fixture
+    with CirceLiteral
+    with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
-  private val indexingRev = 1
+  private val indexingRev = IndexingRev.init
+  private val rev         = 2
 
-  private lazy val (sv, projections) = supervisor()
-  private val project                = ProjectRef.unsafe("org", "proj")
-  private val id1                    = nxv + "view1"
-  private val view1                  = ActiveViewDef(
+  private lazy val (sv, projections, projectionErrors) = unapply(supervisor())
+  private val project                                  = ProjectRef.unsafe("org", "proj")
+  private val id1                                      = nxv + "view1"
+  private val view1                                    = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
     None,
-    None,
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id2   = nxv + "view2"
@@ -53,12 +62,13 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     ViewRef(project, id2),
     projection = id2.toString,
     None,
-    None,
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id3         = nxv + "view3"
@@ -66,13 +76,14 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view3"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -82,14 +93,15 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     ViewRef(project, id2),
     projection = id2.toString + "_2",
     None,
-    None,
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view2_2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
-  private val resumeSignal    = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal    = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
   private def viewStream: ElemStream[IndexingViewDef] =
@@ -129,7 +141,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         value = view3,
         rev = 1
       )
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = ElasticSearchViews.entityType,
         id = nxv + "failed_coord",
@@ -187,12 +199,12 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
              (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
              sv,
              (_: ActiveViewDef) => new NoopSink[Json],
-             (v: ActiveViewDef) => Task.delay(createdIndices.add(v.index)).void,
-             (v: ActiveViewDef) => Task.delay(deletedIndices.add(v.index)).void
+             (v: ActiveViewDef) => IO.delay(createdIndices.add(v.index)).void,
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void
            )
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1))
+             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
     } yield ()
   }
 
@@ -200,7 +212,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been created.")
     } yield ()
@@ -210,7 +222,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been created.")
     } yield ()
@@ -229,7 +241,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for the coordinator projection before the signal") {
     for {
-      entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, id3)
     } yield ()
@@ -237,7 +249,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 1") {
     for {
-      entries <- projections.failedElemEntries(view1.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
@@ -247,14 +259,14 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 2") {
     for {
-      entries <- projections.failedElemEntries(view2.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view2.projection, Offset.start).compile.toList
       _        = entries.assertOneElem
     } yield ()
   }
 
   test("There are no errors for view 3") {
     for {
-      entries <- projections.failedElemEntries(view3.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view3.projection, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
@@ -264,13 +276,13 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- resumeSignal.set(true)
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
+             .eventually(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
     } yield ()
   }
 
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
-      _ <- sv.describe(view1.projection).eventuallyNone
+      _ <- sv.describe(view1.projection).eventually(None)
       _ <- projections.progress(view1.projection).assertNone
       _  = assert(deletedIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been deleted.")
     } yield ()
@@ -280,7 +292,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     "View 2 is updated so the previous projection should be stopped, the previous progress and the index should be deleted."
   ) {
     for {
-      _ <- sv.describe(view2.projection).eventuallyNone
+      _ <- sv.describe(view2.projection).eventually(None)
       _ <- projections.progress(view2.projection).assertNone
       _  = assert(deletedIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been deleted.")
     } yield ()
@@ -290,7 +302,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.index),
@@ -301,7 +313,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("Coordinator projection should have one error after failed elem offset 4") {
     for {
-      entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
+      entries <-
+        projectionErrors.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed_coord")
     } yield ()
@@ -309,7 +322,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("View 2_2 projection should have one error after failed elem offset 4") {
     for {
-      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      entries <- projectionErrors.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()

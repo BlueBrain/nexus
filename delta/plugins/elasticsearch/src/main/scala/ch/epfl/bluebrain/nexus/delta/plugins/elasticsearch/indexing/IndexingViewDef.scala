@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.data.NonEmptyChain
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
@@ -8,16 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, Elas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
-import monix.bio.Task
 
 /**
   * Definition of a view to build a projection
@@ -42,14 +42,24 @@ object IndexingViewDef {
   final case class ActiveViewDef(
       ref: ViewRef,
       projection: String,
-      resourceTag: Option[UserTag],
       pipeChain: Option[PipeChain],
+      selectFilter: SelectFilter,
       index: IndexLabel,
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
-      indexingRev: Int
-  ) extends IndexingViewDef
+      indexingRev: IndexingRev,
+      rev: Int
+  ) extends IndexingViewDef {
+
+    def projectionMetadata: ProjectionMetadata =
+      ProjectionMetadata(
+        ElasticSearchViews.entityType.value,
+        projection,
+        Some(ref.project),
+        Some(ref.viewId)
+      )
+  }
 
   /**
     * Deprecated view to be cleaned up and removed from the supervisor
@@ -71,13 +81,14 @@ object IndexingViewDef {
         ActiveViewDef(
           ViewRef(state.project, state.id),
           ElasticSearchViews.projectionName(state),
-          indexing.resourceTag,
           indexing.pipeChain,
+          indexing.selectFilter,
           ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
           indexing.mapping.getOrElse(defaultMapping),
           indexing.settings.getOrElse(defaultSettings),
           indexing.context,
-          state.indexingRev
+          state.indexingRev,
+          state.rev
         )
 
     }
@@ -87,7 +98,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -95,23 +106,15 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
-    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.selectFilter, _), sink)
 
   private def compile(
       v: ActiveViewDef,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
-    val project  = v.ref.project
-    val id       = v.ref.viewId
-    val metadata = ProjectionMetadata(
-      ElasticSearchViews.entityType.value,
-      v.projection,
-      Some(project),
-      Some(id)
-    )
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
 
     val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
@@ -120,7 +123,7 @@ object IndexingViewDef {
       pipes      <- v.pipeChain.traverse(compilePipeChain)
       chain       = pipes.fold(NonEmptyChain.one(postPipes))(NonEmptyChain(_, postPipes))
       projection <- CompiledProjection.compile(
-                      metadata,
+                      v.projectionMetadata,
                       ExecutionStrategy.PersistentSingleNode,
                       Source(stream),
                       chain,
@@ -128,8 +131,8 @@ object IndexingViewDef {
                     )
     } yield projection
 
-    Task.fromEither(compiled).tapError { e =>
-      Task.delay(logger.error(s"View '$project/$id' could not be compiled.", e))
+    IO.fromEither(compiled).onError { e =>
+      IO.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
     }
   }
 }

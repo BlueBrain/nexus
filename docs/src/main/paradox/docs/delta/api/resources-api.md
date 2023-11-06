@@ -21,12 +21,31 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-@@@ note { .warning }
+@@@ note { .warning title="Remote contexts" }
 
-From Delta v1.5, remote contexts are only resolved during creates and updates.
-That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
+Remote contexts are only resolved during creates and updates.
+That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.
 
 @@@
+
+@@@ note { .warning title="JSON payloads" }
+
+The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
+
+@@@
+
+## Nexus metadata
+
+When using the endpoints described on this page, the responses will contain global metadata described on the
+@ref:[Nexus Metadata](../metadata.md) page. In addition, the following resource specific metadata can be present
+
+- `_project`: address of the resource's project
+- `_incoming`: address to query to obtain the @ref:[list of incoming links](#list-incoming-links)
+- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](#list-outgoing-links)
+- `_constrainedBy`: `@id` of the schema used to validate the resource; the schema can only be identified uniquely
+  together with `_schemaProject`. If no schema has been used to validate the resource, it will indicate the
+  unconstrained identifier.
+- `_schemaProject`: address of the project where the `_constrainedBy` schema is found
 
 ## Indexing
 
@@ -49,6 +68,12 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
   `prefix` defined on the resource's project (`{project_label}`).
 
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed
+- If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated 
+from the provided payload.
+
 **Example**
 
 Request
@@ -66,10 +91,14 @@ Response
 This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want 
 to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
   {...}
 ```
- 
+
+... where `{tag}` is an optional tag associated with the first revision of this resource. 
+
+The `{schema_id}` has the same behaviour as @ref:[the creation using post operation](#create-using-post).
+
 Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
 
 **Example**
@@ -92,11 +121,19 @@ In order to ensure a client does not perform any changes to a resource without h
 the resource, the last revision needs to be passed as a query parameter.
 
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}&tag={tag}
   {...}
 ```
-... where `{previous_rev}` is the last known revision number for the resource.
+... where 
 
+- `{previous_rev}` is the last known revision number for the resource.
+- `{tag}` is an optional tag associated with the same revision as the current update. For example, if `previous_rev` is 2, both the updated payload and `tag` will be associated with revision 3; the new latest revision. 
+
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed with the latest version of its current schema
+- If another value is provided, it has to match the identifier of the current schema as changing the schema of a
+resource is not currently supported. A different revision or tag of this schema can be provided though.
 
 **Example**
 
@@ -128,7 +165,6 @@ Request
 
 Response
 :   @@snip [refreshed.json](assets/resources/updated.json)
-
 
 ## Tag
 
@@ -203,6 +239,42 @@ Request
 Response
 :   @@snip [deprecated.json](assets/resources/deprecated.json)
 
+## Undeprecate
+
+Unlocks a previously deprecated resource. Further operations can then be performed. The resource will again be found when listing/querying.
+
+Undeprecating a resource is considered to be an update as well.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the resource.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/resources/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/resources/undeprecated.json)
+
+## Change schema
+
+This operation allows to only change the schema of a resource without providing any payload.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/update-schema
+```
+
+**Example**
+
+Request
+:   @@snip [schema-change.sh](assets/resources/schema-change.sh)
+
+Response
+:   @@snip [schema-changed.json](assets/resources/schema-changed.json)
+
 ## Fetch
 
 ```
@@ -215,6 +287,11 @@ where ...
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+The `{schema_id}` segment allows to pass the resource schema:
+
+- If `_` is provided, the value is ignored
+- If another value is provided, it must match the identifier of the resource schema.
 
 **Example**
 
@@ -250,6 +327,34 @@ Request
 Response
 :   @@snip [fetched.json](assets/resources/payload.json)
 
+## Fetch remote contexts
+
+Returns the remote contexts that have been detected during the JSON-LD resolution for this resource.
+
+These contexts can be:
+
+* Static contexts that are statically defined in Nexus
+* Project contexts that have been registered by Nexus, in this case the entry also provides the project this context lives
+and its revision at the time the JSON-LD resolution has been performed
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/remote-contexts?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/resources/remote-contexts.sh)
+
+Response
+:   @@snip [tags.json](assets/remote-contexts.json)
+
 ## Fetch tags
 
 ```
@@ -279,14 +384,19 @@ There are three available endpoints to list resources in different scopes.
 ```
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
+                                             &locate={locate}
                                              &deprecated={deprecated}
                                              &rev={rev}
                                              &type={type}
+                                             &typeOperator={typeOperator}
                                              &createdBy={createdBy}
+                                             &createdAt={createdAt}
                                              &updatedBy={updatedBy}
+                                             &updatedAt={updatedAt}
                                              &schema={schema}
                                              &q={search}
                                              &sort={sort}
+                                             &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -296,14 +406,19 @@ This operation returns only resources from projects defined in the organisation 
 ```
 GET /v1/resources/{org_label}?from={from}
                              &size={size}
+                             &locate={locate}
                              &deprecated={deprecated}
                              &rev={rev}
                              &type={type}
+                             &typeOperator={typeOperator}
                              &createdBy={createdBy}
+                             &createdAt={createdAt}
                              &updatedBy={updatedBy}
+                             &updatedAt={updatedAt}
                              &schema={schema}
                              &q={search}
                              &sort={sort}
+                             &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -313,31 +428,59 @@ This operation returns only resources from projects where the caller has the `re
 ```
 GET /v1/resources?from={from}
                  &size={size}
+                 &locate={locate}
                  &deprecated={deprecated}
                  &rev={rev}
                  &type={type}
+                 &typeOperator={typeOperator}
+                 &createdAt={createdAt}
                  &createdBy={createdBy}
+                 &updatedAt={updatedAt}
                  &updatedBy={updatedBy}
                  &schema={schema}
                  &q={search}
                  &sort={sort}
+                 &aggregations={aggregations}
 ```
 
 ### Parameter description
 
+@@@ note { .tip title="How to use time ranges" }
+
+A time range parameter allows to filter resources by their creation date or their last update date.
+
+The provided dates can be:
+
+* A date following the format `YYYY-MM-DDTHH:MM:SSZ`
+* A wild card `*` to express no restriction on a limit
+
+Examples of ranges:
+
+* `2023-06-08T14:00:00Z..*`: Matchers resources created *after* the June 8, 2023 at 14.00
+* `*..2023-06-08T14:00:00Z`: Matchers resources created *before* the June 8, 2023 at 14.00
+* `2023-04-01T00:00:00Z..2023-06-08T14:00:00Z`: Matchers resources created *between* the April 1st at 00.00 and June 8, 2023 at 14.00
+
+@@@
+
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{locate}`: Iri - can be used to find a resource by its `@id` or its address (`_self`)
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
   multiple times, filtering further the `@type` value.
+- `{typeOperator}`: String (`and`/`or`) - used to determine how multiple `type` values affect the query, either requiring all to match (`and`) or any to match (`or`); defaults to `or`.
+  See @link:[De Morgan's laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws) for inference rules.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
+- `{createdAt}`: Time range - can be used to filter the resulting resources based on their creation date
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
+- `{updatedAt}`: Time range - can be used to filter the resulting resources based when was performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
 - `{search}`: String - can be provided to select only the resources in the collection that have attribute values 
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times 
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](#aggregations)
 
 
 **Example**
@@ -348,6 +491,25 @@ Request
 Response
 :   @@snip [listed.json](assets/resources/listed.json)
 
+Aggregations request
+:   @@snip [aggregate.sh](assets/resources/aggregate.sh)
+
+Aggregations response
+:   @@snip [aggregated.json](assets/resources/aggregated.json)
+
+### Aggregations
+
+@@@ warning
+Aggregations are experimental and the API is subject to change.
+@@@
+
+Adding the `aggregations=true` query parameter to a list query allows to aggregate the underlying resources by predefined terms. Currently, the following aggregations will be
+returned:
+
+* `projects`: a bucket aggregation of the resources by the project they belong to
+* `types`: a bucket aggregation of the `@types` featured in the resources
+
+Aggregation works on the same scopes as listing (all projects, organization, and project), and only aggregates the resources for which the caller has `resource/read` permission.
 
 ## List filtering by schema
 
@@ -362,7 +524,10 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &rev={rev}&type={type}
                                                         &createdBy={createdBy}
                                                         &updatedBy={updatedBy}
+                                                        &aggregations={aggregations}
 ```
+
+
 
 ### Parameter description
 
@@ -374,6 +539,7 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
   multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](#aggregations)
 
 **Example**
 

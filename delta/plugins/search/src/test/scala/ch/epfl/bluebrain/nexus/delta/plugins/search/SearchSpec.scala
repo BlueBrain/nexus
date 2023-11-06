@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.Ind
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{Fixtures, ScalaTestElasticSearchClientSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -26,12 +28,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -45,7 +50,7 @@ class SearchSpec
     extends TestKit(ActorSystem("SearchSpec"))
     with AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CirceLiteral
     with TestHelpers
@@ -53,7 +58,8 @@ class SearchSpec
     with Inspectors
     with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
-    with IOValues
+    with CatsIOValues
+    with BIOValues
     with Eventually
     with Fixtures
     with ElasticSearchDocker {
@@ -79,28 +85,28 @@ class SearchSpec
 
   private val mappings = jsonObjectContentOf("test-mapping.json")
 
+  private val esProjection = ElasticSearchProjection(
+    nxv + "searchProjection",
+    UUID.randomUUID(),
+    IndexingRev.init,
+    SparqlConstructQuery.unsafe("CONSTRUCT ..."),
+    Set.empty,
+    Set.empty,
+    false,
+    false,
+    false,
+    permissions.query,
+    Some(IndexGroup.unsafe("search")),
+    mappings,
+    None,
+    ContextObject(JsonObject())
+  )
+
   private val compViewProj1   = CompositeView(
     nxv + "searchView",
     project1.ref,
-    NonEmptySet.of(ProjectSource(nxv + "searchSource", UUID.randomUUID(), Set.empty, Set.empty, None, false)),
-    NonEmptySet.of(
-      ElasticSearchProjection(
-        nxv + "searchProjection",
-        UUID.randomUUID(),
-        SparqlConstructQuery.unsafe(""),
-        Set.empty,
-        Set.empty,
-        None,
-        false,
-        false,
-        false,
-        permissions.query,
-        Some(IndexGroup.unsafe("search")),
-        mappings,
-        None,
-        ContextObject(JsonObject())
-      )
-    ),
+    NonEmptyList.of(ProjectSource(nxv + "searchSource", UUID.randomUUID(), Set.empty, Set.empty, None, false)),
+    NonEmptyList.of(esProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,
@@ -108,19 +114,21 @@ class SearchSpec
     Instant.EPOCH
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
-  private val projectionProj1 =
-    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1)
-  private val projectionProj2 =
-    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1)
+  private val projectionProj1 = TargetProjection(esProjection, compViewProj1)
+  private val projectionProj2 = TargetProjection(esProjection, compViewProj2)
 
-  private val projections = Seq(
-    projectionProj1,
-    projectionProj2
+  private val projections = Seq(projectionProj1, projectionProj2)
+
+  private val listViews: ListProjections = () => IO.pure(projections)
+
+  private val allSuite   = Label.unsafe("allSuite")
+  private val proj2Suite = Label.unsafe("proj2Suite")
+  private val allSuites  = Map(
+    allSuite   -> Set(project1.ref, project2.ref),
+    proj2Suite -> Set(project2.ref)
   )
 
   private val tpe1 = nxv + "Type1"
-
-  private val listViews: ListProjections = () => UIO.pure(projections)
 
   private def createDocuments(proj: TargetProjection): Seq[Json] =
     (0 until 3).map { idx =>
@@ -145,11 +153,18 @@ class SearchSpec
   private val prefix = "prefix"
 
   "Search" should {
-    lazy val search = Search(listViews, aclCheck, esClient, prefix)
+    lazy val search = Search(listViews, aclCheck, esClient, prefix, allSuites)
+
+    val matchAll     = jobj"""{"size": 100}"""
+    val noParameters = Query.Empty
+
+    val project1Documents = createDocuments(projectionProj1).toSet
+    val project2Documents = createDocuments(projectionProj2).toSet
+    val allDocuments      = project1Documents ++ project2Documents
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
-        val index   = projectionIndex(p.projection, p.view.uuid, p.rev, prefix)
+        val index   = projectionIndex(p.projection, p.view.uuid, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)
@@ -159,15 +174,38 @@ class SearchSpec
       esClient.bulk(bulkSeq, Refresh.WaitFor).accepted
     }
 
-    "search all indices" in {
-      val results = search.query(jobj"""{"size": 100}""", Query.Empty)(bob).accepted
-      extractSources(results).toSet shouldEqual projections.flatMap(createDocuments).toSet
+    "search all indices accordingly to Bob's full access" in {
+      val results = search.query(matchAll, noParameters)(bob).accepted
+      extractSources(results).toSet shouldEqual allDocuments
     }
 
-    "search only indices the user has access to" in {
-      val results = search.query(jobj"""{"size": 100}""", Query.Empty)(alice).accepted
-      extractSources(results).toSet shouldEqual createDocuments(projectionProj1).toSet
+    "search only the project 1 index accordingly to Alice's restricted access" in {
+      val results = search.query(matchAll, noParameters)(alice).accepted
+      extractSources(results).toSet shouldEqual project1Documents
     }
 
+    "search within an unknown suite" in {
+      search.query(Label.unsafe("xxx"), matchAll, noParameters)(bob).rejectedWith[UnknownSuite]
+    }
+
+    List(
+      (allSuite, allDocuments),
+      (proj2Suite, project2Documents)
+    ).foreach { case (suite, expected) =>
+      s"search within suite $suite accordingly to Bob's full access" in {
+        val results = search.query(suite, matchAll, noParameters)(bob).accepted
+        extractSources(results).toSet shouldEqual expected
+      }
+    }
+
+    List(
+      (allSuite, project1Documents),
+      (proj2Suite, Set.empty)
+    ).foreach { case (suite, expected) =>
+      s"search within suite $suite accordingly to Alice's restricted access" in {
+        val results = search.query(suite, matchAll, noParameters)(alice).accepted
+        extractSources(results).toSet shouldEqual expected
+      }
+    }
   }
 }

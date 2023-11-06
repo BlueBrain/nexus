@@ -5,27 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
+class ResourceUrisSpec extends BaseSpec {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val mapping                   = ApiMappings(
-    "nxv"       -> nxv.base,
-    "resolvers" -> schemas.resolvers,
-    "_"         -> schemas.resources,
-    "schema"    -> schemas.shacl,
-    "resolver"  -> schemas.resolvers,
-    "resource"  -> schemas.resources
-  )
-  private val base                      = ProjectBase.unsafe(schemas.base)
 
   "ResourceUris" should {
     val projectRef       = ProjectRef.unsafe("myorg", "myproject")
@@ -34,7 +19,6 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
     "be constructed for permissions" in {
       val expected = Uri("http://localhost/v1/permissions")
       ResourceUris.permissions.accessUri shouldEqual expected
-      ResourceUris.permissions.accessUriShortForm shouldEqual expected
     }
 
     "be constructed for acls" in {
@@ -48,7 +32,6 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
         )
       forAll(list) { case (resourceUris, expected) =>
         resourceUris.accessUri shouldEqual expected
-        resourceUris.accessUriShortForm shouldEqual expected
       }
     }
 
@@ -57,125 +40,88 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val expected     = Uri("http://localhost/v1/realms/myrealm")
       val resourceUris = ResourceUris.realm(myrealm)
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expected
     }
 
     "be constructed for organizations" in {
       val expected     = Uri("http://localhost/v1/orgs/myorg")
       val resourceUris = ResourceUris.organization(projectRef.organization)
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expected
     }
 
     "be constructed for projects" in {
       val expected     = Uri("http://localhost/v1/projects/myorg/myproject")
       val resourceUris = ResourceUris.project(projectRef)
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expected
     }
 
     "be constructed for resources" in {
-      val id        = nxv + "myid"
-      val encodedId = UrlUtils.encode(id.toString)
-      forAll(List(schemas.resources -> "_", schemas.resolvers -> "resolver")) { case (schema, shortForm) =>
-        val encodedSchema    = UrlUtils.encode(schema.toString)
-        val expected         = Uri(s"http://localhost/v1/resources/myorg/myproject/$encodedSchema/$encodedId")
-        val expectedIn       = Uri(s"http://localhost/v1/resources/myorg/myproject/$encodedSchema/$encodedId/incoming")
-        val expectedOut      = Uri(s"http://localhost/v1/resources/myorg/myproject/$encodedSchema/$encodedId/outgoing")
-        val expectedShort    = Uri(s"http://localhost/v1/resources/myorg/myproject/$shortForm/nxv:myid")
-        val expectedInShort  = Uri(s"http://localhost/v1/resources/myorg/myproject/$shortForm/nxv:myid/incoming")
-        val expectedOutShort = Uri(s"http://localhost/v1/resources/myorg/myproject/$shortForm/nxv:myid/outgoing")
+      val id          = nxv + "myid"
+      val encodedId   = UrlUtils.encode(id.toString)
+      val expected    = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId")
+      val expectedIn  = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId/incoming")
+      val expectedOut = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId/outgoing")
 
-        val resourceUris = ResourceUris
-          .resource(projectRef, projectRefSchema, id, Latest(schema))(mapping, base)
-          .asInstanceOf[ResourceInProjectAndSchemaUris]
+      val resourceUris =
+        ResourceUris.resource(projectRef, projectRefSchema, id).asInstanceOf[ResourceInProjectAndSchemaUris]
 
-        resourceUris.accessUri shouldEqual expected
-        resourceUris.accessUriShortForm shouldEqual expectedShort
-        resourceUris.incoming shouldEqual expectedIn
-        resourceUris.outgoing shouldEqual expectedOut
-        resourceUris.incomingShortForm shouldEqual expectedInShort
-        resourceUris.outgoingShortForm shouldEqual expectedOutShort
-        resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
-        resourceUris.schemaProject shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject2")
-      }
+      resourceUris.accessUri shouldEqual expected
+      resourceUris.incoming shouldEqual expectedIn
+      resourceUris.outgoing shouldEqual expectedOut
+      resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
+      resourceUris.schemaProject shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject2")
     }
 
     "be constructed for schemas" in {
-      val id               = schemas + "myid"
-      val expected         = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn       = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut      = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
-      val expectedShort    = Uri("http://localhost/v1/schemas/myorg/myproject/myid")
-      val expectedInShort  = Uri("http://localhost/v1/schemas/myorg/myproject/myid/incoming")
-      val expectedOutShort = Uri("http://localhost/v1/schemas/myorg/myproject/myid/outgoing")
+      val id          = schemas + "myid"
+      val expected    = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val expectedIn  = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
+      val expectedOut = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
-      val resourceUris = ResourceUris.schema(projectRef, id)(mapping, base).asInstanceOf[ResourceInProjectUris]
+      val resourceUris = ResourceUris.schema(projectRef, id).asInstanceOf[ResourceInProjectUris]
 
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expectedShort
-      resourceUris.accessUriShortForm shouldEqual expectedShort
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.incomingShortForm shouldEqual expectedInShort
-      resourceUris.outgoingShortForm shouldEqual expectedOutShort
       resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
     }
 
     "be constructed for resolvers" in {
-      val id               = nxv + "myid"
-      val expected         = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn       = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut      = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
-      val expectedShort    = Uri("http://localhost/v1/resolvers/myorg/myproject/nxv:myid")
-      val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/nxv:myid/incoming")
-      val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/nxv:myid/outgoing")
+      val id          = nxv + "myid"
+      val expected    = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
+      val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
-      val resourceUris = ResourceUris.resolver(projectRef, id)(mapping, base).asInstanceOf[ResourceInProjectUris]
+      val resourceUris = ResourceUris.resolver(projectRef, id).asInstanceOf[ResourceInProjectUris]
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expectedShort
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.incomingShortForm shouldEqual expectedInShort
-      resourceUris.outgoingShortForm shouldEqual expectedOutShort
       resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
     }
 
     "be constructed for resolvers with nxv as a base" in {
-      val id               = nxv + "myid"
-      val expected         = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn       = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut      = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
-      val expectedShort    = Uri("http://localhost/v1/resolvers/myorg/myproject/myid")
-      val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/incoming")
-      val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/outgoing")
-
-      val m = ApiMappings("resolvers" -> schemas.resolvers)
+      val id          = nxv + "myid"
+      val expected    = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
+      val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
       val resourceUris =
-        ResourceUris.resolver(projectRef, id)(m, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]
+        ResourceUris.resolver(projectRef, id).asInstanceOf[ResourceInProjectUris]
       resourceUris.accessUri shouldEqual expected
-      resourceUris.accessUriShortForm shouldEqual expectedShort
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.incomingShortForm shouldEqual expectedInShort
-      resourceUris.outgoingShortForm shouldEqual expectedOutShort
       resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
-
     }
 
     "be constructed for ephemeral resources" in {
       val segment         = genString()
       val id              = nxv + "myid"
       val expected        = Uri(s"http://localhost/v1/$segment/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedShort   = Uri(s"http://localhost/v1/$segment/myorg/myproject/nxv:myid")
       val expectedProject = Uri(s"http://localhost/v1/projects/myorg/myproject")
-      val resourceUris    = ResourceUris.ephemeral(segment, projectRef, id)(mapping, base)
+      val resourceUris    = ResourceUris.ephemeral(segment, projectRef, id)
 
       resourceUris match {
         case v: EphemeralResourceInProjectUris =>
           v.accessUri shouldEqual expected
-          v.accessUriShortForm shouldEqual expectedShort
           v.project shouldEqual expectedProject
         case other                             =>
           fail(

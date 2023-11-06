@@ -1,0 +1,158 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+  "@type": [
+    "Entity",
+    "Dataset",
+    "ReconstructedCell",
+    "NeuronMorphology"
+  ],
+  "annotation": [
+    {
+      "@type": [
+        "nsg:MTypeAnnotation",
+        "Annotation"
+      ],
+      "hasBody": {
+        "@id": "http://uri.interlex.org/base/ilx_0383207",
+        "@type": [
+          "MType",
+          "Annotation:Body"
+        ],
+        "label": "L2_IPC"
+      },
+      "name": "M-type Annotation"
+    },
+    {
+      "@type": [
+        "Entity",
+        "Annotation"
+      ],
+      "hasTarget": {
+        "@type": "AnnotationTarget",
+        "hasSource": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/scholarlyarticles/1",
+          "@type": "ScholarlyArticle"
+        }
+      }
+    }
+  ],
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "@id": "uberon:0008933",
+      "label": "primary somatosensory cortex"
+    },
+    "layer": {
+      "@id": "uberon:0005391",
+      "label": "layer 2"
+    },
+    "coordinatesInBrainAtlas": {
+      "valueX": {
+        "@type": "xsd:float",
+        "@value": 7123.999999999999
+      },
+      "valueY": {
+        "@type": "xsd:float",
+        "@value": 1040.05
+      },
+      "valueZ": {
+        "@type": "xsd:float",
+        "@value": 5129.275
+      }
+    }
+  },
+  "contribution": [
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1",
+        "@type": "Agent"
+      },
+      "hadRole": {
+        "@id": "https://neuroshapes.org/NeuronElectrophysiologyRecordingRole",
+        "label": "neuron electrophysiology recording role"
+      }
+    },
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://www.grid.ac/institutes/grid.5333.6",
+        "@type": "Agent"
+      }
+    }
+  ],
+  "derivation": {
+    "@type": "Derivation",
+    "entity": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/22e90788-b089-4014-83ab-206d0d3af71d",
+      "@type": [
+        "PatchedCell",
+        "Entity"
+      ]
+    }
+  },
+  "description": "This is a resource description.",
+  "distribution": [
+    {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/b6cb3fbd-73d6-47c7-bf23-3a993b326afa",
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "location": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/4/4/7/0/b/9/f/d/sm080522a1-5_idA.swc",
+        "store": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/4820323e-bee0-48d2-824f-9d9d404dbbee",
+          "@type": "RemoteDiskStorage",
+          "_rev": 1
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 522260
+      },
+      "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/public/sscx/b6cb3fbd-73d6-47c7-bf23-3a993b326afa",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "44d3cc9a30c49f877120003336279ca55948f05c93f19418fbd66ca5c18d8cb1"
+      },
+      "encodingFormat": "application/swc",
+      "name": "sm080522a1-5_idA.swc"
+    }
+  ],
+  "generation": {
+    "@type": "Generation",
+    "activity": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/6af3b9db-fa85-4190-93c7-156a715c5aa3",
+      "@type": [
+        "Reconstruction",
+        "Activity"
+      ]
+    }
+  },
+  "isPartOf": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/0fa91c1a-de2f-4ace-a627-8a319ad12860",
+    "@type": "Entity"
+  },
+  "license": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
+    "@type": "License"
+  },
+  "name": "sm080522a1-5_idA",
+  "label": "second name",
+  "prefLabel": "third name",
+  "objectOfStudy": {
+    "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+    "@type": "ObjectOfStudy",
+    "label": "Single Cell"
+  },
+  "sameAs": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/136d1a95-ef5b-421f-8b54-71e8dc866e8c"
+  },
+  "subject": {
+    "@type": "Subject",
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+      "label": "Rattus norvegicus"
+    }
+  }
+}

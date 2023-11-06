@@ -1,18 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen, RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.{OrganizationSearchParams, ProjectSearchParams, RealmSearchParams}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.IOValues
-import monix.bio.UIO
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with Inspectors {
+class SearchParamsSpec extends CatsEffectSpec {
 
   private val subject = User("myuser", Label.unsafe("myrealm"))
 
@@ -26,7 +22,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
-      r => UIO.pure(r.name == resource.value.name)
+      r => IO.pure(r.name == resource.value.name)
     )
 
     "match a realm resource" in {
@@ -56,7 +52,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myorg"),
-      _ => UIO.pure(true)
+      _ => IO.pure(true)
     )
     val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1, subject)
 
@@ -64,9 +60,9 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       forAll(
         List(
           searchWithAllParams,
-          OrganizationSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
-          OrganizationSearchParams(filter = _ => UIO.pure(true)),
-          OrganizationSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
+          OrganizationSearchParams(label = Some("my"), filter = _ => IO.pure(true)),
+          OrganizationSearchParams(filter = _ => IO.pure(true)),
+          OrganizationSearchParams(rev = Some(1), filter = _ => IO.pure(true))
         )
       ) { search =>
         search.matches(resource).accepted shouldEqual true
@@ -95,7 +91,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myproj"),
-      _ => UIO.pure(true)
+      _ => IO.pure(true)
     )
     val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1, subject)
 
@@ -103,9 +99,9 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       forAll(
         List(
           searchWithAllParams,
-          ProjectSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
-          ProjectSearchParams(filter = _ => UIO.pure(true)),
-          ProjectSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
+          ProjectSearchParams(label = Some("my"), filter = _ => IO.pure(true)),
+          ProjectSearchParams(filter = _ => IO.pure(true)),
+          ProjectSearchParams(rev = Some(1), filter = _ => IO.pure(true))
         )
       ) { search =>
         search.matches(resource).accepted shouldEqual true

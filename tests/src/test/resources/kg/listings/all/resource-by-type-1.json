@@ -8,16 +8,13 @@
   "_results": [
     {
       "@id": "{{deltaUri}}/resources/{{proj}}/_/resource12",
-      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "@type": "{{resourceType}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,
-      "_incoming": "{{deltaUri}}/resources/{{org}}/{{proj}}/_/resource12/incoming",
-      "_outgoing": "{{deltaUri}}/resources/{{org}}/{{proj}}/_/resource12/outgoing",
       "_project": "{{deltaUri}}/projects/{{org}}/{{proj}}",
       "_rev": 2,
       "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj}}",
-      "_self": "{{deltaUri}}/resources/{{org}}/{{proj}}/_/resource12",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

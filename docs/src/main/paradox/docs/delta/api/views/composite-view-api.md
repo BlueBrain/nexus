@@ -1,3 +1,9 @@
+@@@ index
+
+* @ref:[Composite sink](composite-sink.md)
+
+@@@
+
 # CompositeView
 
 This view is composed by multiple `sources` and `projections`.
@@ -155,7 +161,6 @@ This projection executes the following steps:
          "context": _context_,
          "resourceSchemas": [ "{resourceSchema}", ...],
          "resourceTypes": [ "{resourceType}", ...],
-         "resourceTag": "{tag}",
          "includeMetadata": {includeMetadata},
          "includeDeprecated": {includeDeprecated},
          "permission": {permission},
@@ -182,7 +187,6 @@ where...
 - `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the 
   query. This field is optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.
-- `{tag}`: String - Selects only resources with the provided tag to perform the query. This field is optional.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
   included in the ElasticSearch document. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
@@ -206,7 +210,6 @@ This projection executes the following steps:
          "query": "{query}",
          "resourceSchemas": [ "{resourceSchema}", ...],
          "resourceTypes": [ "{resourceType}", ...],
-         "resourceTag": "{tag}",
          "includeMetadata": {includeMetadata},
          "includeDeprecated": {includeDeprecated},
         "permission": "{permission}"
@@ -223,7 +226,6 @@ where...
 - `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the 
   query. This field is optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.
-- `{tag}`: String - Selects only resources with the provided tag to perform the query. This field is optional.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
   stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
@@ -231,6 +233,9 @@ where...
   execute against the intermediate Sparql space for each target resource.
 - `{permission}`: String - the permission necessary to query this projection. Defaults to `views/query`. 
 
+## Batching queries to the intermediate space
+
+The queries that projections perform to the intermediate Sparql space can be either executed per individual resource, or in batches containing multiple resources. To learn more about it, please refer to the @ref:[Composite Sink page](composite-sink.md).
 
 ## Payload
 

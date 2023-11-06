@@ -18,16 +18,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 
-class RealmsRoutesSpec extends BaseRouteSpec {
+class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
 
   val githubLogo: Uri = "https://localhost/ghlogo"
 
-  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination, httpClientConfig)
+  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination)
 
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
@@ -94,8 +95,7 @@ class RealmsRoutesSpec extends BaseRouteSpec {
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -141,15 +141,13 @@ class RealmsRoutesSpec extends BaseRouteSpec {
     "fail to fetch a realm  without realms/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)).accepted
       Get("/v1/realms/github") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to list realms  without realms/read permission" in {
       Get("/v1/realms") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

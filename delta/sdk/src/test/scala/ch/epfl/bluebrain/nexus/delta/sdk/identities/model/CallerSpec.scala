@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class CallerSpec extends AnyWordSpecLike with Matchers {
+class CallerSpec extends BaseSpec {
 
   "A Caller" should {
     "append the subject to the identities set" in {

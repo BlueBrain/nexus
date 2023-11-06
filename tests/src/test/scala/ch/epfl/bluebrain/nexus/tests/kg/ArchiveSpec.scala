@@ -1,27 +1,22 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.headers.{Accept, Location}
-import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
-import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, SchemaPayload}
 import io.circe.Json
-import io.circe.parser._
-import monix.execution.Scheduler.Implicits.global
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 
-import java.io.ByteArrayInputStream
-import java.nio.file.{Path, Paths}
-import java.security.MessageDigest
-import scala.annotation.tailrec
+import java.nio.file.Paths
 
-class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
+class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
   private val orgId   = genId()
   private val projId  = genId()
@@ -29,64 +24,24 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
   private val fullId  = s"$orgId/$projId"
   private val fullId2 = s"$orgId/$projId2"
 
-  private val schemaPayload = jsonContentOf("/kg/schemas/simple-schema.json")
+  private val schemaPayload = SchemaPayload.loadSimple()
 
-  private val payload1 = jsonContentOf(
-    "/kg/resources/simple-resource.json",
-    "priority"   -> "5",
-    "resourceId" -> "1"
-  )
+  private val resource1Id = "https://dev.nexus.test.com/simplified-resource/1"
+  private val payload1    = SimpleResource.sourcePayload(resource1Id, 5)
 
-  private val payload2 = jsonContentOf(
-    "/kg/resources/simple-resource.json",
-    "priority"   -> "6",
-    "resourceId" -> "2"
-  )
+  private val resource2Id = "https://dev.nexus.test.com/simplified-resource/2"
+  private val payload2    = SimpleResource.sourcePayload(resource2Id, 6)
 
-  private val payloadResponse1 = jsonContentOf(
-    "/kg/resources/simple-resource-response.json",
-    "deltaUri"   -> config.deltaUri,
-    "realm"      -> testRealm.name,
-    "user"       -> Tweety.name,
-    "priority"   -> "5",
-    "rev"        -> "1",
-    "resources"  -> s"${config.deltaUri}/resources/$fullId",
-    "project"    -> s"${config.deltaUri}/projects/$fullId",
-    "resourceId" -> "1"
-  )
+  private val payloadResponse1 = SimpleResource.fetchResponse(Tweety, fullId, resource1Id, 1, 5)
 
-  private val payloadResponse2 = jsonContentOf(
-    "/kg/resources/simple-resource-response.json",
-    "deltaUri"   -> config.deltaUri,
-    "realm"      -> testRealm.name,
-    "user"       -> Tweety.name,
-    "priority"   -> "6",
-    "rev"        -> "1",
-    "resources"  -> s"${config.deltaUri}/resources/$fullId2",
-    "project"    -> s"${config.deltaUri}/projects/$fullId2",
-    "resourceId" -> "2"
-  )
+  private val payloadResponse2 = SimpleResource.fetchResponse(Tweety, fullId2, resource2Id, 1, 6)
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
 
-  private type PathAndContent = (Path, ByteString)
-
-  @tailrec
-  private def readEntries(tar: TarArchiveInputStream, entries: List[PathAndContent] = Nil): List[PathAndContent] = {
-    val entry = tar.getNextTarEntry
-    if (entry == null) entries
-    else {
-      val data = Array.ofDim[Byte](entry.getSize.toInt)
-      tar.read(data)
-      readEntries(tar, (Paths.get(entry.getName) -> ByteString(data)) :: entries)
-    }
-  }
-
-  def digest(byteString: ByteString): String = {
-    val digest = MessageDigest.getInstance("SHA-512")
-    digest.update(byteString.asByteBuffer)
-    digest.digest().map("%02x".format(_)).mkString
+  private[tests] def archiveSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/archives/$project")
+    uri.copy(path = uri.path / id).toString
   }
 
   "Setup" should {
@@ -143,6 +98,36 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
+    "succeed with file link" in {
+      var fileSelf: String = ""
+      val archiveId        = "test-resource:archive-link"
+      for {
+        _      <- deltaClient.get[Json](s"/files/$fullId/test-resource:logo", Tweety) { (json, response) =>
+                    fileSelf = json.hcursor.downField("_self").as[String].toOption.value
+                    response.status shouldEqual StatusCodes.OK
+                  }
+        payload = jsonContentOf("/kg/archives/archive-with-file-self.json", "value" -> fileSelf)
+        _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
+                    response.status shouldEqual StatusCodes.Created
+                  }
+        _      <- deltaClient.get[ByteString](s"/archives/$fullId/$archiveId", Tweety, acceptZip) { (byteString, response) =>
+                    response.status shouldEqual StatusCodes.OK
+                    contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+                    val result = fromZip(byteString)
+
+                    val resource1Id       = "https://dev.nexus.test.com/simplified-resource/1"
+                    val resource1FileName = s"$resource1Id?rev=1"
+
+                    val actualContent1 = result.entryAsJson(s"$fullId/compacted/${UrlUtils.encode(resource1FileName)}.json")
+                    val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
+
+                    filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+                    actualDigest3 shouldEqual nexusLogoDigest
+                  }
+
+      } yield succeed
+    }
+
     "succeed and redirect" in {
       val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
 
@@ -175,18 +160,18 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       val wrong1    = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
       val expected1 = jsonContentOf("/kg/archives/archive-path-invalid1.json")
 
-      deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
-        json shouldEqual expected1
-        response.status shouldEqual StatusCodes.BadRequest
-      }
-
-      val wrong2    = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
-      val expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
-
-      deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
-        json shouldEqual expected2
-        response.status shouldEqual StatusCodes.BadRequest
-      }
+      for {
+        _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
+                      json shouldEqual expected1
+                      response.status shouldEqual StatusCodes.BadRequest
+                    }
+        wrong2    = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
+        expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
+        _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
+                      json shouldEqual expected2
+                      response.status shouldEqual StatusCodes.BadRequest
+                    }
+      } yield succeed
     }
 
     "fail on path collisions" in {
@@ -209,6 +194,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
           replacements(
             Tweety,
             "project2" -> fullId2,
+            "self"     -> archiveSelf(fullId, "https://dev.nexus.test.com/simplified-resource/archive"),
             "project1" -> fullId
           ): _*
         )
@@ -218,21 +204,18 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "succeed returning binary" in {
+    "succeed returning zip" in {
       val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
-      deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) {
+      deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptZip) {
         (byteString, response) =>
-          contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+          contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
           response.status shouldEqual StatusCodes.OK
 
-          val bytes  = new ByteArrayInputStream(byteString.toArray)
-          val tar    = new TarArchiveInputStream(bytes)
-          val unpack = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
+          val result = fromZip(byteString)
 
-          val actualContent1 =
-            parse(unpack.get(s"$fullId/compacted/${prefix}1%3Frev%3D1.json").value.utf8String).rightValue
-          val actualContent2 = parse(unpack.get(s"$fullId2/compacted/${prefix}2.json").value.utf8String).rightValue
-          val actualDigest3  = digest(unpack.get("/some/other/nexus-logo.png").value)
+          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
+          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
+          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
 
           filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
           filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
@@ -249,38 +232,30 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       )
 
     "fail when a resource in the archive cannot be fetched due to missing permissions" in {
-      deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { (json, response) =>
-        json shouldEqual jsonContentOf("/kg/archives/authorization-failed.json", "project" -> fullId2)
-        response.status shouldEqual StatusCodes.Forbidden
-      }
+      deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { expectForbidden }
     }
 
-    "succeed using query param ignoreNotFound" in {
+    "succeed getting archive using query param ignoreNotFound" in {
       val payload = jsonContentOf("/kg/archives/archive-not-found.json")
 
+      def assertContent(archive: Map[String, ByteString]) = {
+        val actualContent1 = archive.entryAsJson(
+          s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json"
+        )
+        filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+      }
+
       for {
-        _ <- deltaClient.put[ByteString](s"/archives/$fullId/test-resource:archive-not-found", payload, Tweety) {
-               (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient.get[ByteString](
-               s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true",
-               Tweety,
-               acceptAll
-             ) { (byteString, response) =>
-               contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-               response.status shouldEqual StatusCodes.OK
-               val bytes          = new ByteArrayInputStream(byteString.toArray)
-               val tar            = new TarArchiveInputStream(bytes)
-               val unpack         = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
-               val actualContent1 = parse(
-                 unpack
-                   .get(s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json")
-                   .value
-                   .utf8String
-               ).rightValue
-               filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
-             }
+        _           <- deltaClient.put[ByteString](s"/archives/$fullId/test-resource:archive-not-found", payload, Tweety) {
+                         (_, response) =>
+                           response.status shouldEqual StatusCodes.Created
+                       }
+        downloadLink = s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true"
+        _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptZip) { (byteString, response) =>
+                         contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+                         response.status shouldEqual StatusCodes.OK
+                         assertContent(fromZip(byteString))
+                       }
       } yield succeed
     }
   }

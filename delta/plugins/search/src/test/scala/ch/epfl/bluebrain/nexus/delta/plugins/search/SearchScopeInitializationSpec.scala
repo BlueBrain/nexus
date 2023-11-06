@@ -14,17 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class SearchScopeInitializationSpec
-    extends DoobieScalaTestFixture
-    with AnyWordSpecLike
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with CompositeViewsFixture
-    with Matchers
-    with IOValues
     with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
@@ -39,13 +36,19 @@ class SearchScopeInitializationSpec
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    crypto,
     config,
     xas
   ).accepted
 
   private val indexingConfig =
-    IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))
+    IndexingConfig(
+      Set.empty,
+      JsonObject.empty,
+      None,
+      SparqlConstructQuery.unsafe(""),
+      ContextObject(JsonObject.empty),
+      None
+    )
 
   private val defaults = Defaults("viewName", "viewDescription")
   lazy val scopeInit   = new SearchScopeInitialization(views, indexingConfig, sa, defaults)

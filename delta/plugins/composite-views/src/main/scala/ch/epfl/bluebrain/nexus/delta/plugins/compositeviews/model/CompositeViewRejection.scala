@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
@@ -32,7 +33,7 @@ import io.circe.{Encoder, Json, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class CompositeViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class CompositeViewRejection(val reason: String) extends Rejection
 
 object CompositeViewRejection {
 
@@ -71,8 +72,15 @@ object CompositeViewRejection {
   final case class ProjectionNotFound private (msg: String) extends CompositeViewRejection(msg)
 
   object ProjectionNotFound {
+
+    def apply(ref: ViewRef, projectionId: Iri): ProjectionNotFound =
+      apply(ref.viewId, projectionId, ref.project)
+
     def apply(id: Iri, projectionId: Iri, project: ProjectRef): ProjectionNotFound =
       ProjectionNotFound(s"Projection '$projectionId' not found in composite view '$id' and project '$project'.")
+
+    def apply(ref: ViewRef, projectionId: Iri, tpe: ProjectionType): ProjectionNotFound =
+      apply(ref.viewId, projectionId, ref.project, tpe)
 
     def apply(id: Iri, projectionId: Iri, project: ProjectRef, tpe: ProjectionType): ProjectionNotFound =
       ProjectionNotFound(s"$tpe '$projectionId' not found in composite view '$id' and project '$project'.")
@@ -86,6 +94,11 @@ object CompositeViewRejection {
       extends CompositeViewRejection(
         s"Projection '$projectionId' not found in composite view '$id' and project '$project'."
       )
+
+  object SourceNotFound {
+    def apply(ref: ViewRef, projectionId: Iri): SourceNotFound =
+      new SourceNotFound(ref.viewId, projectionId, ref.project)
+  }
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
@@ -192,14 +205,6 @@ object CompositeViewRejection {
       )
 
   /**
-    * Signals a rejection caused by the failure to encrypt/decrypt sensitive data (credentials)
-    */
-  final case object InvalidEncryptionSecrets
-      extends CompositeViewSourceRejection(
-        s"Composite view plugin is using incorrect system secrets. Please contact the system administrator."
-      )
-
-  /**
     * Rejection signalling that a projection is invalid.
     */
   sealed abstract class CompositeViewProjectionRejection(reason: String) extends CompositeViewRejection(reason)
@@ -233,6 +238,11 @@ object CompositeViewRejection {
     */
   final case class InvalidCompositeViewId(id: String)
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create a composite view while providing an id that is blank.
+    */
+  final case object BlankCompositeViewId extends CompositeViewRejection(s"Composite view identifier cannot be blank.")
 
   /**
     * Signals a rejection caused when interacting with other APIs when fetching a view
@@ -280,13 +290,6 @@ object CompositeViewRejection {
   final case class DecodingFailed(error: JsonLdDecoderError) extends CompositeViewRejection(error.getMessage)
 
   /**
-    * Rejection returned when attempting to query a Blazegraph index and the caller does not have the right permissions
-    * defined in the view.
-    */
-  final case object AuthorizationFailed extends CompositeViewRejection(ServiceError.AuthorizationFailed.reason)
-  type AuthorizationFailed = AuthorizationFailed.type
-
-  /**
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends CompositeViewRejection(error.reason)
@@ -301,6 +304,7 @@ object CompositeViewRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedCompositeViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankCompositeViewId
   }
 
   implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =
@@ -337,7 +341,6 @@ object CompositeViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ProjectContextRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

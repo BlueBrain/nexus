@@ -4,9 +4,8 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
 import cats.effect._
+import cats.implicits._
 import fs2._
-import monix.bio.Task
-import monix.execution.Scheduler
 
 /**
   * Converts a fs2 stream to an Akka source Original code from the streamz library from Martin Krasser (published under
@@ -15,19 +14,21 @@ import monix.execution.Scheduler
   */
 object StreamConverter {
 
-  private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[Task, A]): Stream[Task, Unit] = {
-    def publish(a: A): Task[Option[Unit]] = Task
-      .fromFuture(publisher.offer(a))
+  private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A])(implicit
+      contextShift: ContextShift[IO]
+  ): Stream[IO, Unit] = {
+    def publish(a: A): IO[Option[Unit]] = IO
+      .fromFuture(IO.delay(publisher.offer(a)))
       .flatMap {
-        case QueueOfferResult.Enqueued       => Task.some(())
-        case QueueOfferResult.Failure(cause) => Task.raiseError[Option[Unit]](cause)
-        case QueueOfferResult.QueueClosed    => Task.none
+        case QueueOfferResult.Enqueued       => IO.pure(Some(()))
+        case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
+        case QueueOfferResult.QueueClosed    => IO.none
         case QueueOfferResult.Dropped        =>
-          Task.raiseError[Option[Unit]](
+          IO.raiseError[Option[Unit]](
             new IllegalStateException("This should never happen because we use OverflowStrategy.backpressure")
           )
       }
-      .onErrorRecover {
+      .recover {
         // This handles a race condition between `interruptWhen` and `publish`.
         // There's no guarantee that, when the akka sink is terminated, we will observe the
         // `interruptWhen` termination before calling publish one last time.
@@ -35,9 +36,9 @@ object StreamConverter {
         case _: StreamDetachedException => None
       }
 
-    def watchCompletion: Task[Unit]    = Task.fromFuture(publisher.watchCompletion()).void
-    def fail(e: Throwable): Task[Unit] = Task.delay(publisher.fail(e)) >> watchCompletion
-    def complete: Task[Unit]           = Task.delay(publisher.complete()) >> watchCompletion
+    def watchCompletion: IO[Unit]    = IO.fromFuture(IO.delay(publisher.watchCompletion())).void
+    def fail(e: Throwable): IO[Unit] = IO.delay(publisher.fail(e)) >> watchCompletion
+    def complete: IO[Unit]           = IO.delay(publisher.complete()) >> watchCompletion
 
     stream
       .interruptWhen(watchCompletion.attempt)
@@ -49,12 +50,12 @@ object StreamConverter {
       }
   }
 
-  def apply[A](stream: Stream[Task, A])(implicit s: Scheduler): Graph[SourceShape[A], NotUsed] = {
+  def apply[A](stream: Stream[IO, A])(implicit contextShift: ContextShift[IO]): Graph[SourceShape[A], NotUsed] = {
     val source = AkkaSource.queue[A](0, OverflowStrategy.backpressure)
     // A sink that runs an FS2 publisherStream when consuming the publisher actor (= materialized value) of source
     val sink   = AkkaSink.foreach[SourceQueueWithComplete[A]] { p =>
       // Fire and forget Future so it runs in the background
-      publisherStream[A](p, stream).compile.drain.runToFuture
+      publisherStream[A](p, stream).compile.drain.unsafeToFuture()
       ()
     }
 
@@ -67,17 +68,21 @@ object StreamConverter {
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  def apply[A](source: Graph[SourceShape[A], NotUsed])(implicit materializer: Materializer): Stream[Task, A] =
+  def apply[A](
+      source: Graph[SourceShape[A], NotUsed]
+  )(implicit materializer: Materializer, contextShift: ContextShift[IO]): Stream[IO, A] =
     Stream.force {
-      Task.delay {
+      IO.delay {
         val subscriber = AkkaSource.fromGraph(source).toMat(AkkaSink.queue[A]())(Keep.right).run()
         subscriberStream[A](subscriber)
       }
     }
 
-  private def subscriberStream[A](subscriber: SinkQueueWithCancel[A]): Stream[Task, A] = {
-    val pull   = Task.deferFuture(subscriber.pull())
-    val cancel = Task.delay(subscriber.cancel())
+  private def subscriberStream[A](
+      subscriber: SinkQueueWithCancel[A]
+  )(implicit contextShift: ContextShift[IO]): Stream[IO, A] = {
+    val pull   = IO.fromFuture(IO.delay(subscriber.pull()))
+    val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
   }
 

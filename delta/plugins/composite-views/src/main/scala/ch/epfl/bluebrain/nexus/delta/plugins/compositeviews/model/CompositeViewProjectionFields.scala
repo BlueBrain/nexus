@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery._
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.d
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -49,12 +48,6 @@ sealed trait CompositeViewProjectionFields {
 
   /**
     * @return
-    *   the optional tag to filter by
-    */
-  def resourceTag: Option[UserTag]
-
-  /**
-    * @return
     *   whether to include deprecated resources
     */
   def includeDeprecated: Boolean
@@ -81,13 +74,10 @@ sealed trait CompositeViewProjectionFields {
     * @return
     *   transform from [[CompositeViewProjectionFields]] to [[CompositeViewProjection]]
     */
-  def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection
+  def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection
 }
 
 object CompositeViewProjectionFields {
-
-  implicit def compositeViewProjectionFieldsOrder[A <: CompositeViewProjectionFields]: Order[A] =
-    Order.by(_.id)
 
   /**
     * Necessary fields to create/update an ElasticSearch projection.
@@ -101,7 +91,6 @@ object CompositeViewProjectionFields {
       settings: Option[JsonObject] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       includeContext: Boolean = false,
@@ -109,22 +98,23 @@ object CompositeViewProjectionFields {
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = ElasticSearchProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection = ElasticSearchProjection(
-      id.getOrElse(generatedId),
-      uuid,
-      query,
-      resourceSchemas,
-      resourceTypes,
-      resourceTag,
-      includeMetadata,
-      includeDeprecated,
-      includeContext,
-      permission,
-      indexGroup,
-      mapping,
-      settings,
-      context
-    )
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection =
+      ElasticSearchProjection(
+        id.getOrElse(generatedId),
+        uuid,
+        indexingRev,
+        query,
+        resourceSchemas,
+        resourceTypes,
+        includeMetadata,
+        includeDeprecated,
+        includeContext,
+        permission,
+        indexGroup,
+        mapping,
+        settings,
+        context
+      )
   }
 
   /**
@@ -135,24 +125,24 @@ object CompositeViewProjectionFields {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       permission: Permission = permissions.query
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = SparqlProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection = SparqlProjection(
-      id.getOrElse(generatedId),
-      uuid,
-      query,
-      resourceSchemas,
-      resourceTypes,
-      resourceTag,
-      includeMetadata,
-      includeDeprecated,
-      permission
-    )
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection =
+      SparqlProjection(
+        id.getOrElse(generatedId),
+        uuid,
+        indexingRev,
+        query,
+        resourceSchemas,
+        resourceTypes,
+        includeMetadata,
+        includeDeprecated,
+        permission
+      )
   }
 
   @nowarn("cat=unused")

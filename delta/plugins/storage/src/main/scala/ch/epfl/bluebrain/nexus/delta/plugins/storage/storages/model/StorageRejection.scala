@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -26,9 +27,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None)
-    extends Product
-    with Serializable
+sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None) extends Rejection
 
 object StorageRejection {
 
@@ -77,6 +76,11 @@ object StorageRejection {
     */
   final case class InvalidStorageId(id: String)
       extends StorageFetchRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create a storage while providing an id that is blank.
+    */
+  final case object BlankStorageId extends StorageRejection(s"Storage identifier cannot be blank.")
 
   /**
     * Rejection returned when attempting to create a storage but the id already exists.
@@ -191,17 +195,6 @@ object StorageRejection {
       )
 
   /**
-    * Signals a rejection caused by the failure to encrypt/decrypt sensitive data (credentials)
-    */
-  final case class InvalidEncryptionSecrets(tpe: StorageType, details: String)
-      extends StorageRejection(
-        s"Storage type '$tpe' is using incorrect system secrets. Please contact the system administrator.",
-        Some(
-          s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
-        )
-      )
-
-  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -213,6 +206,7 @@ object StorageRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankStorageId
   }
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
@@ -235,16 +229,15 @@ object StorageRejection {
 
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)         => StatusCodes.NotFound
-      case TagNotFound(_)                 => StatusCodes.NotFound
-      case StorageNotFound(_, _)          => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)      => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)    => StatusCodes.Conflict
-      case IncorrectRev(_, _)             => StatusCodes.Conflict
-      case ProjectContextRejection(rej)   => rej.status
-      case StorageNotAccessible(_, _)     => StatusCodes.BadRequest
-      case InvalidEncryptionSecrets(_, _) => StatusCodes.InternalServerError
-      case _                              => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case TagNotFound(_)               => StatusCodes.NotFound
+      case StorageNotFound(_, _)        => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)    => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case IncorrectRev(_, _)           => StatusCodes.Conflict
+      case ProjectContextRejection(rej) => rej.status
+      case StorageNotAccessible(_, _)   => StatusCodes.BadRequest
+      case _                            => StatusCodes.BadRequest
     }
 
 }

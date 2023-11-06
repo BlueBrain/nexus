@@ -1,23 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
+import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder.allFields
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 final case class QueryBuilder private[client] (private val query: JsonObject) {
 
-  private val trackTotalHits                                                       = "track_total_hits"
-  private val searchAfter                                                          = "search_after"
-  private val source                                                               = "_source"
+  private val trackTotalHits = "track_total_hits"
+  private val searchAfter    = "search_after"
+
   implicit private def subjectEncoder(implicit baseUri: BaseUri): Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
   implicit private val sortEncoder: Encoder[Sort] =
@@ -42,18 +44,24 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     copy(query.add(trackTotalHits, value.asJson))
 
   /**
-    * Defines what fields are going to be present in the response
-    */
-  def withFields(fields: Set[String]): QueryBuilder =
-    if (fields.isEmpty) this
-    else copy(query.add(source, fields.asJson))
-
-  /**
     * Adds sort to the current payload
     */
   def withSort(sortList: SortList): QueryBuilder =
     if (sortList.isEmpty) this
     else copy(query.add("sort", sortList.values.asJson))
+
+  private def typesTerms(typeOperator: TypeOperator, types: List[Type]) = {
+    val terms = types.map(tpe => term(keywords.tpe, tpe.value))
+
+    if (types.isEmpty) {
+      Nil
+    } else {
+      typeOperator match {
+        case TypeOperator.And => List(and(terms: _*))
+        case TypeOperator.Or  => List(or(terms: _*))
+      }
+    }
+  }
 
   /**
     * Filters by the passed ''params''
@@ -62,19 +70,29 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     val (includeTypes, excludeTypes) = params.types.partition(_.include)
     QueryBuilder(
       query deepMerge queryPayload(
-        mustTerms = includeTypes.map(tpe => term(keywords.tpe, tpe.value)) ++
+        mustTerms = typesTerms(params.typeOperator, includeTypes) ++
+          params.locate.map { l => or(term(keywords.id, l), term(nxv.self.prefix, l)) } ++
           params.id.map(term(keywords.id, _)) ++
           params.q.map(matchPhrasePrefix(allFields, _)) ++
           params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
           params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
           params.rev.map(term(nxv.rev.prefix, _)) ++
           params.createdBy.map(term(nxv.createdBy.prefix, _)) ++
-          params.updatedBy.map(term(nxv.updatedBy.prefix, _)),
-        mustNotTerms = excludeTypes.map(tpe => term(keywords.tpe, tpe.value)),
+          range(nxv.createdAt.prefix, params.createdAt) ++
+          params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
+          range(nxv.updatedAt.prefix, params.updatedAt) ++
+          params.tag.map(term(nxv.tags.prefix, _)),
+        mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),
         withScore = params.q.isDefined
       )
     )
   }
+
+  private def or(terms: JsonObject*)  =
+    JsonObject("bool" -> Json.obj("should" -> terms.asJson))
+
+  private def and(terms: JsonObject*) =
+    JsonObject("bool" -> Json.obj("must" -> terms.asJson))
 
   /**
     * Add indices filter to the query body
@@ -108,6 +126,17 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     )
   }
 
+  private def range(k: String, timeRange: TimeRange): Option[JsonObject] = {
+    import TimeRange._
+    def range(value: Json) = Some(JsonObject("range" -> Json.obj(k -> value)))
+    timeRange match {
+      case Anytime             => None
+      case Before(value)       => range(Json.obj("lt" := value))
+      case After(value)        => range(Json.obj("gt" := value))
+      case Between(start, end) => range(Json.obj("gt" := start, "lt" := end))
+    }
+  }
+
   private def term[A: Encoder](k: String, value: A): JsonObject              =
     JsonObject("term" -> Json.obj(k -> value.asJson))
 
@@ -117,7 +146,22 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   private def matchPhrasePrefix[A: Encoder](k: String, value: A): JsonObject =
     JsonObject("match_phrase_prefix" -> Json.obj(k -> Json.obj("query" -> value.asJson)))
 
-  def build: JsonObject                                                      = query
+  def aggregation(bucketSize: Int): QueryBuilder = {
+    val aggregations =
+      JsonObject(
+        "aggs" := Json.obj(
+          termAggregation("projects", "_project", bucketSize),
+          termAggregation("types", "@type", bucketSize)
+        ),
+        "size" := 0
+      )
+    QueryBuilder(query deepMerge aggregations)
+  }
+
+  private def termAggregation(name: String, fieldName: String, bucketSize: Int) =
+    name -> Json.obj("terms" -> Json.obj("field" := fieldName, "size" := bucketSize))
+
+  def build: JsonObject = query
 }
 
 object QueryBuilder {

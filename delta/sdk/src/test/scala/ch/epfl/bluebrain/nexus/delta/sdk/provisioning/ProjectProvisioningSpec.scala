@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
@@ -16,20 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
 
 import java.util.UUID
 
-class ProjectProvisioningSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with IOValues
-    with IOFixedClock
-    with OptionValues
-    with ConfigFixtures {
+class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture with ConfigFixtures with CatsIOValues {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
@@ -43,7 +37,7 @@ class ProjectProvisioningSpec
   private val aclCheck: AclSimpleCheck = AclSimpleCheck().accepted
 
   private def fetchOrg: FetchOrganization = {
-    case `usersOrg` => UIO.pure(Organization(usersOrg, orgUuid, None))
+    case `usersOrg` => IO.pure(Organization(usersOrg, orgUuid, None))
     case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
@@ -59,17 +53,19 @@ class ProjectProvisioningSpec
     )
   )
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private lazy val projects = ProjectsImpl(
     fetchOrg,
+    _ => IO.unit,
     Set.empty,
     ApiMappings.empty,
     config,
     xas
   )
 
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
+  private lazy val provisioning =
+    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
 
   "Provisioning projects" should {
 

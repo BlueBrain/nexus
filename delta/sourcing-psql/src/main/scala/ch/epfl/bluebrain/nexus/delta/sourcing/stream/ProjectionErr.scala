@@ -21,28 +21,6 @@ sealed trait ProjectionErr extends Exception with Product with Serializable {
 object ProjectionErr {
 
   /**
-    * Applying a json-ld configuration to a source definition would typically yield a materialized source. This error
-    * signals the inability to decode a provided json-ld configuration as per the expectation of the source definition.
-    * @param cfg
-    *   the json-ld configuration that was provided
-    * @param to
-    *   the target type expected by the source definition
-    * @param source
-    *   the source reference
-    * @param message
-    *   a human readable message describing the decoding issue
-    */
-  final case class CouldNotDecodeSourceConfigErr(
-      cfg: ExpandedJsonLd,
-      to: String,
-      source: SourceRef,
-      message: String
-  ) extends ProjectionErr {
-    override def reason: String =
-      s"Unable to decode config '${cfg.json.noSpaces}' to '$to' for source '${source.label.value}' because '$message'"
-  }
-
-  /**
     * Two sources can be merged if the their out types are identical. This error signals a failed attempt to merge two
     * sources with incompatible out types.
     * @param self
@@ -112,17 +90,6 @@ object ProjectionErr {
   }
 
   /**
-    * A source definition can be looked up in the [[ReferenceRegistry]] using a reference. This error signals a failed
-    * lookup attempt.
-    *
-    * @param ref
-    *   the source reference
-    */
-  final case class CouldNotFindSourceErr(ref: SourceRef) extends ProjectionErr {
-    override def reason: String = s"Unable to find source reference '${ref.label.value}'"
-  }
-
-  /**
     * A pipe definition can be looked up in the [[ReferenceRegistry]] using a reference. This error signals a failed
     * lookup attempt.
     *
@@ -142,16 +109,6 @@ object ProjectionErr {
     */
   final case class CouldNotFindTypedPipeErr(ref: PipeRef, tpe: String) extends ProjectionErr {
     override def reason: String = s"Unable to find pipe reference '${ref.label.value}' of expected type '$tpe'"
-  }
-
-  /**
-    * Pipes in the terminal position require an Out type of Unit. This error signals that a [[PipeChain]] could not be
-    * compiled because the requirement is not met.
-    * @param self
-    *   the pipe that was expected to have an Out type of Unit
-    */
-  final case class PipeChainOutNotUnitErr(self: Operation) extends ProjectionErr {
-    override def reason: String = s"The pipe ${self.name} does not have its terminal output type Unit"
   }
 
 }

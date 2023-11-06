@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -48,6 +50,12 @@ object ResourceCommand {
     def rev: Int
   }
 
+  /** A [[ModifyCommand]] to use when the schema is not optional */
+  trait ModifyCommandWithSchema extends ModifyCommand {
+    def schemaRef: ResourceRef
+    def schemaOpt: Option[ResourceRef] = schemaRef.some
+  }
+
   /**
     * Command that signals the intent to create a new resource.
     *
@@ -59,10 +67,8 @@ object ResourceCommand {
     *   the schema used to constrain the resource
     * @param source
     *   the representation of the resource as posted by the subject
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param caller
     *   the subject which created this event
     */
@@ -71,9 +77,9 @@ object ResourceCommand {
       project: ProjectRef,
       schema: ResourceRef,
       source: Json,
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
-      caller: Caller
+      jsonld: JsonLdResult,
+      caller: Caller,
+      tag: Option[UserTag]
   ) extends ResourceCommand {
 
     override def rev: Int = 0
@@ -92,10 +98,8 @@ object ResourceCommand {
     *   the optional schema of the resource. A None value ignores the schema from this command
     * @param source
     *   the representation of the resource as posted by the subject
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param rev
     *   the last known revision of the resource
     * @param caller
@@ -106,10 +110,10 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       source: Json,
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      jsonld: JsonLdResult,
       rev: Int,
-      caller: Caller
+      caller: Caller,
+      tag: Option[UserTag]
   ) extends ResourceCommand
       with ModifyCommand {
     def subject: Subject = caller.subject
@@ -124,10 +128,8 @@ object ResourceCommand {
     *   the project where the resource belongs
     * @param schemaOpt
     *   the optional schema of the resource. A None value ignores the schema from this command
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param rev
     *   the last known revision of the resource
     * @param caller
@@ -137,12 +139,39 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      jsonld: JsonLdResult,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand
       with ModifyCommand {
+    def subject: Subject = caller.subject
+  }
+
+  /**
+    * Command that signals the intent to update the schema attached to a resource
+    *
+    * @param id
+    *   resource identifier
+    * @param project
+    *   project where the resource belongs
+    * @param schemaRef
+    *   schema of the resource
+    * @param expanded
+    *   expanded representation of the resource
+    * @param rev
+    *   last known revision of the resource
+    * @param caller
+    *   subject which created this event
+    */
+  final case class UpdateResourceSchema(
+      id: Iri,
+      project: ProjectRef,
+      schemaRef: ResourceRef,
+      expanded: ExpandedJsonLd,
+      rev: Int,
+      caller: Caller
+  ) extends ResourceCommand
+      with ModifyCommandWithSchema {
     def subject: Subject = caller.subject
   }
 
@@ -216,6 +245,29 @@ object ResourceCommand {
     *   the subject which created this event
     */
   final case class DeprecateResource(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      rev: Int,
+      subject: Subject
+  ) extends ResourceCommand
+      with ModifyCommand
+
+  /**
+    * Command that signals the intent to undeprecate a resource.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this operation
+    * @param rev
+    *   the last known revision of the resource
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class UndeprecateResource(
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],

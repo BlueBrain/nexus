@@ -9,7 +9,7 @@ Knowledge Graph. You can find out more information on our @link:[product home pa
 
 ### Is Blue Brain Nexus free to use?
 
-Yes, Nexus is a free, Open Source platform released under @link:[Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0){ open=new }
+Yes, Nexus is a free, Open Source platform released under @link:[Apache Licence 2.0](https://opensource.org/license/apache-2-0/){ open=new }
 
 ### How do I run Blue Brain Nexus?
 
@@ -17,8 +17,7 @@ There are many ways to run Nexus. Our public Sandbox is running @link:[here](htt
 and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can 
 help you to run Nexus step by step.
 
-Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus/index.md#docker) 
-or @ref:[Minikube](getting-started/running-nexus/index.md#run-nexus-locally-with-minikube). You can also deploy Nexus 
+Meanwhile if you want to run it locally you can do so using @ref:[Docker](getting-started/running-nexus/index.md#docker). You can also deploy Nexus 
 @ref:[“on premise”](getting-started/running-nexus/index.md#on-premise-cloud-deployment), as a single instance or as a cluster. 
 Blue Brain Nexus has also been deployed and tested on AWS using @link:[Kubernetes](https://kubernetes.io/){ open=new }.
 
@@ -153,7 +152,7 @@ on the HTTP request, any SPARQL client should work.
 ### How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
 By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM 
-property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/v1.4.1/delta/src/main/resources/app.conf#L213){ open=new }.
+property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L92){ open=new }.
 In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, 
 visit the @ref:[ACLs page](delta/api/acls-api.md#create).
 

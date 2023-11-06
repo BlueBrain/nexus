@@ -1,0 +1,18 @@
+{
+  "@context": [
+    "https://bbp.neuroshapes.org"
+  ],
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-execution",
+  "@type": "SimulationCampaignExecution",
+  "generated": {
+    "@id": "https://bbp.epfl.ch/data/simulation-campaign",
+    "@type": "https://neuroshapes.org/SimulationCampaign"
+  },
+  "used": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
+    "@type": "SimulationCampaignConfiguration"
+  },
+  "startedAtTime": "2023-07-05T11:00:00.000000",
+  "endedAtTime": "2023-07-12T15:00:00.000000",
+  "status": "Running"
+}

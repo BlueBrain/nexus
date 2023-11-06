@@ -31,7 +31,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import monix.bio.{IO, UIO}
@@ -47,7 +49,7 @@ class DeltaDirectivesSpec
     with OptionValues
     with CirceMarshalling
     with CirceLiteral
-    with IOValues
+    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {
@@ -57,7 +59,8 @@ class DeltaDirectivesSpec
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  implicit private val f: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
+  implicit private val f: FusionConfig =
+    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

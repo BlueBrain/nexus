@@ -25,8 +25,7 @@
       ],
       "includeDeprecated": false,
       "@type": "RemoteProjectEventStream",
-      "endpoint": "http://example.com/remote-endpoint",
-      "token": "secret token"
+      "endpoint": "http://example.com/remote-endpoint"
     },
     {
       "@id": "http://example.com/project-source",

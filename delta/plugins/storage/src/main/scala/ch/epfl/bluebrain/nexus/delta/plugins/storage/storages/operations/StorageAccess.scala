@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import monix.bio.IO
 
 private[operations] trait StorageAccess {
 
@@ -23,18 +22,23 @@ private[operations] trait StorageAccess {
     *   a [[Unit]] if access has been verified successfully or signals an error [[StorageNotAccessible]] with the
     *   details about why the storage is not accessible
     */
-  def apply(id: Iri, storage: Storage): IO[StorageNotAccessible, Unit]
+  def apply(id: Iri, storage: Storage): IO[Unit]
 }
 
 object StorageAccess {
 
   final private[storage] def apply(
       id: Iri,
-      storage: StorageValue
-  )(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
+      storage: StorageValue,
+      client: RemoteDiskStorageClient,
+      config: StorageTypeConfig
+  )(implicit
+      as: ActorSystem,
+      cs: ContextShift[IO]
+  ): IO[Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
-      case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)
-      case storage: RemoteDiskStorageValue => new RemoteDiskStorageAccess().apply(id, storage)
+      case storage: S3StorageValue         => new S3StorageAccess(config).apply(id, storage)
+      case storage: RemoteDiskStorageValue => new RemoteDiskStorageAccess(client).apply(id, storage)
     }
 }

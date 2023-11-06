@@ -55,6 +55,8 @@ object FileCommand {
     *   the file attributes
     * @param subject
     *   the identity associated to this command
+    * @param tag
+    *   an optional user-specified tag attached to the file on creation
     */
   final case class CreateFile(
       id: Iri,
@@ -62,7 +64,8 @@ object FileCommand {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileCommand {
     override def rev: Int = 0
   }
@@ -82,6 +85,8 @@ object FileCommand {
     *   the file attributes
     * @param subject
     *   the identity associated to this command
+    * @param tag
+    *   an optional user-specified tag attached to the latest revision
     */
   final case class UpdateFile(
       id: Iri,
@@ -90,7 +95,8 @@ object FileCommand {
       storageType: StorageType,
       attributes: FileAttributes,
       rev: Int,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileCommand
 
   /**

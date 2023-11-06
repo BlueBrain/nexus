@@ -1,15 +1,19 @@
 {
+  "project": "myorg/myproj",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "types": [
+    "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
+    "https://bluebrain.github.io/nexus/vocabulary/View"
+  ],
+  "rev": 1,
+  "indexingRev": 1,
+  "deprecated": false,
   "createdAt": "1970-01-01T00:00:00Z",
   "createdBy": {
     "@type": "User",
     "realm": "myrealm",
     "subject": "username"
   },
-  "deprecated": false,
-  "id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
-  "project": "myorg/myproj",
-  "rev": 1,
-  "indexingRev": 1,
   "source": {
     "elastic": "value"
   },

@@ -1,1810 +1,4501 @@
 {
-  "@context": [
-    {
-      "AcquisitionAnnotation": {
-        "@id": "nsg:AcquisitionAnnotation"
-      },
-      "Activity": {
-        "@id": "prov:Activity"
-      },
-      "AffineLinearTransform": {
-        "@id": "nsg:AffineLinearTransform"
-      },
-      "Agent": {
-        "@id": "prov:Agent"
-      },
-      "Analysis": {
-        "@id": "nsg:Analysis"
-      },
-      "AnalysisConfiguration": {
-        "@id": "nsg:AnalysisConfiguration",
-        "@type": "@id"
-      },
-      "AnalysisReport": {
-        "@id": "nsg:AnalysisReport",
-        "@type": "@id"
-      },
-      "AnalysisResult": {
-        "@id": "nsg:AnalysisResult"
-      },
-      "AnnotatedSlice": {
-        "@id": "nsg:AnnotatedSlice"
-      },
-      "Annotation": {
-        "@id": "nsg:Annotation"
-      },
-      "AnnotationBody": {
-        "@id": "nsg:AnnotationBody"
-      },
-      "AnnotationTarget": {
-        "@id": "nsg:AnnotationTarget"
-      },
-      "ApicalAnnotation": {
-        "@id": "nsg:ApicalAnnotation"
-      },
-      "ApicalDendrite": {
-        "@id": "nsg:ApicalDendrite"
-      },
-      "AtlasConstruction": {
-        "@id": "nsg:AtlasConstruction"
-      },
-      "AtlasRelease": {
-        "@id": "nsg:AtlasRelease"
-      },
-      "AtlasSpatialReferenceSystem": {
-        "@id": "nsg:AtlasSpatialReferenceSystem"
-      },
-      "Axon": {
-        "@id": "nsg:Axon"
-      },
-      "BasalDendrite": {
-        "@id": "nsg:BasalDendrite"
-      },
-      "BatchQualityMeasurementAnnotation": {
-        "@id": "nsg:BatchQualityMeasurementAnnotation"
-      },
-      "BluePyEfeFeatures": {
-        "@id": "nsg:BluePyEfeFeatures"
-      },
-      "BoundingBox": {
-        "@id": "nsg:BoundingBox"
-      },
-      "BoutonDensity": {
-        "@id": "nsg:BoutonDensity"
-      },
-      "BrainAtlasRelease": {
-        "@id": "nsg:BrainAtlasRelease"
-      },
-      "BrainAtlasSpatialReferenceSystem": {
-        "@id": "nsg:BrainAtlasSpatialReferenceSystem"
-      },
-      "BrainImaging": {
-        "@id": "nsg:BrainImaging"
-      },
-      "BrainLocation": {
-        "@id": "nsg:BrainLocation"
-      },
-      "BrainParcellationDataLayer": {
-        "@id": "nsg:BrainParcellationDataLayer"
-      },
-      "BrainParcellationMesh": {
-        "@id": "nsg:BrainParcellationMesh"
-      },
-      "BrainSlicing": {
-        "@id": "nsg:BrainSlicing"
-      },
-      "BrainTemplateDataLayer": {
-        "@id": "nsg:BrainTemplateDataLayer"
-      },
-      "CampaignAnalysis": {
-        "@id": "nsg:CampaignAnalysis",
-        "@type": "@id"
-      },
-      "Cell": {
-        "@id": "nsg:Cell"
-      },
-      "CellCounting": {
-        "@id": "nsg:CellCounting"
-      },
-      "CellDensity": {
-        "@id": "nsg:CellDensity"
-      },
-      "CellDensityDataLayer": {
-        "@id": "nsg:CellDensityDataLayer"
-      },
-      "CellPlacement": {
-        "@id": "nsg:CellPlacement"
-      },
-      "CellPositions": {
-        "@id": "nsg:CellPositions"
-      },
-      "CellRecordSeries": {
-        "@id": "nsg:CellRecordSeries"
-      },
-      "CircuitCellProperties": {
-        "@id": "nsg:CircuitCellProperties"
-      },
-      "Class": {
-        "@id": "owl:Class"
-      },
-      "Collection": {
-        "@id": "prov:Collection"
-      },
-      "ComponentDimension": {
-        "@id": "nsg:ComponentDimension"
-      },
-      "Concept": {
-        "@id": "skos:Concept"
-      },
-      "ConceptScheme": {
-        "@id": "skos:ConceptScheme"
-      },
-      "Configuration": {
-        "@id": "nsg:Configuration"
-      },
-      "Contribution": {
-        "@id": "nsg:Contribution"
-      },
-      "DataDownload": {
-        "@id": "schema:DataDownload"
-      },
-      "DataMaturity": {
-        "@id": "nsg:DataMaturity"
-      },
-      "Dataset": {
-        "@id": "schema:Dataset"
-      },
-      "DeformableTransform": {
-        "@id": "nsg:DeformableTransform"
-      },
-      "Dendrite": {
-        "@id": "nsg:Dendrite"
-      },
-      "Density": {
-        "@id": "nsg:Density"
-      },
-      "Derivation": {
-        "@id": "prov:Derivation"
-      },
-      "DetailedCircuit": {
-        "@id": "nsg:DetailedCircuit"
-      },
-      "EModel": {
-        "@id": "nsg:EModel"
-      },
-      "EModelBuilding": {
-        "@id": "nsg:EModelBuilding"
-      },
-      "EModelRelease": {
-        "@id": "nsg:EModelRelease"
-      },
-      "EModelScript": {
-        "@id": "nsg:EModelScript"
-      },
-      "EType": {
-        "@id": "nsg:EType"
-      },
-      "ETypeFeatureProtocol": {
-        "@id": "nsg:ETypeFeatureProtocol"
-      },
-      "EdgeCollection": {
-        "@id": "nsg:EdgeCollection"
-      },
-      "ElectrophysiologyFeature": {
-        "@id": "nsg:ElectrophysiologyFeature"
-      },
-      "ElectrophysiologyFeatureExtractionProtocol": {
-        "@id": "nsg:ElectrophysiologyFeatureExtractionProtocol"
-      },
-      "ElectrophysiologyFeatureExtractionTarget": {
-        "@id": "nsg:ElectrophysiologyFeatureExtractionTarget"
-      },
-      "ElectrophysiologyFeatureExtractionTrace": {
-        "@id": "nsg:ElectrophysiologyFeatureExtractionTrace"
-      },
-      "ElectrophysiologyFeatureOptimisationChannelDistribution": {
-        "@id": "nsg:ElectrophysiologyFeatureOptimisationChannelDistribution"
-      },
-      "ElectrophysiologyFeatureOptimisationNeuronMorphology": {
-        "@id": "nsg:ElectrophysiologyFeatureOptimisationNeuronMorphology"
-      },
-      "ElectrophysiologyFeatureOptimisationParameter": {
-        "@id": "nsg:ElectrophysiologyFeatureOptimisationParameter"
-      },
-      "ElectrophysiologyFeatureOptimisationTarget": {
-        "@id": "nsg:ElectrophysiologyFeatureOptimisationTarget"
-      },
-      "ElectrophysiologyFeatureValidationTarget": {
-        "@id": "nsg:ElectrophysiologyFeatureValidationTarget"
-      },
-      "EmodelFeatureGeneration": {
-        "@id": "nsg:EmodelFeatureGeneration"
-      },
-      "EmptyCollection": {
-        "@id": "prov:EmptyCollection"
-      },
-      "Entity": {
-        "@id": "prov:Entity"
-      },
-      "ExperimentalActivity": {
-        "@id": "nsg:ExperimentalActivity"
-      },
-      "ExperimentalProtocol": {
-        "@id": "nsg:ExperimentalProtocol"
-      },
-      "FixationStainingMounting": {
-        "@id": "nsg:FixationStainingMounting"
-      },
-      "FixedStainedSlice": {
-        "@id": "nsg:FixedStainedSlice"
-      },
-      "FragmentSelector": {
-        "@id": "oa:FragmentSelector"
-      },
-      "GPFS": {
-        "@id": "nsg:GPFS"
-      },
-      "GeneExpressionVolumetricDataLayer": {
-        "@id": "nsg:GeneExpressionVolumetricDataLayer"
-      },
-      "Generation": {
-        "@id": "prov:Generation"
-      },
-      "GliaCellDensity": {
-        "@id": "nsg:GliaCellDensity"
-      },
-      "HostCell": {
-        "@id": "nsg:HostCell"
-      },
-      "ImageStack": {
-        "@id": "nsg:ImageStack"
-      },
-      "ImageVolume": {
-        "@id": "nsg:ImageVolume"
-      },
-      "InVitroSliceReconstructedPatchedNeuron": {
-        "@id": "nsg:InVitroSliceReconstructedPatchedNeuron"
-      },
-      "InVitroSliceWholeCellPatchClampElectrophysiologyTrace": {
-        "@id": "nsg:InVitroSliceWholeCellPatchClampElectrophysiologyTrace"
-      },
-      "InVitroWholeBrainReconstructedNeuronMorphology": {
-        "@id": "nsg:InVitroWholeBrainReconstructedNeuronMorphology"
-      },
-      "IntraCellularSharpElectrode": {
-        "@id": "nsg:IntraCellularSharpElectrode"
-      },
-      "IntraCellularSharpElectrodeRecordedCell": {
-        "@id": "nsg:IntraCellularSharpElectrodeRecordedCell"
-      },
-      "IntraCellularSharpElectrodeRecordedCellCollection": {
-        "@id": "nsg:IntraCellularSharpElectrodeRecordedCellCollection"
-      },
-      "IntraCellularSharpElectrodeRecordedSlice": {
-        "@id": "nsg:IntraCellularSharpElectrodeRecordedSlice"
-      },
-      "Invalidation": {
-        "@id": "prov:Invalidation"
-      },
-      "IonChannelGene": {
-        "@id": "nsg:IonChannelGene"
-      },
-      "IonChannelMechanismRelease": {
-        "@id": "nsg:IonChannelMechanismRelease"
-      },
-      "LabeledCell": {
-        "@id": "nsg:LabeledCell"
-      },
-      "LabeledCellCollection": {
-        "@id": "nsg:LabeledCellCollection"
-      },
-      "LayerThickness": {
-        "@id": "nsg:LayerThickness"
-      },
-      "License": {
-        "@id": "nsg:License"
-      },
-      "LinearTransform": {
-        "@id": "nsg:LinearTransform"
-      },
-      "Location": {
-        "@id": "prov:Location"
-      },
-      "MEModel": {
-        "@id": "nsg:MEModel"
-      },
-      "MEModelRelease": {
-        "@id": "nsg:MEModelRelease"
-      },
-      "MType": {
-        "@id": "nsg:MType"
-      },
-      "Mesh": {
-        "@id": "nsg:Mesh"
-      },
-      "Metric": {
-        "@id": "nsg:Metric"
-      },
-      "ModelInstance": {
-        "@id": "nsg:ModelInstance"
-      },
-      "ModelRelease": {
-        "@id": "nsg:ModelRelease"
-      },
-      "ModelReleaseIndex": {
-        "@id": "nsg:ModelReleaseIndex"
-      },
-      "ModelValidation": {
-        "@id": "nsg:ModelValidation"
-      },
-      "MolecularConcentration": {
-        "@id": "nsg:MolecularConcentration"
-      },
-      "Morphology": {
-        "@id": "nsg:Morphology"
-      },
-      "MorphologyDiversification": {
-        "@id": "nsg:MorphologyDiversification"
-      },
-      "MorphologyMesh": {
-        "@id": "nsg:MorphologyMesh"
-      },
-      "MorphologyMeshGeneration": {
-        "@id": "nsg:MorphologyMeshGeneration"
-      },
-      "MorphologyOrientationDataLayer": {
-        "@id": "nsg:MorphologyOrientationDataLayer"
-      },
-      "MorphologyRelease": {
-        "@id": "nsg:MorphologyRelease"
-      },
-      "Motivation": {
-        "@id": "nsg:Motivation"
-      },
-      "NISSLImageDataLayer": {
-        "@id": "nsg:NISSLImageDataLayer"
-      },
-      "NdRaster": {
-        "@id": "nsg:NdRaster"
-      },
-      "NeuronDensity": {
-        "@id": "nsg:NeuronDensity"
-      },
-      "NeuronMorphology": {
-        "@id": "nsg:NeuronMorphology"
-      },
-      "NeuronMorphologyReconstruction": {
-        "@id": "nsg:NeuronMorphologyReconstruction"
-      },
-      "NodeCollection": {
-        "@id": "nsg:NodeCollection"
-      },
-      "ObjectOfStudy": {
-        "@id": "nsg:ObjectOfStudy"
-      },
-      "Ontology": {
-        "@id": "owl:Ontology"
-      },
-      "OntologyConversion": {
-        "@id": "nsg:OntologyConversion"
-      },
-      "Organization": {
-        "@id": "schema:Organization"
-      },
-      "PHDataLayer": {
-        "@id": "nsg:PHDataLayer"
-      },
-      "Parameter": {
-        "@id": "nsg:Parameter"
-      },
-      "ParcellationImageData": {
-        "@id": "nsg:ParcellationImageData"
-      },
-      "ParcellationLabel": {
-        "@id": "nsg:ParcellationLabel"
-      },
-      "ParcellationMeshGeneration": {
-        "@id": "nsg:ParcellationMeshGeneration"
-      },
-      "ParcellationOntology": {
-        "@id": "nsg:ParcellationOntology"
-      },
-      "ParcellationReconstruction": {
-        "@id": "nsg:ParcellationReconstruction"
-      },
-      "ParcellationVolume": {
-        "@id": "nsg:ParcellationVolume"
-      },
-      "PatchClamp": {
-        "@id": "nsg:PatchClamp"
-      },
-      "PatchedCell": {
-        "@id": "nsg:PatchedCell"
-      },
-      "PatchedCellCollection": {
-        "@id": "nsg:PatchedCellCollection"
-      },
-      "PatchedSlice": {
-        "@id": "nsg:PatchedSlice"
-      },
-      "Person": {
-        "@id": "schema:Person"
-      },
-      "Protocol": {
-        "@id": "nsg:Protocol"
-      },
-      "QualityAnnotation": {
-        "@id": "nsg:QualityAnnotation"
-      },
-      "QualityMeasurement": {
-        "@id": "nsg:QualityMeasurement"
-      },
-      "QualityMeasurementAnnotation": {
-        "@id": "nsg:QualityMeasurementAnnotation"
-      },
-      "QuantitativeValue": {
-        "@id": "schema:QuantitativeValue"
-      },
-      "RNASequencing": {
-        "@id": "nsg:RNASequencing"
-      },
-      "ReconstructedCell": {
-        "@id": "nsg:ReconstructedCell"
-      },
-      "ReconstructedCellFormatConversion": {
-        "@id": "nsg:ReconstructedCellFormatConversion"
-      },
-      "ReconstructedCellRelease": {
-        "@id": "nsg:ReconstructedCellRelease"
-      },
-      "ReconstructedCellReleaseGeneration": {
-        "@id": "nsg:ReconstructedCellReleaseGeneration"
-      },
-      "ReconstructedCellReleaseProcess": {
-        "@id": "nsg:ReconstructedCellReleaseProcess"
-      },
-      "ReconstructedNeuronMorphology": {
-        "@id": "nsg:ReconstructedNeuronMorphology"
-      },
-      "ReconstructedPatchedCell": {
-        "@id": "nsg:ReconstructedPatchedCell"
-      },
-      "ReconstructedWholeBrainCell": {
-        "@id": "nsg:ReconstructedWholeBrainCell"
-      },
-      "Reconstruction": {
-        "@id": "nsg:Reconstruction"
-      },
-      "ReconstructionCorrection": {
-        "@id": "nsg:ReconstructionCorrection"
-      },
-      "ReconstructionFromImage": {
-        "@id": "nsg:ReconstructionFromImage"
-      },
-      "RecordMeasure": {
-        "@id": "nsg:RecordMeasure"
-      },
-      "RecordSeries": {
-        "@id": "nsg:RecordSeries"
-      },
-      "RegionOfInterest": {
-        "@id": "nsg:RegionOfInterest"
-      },
-      "ResponseTrace": {
-        "@id": "nsg:ResponseTrace"
-      },
-      "RigidLinearTransform": {
-        "@id": "nsg:RigidLinearTransform"
-      },
-      "RotationalMatrix": {
-        "@id": "nsg:RotationalMatrix"
-      },
-      "SimWriterConfiguration": {
-        "@id": "nsg:SimWriterConfiguration",
-        "@type": "@id"
-      },
-      "SimplifiedCircuit": {
-        "@id": "nsg:SimplifiedCircuit"
-      },
-      "Simulation": {
-        "@id": "nsg:Simulation"
-      },
-      "SimulationCampaign": {
-        "@id": "nsg:SimulationCampaign",
-        "@type": "@id"
-      },
-      "SimulationTrace": {
-        "@id": "nsg:SimulationTrace"
-      },
-      "SingleCellSimulationTrace": {
-        "@id": "nsg:SingleCellSimulationTrace"
-      },
-      "SingleCellTraceGeneration": {
-        "@id": "nsg:SingleCellTraceGeneration"
-      },
-      "Slice": {
-        "@id": "nsg:Slice"
-      },
-      "SliceCollection": {
-        "@id": "nsg:SliceCollection"
-      },
-      "SoftwareAgent": {
-        "@id": "prov:SoftwareAgent"
-      },
-      "SoftwareSourceCode": {
-        "@id": "schema:SoftwareSourceCode"
-      },
-      "SpaceDimension": {
-        "@id": "nsg:SpaceDimension"
-      },
-      "SpatialIndex": {
-        "@id": "nsg:SpatialIndex"
-      },
-      "SpatialIndexDerivation": {
-        "@id": "nsg:SpatialIndexDerivation"
-      },
-      "StimulationTrace": {
-        "@id": "nsg:StimulationTrace"
-      },
-      "StimulusExperiment": {
-        "@id": "nsg:StimulusExperiment"
-      },
-      "SubCellularModel": {
-        "@id": "nsg:SubCellularModel"
-      },
-      "SubCellularModelScript": {
-        "@id": "nsg:SubCellularModelScript"
-      },
-      "Subject": {
-        "@id": "nsg:Subject"
-      },
-      "SubjectCollection": {
-        "@id": "nsg:SubjectCollection"
-      },
-      "SynapseRelease": {
-        "@id": "nsg:SynapseRelease"
-      },
-      "SynapticConnectivity": {
-        "@id": "nsg:SynapticConnectivity"
-      },
-      "SynapticConnectivityTrace": {
-        "@id": "nsg:SynapticConnectivityTrace"
-      },
-      "Target": {
-        "@id": "nsg:Target"
-      },
-      "TemplateImageData": {
-        "@id": "nsg:TemplateImageData"
-      },
-      "TemplateReconstruction": {
-        "@id": "nsg:TemplateReconstruction"
-      },
-      "TemplateVolume": {
-        "@id": "nsg:TemplateVolume"
-      },
-      "Thickness": {
-        "@id": "nsg:Thickness"
-      },
-      "Threshold": {
-        "@id": "nsg:Threshold"
-      },
-      "Trace": {
-        "@id": "nsg:Trace"
-      },
-      "TraceCollection": {
-        "@id": "nsg:TraceCollection"
-      },
-      "TraceFeature": {
-        "@id": "nsg:TraceFeature"
-      },
-      "TraceFeatureExtraction": {
-        "@id": "nsg:TraceFeatureExtraction"
-      },
-      "TraceGeneration": {
-        "@id": "nsg:TraceGeneration"
-      },
-      "Transfection": {
-        "@id": "nsg:Transfection"
-      },
-      "Transform": {
-        "@id": "nsg:Transform"
-      },
-      "Transformation": {
-        "@id": "nsg:Transformation"
-      },
-      "TwoPhotonImageDataLayer": {
-        "@id": "nsg:TwoPhotonImageDataLayer"
-      },
-      "UBERON": "http://purl.obolibrary.org/obo/UBERON_",
-      "Usage": {
-        "@id": "prov:Usage"
-      },
-      "ValidationResult": {
-        "@id": "nsg:ValidationResult"
-      },
-      "VariableReport": {
-        "@id": "nsg:VariableReport"
-      },
-      "Vector3D": {
-        "@id": "nsg:Vector3D"
-      },
-      "VolumetricDataLayer": {
-        "@id": "nsg:VolumetricDataLayer"
-      },
-      "WholeCellPatchClamp": {
-        "@id": "nsg:WholeCellPatchClamp"
-      },
-      "WorkflowEngine": {
-        "@id": "nsg:WorkflowEngine"
-      },
-      "WorkflowExecution": {
-        "@id": "nsg:WorkflowExecution",
-        "@type": "@id"
-      },
-      "about": {
-        "@id": "schema:about",
-        "@type": "@id"
-      },
-      "activity": {
-        "@id": "prov:activity"
-      },
-      "activityType": {
-        "@id": "nsg:activityType"
-      },
-      "additionalName": {
-        "@id": "schema:additionalName"
-      },
-      "address": {
-        "@id": "schema:address"
-      },
-      "addressCountry": {
-        "@id": "schema:addressCountry"
-      },
-      "addressLocality": {
-        "@id": "schema:addressLocality"
-      },
-      "affiliation": {
-        "@id": "schema:affiliation"
-      },
-      "age": {
-        "@id": "nsg:age"
-      },
-      "agent": {
-        "@id": "prov:agent"
-      },
-      "algorithm": {
-        "@id": "schema:algorithm"
-      },
-      "altLabel": {
-        "@id": "skos:altLabel"
-      },
-      "alternateName": {
-        "@id": "schema:alternateName"
-      },
-      "alternateOf": {
-        "@id": "prov:alternateOf"
-      },
-      "analogToDigitalConverter": {
-        "@id": "nsg:analogToDigitalConverter"
-      },
-      "annotation": {
-        "@id": "nsg:annotation"
-      },
-      "annotationAngle": {
-        "@id": "nsg:annotationAngle"
-      },
-      "annotatorComment": {
-        "@id": "nsg:annotatorComment"
-      },
-      "atLocation": {
-        "@id": "prov:atLocation"
-      },
-      "atTime": {
-        "@id": "prov:atTime"
-      },
-      "atlasRelease": {
-        "@id": "nsg:atlasRelease"
-      },
-      "atlasSpatialReferenceSystem": {
-        "@id": "nsg:atlasSpatialReferenceSystem",
-        "@type": "@id"
-      },
-      "atlasVersion": {
-        "@id": "nsg:atlasVersion"
-      },
-      "atlas_id": {
-        "@id": "mba:atlas_id"
-      },
-      "author": {
-        "@id": "schema:author",
-        "@type": "@id"
-      },
-      "axonProjection": {
-        "@id": "nsg:axonProjection"
-      },
-      "bathSolution": {
-        "@id": "nsg:bathSolution"
-      },
-      "bestScore": {
-        "@id": "nsg:bestScore"
-      },
-      "birthDate": {
-        "@id": "schema:birthDate"
-      },
-      "boundary": {
-        "@id": "nsg:boundary"
-      },
-      "boundingBox": {
-        "@id": "nsg:boundingBox"
-      },
-      "brainLocation": {
-        "@id": "nsg:brainLocation"
-      },
-      "brainRegion": {
-        "@id": "nsg:brainRegion"
-      },
-      "brainTemplateDataLayer": {
-        "@id": "nsg:brainTemplateDataLayer"
-      },
-      "bufferEncoding": {
-        "@id": "nsg:bufferEncoding"
-      },
-      "byteOffset": {
-        "@id": "nsg:byteOffset"
-      },
-      "cell": {
-        "@id": "nsg:cell"
-      },
-      "cellLibraryFile": {
-        "@id": "nsg:cellLibraryFile"
-      },
-      "cellLine": {
-        "@id": "nsg:cellLine"
-      },
-      "cellTypeId": {
-        "@id": "nsg:cellTypeId"
-      },
-      "center": {
-        "@id": "nsg:center"
-      },
-      "channel": {
-        "@id": "nsg:channel"
-      },
-      "channelDistribution": {
-        "@id": "nsg:channelDistribution"
-      },
-      "chemicalComposition": {
-        "@id": "nsg:chemicalComposition"
-      },
-      "chlorideReversalPotential": {
-        "@id": "nsg:chlorideReversalPotential"
-      },
-      "circuitCellProperties": {
-        "@id": "nsg:circuitCellProperties"
-      },
-      "citation": {
-        "@id": "schema:citation"
-      },
-      "codeRepository": {
-        "@id": "schema:codeRepository",
-        "@type": "@id"
-      },
-      "colorRGB": {
-        "@id": "nsg:colorRGB"
-      },
-      "colorRGBA": {
-        "@id": "nsg:colorRGBA"
-      },
-      "color_hex_triplet": {
-        "@id": "mba:color_hex_triplet"
-      },
-      "column": {
-        "@id": "nsg:column"
-      },
-      "comment": {
-        "@id": "rdfs:comment"
-      },
-      "compensationCurrent": {
-        "@id": "nsg:compensationCurrent"
-      },
-      "componentEncoding": {
-        "@id": "nsg:componentEncoding"
-      },
-      "compressionCorrection": {
-        "@id": "nsg:compressionCorrection"
-      },
-      "configuration": {
-        "@id": "nsg:configuration"
-      },
-      "conformsTo": {
-        "@id": "nsg:conformsTo"
-      },
-      "contentSize": {
-        "@id": "schema:contentSize"
-      },
-      "contentUrl": {
-        "@id": "schema:contentUrl",
-        "@type": "@id"
-      },
-      "contribution": {
-        "@id": "nsg:contribution"
-      },
-      "coordinatesInBrainAtlas": {
-        "@id": "nsg:coordinatesInBrainAtlas"
-      },
-      "coordinatesInSlice": {
-        "@id": "nsg:coordinatesInSlice"
-      },
-      "count": {
-        "@id": "nsg:count"
-      },
-      "cumulatedLength": {
-        "@id": "nsg:cumulatedLength"
-      },
-      "current": {
-        "@id": "nsg:current"
-      },
-      "cuttingThickness": {
-        "@id": "nsg:cuttingThickness"
-      },
-      "dataSampleModality": {
-        "@id": "nsg:dataSampleModality"
-      },
-      "dateCreated": {
-        "@id": "schema:dateCreated"
-      },
-      "dateModified": {
-        "@id": "schema:dateModified"
-      },
-      "dateOfSurgery": {
-        "@id": "nsg:dateOfSurgery"
-      },
-      "datePublished": {
-        "@id": "schema:datePublished"
-      },
-      "dc": "http://purl.org/dc/elements/1.1/",
-      "dcat": "http://www.w3.org/ns/dcat#",
-      "dcterms": "http://purl.org/dc/terms/",
-      "deathDate": {
-        "@id": "schema:deathDate"
-      },
-      "defines": {
-        "@id": "nsg:defines",
-        "@type": "@id"
-      },
-      "definition": {
-        "@id": "skos:definition"
-      },
-      "density": {
-        "@id": "nsg:density"
-      },
-      "derivation": {
-        "@id": "nsg:derivation"
-      },
-      "description": {
-        "@id": "schema:description"
-      },
-      "digest": {
-        "@id": "nsg:digest"
-      },
-      "digitalToAnalogConverter": {
-        "@id": "nsg:digitalToAnalogConverter"
-      },
-      "dimension": {
-        "@id": "nsg:dimension",
-        "@container": "@list"
-      },
-      "disease": {
-        "@id": "nsg:disease"
-      },
-      "diseaseModel": {
-        "@id": "nsg:diseaseModel"
-      },
-      "distance": {
-        "@id": "schema:distance"
-      },
-      "distanceToBoundary": {
-        "@id": "nsg:distanceToBoundary"
-      },
-      "distribution": {
-        "@id": "schema:distribution"
-      },
-      "doi": {
-        "@id": "nsg:doi"
-      },
-      "drug": {
-        "@id": "schema:drug"
-      },
-      "eCode": {
-        "@id": "nsg:eCode"
-      },
-      "eModel": {
-        "@id": "nsg:eModel"
-      },
-      "eType": {
-        "@id": "nsg:eType"
-      },
-      "edgeCollection": {
-        "@id": "nsg:edgeCollection"
-      },
-      "edgePopulation": {
-        "@id": "nsg:edgePopulation"
-      },
-      "electrodeNumber": {
-        "@id": "nsg:electrodeNumber"
-      },
-      "electrodeResistance": {
-        "@id": "nsg:electrodeResistance"
-      },
-      "email": {
-        "@id": "schema:email"
-      },
-      "embedding": {
-        "@id": "https://neuroshapes.org/embedding",
-        "@container": "@list"
-      },
-      "emodelIndex": {
-        "@id": "nsg:emodelIndex"
-      },
-      "emodelRelease": {
-        "@id": "nsg:emodelRelease"
-      },
-      "encodingFormat": {
-        "@id": "schema:encodingFormat"
-      },
-      "endMembranePotential": {
-        "@id": "nsg:endMembranePotential"
-      },
-      "endTime": {
-        "@id": "nsg:endTime"
-      },
-      "endedAtTime": {
-        "@id": "prov:endedAtTime"
-      },
-      "endianness": {
-        "@id": "nsg:endianness"
-      },
-      "entity": {
-        "@id": "prov:entity"
-      },
-      "eulerAngle": {
-        "@id": "nsg:eulerAngle"
-      },
-      "experimentalCell": {
-        "@id": "nsg:experimentalCell"
-      },
-      "extraRecordings": {
-        "@id": "nsg:extraRecordings"
-      },
-      "familyName": {
-        "@id": "schema:familyName"
-      },
-      "faxNumber": {
-        "@id": "schema:faxNumber"
-      },
-      "feature": {
-        "@id": "nsg:feature"
-      },
-      "featureExtractionConfiguration": {
-        "@id": "nsg:featureExtractionConfiguration"
-      },
-      "features": {
-        "@id": "nsg:features"
-      },
-      "fileExtension": {
-        "@id": "nsg:fileExtension"
-      },
-      "first": {
-        "@id": "rdf:first"
-      },
-      "firstRow": {
-        "@id": "nsg:firstRow"
-      },
-      "fixationMethod": {
-        "@id": "nsg:fixationMethod"
-      },
-      "fixedSliceHeight": {
-        "@id": "nsg:fixedSliceHeight"
-      },
-      "fixedSliceWidth": {
-        "@id": "nsg:fixedSliceWidth"
-      },
-      "function": {
-        "@id": "nsg:function"
-      },
-      "gain": {
-        "@id": "nsg:gain"
-      },
-      "gene": {
-        "@id": "nsg:gene"
-      },
-      "generated": {
-        "@id": "prov:generated"
-      },
-      "generation": {
-        "@id": "nsg:generation"
-      },
-      "geometry": {
-        "@id": "nsg:geometry"
-      },
-      "geometryParameter": {
-        "@id": "nsg:geometryParameter"
-      },
-      "givenName": {
-        "@id": "schema:givenName"
-      },
-      "gradient2D": {
-        "@id": "nsg:gradient2D"
-      },
-      "gradient3D": {
-        "@id": "nsg:gradient3D"
-      },
-      "graph_order": {
-        "@id": "mba:graph_order"
-      },
-      "hadActivity": {
-        "@id": "prov:hadActivity"
-      },
-      "hadMember": {
-        "@id": "prov:hadMember"
-      },
-      "hadPlan": {
-        "@id": "prov:hadPlan"
-      },
-      "hadProtocol": {
-        "@id": "nsg:hadProtocol"
-      },
-      "hadRole": {
-        "@id": "prov:hadRole"
-      },
-      "hadUsage": {
-        "@id": "prov:hadUsage"
-      },
-      "hasApicalDendrite": {
-        "@id": "nsg:hasApicalDendrite"
-      },
-      "hasAxon": {
-        "@id": "nsg:hasAxon"
-      },
-      "hasBasalDendrite": {
-        "@id": "nsg:hasBasalDendrite"
-      },
-      "hasBody": {
-        "@id": "nsg:hasBody"
-      },
-      "hasPart": {
-        "@id": "schema:hasPart",
-        "@type": "@id"
-      },
-      "hasSelector": {
-        "@id": "nsg:hasSelector"
-      },
-      "hasSoma": {
-        "@id": "nsg:hasSoma"
-      },
-      "hasSource": {
-        "@id": "nsg:hasSource"
-      },
-      "hasTarget": {
-        "@id": "nsg:hasTarget"
-      },
-      "heightAnatomicalDirection": {
-        "@id": "nsg:heightAnatomicalDirection"
-      },
-      "heightResolution": {
-        "@id": "nsg:heightResolution"
-      },
-      "hemisphere": {
-        "@id": "nsg:hemisphere"
-      },
-      "hemisphere_id": {
-        "@id": "mba:hemisphere_id"
-      },
-      "hypampThreshold": {
-        "@id": "nsg:hypampThreshold"
-      },
-      "identifier": {
-        "@id": "schema:identifier"
-      },
-      "image": {
-        "@id": "schema:image"
-      },
-      "imageDirection": {
-        "@id": "nsg:imageDirection"
-      },
-      "imageModality": {
-        "@id": "nsg:imageModality"
-      },
-      "imageOrigin": {
-        "@id": "nsg:imageOrigin"
-      },
-      "imageVolume": {
-        "@id": "nsg:imageVolume"
-      },
-      "imagingMethod": {
-        "@id": "nsg:imagingMethod"
-      },
-      "imports": {
-        "@id": "owl:imports"
-      },
-      "inScheme": {
-        "@id": "skos:inScheme"
-      },
-      "index": {
-        "@id": "nsg:index"
-      },
-      "inputResistance": {
-        "@id": "nsg:inputResistance"
-      },
-      "invalidation": {
-        "@id": "nsg:invalidation"
-      },
-      "ionChannelGene": {
-        "@id": "nsg:ionChannelGene"
-      },
-      "isDefinedBy": {
-        "@id": "rdfs:isDefinedBy",
-        "@type": "@id"
-      },
-      "isMeasurementOf": {
-        "@id": "nsg:isMeasurementOf"
-      },
-      "isPartOf": {
-        "@id": "schema:isPartOf",
-        "@type": "@id"
-      },
-      "isRegisteredIn": {
-        "@id": "nsg:isRegisteredIn"
-      },
-      "keywords": {
-        "@id": "schema:keywords"
-      },
-      "label": {
-        "@id": "rdfs:label"
-      },
-      "labelingCompound": {
-        "@id": "nsg:labelingCompound"
-      },
-      "language": {
-        "@id": "schema:language"
-      },
-      "layer": {
-        "@id": "nsg:layer"
-      },
-      "license": {
-        "@id": "schema:license"
-      },
-      "liquidJunctionPotential": {
-        "@id": "nsg:liquidJunctionPotential"
-      },
-      "location": {
-        "@id": "nsg:location"
-      },
-      "locationInSlice": {
-        "@id": "nsg:locationInSlice"
-      },
-      "longestBranchLength": {
-        "@id": "nsg:longestBranchLength"
-      },
-      "longestBranchNumberOfNodes": {
-        "@id": "nsg:longestBranchNumberOfNodes"
-      },
-      "longitudinalAxis": {
-        "@id": "nsg:longitudinalAxis"
-      },
-      "lowerPoint": {
-        "@id": "nsg:lowerPoint"
-      },
-      "luminance": {
-        "@id": "nsg:luminance"
-      },
-      "mType": {
-        "@id": "nsg:mType"
-      },
-      "mainModelScript": {
-        "@id": "nsg:mainModelScript"
-      },
-      "markerIntensity": {
-        "@id": "nsg:markerIntensity"
-      },
-      "mask": {
-        "@id": "nsg:mask"
-      },
-      "materials": {
-        "@id": "nsg:materials"
-      },
-      "maxValue": {
-        "@id": "schema:maxValue"
-      },
-      "mba": "http://api.brain-map.org/api/v2/data/Structure/",
-      "measuredHoldingPotential": {
-        "@id": "nsg:measuredHoldingPotential"
-      },
-      "memodelIndex": {
-        "@id": "nsg:memodelIndex"
-      },
-      "memodelRelease": {
-        "@id": "nsg:memodelRelease"
-      },
-      "minValue": {
-        "@id": "schema:minValue"
-      },
-      "modelOf": {
-        "@id": "nsg:modelOf"
-      },
-      "modelScript": {
-        "@id": "nsg:modelScript"
-      },
-      "molecularConcentration": {
-        "@id": "nsg:molecularConcentration"
-      },
-      "morphology": {
-        "@id": "nsg:morphology"
-      },
-      "morphologyIndex": {
-        "@id": "nsg:morphologyIndex"
-      },
-      "morphologyRelease": {
-        "@id": "nsg:morphologyRelease"
-      },
-      "motivatedBy": {
-        "@id": "nsg:motivatedBy"
-      },
-      "mountingMedia": {
-        "@id": "nsg:mountingMedia"
-      },
-      "name": {
-        "@id": "schema:name"
-      },
-      "neuriteDiameter": {
-        "@id": "nsg:neuriteDiameter"
-      },
-      "neuriteFeature": {
-        "@id": "nsg:neuriteFeature"
-      },
-      "nodeCollection": {
-        "@id": "nsg:nodeCollection"
-      },
-      "normalizedScore": {
-        "@id": "nsg:normalizedScore"
-      },
-      "notation": {
-        "@id": "skos:notation"
-      },
-      "note": {
-        "@id": "skos:note"
-      },
-      "nsg": "https://neuroshapes.org/",
-      "numberOfProjections": {
-        "@id": "nsg:numberOfProjections"
-      },
-      "numberOfRecords": {
-        "@id": "nsg:numberOfRecords"
-      },
-      "numberOfSlices": {
-        "@id": "nsg:numberOfSlices"
-      },
-      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-      "oa": "http://www.w3.org/ns/oa#",
-      "objectOfStudy": {
-        "@id": "nsg:objectOfStudy"
-      },
-      "objectiveMagnification": {
-        "@id": "nsg:objectiveMagnification"
-      },
-      "objectiveType": {
-        "@id": "nsg:objectiveType"
-      },
-      "offsetTime": {
-        "@id": "nsg:offsetTime"
-      },
-      "onsetTime": {
-        "@id": "nsg:onsetTime"
-      },
-      "orientation": {
-        "@id": "nsg:orientation"
-      },
-      "origin": {
-        "@id": "nsg:origin"
-      },
-      "owl": "http://www.w3.org/2002/07/owl#",
-      "parameter": {
-        "@id": "nsg:parameter"
-      },
-      "parcellationId": {
-        "@id": "nsg:parcellationId"
-      },
-      "parcellationOntology": {
-        "@id": "nsg:parcellationOntology"
-      },
-      "parcellationVolume": {
-        "@id": "nsg:parcellationVolume"
-      },
-      "parentOrganization": {
-        "@id": "schema:parentOrganization"
-      },
-      "path": {
-        "@id": "nsg:path"
-      },
-      "period": {
-        "@id": "nsg:period"
-      },
-      "pipetteNumber": {
-        "@id": "nsg:pipetteNumber"
-      },
-      "pipetteResistance": {
-        "@id": "nsg:pipetteResistance"
-      },
-      "polygon": {
-        "@id": "schema:polygon"
-      },
-      "position2D": {
-        "@id": "nsg:position2D"
-      },
-      "position3D": {
-        "@id": "nsg:position3D"
-      },
-      "positionInLayer": {
-        "@id": "nsg:positionInLayer"
-      },
-      "postSynaptic": {
-        "@id": "nsg:postSynaptic"
-      },
-      "postalCode": {
-        "@id": "schema:postalCode"
-      },
-      "preSynaptic": {
-        "@id": "nsg:preSynaptic"
-      },
-      "prefLabel": {
-        "@id": "skos:prefLabel"
-      },
-      "programmingLanguage": {
-        "@id": "schema:programmingLanguage"
-      },
-      "projectName": {
-        "@id": "nsg:projectName"
-      },
-      "projectionBrainRegion": {
-        "@id": "nsg:projectionBrainRegion"
-      },
-      "properties": {
-        "@id": "nsg:properties"
-      },
-      "propertyID": {
-        "@id": "schema:propertyID"
-      },
-      "protocolDefinition": {
-        "@id": "nsg:protocolDefinition"
-      },
-      "protocolType": {
-        "@id": "nsg:protocolType"
-      },
-      "prov": "http://www.w3.org/ns/prov#",
-      "providerExperimentId": {
-        "@id": "nsg:providerExperimentId"
-      },
-      "providerExperimentName": {
-        "@id": "nsg:providerExperimentName"
-      },
-      "putativeEtype": {
-        "@id": "nsg:putativeEtype"
-      },
-      "putativeMType": {
-        "@id": "nsg:putativeMType"
-      },
-      "qualifiedAssociation": {
-        "@id": "prov:qualifiedAssociation"
-      },
-      "qualifiedGeneration": {
-        "@id": "prov:qualifiedGeneration"
-      },
-      "qualifiedUsage": {
-        "@id": "prov:qualifiedUsage"
-      },
-      "quality": {
-        "@id": "nsg:quality"
-      },
-      "qualityAssessment": {
-        "@id": "nsg:qualityAssessment"
-      },
-      "quantity": {
-        "@id": "nsg:quantity"
-      },
-      "quaternion": {
-        "@id": "nsg:quaternion"
-      },
-      "radius": {
-        "@id": "nsg:radius"
-      },
-      "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-      "reagentLinearFormula": {
-        "@id": "nsg:reagentLinearFormula"
-      },
-      "reagentMolarWeight": {
-        "@id": "nsg:reagentMolarWeight"
-      },
-      "reagentName": {
-        "@id": "nsg:reagentName"
-      },
-      "reagentVendor": {
-        "@id": "nsg:reagentVendor"
-      },
-      "reconstructable": {
-        "@id": "nsg:reconstructable"
-      },
-      "reconstructionRequested": {
-        "@id": "nsg:reconstructionRequested"
-      },
-      "recordMeasure": {
-        "@id": "nsg:recordMeasure",
-        "@container": "@list"
-      },
-      "recordingLocation": {
-        "@id": "nsg:recordingLocation"
-      },
-      "releaseDate": {
-        "@id": "schema:releaseDate"
-      },
-      "repetition": {
-        "@id": "nsg:repetition"
-      },
-      "repetitions": {
-        "@id": "schema:repetitions"
-      },
-      "resolution": {
-        "@id": "nsg:resolution"
-      },
-      "rest": {
-        "@id": "rdf:rest"
-      },
-      "row": {
-        "@id": "nsg:row"
-      },
-      "runtimePlatform": {
-        "@id": "schema:runtimePlatform"
-      },
-      "sType": {
-        "@id": "nsg:sType",
-        "@type": "@id"
-      },
-      "sameAs": {
-        "@id": "schema:sameAs"
-      },
-      "sampleType": {
-        "@id": "nsg:sampleType"
-      },
-      "samplingRatio": {
-        "@id": "nsg:samplingRatio"
-      },
-      "scale": {
-        "@id": "nsg:scale"
-      },
-      "schema": "http://schema.org/",
-      "score": {
-        "@id": "nsg:score"
-      },
-      "sealResistance": {
-        "@id": "nsg:sealResistance"
-      },
-      "secondRow": {
-        "@id": "nsg:secondRow"
-      },
-      "sectionArrayNames": {
-        "@id": "nsg:sectionArrayNames"
-      },
-      "sectionIndex": {
-        "@id": "nsg:sectionIndex"
-      },
-      "sectionListNames": {
-        "@id": "nsg:sectionListNames"
-      },
-      "series": {
-        "@id": "nsg:series"
-      },
-      "seriesResistance": {
-        "@id": "nsg:seriesResistance"
-      },
-      "sex": {
-        "@id": "nsg:sex"
-      },
-      "sh": "http://www.w3.org/ns/shacl#",
-      "shsh": "http://www.w3.org/ns/shacl-shacl#",
-      "size": {
-        "@id": "schema:size"
-      },
-      "skos": "http://www.w3.org/2004/02/skos/core#",
-      "sku": {
-        "@id": "schema:sku"
-      },
-      "sliceHeight": {
-        "@id": "nsg:sliceHeight"
-      },
-      "sliceInterval": {
-        "@id": "nsg:sliceInterval"
-      },
-      "sliceIntervalValue": {
-        "@id": "nsg:sliceIntervalValue"
-      },
-      "sliceResolution": {
-        "@id": "nsg:sliceResolution"
-      },
-      "sliceWidth": {
-        "@id": "nsg:sliceWidth"
-      },
-      "slicingAngle": {
-        "@id": "nsg:slicingAngle"
-      },
-      "slicingPlane": {
-        "@id": "nsg:slicingPlane"
-      },
-      "softwareSourceCode": {
-        "@id": "nsg:softwareSourceCode"
-      },
-      "solution": {
-        "@id": "nsg:solution"
-      },
-      "somaNumberOfPoints": {
-        "@id": "nsg:somaNumberOfPoints"
-      },
-      "somaReconstructionType": {
-        "@id": "nsg:somaReconstructionType"
-      },
-      "somaReferenceLocation": {
-        "@id": "nsg:somaReferenceLocation"
-      },
-      "source": {
-        "@id": "nsg:source"
-      },
-      "spatialCellName": {
-        "@id": "nsg:spatialCellName"
-      },
-      "spatialIndex": {
-        "@id": "nsg:spatialIndex"
-      },
-      "spatialReferenceSystem": {
-        "@id": "nsg:spatialReferenceSystem"
-      },
-      "species": {
-        "@id": "nsg:species"
-      },
-      "st_level": {
-        "@id": "mba:st_level"
-      },
-      "stackAnatomicalDirection": {
-        "@id": "nsg:stackAnatomicalDirection"
-      },
-      "stain": {
-        "@id": "nsg:stain"
-      },
-      "startMembranePotential": {
-        "@id": "nsg:startMembranePotential"
-      },
-      "startedAtTime": {
-        "@id": "prov:startedAtTime"
-      },
-      "statistic": {
-        "@id": "nsg:statistic"
-      },
-      "status": {
-        "@id": "nsg:status"
-      },
-      "steps": {
-        "@id": "nsg:steps"
-      },
-      "stimulationFrequency": {
-        "@id": "nsg:stimulationFrequency"
-      },
-      "stimuliToExperimentMap": {
-        "@id": "nsg:stimuliToExperimentMap"
-      },
-      "stimulus": {
-        "@id": "nsg:stimulus"
-      },
-      "stimulusTarget": {
-        "@id": "nsg:stimulusTarget",
-        "@container": "@list"
-      },
-      "stimulusType": {
-        "@id": "nsg:stimulusType"
-      },
-      "store": {
-        "@id": "nsg:store"
-      },
-      "strain": {
-        "@id": "nsg:strain"
-      },
-      "streetAddress": {
-        "@id": "schema:streetAddress"
-      },
-      "subCellularMechanism": {
-        "@id": "nsg:subCellularMechanism"
-      },
-      "subCellularModel": {
-        "@id": "nsg:subCellularModel"
-      },
-      "subClassOf": {
-        "@id": "rdfs:subClassOf",
-        "@type": "@id"
-      },
-      "subject": {
-        "@id": "nsg:subject"
-      },
-      "sweep": {
-        "@id": "nsg:sweep"
-      },
-      "synapse": {
-        "@id": "nsg:synapse"
-      },
-      "synapseRelease": {
-        "@id": "nsg:synapseRelease"
-      },
-      "target": {
-        "@id": "nsg:target"
-      },
-      "targetHoldingPotential": {
-        "@id": "nsg:targetHoldingPotential"
-      },
-      "task": {
-        "@id": "nsg:task"
-      },
-      "telephone": {
-        "@id": "schema:telephone"
-      },
-      "temperature": {
-        "@id": "nsg:temperature"
-      },
-      "templateVolume": {
-        "@id": "nsg:templateVolume"
-      },
-      "thickness": {
-        "@id": "nsg:thickness"
-      },
-      "thirdRow": {
-        "@id": "nsg:thirdRow"
-      },
-      "threshold": {
-        "@id": "nsg:threshold"
-      },
-      "time": {
-        "@id": "nsg:time"
-      },
-      "timeBetween": {
-        "@id": "nsg:timeBetween"
-      },
-      "timeBetween2": {
-        "@id": "nsg:timeBetween2"
-      },
-      "timeStep": {
-        "@id": "nsg:timeStep"
-      },
-      "title": {
-        "@id": "schema:title"
-      },
-      "tolerance": {
-        "@id": "nsg:tolerance",
-        "@container": "@list"
-      },
-      "topConceptOf": {
-        "@id": "skos:topConceptOf"
-      },
-      "trace": {
-        "@id": "nsg:trace"
-      },
-      "transgenic": {
-        "@id": "nsg:transgenic"
-      },
-      "traversedBrainRegion": {
-        "@id": "nsg:traversedBrainRegion"
-      },
-      "treatment": {
-        "@id": "nsg:treatment"
-      },
-      "type": {
-        "@id": "rdf:type"
-      },
-      "uberon": "http://purl.obolibrary.org/obo/UBERON_",
-      "unitCode": {
-        "@id": "schema:unitCode"
-      },
-      "upperPoint": {
-        "@id": "nsg:upperPoint"
-      },
-      "url": {
-        "@id": "schema:url",
-        "@type": "@id"
-      },
-      "used": {
-        "@id": "prov:used"
-      },
-      "value": {
-        "@id": "schema:value"
-      },
-      "valueX": {
-        "@id": "nsg:valueX"
-      },
-      "valueY": {
-        "@id": "nsg:valueY"
-      },
-      "valueZ": {
-        "@id": "nsg:valueZ"
-      },
-      "vann": "http://purl.org/vocab/vann/",
-      "variable": {
-        "@id": "nsg:variable"
-      },
-      "vendor": {
-        "@id": "nsg:vendor"
-      },
-      "version": {
-        "@id": "schema:version"
-      },
-      "view2d": {
-        "@id": "nsg:view2d"
-      },
-      "view3d": {
-        "@id": "nsg:view3d"
-      },
-      "void": "http://rdfs.org/ns/void#",
-      "voltage": {
-        "@id": "nsg:voltage"
-      },
-      "volumeDimension": {
-        "@id": "nsg:volumeDimension"
-      },
-      "voxelResolution": {
-        "@id": "nsg:voxelResolution"
-      },
-      "voxelType": {
-        "@id": "nsg:voxelType"
-      },
-      "warning": {
-        "@id": "nsg:warning"
-      },
-      "wasAssociatedWith": {
-        "@id": "prov:wasAssociatedWith"
-      },
-      "wasAttributedTo": {
-        "@id": "prov:wasAttributedTo"
-      },
-      "wasDerivedFrom": {
-        "@id": "prov:wasDerivedFrom"
-      },
-      "wasGeneratedBy": {
-        "@id": "prov:wasGeneratedBy"
-      },
-      "wasInfluencedBy": {
-        "@id": "prov:wasInfluencedBy"
-      },
-      "wasInformedBy": {
-        "@id": "prov:wasInformedBy"
-      },
-      "wasRevisionOf": {
-        "@id": "prov:wasRevisionOf"
-      },
-      "wasStartedBy": {
-        "@id": "prov:wasStartedBy"
-      },
-      "washOut": {
-        "@id": "nsg:washOut"
-      },
-      "weight": {
-        "@id": "schema:weight"
-      },
-      "widthAnatomicalDirection": {
-        "@id": "nsg:widthAnatomicalDirection"
-      },
-      "widthResolution": {
-        "@id": "nsg:widthResolution"
-      },
-      "worldMatrix": {
-        "@id": "nsg:worldMatrix",
-        "@container": "@list"
-      },
-      "xml": "http://www.w3.org/XML/1998/namespace",
-      "xsd": "http://www.w3.org/2001/XMLSchema#"
+  "@context": {
+    "1990021Phenotype": {
+      "@id": "https://neuroshapes.org/GO:1990021Phenotype"
+    },
+    "ADHPdepol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/ADHPdepol"
+    },
+    "ADHPhyperpol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/ADHPhyperpol"
+    },
+    "ADHPrest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/ADHPrest"
+    },
+    "ADPAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/ADPAmplitude"
+    },
+    "ADPDuration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/ADPDuration"
+    },
+    "AHPAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPAmplitude"
+    },
+    "AHPAmplitudeFromResting": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPAmplitudeFromResting"
+    },
+    "AHPDepth": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPDepth"
+    },
+    "AHPDepthAbs": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPDepthAbs"
+    },
+    "AHPDepthAbsSlow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPDepthAbsSlow"
+    },
+    "AHPDuration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPDuration"
+    },
+    "AHPSlowTime": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPSlowTime"
+    },
+    "AHPTimeFromPeak": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPTimeFromPeak"
+    },
+    "AHPVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AHPVoltage"
+    },
+    "AP1Width": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AP1Width"
+    },
+    "AP2Width": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AP2Width"
+    },
+    "APAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/APAmplitude"
+    },
+    "APDrop": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/APDrop"
+    },
+    "APDurationHalfWidth": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/APDurationHalfWidth"
+    },
+    "APResh": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/APResh"
+    },
+    "APRiseTime": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/APRiseTime"
+    },
+    "APThreshold": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/APThreshold"
+    },
+    "APWaveform": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/APWaveform"
+    },
+    "AccessResistance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AccessResistance"
+    },
+    "Acetylcholine": {
+      "@id": "https://neuroshapes.org/Acetylcholine"
+    },
+    "AcquisitionAnnotation": {
+      "@id": "nsg:AcquisitionAnnotation"
+    },
+    "Activity": {
+      "@id": "prov:Activity"
+    },
+    "AdaptationPercent1": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationPercent1"
+    },
+    "AdaptationPercent2": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationPercent2"
+    },
+    "AdaptationPercent3": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationPercent3"
+    },
+    "AdaptationRatio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationRatio"
+    },
+    "AdaptationRatio1": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationRatio1"
+    },
+    "AdaptationRatio2": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationRatio2"
+    },
+    "AdaptationRatio3": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/AdaptationRatio3"
+    },
+    "AffineLinearTransform": {
+      "@id": "nsg:AffineLinearTransform"
+    },
+    "Agent": {
+      "@id": "prov:Agent"
+    },
+    "Algorithm": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Algorithm"
+    },
+    "Analysis": {
+      "@id": "nsg:Analysis"
+    },
+    "AnalysisConfiguration": {
+      "@id": "nsg:AnalysisConfiguration",
+      "@type": "@id"
+    },
+    "AnalysisReport": {
+      "@id": "nsg:AnalysisReport",
+      "@type": "@id"
+    },
+    "AnalysisResult": {
+      "@id": "nsg:AnalysisResult"
+    },
+    "Angiotensin": {
+      "@id": "https://neuroshapes.org/Angiotensin"
+    },
+    "AnnotatedSlice": {
+      "@id": "nsg:AnnotatedSlice"
+    },
+    "Annotation": {
+      "@id": "nsg:Annotation"
+    },
+    "AnnotationBody": {
+      "@id": "nsg:AnnotationBody"
+    },
+    "AnnotationTarget": {
+      "@id": "nsg:AnnotationTarget"
+    },
+    "ApicalAnnotation": {
+      "@id": "nsg:ApicalAnnotation"
+    },
+    "ApicalDendrite": {
+      "@id": "nsg:ApicalDendrite"
+    },
+    "Artery": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Artery"
+    },
+    "Association": {
+      "@id": "http://www.w3.org/ns/prov#Association"
+    },
+    "Astrocyte": {
+      "@id": "https://neuroshapes.org/Astrocyte"
+    },
+    "AstrocyteEndfoot": {
+      "@id": "nsg:AstrocyteEndfoot"
+    },
+    "AstrocyteMorphology": {
+      "@id": "nsg:AstrocyteMorphology"
+    },
+    "AtlasConstruction": {
+      "@id": "nsg:AtlasConstruction"
+    },
+    "AtlasDatasetRelease": {
+      "@id": "bmo:AtlasDatasetRelease"
+    },
+    "AtlasDatasetReleaseActivity": {
+      "@id": "bmo:AtlasDatasetReleaseActivity"
+    },
+    "AtlasDistanceToLayer": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/AtlasDistanceToLayer"
+    },
+    "AtlasETypeRatio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/AtlasETypeRatio"
+    },
+    "AtlasRelease": {
+      "@id": "nsg:AtlasRelease"
+    },
+    "AtlasSpatialReferenceSystem": {
+      "@id": "nsg:AtlasSpatialReferenceSystem"
+    },
+    "Axon": {
+      "@id": "nsg:Axon"
+    },
+    "AxonGraftingPlusPHNeuronMorphologyGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/AxonGraftingPlusPHNeuronMorphologyGenerator"
+    },
+    "BACFiringFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BACFiringFeature"
+    },
+    "BasalDendrite": {
+      "@id": "nsg:BasalDendrite"
+    },
+    "BasalLamina": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BasalLamina"
+    },
+    "BatchQualityMeasurementAnnotation": {
+      "@id": "nsg:BatchQualityMeasurementAnnotation"
+    },
+    "BiochemicalReaction": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BiochemicalReaction"
+    },
+    "BiologicalBrainActivity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BiologicalBrainActivity"
+    },
+    "BiologicalBrainComponent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BiologicalBrainComponent"
+    },
+    "BiopolarPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/BiopolarPyramidalPhenotype"
+    },
+    "BipolarPhenotype": {
+      "@id": "https://neuroshapes.org/BipolarPhenotype"
+    },
+    "BistratifiedPhenotype": {
+      "@id": "https://neuroshapes.org/BistratifiedPhenotype"
+    },
+    "BituftedPhenotype": {
+      "@id": "https://neuroshapes.org/BituftedPhenotype"
+    },
+    "BloodVessel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BloodVessel"
+    },
+    "BlueBrainStimulus": {
+      "@id": "https://neuroshapes.org/BlueBrainStimulus"
+    },
+    "BluePyEfeFeatures": {
+      "@id": "nsg:BluePyEfeFeatures"
+    },
+    "BlueprintBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BlueprintBuildingWorkflow"
+    },
+    "BoundingBox": {
+      "@id": "nsg:BoundingBox"
+    },
+    "BoutonDensity": {
+      "@id": "nsg:BoutonDensity"
+    },
+    "BrainArea": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainArea"
+    },
+    "BrainAtlasRelease": {
+      "@id": "nsg:BrainAtlasRelease"
+    },
+    "BrainAtlasSpatialReferenceSystem": {
+      "@id": "nsg:BrainAtlasSpatialReferenceSystem"
+    },
+    "BrainBuilderAssignmentMETypeGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainBuilderAssignmentMETypeGenerator"
+    },
+    "BrainCell": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainCell"
+    },
+    "BrainCellFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainCellFeature"
+    },
+    "BrainCellTranscriptomeType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainCellTranscriptomeType"
+    },
+    "BrainCellType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainCellType"
+    },
+    "BrainComponentFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainComponentFeature"
+    },
+    "BrainComponentSimulationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainComponentSimulationWorkflow"
+    },
+    "BrainComponentType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainComponentType"
+    },
+    "BrainHemisphere": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainHemisphere"
+    },
+    "BrainHemisphereLeft": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainHemisphereLeft"
+    },
+    "BrainHemisphereRight": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainHemisphereRight"
+    },
+    "BrainImaging": {
+      "@id": "nsg:BrainImaging"
+    },
+    "BrainLayer": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainLayer"
+    },
+    "BrainLocation": {
+      "@id": "nsg:BrainLocation"
+    },
+    "BrainModelingActivity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainModelingActivity"
+    },
+    "BrainModelingAgent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainModelingAgent"
+    },
+    "BrainParcellationDataLayer": {
+      "@id": "nsg:BrainParcellationDataLayer"
+    },
+    "BrainParcellationMesh": {
+      "@id": "nsg:BrainParcellationMesh"
+    },
+    "BrainRegion": {
+      "@id": "nsg:BrainRegion"
+    },
+    "BrainRegionMesh": {
+      "@id": "https://neuroshapes.org/BrainRegionMesh"
+    },
+    "BrainSlicing": {
+      "@id": "nsg:BrainSlicing"
+    },
+    "BrainSystem": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainSystem"
+    },
+    "BrainTemplateDataLayer": {
+      "@id": "nsg:BrainTemplateDataLayer"
+    },
+    "BrainVascularComponent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVascularComponent"
+    },
+    "BrainVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolume"
+    },
+    "BrainVolumeBlueprint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolumeBlueprint"
+    },
+    "BrainVolumeBlueprintBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolumeBlueprintBuildingWorkflow"
+    },
+    "BrainVolumeConnectivityBlueprint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolumeConnectivityBlueprint"
+    },
+    "BrainVolumeFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolumeFeature"
+    },
+    "BrainVolumeParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/BrainVolumeParameter"
+    },
+    "BurstNumber": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/BurstNumber"
+    },
+    "C1HP1sec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1HP1sec"
+    },
+    "C1_HP_0.5sec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1_HP_0.5sec"
+    },
+    "C1_HP_1sec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1_HP_1sec"
+    },
+    "C1step_1sec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1step_1sec"
+    },
+    "C1step_ag": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1step_ag"
+    },
+    "C1step_highres": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/C1step_highres"
+    },
+    "CaDynamicsModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CaDynamicsModel"
+    },
+    "Ca_HVA2": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Ca_HVA2"
+    },
+    "Ca_LVAst": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Ca_LVAst"
+    },
+    "CalciumChannel": {
+      "@id": "https://neuroshapes.org/CalciumChannel"
+    },
+    "CalciumDynamics": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CalciumDynamics"
+    },
+    "CampaignAnalysis": {
+      "@id": "nsg:CampaignAnalysis",
+      "@type": "@id"
+    },
+    "Capillary": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Capillary"
+    },
+    "Cell": {
+      "@id": "nsg:Cell"
+    },
+    "CellBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellBuildingWorkflow"
+    },
+    "CellCapacitance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/CellCapacitance"
+    },
+    "CellComposition": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellComposition"
+    },
+    "CellCompositionSummary": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellCompositionSummary"
+    },
+    "CellCompositionVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellCompositionVolume"
+    },
+    "CellCounting": {
+      "@id": "nsg:CellCounting"
+    },
+    "CellDensity": {
+      "@id": "nsg:CellDensity"
+    },
+    "CellDensityDataLayer": {
+      "@id": "nsg:CellDensityDataLayer"
+    },
+    "CellDiameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/CellDiameter"
+    },
+    "CellOrientationField": {
+      "@id": "https://neuroshapes.org/CellOrientationField"
+    },
+    "CellPlacement": {
+      "@id": "nsg:CellPlacement"
+    },
+    "CellPositionCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellPositionCircuitProperty"
+    },
+    "CellPositions": {
+      "@id": "nsg:CellPositions"
+    },
+    "CellRecordSeries": {
+      "@id": "nsg:CellRecordSeries"
+    },
+    "CellSurfaceArea": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/CellSurfaceArea"
+    },
+    "CellTypeAssignmentAnnotation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellTypeAssignmentAnnotation"
+    },
+    "CellTypeMapping": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CellTypeMapping"
+    },
+    "ChandelierPhenotype": {
+      "@id": "https://neuroshapes.org/ChandelierPhenotype"
+    },
+    "CheckAISInitiation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/CheckAISInitiation"
+    },
+    "ChemicalSynapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ChemicalSynapse"
+    },
+    "ChemicalSynapticConnection": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ChemicalSynapticConnection"
+    },
+    "ChlorideChannel": {
+      "@id": "https://neuroshapes.org/ChlorideChannel"
+    },
+    "Circuit": {
+      "@id": "nsg:Circuit"
+    },
+    "CircuitCellProperties": {
+      "@id": "nsg:CircuitCellProperties"
+    },
+    "CircuitConnectivityBlueprintBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CircuitConnectivityBlueprintBuildingWorkflow"
+    },
+    "Class": {
+      "@id": "owl:Class"
+    },
+    "ClassicalNeurotransmitter": {
+      "@id": "https://neuroshapes.org/ClassicalNeurotransmitter"
+    },
+    "Collection": {
+      "@id": "prov:Collection"
+    },
+    "Complex": {
+      "@id": "https://neuroshapes.org/Complex"
+    },
+    "ComponentDimension": {
+      "@id": "nsg:ComponentDimension"
+    },
+    "Composition": {
+      "@id": "bmo:Composition"
+    },
+    "Concept": {
+      "@id": "skos:Concept"
+    },
+    "ConceptScheme": {
+      "@id": "skos:ConceptScheme"
+    },
+    "ConductanceDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ConductanceDensity"
+    },
+    "Configuration": {
+      "@id": "nsg:Configuration"
+    },
+    "ConnectivityModelCoefficient": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ConnectivityModelCoefficient"
+    },
+    "ConnectivityModelCoefficientGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ConnectivityModelCoefficientGenerator"
+    },
+    "ConnectivityModelCoefficientGeneratorUsingDistance-DependentAlgorithm": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ConnectivityModelCoefficientGeneratorUsingDistance-DependentAlgorithm"
+    },
+    "ConnectivityModelCoefficientGeneratorUsingErdos-RenyiAlgorithm": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ConnectivityModelCoefficientGeneratorUsingErdos-RenyiAlgorithm"
+    },
+    "Contribution": {
+      "@id": "nsg:Contribution"
+    },
+    "Cytosol": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Cytosol"
+    },
+    "DataCatalog": {
+      "@id": "http://schema.org/DataCatalog"
+    },
+    "DataCurationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataCurationWorkflow"
+    },
+    "DataDownload": {
+      "@id": "schema:DataDownload"
+    },
+    "DataDownloadASC": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataDownloadASC"
+    },
+    "DataGeneralizationRule": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataGeneralizationRule"
+    },
+    "DataGenerationModality": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataGenerationModality"
+    },
+    "DataMaturity": {
+      "@id": "nsg:DataMaturity"
+    },
+    "DataProvenance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataProvenance"
+    },
+    "DataReleaseWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DataReleaseWorkflow"
+    },
+    "Dataset": {
+      "@id": "schema:Dataset"
+    },
+    "DeHyperPol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/DeHyperPol"
+    },
+    "DecayTimeConstant": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/DecayTimeConstant"
+    },
+    "DecayTimeConstantAfterStim": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/DecayTimeConstantAfterStim"
+    },
+    "DefaultIonChannelDensityConstraintGenerationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DefaultIonChannelDensityConstraintGenerationWorkflow"
+    },
+    "DeformableTransform": {
+      "@id": "nsg:DeformableTransform"
+    },
+    "Delta": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Delta"
+    },
+    "Dendrite": {
+      "@id": "nsg:Dendrite"
+    },
+    "DendriteSynapseDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DendriteSynapseDensity"
+    },
+    "Density": {
+      "@id": "nsg:Density"
+    },
+    "Dep": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/Dep"
+    },
+    "DepressingSynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DepressingSynapseType"
+    },
+    "Derivation": {
+      "@id": "prov:Derivation"
+    },
+    "DescendingAxonPhenotype": {
+      "@id": "https://neuroshapes.org/DescendingAxonPhenotype"
+    },
+    "DetailedCircuit": {
+      "@id": "nsg:DetailedCircuit"
+    },
+    "DiameterPowerRelations": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/DiameterPowerRelations"
+    },
+    "Dopamine": {
+      "@id": "https://neuroshapes.org/Dopamine"
+    },
+    "DoubleBouquetPhenotype": {
+      "@id": "https://neuroshapes.org/DoubleBouquetPhenotype"
+    },
+    "DynamicParametersCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/DynamicParametersCircuitProperty"
+    },
+    "E1SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/E1SynapseType"
+    },
+    "E2SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/E2SynapseType"
+    },
+    "E3SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/E3SynapseType"
+    },
+    "EModel": {
+      "@id": "nsg:EModel"
+    },
+    "EModelBuilding": {
+      "@id": "nsg:EModelBuilding"
+    },
+    "EModelBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelBuildingWorkflow"
+    },
+    "EModelHyperparameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelHyperparameter"
+    },
+    "EModelInstance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelInstance"
+    },
+    "EModelInstanceCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelInstanceCategory"
+    },
+    "EModelInstanceCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelInstanceCircuitProperty"
+    },
+    "EModelOptimizationBatchSize": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelOptimizationBatchSize"
+    },
+    "EModelOptimizationStochasticity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelOptimizationStochasticity"
+    },
+    "EModelOptimizer": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelOptimizer"
+    },
+    "EModelParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelParameter"
+    },
+    "EModelParameterConstraint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelParameterConstraint"
+    },
+    "EModelParameterConstraintGenerationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelParameterConstraintGenerationWorkflow"
+    },
+    "EModelParameterOptimizationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelParameterOptimizationWorkflow"
+    },
+    "EModelRelease": {
+      "@id": "nsg:EModelRelease"
+    },
+    "EModelScript": {
+      "@id": "nsg:EModelScript"
+    },
+    "EModelSimulationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelSimulationWorkflow"
+    },
+    "EModelValidationThreshold": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelValidationThreshold"
+    },
+    "EModelValidationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EModelValidationWorkflow"
+    },
+    "EType": {
+      "@id": "nsg:EType"
+    },
+    "ETypeAnnotation": {
+      "@id": "nsg:ETypeAnnotation"
+    },
+    "ETypeCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ETypeCircuitProperty"
+    },
+    "ETypeFeatureProtocol": {
+      "@id": "nsg:ETypeFeatureProtocol"
+    },
+    "ETypeRatio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ETypeRatio"
+    },
+    "EarlyBifurcatingTuftedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/EarlyBifurcatingTuftedPyramidalPhenotype"
+    },
+    "EdgeCollection": {
+      "@id": "nsg:EdgeCollection"
+    },
+    "ElasticSearchViewStatistics": {
+      "@id": "nsg:ElasticSearchViewStatistics"
+    },
+    "ElecCal": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/ElecCal"
+    },
+    "ElectricalSeries": {
+      "@id": "https://neuroshapes.org/ElectricalSeries"
+    },
+    "ElectricalStimulus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ElectricalStimulus"
+    },
+    "ElectricalSynapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ElectricalSynapse"
+    },
+    "ElectricalSynapticConnection": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ElectricalSynapticConnection"
+    },
+    "ElectrophysiologyFeature": {
+      "@id": "nsg:ElectrophysiologyFeature"
+    },
+    "ElectrophysiologyFeatureExtractionProtocol": {
+      "@id": "nsg:ElectrophysiologyFeatureExtractionProtocol"
+    },
+    "ElectrophysiologyFeatureExtractionTarget": {
+      "@id": "nsg:ElectrophysiologyFeatureExtractionTarget"
+    },
+    "ElectrophysiologyFeatureExtractionTrace": {
+      "@id": "nsg:ElectrophysiologyFeatureExtractionTrace"
+    },
+    "ElectrophysiologyFeatureOptimisationChannelDistribution": {
+      "@id": "nsg:ElectrophysiologyFeatureOptimisationChannelDistribution"
+    },
+    "ElectrophysiologyFeatureOptimisationNeuronMorphology": {
+      "@id": "nsg:ElectrophysiologyFeatureOptimisationNeuronMorphology"
+    },
+    "ElectrophysiologyFeatureOptimisationParameter": {
+      "@id": "nsg:ElectrophysiologyFeatureOptimisationParameter"
+    },
+    "ElectrophysiologyFeatureOptimisationTarget": {
+      "@id": "nsg:ElectrophysiologyFeatureOptimisationTarget"
+    },
+    "ElectrophysiologyFeatureValidationTarget": {
+      "@id": "nsg:ElectrophysiologyFeatureValidationTarget"
+    },
+    "Embedding": {
+      "@id": "nsg:Embedding"
+    },
+    "EmbeddingModel": {
+      "@id": "nsg:EmbeddingModel"
+    },
+    "EmodelFeatureGeneration": {
+      "@id": "nsg:EmodelFeatureGeneration"
+    },
+    "EmptyCollection": {
+      "@id": "prov:EmptyCollection"
+    },
+    "EndoplasmicReticulum": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EndoplasmicReticulum"
+    },
+    "Entity": {
+      "@id": "prov:Entity"
+    },
+    "EntityGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EntityGenerator"
+    },
+    "Equation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Equation"
+    },
+    "Estrogen": {
+      "@id": "https://neuroshapes.org/Estrogen"
+    },
+    "EvolutionaryAlgorithm": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/EvolutionaryAlgorithm"
+    },
+    "ExcitatorySynapse": {
+      "@id": "https://neuroshapes.org/ExcitatorySynapse"
+    },
+    "ExcitatoryTransmitter": {
+      "@id": "https://neuroshapes.org/ExcitatoryTransmitter"
+    },
+    "ExperimentalActivity": {
+      "@id": "nsg:ExperimentalActivity"
+    },
+    "ExperimentalData": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ExperimentalData"
+    },
+    "ExperimentalProtocol": {
+      "@id": "nsg:ExperimentalProtocol"
+    },
+    "ExtracellularPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ExtracellularPart"
+    },
+    "ExtracellularPartBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ExtracellularPartBuildingWorkflow"
+    },
+    "ExtracellularPartMetabolismBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ExtracellularPartMetabolismBuildingWorkflow"
+    },
+    "FISlope": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FISlope"
+    },
+    "Fac": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/Fac"
+    },
+    "FacilitatingSynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/FacilitatingSynapseType"
+    },
+    "FastAHPAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FastAHPAmplitude"
+    },
+    "FastAHPAmplitudeFromResting": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FastAHPAmplitudeFromResting"
+    },
+    "FastAHPDuration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FastAHPDuration"
+    },
+    "FastAHPVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FastAHPVoltage"
+    },
+    "FeatureExtractionWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/FeatureExtractionWorkflow"
+    },
+    "FirePattern": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/FirePattern"
+    },
+    "FiringFrequency": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FiringFrequency"
+    },
+    "FirstSpikeLatency": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/FirstSpikeLatency"
+    },
+    "FixationStainingMounting": {
+      "@id": "nsg:FixationStainingMounting"
+    },
+    "FixedStainedSlice": {
+      "@id": "nsg:FixedStainedSlice"
+    },
+    "FragmentSelector": {
+      "@id": "oa:FragmentSelector"
+    },
+    "GABA": {
+      "@id": "https://neuroshapes.org/GABA"
+    },
+    "GABAB_ratio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/GABAB_ratio"
+    },
+    "GO": "http://purl.obolibrary.org/obo/GO_",
+    "GPFS": {
+      "@id": "nsg:GPFS"
+    },
+    "Gad67_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Gad67_plus"
+    },
+    "GammaCaDynamicsDC0": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GammaCaDynamicsDC0"
+    },
+    "Gene": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Gene"
+    },
+    "GeneExpressionProfile": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GeneExpressionProfile"
+    },
+    "GeneExpressionVolumetricDataLayer": {
+      "@id": "nsg:GeneExpressionVolumetricDataLayer"
+    },
+    "Generation": {
+      "@id": "prov:Generation"
+    },
+    "GeneratorVariant": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GeneratorVariant"
+    },
+    "GenericNeuronTType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GenericNeuronTType"
+    },
+    "Glia": {
+      "@id": "https://neuroshapes.org/Glia"
+    },
+    "GliaBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GliaBuildingWorkflow"
+    },
+    "GliaCellDensity": {
+      "@id": "nsg:GliaCellDensity"
+    },
+    "GliaMetabolismBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GliaMetabolismBuildingWorkflow"
+    },
+    "GliaType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/GliaType"
+    },
+    "Glutamate": {
+      "@id": "https://neuroshapes.org/Glutamate"
+    },
+    "H20S8": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/H20S8"
+    },
+    "HCurrent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HCurrent"
+    },
+    "HighResThResp": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/HighResThResp"
+    },
+    "Histamine": {
+      "@id": "https://neuroshapes.org/Histamine"
+    },
+    "HodgkinHuxleyIonCurrentModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HodgkinHuxleyIonCurrentModel"
+    },
+    "HorizontalAxonPhenotype": {
+      "@id": "https://neuroshapes.org/HorizontalAxonPhenotype"
+    },
+    "HorizontalPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/HorizontalPyramidalPhenotype"
+    },
+    "Hormone": {
+      "@id": "https://neuroshapes.org/Hormone"
+    },
+    "HostCell": {
+      "@id": "nsg:HostCell"
+    },
+    "HyperDePol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/HyperDePol"
+    },
+    "Hyperparameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Hyperparameter"
+    },
+    "I1SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/I1SynapseType"
+    },
+    "I2SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/I2SynapseType"
+    },
+    "I3SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/I3SynapseType"
+    },
+    "IBEA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IBEA"
+    },
+    "ICSelector-BasedIonChannelDensityConstraintGenerationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ICSelector-BasedIonChannelDensityConstraintGenerationWorkflow"
+    },
+    "IDRest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDRest"
+    },
+    "IDRestTest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDRestTest"
+    },
+    "IDThres": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDThres"
+    },
+    "IDdepol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDdepol"
+    },
+    "IDhyperpol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDhyperpol"
+    },
+    "IDrest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDrest"
+    },
+    "IDthresh": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IDthresh"
+    },
+    "IRdepol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IRdepol"
+    },
+    "IRhyperpol": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IRhyperpol"
+    },
+    "IRrest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IRrest"
+    },
+    "ISICV": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/ISICV"
+    },
+    "ISILogSlope": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/ISILogSlope"
+    },
+    "ISISemilogSlope": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/ISISemilogSlope"
+    },
+    "IV": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IV"
+    },
+    "IVIonCurrentModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IVIonCurrentModel"
+    },
+    "IV_Test": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/IV_Test"
+    },
+    "ImageStack": {
+      "@id": "nsg:ImageStack"
+    },
+    "ImageVolume": {
+      "@id": "nsg:ImageVolume"
+    },
+    "InVitroSliceReconstructedPatchedNeuron": {
+      "@id": "nsg:InVitroSliceReconstructedPatchedNeuron"
+    },
+    "InVitroSliceWholeCellPatchClampElectrophysiologyTrace": {
+      "@id": "nsg:InVitroSliceWholeCellPatchClampElectrophysiologyTrace"
+    },
+    "InVitroWholeBrainReconstructedNeuronMorphology": {
+      "@id": "nsg:InVitroWholeBrainReconstructedNeuronMorphology"
+    },
+    "InferredData": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/InferredData"
+    },
+    "InhibitorySynapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/InhibitorySynapse"
+    },
+    "InhibitoryTransmitter": {
+      "@id": "https://neuroshapes.org/InhibitoryTransmitter"
+    },
+    "InitialConcentrationOfMg": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/InitialConcentrationOfMg"
+    },
+    "InputResistance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InputResistance"
+    },
+    "Interneuron": {
+      "@id": "https://neuroshapes.org/Interneuron"
+    },
+    "InterstitialSpace": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/InterstitialSpace"
+    },
+    "IntraCellularConcentrationModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IntraCellularConcentrationModel"
+    },
+    "IntraCellularSharpElectrode": {
+      "@id": "nsg:IntraCellularSharpElectrode"
+    },
+    "IntraCellularSharpElectrodeRecordedCell": {
+      "@id": "nsg:IntraCellularSharpElectrodeRecordedCell"
+    },
+    "IntraCellularSharpElectrodeRecordedCellCollection": {
+      "@id": "nsg:IntraCellularSharpElectrodeRecordedCellCollection"
+    },
+    "IntraCellularSharpElectrodeRecordedSlice": {
+      "@id": "nsg:IntraCellularSharpElectrodeRecordedSlice"
+    },
+    "InvFifthISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvFifthISI"
+    },
+    "InvFirstISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvFirstISI"
+    },
+    "InvFourthISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvFourthISI"
+    },
+    "InvLastISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvLastISI"
+    },
+    "InvSecondISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvSecondISI"
+    },
+    "InvThirdISI": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvThirdISI"
+    },
+    "InvTimeToFirstSpike": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/InvTimeToFirstSpike"
+    },
+    "Invalidation": {
+      "@id": "prov:Invalidation"
+    },
+    "InvertedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/InvertedPyramidalPhenotype"
+    },
+    "Ion": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Ion"
+    },
+    "IonChannel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonChannel"
+    },
+    "IonChannelDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonChannelDensity"
+    },
+    "IonChannelDensityConstraint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonChannelDensityConstraint"
+    },
+    "IonChannelGene": {
+      "@id": "nsg:IonChannelGene"
+    },
+    "IonChannelMechanismRelease": {
+      "@id": "nsg:IonChannelMechanismRelease"
+    },
+    "IonCurrent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonCurrent"
+    },
+    "IonCurrentModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonCurrentModel"
+    },
+    "IonDensityConstraintGenerationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonDensityConstraintGenerationWorkflow"
+    },
+    "IonDynamicsFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/IonDynamicsFeature"
+    },
+    "Ki": {
+      "@id": "https://neuroshapes.org/Ki"
+    },
+    "Km": {
+      "@id": "https://neuroshapes.org/Km"
+    },
+    "LNMCStimulus": {
+      "@id": "https://neuroshapes.org/LNMCStimulus"
+    },
+    "LabeledCell": {
+      "@id": "nsg:LabeledCell"
+    },
+    "LabeledCellCollection": {
+      "@id": "nsg:LabeledCellCollection"
+    },
+    "Lamp_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/celltypes/Lamp_plus"
+    },
+    "LargeAxonPhenotype": {
+      "@id": "https://neuroshapes.org/LargeAxonPhenotype"
+    },
+    "LargeBasketPhenotype": {
+      "@id": "https://neuroshapes.org/LargeBasketPhenotype"
+    },
+    "LateBifurcatingTuftedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/LateBifurcatingTuftedPyramidalPhenotype"
+    },
+    "LayerThickness": {
+      "@id": "nsg:LayerThickness"
+    },
+    "LeafRegions": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/LeafRegions"
+    },
+    "License": {
+      "@id": "nsg:License"
+    },
+    "LinearTransform": {
+      "@id": "nsg:LinearTransform"
+    },
+    "Literature": {
+      "@id": "https://neuroshapes.org/Literature"
+    },
+    "LocalBifurcationAngles": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/LocalBifurcationAngles"
+    },
+    "LocalConnectomeCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/LocalConnectomeCategory"
+    },
+    "Location": {
+      "@id": "prov:Location"
+    },
+    "MEModel": {
+      "@id": "nsg:MEModel"
+    },
+    "MEModelClassicNeuronModelGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MEModelClassicNeuronModelGenerator"
+    },
+    "MEModelCylinderNeuronModelGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MEModelCylinderNeuronModelGenerator"
+    },
+    "MEModelRelease": {
+      "@id": "nsg:MEModelRelease"
+    },
+    "METypeCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/METypeCircuitProperty"
+    },
+    "METypeDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/METypeDensity"
+    },
+    "METypeFactSheet": {
+      "@id": "nsg:METypeFactSheet"
+    },
+    "METypePropertyGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/METypePropertyGenerator"
+    },
+    "METypeRatio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/METypeRatio"
+    },
+    "MO-CMA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MO-CMA"
+    },
+    "MType": {
+      "@id": "nsg:MType"
+    },
+    "MTypeAnnotation": {
+      "@id": "nsg:MTypeAnnotation"
+    },
+    "MTypeCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MTypeCircuitProperty"
+    },
+    "MTypeDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MTypeDensity"
+    },
+    "Mapping": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Mapping"
+    },
+    "MarkovIonCurrentModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MarkovIonCurrentModel"
+    },
+    "MartinottiPhenotype": {
+      "@id": "https://neuroshapes.org/MartinottiPhenotype"
+    },
+    "MaxGenerations": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MaxGenerations"
+    },
+    "MaximumFiringRate": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MaximumFiringRate"
+    },
+    "MaximumVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MaximumVoltage"
+    },
+    "MaximumVoltageFromVoltagebase": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MaximumVoltageFromVoltagebase"
+    },
+    "MeanFrequency": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MeanFrequency"
+    },
+    "MediumAHPAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MediumAHPAmplitude"
+    },
+    "MediumAHPAmplitudeFromResting": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MediumAHPAmplitudeFromResting"
+    },
+    "MediumAHPDuration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MediumAHPDuration"
+    },
+    "MediumAHPVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MediumAHPVoltage"
+    },
+    "MembraneTimeConstant": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MembraneTimeConstant"
+    },
+    "Mesh": {
+      "@id": "nsg:Mesh"
+    },
+    "MetabolicNetwork": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/MetabolicNetwork"
+    },
+    "MetabolicPathway": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/MetabolicPathway"
+    },
+    "Metabolite": {
+      "@id": "https://neuroshapes.org/Metabolite"
+    },
+    "Metric": {
+      "@id": "nsg:Metric"
+    },
+    "Microcircuit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Microcircuit"
+    },
+    "Microdomain": {
+      "@id": "nsg:Microdomain"
+    },
+    "Microglia": {
+      "@id": "https://neuroshapes.org/Microglia"
+    },
+    "MinimumVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MinimumVoltage"
+    },
+    "Mitochondrion": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Mitochondrion"
+    },
+    "ModelBasalLaminaMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBasalLaminaMetabolism"
+    },
+    "ModelBiochemicalReaction": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBiochemicalReaction"
+    },
+    "ModelBiochemicalReactionParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBiochemicalReactionParameter"
+    },
+    "ModelBlueprint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBlueprint"
+    },
+    "ModelBrainActivity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainActivity"
+    },
+    "ModelBrainBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainBuildingWorkflow"
+    },
+    "ModelBrainComponent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainComponent"
+    },
+    "ModelBrainParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainParameter"
+    },
+    "ModelBrainParameterConstraint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainParameterConstraint"
+    },
+    "ModelBrainVascularComponent": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainVascularComponent"
+    },
+    "ModelBrainVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainVolume"
+    },
+    "ModelBrainVolumeBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBrainVolumeBuildingWorkflow"
+    },
+    "ModelBuildingConfig": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBuildingConfig"
+    },
+    "ModelBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelBuildingWorkflow"
+    },
+    "ModelCell": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCell"
+    },
+    "ModelCircuit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuit"
+    },
+    "ModelCircuitBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitBuildingWorkflow"
+    },
+    "ModelCircuitConnectivity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitConnectivity"
+    },
+    "ModelCircuitConnectivityBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitConnectivityBuildingWorkflow"
+    },
+    "ModelCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitProperty"
+    },
+    "ModelCircuitPropertyGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitPropertyGenerator"
+    },
+    "ModelCircuitPropertyGeneratorCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitPropertyGeneratorCategory"
+    },
+    "ModelCircuitPropertyGeneratorVariant": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCircuitPropertyGeneratorVariant"
+    },
+    "ModelConnectivityParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelConnectivityParameter"
+    },
+    "ModelCytosolMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelCytosolMetabolism"
+    },
+    "ModelExtracellularPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelExtracellularPart"
+    },
+    "ModelExtracellularPartMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelExtracellularPartMetabolism"
+    },
+    "ModelGlia": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelGlia"
+    },
+    "ModelGliaMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelGliaMetabolism"
+    },
+    "ModelInstance": {
+      "@id": "nsg:ModelInstance"
+    },
+    "ModelInterstitialSpaceMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelInterstitialSpaceMetabolism"
+    },
+    "ModelIonChannel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelIonChannel"
+    },
+    "ModelIonicMechanism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelIonicMechanism"
+    },
+    "ModelMitochondrionMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelMitochondrionMetabolism"
+    },
+    "ModelNGVUnit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelNGVUnit"
+    },
+    "ModelNGVUnitMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelNGVUnitMetabolism"
+    },
+    "ModelNeuron": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelNeuron"
+    },
+    "ModelNeuronMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelNeuronMetabolism"
+    },
+    "ModelReactionBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelReactionBuildingWorkflow"
+    },
+    "ModelReactionParameterOptimizationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelReactionParameterOptimizationWorkflow"
+    },
+    "ModelReactionSimulationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelReactionSimulationWorkflow"
+    },
+    "ModelReactionValidationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelReactionValidationWorkflow"
+    },
+    "ModelRelease": {
+      "@id": "nsg:ModelRelease"
+    },
+    "ModelReleaseIndex": {
+      "@id": "nsg:ModelReleaseIndex"
+    },
+    "ModelSubcellularPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelSubcellularPart"
+    },
+    "ModelSubcellularPartMetabolism": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelSubcellularPartMetabolism"
+    },
+    "ModelSynapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelSynapse"
+    },
+    "ModelSynapseBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelSynapseBuildingWorkflow"
+    },
+    "ModelValidation": {
+      "@id": "nsg:ModelValidation"
+    },
+    "ModelValidationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModelValidationWorkflow"
+    },
+    "Modelkv11": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Modelkv11"
+    },
+    "ModulatorySynapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ModulatorySynapse"
+    },
+    "MolecularCompartment": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MolecularCompartment"
+    },
+    "MolecularCompartmentFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MolecularCompartmentFeature"
+    },
+    "MolecularConcentration": {
+      "@id": "nsg:MolecularConcentration"
+    },
+    "MolecularConcentrationSeries": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MolecularConcentrationSeries"
+    },
+    "Molecule": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Molecule"
+    },
+    "Morphology": {
+      "@id": "nsg:Morphology"
+    },
+    "MorphologyDiversification": {
+      "@id": "nsg:MorphologyDiversification"
+    },
+    "MorphologyEndPoint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyEndPoint"
+    },
+    "MorphologyFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyFeature"
+    },
+    "MorphologyForkingPoint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyForkingPoint"
+    },
+    "MorphologyGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/MorphologyGenerator"
+    },
+    "MorphologyMaxRadialDistance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/MorphologyMaxRadialDistance"
+    },
+    "MorphologyMesh": {
+      "@id": "nsg:MorphologyMesh"
+    },
+    "MorphologyMeshGeneration": {
+      "@id": "nsg:MorphologyMeshGeneration"
+    },
+    "MorphologyOrientationDataLayer": {
+      "@id": "nsg:MorphologyOrientationDataLayer"
+    },
+    "MorphologyPoint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyPoint"
+    },
+    "MorphologyRelease": {
+      "@id": "nsg:MorphologyRelease"
+    },
+    "MorphologyStartingPoint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyStartingPoint"
+    },
+    "MorphologyUnit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/MorphologyUnit"
+    },
+    "Motivation": {
+      "@id": "nsg:Motivation"
+    },
+    "NCBITaxon": "http://purl.obolibrary.org/obo/NCBITaxon_",
+    "NGVUnit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NGVUnit"
+    },
+    "NGVUnitBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NGVUnitBuildingWorkflow"
+    },
+    "NGVUnitMetabolismBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NGVUnitMetabolismBuildingWorkflow"
+    },
+    "NISSLImageDataLayer": {
+      "@id": "nsg:NISSLImageDataLayer"
+    },
+    "NMDA_ratio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/NMDA_ratio"
+    },
+    "NamedIndividual": {
+      "@id": "owl:NamedIndividual"
+    },
+    "NarrowTuftedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/NarrowTuftedPyramidalPhenotype"
+    },
+    "NdRaster": {
+      "@id": "nsg:NdRaster"
+    },
+    "NegCheops": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops"
+    },
+    "NegCheops1": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops1"
+    },
+    "NegCheops2": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops2"
+    },
+    "NegCheops3": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops3"
+    },
+    "NegCheops4": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops4"
+    },
+    "NegCheops5": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NegCheops5"
+    },
+    "NeocorticalThalamicSystem": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeocorticalThalamicSystem"
+    },
+    "NestBasketPhenotype": {
+      "@id": "https://neuroshapes.org/NestBasketPhenotype"
+    },
+    "Neurite": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/Neurite"
+    },
+    "NeuriteFeature": {
+      "@id": "bmo:NeuriteFeature"
+    },
+    "NeuriteLocationFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuriteLocationFeature"
+    },
+    "NeuriteMaxRadialDistance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteMaxRadialDistance"
+    },
+    "NeuriteTotalArea": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalArea"
+    },
+    "NeuriteTotalDepth": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalDepth"
+    },
+    "NeuriteTotalHeight": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalHeight"
+    },
+    "NeuriteTotalLength": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalLength"
+    },
+    "NeuriteTotalVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalVolume"
+    },
+    "NeuriteTotalWidth": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteTotalWidth"
+    },
+    "NeuriteVolumeDensity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NeuriteVolumeDensity"
+    },
+    "NeuroElectroNeuronElectrophysiologicalFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/NeuroElectroNeuronElectrophysiologicalFeature"
+    },
+    "NeuroMNeuronMorphologyFeatureGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuroMNeuronMorphologyFeatureGenerator"
+    },
+    "NeurogliaformPhenotype": {
+      "@id": "https://neuroshapes.org/NeurogliaformPhenotype"
+    },
+    "Neuromodulator": {
+      "@id": "https://neuroshapes.org/Neuromodulator"
+    },
+    "Neuron": {
+      "@id": "https://neuroshapes.org/Neuron"
+    },
+    "NeuronBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronBuildingWorkflow"
+    },
+    "NeuronComposition": {
+      "@id": "bmo:NeuronComposition"
+    },
+    "NeuronConnectionProbability": {
+      "@id": "bmo:NeuronConnectionProbability"
+    },
+    "NeuronDensity": {
+      "@id": "nsg:NeuronDensity"
+    },
+    "NeuronElectricalType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronElectricalType"
+    },
+    "NeuronElectrophysiologicalFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronElectrophysiologicalFeature"
+    },
+    "NeuronElectrophysiologicalFeatureExtractionWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronElectrophysiologicalFeatureExtractionWorkflow"
+    },
+    "NeuronFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronFeature"
+    },
+    "NeuronIdCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronIdCircuitProperty"
+    },
+    "NeuronMEType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMEType"
+    },
+    "NeuronMetabolismBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMetabolismBuildingWorkflow"
+    },
+    "NeuronModelInSpaceGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronModelInSpaceGenerator"
+    },
+    "NeuronMolecularType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMolecularType"
+    },
+    "NeuronMorphologicalFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMorphologicalFeature"
+    },
+    "NeuronMorphologicalFeatureAnnotation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMorphologicalFeatureAnnotation"
+    },
+    "NeuronMorphologicalType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMorphologicalType"
+    },
+    "NeuronMorphology": {
+      "@id": "nsg:NeuronMorphology"
+    },
+    "NeuronMorphologyCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMorphologyCircuitProperty"
+    },
+    "NeuronMorphologyFeatureAnnotation": {
+      "@id": "bmo:NeuronMorphologyFeatureAnnotation"
+    },
+    "NeuronMorphologyFeatureGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronMorphologyFeatureGenerator"
+    },
+    "NeuronMorphologyReconstruction": {
+      "@id": "nsg:NeuronMorphologyReconstruction"
+    },
+    "NeuronPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronPart"
+    },
+    "NeuronPartFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronPartFeature"
+    },
+    "NeuronProjectionDivergence": {
+      "@id": "nsg:NeuronProjectionDivergence"
+    },
+    "NeuronProjectionFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronProjectionFeature"
+    },
+    "NeuronProjectionType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronProjectionType"
+    },
+    "NeuronSynthesisCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronSynthesisCategory"
+    },
+    "NeuronTranscriptomeType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronTranscriptomeType"
+    },
+    "NeuronTranscriptomicType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/celltypes/NeuronTranscriptomicType"
+    },
+    "NeuronType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuronType"
+    },
+    "Neurotransmitter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Neurotransmitter"
+    },
+    "NeurotransmitterSynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeurotransmitterSynapseType"
+    },
+    "NeurotransmitterType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeurotransmitterType"
+    },
+    "NewNeuronType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NewNeuronType"
+    },
+    "NodeCollection": {
+      "@id": "nsg:NodeCollection"
+    },
+    "NoiseOU3": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NoiseOU3"
+    },
+    "NoisePP": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NoisePP"
+    },
+    "NoiseSpiking": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/NoiseSpiking"
+    },
+    "Non-specificChannel": {
+      "@id": "https://neuroshapes.org/Non-specificChannel"
+    },
+    "Noradrenaline": {
+      "@id": "https://neuroshapes.org/Noradrenaline"
+    },
+    "Nrrp": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/Nrrp"
+    },
+    "NumberInitialSpikes": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/NumberInitialSpikes"
+    },
+    "NumberOfBifurcations": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfBifurcations"
+    },
+    "NumberOfForkingPoints": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfForkingPoints"
+    },
+    "NumberOfLeaves": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfLeaves"
+    },
+    "NumberOfNeurites": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfNeurites"
+    },
+    "NumberOfSections": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfSections"
+    },
+    "NumberOfSectionsPerNeurite": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfSectionsPerNeurite"
+    },
+    "NumberOfSegments": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/NumberOfSegments"
+    },
+    "NumberOfSynapses": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NumberOfSynapses"
+    },
+    "NumberOfSynapsesPerConnection": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NumberOfSynapsesPerConnection"
+    },
+    "ObjectOfStudy": {
+      "@id": "nsg:ObjectOfStudy"
+    },
+    "OffspringSize": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/OffspringSize"
+    },
+    "OhmicInputResistance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/OhmicInputResistance"
+    },
+    "OhmicInputResistanceVBSSSE": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/OhmicInputResistanceVBSSSE"
+    },
+    "Oligodendrocyte": {
+      "@id": "https://neuroshapes.org/Oligodendrocyte"
+    },
+    "Ontology": {
+      "@id": "owl:Ontology"
+    },
+    "OntologyConversion": {
+      "@id": "nsg:OntologyConversion"
+    },
+    "Organelle": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Organelle"
+    },
+    "Organization": {
+      "@id": "schema:Organization"
+    },
+    "OrganizationalUnit": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/OrganizationalUnit"
+    },
+    "Other": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Other"
+    },
+    "PHDataLayer": {
+      "@id": "nsg:PHDataLayer"
+    },
+    "PV_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/celltypes/PV_plus"
+    },
+    "Parameter": {
+      "@id": "nsg:Parameter"
+    },
+    "ParameterConstraintGenerationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ParameterConstraintGenerationWorkflow"
+    },
+    "ParameterOptimizationWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ParameterOptimizationWorkflow"
+    },
+    "ParcellationImageData": {
+      "@id": "nsg:ParcellationImageData"
+    },
+    "ParcellationLabel": {
+      "@id": "nsg:ParcellationLabel"
+    },
+    "ParcellationMeshGeneration": {
+      "@id": "nsg:ParcellationMeshGeneration"
+    },
+    "ParcellationOntology": {
+      "@id": "nsg:ParcellationOntology"
+    },
+    "ParcellationReconstruction": {
+      "@id": "nsg:ParcellationReconstruction"
+    },
+    "ParcellationVolume": {
+      "@id": "nsg:ParcellationVolume"
+    },
+    "PartitionAsymmetry": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/PartitionAsymmetry"
+    },
+    "PartitionAsymmetryLength": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/PartitionAsymmetryLength"
+    },
+    "PartitionPairs": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/PartitionPairs"
+    },
+    "PatchClamp": {
+      "@id": "nsg:PatchClamp"
+    },
+    "PatchedCell": {
+      "@id": "nsg:PatchedCell"
+    },
+    "PatchedCellCollection": {
+      "@id": "nsg:PatchedCellCollection"
+    },
+    "PatchedSlice": {
+      "@id": "nsg:PatchedSlice"
+    },
+    "PerforantPathwayAssociatedPhenotype": {
+      "@id": "https://neuroshapes.org/PerforantPathwayAssociatedPhenotype"
+    },
+    "Periodical": {
+      "@id": "schema:Periodical"
+    },
+    "PerisomaticCurrentFiringFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/PerisomaticCurrentFiringFeature"
+    },
+    "Person": {
+      "@id": "schema:Person"
+    },
+    "PointCloud": {
+      "@id": "https://neuroshapes.org/PointCloud"
+    },
+    "PosCheops": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/PosCheops"
+    },
+    "Position": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Position"
+    },
+    "PotassiumChannel": {
+      "@id": "https://neuroshapes.org/PotassiumChannel"
+    },
+    "PredictedData": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/PredictedData"
+    },
+    "Premise": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Premise"
+    },
+    "Principle": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Principle"
+    },
+    "ProjectomeCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ProjectomeCategory"
+    },
+    "Protein": {
+      "@id": "https://neuroshapes.org/Protein"
+    },
+    "ProteinComplex": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/ProteinComplex"
+    },
+    "ProteinProteinInteraction": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ProteinProteinInteraction"
+    },
+    "Protocol": {
+      "@id": "nsg:Protocol"
+    },
+    "Pseudo-LinearSynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Pseudo-LinearSynapseType"
+    },
+    "PyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/PyramidalPhenotype"
+    },
+    "QualityAnnotation": {
+      "@id": "nsg:QualityAnnotation"
+    },
+    "QualityMeasurement": {
+      "@id": "nsg:QualityMeasurement"
+    },
+    "QualityMeasurementAnnotation": {
+      "@id": "nsg:QualityMeasurementAnnotation"
+    },
+    "QuantitativeValue": {
+      "@id": "schema:QuantitativeValue"
+    },
+    "Query": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Query"
+    },
+    "RNASequencing": {
+      "@id": "nsg:RNASequencing"
+    },
+    "RPip": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/RPip"
+    },
+    "RSealClose": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/RSealClose"
+    },
+    "RSealOpen": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/RSealOpen"
+    },
+    "RX7kj5BzRwPqntDPM1GnN7": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/RX7kj5BzRwPqntDPM1GnN7"
+    },
+    "Rac": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Rac"
+    },
+    "ReactionKineticParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ReactionKineticParameter"
+    },
+    "ReactionRate": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/ReactionRate"
+    },
+    "ReactionRateEquation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ReactionRateEquation"
+    },
+    "RecommenderConfiguration": {
+      "@id": "nsg:RecommenderConfiguration"
+    },
+    "ReconstructedAstrocyteMorphology": {
+      "@id": "nsg:ReconstructedAstrocyteMorphology"
+    },
+    "ReconstructedCell": {
+      "@id": "nsg:ReconstructedCell"
+    },
+    "ReconstructedCellFormatConversion": {
+      "@id": "nsg:ReconstructedCellFormatConversion"
+    },
+    "ReconstructedCellRelease": {
+      "@id": "nsg:ReconstructedCellRelease"
+    },
+    "ReconstructedCellReleaseGeneration": {
+      "@id": "nsg:ReconstructedCellReleaseGeneration"
+    },
+    "ReconstructedCellReleaseProcess": {
+      "@id": "nsg:ReconstructedCellReleaseProcess"
+    },
+    "ReconstructedNeuronMorphology": {
+      "@id": "nsg:ReconstructedNeuronMorphology"
+    },
+    "ReconstructedNeuronMorphologyInAsc": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ReconstructedNeuronMorphologyInAsc"
+    },
+    "ReconstructedNeuronMorphologyInSwc": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ReconstructedNeuronMorphologyInSwc"
+    },
+    "ReconstructedPatchedCell": {
+      "@id": "nsg:ReconstructedPatchedCell"
+    },
+    "ReconstructedWholeBrainCell": {
+      "@id": "nsg:ReconstructedWholeBrainCell"
+    },
+    "ReconstructingModelBrain": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ReconstructingModelBrain"
+    },
+    "Reconstruction": {
+      "@id": "nsg:Reconstruction"
+    },
+    "ReconstructionCorrection": {
+      "@id": "nsg:ReconstructionCorrection"
+    },
+    "ReconstructionFromImage": {
+      "@id": "nsg:ReconstructionFromImage"
+    },
+    "RecordMeasure": {
+      "@id": "nsg:RecordMeasure"
+    },
+    "RecordSeries": {
+      "@id": "nsg:RecordSeries"
+    },
+    "RegionOfInterest": {
+      "@id": "nsg:RegionOfInterest"
+    },
+    "RemoteBifurcationAngles": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/RemoteBifurcationAngles"
+    },
+    "ResetITC": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/ResetITC"
+    },
+    "ResponseTrace": {
+      "@id": "nsg:ResponseTrace"
+    },
+    "RestingMembranePotential": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/RestingMembranePotential"
+    },
+    "Rheobase": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/Rheobase"
+    },
+    "RigidLinearTransform": {
+      "@id": "nsg:RigidLinearTransform"
+    },
+    "RotationalMatrix": {
+      "@id": "nsg:RotationalMatrix"
+    },
+    "Rule": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Rule"
+    },
+    "SAPThres1": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPThres1"
+    },
+    "SAPThres2": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPThres2"
+    },
+    "SAPThres3": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPThres3"
+    },
+    "SAPTres1": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPTres1"
+    },
+    "SAPTres2": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPTres2"
+    },
+    "SAPTres3": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPTres3"
+    },
+    "SAPWaveform": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SAPWaveform"
+    },
+    "SDelta": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SDelta"
+    },
+    "SIDRest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SIDRest"
+    },
+    "SIDThres": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SIDThres"
+    },
+    "SIDTres": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SIDTres"
+    },
+    "SIV": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SIV"
+    },
+    "SNoisePP": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SNoisePP"
+    },
+    "SNoiseSpiking": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SNoiseSpiking"
+    },
+    "SO-CMA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SO-CMA"
+    },
+    "SRac": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SRac"
+    },
+    "SResetITC": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SResetITC"
+    },
+    "SST_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/celltypes/SST_plus"
+    },
+    "SSineSpec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SSineSpec"
+    },
+    "SSpikeRec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SSpikeRec"
+    },
+    "SSponAPs": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SSponAPs"
+    },
+    "SSponHold": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SSponHold"
+    },
+    "SSponNoHold": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SSponNoHold"
+    },
+    "STesteCode": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/STesteCode"
+    },
+    "STrueNoise": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/STrueNoise"
+    },
+    "STypeAnnotation": {
+      "@id": "nsg:STypeAnnotation"
+    },
+    "SagAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SagAmplitude"
+    },
+    "SagAmplitude2": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SagAmplitude2"
+    },
+    "SagRatio": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SagRatio"
+    },
+    "SagRatio1": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SagRatio1"
+    },
+    "SagRatio2": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SagRatio2"
+    },
+    "Schema": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema",
+      "@type": "@id"
+    },
+    "ScholarlyArticle": {
+      "@id": "schema:ScholarlyArticle"
+    },
+    "Section": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/Section"
+    },
+    "SectionAreas": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionAreas"
+    },
+    "SectionBifBranchOrders": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionBifBranchOrders"
+    },
+    "SectionBifRadialDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionBifRadialDistances"
+    },
+    "SectionBifurcationLengths": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionBifurcationLengths"
+    },
+    "SectionBranchOrders": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionBranchOrders"
+    },
+    "SectionEndDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionEndDistances"
+    },
+    "SectionLengths": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionLengths"
+    },
+    "SectionPathDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionPathDistances"
+    },
+    "SectionRadialDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionRadialDistances"
+    },
+    "SectionRegions": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SectionRegions"
+    },
+    "SectionStrahlerOrders": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionStrahlerOrders"
+    },
+    "SectionTaperRates": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionTaperRates"
+    },
+    "SectionTermBranchOrders": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionTermBranchOrders"
+    },
+    "SectionTermRadialDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionTermRadialDistances"
+    },
+    "SectionTerminationLengths": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionTerminationLengths"
+    },
+    "SectionTortuosity": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionTortuosity"
+    },
+    "SectionVolumes": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SectionVolumes"
+    },
+    "Segment": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/Segment"
+    },
+    "SegmentLengths": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SegmentLengths"
+    },
+    "SegmentMidpoints": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SegmentMidpoints"
+    },
+    "SegmentRadialDistances": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SegmentRadialDistances"
+    },
+    "Serotonin": {
+      "@id": "https://neuroshapes.org/Serotonin"
+    },
+    "Serpinf1_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Serpinf1_plus"
+    },
+    "SetAmpl": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SetAmpl"
+    },
+    "SetISI": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SetISI"
+    },
+    "SetISITest": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SetISITest"
+    },
+    "SiblingRatios": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SiblingRatios"
+    },
+    "SimWriterConfiguration": {
+      "@id": "nsg:SimWriterConfiguration",
+      "@type": "@id"
+    },
+    "SimilarityBoostingFactor": {
+      "@id": "nsg:SimilarityBoostingFactor"
+    },
+    "SimplifiedCircuit": {
+      "@id": "nsg:SimplifiedCircuit"
+    },
+    "Simulation": {
+      "@id": "nsg:Simulation"
+    },
+    "SimulationCampaign": {
+      "@id": "nsg:SimulationCampaign",
+      "@type": "@id"
+    },
+    "SimulationTrace": {
+      "@id": "nsg:SimulationTrace"
+    },
+    "SineSpec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SineSpec"
+    },
+    "SingleCellSimulationTrace": {
+      "@id": "nsg:SingleCellSimulationTrace"
+    },
+    "SingleCellTraceGeneration": {
+      "@id": "nsg:SingleCellTraceGeneration"
+    },
+    "Slice": {
+      "@id": "nsg:Slice"
+    },
+    "SliceCollection": {
+      "@id": "nsg:SliceCollection"
+    },
+    "SlowAHPAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SlowAHPAmplitude"
+    },
+    "SlowAHPAmplitudeFromResting": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SlowAHPAmplitudeFromResting"
+    },
+    "SlowAHPDuration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SlowAHPDuration"
+    },
+    "SlowAHPVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SlowAHPVoltage"
+    },
+    "SmallAxonPhenotype": {
+      "@id": "https://neuroshapes.org/SmallAxonPhenotype"
+    },
+    "SmallBasketPhenotype": {
+      "@id": "https://neuroshapes.org/SmallBasketPhenotype"
+    },
+    "SodiumChannel": {
+      "@id": "https://neuroshapes.org/SodiumChannel"
+    },
+    "SoftwareAgent": {
+      "@id": "prov:SoftwareAgent"
+    },
+    "SoftwareApplication": {
+      "@id": "schema:SoftwareApplication"
+    },
+    "SoftwareSourceCode": {
+      "@id": "schema:SoftwareSourceCode"
+    },
+    "Soma": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Soma"
+    },
+    "SomaFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SomaFeature"
+    },
+    "SomaNumberOfPoints": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SomaNumberOfPoints"
+    },
+    "SomaRadius": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SomaRadius"
+    },
+    "SomaStatistics": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SomaStatistics"
+    },
+    "SomaSurfaceArea": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/SomaSurfaceArea"
+    },
+    "Somatostatin": {
+      "@id": "https://neuroshapes.org/Somatostatin"
+    },
+    "SpaceDimension": {
+      "@id": "nsg:SpaceDimension"
+    },
+    "SpatialIndex": {
+      "@id": "nsg:SpatialIndex"
+    },
+    "SpatialIndexDerivation": {
+      "@id": "nsg:SpatialIndexDerivation"
+    },
+    "Species": {
+      "@id": "https://neuroshapes.org/Species"
+    },
+    "SpikeAmplitude": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeAmplitude"
+    },
+    "SpikeAmplitudeFromResting": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeAmplitudeFromResting"
+    },
+    "SpikeAmplitudeFromTrough": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeAmplitudeFromTrough"
+    },
+    "SpikeDecayTime": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeDecayTime"
+    },
+    "SpikeHalf-Width": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeHalf-Width"
+    },
+    "SpikeMaxDecaySlope": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeMaxDecaySlope"
+    },
+    "SpikeMaxRiseSlope": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeMaxRiseSlope"
+    },
+    "SpikePeak": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikePeak"
+    },
+    "SpikeRec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SpikeRec"
+    },
+    "SpikeRec_Ih": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SpikeRec_Ih"
+    },
+    "SpikeRec_Kv1.1": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SpikeRec_Kv1.1"
+    },
+    "SpikeRiseTime": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeRiseTime"
+    },
+    "SpikeThreshold": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeThreshold"
+    },
+    "SpikeWidth": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikeWidth"
+    },
+    "Spikecount": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/Spikecount"
+    },
+    "SpikecountStimint": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpikecountStimint"
+    },
+    "SpinyStellatePhenotype": {
+      "@id": "https://neuroshapes.org/SpinyStellatePhenotype"
+    },
+    "SponAPs": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponAPs"
+    },
+    "SponHold25": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponHold25"
+    },
+    "SponHold3": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponHold3"
+    },
+    "SponHold30": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponHold30"
+    },
+    "SponNoHold20": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponNoHold20"
+    },
+    "SponNoHold30": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SponNoHold30"
+    },
+    "SpontAPs": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SpontAPs"
+    },
+    "Spontaneous": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Spontaneous"
+    },
+    "SpontaneousFiringRate": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SpontaneousFiringRate"
+    },
+    "SsAHP": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SsAHP"
+    },
+    "StartHold": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/StartHold"
+    },
+    "StartNoHold": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/StartNoHold"
+    },
+    "StartStandeCode": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/StartStandeCode"
+    },
+    "SteadyStateConcentrationExtractionWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SteadyStateConcentrationExtractionWorkflow"
+    },
+    "SteadyStateMolecularConcentration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SteadyStateMolecularConcentration"
+    },
+    "SteadyStateVoltage": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SteadyStateVoltage"
+    },
+    "SteadyStateVoltageStimend": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/SteadyStateVoltageStimend"
+    },
+    "Step": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Step"
+    },
+    "StimulationTrace": {
+      "@id": "nsg:StimulationTrace"
+    },
+    "StimulusExperiment": {
+      "@id": "nsg:StimulusExperiment"
+    },
+    "SubCellularModel": {
+      "@id": "nsg:SubCellularModel"
+    },
+    "SubCellularModelBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubCellularModelBuildingWorkflow"
+    },
+    "SubCellularModelScript": {
+      "@id": "nsg:SubCellularModelScript"
+    },
+    "SubCellularProcess": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubCellularProcess"
+    },
+    "SubWhiteNoise": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/SubWhiteNoise"
+    },
+    "SubcellularPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubcellularPart"
+    },
+    "SubcellularPartBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubcellularPartBuildingWorkflow"
+    },
+    "SubcellularPartFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubcellularPartFeature"
+    },
+    "SubcellularPartMetabolismBuildingWorkflow": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SubcellularPartMetabolismBuildingWorkflow"
+    },
+    "Subject": {
+      "@id": "nsg:Subject"
+    },
+    "SubjectCollection": {
+      "@id": "nsg:SubjectCollection"
+    },
+    "Synapse": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Synapse"
+    },
+    "SynapseDensity": {
+      "@id": "bmo:SynapseDensity"
+    },
+    "SynapseModelCategory": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapseModelCategory"
+    },
+    "SynapsePhenotypicFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapsePhenotypicFeature"
+    },
+    "SynapsePhysiologyModel": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapsePhysiologyModel"
+    },
+    "SynapsePlasticityType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapsePlasticityType"
+    },
+    "SynapseRelease": {
+      "@id": "nsg:SynapseRelease"
+    },
+    "SynapseType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapseType"
+    },
+    "SynapticConductanceWeight": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/SynapticConductanceWeight"
+    },
+    "SynapticConnection": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticConnection"
+    },
+    "SynapticConnectionFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticConnectionFeature"
+    },
+    "SynapticConnectivity": {
+      "@id": "nsg:SynapticConnectivity"
+    },
+    "SynapticConnectivityTrace": {
+      "@id": "nsg:SynapticConnectivityTrace"
+    },
+    "SynapticParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticParameter"
+    },
+    "SynapticParameterAnnotation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticParameterAnnotation"
+    },
+    "SynapticParameterAssignment": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticParameteAssignment"
+    },
+    "SynapticPathway": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticPathway"
+    },
+    "SynapticPathwayFeature": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticPathwayFeature"
+    },
+    "SynapticPathwayType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticPathwayType"
+    },
+    "SynapticReversalPotential": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/SynapticReversalPotential"
+    },
+    "SynapticStrength": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticStrength"
+    },
+    "SynapticTypeAssignment": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticTypeAssignment"
+    },
+    "SynapticTypeMapping": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynapticTypeMapping"
+    },
+    "SynthesizedAstrocyteMorphology": {
+      "@id": "nsg:SynthesizedAstrocyteMorphology"
+    },
+    "SynthesizedNeuronMorphology": {
+      "@id": "https://neuroshapes.org/SynthesizedNeuronMorphology"
+    },
+    "SynthesizedNeuronMorphologyInAsc": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynthesizedNeuronMorphologyInAsc"
+    },
+    "SynthesizedNeuronMorphologyInH5": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynthesizedNeuronMorphologyInH5"
+    },
+    "SynthesizedNeuronMorphologyInSWC": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SynthesizedNeuronMorphologyInSWC"
+    },
+    "TMDSynthesisMorphologyGenerator": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TMDSynthesisMorphologyGenerator"
+    },
+    "TTT": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TTT"
+    },
+    "TType": {
+      "@id": "nsg:TType"
+    },
+    "TTypeAnnotation": {
+      "@id": "nsg:TTypeAnnotation"
+    },
+    "TTypePlaceholder": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TTypePlaceholder"
+    },
+    "Target": {
+      "@id": "nsg:Target"
+    },
+    "TaudecayCaDynamicsDC0": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TaudecayCaDynamicsDC0"
+    },
+    "TemplateImageData": {
+      "@id": "nsg:TemplateImageData"
+    },
+    "TemplateModelCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TemplateModelCircuitProperty"
+    },
+    "TemplatePropertyCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/TemplatePropertyCircuitProperty"
+    },
+    "TemplateReconstruction": {
+      "@id": "nsg:TemplateReconstruction"
+    },
+    "TemplateVolume": {
+      "@id": "nsg:TemplateVolume"
+    },
+    "TerminalPathLengths": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/TerminalPathLengths"
+    },
+    "TestAmpl": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/TestAmpl"
+    },
+    "TestRheo": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/TestRheo"
+    },
+    "TestSpikeRec": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/TestSpikeRec"
+    },
+    "Test_eCode": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Test_eCode"
+    },
+    "TesteCode": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/TesteCode"
+    },
+    "Testosterone": {
+      "@id": "https://neuroshapes.org/Testosterone"
+    },
+    "Thickness": {
+      "@id": "nsg:Thickness"
+    },
+    "Threshold": {
+      "@id": "nsg:Threshold"
+    },
+    "TimeConstantInMsForRecoveryFromDepression": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/TimeConstantInMsForRecoveryFromDepression"
+    },
+    "TimeConstantInMsForRecoveryFromFacilitation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/TimeConstantInMsForRecoveryFromFacilitation"
+    },
+    "TimeSeries": {
+      "@id": "https://neuroshapes.org/TimeSeries"
+    },
+    "TimeToFirstSpike": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/TimeToFirstSpike"
+    },
+    "TimeToLastSpike": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/TimeToLastSpike"
+    },
+    "TimeToSecondSpike": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/TimeToSecondSpike"
+    },
+    "TotalAreaPerNeurite": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/TotalAreaPerNeurite"
+    },
+    "TotalLengthPerNeurite": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/TotalLengthPerNeurite"
+    },
+    "TotalVolumePerNeurite": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/TotalVolumePerNeurite"
+    },
+    "Trace": {
+      "@id": "nsg:Trace"
+    },
+    "TraceCollection": {
+      "@id": "nsg:TraceCollection"
+    },
+    "TraceDataWebContainer": {
+      "@id": "bmo:TraceDataWebContainer"
+    },
+    "TraceFeature": {
+      "@id": "nsg:TraceFeature"
+    },
+    "TraceFeatureExtraction": {
+      "@id": "nsg:TraceFeatureExtraction"
+    },
+    "TraceGeneration": {
+      "@id": "nsg:TraceGeneration"
+    },
+    "Transfection": {
+      "@id": "nsg:Transfection"
+    },
+    "Transform": {
+      "@id": "nsg:Transform"
+    },
+    "Transformation": {
+      "@id": "nsg:Transformation"
+    },
+    "TrueNoise": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/TrueNoise"
+    },
+    "Truenoise": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/Truenoise"
+    },
+    "TuftedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/TuftedPyramidalPhenotype"
+    },
+    "TwoPhotonImageDataLayer": {
+      "@id": "nsg:TwoPhotonImageDataLayer"
+    },
+    "UntuftedPyramidalPhenotype": {
+      "@id": "https://neuroshapes.org/UntuftedPyramidalPhenotype"
+    },
+    "Usage": {
+      "@id": "prov:Usage"
+    },
+    "Use": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/Use"
+    },
+    "VIP_plus": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/celltypes/VIP_plus"
+    },
+    "VacuumPulses": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/VacuumPulses"
+    },
+    "ValidationResult": {
+      "@id": "nsg:ValidationResult"
+    },
+    "VariableReport": {
+      "@id": "nsg:VariableReport"
+    },
+    "VasculatureGraphModel": {
+      "@id": "nsg:VasculatureGraphModel"
+    },
+    "VasoactiveIntestinalPeptide": {
+      "@id": "https://neuroshapes.org/VasoactiveIntestinalPeptide"
+    },
+    "Vector3D": {
+      "@id": "nsg:Vector3D"
+    },
+    "Vein": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/Vein"
+    },
+    "VenousVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/VenousVolume"
+    },
+    "VideoObject": {
+      "@id": "schema:VideoObject"
+    },
+    "Vmax": {
+      "@id": "https://neuroshapes.org/Vmax"
+    },
+    "Vmax_f": {
+      "@id": "https://neuroshapes.org/Vmax_f"
+    },
+    "Vmax_r": {
+      "@id": "https://neuroshapes.org/Vmax_r"
+    },
+    "VoltageAfterStim": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/VoltageAfterStim"
+    },
+    "VoltageBase": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/VoltageBase"
+    },
+    "VoltageDeflection": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/VoltageDeflection"
+    },
+    "VoltageDeflectionBegin": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/VoltageDeflectionBegin"
+    },
+    "VoltageDeflectionVBSSSE": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/VoltageDeflectionVBSSSE"
+    },
+    "VolumetricDataLayer": {
+      "@id": "nsg:VolumetricDataLayer"
+    },
+    "WhiteNoise": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/WhiteNoise"
+    },
+    "WholeBrain": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/WholeBrain"
+    },
+    "WholeCellPatchClamp": {
+      "@id": "nsg:WholeCellPatchClamp"
+    },
+    "Workflow": {
+      "@id": "bmo:Workflow"
+    },
+    "WorkflowDefinition": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/WorkflowDefinition"
+    },
+    "WorkflowEngine": {
+      "@id": "nsg:WorkflowEngine"
+    },
+    "WorkflowExecution": {
+      "@id": "nsg:WorkflowExecution",
+      "@type": "@id"
+    },
+    "about": {
+      "@id": "schema:about",
+      "@type": "@id"
+    },
+    "activity": {
+      "@id": "prov:activity"
+    },
+    "activityType": {
+      "@id": "nsg:activityType"
+    },
+    "additionalName": {
+      "@id": "schema:additionalName"
+    },
+    "address": {
+      "@id": "schema:address"
+    },
+    "addressCountry": {
+      "@id": "schema:addressCountry"
+    },
+    "addressLocality": {
+      "@id": "schema:addressLocality"
+    },
+    "adjacentTo": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/adjacentTo"
+    },
+    "affiliation": {
+      "@id": "schema:affiliation"
+    },
+    "age": {
+      "@id": "nsg:age"
+    },
+    "agent": {
+      "@id": "prov:agent"
+    },
+    "algorithm": {
+      "@id": "schema:algorithm"
+    },
+    "altLabel": {
+      "@id": "skos:altLabel"
+    },
+    "alternateName": {
+      "@id": "schema:alternateName"
+    },
+    "alternateOf": {
+      "@id": "prov:alternateOf"
+    },
+    "analogToDigitalConverter": {
+      "@id": "nsg:analogToDigitalConverter"
+    },
+    "annotation": {
+      "@id": "nsg:annotation"
+    },
+    "annotationAngle": {
+      "@id": "nsg:annotationAngle"
+    },
+    "annotatorComment": {
+      "@id": "nsg:annotatorComment"
+    },
+    "application": {
+      "@id": "bmo:application"
+    },
+    "associatedIon": {
+      "@id": "https://neuroshapes.org/associatedIon",
+      "@type": "@id"
+    },
+    "atLocation": {
+      "@id": "prov:atLocation"
+    },
+    "atTime": {
+      "@id": "prov:atTime"
+    },
+    "atlasRelease": {
+      "@id": "nsg:atlasRelease"
+    },
+    "atlasSpatialReferenceSystem": {
+      "@id": "nsg:atlasSpatialReferenceSystem",
+      "@type": "@id"
+    },
+    "atlasVersion": {
+      "@id": "nsg:atlasVersion"
+    },
+    "atlas_id": {
+      "@id": "mba:atlas_id"
+    },
+    "author": {
+      "@id": "schema:author",
+      "@type": "@id"
+    },
+    "axonProjection": {
+      "@id": "nsg:axonProjection"
+    },
+    "basedOnFeature": {
+      "@id": "https://neuroshapes.org/basedOnFeature",
+      "@type": "@id"
+    },
+    "bathSolution": {
+      "@id": "nsg:bathSolution"
+    },
+    "bestScore": {
+      "@id": "nsg:bestScore"
+    },
+    "birthDate": {
+      "@id": "schema:birthDate"
+    },
+    "bmc": "https://bbp.epfl.ch/ontologies/core/bmc/",
+    "bmo": "https://bbp.epfl.ch/ontologies/core/bmo/",
+    "boosted": {
+      "@id": "nsg:boosted"
+    },
+    "boostingView": {
+      "@id": "nsg:boostingView"
+    },
+    "boundary": {
+      "@id": "nsg:boundary"
+    },
+    "boundingBox": {
+      "@id": "nsg:boundingBox"
+    },
+    "brainLayer": {
+      "@id": "https://neuroshapes.org/brainLayer",
+      "@type": "@id"
+    },
+    "brainLocation": {
+      "@id": "nsg:brainLocation"
+    },
+    "brainRegion": {
+      "@id": "nsg:brainRegion"
+    },
+    "brainTemplateDataLayer": {
+      "@id": "nsg:brainTemplateDataLayer"
+    },
+    "bufferEncoding": {
+      "@id": "nsg:bufferEncoding"
+    },
+    "byteOffset": {
+      "@id": "nsg:byteOffset"
+    },
+    "canBeLocatedInBrainRegion": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/canBeLocatedInBrainRegion",
+      "@type": "@id"
+    },
+    "canHaveBrainRegion": {
+      "@id": "bmo:canHaveBrainRegion",
+      "@type": "@id"
+    },
+    "canHaveMType": {
+      "@id": "bmo:canHaveMType",
+      "@type": "@id"
+    },
+    "canHaveTType": {
+      "@id": "bmo:canHaveTType",
+      "@type": "@id"
+    },
+    "catalizedBy": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/catalizedBy",
+      "@type": "@id"
+    },
+    "cell": {
+      "@id": "nsg:cell"
+    },
+    "cellLibraryFile": {
+      "@id": "nsg:cellLibraryFile"
+    },
+    "cellLine": {
+      "@id": "nsg:cellLine"
+    },
+    "cellType": {
+      "@id": "https://neuroshapes.org/cellType",
+      "@type": "@id"
+    },
+    "cellTypeId": {
+      "@id": "nsg:cellTypeId"
+    },
+    "cell_set_alias": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/ttypes/cell_set_alias"
+    },
+    "center": {
+      "@id": "nsg:center"
+    },
+    "channel": {
+      "@id": "nsg:channel"
+    },
+    "channelDistribution": {
+      "@id": "nsg:channelDistribution"
+    },
+    "chemicalComposition": {
+      "@id": "nsg:chemicalComposition"
+    },
+    "chlorideReversalPotential": {
+      "@id": "nsg:chlorideReversalPotential"
+    },
+    "circuitCellProperties": {
+      "@id": "nsg:circuitCellProperties"
+    },
+    "citation": {
+      "@id": "schema:citation"
+    },
+    "codeRepository": {
+      "@id": "schema:codeRepository",
+      "@type": "@id"
+    },
+    "color": {
+      "@id": "https://neuroshapes.org/color"
+    },
+    "colorRGB": {
+      "@id": "nsg:colorRGB"
+    },
+    "colorRGBA": {
+      "@id": "nsg:colorRGBA"
+    },
+    "color_hex_triplet": {
+      "@id": "mba:color_hex_triplet"
+    },
+    "column": {
+      "@id": "nsg:column"
+    },
+    "comment": {
+      "@id": "rdfs:comment"
+    },
+    "commonshapes": "https://neuroshapes.org/commons/",
+    "compartment": {
+      "@id": "bmo:compartment"
+    },
+    "compensationCurrent": {
+      "@id": "nsg:compensationCurrent"
+    },
+    "componentEncoding": {
+      "@id": "nsg:componentEncoding"
+    },
+    "componentType": {
+      "@id": "https://neuroshapes.org/componentType",
+      "@type": "@id"
+    },
+    "compressionCorrection": {
+      "@id": "nsg:compressionCorrection"
+    },
+    "concentration": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/concentration",
+      "@type": "@id"
+    },
+    "conductance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/conductance"
+    },
+    "configuration": {
+      "@id": "nsg:configuration"
+    },
+    "conformsTo": {
+      "@id": "nsg:conformsTo"
+    },
+    "constraints": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/constraints",
+      "@type": "@id"
+    },
+    "contentSize": {
+      "@id": "schema:contentSize"
+    },
+    "contentUrl": {
+      "@id": "schema:contentUrl",
+      "@type": "@id"
+    },
+    "continuousWith": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/continuousWith"
+    },
+    "contribution": {
+      "@id": "nsg:contribution"
+    },
+    "coordinatesInAtlas": {
+      "@id": "https://neuroshapes.org/coordinatesInAtlas",
+      "@type": "@id"
+    },
+    "coordinatesInBrainAtlas": {
+      "@id": "nsg:coordinatesInBrainAtlas"
+    },
+    "coordinatesInSlice": {
+      "@id": "nsg:coordinatesInSlice"
+    },
+    "count": {
+      "@id": "nsg:count"
+    },
+    "creator": {
+      "@id": "http://purl.org/dc/elements/1.1/creator"
+    },
+    "cumulatedLength": {
+      "@id": "nsg:cumulatedLength"
+    },
+    "current": {
+      "@id": "nsg:current"
+    },
+    "cuttingThickness": {
+      "@id": "nsg:cuttingThickness"
+    },
+    "dataSampleModality": {
+      "@id": "nsg:dataSampleModality"
+    },
+    "datashapes": "https://neuroshapes.org/dash/",
+    "date": {
+      "@id": "http://purl.org/dc/elements/1.1/date"
+    },
+    "dateCreated": {
+      "@id": "schema:dateCreated"
+    },
+    "dateModified": {
+      "@id": "schema:dateModified"
+    },
+    "dateOfSurgery": {
+      "@id": "nsg:dateOfSurgery"
+    },
+    "datePublished": {
+      "@id": "schema:datePublished"
+    },
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "deathDate": {
+      "@id": "schema:deathDate"
+    },
+    "defines": {
+      "@id": "nsg:defines",
+      "@type": "@id"
+    },
+    "definition": {
+      "@id": "skos:definition"
+    },
+    "delineatedBy": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/delineatedBy",
+      "@type": "@id"
+    },
+    "density": {
+      "@id": "nsg:density"
+    },
+    "deprecated": {
+      "@id": "http://www.w3.org/2002/07/owl#deprecated"
+    },
+    "derivation": {
+      "@id": "nsg:derivation"
+    },
+    "description": {
+      "@id": "schema:description"
+    },
+    "digest": {
+      "@id": "nsg:digest"
+    },
+    "digitalToAnalogConverter": {
+      "@id": "nsg:digitalToAnalogConverter"
+    },
+    "dimension": {
+      "@id": "nsg:dimension",
+      "@container": "@list"
+    },
+    "disease": {
+      "@id": "nsg:disease"
+    },
+    "diseaseModel": {
+      "@id": "nsg:diseaseModel"
+    },
+    "distance": {
+      "@id": "schema:distance"
+    },
+    "distanceToBoundary": {
+      "@id": "nsg:distanceToBoundary"
+    },
+    "distribution": {
+      "@id": "schema:distribution"
+    },
+    "doi": {
+      "@id": "nsg:doi"
+    },
+    "drug": {
+      "@id": "schema:drug"
+    },
+    "eCode": {
+      "@id": "nsg:eCode"
+    },
+    "eModel": {
+      "@id": "nsg:eModel"
+    },
+    "eType": {
+      "@id": "nsg:eType"
+    },
+    "e_GABAA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/e_GABAA"
+    },
+    "e_GABAB": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/e_GABAB"
+    },
+    "edgeCollection": {
+      "@id": "nsg:edgeCollection"
+    },
+    "edgePopulation": {
+      "@id": "nsg:edgePopulation"
+    },
+    "editorialNote": {
+      "@id": "http://www.w3.org/2004/02/skos/core#editorialNote"
+    },
+    "efel_id": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/efel_id"
+    },
+    "efel_namespace": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/efel_namespace"
+    },
+    "electrodeNumber": {
+      "@id": "nsg:electrodeNumber"
+    },
+    "electrodeResistance": {
+      "@id": "nsg:electrodeResistance"
+    },
+    "email": {
+      "@id": "schema:email"
+    },
+    "embedUrl": {
+      "@id": "schema:embedUrl"
+    },
+    "embedding": {
+      "@id": "https://neuroshapes.org/embedding",
+      "@container": "@list"
+    },
+    "embeddingModel": {
+      "@id": "nsg:embeddingModel"
+    },
+    "emodelIndex": {
+      "@id": "nsg:emodelIndex"
+    },
+    "emodelInstance": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/emodelInstance",
+      "@type": "@id"
+    },
+    "emodelRelease": {
+      "@id": "nsg:emodelRelease"
+    },
+    "encodingFormat": {
+      "@id": "schema:encodingFormat"
+    },
+    "endMembranePotential": {
+      "@id": "nsg:endMembranePotential"
+    },
+    "endTime": {
+      "@id": "nsg:endTime"
+    },
+    "endedAtTime": {
+      "@id": "prov:endedAtTime",
+      "@type": "xsd:dateTime"
+    },
+    "endianness": {
+      "@id": "nsg:endianness"
+    },
+    "entity": {
+      "@id": "prov:entity"
+    },
+    "equivalentClass": {
+      "@id": "http://www.w3.org/2002/07/owl#equivalentClass",
+      "@type": "@id"
+    },
+    "eulerAngle": {
+      "@id": "nsg:eulerAngle"
+    },
+    "example": {
+      "@id": "http://www.w3.org/2004/02/skos/core#example"
+    },
+    "experimentalCell": {
+      "@id": "nsg:experimentalCell"
+    },
+    "exposesParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/exposesParameter",
+      "@type": "@id"
+    },
+    "expressedIn": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/expressedIn",
+      "@type": "@id"
+    },
+    "expressionProfile": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/expressionProfile",
+      "@type": "@id"
+    },
+    "extraRecordings": {
+      "@id": "nsg:extraRecordings"
+    },
+    "familyName": {
+      "@id": "schema:familyName"
+    },
+    "faxNumber": {
+      "@id": "schema:faxNumber"
+    },
+    "feature": {
+      "@id": "nsg:feature"
+    },
+    "featureExtractionConfiguration": {
+      "@id": "nsg:featureExtractionConfiguration"
+    },
+    "features": {
+      "@id": "nsg:features"
+    },
+    "fileExtension": {
+      "@id": "nsg:fileExtension"
+    },
+    "first": {
+      "@id": "rdf:first"
+    },
+    "firstRow": {
+      "@id": "nsg:firstRow"
+    },
+    "fixationMethod": {
+      "@id": "nsg:fixationMethod"
+    },
+    "fixedSliceHeight": {
+      "@id": "nsg:fixedSliceHeight"
+    },
+    "fixedSliceWidth": {
+      "@id": "nsg:fixedSliceWidth"
+    },
+    "followedWorkflow": {
+      "@id": "https://neuroshapes.org/followedWorkflow",
+      "@type": "@id"
+    },
+    "function": {
+      "@id": "nsg:function"
+    },
+    "functionalizedWith": {
+      "@id": "bmo:functionilizedWith"
+    },
+    "gain": {
+      "@id": "nsg:gain"
+    },
+    "gene": {
+      "@id": "nsg:gene"
+    },
+    "generate": {
+      "@id": "https://neuroshapes.org/generate",
+      "@type": "@id"
+    },
+    "generated": {
+      "@id": "prov:generated"
+    },
+    "generates": {
+      "@id": "bmo:generates"
+    },
+    "generatesCircuitWithProperty": {
+      "@id": "bmo:generatesCircuitWithProperty",
+      "@type": "@id"
+    },
+    "generation": {
+      "@id": "nsg:generation"
+    },
+    "generationModality": {
+      "@id": "https://neuroshapes.org/generationModality",
+      "@type": "@id"
+    },
+    "geometry": {
+      "@id": "nsg:geometry"
+    },
+    "geometryParameter": {
+      "@id": "nsg:geometryParameter"
+    },
+    "givenName": {
+      "@id": "schema:givenName"
+    },
+    "gmax": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/gmax"
+    },
+    "gradient2D": {
+      "@id": "nsg:gradient2D"
+    },
+    "gradient3D": {
+      "@id": "nsg:gradient3D"
+    },
+    "graph_order": {
+      "@id": "mba:graph_order"
+    },
+    "gsyn": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/gsyn"
+    },
+    "gsynSRSF": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/gsynSRSF"
+    },
+    "hadActivity": {
+      "@id": "prov:hadActivity"
+    },
+    "hadMember": {
+      "@id": "prov:hadMember"
+    },
+    "hadPlan": {
+      "@id": "prov:hadPlan"
+    },
+    "hadProtocol": {
+      "@id": "nsg:hadProtocol"
+    },
+    "hadRole": {
+      "@id": "prov:hadRole"
+    },
+    "hadUsage": {
+      "@id": "prov:hadUsage"
+    },
+    "hasApicalDendrite": {
+      "@id": "nsg:hasApicalDendrite"
+    },
+    "hasAxon": {
+      "@id": "nsg:hasAxon"
+    },
+    "hasBasalDendrite": {
+      "@id": "nsg:hasBasalDendrite"
+    },
+    "hasBasalDentrite": {
+      "@id": "https://neuroshapes.org/hasBasalDentrite"
+    },
+    "hasBaselDendriteFeature": {
+      "@id": "https://neuroshapes.org/hasBaselDendriteFeature",
+      "@type": "@id"
+    },
+    "hasBody": {
+      "@id": "nsg:hasBody"
+    },
+    "hasChannel": {
+      "@id": "https://neuroshapes.org/hasChannel",
+      "@type": "@id"
+    },
+    "hasChildrenHierarchyProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasChildrenHierarchyProperty",
+      "@type": "@id"
+    },
+    "hasCircuitProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasCircuitProperty",
+      "@type": "@id"
+    },
+    "hasConstraint": {
+      "@id": "https://neuroshapes.org/hasConstraint",
+      "@type": "@id"
+    },
+    "hasEType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasEType",
+      "@type": "@id"
+    },
+    "hasFeature": {
+      "@id": "https://neuroshapes.org/hasFeature",
+      "@type": "@id"
+    },
+    "hasHasPartOfHierarchyProperty": {
+      "@id": "bmo:hasHasPartOfHierarchyProperty"
+    },
+    "hasHierarchyView": {
+      "@id": "bmo:hasHierarchyView",
+      "@type": "@id"
+    },
+    "hasInstanceInSpecies": {
+      "@id": "https://neuroshapes.org/hasInstanceInSpecies",
+      "@type": "@id"
+    },
+    "hasIsPartOfHierarchyProperty": {
+      "@id": "bmo:hasIsPartOfHierarchyProperty"
+    },
+    "hasLayerLeafRegionPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasLayerLeafRegionPart",
+      "@type": "@id"
+    },
+    "hasLayerLocation": {
+      "@id": "https://neuroshapes.org/hasLayerLocation",
+      "@type": "@id"
+    },
+    "hasLayerLocationPhenotype": {
+      "@id": "https://neuroshapes.org/hasLayerLocationPhenotype",
+      "@type": "@id"
+    },
+    "hasLayerPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasLayerPart",
+      "@type": "@id"
+    },
+    "hasLeafHierarchyProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasLeafHierarchyProperty",
+      "@type": "@id"
+    },
+    "hasLeafRegionPart": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasLeafRegionPart",
+      "@type": "@id"
+    },
+    "hasMEType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasMEType",
+      "@type": "@id"
+    },
+    "hasMType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasMType",
+      "@type": "@id"
+    },
+    "hasMolType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasMolType",
+      "@type": "@id"
+    },
+    "hasMorphologicalPhenotype": {
+      "@id": "nsg:hasMorphologicalPhenotype",
+      "@type": "@id"
+    },
+    "hasMorphology": {
+      "@id": "https://neuroshapes.org/hasMorphology",
+      "@type": "@id"
+    },
+    "hasMorphologyPhenotype": {
+      "@id": "https://neuroshapes.org/hasMorphologyPhenotype"
+    },
+    "hasNeurotransmitterType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mtypes/hasNeurotransmitterType",
+      "@type": "@id"
+    },
+    "hasObliqDendrite": {
+      "@id": "https://neuroshapes.org/hasObliqDendrite",
+      "@type": "@id"
+    },
+    "hasParameter": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasParameter",
+      "@type": "@id"
+    },
+    "hasParentHierarchyProperty": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasParentHierarchyProperty",
+      "@type": "@id"
+    },
+    "hasPart": {
+      "@id": "schema:hasPart",
+      "@type": "@id"
+    },
+    "hasPhenotype": {
+      "@id": "https://neuroshapes.org/hasPhenotype",
+      "@type": "@id"
+    },
+    "hasPhenotypicFeature": {
+      "@id": "https://neuroshapes.org/hasPhenotypicFeature",
+      "@type": "@id"
+    },
+    "hasRate": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/hasRate",
+      "@type": "@id"
+    },
+    "hasSelector": {
+      "@id": "nsg:hasSelector"
+    },
+    "hasSoma": {
+      "@id": "nsg:hasSoma"
+    },
+    "hasSomaLocatedIn": {
+      "@id": "https://neuroshapes.org/hasSomaLocatedIn",
+      "@type": "@id"
+    },
+    "hasSource": {
+      "@id": "nsg:hasSource"
+    },
+    "hasSpikeAdaptation": {
+      "@id": "https://neuroshapes.org/hasSpikeAdaptation"
+    },
+    "hasSynapticVesicle": {
+      "@id": "https://neuroshapes.org/hasSynapticVesicle",
+      "@type": "@id"
+    },
+    "hasTType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasTType",
+      "@type": "@id"
+    },
+    "hasTarget": {
+      "@id": "nsg:hasTarget"
+    },
+    "hasTuftDendriteFeature": {
+      "@id": "https://neuroshapes.org/hasTuftDendriteFeature",
+      "@type": "@id"
+    },
+    "hasType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasType",
+      "@type": "@id"
+    },
+    "hasWorkflowDefinition": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/hasWorkflowDefinition",
+      "@type": "@id"
+    },
+    "has_rank": {
+      "@id": "http://purl.obolibrary.org/obo/ncbitaxon#has_rank"
+    },
+    "haskv11": {
+      "@id": "https://neuroshapes.org/haskv11"
+    },
+    "heightAnatomicalDirection": {
+      "@id": "nsg:heightAnatomicalDirection"
+    },
+    "heightResolution": {
+      "@id": "nsg:heightResolution"
+    },
+    "hemisphere": {
+      "@id": "nsg:hemisphere"
+    },
+    "hemisphere_id": {
+      "@id": "mba:hemisphere_id"
+    },
+    "humanGene": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/humanGene"
+    },
+    "hypampThreshold": {
+      "@id": "nsg:hypampThreshold"
+    },
+    "identifier": {
+      "@id": "schema:identifier"
+    },
+    "ilx": "http://uri.interlex.org/base/ilx_",
+    "image": {
+      "@id": "schema:image"
+    },
+    "imageDirection": {
+      "@id": "nsg:imageDirection"
+    },
+    "imageModality": {
+      "@id": "nsg:imageModality"
+    },
+    "imageOrigin": {
+      "@id": "nsg:imageOrigin"
+    },
+    "imageVolume": {
+      "@id": "nsg:imageVolume"
+    },
+    "imagingMethod": {
+      "@id": "nsg:imagingMethod"
+    },
+    "imports": {
+      "@id": "owl:imports"
+    },
+    "inScheme": {
+      "@id": "skos:inScheme"
+    },
+    "index": {
+      "@id": "nsg:index"
+    },
+    "inferredCanBeLocatedInBrainRegion": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/inferredCanBeLocatedInBrainRegion",
+      "@type": "@id"
+    },
+    "inferredCanHaveMType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/inferredCanHaveMType",
+      "@type": "@id"
+    },
+    "inputResistance": {
+      "@id": "nsg:inputResistance"
+    },
+    "invalidation": {
+      "@id": "nsg:invalidation"
+    },
+    "inverseOf": {
+      "@id": "schema:inverseOf"
+    },
+    "ion": {
+      "@id": "https://neuroshapes.org/ion",
+      "@type": "@id"
+    },
+    "ionChannel": {
+      "@id": "https://neuroshapes.org/ionChannel",
+      "@type": "@id"
+    },
+    "ionChannelGene": {
+      "@id": "nsg:ionChannelGene"
+    },
+    "isAssociatedWith": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/isAssociatedWith",
+      "@type": "@id"
+    },
+    "isBasedOn": {
+      "@id": "bmo:isBasedOn",
+      "@type": "@id"
+    },
+    "isDefinedBy": {
+      "@id": "rdfs:isDefinedBy",
+      "@type": "@id"
+    },
+    "isDescribedBy": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/isDescribedBy",
+      "@type": "@id"
+    },
+    "isFeatureOf": {
+      "@id": "https://neuroshapes.org/isFeatureOf",
+      "@type": "@id"
+    },
+    "isLayerPartOf": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/isLayerPartOf",
+      "@type": "@id"
+    },
+    "isMeasurementOf": {
+      "@id": "nsg:isMeasurementOf"
+    },
+    "isPartOf": {
+      "@id": "schema:isPartOf",
+      "@type": "@id"
+    },
+    "isRegisteredIn": {
+      "@id": "nsg:isRegisteredIn"
+    },
+    "isRelatedTo": {
+      "@id": "schema:isRelatedTo"
+    },
+    "isRuleEnabled": {
+      "@id": "http://swrl.stanford.edu/ontologies/3.3/swrla.owl#isRuleEnabled"
+    },
+    "k_cat": {
+      "@id": "https://neuroshapes.org/k_cat"
+    },
+    "keywords": {
+      "@id": "schema:keywords"
+    },
+    "label": {
+      "@id": "rdfs:label"
+    },
+    "labelingCompound": {
+      "@id": "nsg:labelingCompound"
+    },
+    "language": {
+      "@id": "schema:language"
+    },
+    "layer": {
+      "@id": "nsg:layer"
+    },
+    "license": {
+      "@id": "schema:license"
+    },
+    "liquidJunctionPotential": {
+      "@id": "nsg:liquidJunctionPotential"
+    },
+    "location": {
+      "@id": "nsg:location"
+    },
+    "locationInSlice": {
+      "@id": "nsg:locationInSlice"
+    },
+    "longestBranchLength": {
+      "@id": "nsg:longestBranchLength"
+    },
+    "longestBranchNumberOfNodes": {
+      "@id": "nsg:longestBranchNumberOfNodes"
+    },
+    "longitudinalAxis": {
+      "@id": "nsg:longitudinalAxis"
+    },
+    "lowerPoint": {
+      "@id": "nsg:lowerPoint"
+    },
+    "luminance": {
+      "@id": "nsg:luminance"
+    },
+    "mType": {
+      "@id": "nsg:mType"
+    },
+    "mainModelScript": {
+      "@id": "nsg:mainModelScript"
+    },
+    "markerIntensity": {
+      "@id": "nsg:markerIntensity"
+    },
+    "mask": {
+      "@id": "nsg:mask"
+    },
+    "materials": {
+      "@id": "nsg:materials"
+    },
+    "maxDensity": {
+      "@id": "https://neuroshapes.org/maxDensity",
+      "@type": "@id"
+    },
+    "maxValue": {
+      "@id": "schema:maxValue"
+    },
+    "mba": "http://api.brain-map.org/api/v2/data/Structure/",
+    "meanvalue": {
+      "@id": "https://neuroshapes.org/meanvalue",
+      "@type": "@id"
+    },
+    "measuredHoldingPotential": {
+      "@id": "nsg:measuredHoldingPotential"
+    },
+    "memodelIndex": {
+      "@id": "nsg:memodelIndex"
+    },
+    "memodelRelease": {
+      "@id": "nsg:memodelRelease"
+    },
+    "minDensity": {
+      "@id": "https://neuroshapes.org/minDensity",
+      "@type": "@id"
+    },
+    "minValue": {
+      "@id": "schema:minValue"
+    },
+    "modelOf": {
+      "@id": "nsg:modelOf"
+    },
+    "modelScript": {
+      "@id": "nsg:modelScript"
+    },
+    "molecularConcentration": {
+      "@id": "nsg:molecularConcentration"
+    },
+    "molecule": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/molecule",
+      "@type": "@id"
+    },
+    "morphology": {
+      "@id": "nsg:morphology"
+    },
+    "morphologyIndex": {
+      "@id": "nsg:morphologyIndex"
+    },
+    "morphologyRelease": {
+      "@id": "nsg:morphologyRelease"
+    },
+    "motivatedBy": {
+      "@id": "nsg:motivatedBy"
+    },
+    "mountingMedia": {
+      "@id": "nsg:mountingMedia"
+    },
+    "mouseGene": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/mouseGene"
+    },
+    "name": {
+      "@id": "schema:name"
+    },
+    "neuriteDiameter": {
+      "@id": "nsg:neuriteDiameter"
+    },
+    "neuriteFeature": {
+      "@id": "nsg:neuriteFeature"
+    },
+    "neurom_id": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/mfeatures/neurom_id"
+    },
+    "neurom_namespace": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/efeatures/neurom_namespace"
+    },
+    "nodeCollection": {
+      "@id": "nsg:nodeCollection"
+    },
+    "normalizedScore": {
+      "@id": "nsg:normalizedScore"
+    },
+    "notation": {
+      "@id": "skos:notation"
+    },
+    "note": {
+      "@id": "skos:note"
+    },
+    "nrrp": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/nrrp"
+    },
+    "nsg": "https://neuroshapes.org/",
+    "numberOfProjections": {
+      "@id": "nsg:numberOfProjections"
+    },
+    "numberOfRecords": {
+      "@id": "nsg:numberOfRecords"
+    },
+    "numberOfSlices": {
+      "@id": "nsg:numberOfSlices"
+    },
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "oa": "http://www.w3.org/ns/oa#",
+    "objectOfStudy": {
+      "@id": "nsg:objectOfStudy"
+    },
+    "objectiveMagnification": {
+      "@id": "nsg:objectiveMagnification"
+    },
+    "objectiveType": {
+      "@id": "nsg:objectiveType"
+    },
+    "obo": "http://purl.obolibrary.org/obo/",
+    "offsetTime": {
+      "@id": "nsg:offsetTime"
+    },
+    "onsetTime": {
+      "@id": "nsg:onsetTime"
+    },
+    "orientation": {
+      "@id": "nsg:orientation"
+    },
+    "origin": {
+      "@id": "nsg:origin"
+    },
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "page": {
+      "@id": "http://xmlns.com/foaf/0.1/page"
+    },
+    "parameter": {
+      "@id": "nsg:parameter"
+    },
+    "parcellationId": {
+      "@id": "nsg:parcellationId"
+    },
+    "parcellationOntology": {
+      "@id": "nsg:parcellationOntology"
+    },
+    "parcellationVolume": {
+      "@id": "nsg:parcellationVolume"
+    },
+    "parentOrganization": {
+      "@id": "schema:parentOrganization"
+    },
+    "path": {
+      "@id": "nsg:path"
+    },
+    "period": {
+      "@id": "nsg:period"
+    },
+    "pipetteNumber": {
+      "@id": "nsg:pipetteNumber"
+    },
+    "pipetteResistance": {
+      "@id": "nsg:pipetteResistance"
+    },
+    "polygon": {
+      "@id": "schema:polygon"
+    },
+    "position": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/position",
+      "@type": "@id"
+    },
+    "position2D": {
+      "@id": "nsg:position2D"
+    },
+    "position3D": {
+      "@id": "nsg:position3D"
+    },
+    "positionInLayer": {
+      "@id": "nsg:positionInLayer"
+    },
+    "postSynaptic": {
+      "@id": "nsg:postSynaptic"
+    },
+    "postalCode": {
+      "@id": "schema:postalCode"
+    },
+    "postsynapticNeuron": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/postsynapticNeuron",
+      "@type": "@id"
+    },
+    "postsynapticNeuronType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/postsynapticNeuronType",
+      "@type": "@id"
+    },
+    "preSynaptic": {
+      "@id": "nsg:preSynaptic"
+    },
+    "prefLabel": {
+      "@id": "skos:prefLabel"
+    },
+    "preferredNamespacePrefix": {
+      "@id": "vann:preferredNamespacePrefix"
+    },
+    "premise": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/premise",
+      "@type": "@id"
+    },
+    "presynapticNeuron": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/presynapticNeuron",
+      "@type": "@id"
+    },
+    "presynapticNeuronType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/presynapticNeuronType",
+      "@type": "@id"
+    },
+    "product": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/product",
+      "@type": "@id"
+    },
+    "programmingLanguage": {
+      "@id": "schema:programmingLanguage"
+    },
+    "projectName": {
+      "@id": "nsg:projectName"
+    },
+    "projectionBrainRegion": {
+      "@id": "nsg:projectionBrainRegion"
+    },
+    "properties": {
+      "@id": "nsg:properties"
+    },
+    "propertyID": {
+      "@id": "schema:propertyID"
+    },
+    "protocolDefinition": {
+      "@id": "nsg:protocolDefinition"
+    },
+    "protocolType": {
+      "@id": "nsg:protocolType"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "providerExperimentId": {
+      "@id": "nsg:providerExperimentId"
+    },
+    "providerExperimentName": {
+      "@id": "nsg:providerExperimentName"
+    },
+    "pulser": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/pulser"
+    },
+    "putativeEtype": {
+      "@id": "nsg:putativeEtype"
+    },
+    "putativeMType": {
+      "@id": "nsg:putativeMType"
+    },
+    "qualifiedAssociation": {
+      "@id": "prov:qualifiedAssociation"
+    },
+    "qualifiedGeneration": {
+      "@id": "prov:qualifiedGeneration"
+    },
+    "qualifiedUsage": {
+      "@id": "prov:qualifiedUsage"
+    },
+    "quality": {
+      "@id": "nsg:quality"
+    },
+    "qualityAssessment": {
+      "@id": "nsg:qualityAssessment"
+    },
+    "quantity": {
+      "@id": "nsg:quantity"
+    },
+    "quaternion": {
+      "@id": "nsg:quaternion"
+    },
+    "radius": {
+      "@id": "nsg:radius"
+    },
+    "ratGene": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ratGene"
+    },
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "reagentLinearFormula": {
+      "@id": "nsg:reagentLinearFormula"
+    },
+    "reagentMolarWeight": {
+      "@id": "nsg:reagentMolarWeight"
+    },
+    "reagentName": {
+      "@id": "nsg:reagentName"
+    },
+    "reagentVendor": {
+      "@id": "nsg:reagentVendor"
+    },
+    "reconstructable": {
+      "@id": "nsg:reconstructable"
+    },
+    "reconstructionRequested": {
+      "@id": "nsg:reconstructionRequested"
+    },
+    "recordMeasure": {
+      "@id": "nsg:recordMeasure",
+      "@container": "@list"
+    },
+    "recordingLocation": {
+      "@id": "nsg:recordingLocation"
+    },
+    "regionVolume": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/regionVolume"
+    },
+    "regionVolumeRatioToWholeBrain": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/regionVolumeRatioToWholeBrain"
+    },
+    "relatedTo": {
+      "@id": "https://neuroshapes.org/relatedTo",
+      "@type": "@id"
+    },
+    "releaseDate": {
+      "@id": "schema:releaseDate"
+    },
+    "repetition": {
+      "@id": "nsg:repetition"
+    },
+    "repetitions": {
+      "@id": "schema:repetitions"
+    },
+    "representedInAnnotation": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/representedInAnnotation"
+    },
+    "resolution": {
+      "@id": "nsg:resolution"
+    },
+    "rest": {
+      "@id": "rdf:rest"
+    },
+    "rights": {
+      "@id": "http://purl.org/dc/elements/1.1/rights"
+    },
+    "row": {
+      "@id": "nsg:row"
+    },
+    "runtimePlatform": {
+      "@id": "schema:runtimePlatform"
+    },
+    "sAHP": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/sAHP"
+    },
+    "sType": {
+      "@id": "nsg:sType",
+      "@type": "@id"
+    },
+    "sameAs": {
+      "@id": "schema:sameAs",
+      "@type": "@id"
+    },
+    "sampleType": {
+      "@id": "nsg:sampleType"
+    },
+    "samplingRatio": {
+      "@id": "nsg:samplingRatio"
+    },
+    "scale": {
+      "@id": "nsg:scale"
+    },
+    "scale_mg": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/scale_mg"
+    },
+    "schema": "http://schema.org/",
+    "score": {
+      "@id": "nsg:score"
+    },
+    "scoutingView": {
+      "@id": "nsg:scoutingView"
+    },
+    "scriptScore": {
+      "@id": "nsg:scriptScore"
+    },
+    "sealResistance": {
+      "@id": "nsg:sealResistance"
+    },
+    "searchQuery": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/searchQuery",
+      "@type": "@id"
+    },
+    "secondRow": {
+      "@id": "nsg:secondRow"
+    },
+    "sectionArrayNames": {
+      "@id": "nsg:sectionArrayNames"
+    },
+    "sectionIndex": {
+      "@id": "nsg:sectionIndex"
+    },
+    "sectionListNames": {
+      "@id": "nsg:sectionListNames"
+    },
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    },
+    "series": {
+      "@id": "nsg:series"
+    },
+    "seriesResistance": {
+      "@id": "nsg:seriesResistance"
+    },
+    "sex": {
+      "@id": "nsg:sex"
+    },
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "similarity": {
+      "@id": "nsg:similarity"
+    },
+    "similarityView": {
+      "@id": "nsg:similarityView"
+    },
+    "size": {
+      "@id": "schema:size"
+    },
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sku": {
+      "@id": "schema:sku"
+    },
+    "sliceHeight": {
+      "@id": "nsg:sliceHeight"
+    },
+    "sliceInterval": {
+      "@id": "nsg:sliceInterval"
+    },
+    "sliceIntervalValue": {
+      "@id": "nsg:sliceIntervalValue"
+    },
+    "sliceResolution": {
+      "@id": "nsg:sliceResolution"
+    },
+    "sliceWidth": {
+      "@id": "nsg:sliceWidth"
+    },
+    "slicingAngle": {
+      "@id": "nsg:slicingAngle"
+    },
+    "slicingPlane": {
+      "@id": "nsg:slicingPlane"
+    },
+    "slope_mg": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/slope_mg"
+    },
+    "softwareSourceCode": {
+      "@id": "nsg:softwareSourceCode"
+    },
+    "solution": {
+      "@id": "nsg:solution"
+    },
+    "somaNumberOfPoints": {
+      "@id": "nsg:somaNumberOfPoints"
+    },
+    "somaReconstructionType": {
+      "@id": "nsg:somaReconstructionType"
+    },
+    "somaReferenceLocation": {
+      "@id": "nsg:somaReferenceLocation"
+    },
+    "source": {
+      "@id": "nsg:source"
+    },
+    "sourceType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/sourceType",
+      "@type": "@id"
+    },
+    "spatialCellName": {
+      "@id": "nsg:spatialCellName"
+    },
+    "spatialIndex": {
+      "@id": "nsg:spatialIndex"
+    },
+    "spatialReferenceSystem": {
+      "@id": "nsg:spatialReferenceSystem"
+    },
+    "species": {
+      "@id": "nsg:species"
+    },
+    "spikeAdaptation": {
+      "@id": "https://neuroshapes.org/spikeAdaptation",
+      "@type": "@id"
+    },
+    "st_level": {
+      "@id": "mba:st_level"
+    },
+    "stackAnatomicalDirection": {
+      "@id": "nsg:stackAnatomicalDirection"
+    },
+    "stain": {
+      "@id": "nsg:stain"
+    },
+    "standardDeviation": {
+      "@id": "https://neuroshapes.org/standardDeviation",
+      "@type": "@id"
+    },
+    "startMembranePotential": {
+      "@id": "nsg:startMembranePotential"
+    },
+    "startedAtTime": {
+      "@id": "prov:startedAtTime",
+      "@type": "xsd:dateTime"
+    },
+    "statistic": {
+      "@id": "nsg:statistic"
+    },
+    "statisticsView": {
+      "@id": "nsg:statisticsView"
+    },
+    "status": {
+      "@id": "nsg:status"
+    },
+    "steps": {
+      "@id": "nsg:steps"
+    },
+    "stimulationFrequency": {
+      "@id": "nsg:stimulationFrequency"
+    },
+    "stimuliToExperimentMap": {
+      "@id": "nsg:stimuliToExperimentMap"
+    },
+    "stimulus": {
+      "@id": "nsg:stimulus",
+      "@container": "@list"
+    },
+    "stimulusTarget": {
+      "@id": "nsg:stimulusTarget",
+      "@container": "@list"
+    },
+    "stimulusType": {
+      "@id": "nsg:stimulusType"
+    },
+    "store": {
+      "@id": "nsg:store"
+    },
+    "strain": {
+      "@id": "nsg:strain"
+    },
+    "streetAddress": {
+      "@id": "schema:streetAddress"
+    },
+    "subCellularMechanism": {
+      "@id": "nsg:subCellularMechanism"
+    },
+    "subCellularModel": {
+      "@id": "nsg:subCellularModel"
+    },
+    "subClassOf": {
+      "@id": "rdfs:subClassOf",
+      "@type": "@id"
+    },
+    "subject": {
+      "@id": "nsg:subject"
+    },
+    "substrate": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/substrate",
+      "@type": "@id"
+    },
+    "sweep": {
+      "@id": "nsg:sweep"
+    },
+    "synapse": {
+      "@id": "nsg:synapse"
+    },
+    "synapseRelease": {
+      "@id": "nsg:synapseRelease"
+    },
+    "synapticConnection": {
+      "@id": "bmo:synapticConnection"
+    },
+    "synapticPathway": {
+      "@id": "bmo:synapticPathway"
+    },
+    "target": {
+      "@id": "nsg:target"
+    },
+    "targetHoldingPotential": {
+      "@id": "nsg:targetHoldingPotential"
+    },
+    "targetType": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/targetType",
+      "@type": "@id"
+    },
+    "task": {
+      "@id": "nsg:task"
+    },
+    "tau_d_AMPA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_d_AMPA"
+    },
+    "tau_d_GABAA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_d_GABAA"
+    },
+    "tau_d_GABAB": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_d_GABAB"
+    },
+    "tau_d_NMDA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_d_NMDA"
+    },
+    "tau_r_AMPA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_r_AMPA"
+    },
+    "tau_r_GABAA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_r_GABAA"
+    },
+    "tau_r_GABAB": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_r_GABAB"
+    },
+    "tau_r_NMDA": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/tau_r_NMDA"
+    },
+    "taxonomy_id": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/ttypes/taxonomy_id"
+    },
+    "telephone": {
+      "@id": "schema:telephone"
+    },
+    "temperature": {
+      "@id": "nsg:temperature"
+    },
+    "templateVolume": {
+      "@id": "nsg:templateVolume"
+    },
+    "thickness": {
+      "@id": "nsg:thickness"
+    },
+    "thirdRow": {
+      "@id": "nsg:thirdRow"
+    },
+    "threshold": {
+      "@id": "nsg:threshold"
+    },
+    "time": {
+      "@id": "nsg:time"
+    },
+    "timeBetween": {
+      "@id": "nsg:timeBetween"
+    },
+    "timeBetween2": {
+      "@id": "nsg:timeBetween2"
+    },
+    "timeStep": {
+      "@id": "nsg:timeStep"
+    },
+    "title": {
+      "@id": "schema:title"
+    },
+    "tolerance": {
+      "@id": "nsg:tolerance",
+      "@container": "@list"
+    },
+    "topConceptOf": {
+      "@id": "skos:topConceptOf"
+    },
+    "trace": {
+      "@id": "nsg:trace"
+    },
+    "transgenic": {
+      "@id": "nsg:transgenic"
+    },
+    "translatesInto": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/molecular-systems/translatesInto",
+      "@type": "@id"
+    },
+    "traversedBrainRegion": {
+      "@id": "nsg:traversedBrainRegion"
+    },
+    "treatment": {
+      "@id": "nsg:treatment"
+    },
+    "type": {
+      "@id": "rdf:type"
+    },
+    "u": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/u"
+    },
+    "u0": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/u0"
+    },
+    "uHillCoefficient": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/parameters/uHillCoefficient"
+    },
+    "uberon": "http://purl.obolibrary.org/obo/UBERON_",
+    "uniprotID": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/uniprotID"
+    },
+    "unitCode": {
+      "@id": "schema:unitCode"
+    },
+    "units": {
+      "@id": "https://neuroshapes.org/units"
+    },
+    "upperPoint": {
+      "@id": "nsg:upperPoint"
+    },
+    "url": {
+      "@id": "schema:url",
+      "@type": "@id"
+    },
+    "used": {
+      "@id": "prov:used"
+    },
+    "uses": {
+      "@id": "bmo:uses"
+    },
+    "usesCircuitWithProperty": {
+      "@id": "bmo:usesCircuitWithProperty",
+      "@type": "@id"
+    },
+    "value": {
+      "@id": "schema:value"
+    },
+    "valuePattern": {
+      "@id": "schema:valuePattern"
+    },
+    "valueX": {
+      "@id": "nsg:valueX"
+    },
+    "valueY": {
+      "@id": "nsg:valueY"
+    },
+    "valueZ": {
+      "@id": "nsg:valueZ"
+    },
+    "vann": "http://purl.org/vocab/vann/",
+    "variable": {
+      "@id": "nsg:variable"
+    },
+    "vectorDimension": {
+      "@id": "nsg:vectorDimension"
+    },
+    "vectorParameter": {
+      "@id": "nsg:vectorParameter"
+    },
+    "vendor": {
+      "@id": "nsg:vendor"
+    },
+    "version": {
+      "@id": "schema:version"
+    },
+    "versionInfo": {
+      "@id": "owl:versionInfo"
+    },
+    "video": {
+      "@id": "schema:itemListElement"
+    },
+    "view2d": {
+      "@id": "nsg:view2d"
+    },
+    "view3d": {
+      "@id": "nsg:view3d"
+    },
+    "void": "http://rdfs.org/ns/void#",
+    "voltage": {
+      "@id": "nsg:voltage"
+    },
+    "volumeDimension": {
+      "@id": "nsg:volumeDimension"
+    },
+    "voxelResolution": {
+      "@id": "nsg:voxelResolution"
+    },
+    "voxelType": {
+      "@id": "nsg:voxelType"
+    },
+    "warning": {
+      "@id": "nsg:warning"
+    },
+    "wasAssociatedWith": {
+      "@id": "prov:wasAssociatedWith"
+    },
+    "wasAttributedTo": {
+      "@id": "prov:wasAttributedTo"
+    },
+    "wasDerivedFrom": {
+      "@id": "prov:wasDerivedFrom"
+    },
+    "wasGeneratedBy": {
+      "@id": "prov:wasGeneratedBy"
+    },
+    "wasInfluencedBy": {
+      "@id": "prov:wasInfluencedBy"
+    },
+    "wasInformedBy": {
+      "@id": "prov:wasInformedBy"
+    },
+    "wasRevisionOf": {
+      "@id": "prov:wasRevisionOf"
+    },
+    "wasStartedBy": {
+      "@id": "prov:wasStartedBy"
+    },
+    "washOut": {
+      "@id": "nsg:washOut"
+    },
+    "weight": {
+      "@id": "schema:weight"
+    },
+    "widthAnatomicalDirection": {
+      "@id": "nsg:widthAnatomicalDirection"
+    },
+    "widthResolution": {
+      "@id": "nsg:widthResolution"
+    },
+    "worldMatrix": {
+      "@id": "nsg:worldMatrix",
+      "@container": "@list"
+    },
+    "xml": "http://www.w3.org/XML/1998/namespace/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "_constrainedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy",
+      "@type": "@id"
+    },
+    "_createdAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_createdBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
+      "@type": "@id"
+    },
+    "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
+    "_incoming": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
+      "@type": "@id"
+    },
+    "_instant": "https://bluebrain.github.io/nexus/vocabulary/instant",
+    "_outgoing": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
+      "@type": "@id"
+    },
+    "_project": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
+      "@type": "@id"
+    },
+    "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
+    "_schemaProject": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
+      "@type": "@id"
+    },
+    "_self": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
+      "@type": "@id"
+    },
+    "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
+    "_subject": "https://bluebrain.github.io/nexus/vocabulary/metadata/subject",
+    "_updatedAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_updatedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedBy",
+      "@type": "@id"
     }
-  ],
+  },
   "@id": "https://neuroshapes.org"
 }

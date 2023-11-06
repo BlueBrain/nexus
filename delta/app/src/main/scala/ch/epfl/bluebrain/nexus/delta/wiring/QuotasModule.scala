@@ -13,14 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.{Quotas, QuotasImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Quotas module wiring config.
   */
 // $COVERAGE-OFF$
 object QuotasModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Quotas].from { (projectsStatistics: ProjectsStatistics, cfg: AppConfig) =>
     new QuotasImpl(projectsStatistics)(cfg.quotas, cfg.serviceAccount)
@@ -35,11 +34,10 @@ object QuotasModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         quotas: Quotas,
-        s: Scheduler,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new QuotasRoutes(identities, aclCheck, quotas)(baseUri, s, cr, ordering)
+    ) => new QuotasRoutes(identities, aclCheck, quotas)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: QuotasRoutes) =>

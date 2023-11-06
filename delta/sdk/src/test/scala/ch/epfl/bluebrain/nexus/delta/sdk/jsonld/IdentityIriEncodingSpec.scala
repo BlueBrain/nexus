@@ -2,16 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class IdentityIriEncodingSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class IdentityIriEncodingSpec extends BaseSpec {
 
   implicit private val base: BaseUri                = BaseUri("http://localhost:8080", Label.unsafe("v1"))
   private val realm                                 = Label.unsafe("myrealm")

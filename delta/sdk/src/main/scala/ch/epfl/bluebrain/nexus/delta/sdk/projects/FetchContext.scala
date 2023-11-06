@@ -2,12 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -96,7 +98,7 @@ object FetchContext {
   /**
     * A rejection allowing to align the different possible rejection when fetching a context
     */
-  sealed trait ContextRejection {
+  sealed trait ContextRejection extends SDKError {
 
     /**
       * The underlying rejection type
@@ -144,12 +146,17 @@ object FetchContext {
     * Create a fetch context instance from an [[Organizations]], [[Projects]] and [[Quotas]] instances
     */
   def apply(organizations: Organizations, projects: Projects, quotas: Quotas): FetchContext[ContextRejection] =
-    apply(organizations.fetchActiveOrganization(_).void, projects.defaultApiMappings, projects.fetch, quotas)
+    apply(
+      organizations.fetchActiveOrganization(_).void.toBIO[OrganizationRejection],
+      projects.defaultApiMappings,
+      projects.fetch(_).toBIO[ProjectRejection],
+      quotas
+    )
 
   def apply(
       fetchActiveOrganization: Label => IO[OrganizationRejection, Unit],
       dam: ApiMappings,
-      fetchProject: ProjectRef => IO[ProjectNotFound, ProjectResource],
+      fetchProject: ProjectRef => IO[ProjectRejection, ProjectResource],
       quotas: Quotas
   ): FetchContext[ContextRejection] =
     new FetchContext[ContextRejection] {
@@ -174,14 +181,17 @@ object FetchContext {
       override def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[ContextRejection, ProjectContext] =
         quotas
           .reachedForResources(ref, subject)
-          .leftWiden[QuotaRejection]
-          .mapError[ContextRejection](e => ContextRejection(e)) >>
+          .adaptError { case e: QuotaRejection => ContextRejection(e) }
+          .toBIO[ContextRejection] >>
           onModify(ref)
 
       override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ContextRejection, ProjectContext] =
         for {
           _       <- fetchActiveOrganization(ref.organization).mapError(ContextRejection.apply(_))
-          _       <- quotas.reachedForEvents(ref, subject).leftWiden[QuotaRejection].mapError(ContextRejection.apply(_))
+          _       <- quotas
+                       .reachedForEvents(ref, subject)
+                       .adaptError { case e: QuotaRejection => ContextRejection(e) }
+                       .toBIO[ContextRejection]
           context <- onWrite(ref)
         } yield context
     }

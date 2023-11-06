@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -125,7 +125,7 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
       Json.obj("elastic" -> Json.fromString("value")),
       Tags(tag           -> 3),
       rev = 1,
-      indexingRev = 1,
+      indexingRev = IndexingRev.init,
       deprecated = false,
       createdAt = instant,
       createdBy = subject,

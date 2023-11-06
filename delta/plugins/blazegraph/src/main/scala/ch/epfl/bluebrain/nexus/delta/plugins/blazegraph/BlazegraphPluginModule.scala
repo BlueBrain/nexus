@@ -1,30 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import cats.effect.{Clock, ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -34,11 +32,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -55,8 +53,32 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       HttpClient()(cfg.indexingClient, as.classicSystem, sc)
   }
 
+  make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
+    BlazegraphSlowQueryStore(
+      xas
+    )
+  }
+
+  make[BlazegraphSlowQueryDeleter].fromEffect {
+    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig, timer: Timer[IO]) =>
+      BlazegraphSlowQueryDeleter.start(
+        supervisor,
+        store,
+        cfg.slowQueries.logTtl,
+        cfg.slowQueries.deleteExpiredLogsEvery
+      )(timer)
+  }
+
+  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
+    BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)
+  }
+
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-indexing-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-indexing-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -66,7 +88,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-query-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-query-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -77,7 +103,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors
     ) =>
       ValidateBlazegraphView(
-        permissions.fetchPermissionSet,
+        permissions.fetchPermissionSet.toUIO,
         config.maxViewRefs,
         xas
       )
@@ -93,7 +119,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config: BlazegraphViewsConfig,
           xas: Transactors,
           api: JsonLdApi,
-          clock: Clock[UIO],
+          clock: Clock[IO],
+          timer: Timer[IO],
           uuidF: UUIDF
       ) =>
         BlazegraphViews(
@@ -104,29 +131,29 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config.eventLog,
           config.prefix,
           xas
-        )(api, clock, uuidF)
+        )(api, clock, timer, uuidF)
     }
 
-  if (!MigrationState.isBgIndexingDisabled) {
-    make[BlazegraphCoordinator].fromEffect {
-      (
-          views: BlazegraphViews,
-          graphStream: GraphResourceStream,
-          registry: ReferenceRegistry,
-          supervisor: Supervisor,
-          client: BlazegraphClient @Id("blazegraph-indexing-client"),
-          config: BlazegraphViewsConfig,
-          baseUri: BaseUri
-      ) =>
-        BlazegraphCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config.batch
-        )(baseUri)
-    }
+  make[BlazegraphCoordinator].fromEffect {
+    (
+        views: BlazegraphViews,
+        graphStream: GraphResourceStream,
+        registry: ReferenceRegistry,
+        supervisor: Supervisor,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        config: BlazegraphViewsConfig,
+        baseUri: BaseUri,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      BlazegraphCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config
+      )(baseUri, timer, cs)
   }
 
   make[BlazegraphViewsQuery].fromEffect {
@@ -135,10 +162,19 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         views: BlazegraphViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
+        slowQueryLogger: BlazegraphSlowQueryLogger,
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      BlazegraphViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, client, cfg.prefix, xas)
+      BlazegraphViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
+        client,
+        slowQueryLogger,
+        cfg.prefix,
+        xas
+      )
   }
 
   make[BlazegraphViewsRoutes].from {
@@ -146,14 +182,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: BlazegraphViews,
-        projections: Projections,
         viewsQuery: BlazegraphViewsQuery,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -163,16 +197,44 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         identities,
         aclCheck,
-        projections,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        s,
         cr,
         ordering,
         cfg.pagination,
         fusionConfig
+      )
+  }
+
+  make[BlazegraphViewsIndexingRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        views: BlazegraphViews,
+        projections: Projections,
+        projectionErrors: ProjectionErrors,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri,
+        cfg: BlazegraphViewsConfig,
+        c: ContextShift[IO],
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      new BlazegraphViewsIndexingRoutes(
+        views.fetchIndexingView(_, _),
+        identities,
+        aclCheck,
+        projections,
+        projectionErrors,
+        schemeDirectives
+      )(
+        baseUri,
+        c,
+        cr,
+        ordering,
+        cfg.pagination
       )
   }
 
@@ -181,6 +243,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       new BlazegraphScopeInitialization(views, serviceAccount, config.defaults)
   }
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
+
+  many[ProjectDeletionTask].add { (views: BlazegraphViews) => BlazegraphDeletionTask(views) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/sparql-metadata.json"))
 
@@ -204,8 +268,22 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(BlazegraphViews.mappings)
 
-  many[PriorityRoute].add { (route: BlazegraphViewsRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add {
+    (
+        bg: BlazegraphViewsRoutes,
+        indexing: BlazegraphViewsIndexingRoutes,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri
+    ) =>
+      PriorityRoute(
+        priority,
+        BlazegraphViewsRoutesHandler(
+          schemeDirectives,
+          bg.routes,
+          indexing.routes
+        )(baseUri),
+        requiresStrictEntity = true
+      )
   }
 
   many[ServiceDependency].add { (client: BlazegraphClient @Id("blazegraph-indexing-client")) =>
@@ -218,9 +296,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         client: BlazegraphClient @Id("blazegraph-indexing-client"),
         config: BlazegraphViewsConfig,
-        baseUri: BaseUri
+        baseUri: BaseUri,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
+      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri, timer, cs)
   }
 
   make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>
@@ -229,42 +309,4 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[BlazegraphView.Shift]
 
-  if (MigrationState.isRunning) {
-    many[MigrationLog].add { (cfg: BlazegraphViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
-      MigrationLog
-        .scoped[Iri, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection](
-          BlazegraphViews.definition(_ =>
-            IO.terminate(new IllegalStateException("BlazegraphView command evaluation should not happen"))
-          )(clock, uuidF),
-          e => e.id,
-          identity,
-          (e, _) => injectBlazegraphViewDefaults(cfg.defaults)(e),
-          cfg.eventLog,
-          xas
-        )
-    }
-  }
-
-}
-
-// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
-object BlazegraphPluginModule {
-
-  import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
-
-  private def setViewDefaults(
-      name: Option[String],
-      description: Option[String]
-  ): BlazegraphViewValue => BlazegraphViewValue = {
-    case iv: IndexingBlazegraphViewValue  => iv.copy(name = name, description = description)
-    case av: AggregateBlazegraphViewValue => av.copy(name = name, description = description)
-  }
-
-  def injectBlazegraphViewDefaults(defaults: Defaults): BlazegraphViewEvent => BlazegraphViewEvent = {
-    case b @ BlazegraphViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case b @ BlazegraphViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case event                                                                         => event
-  }
 }

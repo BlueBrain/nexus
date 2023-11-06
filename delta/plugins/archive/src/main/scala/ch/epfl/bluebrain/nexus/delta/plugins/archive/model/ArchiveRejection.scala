@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,10 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -27,7 +27,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ArchiveRejection(val reason: String) extends Product with Serializable
+sealed abstract class ArchiveRejection(val reason: String) extends Rejection
 
 object ArchiveRejection {
 
@@ -68,11 +68,6 @@ object ArchiveRejection {
           )).mkString("\n")
       )
 
-  final case class FilenameTooLong(id: Iri, project: ProjectRef, fileName: String)
-      extends ArchiveRejection(
-        s"File '$id' in project '$project' has a file name '$fileName' exceeding the 100 character limit for a tar file."
-      )
-
   /**
     * Rejection returned when an archive doesn't exist.
     *
@@ -85,6 +80,11 @@ object ArchiveRejection {
       extends ArchiveRejection(s"Archive '$id' not found in project '$project'.")
 
   /**
+    * A file self from the archive definition was invalid
+    */
+  final case class InvalidFileSelf(underlying: FileSelf.ParsingError) extends ArchiveRejection(underlying.message)
+
+  /**
     * Rejection returned when attempting to interact with an Archive while providing an id that cannot be resolved to an
     * Iri.
     *
@@ -93,6 +93,11 @@ object ArchiveRejection {
     */
   final case class InvalidArchiveId(id: String)
       extends ArchiveRejection(s"Archive identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create an Archive while providing an id that is blank.
+    */
+  final case object BlankArchiveId extends ArchiveRejection(s"Archive identifier cannot be blank.")
 
   /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
@@ -142,19 +147,6 @@ object ArchiveRejection {
       extends ArchiveRejection(s"The resource '${ref.toString}' was not found in project '$project'.")
 
   /**
-    * Rejection returned when the caller does not have permission to access a referenced resource.
-    *
-    * @param address
-    *   the address on which the permission was checked
-    * @param permission
-    *   the permission that was required
-    */
-  final case class AuthorizationFailed(address: AclAddress, permission: Permission)
-      extends ArchiveRejection(
-        s"The permission '$permission' required for accessing a resource at '$address' is missing."
-      )
-
-  /**
     * Wrapper for file rejections.
     *
     * @param rejection
@@ -166,6 +158,7 @@ object ArchiveRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedArchiveId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankArchiveId
   }
 
   implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
@@ -189,7 +182,6 @@ object ArchiveRejection {
     HttpResponseFields {
       case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
       case InvalidResourceCollection(_, _, _) => StatusCodes.BadRequest
-      case FilenameTooLong(_, _, _)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest
       case ProjectContextRejection(rejection) => rejection.status
@@ -197,7 +189,8 @@ object ArchiveRejection {
       case DecodingFailed(_)                  => StatusCodes.BadRequest
       case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
-      case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
+      case BlankArchiveId                     => StatusCodes.BadRequest
+      case InvalidFileSelf(_)                 => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status
     }
 }

@@ -1,16 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.InvalidAccessToken
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import monix.bio.IO
 
 /**
   * Dummy implementation of [[Identities]] passing the expected results in a map
   */
 class IdentitiesDummy private (expected: Map[AuthToken, Caller]) extends Identities {
 
-  override def exchange(token: AuthToken): IO[TokenRejection, Caller] =
+  override def exchange(token: AuthToken): IO[Caller] =
     IO.fromEither(
       expected.get(token).toRight(InvalidAccessToken("Someone", "Some realm", "The caller could not be found."))
     )

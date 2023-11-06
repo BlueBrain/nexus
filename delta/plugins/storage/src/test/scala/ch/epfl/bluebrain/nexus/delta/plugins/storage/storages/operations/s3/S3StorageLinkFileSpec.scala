@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -20,13 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import software.amazon.awssdk.regions.Region
 
@@ -35,14 +31,10 @@ import java.util.UUID
 @DoNotDiscover
 class S3StorageLinkFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
-    with AnyWordSpecLike
+    with CatsEffectSpec
     with AkkaSourceHelpers
-    with Matchers
-    with IOValues
     with StorageFixtures
     with BeforeAndAfterAll {
-
-  implicit private val sc: Scheduler = Scheduler.global
 
   private val iri      = iri"http://localhost/s3"
   private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -61,15 +53,13 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
       algorithm = DigestAlgorithm.default,
       bucket = "bucket3",
       endpoint = Some(docker.hostConfig.endpoint),
-      accessKey = Some(Secret(RootUser)),
-      secretKey = Some(Secret(RootPassword)),
       region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
       maxFileSize = 20
     )
-    createBucket(storageValue).hideErrors.accepted
-    storage = S3Storage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
+    createBucket(storageValue).accepted
+    storage = S3Storage(iri, project, storageValue, Tags.empty, Json.obj())
     attributes = FileAttributes(
       uuid,
       s"http://bucket3.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",
@@ -83,7 +73,7 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
   }
 
   override protected def afterAll(): Unit =
-    deleteBucket(storageValue).hideErrors.accepted
+    deleteBucket(storageValue).accepted
 
   "S3Storage linking operations" should {
     val content = "file content"
@@ -92,14 +82,14 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
+      storage.saveFile(config).apply(description, entity).accepted shouldEqual attributes
 
       val linkAttributes = attributes.copy(origin = FileAttributesOrigin.Storage)
-      storage.linkFile.apply(attributes.path, description).accepted shouldEqual linkAttributes
+      storage.linkFile(config).apply(attributes.path, description).accepted shouldEqual linkAttributes
     }
 
     "fail linking a file that does not exist" in {
-      storage.linkFile.apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
+      storage.linkFile(config).apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
     }
 
   }

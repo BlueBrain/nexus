@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextObject, ContextRemoteIri}
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import monix.bio.IO
 
 /**
   * The Json value of the @context key
@@ -184,8 +184,8 @@ object ContextValue {
   /**
     * Loads a [[ContextValue]] form the passed ''resourcePath''
     */
-  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[ClasspathResourceError, ContextValue] =
-    ClasspathResourceUtils.ioJsonContentOf(resourcePath).map(_.topContextValueOrEmpty)
+  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[ContextValue] =
+    CatsEffectsClasspathResourceUtils.ioJsonContentOf(resourcePath).map(_.topContextValueOrEmpty)
 
   /**
     * Constructs a [[ContextValue]] from a json. The value of the json must be the value of the @context key

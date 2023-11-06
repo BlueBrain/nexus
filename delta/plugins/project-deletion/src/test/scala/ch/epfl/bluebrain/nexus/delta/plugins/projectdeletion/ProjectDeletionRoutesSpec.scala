@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.DurationInt
@@ -19,15 +19,14 @@ class ProjectDeletionRoutesSpec
     extends RouteHelpers
     with CirceMarshalling
     with Matchers
-    with IOValues
+    with BIOValues
     with TestHelpers {
 
-  implicit private val scheduler: Scheduler         = Scheduler.global
   implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json").accepted
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
+    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")
   )
 
   "A ProjectDeletionRoutes" should {

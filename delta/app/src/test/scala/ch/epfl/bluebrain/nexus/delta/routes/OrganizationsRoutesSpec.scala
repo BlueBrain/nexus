@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -12,17 +13,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationsConfig, OrganizationsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsConfig, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 
 import java.util.UUID
 
-class OrganizationsRoutesSpec extends BaseRouteSpec {
+class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
@@ -34,10 +37,12 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
 
   private val aclChecker = AclSimpleCheck().accepted
   private val aopd       = new OwnerPermissionsScopeInitialization(
-    aclChecker.append,
+    acl => aclChecker.append(acl),
     Set(orgsPermissions.write, orgsPermissions.read)
   )
-  private lazy val orgs  = OrganizationsImpl(Set(aopd), config, xas)
+
+  private lazy val orgs                            = OrganizationsImpl(Set(aopd), config, xas)
+  private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -47,6 +52,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     OrganizationsRoutes(
       identities,
       orgs,
+      orgDeleter,
       aclChecker,
       DeltaSchemeDirectives.onlyResolveOrgUuid(ioFromMap(fixedUuid -> org1.label))
     )
@@ -83,8 +89,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       val input = json"""{"description": "${org1.description.value}"}"""
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -211,6 +216,33 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail to deprecate an organization if the revision is omitted" in {
+      Delete("/v1/orgs/org2") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "delete an organization" in {
+      aclChecker.append(AclAddress.fromOrg(org2.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org2?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "fail when trying to delete a non-empty organization" in {
+      aclChecker.append(AclAddress.fromOrg(org1.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org1?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
+    }
+
+    "fail to delete an organization without organizations/delete permission" in {
+      aclChecker.subtract(AclAddress.fromOrg(org2.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org2?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
     "fail fetch an organization without organizations/read permission" in {
       aclChecker.delete(Label.unsafe("org1")).accepted
       forAll(
@@ -223,8 +255,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
         )
       ) { path =>
         Get(path) ~> routes ~> check {
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          response.status shouldEqual StatusCodes.Forbidden
+          response.shouldBeForbidden
         }
       }
     }

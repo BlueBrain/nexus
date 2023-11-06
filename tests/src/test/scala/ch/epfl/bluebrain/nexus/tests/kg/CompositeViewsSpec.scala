@@ -2,21 +2,19 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import io.circe.Json
 import io.circe.optics.JsonPath._
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
-import scala.concurrent.duration._
 
-class CompositeViewsSpec extends BaseSpec {
+class CompositeViewsSpec extends BaseIntegrationSpec {
 
-  private val logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   case class Stats(totalEvents: Long, remainingEvents: Long)
 
@@ -45,13 +43,11 @@ class CompositeViewsSpec extends BaseSpec {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- Task.parSequence(
-               List(
-                 adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
-                 adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
-                 adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
-               )
-             )
+        _ <- List(
+               adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
+               adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
+               adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+             ).sequence
       } yield succeed
     }
 
@@ -126,8 +122,6 @@ class CompositeViewsSpec extends BaseSpec {
 
   "creating the view" should {
 
-    def jerryToken = tokensMap.get(Jerry).credentials.token()
-
     "create a composite view" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
@@ -136,7 +130,8 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> jerryToken
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -151,14 +146,8 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" in {
-      Task
-        .sleep(10.seconds)
-        .runSyncUnsafe()
-      resetAndWait()
-    }
-
     "reject creating a composite view with remote source endpoint with a wrong suffix" in {
+      resetAndWait()
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -166,36 +155,13 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1/other",
-          "token"          -> jerryToken
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-      }
-    }
-
-    "reject creating a composite view with wrong remote source token" in {
-      val view = jsonContentOf(
-        "/kg/views/composite/composite-view.json",
-        replacements(
-          Jerry,
-          "org"            -> orgId,
-          "org2"           -> orgId,
-          "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> s"${jerryToken}wrong"
-        ): _*
-      )
-
-      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf(
-          "/kg/views/composite/composite-source-token-reject.json",
-          replacements(
-            Jerry,
-            "project" -> s"$orgId/songs"
-          ): _*
-        )
       }
     }
 
@@ -207,7 +173,8 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://fail.does.not.exist.at.all.asndkajbskhabsdfjhabsdfjkh/v1",
-          "token"          -> jerryToken
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -268,14 +235,11 @@ class CompositeViewsSpec extends BaseSpec {
           }
         }
     }
-
-    "waiting for data to be indexed" in
-      resetAndWait()
   }
 
   "searching the projections with more data" should {
     "find all bands" in {
-      waitForView()
+      resetAndWait()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
           (json, response) =>
@@ -312,7 +276,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> jerryToken
+          "token"          -> jerryToken,
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -327,15 +293,8 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" in {
-      Task
-        .sleep(10.seconds)
-        .runSyncUnsafe()
-      resetAndWait("composite-ctx")
-    }
-
     "find all bands with context" in {
-      waitForView("composite-ctx")
+      resetAndWait("composite-ctx")
       eventually {
         deltaClient
           .post[Json](s"/views/$orgId/bands/composite-ctx/projections/bands/_search", sortAscendingById, Jerry) {
@@ -351,35 +310,29 @@ class CompositeViewsSpec extends BaseSpec {
 
   private def waitForView(viewId: String = "composite") = {
     eventually {
-      deltaClient.get[Json](s"/views/$orgId/bands/$viewId/projections/_/statistics", Jerry) { (json, response) =>
-        val stats = root._results.each.as[Stats].getAll(json)
-        logger.debug(s"Response: ${response.status} with ${stats.size} stats")
-        stats.foreach { stat =>
-          logger.debug(s"totalEvents: ${stat.totalEvents}, remainingEvents: ${stat.remainingEvents}")
-          stat.totalEvents should be > 0L
-          stat.remainingEvents shouldEqual 0
+      logger.info("Waiting for view to be indexed") >>
+        deltaClient.get[Json](s"/views/$orgId/bands/$viewId/projections/_/statistics", Jerry) { (json, response) =>
+          val stats = root._results.each.as[Stats].getAll(json)
+          stats.foreach { stat =>
+            stat.totalEvents should be > 0L
+            stat.remainingEvents shouldEqual 0
+          }
+          response.status shouldEqual StatusCodes.OK
         }
-        response.status shouldEqual StatusCodes.OK
-      }
     }
-    Task
-      .sleep(5.seconds)
-      .runSyncUnsafe() // after the view reports completion there's a short window until ES returns the results
     succeed
   }
 
-  private def resetView(viewId: String) =
-    deltaClient.delete[Json](s"/views/$orgId/bands/$viewId/projections/_/offset", Jerry) { (_, response) =>
-      logger.info(s"Resetting view responded with ${response.status}")
-      response.status shouldEqual StatusCodes.OK
-    }
+  private def resetView(viewId: String) = {
+    logger.info("Resetting offsets") >>
+      deltaClient.delete[Json](s"/views/$orgId/bands/$viewId/projections/_/offset", Jerry) { (_, response) =>
+        response.status shouldEqual StatusCodes.OK
+      }
+  }
 
   private def resetAndWait(viewId: String = "composite") = {
-    logger.info("Waiting for view to be indexed")
     waitForView(viewId)
-    logger.info("Resetting offsets")
-    resetView(viewId).runSyncUnsafe()
-    logger.info("Waiting for view to be indexed again")
+    resetView(viewId).unsafeRunSync()
     waitForView(viewId)
   }
 
@@ -390,4 +343,75 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
   }
+
+}
+
+object CompositeViewsSpec {
+
+  private val bandQuery =
+    raw"""
+         |PREFIX  nxv:  <https://bluebrain.github.io/nexus/vocabulary/>
+         |PREFIX  music: <https://music.example.com/>
+         |
+         |CONSTRUCT
+         |  {
+         |    ?alias   music:name     ?bandName         ;
+         |             music:genre    ?bandGenre        ;
+         |             music:album    ?albumId          .
+         |    ?albumId music:released ?albumReleaseDate ;
+         |             music:song     ?songId           .
+         |    ?songId  music:title    ?songTitle        ;
+         |             music:number   ?songNumber       ;
+         |             music:length   ?songLength       .
+         |  }
+         |WHERE
+         |  { VALUES ?id { {resource_id} }
+         |    BIND(IRI(concat(str(?id), '/alias')) AS ?alias)
+         |
+         |    ?id  music:name   ?bandName ;
+         |         music:genre  ?bandGenre
+         |
+         |    OPTIONAL
+         |      { ?id ^music:by ?albumId .
+         |        ?albumId  music:released  ?albumReleaseDate
+         |        OPTIONAL
+         |          { ?albumId ^music:on ?songId .
+         |            ?songId  music:title   ?songTitle ;
+         |                     music:number  ?songNumber ;
+         |                     music:length  ?songLength
+         |          }
+         |      }
+         |  }
+         |ORDER BY ?songNumber
+         |""".stripMargin
+      .replaceAll("\\n", " ")
+
+  private val albumQuery =
+    raw"""
+         |PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+         |PREFIX  music: <https://music.example.com/>
+         |PREFIX  nxv:  <https://bluebrain.github.io/nexus/vocabulary/>
+         |
+         |CONSTRUCT 
+         |  { 
+         |    ?alias music:name          ?albumTitle    ;
+         |           music:length        ?albumLength   ;
+         |           music:numberOfSongs ?numberOfSongs .
+         |  }
+         |WHERE
+         |  { { SELECT  ?id ?albumReleaseDate ?albumTitle (SUM(xsd:integer(?songLength)) AS ?albumLength) (COUNT(?albumReleaseDate) AS ?numberOfSongs)
+         |      WHERE
+         |        { VALUES ?id { {resource_id} } .
+         |          OPTIONAL
+         |            { ?id ^music:on/music:length ?songLength }
+         |          ?id  music:released  ?albumReleaseDate ;
+         |               music:title     ?albumTitle .
+         |        }
+         |      GROUP BY ?id ?albumReleaseDate ?albumTitle
+         |    }
+         |    BIND(IRI(concat(str(?id), '/alias')) AS ?alias)
+         |  }
+         |""".stripMargin
+      .replaceAll("\\n", " ")
+
 }

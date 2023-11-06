@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.Sele
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
-import monix.bio.Task
 import org.apache.jena.graph.Node
 import shapeless.Typeable
 
@@ -27,7 +27,7 @@ class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] = Task.pure {
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] = IO.pure {
     if (config.forwardTypes.exists { p => p.exists(element.value.types.contains) }) {
       element
     } else {

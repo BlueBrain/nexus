@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -24,36 +25,43 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, R
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Schemas wiring
   */
 object SchemasModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+
+  make[ValidateSchema].fromEffect { (api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
+    ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
+
+  }
 
   make[Schemas].from {
     (
         fetchContext: FetchContext[ContextRejection],
         schemaImports: SchemaImports,
         api: JsonLdApi,
+        validate: ValidateSchema,
         resolverContextResolution: ResolverContextResolution,
         config: AppConfig,
         xas: Transactors,
-        clock: Clock[UIO],
+        clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
         fetchContext.mapRejection(ProjectContextRejection),
         schemaImports,
         resolverContextResolution,
+        validate,
         config.schemas,
         xas
-      )(api, clock, uuidF)
+      )(api, clock, timer, uuidF)
   }
 
   make[SchemaImports].from {
@@ -61,9 +69,10 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         resources: Resources,
-        schemas: Schemas
+        schemas: Schemas,
+        contextShift: ContextShift[IO]
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)
+      SchemaImports(aclCheck, resolvers, schemas, resources)(contextShift)
   }
 
   make[SchemasRoutes].from {
@@ -72,17 +81,15 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         schemas: Schemas,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Schema.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
+      new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
-        s,
         cr,
         ordering,
         fusionConfig

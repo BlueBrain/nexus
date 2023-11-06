@@ -1,39 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, RevisionNotFound, StorageIsDeprecated, StorageNotAccessible, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Files
 import java.time.Instant
 
-class StoragesStmSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with IOFixedClock
-    with OptionValues
-    with EitherValuable
-    with Inspectors
-    with IOValues
-    with StorageFixtures {
+class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
@@ -47,16 +35,18 @@ class StoragesStmSpec
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      IO.when(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
+      IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
     case (id, s3: S3StorageValue)             =>
-      IO.when(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
+      IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
     case (id, remote: RemoteDiskStorageValue) =>
-      IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
+      IO.whenA(remote.endpoint != remoteFields.endpoint.value)(
+        IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
+      )
   }
 
   private val perms = IO.pure(allowedPerms.toSet)
 
-  private val eval = evaluate(access, perms, config, crypto)(_, _)
+  private val eval = evaluate(access, perms, config)(_, _)
 
   "The Storages state machine" when {
 
@@ -109,7 +99,7 @@ class StoragesStmSpec
       "reject with IncorrectRev" in {
         val state    = storageState(dId, project, diskVal)
         val commands = List(
-          UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
+          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
           TagStorage(dId, project, 1, UserTag.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
@@ -136,7 +126,7 @@ class StoragesStmSpec
             rdId -> inaccessibleRemoteVal
           )
         ) { case (id, value) =>
-          val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
+          val createCmd = CreateStorage(id, project, value, Json.obj(), bob)
           eval(None, createCmd).rejected shouldBe a[StorageNotAccessible]
         }
 
@@ -147,7 +137,7 @@ class StoragesStmSpec
             remoteCurrent -> inaccessibleRemoteVal
           )
         ) { case (state, value) =>
-          val updateCmd = UpdateStorage(state.id, project, value, Secret(Json.obj()), 1, alice)
+          val updateCmd = UpdateStorage(state.id, project, value, Json.obj(), 1, alice)
           eval(Some(state), updateCmd).rejected shouldBe a[StorageNotAccessible]
         }
       }
@@ -167,7 +157,7 @@ class StoragesStmSpec
             (rdId, exceededSizeRemoteVal, config.remoteDisk.value.defaultMaxFileSize)
           )
         ) { case (id, value, maxFileSize) =>
-          val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
+          val createCmd = CreateStorage(id, project, value, Json.obj(), bob)
           eval(None, createCmd).rejected shouldEqual InvalidMaxFileSize(id, 100, maxFileSize)
         }
 
@@ -178,20 +168,20 @@ class StoragesStmSpec
             (remoteCurrent, exceededSizeRemoteVal, config.remoteDisk.value.defaultMaxFileSize)
           )
         ) { case (state, value, maxFileSize) =>
-          val updateCmd = UpdateStorage(state.id, project, value, Secret(Json.obj()), 1, alice)
+          val updateCmd = UpdateStorage(state.id, project, value, Json.obj(), 1, alice)
           eval(Some(state), updateCmd).rejected shouldEqual InvalidMaxFileSize(state.id, 100, maxFileSize)
         }
       }
 
       "reject with ResourceAlreadyExists when storage already exists" in {
         val state = storageState(dId, project, diskVal)
-        eval(Some(state), CreateStorage(dId, project, diskFields, Secret(Json.obj()), bob))
+        eval(Some(state), CreateStorage(dId, project, diskFields, Json.obj(), bob))
           .rejectedWith[ResourceAlreadyExists]
       }
 
       "reject with StorageNotFound" in {
         val commands = List(
-          UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
+          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
           TagStorage(dId, project, 1, UserTag.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
@@ -203,7 +193,7 @@ class StoragesStmSpec
       "reject with StorageIsDeprecated" in {
         val state    = storageState(dId, project, diskVal, rev = 2, deprecated = true)
         val commands = List(
-          UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
+          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -222,12 +212,12 @@ class StoragesStmSpec
         val s3Current     = storageState(s3Id, project, s3Val)
         val remoteCurrent = storageState(rdId, project, remoteVal)
         val list          = List(
-          diskCurrent   -> UpdateStorage(dId, project, s3Fields, Secret(Json.obj()), 1, alice),
-          diskCurrent   -> UpdateStorage(dId, project, remoteFields, Secret(Json.obj()), 1, alice),
-          s3Current     -> UpdateStorage(s3Id, project, diskFields, Secret(Json.obj()), 1, alice),
-          s3Current     -> UpdateStorage(s3Id, project, remoteFields, Secret(Json.obj()), 1, alice),
-          remoteCurrent -> UpdateStorage(rdId, project, diskFields, Secret(Json.obj()), 1, alice),
-          remoteCurrent -> UpdateStorage(rdId, project, s3Fields, Secret(Json.obj()), 1, alice)
+          diskCurrent   -> UpdateStorage(dId, project, s3Fields, Json.obj(), 1, alice),
+          diskCurrent   -> UpdateStorage(dId, project, remoteFields, Json.obj(), 1, alice),
+          s3Current     -> UpdateStorage(s3Id, project, diskFields, Json.obj(), 1, alice),
+          s3Current     -> UpdateStorage(s3Id, project, remoteFields, Json.obj(), 1, alice),
+          remoteCurrent -> UpdateStorage(rdId, project, diskFields, Json.obj(), 1, alice),
+          remoteCurrent -> UpdateStorage(rdId, project, s3Fields, Json.obj(), 1, alice)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[DifferentStorageType]
@@ -241,8 +231,8 @@ class StoragesStmSpec
       val storageValue = s3Fields.copy(readPermission = Some(read), writePermission = Some(write))
       val current      = storageState(s3Id, project, s3Val)
       val list         = List(
-        None          -> CreateStorage(s3Id, project, storageValue, Secret(Json.obj()), bob),
-        Some(current) -> UpdateStorage(s3Id, project, storageValue, Secret(Json.obj()), 1, alice)
+        None          -> CreateStorage(s3Id, project, storageValue, Json.obj(), bob),
+        Some(current) -> UpdateStorage(s3Id, project, storageValue, Json.obj(), 1, alice)
       )
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejected shouldEqual PermissionsAreNotDefined(Set(read, write))
@@ -253,10 +243,10 @@ class StoragesStmSpec
       val s3Current                 = storageState(s3Id, project, s3Val)
       val remoteCurrent             = storageState(rdId, project, remoteVal)
       val list                      = List(
-        None                -> CreateStorage(s3Id, project, s3Fields, Secret(Json.obj()), bob),
-        None                -> CreateStorage(s3Id, project, remoteFields, Secret(Json.obj()), bob),
-        Some(s3Current)     -> UpdateStorage(s3Id, project, s3Fields, Secret(Json.obj()), 1, alice),
-        Some(remoteCurrent) -> UpdateStorage(rdId, project, remoteFields, Secret(Json.obj()), 1, alice)
+        None                -> CreateStorage(s3Id, project, s3Fields, Json.obj(), bob),
+        None                -> CreateStorage(s3Id, project, remoteFields, Json.obj(), bob),
+        Some(s3Current)     -> UpdateStorage(s3Id, project, s3Fields, Json.obj(), 1, alice),
+        Some(remoteCurrent) -> UpdateStorage(rdId, project, remoteFields, Json.obj(), 1, alice)
       )
       val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
@@ -266,7 +256,7 @@ class StoragesStmSpec
         remoteDisk  = None
       )
       // format: on
-      val eval                      = evaluate(access, perms, config, crypto)(_, _)
+      val eval                      = evaluate(access, perms, config)(_, _)
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejectedWith[InvalidStorageType]
       }

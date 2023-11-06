@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
-import cats.effect.Clock
-import cats.implicits.toFoldableOps
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
@@ -19,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidSchema, InvalidSchemaId, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaFetchRejection, SchemaIsDeprecated, SchemaNotFound, SchemaShaclEngineRejection, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -27,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 /**
   * Operations pertaining to managing schemas.
@@ -42,7 +38,7 @@ trait Schemas {
     * @param source
     *   the schema payload
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+  def create(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaResource]
 
   /**
     * Creates a new schema with the expanded form of the passed id.
@@ -58,7 +54,18 @@ trait Schemas {
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Caller): IO[SchemaResource]
+
+  /**
+    * Generates the schema where the id is either present on the payload or self generated without persisting it in the
+    * primary store.
+    *
+    * @param projectRef
+    *   the project reference where the schema belongs
+    * @param source
+    *   the schema payload
+    */
+  def createDryRun(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaResource]
 
   /**
     * Updates an existing schema.
@@ -77,7 +84,7 @@ trait Schemas {
       projectRef: ProjectRef,
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Caller): IO[SchemaResource]
 
   /**
     * Refreshes an existing schema. This is equivalent to posting an update with the latest source. Used for when the
@@ -91,7 +98,7 @@ trait Schemas {
   def refresh(
       id: IdSegment,
       projectRef: ProjectRef
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Caller): IO[SchemaResource]
 
   /**
     * Adds a tag to an existing schema.
@@ -113,7 +120,7 @@ trait Schemas {
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Subject): IO[SchemaResource]
 
   /**
     * Delete a tag on an existing schema.
@@ -132,7 +139,7 @@ trait Schemas {
       projectRef: ProjectRef,
       tag: UserTag,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Subject): IO[SchemaResource]
 
   /**
     * Deprecates an existing schema.
@@ -148,7 +155,7 @@ trait Schemas {
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Subject): IO[SchemaResource]
 
   /**
     * Fetches a schema.
@@ -158,7 +165,7 @@ trait Schemas {
     * @param projectRef
     *   the project reference where the schema belongs
     */
-  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource]
+  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource]
 
   /**
     * Fetch the [[Schema]] from the provided ''projectRef'' and ''resourceRef''. Return on the error channel if the
@@ -169,28 +176,11 @@ trait Schemas {
     * @param projectRef
     *   the project reference where the schema belongs
     */
-  def fetch[R](
+  def fetch(
       resourceRef: ResourceRef,
       projectRef: ProjectRef
-  )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, SchemaResource] =
-    fetch(IdSegmentRef(resourceRef), projectRef).mapError(rejectionMapper.to)
+  ): IO[SchemaResource] = fetch(IdSegmentRef(resourceRef), projectRef)
 
-  /**
-    * Fetch the active [[Schema]] from the provided ''projectRef'' and ''resourceRef''. Return on the error channel if
-    * the schema is deprecated [[SchemaIsDeprecated]] or not found [[SchemaNotFound]]
-    *
-    * @param resourceRef
-    *   the resource identifier of the schema
-    * @param projectRef
-    *   the project reference where the schema belongs
-    */
-  def fetchActiveSchema[R](
-      resourceRef: ResourceRef,
-      projectRef: ProjectRef
-  )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, Schema] =
-    fetch(resourceRef, projectRef).flatMap(res =>
-      IO.raiseWhen(res.deprecated)(rejectionMapper.to(SchemaIsDeprecated(resourceRef.original))).as(res.value)
-    )
 }
 
 object Schemas {
@@ -253,34 +243,25 @@ object Schemas {
     }
   }
 
-  private[delta] def evaluate(
+  private[delta] def evaluate(shaclValidation: ValidateSchema)(
       state: Option[SchemaState],
       cmd: SchemaCommand
-  )(implicit api: JsonLdApi, clock: Clock[UIO]): IO[SchemaRejection, SchemaEvent] = {
-
-    def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
-      val eitherGraph =
-        toFoldableOps(expanded).foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ (_: Graph)))
-      IO.fromEither(eitherGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
-    }
-
-    def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
+  )(implicit clock: Clock[IO]): IO[SchemaEvent] = {
+    def validate(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[Unit] =
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
-        report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _: String))
-        result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
+        report <- shaclValidation(id, expanded)
+        result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
       } yield result
 
     def create(c: CreateSchema) =
       state match {
         case None =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            t     <- IOUtils.instant
-          } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, t, c.subject)
-
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, now, c.subject)
+            }
+        case _    => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =
@@ -292,12 +273,10 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            time  <- IOUtils.instant
-          } yield SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
-
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, now, c.subject)
+            }
       }
 
     def refresh(c: RefreshSchema) =
@@ -309,12 +288,10 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            time  <- IOUtils.instant
-          } yield SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, time, c.subject)
-
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, now, c.subject)
+            }
       }
 
     def tag(c: TagSchema) =
@@ -326,7 +303,7 @@ object Schemas {
         case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case Some(s)                                            =>
-          IOUtils.instant.map(
+          IOInstant.now.map(
             SchemaTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1, _: java.time.Instant, c.subject)
           )
 
@@ -341,7 +318,7 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          IOUtils.instant.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
+          IOInstant.now.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
       }
 
     def deleteTag(c: DeleteSchemaTag) =
@@ -352,7 +329,7 @@ object Schemas {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
         case Some(s)                            =>
-          IOUtils.instant.map(SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject))
+          IOInstant.now.map(SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject))
       }
 
     cmd match {
@@ -368,13 +345,12 @@ object Schemas {
   /**
     * Entity definition for [[Schemas]]
     */
-  def definition(implicit
-      api: JsonLdApi,
-      clock: Clock[UIO]
+  def definition(validate: ValidateSchema)(implicit
+      clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate, next),
+      StateMachine(None, evaluate(validate)(_, _).toBIO[SchemaRejection], next),
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](

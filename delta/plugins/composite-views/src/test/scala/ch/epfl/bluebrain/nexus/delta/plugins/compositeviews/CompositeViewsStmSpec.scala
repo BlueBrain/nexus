@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -10,29 +11,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class CompositeViewsStmSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with OptionValues
-    with IOValues
-    with TestHelpers
-    with CompositeViewsFixture {
+class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
-    val validView: ValidateCompositeView   = (_, _, _) => IO.unit
-    val invalidView: ValidateCompositeView = (_, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
+    val validView: ValidateCompositeView   = (_, _) => IO.unit
+    val invalidView: ValidateCompositeView = (_, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
 
     def current(
         id: Iri = id,

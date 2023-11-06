@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expandIri, ArchiveLog}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -18,13 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog, Transactors}
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 /**
   * Archives module.
@@ -50,30 +50,14 @@ class Archives(
     archiveDownload: ArchiveDownload,
     sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
     config: EphemeralLogConfig
-)(implicit uuidF: UUIDF, rcr: RemoteContextResolution) {
+)(implicit rcr: RemoteContextResolution) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   /**
-    * Creates an archive with a system generated id.
-    *
-    * @param project
-    *   the archive parent project
-    * @param value
-    *   the archive value
-    * @param subject
-    *   the subject that initiated the action
-    */
-  def create(
-      project: ProjectRef,
-      value: ArchiveValue
-  )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
-    uuidF().flatMap(uuid => create(uuid.toString, project, value))
-
-  /**
     * Creates an archive with a specific id.
     *
-    * @param id
+    * @param iri
     *   the archive identifier
     * @param project
     *   the archive parent project
@@ -82,16 +66,8 @@ class Archives(
     * @param subject
     *   the subject that initiated the action
     */
-  def create(
-      id: IdSegment,
-      project: ProjectRef,
-      value: ArchiveValue
-  )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
-    (for {
-      p   <- fetchContext.onRead(project)
-      iri <- expandIri(id, p)
-      res <- eval(CreateArchive(iri, project, value, subject), p)
-    } yield res).span("createArchive")
+  def create(iri: Iri, project: ProjectRef, value: ArchiveValue)(implicit subject: Subject): IO[ArchiveResource] =
+    eval(CreateArchive(iri, project, value, subject)).span("createArchive")
 
   /**
     * Creates an archive from a json-ld representation. If an id is detected in the source document it will be used.
@@ -104,11 +80,11 @@ class Archives(
     * @param subject
     *   the subject that initiated the action
     */
-  def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
+  def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveResource] =
     (for {
-      p            <- fetchContext.onRead(project)
-      (iri, value) <- sourceDecoder(p, source)
-      res          <- eval(CreateArchive(iri, project, value, subject), p)
+      p            <- toCatsIO(fetchContext.onRead(project))
+      (iri, value) <- toCatsIO(sourceDecoder(p, source))
+      res          <- create(iri, project, value)
     } yield res).span("createArchive")
 
   /**
@@ -129,12 +105,11 @@ class Archives(
       id: IdSegment,
       project: ProjectRef,
       source: Json
-  )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
+  )(implicit subject: Subject): IO[ArchiveResource] =
     (for {
-      p     <- fetchContext.onRead(project)
-      iri   <- expandIri(id, p)
-      value <- sourceDecoder(p, iri, source)
-      res   <- eval(CreateArchive(iri, project, value, subject), p)
+      (iri, p) <- expandWithContext(id, project)
+      value    <- toCatsIO(sourceDecoder(p, iri, source))
+      res      <- create(iri, project, value)
     } yield res).span("createArchive")
 
   /**
@@ -145,13 +120,13 @@ class Archives(
     * @param project
     *   the archive parent project
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[ArchiveRejection, ArchiveResource] =
-    (for {
-      p     <- fetchContext.onRead(project)
-      iri   <- expandIri(id, p)
-      state <- log.stateOr(project, iri, ArchiveNotFound(iri, project))
-      res    = state.toResource(p.apiMappings, p.base, config.ttl)
-    } yield res).span("fetchArchive")
+  def fetch(id: IdSegment, project: ProjectRef): IO[ArchiveResource] = {
+    for {
+      (iri, _) <- expandWithContext(id, project)
+      state    <- log.stateOr(project, iri, ArchiveNotFound(iri, project))
+      res       = state.toResource(config.ttl)
+    } yield res
+  }.span("fetchArchive")
 
   /**
     * Provides an [[AkkaSource]] for streaming an archive content.
@@ -167,17 +142,22 @@ class Archives(
       id: IdSegment,
       project: ProjectRef,
       ignoreNotFound: Boolean
-  )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] =
+  )(implicit caller: Caller): IO[AkkaSource] =
     (for {
       resource <- fetch(id, project)
       value     = resource.value
       source   <- archiveDownload(value.value, project, ignoreNotFound)
     } yield source).span("downloadArchive")
 
-  private def eval(cmd: CreateArchive, pc: ProjectContext): IO[ArchiveRejection, ArchiveResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map {
-      _.toResource(pc.apiMappings, pc.base, config.ttl)
-    }
+  private def expandWithContext(id: IdSegment, project: ProjectRef) = toCatsIO {
+    for {
+      p   <- fetchContext.onRead(project)
+      iri <- expandIri(id, p)
+    } yield (iri, p)
+  }
+
+  private def eval(cmd: CreateArchive): IO[ArchiveResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map { _.toResource(config.ttl) }
 }
 
 object Archives {
@@ -213,7 +193,8 @@ object Archives {
       api: JsonLdApi,
       uuidF: UUIDF,
       rcr: RemoteContextResolution,
-      clock: Clock[UIO]
+      clock: Clock[IO],
+      execution: EvaluationExecution
   ): Archives = new Archives(
     EphemeralLog(
       definition,
@@ -226,7 +207,7 @@ object Archives {
     cfg.ephemeral
   )
 
-  private def definition(implicit clock: Clock[UIO]) =
+  private def definition(implicit clock: Clock[IO]) =
     EphemeralDefinition(
       entityType,
       evaluate,
@@ -242,9 +223,9 @@ object Archives {
 
   private[archive] def evaluate(
       command: CreateArchive
-  )(implicit clock: Clock[UIO]): IO[ArchiveRejection, ArchiveState] =
-    IOUtils.instant.map { instant =>
-      ArchiveState(command.id, command.project, command.value.resources, instant, command.subject)
+  )(implicit clock: Clock[IO]): IO[ArchiveState] =
+    IOInstant.now.map { now =>
+      ArchiveState(command.id, command.project, command.value.resources, now, command.subject)
     }
 
 }

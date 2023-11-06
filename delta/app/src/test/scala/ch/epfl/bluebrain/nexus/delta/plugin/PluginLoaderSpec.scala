@@ -1,24 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.Task
-import monix.execution.Scheduler
-import monix.execution.Scheduler.Implicits.global
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
+class PluginLoaderSpec extends CatsEffectSpec with ScalatestRouteTest with CatsRunContext {
 
   private val baseUri       = BaseUri.withoutPrefix("http://localhost")
   private val serviceModule = new ModuleDef {
     make[BaseUri].fromValue(baseUri)
-    make[Scheduler].from(Scheduler.global)
   }
 
   "A PluginLoader" should {
@@ -26,7 +22,7 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     "load plugins from .jar in a directory" in {
       val (_, pluginsDef) = PluginsLoader(config).load.accepted
       WiringInitializer(serviceModule, pluginsDef).use { case (_, locator) =>
-        Task.delay {
+        IO.delay {
           val route = locator.get[Set[PriorityRoute]].head
           pluginsDef.head.priority shouldEqual 10
           Get("/test-plugin") ~> route.route ~> check {

@@ -2,10 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 
@@ -19,6 +21,8 @@ trait ConfigFixtures {
 
   def eventLogConfig: EventLogConfig = EventLogConfig(queryConfig, 5.seconds)
 
+  def aclsConfig: AclsConfig = AclsConfig(eventLogConfig)
+
   def pagination: PaginationConfig =
     PaginationConfig(
       defaultSize = 30,
@@ -27,8 +31,16 @@ trait ConfigFixtures {
     )
 
   def httpClientConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, false)
 
-  def fusionConfig: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
+  def fusionConfig: FusionConfig =
+    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
 
+  def deletionConfig: ProjectsConfig.DeletionConfig = ProjectsConfig.DeletionConfig(
+    enabled = true,
+    1.second,
+    RetryStrategyConfig.AlwaysGiveUp
+  )
+
+  def logConfig: EventLogConfig = EventLogConfig(queryConfig, 10.seconds)
 }

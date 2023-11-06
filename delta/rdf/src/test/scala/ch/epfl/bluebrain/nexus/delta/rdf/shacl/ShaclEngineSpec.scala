@@ -7,22 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ShaclEngineSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with IOValues
-    with EitherValuable
-    with Inspectors {
+class ShaclEngineSpec extends CatsEffectSpec {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
   "A ShaclEngine" should {
+
+    implicit val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
 
     val schema           = jsonContentOf("shacl/schema.json")
     val resource         = jsonContentOf("shacl/resource.json")

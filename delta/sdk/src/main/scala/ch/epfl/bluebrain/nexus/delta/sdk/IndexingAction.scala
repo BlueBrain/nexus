@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.data.NonEmptyList
 import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
@@ -13,9 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, Projection}
-import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task, UIO}
-import fs2.Stream
 
 import scala.concurrent.duration._
 
@@ -36,96 +35,83 @@ trait IndexingAction {
     * @param elem
     *   the element to index
     */
-  def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      cr: RemoteContextResolution
-  ): ElemStream[CompiledProjection]
-
-  /**
-    * Perform an indexing action based on the indexing parameter.
-    *
-    * @param project
-    *   the project in which the resource is located
-    * @param res
-    *   the resource to perform the indexing action for
-    * @param indexingMode
-    *   the execution type
-    */
-  def apply[A](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
-      shift: ResourceShift[_, A, _],
-      cr: RemoteContextResolution
-  ): UIO[Unit] = {
-    indexingMode match {
-      case Async => UIO.unit
-      case Sync  =>
-        for {
-          _      <- UIO.delay(logger.debug("Synchronous indexing of resource '{}/{}' has been requested.", project, res.id))
-          // We create the GraphResource wrapped in an `Elem`
-          elem   <- shift.toGraphResourceElem(project, res)
-          errors <- apply(project, elem)
-          _      <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors.map(_.throwable)))
-        } yield ()
-    }
-  }.hideErrors
+  def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection]
 
   def apply(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      cr: RemoteContextResolution
-  ): Task[List[FailedElem]] = {
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ): IO[List[FailedElem]] = {
     for {
       // To collect the errors
-      errorsRef <- Ref.of[Task, List[FailedElem]](List.empty)
+      errorsRef <- Ref.of[IO, List[FailedElem]](List.empty)
       // We build and start the projections where the resource will apply
       _         <- projections(project, elem)
-                     // TODO make this configurable
-                     .parEvalMap(5) {
+                     .evalMap {
                        case s: SuccessElem[CompiledProjection] =>
-                         runProjection(s.value, failed => errorsRef.update(_ ++ failed).hideErrors)
-                       case _: DroppedElem                     => UIO.unit
-                       case f: FailedElem                      => UIO.delay(logger.error(s"Fetching '$f' returned an error.", f.throwable)).as(None)
+                         runProjection(s.value, failed => errorsRef.update(_ ++ failed))
+                       case _: DroppedElem                     => IO.unit
+                       case f: FailedElem                      => logger.error(f.throwable)(s"Fetching '$f' returned an error.").as(None)
                      }
                      .compile
                      .toList
-                     .hideErrors
-      errors    <- errorsRef.get.hideErrors
+      errors    <- errorsRef.get
     } yield errors
   }
 
-  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => UIO[Unit]) =
+  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit])(implicit
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ) = {
     for {
-      projection <- Projection(compiled, UIO.none, _ => UIO.unit, saveFailedElems)
+      projection <- Projection(compiled, IO.none, _ => IO.unit, saveFailedElems(_))
       _          <- projection.waitForCompletion(timeout)
       // We stop the projection if it has not complete yet
       _          <- projection.stop()
     } yield ()
+  }
 }
 
 object IndexingAction {
 
-  type Execute[A] = (ProjectRef, ResourceF[A], IndexingMode) => UIO[Unit]
+  type Execute[A] = (ProjectRef, ResourceF[A], IndexingMode) => IO[Unit]
 
   /**
     * Does not perform any action
     */
-  def noop[A]: Execute[A] = (_, _, _) => UIO.unit
+  def noop[A]: Execute[A] = (_, _, _) => IO.unit
 
-  private val logger: Logger = Logger[IndexingAction]
-
-  private val noProjection: ElemStream[CompiledProjection] = Stream.empty
+  private val logger = Logger.cats[IndexingAction]
 
   /**
     * An instance of [[IndexingAction]] which executes other [[IndexingAction]] s in parallel.
     */
-  final class AggregateIndexingAction(private val internal: NonEmptyList[IndexingAction]) extends IndexingAction {
+  final class AggregateIndexingAction(private val internal: NonEmptyList[IndexingAction])(implicit
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      cr: RemoteContextResolution
+  ) {
 
-    // We pick the maximum timeout of all
-    override val timeout: FiniteDuration = internal.maximumBy(_.timeout).timeout
-
-    override def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
-        cr: RemoteContextResolution
-    ): ElemStream[CompiledProjection] =
-      internal.foldLeft(noProjection) { case (acc, action) => acc.merge(action.projections(project, elem)) }
+    def apply[A](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
+        shift: ResourceShift[_, A, _]
+    ): IO[Unit] =
+      indexingMode match {
+        case Async => IO.unit
+        case Sync  =>
+          for {
+            _               <- logger.debug(s"Synchronous indexing of resource '$project/${res.id}' has been requested.")
+            // We create the GraphResource wrapped in an `Elem`
+            elem            <- shift.toGraphResourceElem(project, res)
+            errorsPerAction <- internal.traverse(_.apply(project, elem))
+            errors           = errorsPerAction.toList.flatMap(_.map(_.throwable))
+            _               <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors))
+          } yield ()
+      }
   }
 
   object AggregateIndexingAction {
-    def apply(internal: NonEmptyList[IndexingAction]): AggregateIndexingAction = new AggregateIndexingAction(internal)
+    def apply(
+        internal: NonEmptyList[IndexingAction]
+    )(implicit timer: Timer[IO], contextShift: ContextShift[IO], cr: RemoteContextResolution): AggregateIndexingAction =
+      new AggregateIndexingAction(internal)
   }
 }

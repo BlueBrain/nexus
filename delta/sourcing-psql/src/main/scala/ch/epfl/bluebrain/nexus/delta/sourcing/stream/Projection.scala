@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, ExitCase, Fiber, IO, Timer}
+import cats.implicits.catsSyntaxFlatMapOps
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Projection.logger
 import fs2.concurrent.SignallingRef
-import monix.bio.{Fiber, Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -24,30 +26,30 @@ import scala.concurrent.duration.FiniteDuration
   */
 final class Projection private[stream] (
     val name: String,
-    status: Ref[Task, ExecutionStatus],
-    progress: Ref[Task, ProjectionProgress],
-    signal: SignallingRef[Task, Boolean],
-    fiber: Ref[Task, Fiber[Throwable, Unit]]
+    status: Ref[IO, ExecutionStatus],
+    progress: Ref[IO, ProjectionProgress],
+    signal: SignallingRef[IO, Boolean],
+    fiber: Ref[IO, Fiber[IO, Unit]]
 ) {
 
   /**
     * @return
     *   the current execution status of this projection
     */
-  def executionStatus: Task[ExecutionStatus] =
+  def executionStatus: IO[ExecutionStatus] =
     status.get
 
   /**
     * Return the current progress for this projection
     * @return
     */
-  def currentProgress: Task[ProjectionProgress] = progress.get
+  def currentProgress: IO[ProjectionProgress] = progress.get
 
   /**
     * @return
     *   true if the projection is still running, false otherwise
     */
-  def isRunning: Task[Boolean] =
+  def isRunning: IO[Boolean] =
     status.get.map(_.isRunning)
 
   /**
@@ -56,21 +58,37 @@ final class Projection private[stream] (
     *   the maximum time expected for the projection to complete
     * @return
     */
-  def waitForCompletion(timeout: FiniteDuration): Task[ExecutionStatus] =
-    executionStatus
-      .restartUntil {
-        case ExecutionStatus.Completed => true
-        case ExecutionStatus.Failed(_) => true
-        case ExecutionStatus.Stopped   => true
-        case _                         => false
+
+  def waitForCompletion(timeout: FiniteDuration)(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[ExecutionStatus] =
+    iterateUntilCompletion
+      .timeoutTo(timeout, logger.error(s"Timeout waiting for completion on projection $name") >> executionStatus)
+
+  private def statusMeansStopped(executionStatus: ExecutionStatus): Boolean = {
+    executionStatus match {
+      case ExecutionStatus.Completed => true
+      case ExecutionStatus.Failed(_) => true
+      case ExecutionStatus.Stopped   => true
+      case _                         => false
+    }
+  }
+
+  private def iterateUntilCompletion(implicit cs: ContextShift[IO]): IO[ExecutionStatus] = {
+    (for {
+      status <- executionStatus
+      _      <- cs.shift
+    } yield status).flatMap { status =>
+      if (statusMeansStopped(status)) {
+        IO.pure(status)
+      } else {
+        iterateUntilCompletion
       }
-      .timeout(timeout)
-      .flatMap(_ => executionStatus)
+    }
+  }
 
   /**
     * Stops the projection. Has no effect if the projection is already stopped.
     */
-  def stop(): Task[Unit] =
+  def stop(): IO[Unit] =
     for {
       f <- fiber.get
       _ <- status.update(_ => ExecutionStatus.Stopped)
@@ -81,13 +99,14 @@ final class Projection private[stream] (
 
 object Projection {
 
+  val logger                                                              = Logger.cats[Projection]
   private val persistInit: (List[FailedElem], Option[ProjectionProgress]) = (List.empty[FailedElem], None)
 
   def persist[A](
       progress: ProjectionProgress,
-      saveProgress: ProjectionProgress => UIO[Unit],
-      saveFailedElems: List[FailedElem] => UIO[Unit]
-  )(implicit batch: BatchConfig): ElemPipe[A, Unit] =
+      saveProgress: ProjectionProgress => IO[Unit],
+      saveFailedElems: List[FailedElem] => IO[Unit]
+  )(implicit batch: BatchConfig, timer: Timer[IO], cs: ContextShift[IO]): ElemPipe[A, Unit] =
     _.mapAccumulate(progress) {
       case (acc, elem) if elem.offset.value > progress.offset.value => (acc + elem, elem)
       case (acc, elem)                                              => (acc, elem)
@@ -99,9 +118,9 @@ object Projection {
         }
 
         last
-          .fold(UIO.unit) { newProgress =>
+          .fold(IO.unit) { newProgress =>
             saveProgress(newProgress) >>
-              UIO.when(errors.nonEmpty)(saveFailedElems(errors))
+              IO.whenA(errors.nonEmpty)(saveFailedElems(errors))
           }
           .void
       }
@@ -109,29 +128,29 @@ object Projection {
 
   def apply(
       projection: CompiledProjection,
-      fetchProgress: UIO[Option[ProjectionProgress]],
-      saveProgress: ProjectionProgress => UIO[Unit],
-      saveFailedElems: List[FailedElem] => UIO[Unit]
-  )(implicit batch: BatchConfig): Task[Projection] =
+      fetchProgress: IO[Option[ProjectionProgress]],
+      saveProgress: ProjectionProgress => IO[Unit],
+      saveFailedElems: List[FailedElem] => IO[Unit]
+  )(implicit batch: BatchConfig, timer: Timer[IO], cs: ContextShift[IO]): IO[Projection] =
     for {
-      status      <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Pending)
-      signal      <- SignallingRef[Task, Boolean](false)
+      status      <- Ref[IO].of[ExecutionStatus](ExecutionStatus.Pending)
+      signal      <- SignallingRef[IO, Boolean](false)
       progress    <- fetchProgress.map(_.getOrElse(ProjectionProgress.NoProgress))
-      progressRef <- Ref[Task].of(progress)
+      progressRef <- Ref[IO].of(progress)
       stream       = projection.streamF
                        .apply(progress.offset)(status)(signal)
                        .interruptWhen(signal)
                        .onFinalizeCaseWeak {
                          case ExitCase.Error(th) => status.update(_.failed(th))
-                         case ExitCase.Completed => Task.unit // streams stopped through a signal still finish as Completed
-                         case ExitCase.Canceled  => Task.unit // the status is updated by the logic that cancels the stream
+                         case ExitCase.Completed => IO.unit // streams stopped through a signal still finish as Completed
+                         case ExitCase.Canceled  => IO.unit // the status is updated by the logic that cancels the stream
                        }
       persisted    =
         stream
           .through(
             persist(
               progress,
-              (progress: ProjectionProgress) => progressRef.set(progress).hideErrors >> saveProgress(progress),
+              (progress: ProjectionProgress) => progressRef.set(progress) >> saveProgress(progress),
               saveFailedElems
             )
           )
@@ -142,7 +161,7 @@ object Projection {
                        if (s.isRunning) ExecutionStatus.Completed else s
                      )
       fiber       <- task.start
-      fiberRef    <- Ref[Task].of(fiber)
+      fiberRef    <- Ref[IO].of(fiber)
     } yield new Projection(projection.metadata.name, status, progressRef, signal, fiberRef)
 
 }

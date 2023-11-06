@@ -1,21 +1,20 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import java.io.ByteArrayInputStream
-import java.nio.file.{Files, Path, Paths}
-
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.io.FileUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
 
+import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.tailrec
+import scala.reflect.io.{Directory => ScalaDirectory}
 
 class TarFlowSpec
     extends TestKit(ActorSystem("TarFlowSpec"))
@@ -23,7 +22,6 @@ class TarFlowSpec
     with Matchers
     with IOEitherValues
     with Randomness
-    with EitherValues
     with OptionValues
     with Inspectors
     with BeforeAndAfterAll {
@@ -34,7 +32,7 @@ class TarFlowSpec
 
   override def afterAll(): Unit = {
     super.afterAll()
-    FileUtils.cleanDirectory(basePath.toFile)
+    ScalaDirectory(basePath.toFile).deleteRecursively()
     ()
   }
 
@@ -49,11 +47,11 @@ class TarFlowSpec
 
     "generate the byteString for a tar file correctly" in {
       val file1        = dir1.resolve("file1.txt")
-      val file1Content = genString()
+      val file1Content = randomString()
       val file2        = dir1.resolve("file3.txt")
-      val file2Content = genString()
+      val file2Content = randomString()
       val file3        = dir2.resolve("file3.txt")
-      val file3Content = genString()
+      val file3Content = randomString()
       val files        = List(file1 -> file1Content, file2 -> file2Content, file3 -> file3Content)
       forAll(files) { case (file, content) =>
         Source.single(ByteString(content)).runWith(FileIO.toPath(file)).futureValue

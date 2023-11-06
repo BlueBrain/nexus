@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.IO
 import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -10,7 +11,6 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax.EncoderOps
-import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -78,6 +78,13 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def dropped: DroppedElem = DroppedElem(tpe, id, project, instant, offset, rev)
 
+  /** Action of dropping an Elem */
+  def drop: Elem[Nothing] = this match {
+    case e: SuccessElem[A] => e.dropped
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
+
   /**
     * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
     * @param f
@@ -107,21 +114,18 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @param f
     *   the mapping function
     */
-  def evalMap[B](f: A => Task[B]): UIO[Elem[B]] = this match {
+  def evalMap[B](f: A => IO[B]): IO[Elem[B]] = this match {
     case e: SuccessElem[A] =>
-      f(e.value).redeemCause(
-        c => e.failed(c.toThrowable),
-        e.success
-      )
-    case e: FailedElem     => UIO.pure(e)
-    case e: DroppedElem    => UIO.pure(e)
+      f(e.value).redeem(c => e.failed(c), e.success)
+    case e: FailedElem     => IO.pure(e)
+    case e: DroppedElem    => IO.pure(e)
   }
 
   /**
     * Effectfully maps and filters the elem depending on the optionality of the result of the application of the
     * effectful function `f`.
     */
-  def evalMapFilter[B](f: A => Task[Option[B]]): UIO[Elem[B]] = this match {
+  def evalMapFilter[B](f: A => IO[Option[B]]): IO[Elem[B]] = this match {
     case e: SuccessElem[A] =>
       f(e.value).redeem(
         e.failed,
@@ -130,8 +134,8 @@ sealed trait Elem[+A] extends Product with Serializable {
           case None    => e.dropped
         }
       )
-    case e: FailedElem     => UIO.pure(e)
-    case e: DroppedElem    => UIO.pure(e)
+    case e: FailedElem     => IO.pure(e)
+    case e: DroppedElem    => IO.pure(e)
   }
 
   /**
@@ -147,6 +151,15 @@ sealed trait Elem[+A] extends Product with Serializable {
     case e: SuccessElem[A] => Some(e.value)
     case _: FailedElem     => None
     case _: DroppedElem    => None
+  }
+
+  /**
+    * Returns the value as an [[IO]], raising a error on the failed case
+    */
+  def toIO: IO[Option[A]] = this match {
+    case e: SuccessElem[A] => IO.pure(Some(e.value))
+    case f: FailedElem     => IO.raiseError(f.throwable)
+    case _: DroppedElem    => IO.none
   }
 
   /**

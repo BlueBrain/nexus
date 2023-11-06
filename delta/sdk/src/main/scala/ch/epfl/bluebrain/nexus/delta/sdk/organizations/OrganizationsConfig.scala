@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader

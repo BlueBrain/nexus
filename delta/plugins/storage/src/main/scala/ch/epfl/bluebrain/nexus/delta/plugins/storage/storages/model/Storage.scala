@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
@@ -15,17 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-
-import scala.util.{Failure, Success, Try}
 
 sealed trait Storage extends Product with Serializable {
 
@@ -51,7 +46,7 @@ sealed trait Storage extends Product with Serializable {
     * @return
     *   the original json document provided at creation or update
     */
-  def source: Secret[Json]
+  def source: Json
 
   /**
     * @return
@@ -76,8 +71,6 @@ sealed trait Storage extends Product with Serializable {
 
 object Storage {
 
-  private val logger: Logger = Logger[Storage]
-
   /**
     * A storage that stores and fetches files from a local volume
     */
@@ -86,7 +79,7 @@ object Storage {
       project: ProjectRef,
       value: DiskStorageValue,
       tags: Tags,
-      source: Secret[Json]
+      source: Json
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
@@ -94,7 +87,7 @@ object Storage {
     def fetchFile: FetchFile =
       DiskStorageFetchFile
 
-    def saveFile(implicit as: ActorSystem): SaveFile =
+    def saveFile(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
       new DiskStorageSaveFile(this)
 
   }
@@ -107,20 +100,20 @@ object Storage {
       project: ProjectRef,
       value: S3StorageValue,
       tags: Tags,
-      source: Secret[Json]
+      source: Json
   ) extends Storage {
 
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit config: StorageTypeConfig, as: ActorSystem): FetchFile =
-      new S3StorageFetchFile(value)
+    def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem, contextShift: ContextShift[IO]): FetchFile =
+      new S3StorageFetchFile(value, config)
 
-    def saveFile(implicit config: StorageTypeConfig, as: ActorSystem): SaveFile =
-      new S3StorageSaveFile(this)
+    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
+      new S3StorageSaveFile(this, config)
 
-    def linkFile(implicit config: StorageTypeConfig, as: ActorSystem): LinkFile =
-      new S3StorageLinkFile(this)
+    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): LinkFile =
+      new S3StorageLinkFile(this, config)
 
   }
 
@@ -132,26 +125,22 @@ object Storage {
       project: ProjectRef,
       value: RemoteDiskStorageValue,
       tags: Tags,
-      source: Secret[Json]
+      source: Json
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): FetchFile =
-      new RemoteDiskStorageFetchFile(value)
+    def fetchFile(client: RemoteDiskStorageClient): FetchFile =
+      new RemoteDiskStorageFetchFile(value, client)
 
-    def saveFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): SaveFile =
-      new RemoteDiskStorageSaveFile(this)
+    def saveFile(client: RemoteDiskStorageClient): SaveFile =
+      new RemoteDiskStorageSaveFile(this, client)
 
-    def linkFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): LinkFile =
-      new RemoteDiskStorageLinkFile(this)
+    def linkFile(client: RemoteDiskStorageClient): LinkFile =
+      new RemoteDiskStorageLinkFile(this, client)
 
-    def fetchComputedAttributes(implicit
-        config: StorageTypeConfig,
-        client: HttpClient,
-        as: ActorSystem
-    ): FetchAttributes =
-      new RemoteStorageFetchAttributes(value)
+    def fetchComputedAttributes(client: RemoteDiskStorageClient): FetchAttributes =
+      new RemoteStorageFetchAttributes(value, client)
   }
 
   /**
@@ -161,45 +150,6 @@ object Storage {
     *   the digest algorithm, e.g. "SHA-256"
     */
   final case class Metadata(algorithm: DigestAlgorithm)
-
-  private val secretFields = List("credentials", "accessKey", "secretKey")
-
-  private val secretFieldsDefaultEncrypted                          =
-    secretFields.foldLeft(Json.obj())((json, field) => json deepMerge Json.obj(field -> "SECRET".asJson))
-
-  private def getOptionalKeyValue(key: String, json: Json)          =
-    json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
-
-  /**
-    * Encrypts the secretFields of the passed ''json'' using the provided ''crypto''. If that fails, it encrypts the
-    * secretFields with the value 'SECRET' while logging the error
-    */
-  def encryptSourceUnsafe(json: Secret[Json], crypto: Crypto): Json =
-    encryptSource(json, crypto) match {
-      case Failure(exception) =>
-        logger.error(s"Could not encrypt the storage sensitive keys due to ", exception)
-        json.value deepMerge secretFieldsDefaultEncrypted
-      case Success(encrypted) => encrypted
-    }
-
-  /**
-    * Attempts to encrypt the secretFields of the passed ''json'' using the provided ''crypto''
-    */
-  def encryptSource(json: Secret[Json], crypto: Crypto): Try[Json] =
-    secretFields.flatMap(getOptionalKeyValue(_, json.value)).foldM(json.value) { case (acc, (key, value)) =>
-      crypto.encrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
-    }
-
-  /**
-    * Attempts to decrypt the secretFields of the passed ''json'' using the provided ''crypto''
-    */
-  def decryptSource(json: Json, crypto: Crypto): Try[Secret[Json]] =
-    secretFields
-      .flatMap(getOptionalKeyValue(_, json))
-      .foldM(json) { case (acc, (key, value)) =>
-        crypto.decrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
-      }
-      .map(Secret.apply)
 
   implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
     Encoder.encodeJsonObject.contramapObject { s =>
@@ -221,12 +171,12 @@ object Storage {
 
   type Shift = ResourceShift[StorageState, Storage, Metadata]
 
-  def shift(storages: Storages)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+  def shift(storages: Storages)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[StorageState, Storage, Metadata](
       Storages.entityType,
       (ref, project) => storages.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
-      value => JsonLdContent(value, Storage.encryptSourceUnsafe(value.value.source, crypto), Some(value.value.metadata))
+      state => state.toResource,
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 
 }

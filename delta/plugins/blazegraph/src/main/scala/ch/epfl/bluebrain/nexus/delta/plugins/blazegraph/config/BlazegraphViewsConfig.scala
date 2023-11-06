@@ -29,6 +29,8 @@ import scala.concurrent.duration._
   *   configuration of the query Blazegraph client
   * @param queryTimeout
   *   the Blazegraph query timeout
+  * @param slowQueries
+  *   configuration of slow queries
   * @param eventLog
   *   configuration of the event log
   * @param pagination
@@ -41,6 +43,10 @@ import scala.concurrent.duration._
   *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   * @param syncIndexingTimeout
   *   the maximum duration for synchronous indexing to complete
+  * @param defaults
+  *   default values for the default Blazegraph views
+  * @param indexingEnabled
+  *   if false, disables Blazegraph indexing
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
@@ -48,6 +54,7 @@ final case class BlazegraphViewsConfig(
     indexingClient: HttpClientConfig,
     queryClient: HttpClientConfig,
     queryTimeout: Duration,
+    slowQueries: SlowQueriesConfig,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
     batch: BatchConfig,
@@ -55,7 +62,8 @@ final case class BlazegraphViewsConfig(
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingTimeout: FiniteDuration,
-    defaults: Defaults
+    defaults: Defaults,
+    indexingEnabled: Boolean
 )
 
 object BlazegraphViewsConfig {

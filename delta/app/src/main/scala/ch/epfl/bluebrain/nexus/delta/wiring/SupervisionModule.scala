@@ -11,14 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Supervision module wiring config.
   */
 // $COVERAGE-OFF$
 object SupervisionModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[SupervisionRoutes].from {
     (
@@ -26,10 +25,9 @@ object SupervisionModule extends ModuleDef {
         aclCheck: AclCheck,
         supervisor: Supervisor,
         baseUri: BaseUri,
-        s: Scheduler,
         rc: RemoteContextResolution @Id("aggregate"),
         jo: JsonKeyOrdering
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, s, rc, jo)
+    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo)
   }
 
   many[RemoteContextResolution].addEffect(

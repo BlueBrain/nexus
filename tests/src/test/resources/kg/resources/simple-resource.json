@@ -4,9 +4,13 @@
     "other": "https://some.other.prefix.com/"
   },
   {{#resourceId}}
-  "@id": "https://dev.nexus.test.com/simplified-resource/{{resourceId}}",
+  "@id": "{{resourceId}}",
   {{/resourceId}}
+  {{#if resourceType}}
+  "@type": "{{resourceType}}",
+  {{else}}
   "@type": "nxv:TestResource",
+  {{/if}}
   "other:priority": {{priority}},
   "other:projects": [
     "testProject",

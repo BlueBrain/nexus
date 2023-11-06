@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -10,47 +11,52 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
+class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
   private val indexingRev = 1
+  private val rev         = 2
 
-  private lazy val (sv, projections) = supervisor()
-  private val project                = ProjectRef.unsafe("org", "proj")
-  private val id1                    = nxv + "view1"
-  private val view1                  = ActiveViewDef(
+  private lazy val (sv, projections, projectionErrors) = unapply(supervisor())
+  private val project                                  = ProjectRef.unsafe("org", "proj")
+  private val id1                                      = nxv + "view1"
+  private val view1                                    = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view1",
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id2   = nxv + "view2"
   private val view2 = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view2",
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id3         = nxv + "view3"
@@ -58,10 +64,11 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
+    SelectFilter.latest,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     namespace = "view3",
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -70,13 +77,14 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val updatedView2    = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString + "_2",
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view2_2",
-    indexingRev
+    indexingRev,
+    rev
   )
 
-  private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
   private def viewStream: ElemStream[IndexingViewDef] =
@@ -116,7 +124,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
         value = view3,
         rev = 1
       )
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = BlazegraphViews.entityType,
         id = nxv + "failed_coord",
@@ -174,12 +182,12 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
              (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
              sv,
              (_: ActiveViewDef) => new NoopSink[NTriples],
-             (v: ActiveViewDef) => Task.delay(createdIndices.add(v.namespace)).void,
-             (v: ActiveViewDef) => Task.delay(deletedIndices.add(v.namespace)).void
+             (v: ActiveViewDef) => IO.delay(createdIndices.add(v.namespace)).void,
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.namespace)).void
            )
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1))
+             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
     } yield ()
   }
 
@@ -187,7 +195,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view1.namespace),
@@ -200,7 +208,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view2.namespace),
@@ -222,7 +230,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for the coordinator projection before the signal") {
     for {
-      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, id3)
     } yield ()
@@ -230,7 +238,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for view 1") {
     for {
-      entries <- projections.failedElemEntries(view1.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
@@ -240,14 +248,14 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for view 2") {
     for {
-      entries <- projections.failedElemEntries(view2.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view2.projection, Offset.start).compile.toList
       _        = entries.assertOneElem
     } yield ()
   }
 
   test("There are no errors for view 3") {
     for {
-      entries <- projections.failedElemEntries(view3.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view3.projection, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
@@ -257,13 +265,13 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- resumeSignal.set(true)
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
+             .eventually(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
     } yield ()
   }
 
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
-      _ <- sv.describe(view1.projection).eventuallyNone
+      _ <- sv.describe(view1.projection).eventually(None)
       _ <- projections.progress(view1.projection).assertNone
       _  = assert(
              deletedIndices.contains(view1.namespace),
@@ -276,7 +284,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     "View 2 is updated so the previous projection should be stopped, the previous progress and the index should be deleted."
   ) {
     for {
-      _ <- sv.describe(view2.projection).eventuallyNone
+      _ <- sv.describe(view2.projection).eventually(None)
       _ <- projections.progress(view2.projection).assertNone
       _  = assert(
              deletedIndices.contains(view2.namespace),
@@ -289,7 +297,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.namespace),
@@ -300,7 +308,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("Coordinator projection should have one error after failed elem offset 3") {
     for {
-      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(3L)).compile.toList
+      entries <- projectionErrors.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed_coord")
     } yield ()
@@ -308,7 +316,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("View 2_2 projection should have one error after failed elem offset 3") {
     for {
-      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(3L)).compile.toList
+      entries <- projectionErrors.failedElemEntries(updatedView2.projection, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()

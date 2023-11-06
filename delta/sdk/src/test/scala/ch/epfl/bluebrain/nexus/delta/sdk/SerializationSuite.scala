@@ -5,11 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.bio.{EitherAssertions, JsonAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}
-import monix.execution.Scheduler
 import munit.{Assertions, FunSuite, Location}
 
 import scala.collection.immutable.VectorMap
@@ -24,14 +23,12 @@ abstract class SerializationSuite
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  implicit private val s: Scheduler = Scheduler.global
-
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").runSyncUnsafe(),
-      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").runSyncUnsafe()
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").unsafeRunSync(),
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").unsafeRunSync()
     )
 
   def loadEvents[E](module: String, eventsToFile: (E, String)*): Map[E, (Json, JsonObject)] =

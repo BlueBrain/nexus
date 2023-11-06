@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
-import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig.logger
@@ -37,6 +36,9 @@ final case class HttpClientConfig(
 object HttpClientConfig {
 
   private[http] val logger: Logger = Logger[HttpClientConfig]
+
+  def noRetry(compression: Boolean): HttpClientConfig =
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)
 
   @nowarn("cat=unused")
   implicit private val httpClientWorthRetryConverter: ConfigReader[HttpClientWorthRetry] =

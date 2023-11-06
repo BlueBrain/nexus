@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.storage
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ContentTypeRange, HttpEntity}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.{sortKeys, OrderedKeys}
+import ch.epfl.bluebrain.nexus.storage.MediaTypes.`application/ld+json`
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject, Printer}
@@ -19,7 +19,7 @@ import scala.collection.immutable.Seq
 trait JsonLdCirceSupport extends FailFastCirceSupport {
 
   override def unmarshallerContentTypes: Seq[ContentTypeRange] =
-    List(`application/json`, RdfMediaTypes.`application/ld+json`)
+    List(`application/json`, `application/ld+json`)
 
   /**
     * `A` => HTTP entity
@@ -46,8 +46,8 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = OrderedKeys()
   ): ToEntityMarshaller[Json] =
-    Marshaller.withFixedContentType(RdfMediaTypes.`application/ld+json`) { json =>
-      HttpEntity(RdfMediaTypes.`application/ld+json`, printer.print(sortKeys(json)))
+    Marshaller.withFixedContentType(`application/ld+json`) { json =>
+      HttpEntity(`application/ld+json`, printer.print(sortKeys(json)))
     }
 
 }

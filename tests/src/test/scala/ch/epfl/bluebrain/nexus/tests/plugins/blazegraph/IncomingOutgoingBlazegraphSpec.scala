@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.mash.Radar
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.plugins.blazegraph.IncomingOutgoingBlazegraphSpec.Reference
@@ -21,7 +20,7 @@ import java.time.Instant
  * 4. test the incoming references
  * 5. test the outgoing references
  */
-class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
+class IncomingOutgoingBlazegraphSpec extends BaseIntegrationSpec {
 
   private val orgLabel  = genId()
   private val projLabel = genId()
@@ -94,10 +93,10 @@ class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
     "return incoming references" in {
       deltaClient.get[Json](s"/resources/$orgLabel/$projLabel/_/radar/incoming", Radar) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        root._total.long.getOption(json).value shouldEqual 2L
+        root._total.long.getOption(json).value shouldEqual 1L
         val refs    = root._results.json.getOption(json).value.as[List[Reference]].rightValue
         val resBase = s"${config.deltaUri}/resources/$orgLabel/$projLabel/_"
-        refs.map(_.`@id`) shouldEqual List(s"$resBase/radar", s"$resBase/hawkeye")
+        refs.map(_.`@id`) shouldEqual List(s"$resBase/hawkeye")
       }
     }
 

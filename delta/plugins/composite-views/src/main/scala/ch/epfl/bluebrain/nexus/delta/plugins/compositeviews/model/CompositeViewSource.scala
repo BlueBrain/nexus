@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
-import cats.Order
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -11,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJs
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import io.circe.{Encoder, Json}
+import io.circe.Encoder
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -56,6 +56,13 @@ sealed trait CompositeViewSource extends Product with Serializable {
 
   /**
     * @return
+    *   the [[SelectFilter]] for the given view; used to filter the data that is indexed
+    */
+  def selectFilter: SelectFilter =
+    SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
+
+  /**
+    * @return
     *   whether to consider deprecated resources for indexing
     */
   def includeDeprecated: Boolean
@@ -71,6 +78,12 @@ sealed trait CompositeViewSource extends Product with Serializable {
     */
   def pipeChain: Option[PipeChain] =
     PipeChain(resourceSchemas, resourceTypes, includeMetadata = true, includeDeprecated = includeDeprecated)
+
+  /**
+    * @return
+    *   this [[CompositeViewSource]] as [[CompositeViewSourceFields]]
+    */
+  def toField: CompositeViewSourceFields
 }
 
 object CompositeViewSource {
@@ -102,6 +115,15 @@ object CompositeViewSource {
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = ProjectSourceType
+
+    override def toField: CompositeViewSourceFields =
+      ProjectSourceFields(
+        Some(id),
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
 
   /**
@@ -137,6 +159,17 @@ object CompositeViewSource {
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = CrossProjectSourceType
+
+    override def toField: CompositeViewSourceFields =
+      CrossProjectSourceFields(
+        Some(id),
+        project,
+        identities,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
 
   /**
@@ -168,17 +201,22 @@ object CompositeViewSource {
       resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
-      endpoint: Uri,
-      token: Option[AccessToken]
+      endpoint: Uri
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = RemoteProjectSourceType
+
+    override def toField: CompositeViewSourceFields =
+      RemoteProjectSourceFields(
+        Some(id),
+        project,
+        endpoint,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
-
-  final case class AccessToken(value: Secret[String])
-
-  @nowarn("cat=unused")
-  implicit private val accessTokenEncoder: Encoder[AccessToken] = Encoder.instance(_ => Json.Null)
 
   @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSource] = {
@@ -204,14 +242,7 @@ object CompositeViewSource {
 
   @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSource] = {
-    implicit val identityLdDecoder: JsonLdDecoder[Identity]       = deriveDefaultJsonLdDecoder[Identity]
-    implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveDefaultJsonLdDecoder[AccessToken]
+    implicit val identityLdDecoder: JsonLdDecoder[Identity] = deriveDefaultJsonLdDecoder[Identity]
     deriveDefaultJsonLdDecoder[CompositeViewSource]
   }
-
-  implicit final def compositeViewSourceOrdering[A <: CompositeViewSource]: Ordering[A] =
-    Ordering.by(_.id)
-
-  implicit final def compositeViewSourceOrder[A <: CompositeViewSource]: Order[A] =
-    Order.fromOrdering
 }

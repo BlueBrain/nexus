@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage.routes
 
-import java.util.regex.Pattern.quote
-
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -9,17 +7,12 @@ import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.storage.routes.Routes.exceptionHandler
 import ch.epfl.bluebrain.nexus.storage.routes.StorageDirectives._
 import ch.epfl.bluebrain.nexus.storage.utils.Resources
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class StorageDirectivesSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with ScalatestRouteTest
-    with Inspectors
-    with Resources {
+import java.util.regex.Pattern.quote
+
+class StorageDirectivesSpec extends BaseSpec with ScalatestRouteTest with Resources {
 
   "the storage directives" when {
 
@@ -30,7 +23,7 @@ class StorageDirectivesSpec
           quote("{type}") -> "PathInvalid",
           quote(
             "{reason}"
-          )               -> s"The provided location inside the bucket 'name' with the relative path '$path' is invalid."
+          )               -> s"The provided location inside the bucket 'name' with the path '$path' is invalid."
         )
       )
 

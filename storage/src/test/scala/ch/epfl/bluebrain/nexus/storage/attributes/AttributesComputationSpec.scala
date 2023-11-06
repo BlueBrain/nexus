@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.storage.attributes
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.testkit.TestKit
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage.utils.IOValues
@@ -21,7 +21,8 @@ class AttributesComputationSpec
     with Matchers
     with IOValues {
 
-  implicit private val ec: ExecutionContextExecutor = system.dispatcher
+  implicit private val ec: ExecutionContextExecutor     = system.dispatcher
+  implicit val contentTypeDetector: ContentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
 
   private trait Ctx {
     val path           = Files.createTempFile("storage-test", ".txt")

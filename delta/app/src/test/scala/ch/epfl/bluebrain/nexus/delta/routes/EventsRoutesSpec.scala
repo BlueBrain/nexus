@@ -4,16 +4,15 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -21,12 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import fs2.Stream
-import monix.bio.IO
 
 import java.util.UUID
 
-class EventsRoutesSpec extends BaseRouteSpec {
+class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val uuid = UUID.randomUUID()
 
@@ -63,24 +62,24 @@ class EventsRoutesSpec extends BaseRouteSpec {
     override def streamBy(selector: Label, offset: Offset): ServerSentEventStream =
       stream(offset).filter(_.eventType.exists(_.toLowerCase == selector.value))
 
-    override def stream(org: Label, offset: Offset): IO[OrganizationRejection, ServerSentEventStream] =
+    override def stream(org: Label, offset: Offset): IO[ServerSentEventStream] =
       IO.raiseWhen(org != projectRef.organization)(OrganizationNotFound(org)).as(stream(offset))
 
     override def streamBy(
         selector: Label,
         org: Label,
         offset: Offset
-    ): IO[OrganizationRejection, ServerSentEventStream] =
+    ): IO[ServerSentEventStream] =
       IO.raiseWhen(org != projectRef.organization)(OrganizationNotFound(org)).as(streamBy(selector, offset))
 
-    override def stream(project: ProjectRef, offset: Offset): IO[ProjectRejection, ServerSentEventStream] =
+    override def stream(project: ProjectRef, offset: Offset): IO[ServerSentEventStream] =
       IO.raiseWhen(project != projectRef)(ProjectNotFound(project)).as(stream(offset))
 
     override def streamBy(
         selector: Label,
         project: ProjectRef,
         offset: Offset
-    ): IO[ProjectRejection, ServerSentEventStream] =
+    ): IO[ServerSentEventStream] =
       IO.raiseWhen(project != projectRef)(ProjectNotFound(project)).as(streamBy(selector, offset))
 
     override def allSelectors: Set[Label] = Set(acl, project, resources)
@@ -123,8 +122,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
 
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

@@ -8,14 +8,20 @@ on:
       - '.github/workflows/ci-docs.yml'
 
 jobs:
-  review:
+  run:
     if: github.event_name == 'pull_request'
-    runs-on: it
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Review
-        run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateLinks
+        run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateInternalLinks

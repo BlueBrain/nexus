@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,9 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class BlazegraphViewRejection(val reason: String) extends Rejection
 
 object BlazegraphViewRejection {
 
@@ -179,6 +179,12 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a Blazegraph view while providing an id that is blank.
+    */
+  final case object BlankBlazegraphViewId
+      extends BlazegraphViewRejection(s"Blazegraph view identifier cannot be blank.")
+
+  /**
     * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id
@@ -186,13 +192,6 @@ object BlazegraphViewRejection {
     */
   final case class InvalidResourceId(id: String)
       extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
-
-  /**
-    * Rejection returned when attempting to query a BlazegraphView and the caller does not have the right permissions
-    * defined in the view.
-    */
-  final case object AuthorizationFailed extends BlazegraphViewRejection(ServiceError.AuthorizationFailed.reason)
-  type AuthorizationFailed = AuthorizationFailed.type
 
   /**
     * Signals a rejection caused when interacting with the blazegraph client
@@ -214,6 +213,7 @@ object BlazegraphViewRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case BlankId                                           => BlankBlazegraphViewId
   }
 
   implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
@@ -244,7 +244,6 @@ object BlazegraphViewRejection {
       case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
-      case AuthorizationFailed          => StatusCodes.Forbidden
       case _                            => StatusCodes.BadRequest
     }
 }

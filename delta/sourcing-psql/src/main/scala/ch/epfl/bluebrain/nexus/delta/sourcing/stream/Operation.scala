@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Pull, Stream}
-import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -48,7 +48,7 @@ sealed trait Operation { self =>
     */
   def outType: Typeable[Out]
 
-  protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]]
+  protected[stream] def asFs2(implicit timer: Timer[IO], cs: ContextShift[IO]): fs2.Pipe[IO, Elem[In], Elem[Out]]
 
   private[stream] def andThen(that: Operation): Either[OperationInOutMatchErr, Operation] =
     Either.cond(
@@ -59,7 +59,10 @@ sealed trait Operation { self =>
         override def inType: Typeable[self.In]   = self.inType
         override def outType: Typeable[that.Out] = that.outType
 
-        override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[that.Out]] = { stream =>
+        override protected[stream] def asFs2(implicit
+            timer: Timer[IO],
+            cs: ContextShift[IO]
+        ): Pipe[IO, Elem[Operation.this.In], Elem[that.Out]] = { stream =>
           stream
             .through(self.asFs2)
             .map {
@@ -82,7 +85,10 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.inType
 
-    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2(implicit
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ): Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] =
       _.chunks
         .evalTap { chunk =>
           Stream.chunk(chunk).through(self.asFs2).compile.drain
@@ -106,7 +112,10 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.outType
 
-    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2(implicit
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ): Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] =
       _.through(self.asFs2).debug(formatter, logger)
 
   }
@@ -129,8 +138,11 @@ sealed trait Operation { self =>
 
       override def outType: Typeable[Out] = self.outType
 
-      override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] = {
-        def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[this.Out], Unit] = {
+      override protected[stream] def asFs2(implicit
+          timer: Timer[IO],
+          cs: ContextShift[IO]
+      ): Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] = {
+        def go(s: fs2.Stream[IO, Elem[In]]): Pull[IO, Elem[this.Out], Unit] = {
           s.pull.peek.flatMap {
             case Some((chunk, stream)) =>
               val (before, after) = chunk.partitionEither { e =>
@@ -179,7 +191,10 @@ object Operation {
     override def inType: Typeable[In]   = Typeable[In]
     override def outType: Typeable[Out] = Typeable[Out]
 
-    override protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = elemPipe
+    override protected[stream] def asFs2(implicit
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ): fs2.Pipe[IO, Elem[In], Elem[Out]] = elemPipe
   }
 
   def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
@@ -218,7 +233,7 @@ object Operation {
       * @return
       *   a new element (possibly failed, dropped) of type Out
       */
-    def apply(element: SuccessElem[In]): Task[Elem[Out]]
+    def apply(element: SuccessElem[In]): IO[Elem[Out]]
 
     /**
       * Checks if the provided envelope has a successful element value of type `I`. If true, it will return it in Right.
@@ -233,8 +248,11 @@ object Operation {
         case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
       }
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
-      def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
+    override protected[stream] def asFs2(implicit
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ): fs2.Pipe[IO, Elem[In], Elem[Out]] = {
+      def go(s: fs2.Stream[IO, Elem[In]]): Pull[IO, Elem[Out], Unit] = {
         s.pull.uncons1.flatMap {
           case Some((head, tail)) =>
             partitionSuccess(head) match {
@@ -242,8 +260,8 @@ object Operation {
                 Pull
                   .eval(
                     apply(value)
-                      .onErrorHandleWith { err =>
-                        Task
+                      .handleErrorWith { err =>
+                        IO
                           .delay(
                             logger.error(s"Error while applying pipe $name on element ${value.id}", err)
                           )
@@ -275,7 +293,7 @@ object Operation {
       override def inType: Typeable[In]   = Typeable[In]
       override def outType: Typeable[Out] = Typeable[Out]
 
-      override def apply(element: SuccessElem[In]): Task[Elem[Out]] = Task.pure(element)
+      override def apply(element: SuccessElem[In]): IO[Elem[Out]] = IO.pure(element)
     }
 
   }
@@ -289,9 +307,12 @@ object Operation {
 
     def maxWindow: FiniteDuration
 
-    def apply(elements: Chunk[Elem[In]]): Task[Chunk[Elem[Unit]]]
+    def apply(elements: Chunk[Elem[In]]): IO[Chunk[Elem[Unit]]]
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] =
+    override protected[stream] def asFs2(implicit
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ): fs2.Pipe[IO, Elem[In], Elem[Unit]] =
       _.groupWithin(chunkSize, maxWindow)
         .evalMap { chunk =>
           apply(chunk)

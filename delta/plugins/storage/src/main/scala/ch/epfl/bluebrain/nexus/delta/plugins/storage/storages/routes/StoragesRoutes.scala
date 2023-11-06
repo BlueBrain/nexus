@@ -4,34 +4,25 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 /**
   * The storages routes
@@ -56,9 +47,6 @@ final class StoragesRoutes(
     index: IndexingAction.Execute[Storage]
 )(implicit
     baseUri: BaseUri,
-    crypto: Crypto,
-    paginationConfig: PaginationConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -68,20 +56,6 @@ final class StoragesRoutes(
 
   import baseUri.prefixSegment
   import schemeDirectives._
-
-  private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
-    (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
-      StorageSearchParams(
-        Some(projectRef),
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        types,
-        storage => aclCheck.authorizeFor(storage.project, Read)
-      )
-    }
-  }
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
@@ -95,22 +69,12 @@ final class StoragesRoutes(
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      storages.create(ref, Secret(source)).tapEval(index(ref, _, mode)).mapValue(_.metadata)
+                      storages
+                        .create(ref, source)
+                        .flatTap(index(ref, _, mode))
+                        .mapValue(_.metadata)
+                        .attemptNarrow[StorageRejection]
                     )
-                  }
-                }
-              },
-              (pathPrefix("caches") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/storages/{org}/{project}/caches") {
-                  // List storages in cache
-                  (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
-                    (uri, pagination, params, order) =>
-                      authorizeFor(ref, Read).apply {
-                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[StorageResource]] =
-                          searchResultsJsonLdEncoder(Storages.context, pagination, uri)
-
-                        emit(storages.list(pagination, params, order).widen[SearchResults[StorageResource]])
-                      }
                   }
                 }
               },
@@ -128,17 +92,19 @@ final class StoragesRoutes(
                                 emit(
                                   Created,
                                   storages
-                                    .create(id, ref, Secret(source))
-                                    .tapEval(index(ref, _, mode))
+                                    .create(id, ref, source)
+                                    .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
+                                    .attemptNarrow[StorageRejection]
                                 )
                               case (Some(rev), source) =>
                                 // Update a storage
                                 emit(
                                   storages
-                                    .update(id, ref, rev, Secret(source))
-                                    .tapEval(index(ref, _, mode))
+                                    .update(id, ref, rev, source)
+                                    .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
+                                    .attemptNarrow[StorageRejection]
                                 )
                             }
                           }
@@ -149,8 +115,9 @@ final class StoragesRoutes(
                             emit(
                               storages
                                 .deprecate(id, ref, rev)
-                                .tapEval(index(ref, _, mode))
+                                .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
+                                .attemptNarrow[StorageRejection]
                                 .rejectOn[StorageNotFound]
                             )
                           }
@@ -161,7 +128,12 @@ final class StoragesRoutes(
                             ref,
                             id,
                             authorizeFor(ref, Read).apply {
-                              emit(storages.fetch(id, ref).leftWiden[StorageRejection].rejectOn[StorageNotFound])
+                              emit(
+                                storages
+                                  .fetch(id, ref)
+                                  .attemptNarrow[StorageRejection]
+                                  .rejectOn[StorageNotFound]
+                              )
                             }
                           )
                         }
@@ -174,8 +146,8 @@ final class StoragesRoutes(
                       authorizeFor(ref, Read).apply {
                         val sourceIO = storages
                           .fetch(id, ref)
-                          .map(res => Storage.encryptSourceUnsafe(res.value.source, crypto))
-                        emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
+                          .map(res => res.value.source)
+                        emit(sourceIO.attemptNarrow[StorageRejection].rejectOn[StorageNotFound])
                       }
                     }
                   },
@@ -188,7 +160,7 @@ final class StoragesRoutes(
                             storages
                               .fetch(id, ref)
                               .map(_.value.tags)
-                              .leftWiden[StorageRejection]
+                              .attemptNarrow[StorageRejection]
                               .rejectOn[StorageNotFound]
                           )
                         },
@@ -200,8 +172,9 @@ final class StoragesRoutes(
                                 Created,
                                 storages
                                   .tag(id, ref, tag, tagRev, rev)
-                                  .tapEval(index(ref, _, mode))
+                                  .flatTap(index(ref, _, mode))
                                   .mapValue(_.metadata)
+                                  .attemptNarrow[StorageRejection]
                               )
                             }
                           }
@@ -211,7 +184,7 @@ final class StoragesRoutes(
                   },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, Read).apply {
-                      emit(storagesStatistics.get(id, ref).leftWiden[StorageRejection])
+                      emit(storagesStatistics.get(id, ref).attemptNarrow[StorageRejection])
                     }
                   }
                 )
@@ -230,7 +203,6 @@ object StoragesRoutes {
     *   the [[Route]] for storages
     */
   def apply(
-      config: StoragesConfig,
       identities: Identities,
       aclCheck: AclCheck,
       storages: Storages,
@@ -239,14 +211,10 @@ object StoragesRoutes {
       index: IndexingAction.Execute[Storage]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      crypto: Crypto,
       fusionConfig: FusionConfig
-  ): Route = {
-    implicit val paginationConfig: PaginationConfig = config.pagination
+  ): Route =
     new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes
-  }
 
 }

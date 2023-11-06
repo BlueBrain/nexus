@@ -7,20 +7,26 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.Materializer
+import cats.syntax.all._
+import cats.effect.{ContextShift, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.tests.Identity.{ClientCredentials, UserCredentials}
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
-import monix.bio.Task
+
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
-class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: FromEntityUnmarshaller[Json])
-    extends TestHelpers {
+class KeycloakDsl(implicit
+    as: ActorSystem,
+    materializer: Materializer,
+    um: FromEntityUnmarshaller[Json],
+    contextShift: ContextShift[IO],
+    executionContext: ExecutionContext
+) extends TestHelpers {
 
-  import monix.execution.Scheduler.Implicits.global
-
-  private val logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}")
   private val keycloakClient = HttpClient(keycloakUrl)
@@ -33,8 +39,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
       realm: Realm,
       clientCredentials: ClientCredentials,
       userCredentials: List[UserCredentials]
-  ): Task[StatusCode] = {
-    logger.info(s"Creating realm $realm in Keycloak...")
+  ): IO[StatusCode] = {
     val users = userCredentials.map { u =>
       Map(
         s"username" -> u.name,
@@ -51,32 +56,31 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
     )
 
     for {
+      _          <- logger.info(s"Creating realm $realm in Keycloak...")
       adminToken <- userToken(keycloakAdmin, adminClient)
-      status     <- keycloakClient(
+      response   <- keycloakClient(
                       HttpRequest(
                         method = POST,
                         uri = s"$keycloakUrl/admin/realms/",
                         headers = Authorization(HttpCredentials.createOAuth2BearerToken(adminToken)) :: Nil,
                         entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
                       )
-                    ).tapError { t =>
-                      Task { logger.error(s"Error while importing realm: ${realm.name}", t) }
-                    }.map { res =>
-                      logger.info(s"${realm.name} has been imported with code: ${res.status}")
-                      res.status
+                    ).onError { t =>
+                      logger.error(t)(s"Error while importing realm: ${realm.name}")
                     }
-    } yield status
+      _          <- logger.info(s"${realm.name} has been imported with code: ${response.status}")
+    } yield response.status
   }
 
   private def realmEndpoint(realm: Realm) =
     Uri(s"$keycloakUrl/realms/${realm.name}/protocol/openid-connect/token")
 
-  def userToken(user: UserCredentials, client: ClientCredentials): Task[String] = {
-    logger.info(s"Getting token for user ${user.name} for ${user.realm.name}")
+  def userToken(user: UserCredentials, client: ClientCredentials): IO[String] = {
     val clientFields = if (client.secret == "") {
-      Map("client_id" -> client.id)
+      Map("scope" -> "openid", "client_id" -> client.id)
     } else {
       Map(
+        "scope"         -> "openid",
         "client_id"     -> client.id,
         "client_secret" -> client.secret
       )
@@ -96,52 +100,54 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
         .toEntity
     )
 
-    keycloakClient(request)
-      .flatMap { res =>
-        Task.deferFuture { um(res.entity) }
-      }
-      .tapError { t =>
-        Task { logger.error(s"Error while getting user token for realm: ${user.realm.name} and user:$user", t) }
-      }
-      .map { response =>
+    logger.info(s"Getting token for user ${user.name} for ${user.realm.name}") >>
+      keycloakClient(request)
+        .flatMap { res =>
+          IO.fromFuture { IO(um(res.entity)) }
+        }
+        .onError { t =>
+          logger.error(t)(s"Error while getting user token for realm: ${user.realm.name} and user:$user")
+        }
+        .map { response =>
+          keycloak.access_token
+            .getOption(response)
+            .getOrElse(
+              throw new IllegalArgumentException(
+                s"Couldn't get a token for user ${user.name}, we got response: $response"
+              )
+            )
+        }
+
+  }
+
+  def serviceAccountToken(client: ClientCredentials): IO[String] = {
+    logger.info(s"Getting token for client ${client.name} for ${client.realm}") >>
+      keycloakClient(
+        HttpRequest(
+          method = POST,
+          uri = realmEndpoint(client.realm),
+          headers = Authorization(HttpCredentials.createBasicHttpCredentials(client.id, client.secret)) :: Nil,
+          entity = akka.http.scaladsl.model
+            .FormData(
+              Map(
+                "scope"      -> "openid",
+                "grant_type" -> "client_credentials"
+              )
+            )
+            .toEntity
+        )
+      ).flatMap { res =>
+        IO.fromFuture { IO(um(res.entity)) }
+      }.onError { t =>
+        logger.error(t)(s"Error while getting user token for realm: ${client.realm} and client: $client")
+      }.map { response =>
         keycloak.access_token
           .getOption(response)
           .getOrElse(
             throw new IllegalArgumentException(
-              s"Couldn't get a token for user ${user.name}, we got response: $response"
+              s"Couldn't get a token for client ${client.id} for realm ${client.realm.name}, we got response: $response"
             )
           )
       }
-
-  }
-
-  def serviceAccountToken(client: ClientCredentials): Task[String] = {
-    logger.info(s"Getting token for client ${client.name} for ${client.realm}")
-    keycloakClient(
-      HttpRequest(
-        method = POST,
-        uri = realmEndpoint(client.realm),
-        headers = Authorization(HttpCredentials.createBasicHttpCredentials(client.id, client.secret)) :: Nil,
-        entity = akka.http.scaladsl.model
-          .FormData(
-            Map(
-              "grant_type" -> "client_credentials"
-            )
-          )
-          .toEntity
-      )
-    ).flatMap { res =>
-      Task.deferFuture { um(res.entity) }
-    }.tapError { t =>
-      Task { logger.error(s"Error while getting user token for realm: ${client.realm} and client: $client", t) }
-    }.map { response =>
-      keycloak.access_token
-        .getOption(response)
-        .getOrElse(
-          throw new IllegalArgumentException(
-            s"Couldn't get a token for client ${client.id} for realm ${client.realm.name}, we got response: $response"
-          )
-        )
-    }
   }
 }

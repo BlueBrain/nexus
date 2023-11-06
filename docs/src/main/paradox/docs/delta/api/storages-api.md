@@ -64,13 +64,14 @@ While there's no formal specification for this service, you can check out or dep
 @link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/$git.branch$/storage){ open=new }.
 
 In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be set to `true`.
+@ref:[More information about configuration](../../getting-started/running-nexus/configuration/index.md#remote-storage-configuration)
+
 
 ```json
 {
   "@type": "RemoteDiskStorage",
   "default": "{default}",
   "endpoint": "{endpoint}",
-  "credentials": "{credentials}",
   "folder": "{folder}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -82,7 +83,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{endpoint}`: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-endpoint`.
-- `{credentials}`: String - the service account access token to authenticate and authorize Nexus Delta client against the storage service. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-credentials`.
 - `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).
@@ -99,8 +99,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
   "@type": "S3Storage",
   "default": "{default}",
   "endpoint": "{endpoint}",
-  "accessKey": "{access_key}",
-  "secretKey": "{secret_key}",
   "region": "{region}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -112,8 +110,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{endpoint}`: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-endpoint`.
-- `{access_key}`: String - the Amazon S3 compatible access key. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-access-key`.
-- `{secret_key}`: String - the Amazon S3 compatible secret key. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-secret-key`.
 - `{region}`: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
@@ -336,6 +332,7 @@ GET /v1/storages/{org_label}/{project_label}?from={from}
                                              &updatedBy={updatedBy}
                                              &q={search}
                                              &sort={sort}
+                                             &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -352,6 +349,7 @@ GET /v1/storages/{org_label}?from={from}
                             &updatedBy={updatedBy}
                             &q={search}
                             &sort={sort}
+                            &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -368,6 +366,7 @@ GET /v1/storages?from={from}
                 &updatedBy={updatedBy}
                 &q={search}
                 &sort={sort}
+                &aggregations={aggregations}
 ```
 
 ### Parameter description
@@ -384,6 +383,7 @@ GET /v1/storages?from={from}
   (containing) the provided string
 - `{sort}`: String - can be used to sort storages based on a payloads' field. This parameter can appear multiple times
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
 
 
 **Example**

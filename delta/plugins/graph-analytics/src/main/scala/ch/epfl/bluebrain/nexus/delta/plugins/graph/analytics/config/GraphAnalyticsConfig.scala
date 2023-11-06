@@ -1,26 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import com.typesafe.config.Config
 import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
-import scala.concurrent.duration._
 
 /**
   * Configuration for the graph analytics plugin.
   *
-  * @param idleTimeout
-  *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param batch
+  *   a configuration definition how often we want to push to Elasticsearch
+  * @param prefix
+  *   prefix for indices
   * @param termAggregations
   *   the term aggregations query configuration
+  * @param indexingEnabled
+  *   if true, disables graph analytics indexing
   */
 final case class GraphAnalyticsConfig(
-    idleTimeout: Duration,
-    termAggregations: TermAggregationsConfig
+    batch: BatchConfig,
+    prefix: String,
+    termAggregations: TermAggregationsConfig,
+    indexingEnabled: Boolean
 )
 
 object GraphAnalyticsConfig {
@@ -52,15 +57,8 @@ object GraphAnalyticsConfig {
 
   implicit final val graphAnalyticsConfigReader: ConfigReader[GraphAnalyticsConfig] =
     deriveReader[GraphAnalyticsConfig].emap { c =>
-      (validateIdleTimeout(c), validateAggregations(c.termAggregations)).mapN((_, _) => c)
+      validateAggregations(c.termAggregations).map(_ => c)
     }
-
-  private def validateIdleTimeout(cfg: GraphAnalyticsConfig) =
-    Either.cond(
-      cfg.idleTimeout.gteq(10.minutes),
-      (),
-      failure("'idle-timeout' must be greater than 10 minutes")
-    )
 
   private def validateAggregations(cfg: TermAggregationsConfig) =
     Either.cond(

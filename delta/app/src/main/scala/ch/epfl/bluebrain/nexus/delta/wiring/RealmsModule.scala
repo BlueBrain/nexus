@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.Clock
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -32,12 +32,13 @@ object RealmsModule extends ModuleDef {
   make[Realms].from {
     (
         cfg: AppConfig,
-        clock: Clock[UIO],
+        clock: Clock[IO],
+        timer: Timer[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>
       val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock)
+      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock, timer)
   }
 
   make[RealmsRoutes].from {
@@ -46,15 +47,14 @@ object RealmsModule extends ModuleDef {
         realms: Realms,
         cfg: AppConfig,
         aclCheck: AclCheck,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
+      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (cfg: AppConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient()(cfg.realms.client, as.classicSystem, sc)
+  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem, sc)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }

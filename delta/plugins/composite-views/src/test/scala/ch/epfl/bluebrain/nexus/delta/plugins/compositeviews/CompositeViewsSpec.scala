@@ -15,29 +15,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, DoobieScalaTestFixture, IOFixedClock}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
-import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
 class CompositeViewsSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with OptionValues
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with CompositeViewsFixture
     with CirceEq
     with Fixtures {
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-  implicit private val scheduler: Scheduler = Scheduler.global
-  implicit private val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
     val apiMappings       = ApiMappings("nxv" -> nxv.base)
@@ -58,7 +53,6 @@ class CompositeViewsSpec
       fetchContext,
       ResolverContextResolution(rcr),
       alwaysValidate,
-      crypto,
       config,
       xas
     ).accepted
@@ -79,31 +73,20 @@ class CompositeViewsSpec
         updatedBy: Subject = alice.subject,
         tags: Tags = Tags.empty,
         source: Json
-    ): ViewResource = {
-      ResourceF(
-        id,
-        ResourceUris("views", projectRef, id)(project.apiMappings, project.base),
-        rev,
-        Set(nxv.View, compositeViewType),
-        deprecated,
-        createdAt,
-        createdBy,
-        updatedAt,
-        updatedBy,
-        schema,
-        CompositeView(
-          id,
-          projectRef,
-          value.sources,
-          value.projections,
-          value.rebuildStrategy,
-          uuid,
-          tags,
-          source,
-          Instant.EPOCH
-        )
-      )
-    }
+    ): ViewResource = CompositeViewsGen.resourceFor(
+      projectRef,
+      id,
+      uuid,
+      value,
+      rev = rev,
+      deprecated = deprecated,
+      createdAt = createdAt,
+      createdBy = createdBy,
+      updatedAt = updatedAt,
+      updatedBy = updatedBy,
+      tags = tags,
+      source = source
+    )
 
     "create a composite view" when {
       "using JSON source" in {

@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import java.io.InputStream
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 
+import java.io.InputStream
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -35,24 +36,6 @@ trait TestHelpers extends ClasspathResourceUtils {
   }
 
   /**
-    * Convert a map to an function returning an IO
-    * @param values
-    *   (key/value) giving the expected result for the given parameter
-    */
-  final def ioFromMap[A, B](values: (A, B)*): A => UIO[Option[B]] =
-    (a: A) => IO.pure(values.toMap.get(a))
-
-  /**
-    * Convert a map to an function returning an IO
-    * @param map
-    *   the map giving the expected result for the given parameter
-    * @param ifAbsent
-    *   which error to return if the parameter can't be found
-    */
-  final def ioFromMap[A, B, C](map: Map[A, B], ifAbsent: A => C): A => IO[C, B] =
-    (a: A) => IO.fromOption(map.get(a), ifAbsent(a))
-
-  /**
     * Loads the content of the argument classpath resource as an [[InputStream]].
     *
     * @param resourcePath
@@ -61,7 +44,7 @@ trait TestHelpers extends ClasspathResourceUtils {
     *   the content of the referenced resource as an [[InputStream]]
     */
   final def streamOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): InputStream =
-    runAcceptOrThrow(ioStreamOf(resourcePath))
+    bioRunAcceptOrThrow(bioStreamOf(resourcePath))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -75,7 +58,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def contentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit s: Scheduler = Scheduler.global): String =
+  ): String =
     runAcceptOrThrow(ioContentOf(resourcePath, attributes: _*))
 
   /**
@@ -90,7 +73,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def jsonObjectContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit s: Scheduler = Scheduler.global): JsonObject =
+  ): JsonObject =
     runAcceptOrThrow(ioJsonObjectContentOf(resourcePath, attributes: _*))
 
   /**
@@ -105,7 +88,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def jsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit s: Scheduler = Scheduler.global): Json =
+  ): Json =
     runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
 
   /**
@@ -117,11 +100,17 @@ trait TestHelpers extends ClasspathResourceUtils {
     * @return
     *   the content of the referenced resource as a map of properties
     */
-  final def propertiesOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): Map[String, String] =
+  final def propertiesOf(resourcePath: String): Map[String, String] =
     runAcceptOrThrow(ioPropertiesOf(resourcePath))
 
-  private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
+  private def bioRunAcceptOrThrow[A](io: BIO[ClasspathResourceError, A])(implicit s: Scheduler): A =
     io.attempt.runSyncUnsafe() match {
+      case Left(value)  => throw new IllegalArgumentException(value.toString)
+      case Right(value) => value
+    }
+
+  private def runAcceptOrThrow[A](io: IO[A]): A =
+    io.attempt.unsafeRunSync() match {
       case Left(value)  => throw new IllegalArgumentException(value.toString)
       case Right(value) => value
     }

@@ -2,81 +2,126 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
-import cats.data.{NonEmptyList, NonEmptySet}
-import cats.effect.Resource
+import cats.Semigroup
+import cats.data.NonEmptyList
 import cats.effect.concurrent.Ref
-import cats.kernel.Semigroup
+import cats.effect.{IO, Resource}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSuite.{batchConfig, Album, Band, Music}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.Queries.{batchQuery, singleQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewFactory, CompositeViews, CompositeViewsFixture, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, jsonOpsSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, JsonAssertions, PatienceConfig, ResourceFixture, TextAssertions}
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import monix.bio.{Task, UIO}
-import monix.execution.Scheduler
 import munit.AnyFixture
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
-class CompositeIndexingSuite
-    extends BioSuite
-    with CompositeIndexingSuite.Fixture
+class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
+class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
+
+trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
+
+  implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
+
+  val prefix: String = "delta"
+
+  private val queryConfig      = QueryConfig(10, RefreshStrategy.Delay(10.millis))
+  val batchConfig: BatchConfig = BatchConfig(2, 50.millis)
+  private val compositeConfig  =
+    CompositeViewsFixture.config.copy(
+      blazegraphBatch = batchConfig,
+      elasticsearchBatch = batchConfig
+    )
+
+  private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
+    (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource())
+      .parMapN { case (xas, esClient, bgClient) =>
+        val compositeRestartStore = new CompositeRestartStore(xas)
+        val projections           =
+          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
+        val spaces                = CompositeSpaces(prefix, esClient, bgClient)
+        val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
+        Setup(esClient, bgClient, projections, spaces, sinks)
+      }
+      .mapK(taskToIoK)
+  }
+
+  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
+    ResourceFixture.suiteLocal(name, resource(sinkConfig))
+
+  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
+    suiteLocalFixture("compositeIndexing", sinkConfig)
+
+}
+
+abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConstructQuery)
+    extends CompositeIndexingFixture
     with TestHelpers
     with Fixtures
     with JsonAssertions
     with TextAssertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(compositeIndexing)
+  private val fixture = compositeIndexing(sinkConfig)
+
+  override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
 
-  private val prefix                                                = "delta"
-  private lazy val (esClient, bgClient, projections, spacesBuilder) = compositeIndexing()
+  private lazy val result = fixture()
+  import result._
 
   // Data to index
   private val museId       = iri"http://music.com/muse"
@@ -95,27 +140,6 @@ class CompositeIndexingSuite
   private val theGatewayId      = iri"http://music.com/the_getaway"
   private val theGateway        = Album(theGatewayId, "The Getaway", redHotId)
 
-  private val query = SparqlConstructQuery.unsafe(
-    """
-      |prefix music: <http://music.com/>
-      |CONSTRUCT {
-      |	{resource_id}   music:name       ?bandName ;
-      |					music:genre      ?bandGenre ;
-      |					music:start      ?bandStartYear ;
-      |					music:album      ?albumId .
-      |	?albumId        music:title   	 ?albumTitle .
-      |} WHERE {
-      |	{resource_id}   music:name       ?bandName ;
-      |					music:start      ?bandStartYear;
-      |					music:genre      ?bandGenre .
-      |	OPTIONAL {
-      |		{resource_id} 	^music:by 		?albumId .
-      |		?albumId        music:title   	?albumTitle .
-      |	}
-      |}
-      |""".stripMargin
-  )
-
   private val project1 = ProjectRef.unsafe("org", "proj")
   private val project2 = ProjectRef.unsafe("org", "proj2")
   private val project3 = ProjectRef.unsafe("org", "proj3")
@@ -123,9 +147,9 @@ class CompositeIndexingSuite
   // Transforming data as elems
   private def elem[A <: Music](project: ProjectRef, value: A, offset: Long, deprecated: Boolean = false, rev: Int = 1)(
       implicit jsonldEncoder: JsonLdEncoder[A]
-  ) = {
+  ): IO[SuccessElem[GraphResource]] = {
     for {
-      graph     <- jsonldEncoder.graph(value)
+      graph     <- jsonldEncoder.graph(value).toCatsIO
       entityType = EntityType(value.getClass.getSimpleName)
       resource   = GraphResource(
                      entityType,
@@ -177,11 +201,12 @@ class CompositeIndexingSuite
   // Elems for project 3
   private val elems3: ElemStream[GraphResource] = Stream.eval(elem(project3, theGateway, 7L))
 
-  private val mainCompleted    = Ref.unsafe[Task, Map[ProjectRef, Int]](Map.empty)
-  private val rebuildCompleted = Ref.unsafe[Task, Map[ProjectRef, Int]](Map.empty)
+  private val mainCompleted    = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
+  private val rebuildCompleted = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
 
-  private def resetCompleted                                                       = mainCompleted.set(Map.empty) >> rebuildCompleted.set(Map.empty)
-  private def increment(map: Ref[Task, Map[ProjectRef, Int]], project: ProjectRef) =
+  private def resetCompleted = mainCompleted.set(Map.empty) >> rebuildCompleted.set(Map.empty)
+
+  private def increment(map: Ref[IO, Map[ProjectRef, Int]], project: ProjectRef) =
     map.update(_.updatedWith(project)(_.map(_ + 1).orElse(Some(1))))
 
   private val compositeStream = new CompositeGraphStream {
@@ -205,19 +230,18 @@ class CompositeIndexingSuite
 
     override def main(source: CompositeViewSource, project: ProjectRef): Source = {
       val (p, s) = stream(source, project)
-      Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[Task])
+      Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[IO])
     }
 
-    override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
+    override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source = {
       val (p, s) = stream(source, project)
       Source(_ => s.onFinalize(increment(rebuildCompleted, p)))
     }
 
-    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] = {
+    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] = {
       offset =>
         stream(source, project)._2.compile.last
           .map(_.map { e => RemainingElems(e.offset.value - offset.value, e.instant) })
-          .hideErrors
     }
   }
 
@@ -257,18 +281,17 @@ class CompositeIndexingSuite
     None,
     includeDeprecated = false,
     project3,
-    Uri("https://bbp.epfl.ch/nexus"),
-    None
+    Uri("https://bbp.epfl.ch/nexus")
   )
 
   private val contextJson             = jsonContentOf("indexing/music-context.json")
   private val elasticSearchProjection = ElasticSearchProjection(
     projection1Id,
     UUID.randomUUID(),
+    IndexingRev.init,
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set(iri"http://music.com/Band"),
-    resourceTag = None,
     includeMetadata = false,
     includeDeprecated = false,
     includeContext = false,
@@ -282,18 +305,18 @@ class CompositeIndexingSuite
   private val blazegraphProjection = SparqlProjection(
     projection2Id,
     UUID.randomUUID(),
+    IndexingRev.init,
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
-    resourceTag = None,
     includeMetadata = false,
     includeDeprecated = false,
     permissions.query
   )
 
-  private val noRebuild = CompositeViewValue(
-    NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
-    NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
+  private val noRebuild = CompositeViewFactory.unsafe(
+    NonEmptyList.of(projectSource, crossProjectSource, remoteProjectSource),
+    NonEmptyList.of(elasticSearchProjection, blazegraphProjection),
     None
   )
 
@@ -304,43 +327,77 @@ class CompositeIndexingSuite
 
     val view = ActiveViewDef(ref, uuid, rev, noRebuild)
 
-    val spaces          = spacesBuilder(view)
-    val commonNamespace = s"${prefix}_${uuid}_$rev"
-    val sparqlNamespace = s"${prefix}_${uuid}_${blazegraphProjection.uuid}_$rev"
-    val elasticIndex    = IndexLabel.unsafe(s"${prefix}_${uuid}_${elasticSearchProjection.uuid}_$rev")
+    val commonNs        = commonNamespace(uuid, noRebuild.sourceIndexingRev, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
 
     for {
       // Initialise the namespaces and indices
-      _ <- spaces.init
-      _ <- bgClient.existsNamespace(commonNamespace).assert(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
-      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      _ <- spaces.init(view)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete them on destroy
-      _ <- spaces.destroy
-      _ <- bgClient.existsNamespace(commonNamespace).assert(false)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
-      _ <- esClient.existsIndex(elasticIndex).assert(false)
+      _ <- spaces.destroyAll(view)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(false)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
+    } yield ()
+  }
+
+  test("Init the namespaces and indices and destroy the projections individually") {
+    val ref  = ViewRef(ProjectRef.unsafe("org", "proj"), nxv + "id")
+    val uuid = UUID.randomUUID()
+    val rev  = 2
+
+    val view = ActiveViewDef(ref, uuid, rev, noRebuild)
+
+    val commonNs        = commonNamespace(uuid, noRebuild.sourceIndexingRev, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+
+    for {
+      // Initialise the namespaces and indices
+      _ <- spaces.init(view)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
+      // Delete the blazegraph projection
+      _ <- spaces.destroyProjection(view, blazegraphProjection)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
+      // Delete the elasticsearch projection
+      _ <- spaces.destroyProjection(view, elasticSearchProjection)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
     } yield ()
   }
 
   private def start(view: ActiveViewDef) = {
-    val spaces = spacesBuilder(view)
     for {
-      compiled <- CompositeViewDef.compile(view, spaces, PipeChain.compile(_, registry), compositeStream, projections)
-      _        <- spaces.init
-      _        <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)(batchConfig)
+      compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
+      _        <- spaces.init(view)
+      _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig, timer, contextShift)
     } yield compiled
   }
+
+  private val resultMuse: Json     = jsonContentOf("indexing/result_muse.json")
+  private val resultRedHot: Json   = jsonContentOf("indexing/result_red_hot.json")
+  private val resultMuseMetadata   = jsonContentOf("indexing/result_muse_metadata.json")
+  private val resultRedHotMetadata = jsonContentOf("indexing/result_red_hot_metadata.json")
 
   test("Indexing resources without rebuild") {
     val uuid   = UUID.randomUUID()
     val viewId = iri"https://bbp.epfl.ch/composite"
     val rev    = 1
 
-    val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, noRebuild)
+    val viewRef = ViewRef(project1, viewId)
+    val view    = ActiveViewDef(viewRef, uuid, rev, noRebuild)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     val projectionName   = s"composite-views-${view.ref.project}-${view.ref.viewId}-${view.rev}"
     val expectedMetadata =
@@ -366,28 +423,28 @@ class CompositeIndexingSuite
     for {
       compiled <- start(view)
       _         = assertEquals(compiled.metadata, expectedMetadata)
-      _        <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _        <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _        <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _        <- rebuildCompleted.get.assert(Map.empty)
-      _        <- projections.progress(view.ref, rev).eventually(expectedProgress)
+      _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
+      _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
-                    jsonContentOf("indexing/result_muse.json"),
-                    jsonContentOf("indexing/result_red_hot.json")
+                    resultMuse,
+                    resultRedHot
                   ).eventually(())
-      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO
     } yield ()
   }
 
   test("Indexing resources including metadata and deprecated without rebuild") {
-    val value = CompositeViewValue(
-      NonEmptySet.of(
+    val value = CompositeViewFactory.unsafe(
+      NonEmptyList.of(
         projectSource.copy(includeDeprecated = true),
         crossProjectSource.copy(includeDeprecated = true),
         remoteProjectSource.copy(includeDeprecated = true)
       ),
-      NonEmptySet.of(
+      NonEmptyList.of(
         elasticSearchProjection.copy(includeMetadata = true, includeDeprecated = true),
         blazegraphProjection.copy(includeMetadata = true, includeDeprecated = true)
       ),
@@ -400,22 +457,22 @@ class CompositeIndexingSuite
 
     val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.assert(Map.empty)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse_metadata.json"),
-             jsonContentOf("indexing/result_red_hot_metadata.json")
+             resultMuseMetadata,
+             resultRedHotMetadata
            ).eventually(())
-      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).eventually(())
+      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).toCatsIO.eventually(())
     } yield ()
   }
 
@@ -424,12 +481,13 @@ class CompositeIndexingSuite
 
     val rebuild = noRebuild.copy(rebuildStrategy = Some(CompositeView.Interval(2.seconds)))
 
-    val viewId = iri"https://bbp.epfl.ch/composite3"
-    val rev    = 1
-    val view   = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, rebuild)
+    val viewId  = iri"https://bbp.epfl.ch/composite3"
+    val rev     = 1
+    val viewRef = ViewRef(project1, viewId)
+    val view    = ActiveViewDef(viewRef, uuid, rev, rebuild)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     implicit def mapSemigroup[A, B]: Semigroup[Map[A, B]] = (x: Map[A, B], y: Map[A, B]) => x ++ y
 
@@ -454,40 +512,40 @@ class CompositeIndexingSuite
 
     def checkIndexingState =
       for {
-        _ <- projections.progress(view.ref, rev).eventually(expectedProgress)
+        _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
         _ <- checkElasticSearchDocuments(
                elasticIndex,
-               jsonContentOf("indexing/result_muse.json"),
-               jsonContentOf("indexing/result_red_hot.json")
+               resultMuse,
+               resultRedHot
              ).eventually(())
-        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO.eventually(())
       } yield ()
 
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(1))
       _ <- checkIndexingState
-      _ <- projections.fullRestart(project1, viewId)(Anonymous)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(2)
+      _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(2))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(2))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(2))
       _ <- checkIndexingState
     } yield ()
   }
 
   test("Indexing resources with included JSON-LD context") {
-    val value = CompositeViewValue(
-      NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
-      NonEmptySet.of(elasticSearchProjection.copy(includeContext = true)),
+    val value = CompositeViewFactory.unsafe(
+      NonEmptyList.of(projectSource, crossProjectSource, remoteProjectSource),
+      NonEmptyList.of(elasticSearchProjection.copy(includeContext = true)),
       None
     )
 
@@ -496,32 +554,34 @@ class CompositeIndexingSuite
     val viewId       = iri"https://bbp.epfl.ch/composite4"
     val rev          = 1
     val view         = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
-    val elasticIndex = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
+    val elasticIndex = projectionIndex(elasticSearchProjection, uuid, prefix)
 
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.assert(Map.empty)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse.json").deepMerge(contextJson.removeKeys(keywords.id)),
-             jsonContentOf("indexing/result_red_hot.json").deepMerge(contextJson.removeKeys(keywords.id))
+             resultMuse.deepMerge(contextJson.removeKeys(keywords.id)),
+             resultRedHot.deepMerge(contextJson.removeKeys(keywords.id))
            ).eventually(())
     } yield ()
   }
 
-  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*) = {
+  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*): IO[Unit] = {
     val page = FromPagination(0, 5000)
     for {
-      _       <- esClient.refresh(index)
-      results <- esClient.search(
-                   QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-                   Set(index.value),
-                   Query.Empty
-                 )
+      _       <- esClient.refresh(index).toCatsIO
+      results <- esClient
+                   .search(
+                     QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
+                     Set(index.value),
+                     Query.Empty
+                   )
+                   .toCatsIO
       _        = assertEquals(results.sources.size, expected.size)
       _        = results.sources.zip(expected).foreach { case (obtained, expected) =>
                    obtained.asJson.equalsIgnoreArrayOrder(expected)
@@ -529,40 +589,17 @@ class CompositeIndexingSuite
     } yield ()
   }
 
-  private val checkQuery                                                  = SparqlConstructQuery.unsafe("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s")
+  private val checkQuery = SparqlConstructQuery.unsafe("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s")
+
   private def checkBlazegraphTriples(namespace: String, expected: String) =
     bgClient
       .query(Set(namespace), checkQuery, SparqlNTriples)
       .map(_.value.toString)
       .map(_.equalLinesUnordered(expected))
+
 }
 
-object CompositeIndexingSuite extends IOFixedClock {
-
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-
-  private val queryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Delay(10.millis))
-  val batchConfig: BatchConfig         = BatchConfig(2, 50.millis)
-
-  type Result = (ElasticSearchClient, BlazegraphClient, CompositeProjections, CompositeSpaces.Builder)
-
-  private def resource()(implicit s: Scheduler, cl: ClassLoader): Resource[Task, Result] = {
-    (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource()).parMapN {
-      case (xas, esClient, bgClient) =>
-        val compositeRestartStore = new CompositeRestartStore(xas)
-        val projections           =
-          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
-        val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, batchConfig, bgClient, batchConfig)(baseUri)
-        (esClient, bgClient, projections, spacesBuilder)
-    }
-  }
-
-  def suiteLocalFixture(name: String)(implicit s: Scheduler, cl: ClassLoader): TaskFixture[Result] =
-    ResourceFixture.suiteLocal(name, resource())
-
-  trait Fixture { self: BioSuite =>
-    val compositeIndexing: ResourceFixture.TaskFixture[Result] = suiteLocalFixture("compositeIndexing")
-  }
+object CompositeIndexingSuite {
 
   private val ctxIri = ContextValue(iri"http://music.com/context")
 
@@ -573,9 +610,19 @@ object CompositeIndexingSuite extends IOFixedClock {
     }
   )
 
+  final case class Setup(
+      esClient: ElasticSearchClient,
+      bgClient: BlazegraphClient,
+      projections: CompositeProjections,
+      spaces: CompositeSpaces,
+      sinks: CompositeSinks
+  )
+
   sealed trait Music extends Product with Serializable {
     def id: Iri
+
     def tpe: Iri
+
     def label: String
   }
 
@@ -583,16 +630,19 @@ object CompositeIndexingSuite extends IOFixedClock {
     override val tpe: Iri      = iri"http://music.com/Band"
     override val label: String = name
   }
+
   object Band {
     implicit val bandEncoder: Encoder.AsObject[Band]    =
       deriveConfiguredEncoder[Band].mapJsonObject(_.add("@type", "Band".asJson))
     implicit val bandJsonLdEncoder: JsonLdEncoder[Band] =
       JsonLdEncoder.computeFromCirce((b: Band) => b.id, ctxIri)
   }
-  final case class Album(id: Iri, title: String, by: Iri)                      extends Music {
+
+  final case class Album(id: Iri, title: String, by: Iri) extends Music {
     override val tpe: Iri      = iri"http://music.com/Album"
     override val label: String = title
   }
+
   object Album {
     implicit val albumEncoder: Encoder.AsObject[Album]    =
       deriveConfiguredEncoder[Album].mapJsonObject(_.add("@type", "Album".asJson))
@@ -601,10 +651,60 @@ object CompositeIndexingSuite extends IOFixedClock {
   }
 
   final case class Metadata(uuid: UUID)
+
   object Metadata {
     implicit private val encoderMetadata: Encoder.AsObject[Metadata] = deriveEncoder
     implicit val jsonLdEncoderMetadata: JsonLdEncoder[Metadata]      = JsonLdEncoder.computeFromCirce(ctxIri)
 
   }
 
+}
+
+object Queries {
+  val batchQuery: SparqlConstructQuery = SparqlConstructQuery.unsafe(
+    """
+      |prefix music: <http://music.com/>
+      |CONSTRUCT {
+      |	?alias          music:name       ?bandName ;
+      |					music:genre      ?bandGenre ;
+      |					music:start      ?bandStartYear ;
+      |					music:album      ?albumId .
+      |	?albumId        music:title   	 ?albumTitle .
+      |} WHERE {
+      | VALUES ?id { {resource_id} } .
+      | BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
+      |
+      |	?id             music:name       ?bandName ;
+      |					music:start      ?bandStartYear;
+      |					music:genre      ?bandGenre .
+      |	OPTIONAL {
+      |		?id         	^music:by 		?albumId .
+      |		?albumId        music:title   	?albumTitle .
+      |	}
+      |}
+      |""".stripMargin
+  )
+
+  val singleQuery: SparqlConstructQuery = SparqlConstructQuery.unsafe(
+    """
+      |prefix music: <http://music.com/>
+      |CONSTRUCT {
+      |	?id             music:name       ?bandName ;
+      |					music:genre      ?bandGenre ;
+      |					music:start      ?bandStartYear ;
+      |					music:album      ?albumId .
+      |	?albumId        music:title   	 ?albumTitle .
+      |} WHERE {
+      | BIND( {resource_id} AS ?id ) .
+      |
+      |	?id             music:name       ?bandName ;
+      |					music:start      ?bandStartYear;
+      |					music:genre      ?bandGenre .
+      |	OPTIONAL {
+      |		?id         	^music:by 		?albumId .
+      |		?albumId        music:title   	?albumTitle .
+      |	}
+      |}
+      |""".stripMargin
+  )
 }

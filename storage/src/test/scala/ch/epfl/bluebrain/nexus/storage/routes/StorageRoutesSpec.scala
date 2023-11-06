@@ -1,8 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage.routes
 
-import java.nio.file.Paths
-import java.util.regex.Pattern.quote
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/jpeg`}
@@ -15,59 +12,54 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
-import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
-import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence.{BucketDoesNotExist, BucketExists}
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
+import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import monix.eval.Task
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
-import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.file.Paths
+import java.util.regex.Pattern.quote
 import scala.concurrent.duration._
 
 class StorageRoutesSpec
-    extends AnyWordSpecLike
-    with Matchers
+    extends BaseSpec
     with ScalatestRouteTest
     with IdiomaticMockito
     with Randomness
     with Resources
     with ArgumentMatchersSugar
-    with OptionValues
     with ScalaFutures {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit val appConfig: AppConfig                         = Settings(system).appConfig
-  implicit val deltaIdentities: DeltaIdentitiesClient[Task] = mock[DeltaIdentitiesClient[Task]]
-  val storages: Storages[Task, AkkaSource]                  = mock[Storages[Task, AkkaSource]]
-  val route: Route                                          = Routes(storages)
-
-  deltaIdentities()(None) shouldReturn Task(Caller(Anonymous, Set.empty))
+  implicit val appConfig: AppConfig                     = Settings(system).appConfig
+  implicit val authorizationMethod: AuthorizationMethod = AuthorizationMethod.Anonymous
+  val storages: Storages[IO, AkkaSource]                = mock[Storages[IO, AkkaSource]]
+  val route: Route                                      = Routes(storages)
 
   trait Ctx {
-    val name        = genString()
-    val resourceCtx = iri"https://bluebrain.github.io/nexus/contexts/resource.json"
+    val name        = randomString()
+    val resourceCtx = "https://bluebrain.github.io/nexus/contexts/resource.json"
   }
 
   trait RandomFile extends Ctx {
-    val filename              = s"${genString()}.json"
-    val content               = Json.obj("key" -> Json.fromString(genString())).noSpaces
-    val source: AkkaSource    = Source.single(ByteString(content))
-    implicit val bucketExists = BucketExists
-    implicit val pathExists   = PathExists
+    val filename                            = s"${randomString()}.json"
+    val content                             = Json.obj("key" -> Json.fromString(randomString())).noSpaces
+    val source: AkkaSource                  = Source.single(ByteString(content))
+    implicit val bucketExists: BucketExists = BucketExists
+    implicit val pathExists: PathExists     = PathExists
   }
 
   trait RandomFileCreate extends RandomFile {
@@ -138,7 +130,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathAlreadyExists",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' already exists."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' already exists."
             )
           )
           storages.exists(name) wasCalled once
@@ -153,7 +145,7 @@ class StorageRoutesSpec
           eqTo(BucketExists),
           eqTo(PathDoesNotExist)
         ) shouldReturn
-          Task.raiseError(InternalError("something went wrong"))
+          IO.raiseError(InternalError("something went wrong"))
 
         Put(s"/v1/buckets/$name/files/path/to/file/$filename", multipartForm) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -173,14 +165,14 @@ class StorageRoutesSpec
 
       "pass" in new RandomFileCreate {
         val absoluteFilePath = appConfig.storage.rootVolume.resolve(filePath)
-        val digest           = Digest("SHA-256", genString())
+        val digest           = Digest("SHA-256", randomString())
         val attributes       = FileAttributes(s"file://$absoluteFilePath", 12L, digest, `application/octet-stream`)
         storages.exists(name) shouldReturn BucketExists
         storages.pathExists(name, filePathUri) shouldReturn PathDoesNotExist
         storages.createFile(eqTo(name), eqTo(filePathUri), any[AkkaSource])(
           eqTo(BucketExists),
           eqTo(PathDoesNotExist)
-        ) shouldReturn Task(
+        ) shouldReturn IO(
           attributes
         )
 
@@ -227,7 +219,7 @@ class StorageRoutesSpec
         val source = "source/dir"
         val dest   = "dest/dir"
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
-          Task.raiseError(InternalError("something went wrong"))
+          IO.raiseError(InternalError("something went wrong"))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -260,7 +252,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathInvalid",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$source' is invalid."
+              )               -> s"The provided location inside the bucket '$name' with the path '$source' is invalid."
             )
           )
         }
@@ -272,7 +264,7 @@ class StorageRoutesSpec
         val dest       = "dest/dir"
         val attributes = FileAttributes(s"file://some/prefix/$dest", 12L, Digest.empty, `application/octet-stream`)
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
-          Task.pure(Right(attributes))
+          IO.pure(Right(attributes))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -309,7 +301,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.pathExists(name, filePathUri) wasCalled once
@@ -330,7 +322,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.getFile(name, filePathUri) wasCalled once
@@ -382,7 +374,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.pathExists(name, filePathUri) wasCalled once
@@ -393,8 +385,8 @@ class StorageRoutesSpec
         val filePathUri = Uri.Path(s"$filename")
         storages.exists(name) shouldReturn BucketExists
         val attributes  =
-          FileAttributes(s"file://$filePathUri", genInt().toLong, Digest("SHA-256", genString()), `image/jpeg`)
-        storages.getAttributes(name, filePathUri) shouldReturn Task(attributes)
+          FileAttributes(s"file://$filePathUri", genInt().toLong, Digest("SHA-256", randomString()), `image/jpeg`)
+        storages.getAttributes(name, filePathUri) shouldReturn IO(attributes)
         storages.pathExists(name, filePathUri) shouldReturn PathExists
 
         Get(s"/v1/buckets/$name/attributes/$filename") ~> Accept(`*/*`) ~> route ~> check {
@@ -403,14 +395,16 @@ class StorageRoutesSpec
             "_algorithm" -> Json.fromString(attributes.digest.algorithm),
             "_value"     -> Json.fromString(attributes.digest.value)
           )
-          responseAs[Json] shouldEqual Json
-            .obj(
-              "_bytes"     -> Json.fromLong(attributes.bytes),
-              "_digest"    -> digestJson,
-              "_location"  -> Json.fromString(attributes.location.toString()),
-              "_mediaType" -> Json.fromString(attributes.mediaType.toString)
-            )
-            .addContext(resourceCtx)
+          responseAs[Json] shouldEqual addContext(
+            Json
+              .obj(
+                "_bytes"     -> Json.fromLong(attributes.bytes),
+                "_digest"    -> digestJson,
+                "_location"  -> Json.fromString(attributes.location.toString()),
+                "_mediaType" -> Json.fromString(attributes.mediaType.toString)
+              ),
+            resourceCtx
+          )
           storages.getAttributes(name, filePathUri) wasCalled once
         }
       }
@@ -418,7 +412,7 @@ class StorageRoutesSpec
       "return empty attributes" in new RandomFile {
         val filePathUri = Uri.Path(s"$filename")
         storages.exists(name) shouldReturn BucketExists
-        storages.getAttributes(name, filePathUri) shouldReturn Task(
+        storages.getAttributes(name, filePathUri) shouldReturn IO(
           FileAttributes(s"file://$filePathUri", 0L, Digest.empty, `application/octet-stream`)
         )
         storages.pathExists(name, filePathUri) shouldReturn PathExists
@@ -426,14 +420,16 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/attributes/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual Accepted
           val digestJson = Json.obj("_algorithm" -> Json.fromString(""), "_value" -> Json.fromString(""))
-          responseAs[Json] shouldEqual Json
-            .obj(
-              "_bytes"     -> Json.fromLong(0L),
-              "_digest"    -> digestJson,
-              "_location"  -> Json.fromString(s"file://${filePathUri.toString().toLowerCase}"),
-              "_mediaType" -> Json.fromString(`application/octet-stream`.toString())
-            )
-            .addContext(resourceCtx)
+          responseAs[Json] shouldEqual addContext(
+            Json
+              .obj(
+                "_bytes"     -> Json.fromLong(0L),
+                "_digest"    -> digestJson,
+                "_location"  -> Json.fromString(s"file://${filePathUri.toString().toLowerCase}"),
+                "_mediaType" -> Json.fromString(`application/octet-stream`.toString())
+              ),
+            resourceCtx
+          )
           storages.getAttributes(name, filePathUri) wasCalled once
         }
       }

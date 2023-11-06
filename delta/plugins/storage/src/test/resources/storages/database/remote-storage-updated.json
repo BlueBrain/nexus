@@ -7,7 +7,6 @@
     "description": "remoteDescription",
     "algorithm": "SHA-256",
     "endpoint" : "http://localhost",
-    "credentials" : "wqUglodAZzmNk3CEZeZgBA==",
     "folder" : "myfolder2",
     "readPermission" : "remote/read",
     "writePermission" : "remote/write",
@@ -15,7 +14,6 @@
     "@type" : "RemoteDiskStorageValue"
   },
   "source" : {
-    "credentials" : "wqUglodAZzmNk3CEZeZgBA==",
     "@type" : "RemoteDiskStorage",
     "name": "remoteName",
     "description": "remoteDescription",

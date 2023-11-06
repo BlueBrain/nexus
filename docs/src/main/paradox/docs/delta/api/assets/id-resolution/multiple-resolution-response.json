@@ -1,0 +1,42 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total" : 2,
+  "_results" : [
+    {
+      "@id" : "https://example.com/Alice",
+      "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_createdAt" : "2023-09-22T13:55:33.493Z",
+      "_createdBy" : "http://localhost:8080/v1/realms/myrealm/users/bob",
+      "_deprecated" : false,
+      "_incoming" : "http://localhost:8080/v1/resources/myorg/myproject/_/https:%2F%2Fexample.com%2FAlice/incoming",
+      "_outgoing" : "http://localhost:8080/v1/resources/myorg/myproject/_/https:%2F%2Fexample.com%2FAlice/outgoing",
+      "_project" : "http://localhost:8080/v1/projects/myorg/myproject",
+      "_rev" : 1,
+      "_schemaProject" : "http://localhost:8080/v1/projects/myorg/myproject",
+      "_score" : 0.0,
+      "_self" : "http://localhost:8080/v1/resources/myorg/myproject/_/https:%2F%2Fexample.com%2FAlice",
+      "_updatedAt" : "2023-09-22T13:55:33.493Z",
+      "_updatedBy" : "http://localhost:8080/v1/realms/myrealm/users/bob"
+    },
+    {
+      "@id" : "https://example.com/Alice",
+      "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_createdAt" : "2023-09-22T13:55:33.459Z",
+      "_createdBy" : "http://localhost:8080/v1/realms/myrealm/users/bob",
+      "_deprecated" : false,
+      "_incoming" : "http://localhost:8080/v1/resources/myorg/secondproject/_/https:%2F%2Fexample.com%2FAlice/incoming",
+      "_outgoing" : "http://localhost:8080/v1/resources/myorg/secondproject/_/https:%2F%2Fexample.com%2FAlice/outgoing",
+      "_project" : "http://localhost:8080/v1/projects/myorg/secondproject",
+      "_rev" : 1,
+      "_schemaProject" : "http://localhost:8080/v1/projects/myorg/secondproject",
+      "_score" : 0.0,
+      "_self" : "http://localhost:8080/v1/resources/myorg/secondproject/_/https:%2F%2Fexample.com%2FAlice",
+      "_updatedAt" : "2023-09-22T13:55:33.459Z",
+      "_updatedBy" : "http://localhost:8080/v1/realms/myrealm/users/bob"
+    }
+  ],
+  "_maxScore" : 0.0
+}

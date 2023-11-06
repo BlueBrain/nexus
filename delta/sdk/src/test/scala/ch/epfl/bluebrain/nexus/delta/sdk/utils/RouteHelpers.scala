@@ -2,23 +2,27 @@ package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity, StatusCodes}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.parser.parse
-import io.circe.{Json, Printer}
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Json, JsonObject, Printer}
+import org.scalactic.source.Position
+import org.scalatest.{Assertion, Suite}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
-trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {
+trait RouteHelpers extends BaseSpec with ScalatestRouteTest with ScalaFutures {
+  self: Suite =>
 
   implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 
@@ -67,6 +71,25 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
 
   def asJson(implicit materializer: Materializer): Json =
     asJson(http.entity.dataBytes)
+
+  def asJsonObject(implicit materializer: Materializer): JsonObject = {
+    val json = asJson(http.entity.dataBytes)
+    json.asObject.getOrElse(
+      fail(s"Error converting '$json' to a JsonObject.")
+    )
+  }
+
+  def as[A: Decoder](implicit materializer: Materializer, A: ClassTag[A]): A =
+    asJson.as[A] match {
+      case Left(err)    => fail(s"Error converting th json to '${A.runtimeClass.getName}'. Details: '${err.getMessage()}'")
+      case Right(value) => value
+    }
+
+  def shouldBeForbidden(implicit position: Position, materializer: Materializer): Assertion = {
+    http.status shouldEqual StatusCodes.Forbidden
+    asJsonObject(materializer)("@type") shouldEqual Some("AuthorizationFailed".asJson)
+  }
+
 }
 
 final class HttpChunksOps(private val chunks: Source[ChunkStreamPart, Any]) extends Consumer {

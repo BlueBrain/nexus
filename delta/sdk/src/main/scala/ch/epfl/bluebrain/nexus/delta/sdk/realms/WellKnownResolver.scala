@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalGrantTypeFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{GrantType, RealmRejection, WellKnown}
 import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto._
 import io.circe.{CursorOp, Decoder, Json}
-import monix.bio.IO
 
 import scala.util.Try
 
@@ -30,7 +29,7 @@ object WellKnownResolver {
   /**
     * Constructs a WellKnown instance from an uri
     */
-  def apply(fetch: Uri => IO[HttpClientError, Json])(configUri: Uri): IO[RealmRejection, WellKnown] = {
+  def apply(fetch: Uri => IO[Json])(configUri: Uri): IO[WellKnown] = {
     import GrantType.Snake._
 
     def issuer(json: Json): Either[RealmRejection, String] =
@@ -62,9 +61,9 @@ object WellKnownResolver {
         .endpointsDecoder(json.hcursor)
         .leftMap(df => IllegalEndpointFormat(configUri, CursorOp.opsToPath(df.history)))
 
-    def fetchJwkKeys(jwkUri: Uri): IO[RealmRejection, Set[Json]] =
+    def fetchJwkKeys(jwkUri: Uri): IO[Set[Json]] =
       for {
-        json      <- fetch(jwkUri).mapError(_ => UnsuccessfulJwksResponse(jwkUri))
+        json      <- fetch(jwkUri).adaptError(_ => UnsuccessfulJwksResponse(jwkUri))
         keysJson  <- IO.fromEither(
                        json.hcursor
                          .get[Set[Json]]("keys")
@@ -86,7 +85,7 @@ object WellKnownResolver {
       } yield validKeys
 
     for {
-      json       <- fetch(configUri).mapError(_ => UnsuccessfulOpenIdConfigResponse(configUri))
+      json       <- fetch(configUri).adaptError(_ => UnsuccessfulOpenIdConfigResponse(configUri))
       issuer     <- IO.fromEither(issuer(json))
       grantTypes <- IO.fromEither(grantTypes(json))
       jwkUri     <- IO.fromEither(jwksUri(json))

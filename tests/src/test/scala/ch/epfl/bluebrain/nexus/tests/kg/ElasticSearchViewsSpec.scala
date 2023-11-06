@@ -2,16 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
-import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
+import io.circe.{ACursor, Json}
 
-class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
+class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
   private val orgId  = genId()
   private val projId = genId()
@@ -85,6 +83,21 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         }
     }
 
+    "fail to create a view with an invalid mapping" in {
+      val invalidMapping            =
+        json"""{"mapping": "fail"}"""
+      val payloadWithInvalidMapping = json"""{ "@type": "ElasticSearchView", "mapping": $invalidMapping }"""
+      deltaClient.put[Json](s"/views/$fullId/invalid", payloadWithInvalidMapping, ScoobyDoo) { expectBadRequest }
+    }
+
+    "fail to create a view with invalid settings" in {
+      val invalidSettings            =
+        json"""{"analysis": "fail"}"""
+      val payloadWithInvalidSettings =
+        json"""{ "@type": "ElasticSearchView", "mapping": { }, "settings": $invalidSettings }"""
+      deltaClient.put[Json](s"/views/$fullId/invalid", payloadWithInvalidSettings, ScoobyDoo) { expectBadRequest }
+    }
+
     "create people view in project 2" in {
       deltaClient.put[Json](
         s"/views/$fullId2/test-resource:people",
@@ -96,6 +109,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "get the created elasticsearch views" in {
+      val id = "https://dev.nexus.test.com/simplified-resource/cell-view"
       projects.parTraverse { project =>
         deltaClient.get[Json](s"/views/$project/test-resource:cell-view", ScoobyDoo) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -103,8 +117,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             "/kg/views/elasticsearch/indexing-response.json",
             replacements(
               ScoobyDoo,
-              "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
-              "self"           -> s"${config.deltaUri}/views/$project/test-resource:cell-view",
+              "id"             -> id,
+              "self"           -> viewSelf(project, id),
               "project-parent" -> s"${config.deltaUri}/projects/$project",
               "project"        -> project
             ): _*
@@ -126,6 +140,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "get the created AggregateElasticSearchView" in {
+      val id = "https://dev.nexus.test.com/simplified-resource/agg-cell-view"
       deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
 
@@ -133,8 +148,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
           "/kg/views/elasticsearch/aggregate-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/agg-cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:agg-cell-view",
+            "id"             -> id,
+            "self"           -> viewSelf(fullId2, id),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2
@@ -215,7 +230,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -239,7 +254,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId2/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -289,10 +304,10 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "14",
-          "processed" -> "14",
+          "total"     -> "5",
+          "processed" -> "5",
           "evaluated" -> "5",
-          "discarded" -> "9",
+          "discarded" -> "0",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
@@ -383,7 +398,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -408,7 +423,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -418,6 +433,54 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val expected =
           json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
         json shouldEqual expected
+      }
+    }
+
+    "fail to fetch mapping without permission" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", Anonymous) { expectForbidden }
+    }
+
+    "fail to fetch mapping for view that doesn't exist" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:wrong-view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.NotFound
+        json shouldEqual jsonContentOf(
+          "/kg/views/elasticsearch/errors/es-view-not-found.json",
+          replacements(
+            ScoobyDoo,
+            "viewId"     -> "https://dev.nexus.test.com/simplified-resource/wrong-view",
+            "projectRef" -> fullId
+          ): _*
+        )
+      }
+    }
+
+    "fail to fetch mapping for aggregate view" in {
+      val view = "test-resource:agg-cell-view"
+      deltaClient.get[Json](s"/views/$fullId2/$view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
+        json shouldEqual jsonContentOf(
+          "/kg/views/elasticsearch/errors/es-incorrect-view-type.json",
+          replacements(
+            ScoobyDoo,
+            "view"         -> view,
+            "providedType" -> "AggregateElasticSearchView",
+            "expectedType" -> "ElasticSearchView"
+          ): _*
+        )
+      }
+    }
+
+    "return the view's mapping" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+
+        def hasOnlyOneKey = (j: ACursor) => j.keys.exists(_.size == 1)
+        def downFirstKey  = (j: ACursor) => j.downField(j.keys.get.head)
+
+        assert(hasOnlyOneKey(json.hcursor))
+        val firstKey = downFirstKey(json.hcursor)
+        assert(hasOnlyOneKey(firstKey))
+        assert(downFirstKey(firstKey).key.contains("mappings"))
       }
     }
 

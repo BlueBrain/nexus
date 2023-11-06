@@ -7,30 +7,30 @@
   "_total": 2,
   "_results": [
     {
-      "sourceId": "http://example.com/cross-project-source",
+      "sourceId": "http://example.com/project-source",
       "projectionId": "http://example.com/blazegraph-projection",
       "delayInSeconds": 5,
-      "discardedEvents": 2,
-      "evaluatedEvents": 1,
-      "failedEvents": 0,
+      "discardedEvents": 1,
+      "evaluatedEvents": 4,
+      "failedEvents": 1,
       "lastEventDateTime": "{{last}}",
       "lastProcessedEventDateTime": "{{instant_blazegraph}}",
-      "processedEvents": 3,
+      "processedEvents": 6,
       "remainingEvents": 10,
-      "totalEvents": 13
+      "totalEvents": 16
     },
     {
-      "sourceId": "http://example.com/cross-project-source",
-      "projectionId": "http://example.com/es-projection",
       "delayInSeconds": 5,
-      "discardedEvents": 2,
-      "evaluatedEvents": 1,
-      "failedEvents": 0,
+      "discardedEvents": 1,
+      "evaluatedEvents": 4,
+      "failedEvents": 1,
       "lastEventDateTime": "{{last}}",
       "lastProcessedEventDateTime": "{{instant_elasticsearch}}",
-      "processedEvents": 3,
+      "processedEvents": 6,
+      "projectionId": "http://example.com/es-projection",
       "remainingEvents": 10,
-      "totalEvents": 13
+      "sourceId": "http://example.com/project-source",
+      "totalEvents": 16
     }
   ]
 }

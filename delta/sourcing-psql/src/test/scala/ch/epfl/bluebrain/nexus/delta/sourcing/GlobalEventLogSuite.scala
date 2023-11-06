@@ -9,15 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import scala.concurrent.duration._
 
-class GlobalEventLogSuite extends BioSuite with Doobie.Fixture {
+class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -61,68 +62,76 @@ class GlobalEventLogSuite extends BioSuite with Doobie.Fixture {
   private val id = nxv + "id"
 
   test("Raise an error with a non-existent " + id) {
-    eventLog.stateOr(nxv + "xxx", NotFound).error(NotFound)
+    eventLog.stateOr(nxv + "xxx", NotFound).intercept(NotFound)
   }
 
   test("Evaluate successfully a command and store both event and state for an initial state") {
     for {
-      _ <- eventLog.evaluate(id, Add(2)).assert((plus2, total1))
+      _ <- eventLog.evaluate(id, Add(2)).assertEquals((plus2, total1))
       _ <- eventStore.history(id).assert(plus2)
-      _ <- eventLog.stateOr(id, NotFound).assert(total1)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total1)
     } yield ()
   }
 
   test("Evaluate successfully another and store both event and state for an initial state") {
     for {
-      _ <- eventLog.evaluate(id, Add(3)).assert((plus3, total2))
+      _ <- eventLog.evaluate(id, Add(3)).assertEquals((plus3, total2))
       _ <- eventStore.history(id).assert(plus2, plus3)
-      _ <- eventLog.stateOr(id, NotFound).assert(total2)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
   }
 
   test("Reject a command and persist nothing") {
     for {
-      _ <- eventLog.evaluate(id, Subtract(8)).error(NegativeTotal(-3))
+      _ <- eventLog.evaluate(id, Subtract(8)).intercept(NegativeTotal(-3))
       _ <- eventStore.history(id).assert(plus2, plus3)
-      _ <- eventLog.stateOr(id, NotFound).assert(total2)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
   }
 
   test("Raise an error and persist nothing") {
     val boom = Boom("fail")
     for {
-      _ <- eventLog.evaluate(id, boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(id, boom).intercept(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history(id).assert(plus2, plus3)
-      _ <- eventLog.stateOr(id, NotFound).assert(total2)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
   }
 
   test("Get a timeout and persist nothing") {
     for {
-      _ <- eventLog.evaluate(id, Never).terminated(EvaluationTimeout(Never, maxDuration))
+      _ <- eventLog.evaluate(id, Never).intercept(EvaluationTimeout(Never, maxDuration))
       _ <- eventStore.history(id).assert(plus2, plus3)
-      _ <- eventLog.stateOr(id, NotFound).assert(total2)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
   }
 
   test("Dry run successfully a command without persisting anything") {
     for {
-      _ <- eventLog.dryRun(id, Subtract(4)).assert((minus4, total3))
+      _ <- eventLog.dryRun(id, Subtract(4)).assertEquals((minus4, total3))
       _ <- eventStore.history(id).assert(plus2, plus3)
-      _ <- eventLog.stateOr(id, NotFound).assert(total2)
+      _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
   }
 
   test("Get state at the specified revision") {
-    eventLog.stateOr(id, 1, NotFound, RevisionNotFound).assert(total1)
+    eventLog.stateOr(id, 1, NotFound, RevisionNotFound).assertEquals(total1)
   }
 
   test("Raise an error with a non-existent " + id) {
-    eventLog.stateOr(nxv + "xxx", 1, NotFound, RevisionNotFound).error(NotFound)
+    eventLog.stateOr(nxv + "xxx", 1, NotFound, RevisionNotFound).intercept(NotFound)
   }
 
-  test("Raise an error when prov" + id + "ing a nonexistent revision") {
-    eventLog.stateOr(id, 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 2))
+  test(s"Raise an error when providing a nonexistent revision") {
+    eventLog.stateOr(id, 10, NotFound, RevisionNotFound).intercept(RevisionNotFound(10, 2))
+  }
+
+  test(s"Delete events and state for $id") {
+    for {
+      _ <- eventLog.delete(id)
+      _ <- eventLog.stateOr(id, 1, NotFound, RevisionNotFound).intercept(NotFound)
+      _ <- eventLog.currentEvents(Offset.start).assertSize(0)
+    } yield ()
   }
 
 }

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -21,7 +21,7 @@ import shapeless.Typeable
   */
 class GenericPipe[I: Typeable, O: Typeable] private[stream] (
     label: Label,
-    fn: SuccessElem[I] => Task[Elem[O]]
+    fn: SuccessElem[I] => IO[Elem[O]]
 ) extends Pipe {
   override val ref: PipeRef = PipeRef(label)
   override type In  = I
@@ -29,7 +29,7 @@ class GenericPipe[I: Typeable, O: Typeable] private[stream] (
   override def inType: Typeable[In]   = Typeable[In]
   override def outType: Typeable[Out] = Typeable[Out]
 
-  override def apply(element: SuccessElem[In]): Task[Elem[Out]] = fn(element)
+  override def apply(element: SuccessElem[In]): IO[Elem[Out]] = fn(element)
 }
 
 object GenericPipe {
@@ -45,12 +45,12 @@ object GenericPipe {
     * @tparam O
     *   the output element type
     */
-  def apply[I: Typeable, O: Typeable](label: Label, fn: SuccessElem[I] => Task[Elem[O]]): PipeDef =
+  def apply[I: Typeable, O: Typeable](label: Label, fn: SuccessElem[I] => IO[Elem[O]]): PipeDef =
     new GenericPipeDef(label, fn)
 
   private class GenericPipeDef[I: Typeable, O: Typeable] private[stream] (
       label: Label,
-      fn: SuccessElem[I] => Task[Elem[O]]
+      fn: SuccessElem[I] => IO[Elem[O]]
   ) extends PipeDef {
     override val ref: PipeRef = PipeRef(label)
     override type PipeType = GenericPipe[I, O]

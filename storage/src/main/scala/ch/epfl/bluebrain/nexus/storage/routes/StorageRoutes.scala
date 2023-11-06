@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, StatusCode, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
@@ -16,10 +17,8 @@ import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
 
-class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpConfig) {
+class StorageRoutes()(implicit storages: Storages[IO, AkkaSource], hc: HttpConfig) {
 
   def routes: Route =
     // Consume buckets/{name}/
@@ -34,15 +33,15 @@ class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpCon
           }
         },
         // Consume files
-        (pathPrefix("files") & extractRelativePath(name)) { relativePath =>
+        (pathPrefix("files") & extractPath(name)) { path =>
           operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
             bucketExists(name).apply { implicit bucketExistsEvidence =>
               concat(
                 put {
-                  pathNotExists(name, relativePath).apply { implicit pathNotExistEvidence =>
+                  pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
                     // Upload file
                     fileUpload("file") { case (_, source) =>
-                      complete(Created -> storages.createFile(name, relativePath, source).runToFuture)
+                      complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
                     }
                   }
                 },
@@ -50,14 +49,14 @@ class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpCon
                   // Link file/dir
                   entity(as[LinkFile]) { case LinkFile(source) =>
                     validatePath(name, source) {
-                      complete(storages.moveFile(name, source, relativePath).runWithStatus(OK))
+                      complete(storages.moveFile(name, source, path).runWithStatus(OK))
                     }
                   }
                 },
                 // Get file
                 get {
-                  pathExists(name, relativePath).apply { implicit pathExistsEvidence =>
-                    storages.getFile(name, relativePath) match {
+                  pathExists(name, path).apply { implicit pathExistsEvidence =>
+                    storages.getFile(name, path) match {
                       case Right((source, Some(_))) => complete(HttpEntity(`application/octet-stream`, source))
                       case Right((source, None))    => complete(HttpEntity(`application/x-tar`, source))
                       case Left(err)                => complete(err)
@@ -69,17 +68,17 @@ class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpCon
           }
         },
         // Consume attributes
-        (pathPrefix("attributes") & extractRelativePath(name)) { relativePath =>
+        (pathPrefix("attributes") & extractPath(name)) { path =>
           operationName(s"/${hc.prefix}/buckets/{}/attributes/{}") {
             bucketExists(name).apply { implicit bucketExistsEvidence =>
               // Get file attributes
               get {
-                pathExists(name, relativePath).apply { implicit pathExistsEvidence =>
-                  val result = storages.getAttributes(name, relativePath).map[(StatusCode, FileAttributes)] {
+                pathExists(name, path).apply { implicit pathExistsEvidence =>
+                  val result = storages.getAttributes(name, path).map[(StatusCode, FileAttributes)] {
                     case attr @ FileAttributes(_, _, Digest.empty, _) => Accepted -> attr
                     case attr                                         => OK       -> attr
                   }
-                  complete(result.runToFuture)
+                  complete(result.unsafeToFuture())
                 }
               }
             }
@@ -95,7 +94,7 @@ object StorageRoutes {
     * Link file request.
     *
     * @param source
-    *   the relative location of the file/dir
+    *   the location of the file/dir
     */
   final private[routes] case class LinkFile(source: Uri.Path)
 
@@ -105,7 +104,7 @@ object StorageRoutes {
     implicit val linkFileEnc: Encoder[LinkFile] = deriveEncoder[LinkFile]
   }
 
-  final def apply(storages: Storages[Task, AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {
+  final def apply(storages: Storages[IO, AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {
     implicit val s = storages
     new StorageRoutes()
   }

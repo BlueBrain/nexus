@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import monix.bio.UIO
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 
 import scala.concurrent.duration.FiniteDuration
@@ -26,7 +25,7 @@ trait EphemeralStateStore[Id, S <: EphemeralState] {
   /**
     * Returns the state
     */
-  def get(ref: ProjectRef, id: Id): UIO[Option[S]]
+  def get(ref: ProjectRef, id: Id): IO[Option[S]]
 }
 
 object EphemeralStateStore {
@@ -67,12 +66,11 @@ object EphemeralStateStore {
             """.stripMargin
       }.update.run.void
 
-      override def get(ref: ProjectRef, id: Id): UIO[Option[S]] =
+      override def get(ref: ProjectRef, id: Id): IO[Option[S]] =
         sql"""SELECT value FROM public.ephemeral_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id"""
           .query[S]
           .option
-          .transact(xas.read)
-          .hideErrors
+          .transact(xas.readCE)
     }
 
 }

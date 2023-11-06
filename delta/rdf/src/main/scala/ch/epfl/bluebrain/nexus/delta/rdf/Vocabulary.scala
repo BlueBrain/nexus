@@ -129,8 +129,8 @@ object Vocabulary {
     * Nexus vocabulary
     */
   object nxv {
-    implicit val base     = iri"https://bluebrain.github.io/nexus/vocabulary/"
-    def +(suffix: String) = iri"$base$suffix"
+    implicit val base: Iri = iri"https://bluebrain.github.io/nexus/vocabulary/"
+    def +(suffix: String)  = iri"$base$suffix"
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
@@ -160,6 +160,7 @@ object Vocabulary {
     val score                 = Metadata("score")
     val self                  = Metadata("self")
     val source                = Metadata("source")
+    val tags                  = Metadata("tags")
     val tokenEndpoint         = Metadata("tokenEndpoint")
     val total                 = Metadata("total")
     val types                 = Metadata("types")
@@ -229,15 +230,17 @@ object Vocabulary {
     val quotas                = contexts + "quotas.json"
     val realms                = contexts + "realms.json"
     val realmsMetadata        = contexts + "realms-metadata.json"
+    val remoteContexts        = contexts + "remote-contexts.json"
     val resolvers             = contexts + "resolvers.json"
     val resolversMetadata     = contexts + "resolvers-metadata.json"
     val search                = contexts + "search.json"
     val schemasMetadata       = contexts + "schemas-metadata.json"
     val shacl                 = contexts + "shacl-20170720.json"
+    val statistics            = contexts + "statistics.json"
     val supervision           = contexts + "supervision.json"
     val tags                  = contexts + "tags.json"
+    val validation            = contexts + "validation.json"
     val version               = contexts + "version.json"
-    val statistics            = contexts + "statistics.json"
 
   }
 

@@ -3,10 +3,20 @@ package ch.epfl.bluebrain.nexus.testkit
 import ch.epfl.bluebrain.nexus.testkit.CirceEq.IgnoredArrayOrder
 import io.circe._
 import io.circe.syntax._
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher, MatchResult, Matcher}
 
 trait CirceEq {
   def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)
+
+  def field(fieldName: String, expectedValue: Json): HavePropertyMatcher[Json, Json] = HavePropertyMatcher(left => {
+    val actualValue = left.hcursor.downField(fieldName).as[Json].getOrElse(Json.Null)
+    HavePropertyMatchResult(
+      actualValue == expectedValue,
+      fieldName,
+      expectedValue,
+      actualValue
+    )
+  })
 }
 
 object CirceEq {

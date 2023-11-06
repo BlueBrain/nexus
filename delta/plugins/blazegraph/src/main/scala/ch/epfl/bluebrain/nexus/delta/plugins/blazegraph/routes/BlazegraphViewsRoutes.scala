@@ -3,23 +3,22 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -28,17 +27,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
-import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax._
-import io.circe.{Encoder, Json}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
-import monix.execution.Scheduler
+import io.circe.Json
 
 /**
   * The Blazegraph views routes
@@ -49,8 +41,6 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   to check the acls
-  * @param projections
-  *   the projections module
   * @param schemeDirectives
   *   directives related to orgs and projects
   * @param index
@@ -61,12 +51,10 @@ class BlazegraphViewsRoutes(
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     aclCheck: AclCheck,
-    projections: Projections,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[BlazegraphView]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig,
@@ -77,215 +65,172 @@ class BlazegraphViewsRoutes(
     with RdfMarshalling
     with BlazegraphViewsDirectives {
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
-    deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
-
-  implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
+  private def indexUIO(project: ProjectRef, resource: ResourceF[BlazegraphView], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
-      concat(
-        pathPrefix("views") {
-          extractCaller { implicit caller =>
-            resolveProjectRef.apply { implicit ref =>
-              // Create a view without id segment
-              concat(
-                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
-                  operationName(s"$prefixSegment/views/{org}/{project}") {
-                    authorizeFor(ref, Write).apply {
-                      emit(
-                        Created,
-                        views
-                          .create(ref, source)
-                          .tapEval(index(ref, _, mode))
-                          .mapValue(_.metadata)
-                          .rejectWhen(decodingFailedOrViewNotFound)
-                      )
-                    }
-                  }
-                },
-                (idSegment & indexingMode) { (id, mode) =>
-                  concat(
-                    (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
-                      concat(
-                        put {
-                          authorizeFor(ref, Write).apply {
-                            (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                              case (None, source)      =>
-                                // Create a view with id segment
-                                emit(
-                                  Created,
-                                  views
-                                    .create(id, ref, source)
-                                    .tapEval(index(ref, _, mode))
-                                    .mapValue(_.metadata)
-                                    .rejectWhen(decodingFailedOrViewNotFound)
-                                )
-                              case (Some(rev), source) =>
-                                // Update a view
-                                emit(
-                                  views
-                                    .update(id, ref, rev, source)
-                                    .tapEval(index(ref, _, mode))
-                                    .mapValue(_.metadata)
-                                    .rejectWhen(decodingFailedOrViewNotFound)
-                                )
-                            }
+    concat(
+      pathPrefix("views") {
+        extractCaller { implicit caller =>
+          resolveProjectRef.apply { implicit ref =>
+            // Create a view without id segment
+            concat(
+              (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
+                authorizeFor(ref, Write).apply {
+                  emit(
+                    Created,
+                    views
+                      .create(ref, source)
+                      .flatTap(indexUIO(ref, _, mode))
+                      .mapValue(_.metadata)
+                      .attemptNarrow[BlazegraphViewRejection]
+                      .rejectWhen(decodingFailedOrViewNotFound)
+                  )
+                }
+              },
+              (idSegment & indexingMode) { (id, mode) =>
+                concat(
+                  pathEndOrSingleSlash {
+                    concat(
+                      put {
+                        authorizeFor(ref, Write).apply {
+                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, source)      =>
+                              // Create a view with id segment
+                              emit(
+                                Created,
+                                views
+                                  .create(id, ref, source)
+                                  .flatTap(indexUIO(ref, _, mode))
+                                  .mapValue(_.metadata)
+                                  .attemptNarrow[BlazegraphViewRejection]
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                            case (Some(rev), source) =>
+                              // Update a view
+                              emit(
+                                views
+                                  .update(id, ref, rev, source)
+                                  .flatTap(indexUIO(ref, _, mode))
+                                  .mapValue(_.metadata)
+                                  .attemptNarrow[BlazegraphViewRejection]
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
                           }
-                        },
-                        (delete & parameter("rev".as[Int])) { rev =>
-                          // Deprecate a view
-                          authorizeFor(ref, Write).apply {
+                        }
+                      },
+                      (delete & parameter("rev".as[Int])) { rev =>
+                        // Deprecate a view
+                        authorizeFor(ref, Write).apply {
+                          emit(
+                            views
+                              .deprecate(id, ref, rev)
+                              .flatTap(indexUIO(ref, _, mode))
+                              .mapValue(_.metadata)
+                              .attemptNarrow[BlazegraphViewRejection]
+                              .rejectOn[ViewNotFound]
+                          )
+                        }
+                      },
+                      // Fetch a view
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(
+                          ref,
+                          id,
+                          authorizeFor(ref, Read).apply {
                             emit(
                               views
-                                .deprecate(id, ref, rev)
-                                .tapEval(index(ref, _, mode))
-                                .mapValue(_.metadata)
+                                .fetch(id, ref)
+                                .attemptNarrow[BlazegraphViewRejection]
                                 .rejectOn[ViewNotFound]
                             )
                           }
-                        },
-                        // Fetch a view
-                        (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(
-                            ref,
-                            id,
-                            authorizeFor(ref, Read).apply {
-                              emit(views.fetch(id, ref).rejectOn[ViewNotFound])
-                            }
-                          )
-                        }
-                      )
-                    },
-                    // Query a blazegraph view
-                    (pathPrefix("sparql") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
-                        concat(
-                          // Query
-                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
-                            queryResponseType.apply { responseType =>
-                              emit(viewsQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
-                            }
-                          }
                         )
                       }
-                    },
-                    // Fetch a blazegraph view statistics
-                    (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                        authorizeFor(ref, permissions.read).apply {
+                    )
+                  },
+                  // Query a blazegraph view
+                  (pathPrefix("sparql") & pathEndOrSingleSlash) {
+                    concat(
+                      // Query
+                      ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                        queryResponseType.apply { responseType =>
                           emit(
-                            views
-                              .fetchIndexingView(id, ref)
-                              .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
+                            viewsQuery
+                              .query(id, ref, query, responseType)
+                              .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
                           )
                         }
                       }
-                    },
-                    // Fetch blazegraph view indexing failures
-                    lastEventId { offset =>
-                      (pathPrefix("failures") & get & pathEndOrSingleSlash) {
-                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/failures") {
-                          authorizeFor(ref, Write).apply {
+                    )
+                  },
+                  (pathPrefix("tags") & pathEndOrSingleSlash) {
+                    concat(
+                      // Fetch tags for a view
+                      (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                        emit(
+                          views
+                            .fetch(id, ref)
+                            .map(_.value.tags)
+                            .attemptNarrow[BlazegraphViewRejection]
+                            .rejectOn[ViewNotFound]
+                        )
+                      },
+                      // Tag a view
+                      (post & parameter("rev".as[Int])) { rev =>
+                        authorizeFor(ref, Write).apply {
+                          entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
+                              Created,
                               views
-                                .fetch(id, ref)
-                                .map { view =>
-                                  projections
-                                    .failedElemSses(view.value.project, view.value.id, offset)
-                                }
+                                .tag(id, ref, tag, tagRev, rev)
+                                .flatTap(indexUIO(ref, _, mode))
+                                .mapValue(_.metadata)
+                                .attemptNarrow[BlazegraphViewRejection]
+                                .rejectOn[ViewNotFound]
                             )
                           }
                         }
                       }
-                    },
-                    // Manage an blazegraph view offset
-                    (pathPrefix("offset") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
-                        concat(
-                          // Fetch a blazegraph view offset
-                          (get & authorizeFor(ref, permissions.read)) {
-                            emit(
-                              views
-                                .fetchIndexingView(id, ref)
-                                .flatMap(v => projections.offset(v.projection))
-                                .rejectOn[ViewNotFound]
-                            )
-                          },
-                          // Remove an blazegraph view offset (restart the view)
-                          (delete & authorizeFor(ref, Write)) {
-                            emit(
-                              views
-                                .fetchIndexingView(id, ref)
-                                .flatMap { r => projections.scheduleRestart(r.projection) }
-                                .as(Offset.start)
-                                .rejectOn[ViewNotFound]
-                            )
-                          }
-                        )
-                      }
-                    },
-                    (pathPrefix("tags") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
-                        concat(
-                          // Fetch tags for a view
-                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                            emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
-                          },
-                          // Tag a view
-                          (post & parameter("rev".as[Int])) { rev =>
-                            authorizeFor(ref, Write).apply {
-                              entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(
-                                  Created,
-                                  views
-                                    .tag(id, ref, tag, tagRev, rev)
-                                    .tapEval(index(ref, _, mode))
-                                    .mapValue(_.metadata)
-                                    .rejectOn[ViewNotFound]
-                                )
-                              }
-                            }
-                          }
-                        )
-                      }
-                    },
-                    // Fetch a view original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                        authorizeFor(ref, Read).apply {
-                          emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
-                        }
-                      }
-                    },
-                    //Incoming/outgoing links for views
-                    incomingOutgoing(id, ref)
-                  )
-                }
-              )
-            }
-          }
-        },
-        //Handle all other incoming and outgoing links
-        pathPrefix(Segment) { segment =>
-          extractCaller { implicit caller =>
-            resolveProjectRef.apply { ref =>
-              // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
-              consumeIdSegmentIf(segment == "resources") {
-                idSegment { id =>
+                    )
+                  },
+                  // Fetch a view original source
+                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                    authorizeFor(ref, Read).apply {
+                      emit(
+                        views
+                          .fetch(id, ref)
+                          .map(_.value.source)
+                          .attemptNarrow[BlazegraphViewRejection]
+                          .rejectOn[ViewNotFound]
+                      )
+                    }
+                  },
+                  //Incoming/outgoing links for views
                   incomingOutgoing(id, ref)
-                }
+                )
+              }
+            )
+          }
+        }
+      },
+      //Handle all other incoming and outgoing links
+      pathPrefix(Segment) { segment =>
+        extractCaller { implicit caller =>
+          resolveProjectRef.apply { ref =>
+            // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
+            consumeIdSegmentIf(segment == "resources") {
+              idSegment { id =>
+                incomingOutgoing(id, ref)
               }
             }
           }
         }
-      )
-    }
+      }
+    )
 
   private def consumeIdSegmentIf(condition: Boolean): Directive0 =
     if (condition) idSegment.flatMap(_ => pass)
@@ -298,7 +243,7 @@ class BlazegraphViewsRoutes(
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
         authorizeFor(ref, Read).apply {
-          emit(viewsQuery.incoming(id, ref, pagination))
+          emit(viewsQuery.incoming(id, ref, pagination).attemptNarrow[BlazegraphViewRejection])
         }
       },
       (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
@@ -308,20 +253,15 @@ class BlazegraphViewsRoutes(
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
         authorizeFor(ref, Read).apply {
-          emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
+          emit(
+            viewsQuery.outgoing(id, ref, pagination, includeExternal).attemptNarrow[BlazegraphViewRejection]
+          )
         }
       }
     )
-
-  private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {
-    case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
-  }
-
 }
 
 object BlazegraphViewsRoutes {
-
-  type RestartView = (Iri, ProjectRef) => UIO[Unit]
 
   /**
     * @return
@@ -332,12 +272,10 @@ object BlazegraphViewsRoutes {
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       aclCheck: AclCheck,
-      projections: Projections,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[BlazegraphView]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig,
@@ -348,7 +286,6 @@ object BlazegraphViewsRoutes {
       viewsQuery,
       identities,
       aclCheck,
-      projections,
       schemeDirectives,
       index
     ).routes

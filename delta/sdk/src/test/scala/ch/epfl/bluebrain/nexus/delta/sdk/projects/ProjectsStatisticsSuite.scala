@@ -14,8 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -25,7 +26,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFixtures {
+class ProjectsStatisticsSuite extends BioSuite with CatsRunContext with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -58,12 +59,12 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
 
   test("Insert some fruits and cheeses") {
     (
-      fruitStore.save(Fruit(proj, nxv + "banana", 3, epoch)) >>
-        fruitStore.save(Fruit(proj, nxv + "apple", 1, epoch.plusSeconds(10L))) >>
-        fruitStore.save(Fruit(proj, nxv + "banana", 1, epoch), UserTag.unsafe("v1")) >>
-        cheeseStore.save(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
-        fruitStore.save(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
-        cheeseStore.save(Cheese(proj2, nxv + "morbier", 3, epoch))
+      fruitStore.unsafeSave(Fruit(proj, nxv + "banana", 3, epoch)) >>
+        fruitStore.unsafeSave(Fruit(proj, nxv + "apple", 1, epoch.plusSeconds(10L))) >>
+        fruitStore.unsafeSave(Fruit(proj, nxv + "banana", 1, epoch), UserTag.unsafe("v1")) >>
+        cheeseStore.unsafeSave(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
+        fruitStore.unsafeSave(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
+        cheeseStore.unsafeSave(Cheese(proj2, nxv + "morbier", 3, epoch))
     ).transact(xas.write).assert(())
   }
 

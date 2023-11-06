@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import monix.bio.UIO
 
 import java.time.Instant
 
@@ -36,7 +36,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     new SupervisionRoutes(
       identities,
       aclCheck,
-      UIO.delay { List(description1, description2) }
+      IO.delay { List(description1, description2) }
     ).routes
   )
 
@@ -44,8 +44,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "be forbidden without supervision/read permission" in {
       Get("/v1/supervision/projections") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

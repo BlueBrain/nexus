@@ -22,7 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -40,13 +43,14 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     with AnyWordSpecLike
     with Matchers
     with ConfigFixtures
-    with EitherValuable
+    with EitherValues
     with CancelAfterFailure
     with TestHelpers
     with Eventually
     with Inspectors
     with TestMatchers
-    with IOValues {
+    with BIOValues
+    with CatsIOValues {
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
@@ -54,7 +58,8 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val client   =
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
   private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {

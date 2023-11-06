@@ -2,18 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class RemoteContextResolutionSpec extends CatsEffectSpec with Fixtures {
 
   "A remote context resolution" should {
 
     val input = jsonContentOf("/jsonld/context/input-with-remote-context.json")
 
     "resolve" in {
-      remoteResolution(input).accepted shouldEqual remoteContexts
+      remoteResolution(input).accepted shouldEqual remoteContexts.map { case (iri, context) =>
+        iri -> StaticContext(iri, context)
+      }
     }
 
     "fail to resolve when some context does not exist" in {
@@ -29,7 +31,7 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
       val ctxValuesMap       = remoteContexts - excluded
       val excludedResolution = RemoteContextResolution.fixed(excluded -> ctxValue)
       val restResolution     = RemoteContextResolution.fixed(ctxValuesMap.toSeq: _*)
-      restResolution.merge(excludedResolution).resolve(excluded).accepted shouldEqual ctxValue
+      restResolution.merge(excludedResolution).resolve(excluded).accepted shouldEqual StaticContext(excluded, ctxValue)
     }
   }
 

@@ -11,29 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
-import monix.bio.IO
-import monix.execution.Scheduler.Implicits.global
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 
-class ElasticSearchViewDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with IOValues
-    with TestHelpers
-    with OptionValues
-    with Fixtures {
+class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
 
   private val ref     = ProjectRef.unsafe("org", "proj")
   private val context = ProjectContext.unsafe(
@@ -44,12 +31,11 @@ class ElasticSearchViewDecodingSpec
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
-  implicit private val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  implicit private val resolverContext: ResolverContextResolution = ResolverContextResolution(rcr)
 
   implicit private val caller: Caller = Caller.Anonymous
   private val decoder                 =
-    ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext).runSyncUnsafe()
+    ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext).unsafeRunSync()
 
   "An IndexingElasticSearchViewValue" should {
     val mapping  = json"""{ "dynamic": false }""".asObject.value

@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -11,11 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Graph analytics plugin wiring.
@@ -27,12 +32,30 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
   make[GraphAnalytics]
-    .fromEffect {
-      (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
-        GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection))(
-          config.termAggregations
-        )
+    .from { (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
+      GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
+
+  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors, timer: Timer[IO]) =>
+    GraphAnalyticsStream(qc, xas)(timer)
+  }
+
+  make[GraphAnalyticsCoordinator].fromEffect {
+    (
+        projects: Projects,
+        analyticsStream: GraphAnalyticsStream,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: GraphAnalyticsConfig,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)(timer, cs)
+  }
+
+  make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>
+    new GraphAnalyticsViewsQueryImpl(config.prefix, client)
+  }
 
   make[GraphAnalyticsRoutes].from {
     (
@@ -42,19 +65,19 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         projections: Projections,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        viewsQuery: GraphAnalyticsViewsQuery
     ) =>
       new GraphAnalyticsRoutes(
         identities,
         aclCheck,
         graphAnalytics,
-        projections,
-        schemeDirectives
+        project => projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)),
+        schemeDirectives,
+        viewsQuery
       )(
         baseUri,
-        s,
         cr,
         ordering
       )

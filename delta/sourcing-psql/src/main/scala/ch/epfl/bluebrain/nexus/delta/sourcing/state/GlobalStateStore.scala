@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
@@ -16,7 +16,6 @@ import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import fs2.Stream
 import io.circe.Decoder
-import monix.bio.{Task, UIO}
 
 /**
   * Allow to save and fetch [[GlobalState]] s from the database
@@ -24,7 +23,7 @@ import monix.bio.{Task, UIO}
 trait GlobalStateStore[Id, S <: GlobalState] {
 
   /**
-    * Persist the state at the given tag
+    * Persist the state
     */
   def save(state: S): ConnectionIO[Unit]
 
@@ -36,7 +35,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
   /**
     * Returns the state
     */
-  def get(id: Id): UIO[Option[S]]
+  def get(id: Id): IO[Option[S]]
 
   /**
     * Fetches states from the given type from the provided offset.
@@ -63,7 +62,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
 
 object GlobalStateStore {
 
-  def listIds(tpe: EntityType, xa: Transactor[Task]): Stream[Task, Iri] =
+  def listIds(tpe: EntityType, xa: Transactor[IO]): Stream[IO, Iri] =
     sql"SELECT id FROM global_states WHERE type = $tpe".query[Iri].stream.transact(xa)
 
   def apply[Id, S <: GlobalState](
@@ -71,7 +70,7 @@ object GlobalStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
+  )(implicit timer: Timer[IO]): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import IriInstances._
     implicit val putId: Put[Id]      = serializer.putId
@@ -117,12 +116,11 @@ object GlobalStateStore {
     override def delete(id: Id): ConnectionIO[Unit] =
       sql"""DELETE FROM global_states WHERE type = $tpe AND id = $id""".stripMargin.update.run.void
 
-    override def get(id: Id): UIO[Option[S]] =
+    override def get(id: Id): IO[Option[S]] =
       sql"""SELECT value FROM global_states WHERE type = $tpe AND id = $id"""
         .query[S]
         .option
-        .transact(xas.read)
-        .hideErrors
+        .transact(xas.readCE)
 
     private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
       StreamingQuery[Envelope[S]](

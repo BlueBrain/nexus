@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage._
@@ -8,29 +7,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.IOValues
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class StorageSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with RemoteContextResolutionFixture
-    with IOValues
-    with StorageFixtures {
+class StorageSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   "A Storage" should {
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
     val tag           = UserTag.unsafe("tag")
     val diskStorage   =
-      DiskStorage(nxv + "disk", project, diskVal, Tags.empty, Secret(json"""{"disk": "value"}"""))
-    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Tags(tag -> 1), Secret(json"""{"s3": "value"}"""))
+      DiskStorage(nxv + "disk", project, diskVal, Tags.empty, json"""{"disk": "value"}""")
+    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Tags(tag -> 1), json"""{"s3": "value"}""")
     val remoteStorage =
-      RemoteDiskStorage(nxv + "remote", project, remoteVal, Tags.empty, Secret(json"""{"remote": "value"}"""))
+      RemoteDiskStorage(nxv + "remote", project, remoteVal, Tags.empty, json"""{"remote": "value"}""")
 
     "be compacted" in {
       forAll(

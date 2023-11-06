@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -11,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
@@ -27,7 +29,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ResolverRejection(val reason: String) extends Product with Serializable
+sealed abstract class ResolverRejection(val reason: String) extends Rejection
 
 object ResolverRejection {
 
@@ -93,6 +95,11 @@ object ResolverRejection {
     */
   final case class InvalidResolverId(id: String)
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create a resolver while providing an id that is blank.
+    */
+  final case object BlankResolverId extends ResolverRejection(s"Resolver identifier cannot be blank.")
 
   /**
     * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
@@ -222,6 +229,7 @@ object ResolverRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case BlankId                                           => BlankResolverId
   }
 
   implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =
@@ -232,8 +240,9 @@ object ResolverRejection {
         case ProjectContextRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidResolution(_, _, report)            => obj.add("report", report.asJson)
-        case InvalidResolverResolution(_, _, _, report) => obj.add("report", report.asJson)
+        case InvalidResolution(_, _, report)            => obj.addContext(contexts.resolvers).add("report", report.asJson)
+        case InvalidResolverResolution(_, _, _, report) =>
+          obj.addContext(contexts.resolvers).add("report", report.asJson)
         case _: ResolverNotFound                        => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                          => obj
       }

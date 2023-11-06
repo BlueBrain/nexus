@@ -103,21 +103,24 @@ object ResponseToJsonLd extends FileBytesInstances {
         s"=?UTF-8?B?$encodedFilename?="
       }
 
-      override def apply(statusOverride: Option[StatusCode]): Route =
-        onSuccess(io.attempt.runToFuture) {
-          case Left(complete: Complete[E]) => emit(complete)
-          case Left(reject: Reject[E])     => emit(reject)
-          case Right(response)             =>
+      override def apply(statusOverride: Option[StatusCode]): Route = {
+        val flattened = io.flatMap { fr => fr.content.attempt.map(_.map { s => fr.metadata -> s }) }.attempt
+        onSuccess(flattened.runToFuture) {
+          case Left(complete: Complete[E])       => emit(complete)
+          case Left(reject: Reject[E])           => emit(reject)
+          case Right(Left(c))                    => emit(c)
+          case Right(Right((metadata, content))) =>
             headerValueByType(Accept) { accept =>
-              if (accept.mediaRanges.exists(_.matches(response.contentType.mediaType))) {
-                val encodedFilename = attachmentString(response.filename)
+              if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {
+                val encodedFilename = attachmentString(metadata.filename)
                 respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
-                  complete(statusOverride.getOrElse(OK), HttpEntity(response.contentType, response.content))
+                  complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
                 }
               } else
-                reject(unacceptedMediaTypeRejection(Seq(response.contentType.mediaType)))
+                reject(unacceptedMediaTypeRejection(Seq(metadata.contentType.mediaType)))
             }
         }
+      }
     }
 }
 

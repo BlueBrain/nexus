@@ -13,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class FilterBySchemaSuite extends BioSuite {
+class FilterBySchemaSuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -56,16 +56,16 @@ class FilterBySchemaSuite extends BioSuite {
 
   test("Do not filter elements if the expected schema set is empty") {
     val elem = element(Latest(iri"http://localhost/schema1"))
-    pipe(Set.empty).apply(elem).assert(elem)
+    pipe(Set.empty).apply(elem).assertEquals(elem)
   }
 
   test("Do not filter elements if the schema intersection is not void") {
     val elem = element(Revision(iri"http://localhost/schema1", 2))
-    pipe(Set(iri"http://localhost/schema1", iri"http://localhost/schema2")).apply(elem).assert(elem)
+    pipe(Set(iri"http://localhost/schema1", iri"http://localhost/schema2")).apply(elem).assertEquals(elem)
   }
 
   test("Filter elements if the type intersection is void") {
     val elem = element(Revision(iri"http://localhost/schema1", 2))
-    pipe(Set(iri"http://localhost/schema2", iri"http://localhost/schema3")).apply(elem).assert(elem.dropped)
+    pipe(Set(iri"http://localhost/schema2", iri"http://localhost/schema3")).apply(elem).assertEquals(elem.dropped)
   }
 }

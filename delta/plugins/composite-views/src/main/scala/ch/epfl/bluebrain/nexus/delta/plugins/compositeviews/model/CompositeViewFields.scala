@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -27,8 +27,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeViewFields(
     name: Option[String],
     description: Option[String],
-    sources: NonEmptySet[CompositeViewSourceFields],
-    projections: NonEmptySet[CompositeViewProjectionFields],
+    sources: NonEmptyList[CompositeViewSourceFields],
+    projections: NonEmptyList[CompositeViewProjectionFields],
     rebuildStrategy: Option[RebuildStrategy]
 ) {
   def toJson(iri: Iri)(implicit base: BaseUri): Json =
@@ -37,10 +37,12 @@ final case class CompositeViewFields(
 
 object CompositeViewFields {
 
-  /** Construct a [[CompositeViewFields]] without name and description */
+  /**
+    * Construct a [[CompositeViewFields]] without name and description
+    */
   def apply(
-      sources: NonEmptySet[CompositeViewSourceFields],
-      projections: NonEmptySet[CompositeViewProjectionFields],
+      sources: NonEmptyList[CompositeViewSourceFields],
+      projections: NonEmptyList[CompositeViewProjectionFields],
       rebuildStrategy: Option[RebuildStrategy]
   ): CompositeViewFields =
     CompositeViewFields(None, None, sources, projections, rebuildStrategy)

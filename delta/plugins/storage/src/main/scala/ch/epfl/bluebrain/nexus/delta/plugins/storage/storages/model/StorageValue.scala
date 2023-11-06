@@ -3,16 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -20,9 +16,12 @@ import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
+import java.io.File
 import java.nio.file.Path
 import scala.annotation.nowarn
+import scala.reflect.io.Directory
 import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
@@ -71,12 +70,6 @@ sealed trait StorageValue extends Product with Serializable {
 
   /**
     * @return
-    *   a set of secrets for the current storage
-    */
-  def secrets: Set[Secret[String]]
-
-  /**
-    * @return
     *   the permission required in order to download a file to this storage
     */
   def readPermission: Permission
@@ -108,8 +101,10 @@ object StorageValue {
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType             = StorageType.DiskStorage
-    override val secrets: Set[Secret[String]] = Set.empty
+    override val tpe: StorageType = StorageType.DiskStorage
+
+    def rootDirectory(project: ProjectRef): Directory =
+      new Directory(new File(volume.value.toFile, project.toString))
   }
 
   object DiskStorageValue {
@@ -144,17 +139,14 @@ object StorageValue {
       algorithm: DigestAlgorithm,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[Secret[String]],
-      secretKey: Option[Secret[String]],
       region: Option[Region],
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType             = StorageType.S3Storage
-    override val capacity: Option[Long]       = None
-    override val secrets: Set[Secret[String]] = Set.empty ++ accessKey ++ secretKey
+    override val tpe: StorageType       = StorageType.S3Storage
+    override val capacity: Option[Long] = None
 
     def address(bucket: String): Uri =
       endpoint match {
@@ -168,18 +160,17 @@ object StorageValue {
       *   these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
       */
     def alpakkaSettings(config: StorageTypeConfig): s3.S3Settings = {
-      val (accessKeyOrDefault, secretKeyOrDefault) =
-        config.amazon
-          .map { cfg =>
-            accessKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultAccessKey else None) ->
-              secretKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultSecretKey else None)
-          }
-          .getOrElse(None -> None)
 
-      val credsProvider                            = (accessKeyOrDefault, secretKeyOrDefault) match {
-        case (Some(accessKey), Some(secretKey)) =>
+      val keys          = for {
+        cfg       <- config.amazon
+        accessKey <- cfg.defaultAccessKey
+        secretKey <- cfg.defaultSecretKey
+      } yield accessKey -> secretKey
+
+      val credsProvider = keys match {
+        case Some((accessKey, secretKey)) =>
           StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey.value, secretKey.value))
-        case _                                  =>
+        case _                            =>
           StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials())
       }
 
@@ -209,8 +200,6 @@ object StorageValue {
         algorithm: DigestAlgorithm,
         bucket: String,
         endpoint: Option[Uri],
-        accessKey: Option[Secret[String]],
-        secretKey: Option[Secret[String]],
         region: Option[Region],
         readPermission: Permission,
         writePermission: Permission,
@@ -223,8 +212,6 @@ object StorageValue {
         algorithm,
         bucket,
         endpoint,
-        accessKey,
-        secretKey,
         region,
         readPermission,
         writePermission,
@@ -244,27 +231,14 @@ object StorageValue {
       default: Boolean,
       algorithm: DigestAlgorithm,
       endpoint: BaseUri,
-      credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType             = StorageType.RemoteDiskStorage
-    override val capacity: Option[Long]       = None
-    override val secrets: Set[Secret[String]] = Set.empty ++ credentials
-
-    /**
-      * Construct the auth token to query the remote storage
-      */
-    def authToken(config: StorageTypeConfig): Option[AuthToken] =
-      config.remoteDisk
-        .flatMap { cfg =>
-          credentials.orElse(if (endpoint == cfg.defaultEndpoint) cfg.defaultCredentials else None)
-        }
-        .map(secret => AuthToken(secret.value))
-
+    override val tpe: StorageType       = StorageType.RemoteDiskStorage
+    override val capacity: Option[Long] = None
   }
 
   object RemoteDiskStorageValue {
@@ -277,7 +251,6 @@ object StorageValue {
         default: Boolean,
         algorithm: DigestAlgorithm,
         endpoint: BaseUri,
-        credentials: Option[Secret[String]],
         folder: Label,
         readPermission: Permission,
         writePermission: Permission,
@@ -289,7 +262,6 @@ object StorageValue {
         default,
         algorithm,
         endpoint,
-        credentials,
         folder,
         readPermission,
         writePermission,
@@ -309,18 +281,11 @@ object StorageValue {
 
   @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
-  def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
+  def databaseCodec(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
     implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val pathDecoder: Decoder[Path]     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.toString)
     implicit val regionDecoder: Decoder[Region] = Decoder.decodeString.map(Region.of)
-
-    implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
-      case Secret(value) => crypto.encrypt(value).get
-    }
-
-    implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
-      Decoder.decodeString.emapTry(str => crypto.decrypt(str).map(Secret(_)))
 
     implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
 

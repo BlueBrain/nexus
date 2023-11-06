@@ -4,51 +4,76 @@ import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{BaseRouteSpec, RouteFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest._
 
-@DoNotDiscover
-class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with StorageFixtures with FileFixtures {
+class FilesRoutesSpec
+    extends BaseRouteSpec
+    with CancelAfterFailure
+    with StorageFixtures
+    with FileFixtures
+    with IOFromMap
+    with CatsIOValues {
 
-  implicit private val sc: Scheduler                   = Scheduler.global
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-  implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
+  val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
+  val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.anonymousForTest
+  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
-  implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities      = IdentitiesDummy(caller)
+  // TODO: sort out how we handle this in tests
+  implicit override def rcr: RemoteContextResolution =
+    RemoteContextResolution.fixedIO(
+      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json"),
+      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
+      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
+      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
+      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
+    )
+
+  implicit private val caller: Caller =
+    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val aliceIdentities         = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
@@ -75,34 +100,40 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
   private val storagesStatistics: StoragesStatistics =
     (_, _) => IO.pure { StorageStatEntry(0, 0) }
 
-  private val aclCheck        = AclSimpleCheck().accepted
-  lazy val storages: Storages = Storages(
+  private val aclCheck = AclSimpleCheck().accepted
+
+  lazy val storages: Storages                              = Storages(
     fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
+    ResolverContextResolution(rcr),
     IO.pure(allowedPerms.toSet),
     (_, _) => IO.unit,
-    crypto,
     xas,
-    StoragesConfig(eventLogConfig, pagination, config),
+    StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
-  lazy val files: Files       = Files(
-    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-    aclCheck,
-    storages,
-    storagesStatistics,
-    xas,
-    config,
-    FilesConfig(eventLogConfig)
-  )
-  private val groupDirectives =
+  lazy val files: Files                                    =
+    Files(
+      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      aclCheck,
+      storages,
+      storagesStatistics,
+      xas,
+      config,
+      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
+      remoteDiskStorageClient
+    )(ceClock, uuidF, timer, contextShift, typedSystem)
+  private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  private lazy val routes     =
+  private lazy val routes                                  = routesWithIdentities(aliceIdentities)
+  private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
+  private val tag       = UserTag.unsafe("mytag")
+
+  private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
   "File routes" should {
 
@@ -116,16 +147,15 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
           caller.subject -> Set(storagesPermissions.write)
         )
         .accepted
-      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms).accepted
       storages
-        .create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge json"""{"capacity":5000}"""))
+        .create(dId, projectRef, diskFieldsJson deepMerge defaults deepMerge json"""{"capacity":5000}""")
         .accepted
     }
 
     "fail to create a file without disk/write permission" in {
       Post("/v1/files/org/proj", entity()) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -138,19 +168,31 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
 
+    "create and tag a file" in {
+      withUUIDF(uuid2) {
+        Post("/v1/files/org/proj?tag=mytag", entity()) ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          val attr      = attributes(id = uuid2)
+          val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
+          response.asJson shouldEqual expected
+          fileByTag.value.tags.tags should contain(tag)
+        }
+      }
+    }
+
     "fail to create a file link using a storage that does not allow it" in {
       val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
       Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
       }
     }
 
     "fail to create a file without s3/write permission" in {
       Put("/v1/files/org/proj/file1?storage=s3-storage", entity()) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -161,6 +203,22 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
         val attr = attributes("file2.txt")
         response.asJson shouldEqual
           fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+      }
+    }
+
+    "create and tag a file with an authenticated user and provided id" in {
+      withUUIDF(uuid2) {
+        Put(
+          "/v1/files/org/proj/fileTagged?storage=s3-storage&tag=mytag",
+          entity("fileTagged.txt")
+        ) ~> asAlice ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          val attr      = attributes("fileTagged.txt", id = uuid2)
+          val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
+          response.asJson shouldEqual expected
+          fileByTag.value.tags.tags should contain(tag)
+        }
       }
     }
 
@@ -188,9 +246,8 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
 
     "fail to update a file without disk/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(diskWrite)).accepted
-      Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
+        response.shouldBeForbidden
       }
     }
 
@@ -211,12 +268,28 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
 
+    "update and tag a file in one request" in {
+      givenRoutesForUserWithPermissions(Set(diskRead, diskWrite)) { (user, route) =>
+        val token = addCredentials(OAuth2BearerToken(user.subject))
+
+        givenAFile { id =>
+          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"$id.txt")) ~> token ~> route ~> check {
+            status shouldEqual StatusCodes.OK
+          }
+
+          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> token ~> route ~> check {
+            status shouldEqual StatusCodes.OK
+          }
+        }
+      }
+    }
+
     "fail to update a file link using a storage that does not allow it" in {
       val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
       Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
       }
     }
 
@@ -246,8 +319,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
 
     "fail to deprecate a file without files/write permission" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=1") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -267,7 +339,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
 
-    "reject the deprecation of a already deprecated file" in {
+    "reject the deprecation of an already deprecated file" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> generatedId)
@@ -286,8 +358,8 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
     "fail to fetch a file without s3/read permission" in {
       forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
+          response.headers should not contain varyHeader
         }
       }
     }
@@ -298,6 +370,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotAcceptable
           response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
+          response.headers should not contain varyHeader
         }
       }
     }
@@ -314,6 +387,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
             header("Content-Disposition").value.value() shouldEqual
               s"""attachment; filename="=?UTF-8?B?$filename64?=""""
             response.asString shouldEqual content
+            response.headers should contain(varyHeader)
           }
         }
       }
@@ -340,6 +414,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
             header("Content-Disposition").value.value() shouldEqual
               s"""attachment; filename="=?UTF-8?B?$filename64?=""""
             response.asString shouldEqual content
+            response.headers should contain(varyHeader)
           }
         }
       }
@@ -351,8 +426,8 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.shouldBeForbidden
+            response.headers should not contain varyHeader
           }
         }
       }
@@ -364,6 +439,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
         status shouldEqual StatusCodes.OK
         val attr = attributes("file-idx-1.txt")
         response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = alice)
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -384,6 +460,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual
               fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+            response.headers should contain(varyHeader)
           }
         }
       }
@@ -436,15 +513,6 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
 
-    "fail to get the events stream without events/read permission" in {
-      forAll(List("/v1/files/events", "/v1/files/myorg/events", "/v1/files/org/proj/events")) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        }
-      }
-    }
-
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       Get("/v1/files/org/project/file1") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
@@ -452,12 +520,36 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
   }
+
+  def givenAFile(test: String => Assertion): Assertion = {
+    val id = genString()
+    Put(s"/v1/files/org/proj/$id", entity(s"${genString()}.txt")) ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+    test(id)
+  }
+
+  def givenRoutesForUserWithPermissions(
+      perms: Set[Permission]
+  )(test: (User, Route) => Assertion): Assertion =
+    givenAUserWithPermissions(perms) { (user, caller) =>
+      val authedRoutes = routesWithIdentities(IdentitiesDummy(caller))
+      test(user, authedRoutes)
+    }
+
+  def givenAUserWithPermissions(perms: Set[Permission])(test: (User, Caller) => Assertion): Assertion = {
+    val userId     = genString()
+    val user: User = User(userId, realm)
+    val c: Caller  = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
+    aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
+    test(user, c)
+  }
 }
 
 object FilesRoutesSpec extends TestHelpers with RouteFixtures {
 
   def fileMetadata(
-      ref: ProjectRef,
+      project: ProjectRef,
       id: Iri,
       attributes: FileAttributes,
       storage: ResourceRef.Revision,
@@ -465,12 +557,11 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      label: Option[String] = None
+      updatedBy: Subject = Anonymous
   )(implicit baseUri: BaseUri): Json =
     jsonContentOf(
       "files/file-route-metadata-response.json",
-      "project"     -> ref,
+      "project"     -> project,
       "id"          -> id,
       "rev"         -> rev,
       "storage"     -> storage.iri,
@@ -487,7 +578,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       "createdBy"   -> createdBy.asIri,
       "updatedBy"   -> updatedBy.asIri,
       "type"        -> storageType,
-      "label"       -> label.fold(lastSegment(id))(identity)
+      "self"        -> ResourceUris("files", project, id).accessUri
     )
 
 }

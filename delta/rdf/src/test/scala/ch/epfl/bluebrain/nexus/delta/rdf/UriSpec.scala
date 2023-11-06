@@ -2,14 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Inspectors with OptionValues {
+class UriSpec extends BaseSpec {
   "A Uri" should {
     val uriString = "http://example.com/path"
     val uri       = uri"$uriString"

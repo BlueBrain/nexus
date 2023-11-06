@@ -1,24 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
 
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 
-object ResourceGen extends IOValues {
+object ResourceGen {
 
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
@@ -27,33 +30,31 @@ object ResourceGen extends IOValues {
       id: Iri,
       project: ProjectRef,
       source: Json,
+      jsonld: JsonLdResult,
       schema: ResourceRef = Latest(schemas.resources),
-      types: Set[Iri] = Set.empty,
       tags: Tags = Tags.empty,
       rev: Int = 1,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
-  )(implicit resolution: RemoteContextResolution): ResourceState = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+  ) =
     ResourceState(
       id,
       project,
       project,
       source,
-      compacted,
-      expanded,
+      jsonld.compacted,
+      jsonld.expanded,
+      RemoteContextRef(jsonld.remoteContexts),
       rev,
       deprecated,
       schema,
-      types,
+      jsonld.types,
       tags,
       Instant.EPOCH,
       subject,
       Instant.EPOCH,
       subject
     )
-  }
 
   def resource(
       id: Iri,
@@ -67,6 +68,21 @@ object ResourceGen extends IOValues {
     Resource(id, project, tags, schema, source, compacted, expanded)
   }
 
+  def resourceAsync(
+      id: Iri,
+      project: ProjectRef,
+      source: Json,
+      schema: ResourceRef = Latest(schemas.resources),
+      tags: Tags = Tags.empty
+  )(implicit resolution: RemoteContextResolution): IO[Resource] = {
+    for {
+      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
+      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
+    } yield {
+      Resource(id, project, tags, schema, source, compacted, expanded)
+    }
+  }
+
   def sourceToResourceF(
       id: Iri,
       project: ProjectRef,
@@ -75,12 +91,12 @@ object ResourceGen extends IOValues {
       tags: Tags = Tags.empty,
       rev: Int = 1,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      deprecated: Boolean = false
   )(implicit resolution: RemoteContextResolution): DataResource = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    val result         = ExpandedJsonLd.explain(source).accepted
+    val expanded       = result.value.replaceId(id)
+    val compacted      = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    val remoteContexts = RemoteContextRef(result.remoteContexts)
     Resource(id, project, tags, schema, source, compacted, expanded)
     ResourceState(
       id,
@@ -89,6 +105,7 @@ object ResourceGen extends IOValues {
       source,
       compacted,
       expanded,
+      remoteContexts,
       rev,
       deprecated,
       schema,
@@ -98,7 +115,7 @@ object ResourceGen extends IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base))
+    ).toResource
   }
 
   def resourceFor(
@@ -106,9 +123,7 @@ object ResourceGen extends IOValues {
       types: Set[Iri] = Set.empty,
       rev: Int = 1,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      deprecated: Boolean = false
   ): DataResource =
     ResourceState(
       resource.id,
@@ -117,6 +132,7 @@ object ResourceGen extends IOValues {
       resource.source,
       resource.compacted,
       resource.expanded,
+      Set.empty,
       rev,
       deprecated,
       resource.schema,
@@ -126,6 +142,16 @@ object ResourceGen extends IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base))
+    ).toResource
+
+  def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit resolution: RemoteContextResolution) = {
+    val resourceF = sourceToResourceF(id, project, source)
+    JsonLdContent(resourceF, resourceF.value.source, None)
+  }
+
+  implicit final private class CatsIOValuesOps[A](private val io: IO[A]) {
+    def accepted: A =
+      io.unsafeRunTimed(45.seconds).getOrElse(throw new RuntimeException("IO timed out during .accepted call"))
+  }
 
 }

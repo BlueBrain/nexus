@@ -3,9 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
@@ -51,11 +49,8 @@ object FileGen {
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = Vocabulary.nxv.base
+      updatedBy: Subject = Anonymous
   ): FileResource =
-    state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy)
-      .toResource(am, ProjectBase.unsafe(base))
+    state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy).toResource
 
 }

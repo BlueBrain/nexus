@@ -1,21 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
+import akka.http.scaladsl.model.MediaTypes.`application/zip`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF, UrlUtils}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError.InvalidPath
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -28,41 +30,39 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, FileResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import io.circe.Json
-import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 import org.scalatest.TryValues
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues {
-
-  implicit private val scheduler: Scheduler = Scheduler.global
+class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues with ArchiveHelpers {
 
   private val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
 
-  implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
+  implicit private val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
 
-  import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
+  implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 
   private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller     = Caller.unsafe(subject)
@@ -82,9 +82,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private val perms = Seq(
     Permissions.resources.write,
-    Permissions.resources.read,
-    model.permissions.read,
-    model.permissions.write
+    Permissions.resources.read
   )
 
   private val asSubject     = addCredentials(OAuth2BearerToken("user"))
@@ -93,12 +91,13 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val acceptAll     = Accept(`*/*`)
 
   private val fetchContext    = FetchContextDummy(List(project))
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
   private val fileId                = iri"http://localhost/${genString()}"
-  private val encodedFileId         = UrlUtils.encode(fileId.toString)
+  private val encodedFileId         = encode(fileId.toString)
+  private val fileSelf              = uri"http://delta:8080/files/$encodedFileId"
   private val fileContent           = "file content"
   private val fileAttributes        = FileAttributes(
     uuid,
@@ -113,20 +112,23 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val file: ResourceF[File] =
     FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = subject, updatedBy = subject)
 
+  private val notFoundId   = uri"http://localhost/${genString()}"
+  private val notFoundSelf = uri"http://delta:8080/files/${encode(notFoundId.toString)}"
+
   private val generatedId = project.base.iri / uuid.toString
 
-  val fetchResource: (Iri, ProjectRef) => UIO[Option[JsonLdContent[_, _]]] = {
+  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[_, _]]] = {
     case (`fileId`, `projectRef`) =>
-      UIO.some(JsonLdContent(file, file.value.asJson, None))
+      IO.pure(Some(JsonLdContent(file, file.value.asJson, None)))
     case _                        =>
-      UIO.none
+      IO.none
   }
 
-  val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileRejection, FileResponse] = (id, p, c) => {
+  val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileResponse] = (id, p, c) => {
     val s = c.subject
     (id, p, s) match {
       case (_, _, `subjectNoFilePerms`) =>
-        IO.raiseError(FileRejection.AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
+        IO.raiseError(AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
       case (`fileId`, `projectRef`, _)  =>
         IO.pure(FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, 12L, Source.single(ByteString(fileContent))))
       case (id, ref, _)                 =>
@@ -143,7 +145,12 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       archiveDownload = ArchiveDownload(
                           aclCheck,
                           (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
-                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c)
+                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c),
+                          (input: Iri) =>
+                            input.toUri match {
+                              case `fileSelf` => IO.pure((projectRef, Latest(fileId)))
+                              case _          => IO.raiseError(InvalidPath(input))
+                            }
                         )
       archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
@@ -153,28 +160,26 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private def archiveMetadata(
       id: Iri,
-      ref: ProjectRef,
+      project: ProjectRef,
       rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = subject,
       updatedBy: Subject = subject,
-      expiresInSeconds: Long = 18000L,
-      label: Option[String] = None
+      expiresInSeconds: Long = 18000L
   ): Json =
     jsonContentOf(
       "responses/archive-metadata-response.json",
-      "project"          -> ref,
+      "project"          -> project,
       "id"               -> id,
       "rev"              -> rev,
       "deprecated"       -> deprecated,
       "createdBy"        -> createdBy.asIri,
       "updatedBy"        -> updatedBy.asIri,
-      "label"            -> label.fold(lastSegment(id))(identity),
+      "self"             -> ResourceUris.ephemeral("archives", project, id).accessUri,
       "expiresInSeconds" -> expiresInSeconds.toString
     )
 
   "The ArchiveRoutes" should {
-    val notFoundId = iri"http://localhost/${genString()}"
 
     val archive =
       json"""{
@@ -194,6 +199,28 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
               {
                 "@type": "File",
                 "resourceId": "$notFoundId"
+              }
+            ]
+          }"""
+
+    val archiveWithFileSelf =
+      json"""{
+            "resources": [
+              {
+                "@type": "Resource",
+                "resourceId": "$fileId"
+              },
+              {
+                "@type": "FileSelf",
+                "value": "$fileSelf"
+              },
+              {
+                "@type": "Resource",
+                "resourceId": "$notFoundId"
+              },
+              {
+                "@type": "FileSelf",
+                "value": "$notFoundSelf"
               }
             ]
           }"""
@@ -218,16 +245,29 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
+        response.asJson shouldEqual archiveMetadata(id, project.ref)
+      }
+    }
+
+    "create an archive with file self" in {
+      val id        = iri"http://localhost/${genString()}"
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
+
+      Put(
+        s"/v1/archives/$projectRef/$encodedId",
+        archiveWithFileSelf.toEntity
+      ) ~> asSubject ~> acceptMeta ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual archiveMetadata(id, project.ref)
       }
     }
 
     "create an archive with a specific id and redirect" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.SeeOther
         header[Location].value.uri.toString() shouldEqual s"${baseUri.endpoint}/archives/$projectRef/$encodedId"
@@ -245,34 +285,33 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       }
     }
 
-    "fetch an archive ignoring not found" in {
-      forAll(List(Accept(`application/x-tar`), acceptAll)) { accept =>
-        Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> accept ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          header[`Content-Type`].value.value() shouldEqual `application/x-tar`.value
-          val result = TarUtils.mapOf(responseEntity.dataBytes)
+    "fetch a zip archive ignoring not found" in {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> Accept(
+        `application/zip`
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        header[`Content-Type`].value.value() shouldEqual `application/zip`.value
+        val result = fromZip(responseEntity.dataBytes)(materializer, executor)
 
-          result.keySet shouldEqual Set(
-            s"${project.ref}/file/file.txt",
-            s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
-          )
+        result.keySet shouldEqual Set(
+          s"${project.ref}/file/file.txt",
+          s"${project.ref}/compacted/${encode(fileId.toString)}.json"
+        )
 
-          val expectedContent = fileContent
-          val actualContent   = result.get(s"${project.ref}/file/file.txt").value
-          actualContent shouldEqual expectedContent
+        val expectedContent = fileContent
+        val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
+        actualContent shouldEqual expectedContent
 
-          val expectedMetadata = FilesRoutesSpec.fileMetadata(
-            projectRef,
-            fileId,
-            file.value.attributes,
-            storageRef,
-            createdBy = subject,
-            updatedBy = subject,
-            label = Some(encodedFileId.replaceAll("%3A", ":"))
-          )
-          val actualMetadata   = result.get(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json").value
-          parse(actualMetadata).rightValue shouldEqual expectedMetadata
-        }
+        val expectedMetadata = FilesRoutesSpec.fileMetadata(
+          projectRef,
+          fileId,
+          file.value.attributes,
+          storageRef,
+          createdBy = subject,
+          updatedBy = subject
+        )
+        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
+        actualMetadata shouldEqual expectedMetadata
       }
     }
 
@@ -294,29 +333,25 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
     "fail to fetch an archive json representation when lacking permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptMeta ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to download an archive when lacking permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptAll ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to download an archive when lacking file permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asNoFilePerms ~> acceptAll ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/file-authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to create an archive when lacking permissions" in {
       Post(s"/v1/archives/$projectRef", archive.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

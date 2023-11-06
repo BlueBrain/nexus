@@ -6,27 +6,25 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 @DoNotDiscover
 class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with EitherValuable
-    with IOValues
+    with CatsEffectSpec
     with TestHelpers
     with Eventually
     with StorageFixtures
@@ -35,9 +33,12 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
-  implicit private val httpClient: HttpClient       = HttpClient()
+  private val httpClient: HttpClient                = HttpClient()
+  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
+  private val remoteDiskStorageClient               =
+    new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
-  private val access = new RemoteDiskStorageAccess
+  private val access = new RemoteDiskStorageAccess(remoteDiskStorageClient)
 
   private var storageValue: RemoteDiskStorageValue = _
 
@@ -47,7 +48,6 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
       default = true,
       DigestAlgorithm.default,
       BaseUri(docker.hostConfig.endpoint).rightValue,
-      None,
       Label.unsafe(RemoteStorageDocker.BucketName),
       read,
       write,

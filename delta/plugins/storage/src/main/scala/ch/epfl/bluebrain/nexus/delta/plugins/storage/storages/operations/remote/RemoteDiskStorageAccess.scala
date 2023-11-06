@@ -1,30 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
-import akka.actor.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import cats.effect.IO
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 
-class RemoteDiskStorageAccess(implicit config: StorageTypeConfig, httpClient: HttpClient, as: ActorSystem)
-    extends StorageAccess {
+class RemoteDiskStorageAccess(client: RemoteDiskStorageClient) extends StorageAccess {
   override type Storage = RemoteDiskStorageValue
 
-  override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[StorageNotAccessible, Unit] = {
-    implicit val cred: Option[AuthToken] = storage.authToken(config)
-    val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.endpoint)
+  override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[Unit] = {
     client
-      .exists(storage.folder)
-      .mapError(err =>
+      .exists(storage.folder)(storage.endpoint)
+      .adaptError { case err: HttpClientError =>
         StorageNotAccessible(
           id,
           err.details.fold(s"Folder '${storage.folder}' does not exist")(d => s"${err.reason}: $d")
         )
-      )
+      }
   }
 }

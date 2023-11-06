@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.syntax.all._
 
 import java.net.UnknownHostException
 import scala.concurrent.TimeoutException
@@ -87,6 +86,14 @@ object HttpClient {
     apply(HttpSingleRequest.default)
   }
 
+  /**
+    * Construct an Http client using an underlying akka http client which will not retry on failures
+    */
+  final def noRetry(compression: Boolean)(implicit as: ActorSystem, scheduler: Scheduler): HttpClient = {
+    implicit val config: HttpClientConfig = HttpClientConfig.noRetry(compression)
+    apply()
+  }
+
   private[http] def apply(
       client: HttpSingleRequest
   )(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient =
@@ -102,8 +109,6 @@ object HttpClient {
         decoder.map(_.decodeMessage(response))
       }
 
-      private val retryStrategy = httpConfig.strategy
-
       @SuppressWarnings(Array("IsInstanceOf"))
       private def toHttpError(req: HttpRequest): Throwable => HttpClientError = {
         case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
@@ -114,13 +119,18 @@ object HttpClient {
       override def apply[A](
           req: HttpRequest
       )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] = {
-        val reqCompressionSupport = if (httpConfig.compression) req.addHeader(acceptEncoding) else req
+        val reqCompressionSupport =
+          if (httpConfig.compression) {
+            Coders.Gzip.encodeMessage(req).addHeader(acceptEncoding)
+          } else
+            req.addHeader(acceptEncoding)
+
         for {
-          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(req))
-          resp        <- decodeResponse(req, encodedResp)
-          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp))
+          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(reqCompressionSupport))
+          resp        <- decodeResponse(reqCompressionSupport, encodedResp)
+          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](reqCompressionSupport, resp))
         } yield a
-      }.retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
+      }.retry(httpConfig.strategy)
 
       override def fromEntityTo[A](
           req: HttpRequest

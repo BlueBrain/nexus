@@ -28,7 +28,7 @@ object Identity extends TestHelpers {
   // Client
   val ServiceAccount: ClientCredentials = ClientCredentials("delta", "shhh", internal)
 
-  val Delta: UserCredentials = UserCredentials("delta", "shhh", internal)
+  val Delta: UserCredentials = UserCredentials("service-account-delta", "shhh", internal)
 
   val testRealm  = Realm("test-" + genString())
   val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
@@ -38,6 +38,11 @@ object Identity extends TestHelpers {
 
   object acls {
     val Marge = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object userPermissions {
+    val UserWithNoPermissions = UserCredentials(genString(), genString(), testRealm)
+    val UserWithPermissions   = UserCredentials(genString(), genString(), testRealm)
   }
 
   object archives {
@@ -55,6 +60,11 @@ object Identity extends TestHelpers {
   object listings {
     val Bob   = UserCredentials(genString(), genString(), testRealm)
     val Alice = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object aggregations {
+    val Charlie = UserCredentials(genString(), genString(), testRealm)
+    val Rose    = UserCredentials(genString(), genString(), testRealm)
   }
 
   object orgs {
@@ -89,6 +99,6 @@ object Identity extends TestHelpers {
   }
 
   lazy val allUsers =
-    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
+    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
 
 }

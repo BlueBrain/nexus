@@ -1,15 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
-import monix.execution.Scheduler.Implicits.global
 
-class VersionSpec extends BaseSpec with EitherValuable {
+class VersionSpec extends BaseIntegrationSpec {
 
   "The /version endpoint" should {
     s"be protected by ${Permission.Version.Read.value}" in {
@@ -19,7 +17,7 @@ class VersionSpec extends BaseSpec with EitherValuable {
     }
 
     "return the dependencies and plugin versions" in {
-      aclDsl.addPermissionAnonymous("/", Permission.Version.Read).runSyncUnsafe()
+      aclDsl.addPermissionAnonymous("/", Permission.Version.Read).unsafeRunSync()
 
       deltaClient.get[Json]("/version", Identity.Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
@@ -35,7 +33,6 @@ object VersionSpec {
 
   final case class DependenciesBundle(
       blazegraph: String,
-      cassandra: Option[String],
       postgres: Option[String],
       elasticsearch: String,
       remoteStorage: String

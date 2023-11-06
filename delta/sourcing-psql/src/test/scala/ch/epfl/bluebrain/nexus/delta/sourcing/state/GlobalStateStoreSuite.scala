@@ -9,16 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GlobalStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -45,17 +45,17 @@ class GlobalStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   private val envelope3 = Envelope(Arithmetic.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(3L))
 
   private def assertCount(expected: Int) =
-    sql"select count(*) from global_states".query[Int].unique.transact(xas.read).assert(expected)
+    sql"select count(*) from global_states".query[Int].unique.transact(xas.readCE).assertEquals(expected)
 
   test("Save state 1 and state 2 successfully") {
     for {
-      _ <- List(state1, state2).traverse(store.save).transact(xas.write)
+      _ <- List(state1, state2).traverse(store.save).transact(xas.writeCE)
       _ <- assertCount(2)
     } yield ()
   }
 
   test("List ids") {
-    GlobalStateStore.listIds(Arithmetic.entityType, xas.read).assert(id1, id2)
+    GlobalStateStore.listIds(Arithmetic.entityType, xas.readCE).assert(List(id1, id2))
   }
 
   test("get state 1") {
@@ -80,7 +80,7 @@ class GlobalStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.save(updatedState1).transact(xas.write)
+      _ <- store.save(updatedState1).transact(xas.writeCE)
       _ <- assertCount(2)
       _ <- store.get(id1).assertSome(updatedState1)
     } yield ()
@@ -92,7 +92,7 @@ class GlobalStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Delete state 2 successfully") {
     for {
-      _ <- store.delete(id2).transact(xas.write)
+      _ <- store.delete(id2).transact(xas.writeCE)
       _ <- assertCount(1)
       _ <- store.get(id2).assertNone
     } yield ()

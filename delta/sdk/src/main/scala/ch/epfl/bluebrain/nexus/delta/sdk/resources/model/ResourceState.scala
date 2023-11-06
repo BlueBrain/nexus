@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -31,6 +31,8 @@ import scala.annotation.nowarn
   *   the compacted JSON-LD representation of the resource
   * @param expanded
   *   the expanded JSON-LD representation of the resource
+  * @param remoteContexts
+  *   the remote contexts of the resource
   * @param rev
   *   the organization revision
   * @param deprecated
@@ -57,6 +59,8 @@ final case class ResourceState(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
+    // TODO: Remove default after 1.10 migration
+    remoteContexts: Set[RemoteContextRef] = Set.empty,
     rev: Int,
     deprecated: Boolean,
     schema: ResourceRef,
@@ -68,10 +72,10 @@ final case class ResourceState(
     updatedBy: Subject
 ) extends ScopedState {
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): DataResource =
+  def toResource: DataResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, base),
+      uris = ResourceUris.resource(project, schemaProject, id),
       rev = rev,
       types = types,
       schema = schema,
@@ -91,7 +95,10 @@ object ResourceState {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration         = Serializer.circeConfiguration
+
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration         = Serializer.circeConfiguration.withDefaults
     implicit val codec: Codec.AsObject[ResourceState] = deriveConfiguredCodec[ResourceState]
     Serializer()
   }

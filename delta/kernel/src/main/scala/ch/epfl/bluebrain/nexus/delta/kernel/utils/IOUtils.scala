@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import cats.effect.concurrent.Ref
 import monix.bio.{Task, UIO}
 
@@ -16,6 +16,15 @@ trait IOUtils {
   def instant(implicit clock: Clock[UIO]): UIO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
 }
+
+object IOUtils extends IOUtils
+
+trait IOInstant {
+  def now(implicit clock: Clock[IO]): IO[Instant] =
+    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+}
+
+object IOInstant extends IOInstant
 
 trait UUIDF {
 
@@ -65,6 +74,12 @@ object UUIDF {
                 override def apply(): UIO[UUID]           = uuidRef.get.hideErrors
               }
     } yield uuidF).hideErrors
-}
 
-object IOUtils extends IOUtils
+  /**
+    * Creates a [[UUIDF]] sourcing [[UUID]] values from a mutable reference.
+    *
+    * @param ref
+    *   the pre-initialised mutable reference used to store the [[UUID]]
+    */
+  final def fromRef(ref: Ref[Task, UUID]): UUIDF = () => ref.get.hideErrors
+}

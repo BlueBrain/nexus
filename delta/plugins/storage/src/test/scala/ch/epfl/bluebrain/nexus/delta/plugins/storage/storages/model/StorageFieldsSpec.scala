@@ -10,16 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.IOValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class StorageFieldsSpec
-    extends AnyWordSpec
-    with Matchers
-    with RemoteContextResolutionFixture
-    with IOValues
-    with StorageFixtures {
+class StorageFieldsSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   implicit private val cfg: Configuration = StorageDecoderConfiguration.apply.accepted
   val sourceDecoder                       = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)
@@ -50,7 +43,7 @@ class StorageFieldsSpec
     }
 
     "dealing with S3 storages" should {
-      val json = s3FieldsJson.value.addContext(contexts.storages)
+      val json = s3FieldsJson.addContext(contexts.storages)
 
       "be created from Json-LD" in {
         sourceDecoder(pc, json).accepted._2 shouldEqual s3Fields
@@ -70,12 +63,12 @@ class StorageFieldsSpec
             "region"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None, None, None)
+          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None)
       }
     }
 
     "dealing with remote storages" should {
-      val json = remoteFieldsJson.value.addContext(contexts.storages)
+      val json = remoteFieldsJson.addContext(contexts.storages)
 
       "be created from Json-LD" in {
         sourceDecoder(pc, json).accepted._2 shouldEqual remoteFields
@@ -93,7 +86,7 @@ class StorageFieldsSpec
             "credentials"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageFields(None, None, default = true, None, None, Label.unsafe("myfolder"), None, None, None)
+          RemoteDiskStorageFields(None, None, default = true, None, Label.unsafe("myfolder"), None, None, None)
       }
     }
   }

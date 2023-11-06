@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class SearchResultsSpec extends AnyWordSpecLike with Matchers {
+class SearchResultsSpec extends BaseSpec {
 
   "Scored search results" should {
     val entries       = List(ScoredResultEntry(1f, 1), ScoredResultEntry(2f, 2))
@@ -41,6 +40,13 @@ class SearchResultsSpec extends AnyWordSpecLike with Matchers {
       val expectedEntries       = List(UnscoredResultEntry("2"))
       val expectedSearchResults = UnscoredSearchResults(expectedEntries.length.toLong, expectedEntries)
       searchResults.copyWith(expectedEntries) shouldEqual expectedSearchResults
+    }
+  }
+
+  implicit class SearchResultsOps[A](searchResults: SearchResults[A]) {
+    def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B] = searchResults match {
+      case ScoredSearchResults(_, maxScore, _, _) => ScoredSearchResults[B](res.length.toLong, maxScore, res)
+      case UnscoredSearchResults(_, _, _)         => UnscoredSearchResults[B](res.length.toLong, res)
     }
   }
 

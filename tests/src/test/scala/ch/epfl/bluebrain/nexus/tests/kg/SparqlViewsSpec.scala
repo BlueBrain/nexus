@@ -2,16 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
-class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
+class SparqlViewsSpec extends BaseIntegrationSpec {
 
   private val orgId  = genId()
   private val projId = genId()
@@ -70,13 +68,13 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "get the created SparqlView" in {
       deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-
+        val viewId   = "https://dev.nexus.test.com/simplified-resource/cell-view"
         val expected = jsonContentOf(
           "/kg/views/sparql-view-response.json",
           replacements(
             ScoobyDoo,
             "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId/test-resource:cell-view",
+            "self"           -> viewSelf(fullId, viewId),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId"
           ): _*
         )
@@ -96,12 +94,13 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "get an AggregateSparqlView" in {
       deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
+        val viewId   = "https://dev.nexus.test.com/simplified-resource/agg-cell-view"
         val expected = jsonContentOf(
           "/kg/views/agg-sparql-view-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/agg-cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:agg-cell-view",
+            "id"             -> viewId,
+            "resources"      -> viewSelf(fullId2, viewId),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2
@@ -255,6 +254,24 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
+      }
+    }
+
+    val byTagQuery =
+      """
+        |prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+        |
+        |select ?s where {
+        |  ?s nxv:tags "one"
+        |}
+        |order by ?s
+      """.stripMargin
+
+    "search by tag in SPARQL endpoint in project 1 with default view" in eventually {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", byTagQuery, ScoobyDoo) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json shouldEqual jsonContentOf("/kg/views/sparql-search-response-tagged.json")
       }
     }
 

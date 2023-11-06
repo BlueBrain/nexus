@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
@@ -13,36 +14,22 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
-import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewSTMSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with OptionValues
-    with EitherValuable
-    with Inspectors
-    with IOFixedClock
-    with IOValues
-    with Fixtures {
+class ElasticSearchViewSTMSpec extends CatsEffectSpec {
 
   "An ElasticSearch STM" when {
 
-    val uuid                   = UUID.randomUUID()
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler = Scheduler.global
+    val uuid                  = UUID.randomUUID()
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     val epoch       = Instant.EPOCH
     val epochPlus10 = Instant.EPOCH.plusMillis(10L)
@@ -62,7 +49,7 @@ class ElasticSearchViewSTMSpec
     // format: on
 
     val invalidView: ValidateElasticSearchView =
-      (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.raiseError(InvalidElasticSearchIndexPayload(None))
+      (_: UUID, _: IndexingRev, _: ElasticSearchViewValue) => IO.raiseError(InvalidElasticSearchIndexPayload(None))
 
     def current(
         id: Iri = id,
@@ -72,7 +59,7 @@ class ElasticSearchViewSTMSpec
         source: Json = source,
         tags: Tags = Tags.empty,
         rev: Int = 1,
-        indexingRev: Int = 1,
+        indexingRev: IndexingRev = IndexingRev.init,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
         createdBy: Subject = Anonymous,
@@ -95,7 +82,7 @@ class ElasticSearchViewSTMSpec
         updatedBy
       )
 
-    val eval = evaluate(alwaysValidate)(_, _)
+    val eval = evaluate(ValidateElasticSearchView.always)(_, _)
 
     "evaluating the CreateElasticSearchView command" should {
       "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {
@@ -248,7 +235,7 @@ class ElasticSearchViewSTMSpec
           value = indexingValueWithUserTag,
           source = source2,
           rev = 2,
-          indexingRev = 2,
+          indexingRev = IndexingRev(2),
           updatedAt = epochPlus10,
           updatedBy = subject
         )

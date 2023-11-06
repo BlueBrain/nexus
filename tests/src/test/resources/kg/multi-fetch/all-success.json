@@ -1,0 +1,41 @@
+{
+  "format" : "source",
+  "resources" : [
+    {
+      "@id" : "https://bluebrain.github.io/nexus/vocabulary/resource?tag=v1.0.0",
+      "project" : "{{project1}}",
+      "value" : {
+        "@context" : {
+          "nxv" : "https://bluebrain.github.io/nexus/vocabulary/",
+          "other" : "https://some.other.prefix.com/"
+        },
+        "@type" : "nxv:TestResource",
+        "nullValue" : null,
+        "other:priority" : 5,
+        "other:projects" : [
+          "testProject",
+          "testProject2"
+        ]
+      }
+    },
+    {
+      "@id" : "https://bluebrain.github.io/nexus/vocabulary/file",
+      "project" : "{{project2}}",
+      "value" : {
+        "_bytes" : 21,
+        "_digest" : {
+          "_algorithm" : "SHA-256",
+          "_value" : "5ef661604649ed3d825176db889d7af0e2c1012d2ffa5080f8a220a234212517"
+        },
+        "_filename" : "attachment.json",
+        "_mediaType" : "application/json",
+        "_origin" : "Client",
+        "_storage" : {
+          "@id" : "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+          "@type" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
+          "_rev" : 1
+        }
+      }
+    }
+  ]
+}

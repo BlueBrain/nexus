@@ -6,8 +6,14 @@
     "@type": {
       "type": "keyword"
     },
+    "_project": {
+      "type": "keyword"
+    },
     "_rev": {
       "type": "long"
+    },
+    "_deprecated": {
+      "type": "boolean"
     },
     "_createdAt": {
       "type": "date"
@@ -100,6 +106,30 @@
         },
         "dataType": {
           "type": "keyword"
+        }
+      }
+    },
+    "remoteContexts": {
+      "type": "nested",
+      "properties": {
+        "iri": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "resource": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "project": {
+              "type": "keyword"
+            },
+            "rev": {
+              "type": "long"
+            }
+          }
         }
       }
     }

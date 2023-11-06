@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -17,25 +18,27 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import monix.bio.IO
 
 import java.util.UUID
 
-class SchemasRoutesSpec extends BaseRouteSpec {
+class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+  private val uuid                                        = UUID.randomUUID()
+  implicit private val uuidF: UUIDF                       = UUIDF.fixed(uuid)
+  implicit private val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -58,15 +61,9 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
 
-  private val schemaImports = new SchemaImports(
-    (_, _, _) => IO.raiseError(ResourceResolutionReport()),
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val schemaImports = SchemaImports.alwaysFail
 
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private lazy val aclCheck = AclSimpleCheck().accepted
 
@@ -81,7 +78,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       SchemasRoutes(
         identities,
         aclCheck,
-        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas),
+        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas),
         groupDirectives,
         IndexingAction.noop
       )
@@ -92,8 +89,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
     "fail to create a schema without schemas/write permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/schemas/myorg/myproject", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -136,8 +132,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
     "fail to update a schema without schemas/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
       Put(s"/v1/schemas/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -175,8 +170,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
     "fail to refresh a schema without schemas/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
       Put(s"/v1/schemas/myorg/myproject/myid/refresh", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -206,8 +200,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
     "fail to deprecate a schema without schemas/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
       Delete("/v1/schemas/myorg/myproject/myid?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -251,8 +244,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.shouldBeForbidden
           }
         }
       }
@@ -264,7 +256,11 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual jsonContentOf("schemas/schema-updated-response.json", "id" -> "nxv:myid")
+          response.asJson shouldEqual jsonContentOf(
+            "schemas/schema-updated-response.json",
+            "id"   -> "nxv:myid",
+            "self" -> ResourceUris.schema(projectRef, myId).accessUri
+          )
         }
       }
     }
@@ -285,7 +281,11 @@ class SchemasRoutesSpec extends BaseRouteSpec {
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("schemas/schema-created-response.json", "id" -> "nxv:myid2")
+            response.asJson shouldEqual jsonContentOf(
+              "schemas/schema-created-response.json",
+              "id"   -> "nxv:myid2",
+              "self" -> ResourceUris.schema(projectRef, myId2).accessUri
+            )
           }
         }
       }
@@ -388,7 +388,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   }
 
   private def schemaMetadata(
-      ref: ProjectRef,
+      project: ProjectRef,
       id: Iri,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -397,12 +397,12 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   ): Json =
     jsonContentOf(
       "schemas/schema-route-metadata-response.json",
-      "project"    -> ref,
+      "project"    -> project,
       "id"         -> id,
       "rev"        -> rev,
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
-      "label"      -> lastSegment(id)
+      "self"       -> ResourceUris.schema(project, id).accessUri
     )
 }

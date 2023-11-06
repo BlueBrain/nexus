@@ -3,7 +3,7 @@
     "https://neuroshapes.org",
     {
       "@base": "https://bbp.epfl.ch/neurosciencegraph/data/",
-      "@vocab": "https://bbp.epfl.ch/nexus/v1/resources/bbp/neocortex/_/"
+      "@vocab": "https://bbp.epfl.ch/ontologies/core/bmo/"
     }
   ],
   "@id": "https://bbp.neuroshapes.org"

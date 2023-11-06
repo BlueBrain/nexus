@@ -1,25 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import cats.effect.{Clock, IO, Timer}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.{Task, UIO}
 
 import java.time.Instant
 
@@ -31,34 +31,31 @@ final class CompositeRestartStore(xas: Transactors) {
   /**
     * Save a composite restart
     */
-  def save(restart: CompositeRestart): UIO[Unit] =
+  def save(restart: CompositeRestart): IO[Unit] =
     sql"""INSERT INTO public.composite_restarts (project, id, value, instant, acknowledged)
-         |VALUES (${restart.project}, ${restart.id}, ${restart.asJson} ,${restart.instant}, false)
+         |VALUES (${restart.view.project}, ${restart.view.viewId}, ${restart.asJson} ,${restart.instant}, false)
          |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
 
   /**
     * Acknowledge a composite restart
     */
-  def acknowledge(offset: Offset): UIO[Unit] =
+  def acknowledge(offset: Offset): IO[Unit] =
     sql"""UPDATE public.composite_restarts SET acknowledged = true
          |WHERE ordering = ${offset.value}
          |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
 
   /**
     * Delete expired composite restarts
     */
-  def deleteExpired(instant: Instant): UIO[Unit] =
+  def deleteExpired(instant: Instant): IO[Unit] =
     sql"""DELETE FROM public.composite_restarts WHERE instant < $instant""".update.run
-      .transact(xas.write)
-      .hideErrors
-      .tapEval { deleted =>
-        UIO.when(deleted > 0)(UIO.delay(logger.info(s"Deleted $deleted composite restarts.")))
+      .transact(xas.writeCE)
+      .flatTap { deleted =>
+        IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted composite restarts."))
       }
       .void
 
@@ -67,7 +64,7 @@ final class CompositeRestartStore(xas: Transactors) {
     * @param view
     *   the view reference
     */
-  def head(view: ViewRef): UIO[Option[Elem[CompositeRestart]]] =
+  def head(view: ViewRef): IO[Option[Elem[CompositeRestart]]] =
     fetchOne(view, asc = true)
 
   /**
@@ -75,7 +72,7 @@ final class CompositeRestartStore(xas: Transactors) {
     * @param view
     *   the view reference
     */
-  def last(view: ViewRef): UIO[Option[Elem[CompositeRestart]]] =
+  def last(view: ViewRef): IO[Option[Elem[CompositeRestart]]] =
     fetchOne(view, asc = false)
 
   private def fetchOne(view: ViewRef, asc: Boolean) = {
@@ -89,14 +86,13 @@ final class CompositeRestartStore(xas: Transactors) {
         Elem.fromEither(entityType, id, Some(project), instant, offset, json.as[CompositeRestart], 1)
       }
       .option
-      .transact(xas.read)
-      .hideErrors
+      .transact(xas.readCE)
   }
 
 }
 
 object CompositeRestartStore {
-  private val logger: Logger = Logger[CompositeRestartStore]
+  private val logger = Logger.cats[CompositeRestartStore]
 
   private val purgeCompositeRestartMetadata = ProjectionMetadata("composite-views", "purge-composite-restarts")
 
@@ -110,10 +106,11 @@ object CompositeRestartStore {
     *   the projection config
     */
   def deleteExpired(store: CompositeRestartStore, supervisor: Supervisor, config: ProjectionConfig)(implicit
-      clock: Clock[UIO]
-  ): Task[Unit] = {
+      clock: Clock[IO],
+      timer: Timer[IO]
+  ): IO[Unit] = {
     val deleteExpiredRestarts =
-      IOUtils.instant.flatMap { now =>
+      IOInstant.now.flatMap { now =>
         store.deleteExpired(now.minusMillis(config.restartTtl.toMillis))
       }
     supervisor
@@ -123,7 +120,7 @@ object CompositeRestartStore {
           ExecutionStrategy.TransientSingleNode,
           _ =>
             Stream
-              .awakeEvery[Task](config.deleteExpiredEvery)
+              .awakeEvery[IO](config.deleteExpiredEvery)
               .evalTap(_ => deleteExpiredRestarts)
               .drain
         )

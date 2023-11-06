@@ -10,17 +10,17 @@
     "@type" : "{{storageType}}",
     "_rev": 1
   },
-  "_bytes": 52,
+  "_bytes": 42,
   "_digest": {
     "_algorithm": "SHA-256",
-    "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+    "_value": "9144c8a8c435aff3262ba0a4620590f774c1d86a13956619723052eca6546c64"
   },
   "_filename": "{{filename}}",
   "_mediaType": "application/json",
   "_origin" : "Client",
-  "_incoming": "{{deltaUri}}/files/{{projId}}/{{filename}}/incoming",
-  "_outgoing": "{{deltaUri}}/files/{{projId}}/{{filename}}/outgoing",
-  "_self": "{{deltaUri}}/files/{{projId}}/{{filename}}",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
+  "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",
   "_rev": 3,

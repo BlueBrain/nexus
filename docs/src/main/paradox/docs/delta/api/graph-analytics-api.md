@@ -1,8 +1,12 @@
 # Graph analytics
 
-Graph analytics are a functionality introduced by the `graph-analytics` plugin and rooted in the `/v1/graph-analytics/{org_label}/{project_label}` collection. 
-They provide ways to get insights about the data and their relationships in terms of types (@type field).
-  
+Graph analytics is a feature introduced by the `graph-analytics` plugin and rooted in the `/v1/graph-analytics/{org_label}/{project_label}` collection. 
+
+It runs for each project and it parses and breaks down non-deprecated resources to analyse their structure.
+For each of these resources, it extracts the following information:
+
+* Its properties: their path and the type of the associated value
+* Its relationships, that is to say the other resources in the same project it points to.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -76,6 +80,25 @@ Request
 Response
 :   @@snip [fetched-progress.json](assets/graph-analytics/fetched-progress.json)
 
+## Search
+
+```
+POST /v1/graph-analytics/{org_label}/{project_label}/_search
+  {...}
+```
+
+Search documents that are in a given project's Graph Analytics view.
+
+The supported payload is defined on the @link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body){ open=new }.
+
+**Example**
+
+Request
+:   @@snip [ga-search.sh](assets/graph-analytics/ga-search.sh)
+
+Response
+:   @@snip [ge-search.json](assets/graph-analytics/ga-search.json)
+
 ## Internals
 
 In order to implement the described endpoints we needed a way to transform our data so that it would answer the desired questions in a performant manner.
@@ -90,7 +113,13 @@ An example of the ElasticSearch Document looks as follows:
 {
   "@id": "http://example.com/Anna",
   "@type": "http://schema.org/Person",
+  "_project": "myorg/myproject",
   "_rev": 4,
+  "_deprecated": false,
+  "_createdAt": "2023-06-01T00:00:00Z",
+  "_createdBy": { "@type": "User", "realm": "bbp",  "subject": "Bob" },
+  "_updatedAt": "2023-06-12T00:00:00Z",
+  "_updatedBy": { "@type": "User", "realm": "bbp",  "subject": "Alice" },
   "properties": [
     {
       "dataType": "object",
@@ -132,7 +161,7 @@ An example of the ElasticSearch Document looks as follows:
   "references": [
     {
       "found": true,
-      "@id": "http://example.com/Robert",
+      "@id": "http://example.com/Robert"
     }
   ],
   "relationships": [
@@ -142,6 +171,17 @@ An example of the ElasticSearch Document looks as follows:
       "@type": "http://schema.org/Person",
       "path": "http://schema.org/brother",
       "isInArray": false
+    }
+  ],
+  "remoteContexts": [
+    {
+      "@type": "ProjectRemoteContextRef",
+      "iri": "https://bbp.epfl.ch/contexts/person",
+      "resource": {
+        "id": "https://bbp.epfl.ch/contexts/person",
+        "project": "myorg/myproject",
+        "rev": 1
+      }
     }
   ]
 }
@@ -156,3 +196,5 @@ An example of the ElasticSearch Document looks as follows:
 - `isInArray` - Boolean: Flag to inform whether the current path (or its parent) is part of an array.
 - `dataType` - String: The type of the value present in the current path. Possible values are: string, numeric and boolean
 - `found` - Boolean: Flag to inform whether an @id inside `references` has been resolved as a relationship.
+- `remoteContexts` - Json Object Array: A collection of remote contexts detected during the JSON-LD resolution for this resource. 
+  See the @ref:[Resources - Fetch remote contexts](resources-api.md#fetch-remote-contexts) operation to learn about the remote context types.

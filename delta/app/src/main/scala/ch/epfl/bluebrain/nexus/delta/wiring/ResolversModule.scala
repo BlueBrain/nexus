@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -25,9 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Resolvers wiring
@@ -42,7 +41,8 @@ object ResolversModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         api: JsonLdApi,
-        clock: Clock[UIO],
+        clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ResolversImpl(
@@ -50,7 +50,7 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution,
         config.resolvers,
         xas
-      )(api, clock, uuidF)
+      )(api, clock, uuidF, timer)
   }
 
   make[MultiResolution].from {
@@ -62,22 +62,20 @@ object ResolversModule extends ModuleDef {
     ) =>
       MultiResolution(
         fetchContext.mapRejection(ProjectContextRejection),
-        ResolverResolution(aclCheck, resolvers, shifts)
+        ResolverResolution(aclCheck, resolvers, shifts, excludeDeprecated = false)
       )
   }
 
   make[ResolversRoutes].from {
     (
-        config: AppConfig,
         identities: Identities,
         aclCheck: AclCheck,
         resolvers: Resolvers,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -88,11 +86,9 @@ object ResolversModule extends ModuleDef {
         resolvers,
         multiResolution,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        config.resolvers.pagination,
-        s,
         cr,
         ordering,
         fusionConfig
@@ -104,7 +100,7 @@ object ResolversModule extends ModuleDef {
   many[ScopedEventMetricEncoder[_]].add { ResolverEvent.resolverEventMetricEncoder }
 
   make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount, config: AppConfig) =>
-    new ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
+    ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
   }
   many[ScopeInitialization].ref[ResolverScopeInitialization]
 

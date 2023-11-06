@@ -4,6 +4,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -11,30 +14,28 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.bio.IO
-import monix.execution.Scheduler.Implicits.global
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.matchers.should.Matchers
 
-class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IOValues {
+class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with CatsIOValues {
 
-  implicit private val cl = getClass.getClassLoader
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)
 
-  implicit private val jsonKeys                     =
+  implicit private val jsonKeys: JsonKeyOrdering    =
     JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details"))
 
   val user: Subject = User("alice", Label.unsafe("wonderland"))
@@ -46,7 +47,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
 
   val identities = new Identities {
 
-    override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
+    override def exchange(token: AuthToken): IO[Caller] = {
       token match {
         case AuthToken("alice") => IO.pure(userCaller)
         case AuthToken("bob")   => IO.pure(user2Caller)
@@ -56,9 +57,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
   }
 
-  val aclCheck = AclSimpleCheck(
-    (user, AclAddress.Root, Set(permission))
-  ).accepted
+  val aclCheck = AclSimpleCheck((user, AclAddress.Root, Set(permission))).accepted
 
   val directives = new AuthDirectives(identities, aclCheck) {}
 
@@ -78,7 +77,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
       }
     }
 
-  private val authExceptionHandler: ExceptionHandler = ExceptionHandler { case AuthorizationFailed =>
+  private val authExceptionHandler: ExceptionHandler = ExceptionHandler { case AuthorizationFailed(_) =>
     complete(StatusCodes.Forbidden)
   }
 

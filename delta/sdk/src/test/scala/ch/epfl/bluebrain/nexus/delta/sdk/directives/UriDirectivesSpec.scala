@@ -5,19 +5,22 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -31,7 +34,7 @@ class UriDirectivesSpec
     with OptionValues
     with CirceLiteral
     with UriDirectives
-    with IOValues
+    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {
@@ -73,6 +76,12 @@ class UriDirectivesSpec
         },
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
+        },
+        (pathPrefix("timerange") & createdAt & pathEndOrSingleSlash) {
+          case TimeRange.Anytime             => complete("anytime")
+          case TimeRange.After(value)        => complete(s"after=$value")
+          case TimeRange.Before(value)       => complete(s"before=$value")
+          case TimeRange.Between(start, end) => complete(s"between=$start,$end")
         },
         (pathPrefix("indexing") & indexingMode & pathEndOrSingleSlash) {
           case IndexingMode.Async => complete("async")
@@ -139,6 +148,44 @@ class UriDirectivesSpec
     "reject if rev query parameter is present" in {
       Get("/base/noRev?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
+      }
+    }
+
+    "reject if the time range is invalid" in {
+      Get("/base/timerange?createdAt=FAIL") ~> Accept(`*/*`) ~> route ~> check {
+        rejection shouldBe a[ValidationRejection]
+      }
+    }
+
+    "return anytime if no time range is provided" in {
+      Get("/base/timerange") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "anytime"
+      }
+    }
+
+    "return before if an end of range is provided" in {
+      val end     = Instant.now()
+      val encoded = UrlUtils.encode(end.toString)
+      Get(s"/base/timerange?createdAt=*..$encoded") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"before=$end"
+      }
+    }
+
+    "return after if an start of range is provided" in {
+      val start   = Instant.now()
+      val encoded = UrlUtils.encode(start.toString)
+      Get(s"/base/timerange?createdAt=$encoded..*") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"after=$start"
+      }
+    }
+
+    "return between is an start of range is provided" in {
+      val start        = Instant.now()
+      val end          = Instant.now().plusMillis(1_000_000L)
+      val encodedStart = UrlUtils.encode(start.toString)
+      val encodedEnd   = UrlUtils.encode(end.toString)
+      Get(s"/base/timerange?createdAt=$encodedStart..$encodedEnd") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"between=$start,$end"
       }
     }
 

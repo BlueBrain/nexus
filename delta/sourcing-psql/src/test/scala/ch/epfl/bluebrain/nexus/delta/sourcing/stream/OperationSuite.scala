@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -8,14 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, StreamAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BIOStreamAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
-import monix.bio.Task
 import shapeless.Typeable
 
 import java.time.Instant
 
-class OperationSuite extends BioSuite with StreamAssertions {
+class OperationSuite extends CatsEffectSuite with BIOStreamAssertions {
 
   test("Run the double stream") {
     val sink       = CacheSink.states[Int]
@@ -92,12 +93,12 @@ object OperationSuite {
   private val numberType = EntityType("number")
 
   private def until(n: Int): Source = Source(offset =>
-    Stream.range(offset.value.toInt, n).covary[Task].map { i =>
+    Stream.range(offset.value.toInt, n).covary[IO].map { i =>
       SuccessElem(numberType, nxv + i.toString, None, Instant.EPOCH, Offset.at(i.toLong), i, 1)
     }
   )
 
-  val double: Pipe = new GenericPipe[Int, Int](Label.unsafe("double"), _.evalMap { v => Task.pure(v * 2) })
-  val half: Pipe   = new GenericPipe[Int, Double](Label.unsafe("half"), _.evalMap { v => Task.pure((v.toDouble / 2)) })
+  val double: Pipe = new GenericPipe[Int, Int](Label.unsafe("double"), _.evalMap { v => IO.pure(v * 2) })
+  val half: Pipe   = new GenericPipe[Int, Double](Label.unsafe("half"), _.evalMap { v => IO.pure((v.toDouble / 2)) })
 
 }

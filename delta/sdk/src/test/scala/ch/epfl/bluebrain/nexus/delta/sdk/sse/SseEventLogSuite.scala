@@ -1,22 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
 
-class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
+class SseEventLogSuite extends CatsEffectSuite with ConfigFixtures with CatsEffectAssertions {
 
   implicit private val jo: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
@@ -25,9 +24,9 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
   private val orgUuid     = UUID.randomUUID()
   private val projectUuid = UUID.randomUUID()
 
-  private def fetchUuids: ProjectRef => UIO[Option[(UUID, UUID)]] = {
-    case `ref` => UIO.some(orgUuid -> projectUuid)
-    case _     => UIO.none
+  private def fetchUuids: ProjectRef => IO[Option[(UUID, UUID)]] = {
+    case `ref` => IO.pure(Some(orgUuid -> projectUuid))
+    case _     => IO.none
   }
 
   private def makeEnvelope(sseData: SseData) = Envelope(
@@ -45,7 +44,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
     )
     SseEventLog
       .toServerSentEvent(envelope, fetchUuids)
-      .assert(ServerSentEvent("""{"name":"John Doe"}""", "Person", "5"))
+      .assertEquals(ServerSentEvent("""{"name":"John Doe"}""", "Person", "5"))
   }
 
   test("Should not inject project uuids when the ref is unknown") {
@@ -59,7 +58,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
     )
     SseEventLog
       .toServerSentEvent(envelope, fetchUuids)
-      .assert(ServerSentEvent("""{"name":"John Doe"}""", "Person", "5"))
+      .assertEquals(ServerSentEvent("""{"name":"John Doe"}""", "Person", "5"))
   }
 
   test("Should inject project uuids when the ref is unknown") {
@@ -73,7 +72,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
     )
     SseEventLog
       .toServerSentEvent(envelope, fetchUuids)
-      .assert(
+      .assertEquals(
         ServerSentEvent(
           s"""{"_organizationUuid":"$orgUuid","_projectUuid":"$projectUuid","name":"John Doe"}""",
           "Person",

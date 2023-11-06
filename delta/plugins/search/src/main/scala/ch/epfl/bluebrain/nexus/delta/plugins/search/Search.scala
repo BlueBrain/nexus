@@ -1,36 +1,49 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.{UnknownSuite, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 trait Search {
 
   /**
-    * Queries the underlying elasticsearch search indices that the ''caller'' has access to
+    * Queries all the underlying search indices that the ''caller'' has access to
     *
     * @param payload
     *   the query payload
     */
-  def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
+  def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
+
+  /**
+    * Queries the underlying search indices for the provided suite that the ''caller'' has access to
+    *
+    * @param suite
+    *   the suite where the search query has to be applied
+    * @param payload
+    *   the query payload
+    */
+  def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
 }
 
 object Search {
 
-  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Int)
+  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView)
 
-  private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
+  private[search] type ListProjections = () => IO[Seq[TargetProjection]]
 
   /**
     * Constructs a new [[Search]] instance.
@@ -39,7 +52,8 @@ object Search {
       compositeViews: CompositeViews,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      prefix: String
+      prefix: String,
+      suites: SearchConfig.Suites
   ): Search = {
 
     val listProjections: ListProjections = () =>
@@ -54,12 +68,12 @@ object Search {
             .flatMap { entry =>
               val res = entry.source
               for {
-                projection   <- res.value.projections.value.find(_.id == defaultProjectionId)
+                projection   <- res.value.projections.lookup(defaultProjectionId)
                 esProjection <- projection.asElasticSearch
-              } yield TargetProjection(esProjection, res.value, res.rev)
+              } yield TargetProjection(esProjection, res.value)
             }
         )
-    apply(listProjections, aclCheck, client, prefix)
+    apply(listProjections, aclCheck, client, prefix, suites)
   }
 
   /**
@@ -69,19 +83,35 @@ object Search {
       listProjections: ListProjections,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      prefix: String
+      prefix: String,
+      suites: SearchConfig.Suites
   ): Search =
     new Search {
-      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] = {
+
+      private def query(projectionPredicate: TargetProjection => Boolean, payload: JsonObject, qp: Uri.Query)(implicit
+          caller: Caller
+      ) =
         for {
-          allProjections    <- listProjections()
+          allProjections    <- listProjections().map(_.filter(projectionPredicate))
           accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
                                  allProjections,
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
-                                 p => projectionIndex(p.projection, p.view.uuid, p.rev, prefix).value
+                                 p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
           results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results
+
+      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =
+        query(_ => true, payload, qp)
+
+      override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
+          caller: Caller
+      ): IO[Json] = {
+        IO.fromOption(suites.get(suite))(UnknownSuite(suite)).flatMap { projects =>
+          def predicate(p: TargetProjection): Boolean = projects.contains(p.view.project)
+          query(predicate(_), payload, qp)
+        }
       }
+
     }
 }

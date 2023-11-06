@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -30,7 +30,7 @@ import io.circe.{Encoder, Json, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ElasticSearchViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class ElasticSearchViewRejection(val reason: String) extends Rejection
 
 object ElasticSearchViewRejection {
 
@@ -126,7 +126,7 @@ object ElasticSearchViewRejection {
     *   the view id
     */
   final case class DifferentElasticSearchViewType(
-      id: Iri,
+      id: String,
       provided: ElasticSearchViewType,
       expected: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(
@@ -179,6 +179,12 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create an ElasticSearchView while providing an id that is blank.
+    */
+  final case object BlankElasticSearchViewId
+      extends ElasticSearchViewRejection(s"Elastic search view identifier cannot be blank.")
+
+  /**
     * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
     *
     * @param error
@@ -193,14 +199,6 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(
         s"The provided ElasticSearch view JSON document${id.fold("")(id => s" with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
-
-  /**
-    * Rejection returned when attempting to query an elasticsearchview and the caller does not have the right
-    * permissions defined in the view.
-    */
-  final case object AuthorizationFailed extends ElasticSearchViewRejection(ServiceError.AuthorizationFailed.reason)
-
-  type AuthorizationFailed = AuthorizationFailed.type
 
   /**
     * Signals a rejection caused when interacting with the elasticserch client
@@ -232,6 +230,7 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankElasticSearchViewId
   }
 
   implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =
@@ -264,7 +263,6 @@ object ElasticSearchViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ProjectContextRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

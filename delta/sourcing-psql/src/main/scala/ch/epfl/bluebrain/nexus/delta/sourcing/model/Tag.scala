@@ -4,8 +4,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.sourcing.FragmentEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import doobie.Put
+import doobie.implicits._
 import doobie.util.Get
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
@@ -82,4 +84,7 @@ object Tag {
 
   implicit val tagJsonLdDecoder: JsonLdDecoder[Tag] =
     Latest.latestTagJsonLdDecoder or UserTag.userTagJsonLdDecoder.covary[Tag]
+
+  implicit val tagFragmentEncoder: FragmentEncoder[Tag] =
+    FragmentEncoder.instance { tag => Some(fr"tag = $tag") }
 }

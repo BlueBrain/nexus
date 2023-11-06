@@ -2,24 +2,25 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO}
 
 /**
   * Operations pertaining to managing realms.
@@ -46,7 +47,7 @@ trait Realms {
       openIdConfig: Uri,
       logo: Option[Uri],
       acceptedAudiences: Option[NonEmptySet[String]]
-  )(implicit caller: Subject): IO[RealmRejection, RealmResource]
+  )(implicit caller: Subject): IO[RealmResource]
 
   /**
     * Updates an existing realm using the provided configuration.
@@ -71,7 +72,7 @@ trait Realms {
       openIdConfig: Uri,
       logo: Option[Uri],
       acceptedAudiences: Option[NonEmptySet[String]]
-  )(implicit caller: Subject): IO[RealmRejection, RealmResource]
+  )(implicit caller: Subject): IO[RealmResource]
 
   /**
     * Deprecates an existing realm. A deprecated realm prevents clients from authenticating.
@@ -81,7 +82,7 @@ trait Realms {
     * @param rev
     *   the revision of the realm
     */
-  def deprecate(label: Label, rev: Int)(implicit caller: Subject): IO[RealmRejection, RealmResource]
+  def deprecate(label: Label, rev: Int)(implicit caller: Subject): IO[RealmResource]
 
   /**
     * Fetches a realm.
@@ -89,7 +90,7 @@ trait Realms {
     * @param label
     *   the realm label
     */
-  def fetch(label: Label): IO[RealmNotFound, RealmResource]
+  def fetch(label: Label): IO[RealmResource]
 
   /**
     * Fetches a realm at a specific revision.
@@ -101,7 +102,7 @@ trait Realms {
     * @return
     *   the realm as a resource at the specified revision
     */
-  def fetchAt(label: Label, rev: Int): IO[RealmRejection.NotFound, RealmResource]
+  def fetchAt(label: Label, rev: Int): IO[RealmResource]
 
   /**
     * Lists realms with optional filters.
@@ -119,7 +120,7 @@ trait Realms {
       pagination: FromPagination,
       params: RealmSearchParams,
       ordering: Ordering[RealmResource]
-  ): UIO[UnscoredSearchResults[RealmResource]]
+  ): IO[UnscoredSearchResults[RealmResource]]
 }
 
 object Realms {
@@ -158,27 +159,24 @@ object Realms {
   }
 
   private[delta] def evaluate(
-      wellKnown: Uri => IO[RealmRejection, WellKnown],
-      openIdExists: (Label, Uri) => IO[RealmOpenIdConfigAlreadyExists, Unit]
+      wellKnown: Uri => IO[WellKnown],
+      openIdExists: (Label, Uri) => IO[Unit]
   )(state: Option[RealmState], cmd: RealmCommand)(implicit
-      clock: Clock[UIO] = IO.clock
-  ): IO[RealmRejection, RealmEvent] = {
+      clock: Clock[IO]
+  ): IO[RealmEvent] = {
     // format: off
     def create(c: CreateRealm) =
       state.fold {
-        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
+        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.now).mapN {
           case (wk, instant) =>
             RealmCreated(c.label, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
       }(_ => IO.raiseError(RealmAlreadyExists(c.label)))
 
     def update(c: UpdateRealm)       =
-      IO.fromOption(
-        state,
-        RealmNotFound(c.label)
-      ).flatMap {
+      IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
+        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.now).mapN {
           case (wk, instant) =>
             RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
@@ -186,13 +184,10 @@ object Realms {
     // format: on
 
     def deprecate(c: DeprecateRealm) =
-      IO.fromOption(
-        state,
-        RealmNotFound(c.label)
-      ).flatMap {
+      IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s if s.deprecated   => IO.raiseError(RealmAlreadyDeprecated(c.label))
-        case s                   => IOUtils.instant.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
+        case s                   => IOInstant.now.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -211,14 +206,14 @@ object Realms {
     *   check if the openId configuration has already been registered in Nexus
     */
   def definition(
-      wellKnown: Uri => IO[RealmRejection, WellKnown],
-      openIdExists: (Label, Uri) => IO[RealmOpenIdConfigAlreadyExists, Unit]
-  )(implicit
-      clock: Clock[UIO]
-  ): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] =
+      wellKnown: Uri => IO[WellKnown],
+      openIdExists: (Label, Uri) => IO[Unit]
+  )(implicit clock: Clock[IO]): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] = {
+    def evaluateMonix(state: Option[RealmState], cmd: RealmCommand): BIO[RealmRejection, RealmEvent] =
+      evaluate(wellKnown, openIdExists)(state, cmd).toBIO[RealmRejection]
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(wellKnown, openIdExists), next),
+      StateMachine(None, evaluateMonix, next),
       RealmEvent.serializer,
       RealmState.serializer,
       onUniqueViolation = (id: Label, c: RealmCommand) =>
@@ -228,5 +223,6 @@ object Realms {
           case d: DeprecateRealm => IncorrectRev(d.rev, d.rev + 1)
         }
     )
+  }
 
 }

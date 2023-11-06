@@ -6,13 +6,17 @@ import akka.testkit.TestKit
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -21,12 +25,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -35,12 +39,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -48,29 +53,28 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
+    with CatsEffectSpec
     with DoobieScalaTestFixture
-    with Matchers
-    with EitherValuable
-    with OptionValues
-    with CirceLiteral
-    with TestHelpers
-    with TestMatchers
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
-    with IOValues
     with Fixtures
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
+  private val noopSlowQueryLogger: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
+    override def apply[E, A](context: BlazegraphQueryContext, query: BIO[E, A]): BIO[E, A] = query
+  }
+
   implicit private val sc: Scheduler                = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
+  implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, false)
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val uuidF: UUIDF = UUIDF.random
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val client   =
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -138,10 +142,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     SparqlResourceLink(
       ResourceF(
         resourceId,
-        ResourceUris.resource(project1.ref, project1.ref, resourceId, ResourceRef(resourceId / "schema"))(
-          project1.apiMappings,
-          project1.base
-        ),
+        ResourceUris.resource(project1.ref, project1.ref, resourceId),
         2,
         Set(resourceId / "type"),
         deprecated = false,
@@ -171,7 +172,9 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).flatMap { acls => BlazegraphViewsQuery(acls, fetchContext, views, client, "prefix", xas) }.accepted
+    ).flatMap { acls =>
+      BlazegraphViewsQuery(acls, fetchContext, views, client, noopSlowQueryLogger, "prefix", xas)
+    }.accepted
 
     "create the indexing views" in {
       indexingViews.traverse { v =>
@@ -218,7 +221,10 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.project
-      viewsQuery.query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery
+        .query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon)
+        .toBIO[BlazegraphViewRejection]
+        .terminated[AuthorizationFailed]
     }
 
     "query a deprecated indexed view" in eventually {

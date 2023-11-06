@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -23,14 +23,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConf
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ProjectsRoutesSpec extends BaseRouteSpec {
+class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
@@ -85,7 +87,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
   )
 
   implicit private val projectsConfig: ProjectsConfig =
-    ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+    ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 
@@ -94,8 +96,9 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     case _     => UIO.none
   }
 
-  private lazy val projects     = ProjectsImpl(fetchOrg, Set.empty, defaultApiMappings, projectsConfig, xas)
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
+  private lazy val projects     = ProjectsImpl(fetchOrg, _ => UIO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)
+  private lazy val provisioning =
+    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
   private lazy val routes       = Route.seal(
     ProjectsRoutes(
       identities,
@@ -123,8 +126,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     "fail to create a project without projects/create permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -192,8 +194,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     "fail to update a project without projects/write permission" in {
       aclCheck.delete(AclAddress.Project(Label.unsafe("org1"), Label.unsafe("proj"))).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -233,8 +234,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     "fail to deprecate a project without projects/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -322,8 +322,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         )
       ) { path =>
         Get(path) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }
@@ -467,8 +466,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     "fail to get the project statistics without resources/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/projects/org1/proj/statistics") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        response.status shouldEqual StatusCodes.Forbidden
+        response.shouldBeForbidden
       }
     }
 
@@ -513,6 +511,32 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
       Get("/v1/projects/users-org/user1") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
         response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/admin/users-org/user1")
+      }
+    }
+
+    "fail to delete a project without projects/delete permission" in {
+      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
+        response.shouldBeForbidden
+      }
+    }
+
+    "delete a project" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.delete, resources.read)).accepted
+      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        response.asJson should equalIgnoreArrayOrder(
+          projectMetadata(
+            ref,
+            "proj",
+            projectUuid,
+            "org1",
+            orgUuid,
+            rev = 4,
+            deprecated = true,
+            markedForDeletion = true
+          )
+        )
       }
     }
   }

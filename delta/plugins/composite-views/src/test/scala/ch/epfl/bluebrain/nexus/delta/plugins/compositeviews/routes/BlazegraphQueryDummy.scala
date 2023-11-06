@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClient, SparqlQueryResponse}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.IO
 
 class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) extends BlazegraphQuery {
 
@@ -18,7 +18,7 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
       project: ProjectRef,
       query: SparqlQuery,
       responseType: Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+  )(implicit caller: Caller): IO[R] =
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
@@ -31,7 +31,7 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
       project: ProjectRef,
       query: SparqlQuery,
       responseType: Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+  )(implicit caller: Caller): IO[R] =
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
@@ -43,7 +43,7 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
       project: ProjectRef,
       query: SparqlQuery,
       responseType: Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+  )(implicit caller: Caller): IO[R] =
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))

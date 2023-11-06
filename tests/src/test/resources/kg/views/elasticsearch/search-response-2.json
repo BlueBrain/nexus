@@ -22,7 +22,6 @@
           "name": "ABC-MT-C1",
           "nxv:deprecated": false
         },
-        "_type": "_doc",
         "sort": [
           "ABC-MT-C1"
         ]
@@ -42,7 +41,6 @@
           "name": "DEF-MT-C1",
           "nxv:deprecated": false
         },
-        "_type": "_doc",
         "sort": [
           "DEF-MT-C1"
         ]

@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -15,22 +14,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Permissions module wiring config.
   */
 // $COVERAGE-OFF$
 object PermissionsModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
+  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO], timer: Timer[IO]) =>
     PermissionsImpl(
       cfg.permissions,
       xas
-    )(clock)
+    )(clock, timer)
   }
 
   make[PermissionsRoutes].from {
@@ -39,10 +37,9 @@ object PermissionsModule extends ModuleDef {
         permissions: Permissions,
         aclCheck: AclCheck,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, s, cr, ordering)
+    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, cr, ordering)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => PermissionsEvent.sseEncoder(base) }

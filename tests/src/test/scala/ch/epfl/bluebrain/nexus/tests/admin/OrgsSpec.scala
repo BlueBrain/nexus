@@ -1,26 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
-class OrgsSpec extends BaseSpec with EitherValuable {
+class OrgsSpec extends BaseIntegrationSpec {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
-
-  private val UnauthorizedAccess = ExpectedResponse(
-    StatusCodes.Forbidden,
-    jsonContentOf("/iam/errors/unauthorized-access.json")
-  )
-
-  private val OrganizationConflict = ExpectedResponse(
-    StatusCodes.Conflict,
-    jsonContentOf("/admin/errors/org-incorrect-revision.json")
-  )
 
   "creating an organization" should {
     "fail if the permissions are missing" in {
@@ -28,7 +16,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         genId(),
         "Description",
         Fry,
-        Some(UnauthorizedAccess)
+        Some(StatusCodes.Forbidden)
       )
     }
 
@@ -66,12 +54,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                duplicate,
                "Description",
                Fry,
-               Some(
-                 ExpectedResponse(
-                   StatusCodes.Conflict,
-                   jsonContentOf("/admin/errors/org-already-exists.json", "orgId" -> duplicate)
-                 )
-               )
+               Some(StatusCodes.Conflict)
              )
       } yield succeed
     }
@@ -86,10 +69,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                s"Description $id",
                Fry
              )
-        _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
-               response.status shouldEqual StatusCodes.Forbidden
-               json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json")
-             }
+        _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { expectForbidden }
       } yield succeed
     }
 
@@ -110,7 +90,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "fetch organization by UUID" in {
       deltaClient.get[Json](s"/orgs/$id", Leela) { (jsonById, _) =>
-        runTask {
+        runIO {
           val orgUuid = _uuid.getOption(jsonById).value
 
           deltaClient.get[Json](s"/orgs/$orgUuid", Leela) { (jsonByUuid, response) =>
@@ -152,7 +132,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         id,
         description,
         Leela,
-        Some(UnauthorizedAccess)
+        Some(StatusCodes.Forbidden)
       )
     }
 
@@ -178,7 +158,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         description,
         Leela,
         4,
-        Some(OrganizationConflict)
+        Some(StatusCodes.Conflict)
       )
     }
 
@@ -192,16 +172,12 @@ class OrgsSpec extends BaseSpec with EitherValuable {
     }
 
     "fail when organization does not exist" in {
-      val notFound = ExpectedResponse(
-        StatusCodes.NotFound,
-        jsonContentOf("/admin/errors/not-exists.json", "orgId" -> nonExistent)
-      )
       adminDsl.updateOrganization(
         nonExistent,
         description,
         Leela,
         1,
-        Some(notFound)
+        Some(StatusCodes.NotFound)
       )
     }
 
@@ -223,7 +199,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                2
              )
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (lastVersion, response) =>
-               runTask {
+               runIO {
                  response.status shouldEqual StatusCodes.OK
                  admin.validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
                  deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (thirdVersion, response) =>

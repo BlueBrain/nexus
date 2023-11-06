@@ -1,0 +1,8 @@
+{
+  "@id": "{{id}}",
+  "@type": "DiskStorage",
+  "volume": "/default-volume",
+  "default": false,
+  "readPermission": "{{read-permission}}",
+  "writePermission": "{{write-permission}}"
+}

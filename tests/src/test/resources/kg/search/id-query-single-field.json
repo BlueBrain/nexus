@@ -1,0 +1,16 @@
+{
+  "_source": [
+    "{{field}}"
+  ],
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "@id.keyword": "{{id}}"
+          }
+        }
+      ]
+    }
+  }
+}

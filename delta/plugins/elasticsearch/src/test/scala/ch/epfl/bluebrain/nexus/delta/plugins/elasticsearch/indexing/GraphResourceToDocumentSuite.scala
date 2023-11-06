@@ -9,13 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.bio.JsonAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.JsonAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues
 import io.circe.Json
-import munit.FunSuite
 
 import java.time.Instant
 
-class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAssertions {
+class GraphResourceToDocumentSuite extends BioSuite with Fixtures with JsonAssertions with CatsIOValues {
 
   private val entityType = EntityType("entityType")
   private val project    = ProjectRef.unsafe("org", "project")

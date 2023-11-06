@@ -1,0 +1,153 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/trace",
+  "@type": [
+    "Dataset",
+    "Trace",
+    "Entity",
+    "SingleCellSimulationTrace"
+  ],
+  "annotation": [
+    {
+      "@type": [
+        "MTypeAnnotation",
+        "Annotation"
+      ],
+      "hasBody": {
+        "@id": "http://uri.interlex.org/base/ilx_0381373",
+        "@type": [
+          "MType",
+          "AnnotationBody"
+        ],
+        "label": "L6_IPC"
+      },
+      "name": "M-type annotation"
+    },
+    {
+      "@type": [
+        "Annotation",
+        "ETypeAnnotation"
+      ],
+      "hasBody": {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/etypes/cADpyr",
+        "@type": [
+          "EType",
+          "AnnotationBody"
+        ],
+        "label": "cADpyr"
+      },
+      "name": "E-type annotation"
+    }
+  ],
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "@id": "http://uri.interlex.org/paxinos/uris/rat/labels/799",
+      "label": "S1J",
+      "prefLabel": "primary somatosensory cortex, jaw region"
+    },
+    "layer": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0005395",
+      "label": "layer 6"
+    }
+  },
+  "contribution": [
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/tuncel",
+        "@type": [
+          "Person",
+          "Agent"
+        ]
+      }
+    },
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://www.grid.ac/institutes/grid.5333.6",
+        "@type": [
+          "Agent",
+          "Organization"
+        ]
+      }
+    }
+  ],
+  "dateCreated": {
+    "@type": "xsd:dateTime",
+    "@value": "2021-05-18T18:59:02.602182+02:00"
+  },
+  "description": "This dataset is about simulated electrophysiology traces for cell instance S1J_L6_IPC_cADpyr_2. The dataset contains one distribution of the traces in NWB file format.",
+  "distribution": {
+    "@type": "DataDownload",
+    "atLocation": {
+      "@type": "Location",
+      "location": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/e/1/0/5/5/9/1/c/S1J_L6_IPC_cADpyr_2.nwb",
+      "store": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/4820323e-bee0-48d2-824f-9d9d404dbbee"
+      }
+    },
+    "contentSize": {
+      "unitCode": "bytes",
+      "value": 1657656
+    },
+    "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/public/sscx/5b24efb8-ce68-4ce7-afa6-53b8d8ea9a01",
+    "digest": {
+      "algorithm": "SHA-256",
+      "value": "9dfe31ab52dd636987a610b9ac70f6ca28f03331d75a17624a4308a1d64266fc"
+    },
+    "encodingFormat": "application/nwb",
+    "name": "S1J_L6_IPC_cADpyr_2.nwb"
+  },
+  "image": [
+    {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/58342dff-8034-4b53-933b-1c034cdc8180",
+      "about": "nsg:StimulationTrace",
+      "repetition": 1,
+      "stimulusType": {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/step_2"
+      }
+    }
+  ],
+  "license": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
+    "@type": "License"
+  },
+  "prefLabel": "S1J_L6_IPC_cADpyr_2",
+  "note": "SSCX Simulation Data",
+  "objectOfStudy": {
+    "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+    "@type": "ObjectOfStudy",
+    "label": "Single Cell"
+  },
+  "stimulus": [
+    {
+      "@type": "Stimulus",
+      "stimulusType": {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/step_2",
+        "label": "step_2"
+      }
+    },
+    {
+      "@type": "Stimulus",
+      "stimulusType": {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/step_3",
+        "label": "step_3"
+      }
+    },
+    {
+      "@type": "Stimulus",
+      "stimulusType": {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/stimulustypes/step_1",
+        "label": "step_1"
+      }
+    }
+  ],
+  "subject": {
+    "@type": "Subject",
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+      "label": "Rattus norvegicus"
+    }
+  }
+}

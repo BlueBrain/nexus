@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, 
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import com.typesafe.scalalogging.Logger
 import io.github.classgraph.ClassGraph
-import monix.bio.{IO, UIO}
 
 import java.io.{File, FilenameFilter}
 import java.lang.reflect.InvocationTargetException
@@ -35,49 +35,50 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
     * plugin jar files and attempts to load them in multiple passes where a new pass is attempted if the previous one
     * managed to load some classes but not all.
     */
-  def load: IO[PluginError, (ClassLoader, List[PluginDef])] = {
-    UIO.delay(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
+  def load: IO[(ClassLoader, List[PluginDef])] = {
+    IO.delay(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
       // recursively load the jar files, retrying in case of errors if there's at least one plugin loaded per pass
       // this enables handling of plugin dependencies
-      IO.tailRecM((jarFiles, new PluginsClassLoader(Nil, parentClassLoader), Nil: List[PluginDef])) {
+      (jarFiles, new PluginsClassLoader(Nil, parentClassLoader), Nil: List[PluginDef]).tailRecM {
         case (Nil, cl, plugins)       => IO.pure(Right((cl, plugins)))
         case (remaining, cl, plugins) =>
           // attempt to load the remaining files
-          remaining.traverse(file => loadPluginDef(file, cl).attempt.map(v => (file, v))).flatMap { results =>
-            // partition the load results into List(file -> error) and List(plugin def -> plugin class loader)
-            val partitioned =
-              results.foldLeft((Nil: List[(File, PluginError)], Nil: List[(PluginDef, PluginClassLoader)])) {
-                case ((errors, loaded), (f, Left(err)))          => ((f, err) :: errors, loaded)
-                case ((errors, loaded), (_, Right(None)))        => (errors, loaded)
-                case ((errors, loaded), (_, Right(Some(value)))) => (errors, value :: loaded)
-              }
+          remaining.traverse(file => loadPluginDef(file, cl).attemptNarrow[PluginError].map(v => (file, v))).flatMap {
+            results =>
+              // partition the load results into List(file -> error) and List(plugin def -> plugin class loader)
+              val partitioned =
+                results.foldLeft((Nil: List[(File, PluginError)], Nil: List[(PluginDef, PluginClassLoader)])) {
+                  case ((errors, loaded), (f, Left(err)))          => ((f, err) :: errors, loaded)
+                  case ((errors, loaded), (_, Right(None)))        => (errors, loaded)
+                  case ((errors, loaded), (_, Right(Some(value)))) => (errors, value :: loaded)
+                }
 
-            partitioned match {
-              // everything was loaded, adding each plugin class loader and return all plugin defs
-              case (Nil, loaded)                =>
-                UIO.delay {
-                  loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
-                  Left((Nil, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
-                }
-              // nothing resolved, pick the first error and return
-              case ((file, error) :: rest, Nil) =>
-                IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest: _*)))
-              // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
-              case (errors, loaded)             =>
-                UIO.delay {
-                  loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
-                  Left((errors.map { case (file, _) => file }, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
-                }
-            }
+              partitioned match {
+                // everything was loaded, adding each plugin class loader and return all plugin defs
+                case (Nil, loaded)                =>
+                  IO.delay {
+                    loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
+                    Left((Nil, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
+                  }
+                // nothing resolved, pick the first error and return
+                case ((file, error) :: rest, Nil) =>
+                  IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest: _*)))
+                // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
+                case (errors, loaded)             =>
+                  IO.delay {
+                    loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
+                    Left((errors.map { case (file, _) => file }, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
+                  }
+              }
           }
       }
     }
   }
 
-  private def loadPluginDef(jar: File, parent: ClassLoader): IO[PluginError, Option[(PluginDef, PluginClassLoader)]] =
+  private def loadPluginDef(jar: File, parent: ClassLoader): IO[Option[(PluginDef, PluginClassLoader)]] =
     for {
-      pluginClassLoader <- UIO.delay(new PluginClassLoader(jar.toURI.toURL, parent))
-      pluginDefClasses  <- UIO.delay(loadPluginDefClasses(pluginClassLoader))
+      pluginClassLoader <- IO.delay(new PluginClassLoader(jar.toURI.toURL, parent))
+      pluginDefClasses  <- IO.delay(loadPluginDefClasses(pluginClassLoader))
       pluginDef         <- pluginDefClasses match {
                              case pluginDef :: Nil =>
                                IO.delay( // delayed because it can throw
@@ -90,9 +91,9 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                                      ex.getCause match {
                                        case ncdf: NoClassDefFoundError =>
                                          IO.raiseError(ClassNotFoundError("Could not find class: " + ncdf.getMessage))
-                                       case _                          => IO.terminate(ex)
+                                       case _                          => IO.raiseError(ex)
                                      }
-                                   case other                         => IO.terminate(other)
+                                   case other                         => IO.raiseError(other)
                                  },
                                  value => IO.pure(value)
                                )
@@ -105,7 +106,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                            }
     } yield pluginDef.map(_ -> pluginClassLoader)
 
-  private def loadPluginDefClasses(loader: ClassLoader)                                                              =
+  private def loadPluginDefClasses(loader: ClassLoader)                                                 =
     new ClassGraph()
       .overrideClassLoaders(loader)
       .enableAllInfo()

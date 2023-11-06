@@ -7,15 +7,17 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 
 import java.util.UUID
@@ -128,6 +130,14 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case segment                                         => provide(IdSegment(segment))
     }
 
+  def iriSegment: Directive1[Iri] =
+    pathPrefix(Segment).flatMap { segment =>
+      Iri(segment) match {
+        case Left(_)    => reject()
+        case Right(iri) => provide(iri)
+      }
+    }
+
   /**
     * Consumes a path Segment and parse it into a [[UserTag]]
     */
@@ -159,6 +169,23 @@ trait UriDirectives extends QueryParamsUnmarshalling {
         )
       )
   }
+
+  /**
+    * Creates optional [[UserTag]] from `tag` query param.
+    */
+  val tagParam: Directive1[Option[UserTag]] = parameter("tag".as[UserTag].?)
+
+  def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
+    case None        => provide(TimeRange.default)
+    case Some(value) =>
+      TimeRange.parse(value) match {
+        case Right(range) => provide(range)
+        case Left(error)  => reject(validationRejection(error.message))
+      }
+  }
+
+  val createdAt: Directive1[TimeRange] = timeRange("createdAt")
+  val updatedAt: Directive1[TimeRange] = timeRange("updatedAt")
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]

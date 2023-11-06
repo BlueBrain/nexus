@@ -1,44 +1,41 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SinkConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 import monix.execution.Scheduler
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
+trait CompositeViewsFixture extends ConfigFixtures {
 
-  val crypto: Crypto = Crypto("changeme", "salt")
-
-  val alwaysValidate: ValidateCompositeView = (_, _, _) => IO.unit
+  val alwaysValidate: ValidateCompositeView = (_, _) => IO.unit
 
   val query =
     TemplateSparqlConstructQuery(
       "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
-    ).rightValue
+    ).getOrElse(throw new RuntimeException("Should never happen"))
 
   val uuid                   = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
@@ -69,8 +66,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val remoteProjectFields = RemoteProjectSourceFields(
     Some(iri"http://example.com/remote-project-source"),
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint"),
-    Some(Secret("secret token"))
+    Uri("http://example.com/remote-endpoint")
   )
 
   val esProjectionFields         = ElasticSearchProjectionFields(
@@ -87,8 +83,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   )
 
   val viewFields = CompositeViewFields(
-    NonEmptySet.of(projectFields, crossProjectFields, remoteProjectFields),
-    NonEmptySet.of(esProjectionFields, blazegraphProjectionFields),
+    NonEmptyList.of(projectFields, crossProjectFields, remoteProjectFields),
+    NonEmptyList.of(esProjectionFields, blazegraphProjectionFields),
     Some(Interval(1.minute))
   )
 
@@ -124,17 +120,16 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     None,
     false,
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint"),
-    Some(AccessToken(Secret("secret token")))
+    Uri("http://example.com/remote-endpoint")
   )
 
   val esProjection         = ElasticSearchProjection(
     iri"http://example.com/es-projection",
     uuid,
+    IndexingRev.init,
     query,
     Set.empty,
     Set.empty,
-    None,
     false,
     false,
     false,
@@ -147,18 +142,18 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",
     uuid,
+    IndexingRev.init,
     query,
     Set.empty,
     Set.empty,
-    None,
     false,
     false,
     permissions.query
   )
 
-  val viewValue      = CompositeViewValue(
-    NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
-    NonEmptySet.of(esProjection, blazegraphProjection),
+  val viewValue      = CompositeViewFactory.unsafe(
+    NonEmptyList.of(projectSource, crossProjectSource, remoteProjectSource),
+    NonEmptyList.of(esProjection, blazegraphProjection),
     Some(Interval(1.minute))
   )
   val viewValueNamed = viewValue.copy(name = Some("viewName"), description = Some("viewDescription"))
@@ -168,6 +163,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
     SourcesConfig(1),
+    BlazegraphAccess("http://localhost:9999/blazegraph", None, 1.minute),
     "prefix",
     3,
     eventLogConfig,
@@ -176,7 +172,10 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     1.minute,
     batchConfig,
     batchConfig,
-    3.seconds
+    3.seconds,
+    false,
+    SinkConfig.Batch,
+    Credentials.Anonymous
   )
 }
 

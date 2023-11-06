@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -20,25 +21,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.UIO
-import monix.execution.Scheduler
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
-class BlazegraphViewsSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with IOValues
-    with TestHelpers
-    with ConfigFixtures
-    with Fixtures {
+class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture with ConfigFixtures with Fixtures {
 
   "BlazegraphViews" when {
     val uuid                  = UUID.randomUUID()
@@ -46,7 +36,6 @@ class BlazegraphViewsSpec
 
     val prefix = "prefix"
 
-    implicit val sc: Scheduler  = Scheduler.global
     val realm                   = Label.unsafe("myrealm")
     val bob                     = User("Bob", realm)
     implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
@@ -95,11 +84,11 @@ class BlazegraphViewsSpec
       fetchContext,
       ResolverContextResolution(rcr),
       ValidateBlazegraphView(
-        UIO.pure(Set(permissions.query)),
+        IO.pure(Set(permissions.query)),
         2,
         xas
       ),
-      _ => UIO.unit,
+      _ => IO.unit,
       eventLogConfig,
       prefix,
       xas

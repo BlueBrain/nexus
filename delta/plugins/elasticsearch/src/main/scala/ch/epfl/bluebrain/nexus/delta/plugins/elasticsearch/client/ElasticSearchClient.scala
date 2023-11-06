@@ -9,6 +9,8 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
@@ -21,14 +23,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
-import retry.syntax.all._
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -55,15 +56,18 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val refreshParam                                          = "refresh"
   private val ignoreUnavailable                                     = "ignore_unavailable"
   private val allowNoIndices                                        = "allow_no_indices"
+  private val deleteByQueryPath                                     = "_delete_by_query"
   private val updateByQueryPath                                     = "_update_by_query"
   private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
   private val source                                                = "_source"
+  private val mapping                                               = "_mapping"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
   private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
+  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "true")
   private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
     RetryStrategy.constant(
       1.second,
@@ -246,7 +250,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param query
     *   the search query
     * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
+    *   the indices targeted by the update query
     */
   def updateByQuery(query: JsonObject, indices: Set[String]): HttpResult[Unit] = {
     val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
@@ -258,14 +262,23 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                   json.hcursor.get[String]("task").leftMap(_ => HttpClientStatusError(req, BadRequest, json.noSpaces))
                 )
       taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
-      _      <- client
-                  .toJson(taskReq)
-                  .retryingOnSomeErrors(
-                    updateByQueryStrategy.retryWhen,
-                    updateByQueryStrategy.policy,
-                    updateByQueryStrategy.onError
-                  )
+      _      <- client.toJson(taskReq).retry(updateByQueryStrategy)
     } yield ()
+  }
+
+  /**
+    * Runs an delete by query with the passed ''query'' and ''index''. The query is run as a task and the task is
+    * requested until it finished
+    *
+    * @param query
+    *   the search query
+    * @param index
+    *   the index targeted by the delete query
+    */
+  def deleteByQuery(query: JsonObject, index: IndexLabel): HttpResult[Unit] = {
+    val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQuery(Uri.Query(defaultDeleteByQuery))
+    val req            = Post(deleteEndpoint, query).withHttpCredentials
+    client.toJson(req).void
   }
 
   /**
@@ -423,7 +436,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       sort: SortList = SortList.empty
   ): HttpResult[Json] =
     if (indices.isEmpty)
-      emptyResults
+      emptyResults.toBIO[HttpClientError]
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
       val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
@@ -474,6 +487,29 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   }
 
   /**
+    * Perform an aggregation for the ''query'' inside the given indices
+    *
+    * @param params
+    *   the filter parameters
+    * @param indices
+    *   the indices to use (if empty, searches in all the indices)
+    * @param qp
+    *   the query parameters
+    * @param bucketSize
+    *   the maximum number of terms returned by a term aggregation
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation-size
+    */
+  def aggregate(params: ResourcesSearchParams, indices: Set[String], qp: Query, bucketSize: Int)(implicit
+      base: BaseUri
+  ): HttpResult[AggregationResult] = {
+    val query          = QueryBuilder(params).aggregation(bucketSize)
+    val (indexPath, q) = indexPathAndQuery(indices, query)
+    val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    client.fromJsonTo[AggregationResult](Post(searchEndpoint, q.build).withHttpCredentials)
+  }
+
+  /**
     * Refresh the given index
     */
   def refresh(index: IndexLabel): HttpResult[Boolean] =
@@ -481,6 +517,12 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       case resp if resp.status.isSuccess() =>
         discardEntity(resp) >> IO.pure(true)
     }
+
+  /**
+    * Obtain the mapping of the given index
+    */
+  def mapping(index: IndexLabel): HttpResult[Json] =
+    client.toJson(Get(endpoint / index.value / mapping).withHttpCredentials)
 
   private def discardEntity(resp: HttpResponse) =
     UIO.delay(resp.discardEntityBytes()) >> IO.unit
@@ -568,6 +610,17 @@ object ElasticSearchClient {
         case None           => decodeUnscoredResults
       }
     )
+
+  implicit val aggregationDecoder: Decoder[AggregationResult] =
+    Decoder.decodeJsonObject.emap { result =>
+      result.asJson.hcursor
+        .downField("aggregations")
+        .focus
+        .flatMap(_.asObject) match {
+        case Some(aggs) => Right(AggregationResult(fetchTotal(result), aggs))
+        case None       => Left("The response did not contain a valid 'aggregations' field.")
+      }
+    }
 
   final private[client] case class Count(value: Long)
   private[client] object Count {

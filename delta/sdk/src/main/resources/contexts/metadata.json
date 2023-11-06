@@ -1,6 +1,10 @@
 {
   "@context": {
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
+    "_tags": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/tags",
+      "@container": "@set"
+    },
     "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
     "_createdAt": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/createdAt",

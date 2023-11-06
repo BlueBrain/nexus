@@ -2,13 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-
-import java.util.UUID
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 
 /**
   * Holds information about the different access Uri of a resource
@@ -23,23 +19,10 @@ sealed trait ResourceUris extends Product with Serializable {
 
   /**
     * @return
-    *   the relative access [[Uri]] in a short form
-    */
-  def relativeAccessUriShortForm: Uri
-
-  /**
-    * @return
     *   the access [[Uri]]
     */
   def accessUri(implicit base: BaseUri): Uri =
     relativeAccessUri.resolvedAgainst(base.endpoint.finalSlash())
-
-  /**
-    * @return
-    *   the access [[Uri]] in a short form
-    */
-  def accessUriShortForm(implicit base: BaseUri): Uri =
-    relativeAccessUriShortForm.resolvedAgainst(base.endpoint.finalSlash())
 }
 
 object ResourceUris {
@@ -54,14 +37,11 @@ object ResourceUris {
     */
   final case class ResourceInProjectUris(
       projectRef: ProjectRef,
-      relativeAccessUri: Uri,
-      relativeAccessUriShortForm: Uri
+      relativeAccessUri: Uri
   ) extends ResourceUris {
-    def incoming(implicit base: BaseUri): Uri          = accessUri / "incoming"
-    def outgoing(implicit base: BaseUri): Uri          = accessUri / "outgoing"
-    def incomingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "incoming"
-    def outgoingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "outgoing"
-    def project(implicit base: BaseUri): Uri           = ResourceUris.project(projectRef).accessUri
+    def incoming(implicit base: BaseUri): Uri = accessUri / "incoming"
+    def outgoing(implicit base: BaseUri): Uri = accessUri / "outgoing"
+    def project(implicit base: BaseUri): Uri  = ResourceUris.project(projectRef).accessUri
   }
 
   /**
@@ -69,8 +49,7 @@ object ResourceUris {
     */
   final case class EphemeralResourceInProjectUris(
       projectRef: ProjectRef,
-      relativeAccessUri: Uri,
-      relativeAccessUriShortForm: Uri
+      relativeAccessUri: Uri
   ) extends ResourceUris {
     def project(implicit base: BaseUri): Uri = ResourceUris.project(projectRef).accessUri
   }
@@ -81,15 +60,12 @@ object ResourceUris {
   final case class ResourceInProjectAndSchemaUris(
       projectRef: ProjectRef,
       schemaProjectRef: ProjectRef,
-      relativeAccessUri: Uri,
-      relativeAccessUriShortForm: Uri
+      relativeAccessUri: Uri
   ) extends ResourceUris {
-    def incoming(implicit base: BaseUri): Uri          = accessUri / "incoming"
-    def outgoing(implicit base: BaseUri): Uri          = accessUri / "outgoing"
-    def incomingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "incoming"
-    def outgoingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "outgoing"
-    def project(implicit base: BaseUri): Uri           = ResourceUris.project(projectRef).accessUri
-    def schemaProject(implicit base: BaseUri): Uri     = ResourceUris.project(schemaProjectRef).accessUri
+    def incoming(implicit base: BaseUri): Uri      = accessUri / "incoming"
+    def outgoing(implicit base: BaseUri): Uri      = accessUri / "outgoing"
+    def project(implicit base: BaseUri): Uri       = ResourceUris.project(projectRef).accessUri
+    def schemaProject(implicit base: BaseUri): Uri = ResourceUris.project(schemaProjectRef).accessUri
   }
 
   /**
@@ -103,14 +79,9 @@ object ResourceUris {
     * @param id
     *   the id that can be compacted
     */
-  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri)(
-      mappings: ApiMappings,
-      base: ProjectBase
-  ): ResourceUris = {
-    val ctx               = context(base, mappings)
-    val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
-    val relativeShortForm = relative / ctx.compact(id, useVocab = false)
-    ResourceInProjectUris(projectRef, relative / id.toString, relativeShortForm)
+  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri): ResourceUris = {
+    val relative = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
+    ResourceInProjectUris(projectRef, relative / id.toString)
   }
 
   /**
@@ -134,27 +105,18 @@ object ResourceUris {
     *   the schema project reference
     * @param id
     *   the id that can be compacted
-    * @param schema
-    *   the schema reference that can be compacted
     */
   private def apply(
       resourceTypeSegment: String,
       projectRef: ProjectRef,
       schemaProject: ProjectRef,
-      schema: ResourceRef,
       id: Iri
-  )(
-      mappings: ApiMappings,
-      base: ProjectBase
   ): ResourceUris = {
-    val ctx               = context(base, mappings)
-    val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
-    val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
+    val relative = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     ResourceInProjectAndSchemaUris(
       projectRef,
       schemaProject,
-      relative / schema.toString / id.toString,
-      relativeShortForm
+      relative / "_" / id.toString
     )
   }
 
@@ -193,31 +155,22 @@ object ResourceUris {
     apply(s"projects/$ref")
 
   /**
-    * Resource uris for a project deletions
-    */
-  def projectDeletes(ref: ProjectRef, uuid: UUID): ResourceUris =
-    apply(s"projects/$ref/deletions/$uuid")
-
-  /**
     * Resource uris for a resource
     */
-  def resource(projectRef: ProjectRef, schemaProject: ProjectRef, id: Iri, schema: ResourceRef)(
-      mappings: ApiMappings,
-      base: ProjectBase
-  ): ResourceUris =
-    apply("resources", projectRef, schemaProject, schema, id)(mappings, base)
+  def resource(projectRef: ProjectRef, schemaProject: ProjectRef, id: Iri): ResourceUris =
+    apply("resources", projectRef, schemaProject, id)
 
   /**
     * Resource uris for a schema
     */
-  def schema(ref: ProjectRef, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply("schemas", ref, id)(mappings, base)
+  def schema(ref: ProjectRef, id: Iri): ResourceUris =
+    apply("schemas", ref, id)
 
   /**
     * Resource uris for a resolver
     */
-  def resolver(ref: ProjectRef, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply("resolvers", ref, id)(mappings, base)
+  def resolver(ref: ProjectRef, id: Iri): ResourceUris =
+    apply("resolvers", ref, id)
 
   /**
     * Resource uris for ephemeral resources that are scoped to a project.
@@ -226,20 +179,9 @@ object ResourceUris {
       resourceTypeSegment: String,
       ref: ProjectRef,
       id: Iri
-  )(mappings: ApiMappings, base: ProjectBase): ResourceUris = {
-    val ctx               = context(base, mappings)
-    val relative          = Uri(resourceTypeSegment) / ref.organization.value / ref.project.value
-    val relativeAccess    = relative / id.toString
-    val relativeShortForm = relative / ctx.compact(id, useVocab = false)
-    EphemeralResourceInProjectUris(ref, relativeAccess, relativeShortForm)
+  ): ResourceUris = {
+    val relative       = Uri(resourceTypeSegment) / ref.organization.value / ref.project.value
+    val relativeAccess = relative / id.toString
+    EphemeralResourceInProjectUris(ref, relativeAccess)
   }
-
-  private def context(base: ProjectBase, mappings: ApiMappings): JsonLdContext =
-    JsonLdContext(
-      ContextValue.empty,
-      base = Some(base.iri),
-      prefixMappings = mappings.prefixMappings.filterNot { case (_, iri) => iri == base.iri },
-      aliases = mappings.aliases
-    )
-
 }

@@ -41,7 +41,7 @@
         "object": {
           "datatype": "http://www.w3.org/2001/XMLSchema#integer",
           "type": "literal",
-          "value": "52"
+          "value": "42"
         },
         "predicate": {
           "type": "uri",
@@ -55,7 +55,7 @@
       {
         "object": {
           "type": "literal",
-          "value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+          "value": "9144c8a8c435aff3262ba0a4620590f774c1d86a13956619723052eca6546c64"
         },
         "predicate": {
           "type": "uri",
@@ -169,7 +169,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json"
+          "value": "{{self}}"
         },
         "predicate": {
           "type": "uri",
@@ -183,7 +183,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json/incoming"
+          "value": "{{self}}/incoming"
         },
         "predicate": {
           "type": "uri",
@@ -197,7 +197,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json/outgoing"
+          "value": "{{self}}/outgoing"
         },
         "predicate": {
           "type": "uri",

@@ -22,6 +22,24 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
+      - name: Set up proxy for docker buildx
+        run: |
+          echo http_proxy=${http_proxy} >> $GITHUB_ENV
+          echo https_proxy=${https_proxy} >> $GITHUB_ENV
+          echo no_proxy=${no_proxy} >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: |
+            env.http_proxy=${{ env.http_proxy }}
+            env.https_proxy=${{ env.https_proxy }}
+            "env.no_proxy='${{ env.no_proxy}}'"
       - name: Publish To DockerHub
         run: |
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
@@ -20,15 +21,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindT
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class IndexingViewDefSuite extends BioSuite {
+class IndexingViewDefSuite extends CatsEffectSuite {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
@@ -44,6 +45,7 @@ class IndexingViewDefSuite extends BioSuite {
   private val subject: Subject = Anonymous
   private val tag              = UserTag.unsafe("mytag")
   private val indexingRev      = 1
+  private val currentRev       = 1
 
   private val namespace = s"${prefix}_${uuid}_1"
 
@@ -80,10 +82,11 @@ class IndexingViewDefSuite extends BioSuite {
         ActiveViewDef(
           viewRef,
           s"blazegraph-$projectRef-$id-$indexingRev",
-          indexing.resourceTag,
+          indexing.selectFilter,
           indexing.pipeChain,
           namespace,
-          indexingRev
+          indexingRev,
+          currentRev
         )
       )
     )
@@ -107,10 +110,11 @@ class IndexingViewDefSuite extends BioSuite {
     val v = ActiveViewDef(
       viewRef,
       s"blazegraph-$projectRef-$id-1",
-      indexing.resourceTag,
+      indexing.selectFilter,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       namespace,
-      indexingRev
+      indexingRev,
+      currentRev
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -122,7 +126,7 @@ class IndexingViewDefSuite extends BioSuite {
         GraphResourceStream.empty,
         sink
       )
-      .error(expectedError)
+      .intercept(expectedError)
 
     assert(
       sink.successes.isEmpty && sink.dropped.isEmpty && sink.failed.isEmpty,
@@ -135,10 +139,11 @@ class IndexingViewDefSuite extends BioSuite {
     val v = ActiveViewDef(
       viewRef,
       s"blazegraph-$projectRef-$id-1",
-      indexing.resourceTag,
+      indexing.selectFilter,
       Some(PipeChain(FilterDeprecated())),
       namespace,
-      indexingRev
+      indexingRev,
+      currentRev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(
@@ -160,9 +165,9 @@ class IndexingViewDefSuite extends BioSuite {
                       compiled.metadata,
                       ProjectionMetadata(BlazegraphViews.entityType.value, v.projection, Some(projectRef), Some(id))
                     )
-      projection <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)
+      projection <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)
       _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
-      _          <- projection.currentProgress.assert(expectedProgress)
+      _          <- projection.currentProgress.assertEquals(expectedProgress)
     } yield ()
   }
 

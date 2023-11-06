@@ -13,13 +13,15 @@
     "_value": ""
   },
   "_filename": "{{filename}}",
-  "_incoming": "{{deltaUri}}/files/{{projId}}/{{filename}}/incoming",
-  "_mediaType": "text/plain",
+  {{#if mediaType}}
+  "_mediaType": "{{mediaType}}",
+  {{/if}}
   "_origin": "Storage",
-  "_outgoing": "{{deltaUri}}/files/{{projId}}/{{filename}}/outgoing",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
   "_project": "{{project}}",
   "_rev": 1,
-  "_self": "{{deltaUri}}/files/{{projId}}/{{filename}}",
+  "_self": "{{self}}",
   "_storage": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
     "@type": "{{storageType}}",

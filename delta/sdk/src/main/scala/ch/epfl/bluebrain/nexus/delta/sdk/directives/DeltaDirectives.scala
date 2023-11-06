@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, `Last-Event-ID`, Accept, RawHeader}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -102,7 +102,7 @@ trait DeltaDirectives extends UriDirectives {
   def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
-  private[directives] def requestMediaType: Directive1[MediaType] =
+  def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
       HeadersUtils.findFirst(req.headers, mediaTypes) match {
         case Some(value) => provide(value)
@@ -119,15 +119,7 @@ trait DeltaDirectives extends UriDirectives {
       s: Scheduler
   ): Route =
     emitOrFusionRedirect(
-      UIO.pure {
-        val resourceBase =
-          config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
-        id match {
-          case _: Latest        => resourceBase
-          case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
-          case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
-        }
-      },
+      fusionResourceUri(projectRef, id),
       emitDelta
     )
 
@@ -144,10 +136,13 @@ trait DeltaDirectives extends UriDirectives {
       emitDelta
     )
 
-  private def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler) =
+  /**
+    * If the `Accept` header is set to `text/html`, redirect to the provided uri if the feature is enabled
+    */
+  def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler): Route =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
-        emitRedirect(SeeOther, fusionUri)
+        emitRedirect(SeeOther, ResponseToRedirect.uioRedirect(fusionUri))
       } else
         emitDelta
     }
@@ -167,5 +162,36 @@ trait DeltaDirectives extends UriDirectives {
           case Some(o) => provide(Offset.at(o))
         }
       case None        => provide(Offset.Start)
+    }
+
+  /** The URI of a resource in fusion (given a project & id pair) */
+  def fusionResourceUri(projectRef: ProjectRef, id: IdSegmentRef)(implicit config: FusionConfig): UIO[Uri] =
+    UIO.pure {
+      val resourceBase =
+        config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
+      id match {
+        case _: Latest        => resourceBase
+        case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
+        case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
+      }
+    }
+
+  /** The URI of fusion's main login page */
+  def fusionLoginUri(implicit config: FusionConfig): UIO[Uri] =
+    UIO.pure { config.base / "login" }
+
+  /** Injects a `Vary: Accept,Accept-Encoding` into the response */
+  def varyAcceptHeaders: Directive0 =
+    vary(Set(Accept.name, `Accept-Encoding`.name))
+
+  private def vary(headers: Set[String]): Directive0 =
+    respondWithHeader(RawHeader("Vary", headers.mkString(",")))
+
+  private def respondWithHeader(responseHeader: HttpHeader): Directive0 =
+    mapSuccessResponse(r => r.withHeaders(r.headers :+ responseHeader))
+
+  private def mapSuccessResponse(f: HttpResponse => HttpResponse): Directive0 =
+    mapRouteResultPF {
+      case RouteResult.Complete(response) if response.status.isSuccess => RouteResult.Complete(f(response))
     }
 }

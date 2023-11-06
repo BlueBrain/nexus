@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchAttributeRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import monix.bio.IO
 
 trait FetchAttributes {
 
@@ -18,7 +16,7 @@ trait FetchAttributes {
     * @param attributes
     *   the file attributes
     */
-  def apply(attributes: FileAttributes): IO[StorageFileRejection.FetchAttributeRejection, ComputedFileAttributes] =
+  def apply(attributes: FileAttributes): IO[ComputedFileAttributes] =
     apply(attributes.path).map { case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
       ComputedFileAttributes(mediaType, bytes, digest)
     }
@@ -29,7 +27,7 @@ trait FetchAttributes {
     * @param path
     *   the file path
     */
-  def apply(path: Uri.Path): IO[FetchAttributeRejection, RemoteDiskStorageFileAttributes]
+  def apply(path: Uri.Path): IO[RemoteDiskStorageFileAttributes]
 }
 
 object FetchAttributes {
@@ -38,12 +36,13 @@ object FetchAttributes {
     * Construct a [[FetchAttributes]] from the given ''storage''.
     */
   def apply(
-      storage: Storage
-  )(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): FetchAttributes =
+      storage: Storage,
+      client: RemoteDiskStorageClient
+  ): FetchAttributes =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)
       case storage: Storage.S3Storage         => unsupported(storage.tpe)
-      case storage: Storage.RemoteDiskStorage => storage.fetchComputedAttributes
+      case storage: Storage.RemoteDiskStorage => storage.fetchComputedAttributes(client)
     }
 
   private def unsupported(storageType: StorageType): FetchAttributes =

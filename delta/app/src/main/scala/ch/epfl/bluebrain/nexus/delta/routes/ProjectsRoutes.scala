@@ -3,14 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.data.OptionT
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -26,8 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
-import monix.execution.Scheduler
 
 /**
   * The project routes
@@ -52,10 +53,10 @@ final class ProjectsRoutes(
 )(implicit
     baseUri: BaseUri,
     config: ProjectsConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    fusionConfig: FusionConfig
+    fusionConfig: FusionConfig,
+    contextShift: ContextShift[IO]
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -64,22 +65,24 @@ final class ProjectsRoutes(
 
   implicit val paginationConfig: PaginationConfig = config.pagination
 
-  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
-    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
-      ProjectSearchParams(
-        None,
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        label,
-        proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, fetchAllCached)
-      )
+  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] = {
+    onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
+      (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+        ProjectSearchParams(
+          None,
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, allAcls).toUIO
+        )
+      }
     }
+  }
 
   private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
-    projectProvisioning(caller.subject).runToFuture
+    projectProvisioning(caller.subject).unsafeToFuture()
   )
 
   def routes: Route =
@@ -107,14 +110,19 @@ final class ProjectsRoutes(
                           // Create project
                           authorizeFor(ref, projectsPermissions.create).apply {
                             entity(as[ProjectFields]) { fields =>
-                              emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
+                              emit(
+                                StatusCodes.Created,
+                                projects.create(ref, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                              )
                             }
                           }
                         case Some(rev) =>
                           // Update project
                           authorizeFor(ref, projectsPermissions.write).apply {
                             entity(as[ProjectFields]) { fields =>
-                              emit(projects.update(ref, rev, fields).mapValue(_.metadata))
+                              emit(
+                                projects.update(ref, rev, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                              )
                             }
                           }
                       }
@@ -123,23 +131,28 @@ final class ProjectsRoutes(
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch project at specific revision
                           authorizeFor(ref, projectsPermissions.read).apply {
-                            emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
+                            emit(projects.fetchAt(ref, rev).attemptNarrow[ProjectRejection])
                           }
                         case None      => // Fetch project
                           emitOrFusionRedirect(
                             ref,
                             authorizeFor(ref, projectsPermissions.read).apply {
-                              emit(projects.fetch(ref).leftWiden[ProjectRejection])
+                              emit(projects.fetch(ref).attemptNarrow[ProjectRejection])
                             }
                           )
                       }
                     },
                     // Deprecate/delete project
                     (delete & pathEndOrSingleSlash) {
-                      parameters("rev".as[Int]) { rev =>
-                        authorizeFor(ref, projectsPermissions.write).apply {
-                          emit(projects.deprecate(ref, rev).mapValue(_.metadata))
-                        }
+                      parameters("rev".as[Int], "prune".?(false)) {
+                        case (rev, true)  =>
+                          authorizeFor(ref, projectsPermissions.delete).apply {
+                            emit(projects.delete(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
+                          }
+                        case (rev, false) =>
+                          authorizeFor(ref, projectsPermissions.write).apply {
+                            emit(projects.deprecate(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
+                          }
                       }
                     }
                   )
@@ -148,8 +161,9 @@ final class ProjectsRoutes(
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, resources.read).apply {
+                      val stats = projectsStatistics.get(ref).toCatsIO
                       emit(
-                        IO.fromOptionEval(projectsStatistics.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection]
+                        OptionT(stats).toRight[ProjectRejection](ProjectNotFound(ref)).value
                       )
                     }
                   }
@@ -187,10 +201,10 @@ object ProjectsRoutes {
   )(implicit
       baseUri: BaseUri,
       config: ProjectsConfig,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      fusionConfig: FusionConfig
+      fusionConfig: FusionConfig,
+      contextShift: ContextShift[IO]
   ): Route =
     new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives).routes
 

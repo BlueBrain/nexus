@@ -1,35 +1,44 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf, ioJsonObjectContentOf}
+import cats.effect.IO
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import com.typesafe.scalalogging.Logger
+import io.circe.JsonObject
+import org.typelevel.log4cats
 
 package object indexing {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  implicit private val logger: Logger           = Logger[GraphAnalytics]
+  implicit private val classLoader: ClassLoader    = getClass.getClassLoader
+  implicit private val logger: log4cats.Logger[IO] = Logger.cats[GraphAnalytics]
 
   val updateRelationshipsScriptId = "updateRelationships"
 
-  val scriptContent =
-    ioContentOf("elasticsearch/update_relationships_script.painless")
-      .logAndDiscardErrors("ElasticSearch script 'update_relationships_script.painless' template not found")
+  val scriptContent: IO[String] =
+    CatsEffectsClasspathResourceUtils
+      .ioContentOf("elasticsearch/update_relationships_script.painless")
+      .onError(e => logger.warn(e)("ElasticSearch script 'update_relationships_script.painless' template not found"))
 
-  val graphAnalyticsMappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
+  val graphAnalyticsMappings: IO[JsonObject] =
+    CatsEffectsClasspathResourceUtils
+      .ioJsonObjectContentOf("elasticsearch/mappings.json")
+      .onError(e => logger.warn(e)("ElasticSearch mapping 'mappings.json' template not found"))
 
-  def propertiesAggQuery(config: TermAggregationsConfig) = ioJsonObjectContentOf(
+  def propertiesAggQuery(config: TermAggregationsConfig): IO[JsonObject] = ioJsonObjectContentOf(
     "elasticsearch/paths-properties-aggregations.json",
     "shard_size" -> config.shardSize,
     "size"       -> config.size,
     "type"       -> "{{type}}"
-  ).logAndDiscardErrors("ElasticSearch 'paths-properties-aggregations.json' template not found")
+  ).logErrors("ElasticSearch 'paths-properties-aggregations.json' template not found")
 
-  def relationshipsAggQuery(config: TermAggregationsConfig) =
+  def relationshipsAggQuery(config: TermAggregationsConfig): IO[JsonObject] =
     ioJsonObjectContentOf(
       "elasticsearch/paths-relationships-aggregations.json",
       "shard_size" -> config.shardSize,
       "size"       -> config.size
-    ).logAndDiscardErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
+    ).logErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
 
 }

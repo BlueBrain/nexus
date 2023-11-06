@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -16,7 +17,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class PermissionsRejection(val reason: String) extends Product with Serializable
+sealed abstract class PermissionsRejection(val reason: String) extends Rejection
 
 object PermissionsRejection {
 

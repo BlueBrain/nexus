@@ -175,10 +175,10 @@ object PullRequest {
     }
 
     def source: Json = this match {
-      case _: PullRequestActive =>
+      case p: PullRequestActive =>
         Json.obj(
           "@id"    -> Json.fromString(id.toString),
-          "@type"  -> Json.fromString("PullRequest"),
+          "@type"  -> Json.arr(p.types.toList.map(iri => Json.fromString(iri.toString)): _*),
           "status" -> Json.fromString("active"),
           "label"  -> Json.fromString("active")
         )
@@ -201,7 +201,8 @@ object PullRequest {
         createdAt: Instant,
         createdBy: Subject,
         updatedAt: Instant,
-        updatedBy: Subject
+        updatedBy: Subject,
+        override val types: Set[Iri] = Set(nxv + "PullRequest")
     ) extends PullRequestState {
       override def deprecated: Boolean = false
     }
@@ -223,7 +224,7 @@ object PullRequest {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestState] = deriveConfiguredCodec[PullRequestState]
-      Serializer()
+      Serializer.dropNullsInjectType()
     }
 
     def toGraphResource(state: PullRequestState, base: Iri): GraphResource =

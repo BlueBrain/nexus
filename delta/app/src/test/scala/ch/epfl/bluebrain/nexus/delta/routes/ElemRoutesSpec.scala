@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -14,17 +15,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseElemStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
+class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -43,13 +45,19 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
   private val sseElemStream = new SseElemStream {
 
-    private val stream = Stream.emits(List(elem1, elem2, elem3)).covary[Task]
+    private val stream = Stream.emits(List(elem1, elem2, elem3)).covary[IO]
 
-    override def continuous(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream = stream
+    override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
+      stream
 
-    override def currents(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream        = stream
-    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =
-      UIO.some(RemainingElems(999L, Instant.EPOCH))
+    override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
+      stream
+    override def remaining(
+        project: ProjectRef,
+        selectFilter: SelectFilter,
+        start: Offset
+    ): IO[Option[RemainingElems]]                                                                                =
+      IO.pure(Some(RemainingElems(999L, Instant.EPOCH)))
   }
 
   private val routes = Route.seal(
@@ -93,13 +101,11 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
 
         Head(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

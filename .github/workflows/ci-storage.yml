@@ -2,20 +2,24 @@ name: Storage Integration Service
 on:
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-storage.yml'
 jobs:
-  review:
+  run:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
         uses: actions/checkout@v3
         with:

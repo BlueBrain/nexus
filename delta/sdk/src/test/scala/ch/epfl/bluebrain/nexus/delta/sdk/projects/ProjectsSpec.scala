@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{evaluate, FetchOrganization}
@@ -12,28 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
-import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 
-class ProjectsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValuable
-    with Inspectors
-    with IOFixedClock
-    with IOValues
-    with TestHelpers
-    with CirceLiteral
-    with OptionValues {
+class ProjectsSpec extends CatsEffectSpec {
 
   "The Projects state machine" when {
-    implicit val sc: Scheduler  = Scheduler.global
     val epoch                   = Instant.EPOCH
     val time2                   = Instant.ofEpochMilli(10L)
     val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
@@ -64,14 +50,22 @@ class ProjectsSpec
       case `org2abel` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2abel)))
       case label      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
     }
-    val ref                     = ProjectRef(orgLabel, label)
-    val ref2                    = ProjectRef(org2abel, label)
+
+    val ref              = ProjectRef(orgLabel, label)
+    val ref2             = ProjectRef(org2abel, label)
+    val ref2IsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
+
+    val validateDeletion: ValidateProjectDeletion = {
+      case `ref`  => IO.unit
+      case `ref2` => IO.raiseError(ref2IsReferenced)
+      case _      => IO.raiseError(new IllegalArgumentException(s"Only '$ref' and '$ref2' are expected here"))
+    }
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs)(_, _)
+      val eval = evaluate(orgs, validateDeletion)(_, _)
 
       "create a new event" in {
         eval(None, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
@@ -136,7 +130,8 @@ class ProjectsSpec
       "reject with ProjectNotFound" in {
         val list = List(
           None -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
-          None -> DeprecateProject(ref, 1, subject)
+          None -> DeprecateProject(ref, 1, subject),
+          None -> DeleteProject(ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ProjectNotFound]
@@ -153,6 +148,11 @@ class ProjectsSpec
         val cmd = DeleteProject(ref, 1, subject)
         eval(Some(cur), cmd).accepted shouldEqual
           ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
+      }
+
+      "reject with ProjectIsReferenced" in {
+        eval(Some(state), DeleteProject(ref2, 1, subject)).rejected shouldEqual
+          ref2IsReferenced
       }
     }
 

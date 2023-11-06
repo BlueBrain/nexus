@@ -1,35 +1,35 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse, StatusCodes}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
+import io.circe.optics.JsonPath.root
 import org.apache.commons.codec.Charsets
 import org.scalatest.Assertion
 
 import java.util.Base64
 
-abstract class StorageSpec extends BaseSpec with CirceEq {
+abstract class StorageSpec extends BaseIntegrationSpec {
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
 
   val nxv = "https://bluebrain.github.io/nexus/vocabulary/"
 
-  private[tests] val orgId  = genId()
-  private[tests] val projId = genId()
-  private[tests] val fullId = s"$orgId/$projId"
+  private[tests] val orgId      = genId()
+  private[tests] val projId     = genId()
+  private[tests] val projectRef = s"$orgId/$projId"
+
+  private[tests] val attachmentPrefix = s"${config.deltaUri}/resources/$projectRef/_/"
 
   def storageName: String
 
@@ -39,35 +39,28 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
   def locationPrefix: Option[String]
 
-  def createStorages: Task[Assertion]
+  def createStorages: IO[Assertion]
 
-  "creating projects" should {
-
-    "add necessary ACLs for user" in {
-      aclDsl.addPermission(
-        "/",
-        Coyote,
-        Organizations.Create
-      )
-    }
-
-    "succeed if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Coyote)
-        _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = fullId), Coyote)
-      } yield succeed
-    }
-
+  protected def fileSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/files/$project")
+    uri.copy(path = uri.path / id).toString
   }
 
-  "creating a storage" should {
-    s"succeed creating a $storageName storage" in {
+  private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createProjects(Coyote, orgId, projId).accepted
+  }
+
+  "Creating a storage" should {
+    s"succeed for a $storageName storage" in {
       createStorages
     }
 
     "wait for storages to be indexed" in {
       eventually {
-        deltaClient.get[Json](s"/storages/$fullId", Coyote) { (json, response) =>
+        deltaClient.get[Json](s"/storages/$projectRef", Coyote) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           _total.getOption(json).value shouldEqual 3
         }
@@ -75,147 +68,111 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
   }
 
-  s"uploading an attachment against the $storageName storage" should {
+  "An empty file" should {
 
-    "upload empty file" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/empty?storage=nxv:$storageId",
-        contentOf("/kg/files/empty"),
+    val emptyFileContent = ""
+
+    "be successfully uploaded" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/empty?storage=nxv:$storageId",
+        emptyFileContent,
         ContentTypes.`text/plain(UTF-8)`,
         "empty",
         Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
+      ) { expectCreated }
     }
 
-    "fetch empty file" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:empty", Coyote, acceptAll) { (content, response) =>
-        assertFetchAttachment(
-          response,
-          "empty",
-          ContentTypes.`text/plain(UTF-8)`
-        )
-        content.utf8String shouldEqual contentOf("/kg/files/empty")
+    "be downloaded" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
+        expectDownload("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
       }
     }
+  }
 
-    "upload attachment with JSON" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment.json?storage=nxv:$storageId",
-        contentOf("/kg/files/attachment.json"),
-        ContentTypes.`application/json`,
-        "attachment.json",
-        Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
-    }
+  "A json file" should {
 
-    "fetch attachment" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:attachment.json", Coyote, acceptAll) {
-        (content, response) =>
-          assertFetchAttachment(
-            response,
-            "attachment.json",
-            ContentTypes.`application/json`
-          )
-          content.utf8String shouldEqual contentOf("/kg/files/attachment.json")
-      }
-    }
+    val jsonFileContent        = """{ "initial": ["is", "a", "test", "file"] }"""
+    val updatedJsonFileContent = """{ "updated": ["is", "a", "test", "file"] }"""
 
-    "fetch gzipped attachment" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:attachment.json", Coyote, gzipHeaders) {
-        (content, response) =>
-          assertFetchAttachment(
-            response,
-            "attachment.json",
-            ContentTypes.`application/json`
-          )
-          httpEncodings(response) shouldEqual Seq(HttpEncodings.gzip)
-          decodeGzip(content) shouldEqual contentOf("/kg/files/attachment.json")
-      }
-    }
-
-    "update attachment with JSON" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment.json?storage=nxv:$storageId&rev=1",
-        contentOf("/kg/files/attachment2.json"),
-        ContentTypes.`application/json`,
-        "attachment.json",
-        Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "fetch updated attachment" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:attachment.json", Coyote, acceptAll) {
-        (content, response) =>
-          assertFetchAttachment(
-            response,
-            "attachment.json",
-            ContentTypes.`application/json`
-          )
-          content.utf8String shouldEqual contentOf("/kg/files/attachment2.json")
-      }
-    }
-
-    "fetch previous revision of attachment" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:attachment.json?rev=1", Coyote, acceptAll) {
-        (content, response) =>
-          assertFetchAttachment(
-            response,
-            "attachment.json",
-            ContentTypes.`application/json`
-          )
-          content.utf8String shouldEqual contentOf("/kg/files/attachment.json")
-      }
-    }
-
-    "upload second attachment to created storage" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment2?storage=nxv:$storageId",
-        contentOf("/kg/files/attachment2"),
+    "be uploaded" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/attachment.json?storage=nxv:$storageId",
+        jsonFileContent,
         ContentTypes.NoContentType,
-        "attachment2",
+        "attachment.json",
         Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
+      ) {
+        expectCreated
       }
     }
 
-    "fetch second attachment" in {
-      deltaClient.get[ByteString](s"/files/$fullId/attachment:attachment2", Coyote, acceptAll) { (content, response) =>
-        assertFetchAttachment(
-          response,
-          "attachment2"
+    "be downloaded" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
+        expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent)
+      }
+    }
+
+    "be downloaded as gzip" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, gzipHeaders) {
+        expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent, compressed = true)
+      }
+    }
+
+    "be updated" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/attachment.json?storage=nxv:$storageId&rev=1",
+        updatedJsonFileContent,
+        ContentTypes.`application/json`,
+        "attachment.json",
+        Coyote
+      ) {
+        expectOk
+      }
+    }
+
+    "download the updated file" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
+        expectDownload(
+          "attachment.json",
+          ContentTypes.`application/json`,
+          updatedJsonFileContent
         )
-        content.utf8String shouldEqual contentOf("/kg/files/attachment2")
       }
     }
 
-    "delete the attachment" in {
-      deltaClient.delete[Json](s"/files/$fullId/attachment:attachment.json?rev=2", Coyote) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
+    "download the previous revision" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json?rev=1", Coyote, acceptAll) {
+        expectDownload(
+          "attachment.json",
+          ContentTypes.`application/json`,
+          jsonFileContent
+        )
       }
     }
 
-    "fetch attachment metadata" in {
+    "deprecate the file" in {
+      deltaClient.delete[Json](s"/files/$projectRef/attachment:attachment.json?rev=2", Coyote) {
+        expectOk
+      }
+    }
+
+    "have the expected metadata" in {
+      val id       = s"${attachmentPrefix}attachment.json"
       val expected = jsonContentOf(
         "/kg/files/attachment-metadata.json",
         replacements(
           Coyote,
-          "id"          -> s"${config.deltaUri}/resources/$fullId/_/attachment.json",
-          "filename"    -> s"attachment.json",
+          "id"          -> id,
+          "self"        -> fileSelf(projectRef, id),
+          "filename"    -> "attachment.json",
           "storageId"   -> storageId,
           "storageType" -> storageType,
-          "projId"      -> s"$fullId",
-          "project"     -> s"${config.deltaUri}/projects/$fullId"
+          "projId"      -> s"$projectRef",
+          "project"     -> s"${config.deltaUri}/projects/$projectRef"
         ): _*
       )
 
-      deltaClient.get[Json](s"/files/$fullId/attachment:attachment.json", Coyote) { (json, response) =>
+      deltaClient.get[Json](s"/files/$projectRef/attachment:attachment.json", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         locationPrefix.foreach { l =>
           location.getOption(json).value should startWith(l)
@@ -223,120 +180,103 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
     }
+  }
 
-    "attempt to upload a third attachment against an storage that does not exists" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:wrong-id",
-        contentOf("/kg/files/attachment2"),
+  "A file without extension" should {
+
+    val textFileContent = "text file"
+
+    "be uploaded" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/attachment2?storage=nxv:$storageId",
+        textFileContent,
         ContentTypes.NoContentType,
         "attachment2",
         Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
+      ) {
+        expectCreated
       }
     }
 
-    "fail to upload file against a storage with custom permissions" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:${storageId}2",
-        contentOf("/kg/files/attachment2"),
-        ContentTypes.NoContentType,
-        "attachment2",
-        Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
-    "add ACLs for custom storage" in {
-      aclDsl.addPermissions(
-        "/",
-        Coyote,
-        Set(Permission(storageName, "read"), Permission(storageName, "write"))
-      )
-    }
-
-    "upload file against a storage with custom permissions" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:${storageId}2",
-        contentOf("/kg/files/attachment2"),
-        ContentTypes.NoContentType,
-        "attachment2",
-        Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
+    "be downloaded" in {
+      deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment2", Coyote, acceptAll) {
+        expectDownload("attachment2", ContentTypes.`application/octet-stream`, textFileContent)
       }
     }
   }
 
-  "deprecating a storage" should {
+  "Uploading a file against a unknown storage" should {
 
-    "deprecate a storage" in {
-      deltaClient.delete[Json](s"/storages/$fullId/nxv:$storageId?rev=1", Coyote) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
+    val textFileContent = "text file"
 
-    "reject uploading a new file against the deprecated storage" in {
-      deltaClient.putAttachment[Json](
-        s"/files/$fullId/${genString()}?storage=nxv:$storageId",
-        "",
+    "fail" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/attachment3?storage=nxv:wrong-id",
+        textFileContent,
         ContentTypes.NoContentType,
-        "attachment3",
+        "attachment2",
         Coyote
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-      }
-    }
-
-    "fetch second attachment metadata" in {
-      val expected = jsonContentOf(
-        "/kg/files/attachment2-metadata.json",
-        replacements(
-          Coyote,
-          "storageId"   -> storageId,
-          "storageType" -> storageType,
-          "projId"      -> s"$fullId",
-          "project"     -> s"${config.deltaUri}/projects/$fullId",
-          "storageType" -> storageType
-        ): _*
-      )
-
-      deltaClient.get[Json](s"/files/$fullId/attachment:attachment2", Coyote) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
-      }
+      ) { expectNotFound }
     }
   }
 
-  "getting statistics" should {
+  "Uploading a file against a storage with custom permissions" should {
+
+    val textFileContent = "text file"
+
+    def uploadStorageWithCustomPermissions: ((Json, HttpResponse) => Assertion) => IO[Assertion] =
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/attachment3?storage=nxv:${storageId}2",
+        textFileContent,
+        ContentTypes.NoContentType,
+        "attachment2",
+        Coyote
+      )
+
+    "fail without these custom permissions" in {
+      uploadStorageWithCustomPermissions { expectForbidden }
+    }
+
+    "succeed with the appropriate permissions" in {
+      val permissions = Set(Permission(storageName, "read"), Permission(storageName, "write"))
+      for {
+        _ <- aclDsl.addPermissions("/", Coyote, permissions)
+        _ <- uploadStorageWithCustomPermissions { expectCreated }
+      } yield (succeed)
+    }
+  }
+
+  "Getting statistics" should {
     "return the correct statistics" in eventually {
-      deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId/statistics", Coyote) { (json, response) =>
+      deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId/statistics", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        filterKey("lastProcessedEventDateTime")(json) shouldEqual jsonContentOf("/kg/storages/statistics.json")
+        val expected =
+          json"""{ "@context": "https://bluebrain.github.io/nexus/contexts/storages.json", "files": 4, "spaceUsed": 93 }"""
+        filterKey("lastProcessedEventDateTime")(json) shouldEqual expected
       }
     }
 
     "fail for an unknown storage" in eventually {
-      deltaClient.get[Json](s"/storages/$fullId/nxv:fail/statistics", Coyote) { (json, response) =>
+      deltaClient.get[Json](s"/storages/$projectRef/nxv:fail/statistics", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.NotFound
         json shouldEqual jsonContentOf(
           "/kg/storages/not-found.json",
           "storageId" -> (nxv + "fail"),
-          "projId"    -> s"$fullId"
+          "projId"    -> s"$projectRef"
         )
       }
     }
   }
 
-  "list files" in eventually {
-    deltaClient.get[Json](s"/files/$fullId", Coyote) { (json, response) =>
+  "List files" in eventually {
+    deltaClient.get[Json](s"/files/$projectRef", Coyote) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val mapping  = replacements(
         Coyote,
-        "project"     -> fullId,
-        "storageId"   -> storageId,
-        "storageType" -> storageType
+        "project"        -> projectRef,
+        "fileSelfPrefix" -> fileSelfPrefix,
+        "storageId"      -> storageId,
+        "storageType"    -> storageType
       )
       val expected = jsonContentOf("/kg/files/list.json", mapping: _*)
       filterSearchMetadata
@@ -344,7 +284,8 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
   }
 
-  "query the default sparql view for files" in eventually {
+  "Query the default sparql view for files" in eventually {
+    val id    = s"http://delta:8080/v1/resources/$projectRef/_/attachment.json"
     val query =
       s"""
         |prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
@@ -367,7 +308,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         |           :incoming           ?incoming       ;
         |           :outgoing           ?outgoing       ;
         |} WHERE {
-        |      BIND(<http://delta:8080/v1/resources/$fullId/_/attachment.json> as ?id) .
+        |      BIND(<$id> as ?id) .
         |
         |      ?id  a  ?type  .
         |      ?id  nxv:filename               ?filename;
@@ -389,17 +330,93 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         |
       """.stripMargin
 
-    deltaClient.sparqlQuery[Json](s"/views/$fullId/graph/sparql", query, Coyote) { (json, response) =>
+    deltaClient.sparqlQuery[Json](s"/views/$projectRef/graph/sparql", query, Coyote) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val mapping  = replacements(
         Coyote,
-        "project"   -> fullId,
+        "project"   -> projectRef,
+        "self"      -> fileSelf(projectRef, id),
         "storageId" -> storageId
       )
       val expected = jsonContentOf("/kg/files/sparql.json", mapping: _*)
       json should equalIgnoreArrayOrder(expected)
     }
+  }
 
+  "Upload files with the .custom extension" should {
+    val fileContent = "file content"
+
+    def uploadCustomFile(id: String, contentType: ContentType): ((Json, HttpResponse) => Assertion) => IO[Assertion] =
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/$id?storage=nxv:$storageId",
+        fileContent,
+        contentType,
+        "file.custom",
+        Coyote
+      )
+
+    def assertContentType(id: String, expectedContentType: String) =
+      deltaClient.get[Json](s"/files/$projectRef/attachment:$id", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        root._mediaType.string.getOption(json) shouldEqual Some(expectedContentType)
+      }
+
+    "autodetect the correct content type when no header is passed" in {
+      val id = "file.custom"
+      for {
+        _ <- uploadCustomFile(id, ContentTypes.NoContentType) { expectCreated }
+        _ <- assertContentType(id, "application/custom")
+      } yield succeed
+    }
+
+    "assign the content-type header provided by the user" in {
+      val id = "file2.custom"
+      for {
+        _ <- uploadCustomFile(id, ContentTypes.`application/json`) { expectCreated }
+        _ <- assertContentType(id, "application/json")
+      } yield succeed
+    }
+  }
+
+  "Deprecating a storage" should {
+
+    "deprecate a storage" in {
+      deltaClient.delete[Json](s"/storages/$projectRef/nxv:$storageId?rev=1", Coyote) { expectOk }
+    }
+
+    "reject uploading a new file against the deprecated storage" in {
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/${genString()}?storage=nxv:$storageId",
+        "",
+        ContentTypes.NoContentType,
+        "attachment3",
+        Coyote
+      ) {
+        expectBadRequest
+      }
+    }
+
+    "fetch metadata" in {
+      val id       = s"${attachmentPrefix}attachment2"
+      val expected = jsonContentOf(
+        "/kg/files/attachment2-metadata.json",
+        replacements(
+          Coyote,
+          "id"          -> id,
+          "storageId"   -> storageId,
+          "self"        -> fileSelf(projectRef, id),
+          "storageType" -> storageType,
+          "projId"      -> s"$projectRef",
+          "project"     -> s"${config.deltaUri}/projects/$projectRef",
+          "storageType" -> storageType
+        ): _*
+      )
+
+      deltaClient.get[Json](s"/files/$projectRef/attachment:attachment2", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+      }
+    }
   }
 
   private def attachmentString(filename: String): String = {
@@ -407,19 +424,21 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     s"=?UTF-8?B?$encodedFilename?="
   }
 
-  private def assertFetchAttachment(
-      response: HttpResponse,
+  private def expectDownload(
       expectedFilename: String,
-      expectedContentType: ContentType
-  ): Assertion = {
-    assertFetchAttachment(response, expectedFilename)
-    contentType(response) shouldEqual expectedContentType
-  }
-
-  private def assertFetchAttachment(response: HttpResponse, expectedFilename: String): Assertion = {
-    response.status shouldEqual StatusCodes.OK
-    dispositionType(response) shouldEqual ContentDispositionTypes.attachment
-    attachmentName(response) shouldEqual attachmentString(expectedFilename)
-  }
-
+      expectedContentType: ContentType,
+      expectedContent: String,
+      compressed: Boolean = false
+  ) =
+    (content: ByteString, response: HttpResponse) => {
+      response.status shouldEqual StatusCodes.OK
+      dispositionType(response) shouldEqual ContentDispositionTypes.attachment
+      attachmentName(response) shouldEqual attachmentString(expectedFilename)
+      contentType(response) shouldEqual expectedContentType
+      if (compressed) {
+        httpEncodings(response) shouldEqual Seq(HttpEncodings.gzip)
+        decodeGzip(content) shouldEqual expectedContent
+      } else
+        content.utf8String shouldEqual expectedContent
+    }
 }

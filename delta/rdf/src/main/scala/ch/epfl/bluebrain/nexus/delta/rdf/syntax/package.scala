@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, InstantSyntax, TaskSyntax}
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax}
 
 package object syntax
     extends JsonSyntax
@@ -10,5 +10,5 @@ package object syntax
     with UriSyntax
     with PathSyntax
     with ClassTagSyntax
-    with TaskSyntax
+    with IOSyntax
     with InstantSyntax

@@ -80,17 +80,6 @@ synchronously or in the background. This behaviour is controlled using `indexing
 - `async` - (default value) the view will be indexed asynchronously
 - `sync` - the view will be indexed synchronously and the API call won't return until the indexing is finished
 
-## Passivation
-
-Views are now stopped if no event has been detected for a given period (by default 30 minutes).
-
-This value can be updated by updating the configuration keys:
-- `plugins.blazegraph.idle-timeout`
-- `plugins.composite-views.idle-timeout`
-- `plugins.elasticsearch.idle-timeout`
-
-Setting an infinite time (`Inf`) will disable this feature.
-
 ## List views
 
 There are three available endpoints to list views in different scopes.
@@ -107,6 +96,7 @@ GET /v1/views/{org_label}/{project_label}?from={from}
                                          &updatedBy={updatedBy}
                                          &q={search}
                                          &sort={sort}
+                                         &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -123,6 +113,7 @@ GET /v1/views/{org_label}?from={from}
                          &updatedBy={updatedBy}
                          &q={search}
                          &sort={sort}
+                         &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -139,9 +130,10 @@ GET /v1/views?from={from}
              &updatedBy={updatedBy}
              &q={search}
              &sort={sort}
+             &aggregations={aggregations}
 ```
 
-### Parameter description
+#### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
@@ -155,6 +147,8 @@ GET /v1/views?from={from}
   (containing) the provided string
 - `{sort}`: String - can be used to sort views based on a payloads' field. This parameter can appear multiple times to 
   enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](../resources-api.md#aggregations).
+
 
 
 **Example**
@@ -165,9 +159,52 @@ Request
 Response
 :   @@snip [view-list.json](../assets/views/list.json)
 
+## Indexing failures
+
+### Listing indexing failures
+
+This endpoint returns the indexing failures for the view `{view_id}`. The caller must have `view/write` permission on `{org_label}/{project_label}`.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/failures
+    ?from={from}
+    &size={size}
+    &instant={instant}
+```
+
+#### Parameter description
+
+- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
+- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{instant}`: Time Range - can be used to filter the results based on the moment they were risen
+
+**Example**
+
+Request
+:   @@snip [failures.sh](../assets/views/failures.sh)
+
+Response
+:   @@snip [failures.json](../assets/views/failures.json)
+
+### Fetch indexing failures as SSEs
+
+This endpoint fetches the available indexing failures. The `Last-Event-Id` is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have `view/write` permission on `{org_label}/{project_label}`.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/failures/sse
+```
+
+**Example**
+
+Request
+:   @@snip [failures.sh](../assets/views/sse-failures.sh)
+
+Response
+:   @@snip [failures.json](../assets/views/sse-failures.json)
+
 ## Server Sent Events
 
-From Delta 1.5, it is possible to fetch SSEs for all resolvers or just resolvers
+From Delta 1.5, it is possible to fetch SSEs for all views or just views
 in the scope of an organization or a project.
 
 ```
@@ -196,19 +233,3 @@ Request
 
 Response
 :   @@snip [views-sse.json](../assets/views/sse.json)
-
-### Fetch indexing failures
-
-This endpoint fetches the available indexing failures as SSEs. The `Last-Event-Id` is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have `view/write` permission on `{org_label}/{project_label}`.
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/failures
-```
-
-**Example**
-
-Request
-:   @@snip [failures.sh](../assets/views/elasticsearch/failures.sh)
-
-Response
-:   @@snip [failures.json](../assets/views/elasticsearch/failures.json)

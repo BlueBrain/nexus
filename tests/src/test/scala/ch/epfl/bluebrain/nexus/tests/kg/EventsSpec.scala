@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
-import org.scalatest.Inspectors
 
-class EventsSpec extends BaseSpec with Inspectors {
+class EventsSpec extends BaseIntegrationSpec {
 
   private val orgId                          = genId()
   private val orgId2                         = genId()
@@ -89,11 +88,18 @@ class EventsSpec extends BaseSpec with Inspectors {
 
     "add events to project" in {
       //Created event
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      )
+      val resourceId = "https://dev.nexus.test.com/simplified-resource/1"
+      val payload    = SimpleResource.sourcePayload(resourceId, 3)
+
+      val fileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment"]
+           |}""".stripMargin
+
+      val updatedFileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment", "2"]
+           |}""".stripMargin
 
       for {
         //ResourceCreated event
@@ -106,11 +112,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //ResourceUpdated event
         _ <- deltaClient.put[Json](
                s"/resources/$id/_/test-resource:1?rev=1",
-               jsonContentOf(
-                 "/kg/resources/simple-resource.json",
-                 "priority"   -> "5",
-                 "resourceId" -> "1"
-               ),
+               SimpleResource.sourcePayload(resourceId, 5),
                BugsBunny
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.OK
@@ -128,9 +130,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.OK
              }
         //FileCreated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               fileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny
@@ -138,9 +140,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.Created
              }
         //FileUpdated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json?rev=1",
-               contentOf("/kg/files/attachment2.json"),
+               updatedFileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny
@@ -242,43 +244,41 @@ class EventsSpec extends BaseSpec with Inspectors {
 
     "fetch global events" in {
       // TODO: find a way to get the current event sequence in postgres
-      Task
-        .when(initialEventId.isDefined) {
-          for {
-            uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
-            uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-            _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
-                        val projectEvents = seq.drop(14)
-                        projectEvents.size shouldEqual 7
-                        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                          "ResourceCreated",
-                          "ResourceCreated",
-                          "ResourceUpdated",
-                          "ResourceTagAdded",
-                          "ResourceDeprecated",
-                          "FileCreated",
-                          "FileUpdated"
-                        )
-                        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                        json shouldEqual jsonContentOf(
-                          "/kg/events/events-multi-project.json",
-                          replacements(
-                            BugsBunny,
-                            "resources"         -> s"${config.deltaUri}/resources/$id",
-                            "organizationUuid"  -> uuids._1,
-                            "projectUuid"       -> uuids._2,
-                            "organization2Uuid" -> uuids2._1,
-                            "project2Uuid"      -> uuids2._2,
-                            "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
-                            "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                            "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
-                            "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
-                          ): _*
-                        )
-                      }
-          } yield ()
-        }
-        .as(succeed)
+      IO.whenA(initialEventId.isDefined) {
+        for {
+          uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
+          uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
+          _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
+                      val projectEvents = seq.drop(14)
+                      projectEvents.size shouldEqual 7
+                      projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+                        "ResourceCreated",
+                        "ResourceCreated",
+                        "ResourceUpdated",
+                        "ResourceTagAdded",
+                        "ResourceDeprecated",
+                        "FileCreated",
+                        "FileUpdated"
+                      )
+                      val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+                      json shouldEqual jsonContentOf(
+                        "/kg/events/events-multi-project.json",
+                        replacements(
+                          BugsBunny,
+                          "resources"         -> s"${config.deltaUri}/resources/$id",
+                          "organizationUuid"  -> uuids._1,
+                          "projectUuid"       -> uuids._2,
+                          "organization2Uuid" -> uuids2._1,
+                          "project2Uuid"      -> uuids2._2,
+                          "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
+                          "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                          "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
+                          "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
+                        ): _*
+                      )
+                    }
+        } yield ()
+      }.as(succeed)
     }
   }
 }

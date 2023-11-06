@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
@@ -17,7 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
@@ -34,7 +37,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     with AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with BIOValues
     with IOFixedClock
     with ConfigFixtures
     with Eventually {
@@ -44,7 +47,6 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   implicit val sc: Scheduler         = Scheduler.global
   implicit val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  implicit private val aggCfg        = TermAggregationsConfig(100, 300)
 
   private val project      = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
   private val fetchContext = FetchContextDummy[GraphAnalyticsRejection](
@@ -52,15 +54,16 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     ProjectContextRejection
   )
 
-  private lazy val endpoint                  = docker.esHostConfig.endpoint
-  private lazy val client                    = new ElasticSearchClient(HttpClient(), endpoint, 2000)
-  private var graphAnalytics: GraphAnalytics = null
+  private lazy val endpoint                       = docker.esHostConfig.endpoint
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
+  private val prefix                              = "test"
+  private lazy val graphAnalytics: GraphAnalytics =
+    GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))
 
   "GraphAnalytics" should {
 
     "initialize" in {
-      graphAnalytics = GraphAnalytics(client, fetchContext).accepted
-      val idx    = GraphAnalytics.idx(project.ref)
+      val idx    = GraphAnalytics.index(prefix, project.ref)
       client.createIndex(idx, Some(jsonObjectContentOf("elasticsearch/mappings.json")), None).accepted
       val robert = iri"http://localhost/Robert"
       val sam    = iri"http://localhost/Sam"
@@ -78,7 +81,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch relationships" in eventually {
-      graphAnalytics.relationships(project.ref).accepted shouldEqual
+      graphAnalytics.relationships(project.ref).toBIO[GraphAnalyticsRejection].accepted shouldEqual
         AnalyticsGraph(
           List(Node(schema.Person, "Person", 3)),
           List(Edge(schema.Person, schema.Person, 3, Vector(EdgePath(schema + "brother", "brother"))))
@@ -86,7 +89,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch properties" in {
-      graphAnalytics.properties(project.ref, schema.Person).accepted shouldEqual
+      graphAnalytics.properties(project.ref, schema.Person).toBIO[GraphAnalyticsRejection].accepted shouldEqual
         PropertiesStatistics(
           Metadata(schema.Person, "Person", 3),
           List(

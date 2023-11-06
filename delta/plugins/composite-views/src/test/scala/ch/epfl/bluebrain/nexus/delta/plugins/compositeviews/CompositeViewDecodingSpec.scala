@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -18,27 +17,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
-import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-class CompositeViewDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with TestHelpers
-    with CirceLiteral
-    with Fixtures
-    with EitherValuable
-    with OptionValues {
+class CompositeViewDecodingSpec extends BioSpec with CirceLiteral with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -53,8 +40,7 @@ class CompositeViewDecodingSpec
   val uuid                          = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  val resolverContext: ResolverContextResolution = ResolverContextResolution(rcr)
   private val decoder                            = CompositeViewFieldsJsonLdSourceDecoder(uuidF, resolverContext, 1.minute)
 
   val query1 =
@@ -100,7 +86,7 @@ class CompositeViewDecodingSpec
       }""".asObject.value)
 
   val compositeViewValue      = CompositeViewFields(
-    NonEmptySet.of(
+    NonEmptyList.of(
       ProjectSourceFields(
         Some(iri"http://music.com/sources/local")
       ),
@@ -112,11 +98,10 @@ class CompositeViewDecodingSpec
       RemoteProjectSourceFields(
         Some(iri"http://music.com/sources/songs"),
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com"),
-        Some(Secret("mytoken"))
+        Uri("https://example2.nexus.com")
       )
     ),
-    NonEmptySet.of(
+    NonEmptyList.of(
       ElasticSearchProjectionFields(
         Some(iri"http://music.com/bands"),
         query1,
@@ -134,7 +119,7 @@ class CompositeViewDecodingSpec
     Some(Interval(1.minutes))
   )
   val compositeViewValueNoIds = CompositeViewFields(
-    NonEmptySet.of(
+    NonEmptyList.of(
       ProjectSourceFields(
         None
       ),
@@ -146,11 +131,10 @@ class CompositeViewDecodingSpec
       RemoteProjectSourceFields(
         None,
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com"),
-        Some(Secret("mytoken"))
+        Uri("https://example2.nexus.com")
       )
     ),
-    NonEmptySet.of(
+    NonEmptyList.of(
       ElasticSearchProjectionFields(
         None,
         query1,

@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.d
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -95,6 +96,12 @@ object BlazegraphViewValue {
         resourceTag == that.resourceTag &&
         includeMetadata == that.includeMetadata &&
         includeDeprecated == that.includeDeprecated
+
+    /**
+      * Creates a [[SelectFilter]] for this view
+      */
+    def selectFilter: SelectFilter =
+      SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
   }
 
   /**

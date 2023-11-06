@@ -2,26 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveState, ArchiveValue, CreateArchive}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.nio.file.Paths
 import java.time.Instant
 
-class ArchivesSTMSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with IOValues
-    with IOFixedClock
-    with EitherValuable
-    with TestHelpers {
+class ArchivesSTMSpec extends CatsEffectSpec {
 
   "An Archive STM" when {
     val id      = iri"http://localhost${genString()}"

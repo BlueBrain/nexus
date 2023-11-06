@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
+import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import cats.effect.IO
+import cats.implicits.catsSyntaxOptionId
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -15,32 +17,43 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, Printer}
-import monix.bio.{IO, UIO}
+import org.scalatest.Assertion
 
 import java.util.UUID
 
-class ResourcesRoutesSpec extends BaseRouteSpec {
+class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
-  private val uuid = UUID.randomUUID()
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  implicit private val caller: Caller =
+  private val reader = alice
+  private val writer = bob
+
+  implicit private val callerAlice: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerBob: Caller   =
+    Caller(bob, Set(bob, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
+  private val asReader = addCredentials(OAuth2BearerToken("alice"))
+  private val asWriter = addCredentials(OAuth2BearerToken("bob"))
 
   private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
@@ -58,435 +71,784 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val schema3      = SchemaGen.schema(nxv + "otherSchema", project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val tag          = UserTag.unsafe("mytag")
 
-  private val myId                = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2               = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3               = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4               = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myIdEncoded         = UrlUtils.encode(myId.toString)
-  private val myId2Encoded        = UrlUtils.encode(myId2.toString)
-  private val payload             = jsonContentOf("resources/resource.json", "id" -> myId)
-  private val payloadWithMetadata = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
+  private val myId                            = nxv + "myid" // Resource created against no schema with id present on the payload
+  private def encodeWithBase(id: String)      = UrlUtils.encode((nxv + id).toString)
+  private val payload                         = jsonContentOf("resources/resource.json", "id" -> myId)
+  private def simplePayload(id: String)       = jsonContentOf("resources/resource.json", "id" -> (nxv + id))
+  private val payloadWithoutId                = payload.removeKeys(keywords.id)
+  private val payloadWithBlankId              = jsonContentOf("resources/resource.json", "id" -> "")
+  private val payloadWithUnderscoreFields     =
+    jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId)
+  private def payloadWithMetadata(id: String) = jsonContentOf(
+    "resources/resource-with-metadata.json",
+    "id"   -> (nxv + id),
+    "self" -> ResourceUris.resource(projectRef, projectRef, nxv + id).accessUri
+  )
 
   private val aclCheck = AclSimpleCheck().accepted
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-    case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
-    case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
-    case _                                 => UIO.none
+    case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
+    case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
+    case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
+    case _                                 => IO.none
   }
-  private val resourceResolution: ResourceResolution[Schema]                  =
+
+  private val validator: ValidateResource                          = ValidateResource(
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-  private val fetchContext                                                    = FetchContextDummy(List(project.value), ProjectContextRejection)
-  private val resolverContextResolution: ResolverContextResolution            = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
-  private val config                                                          = ResourcesConfig(eventLogConfig)
+  private val fetchContext                                         = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
-  private lazy val routes =
-    Route.seal(
-      ResourcesRoutes(
-        IdentitiesDummy(caller),
-        aclCheck,
-        ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
-        DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
-        IndexingAction.noop
-      )
+  private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
+    val resources = ResourcesImpl(
+      validator,
+      fetchContext,
+      resolverContextResolution,
+      ResourcesConfig(eventLogConfig, decodingOption),
+      xas
     )
+    (
+      Route.seal(
+        ResourcesRoutes(
+          IdentitiesDummy(callerAlice, callerBob),
+          aclCheck,
+          resources,
+          DeltaSchemeDirectives(
+            fetchContext,
+            ioFromMap(uuid -> projectRef.organization),
+            ioFromMap(uuid -> projectRef)
+          ),
+          IndexingAction.noop
+        )
+      ),
+      resources
+    )
+  }
 
-  private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
+  private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)._1
 
-  private val payloadUpdatedWithMetdata = payloadWithMetadata deepMerge json"""{"name": "Alice", "address": null}"""
+  private val payloadUpdated             = payload deepMerge json"""{"name": "Alice", "address": null}"""
+  private def payloadUpdated(id: String) = simplePayload(id) deepMerge json"""{"name": "Alice", "address": null}"""
+
+  private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
+
+  private val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    aclCheck.append(AclAddress.Root, reader -> Set(resources.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(resources.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(resources.write)).accepted
+  }
 
   "A resource route" should {
 
     "fail to create a resource without resources/write permission" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Post("/v1/resources/myorg/myproject", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      Post("/v1/resources/myorg/myproject", payload.toEntity) ~> asReader ~> routes ~> check {
+        response.shouldBeForbidden
       }
     }
 
     "create a resource" in {
-      aclCheck
-        .append(AclAddress.Root, Anonymous -> Set(resources.write), caller.subject -> Set(resources.write))
-        .accepted
-
       val endpoints = List(
-        ("/v1/resources/myorg/myproject", myId, schemas.resources),
-        ("/v1/resources/myorg/myproject/myschema", myId2, schema1.id)
+        ("/v1/resources/myorg/myproject", schemas.resources),
+        ("/v1/resources/myorg/myproject/myschema", schema1.id)
       )
-      forAll(endpoints) { case (endpoint, id, schema) =>
-        val payload = jsonContentOf("resources/resource.json", "id" -> id)
-        Post(endpoint, payload.toEntity) ~> routes ~> check {
+      forAll(endpoints) { case (endpoint, schema) =>
+        val id = genString()
+        Post(endpoint, simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          response.asJson shouldEqual resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString)
+          response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
+        }
+      }
+    }
+
+    "create a tagged resource" in {
+      val endpoints           = List(
+        ("/v1/resources/myorg/myproject?tag=mytag", schemas.resources),
+        ("/v1/resources/myorg/myproject/myschema?tag=mytag", schema1.id)
+      )
+      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
+      forAll(endpoints) { case (endpoint, schema) =>
+        val id = genString()
+        Post(endpoint, simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
+          lookupResourceByTag(resources, nxv + id) should contain(tag)
         }
       }
     }
 
     "create a resource with an authenticated user and provided id" in {
       val endpoints = List(
-        ("/v1/resources/myorg/myproject/_/myid3", myId3, schemas.resources),
-        ("/v1/resources/myorg/myproject/myschema/myid4", myId4, schema1.id)
+        ((id: String) => s"/v1/resources/myorg/myproject/_/$id", schemas.resources),
+        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id", schema1.id)
       )
-      forAll(endpoints) { case (endpoint, id, schema) =>
-        val payload = jsonContentOf("resources/resource.json", "id" -> id)
-        Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
+      forAll(endpoints) { case (endpoint, schema) =>
+        val id = genString()
+        Put(endpoint(id), simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          response.asJson shouldEqual
-            resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
+          response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
         }
-
       }
     }
 
+    "create a tagged resource with an authenticated user and provided id" in {
+      val endpoints           = List(
+        ((id: String) => s"/v1/resources/myorg/myproject/_/$id?tag=mytag", schemas.resources),
+        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag", schema1.id)
+      )
+      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
+      forAll(endpoints) { case (endpoint, schema) =>
+        val id = genString()
+        Put(endpoint(id), simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
+          lookupResourceByTag(resources, nxv + id) should contain(tag)
+        }
+      }
+    }
+
+    def lookupResourceByTag(resources: Resources, id: Iri): List[UserTag] =
+      resources.fetch(IdSegmentRef(id, tag), projectRef, None).accepted.value.tags.value.keys.toList
+
     "reject the creation of a resource which already exists" in {
-      Put("/v1/resources/myorg/myproject/_/myid", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual
-          jsonContentOf("/resources/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id", simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
+          println(response.asJson)
+          status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual
+            jsonContentOf("/resources/errors/already-exists.json", "id" -> (nxv + id), "project" -> "myorg/myproject")
+        }
       }
     }
 
     "fail to create a resource that does not validate against a schema" in {
+      val payloadFailingSchemaConstraints = payloadWithoutId.replaceKeyWithValue("number", "wrong")
       Put(
         "/v1/resources/myorg/myproject/nxv:myschema/wrong",
-        payload.removeKeys(keywords.id).replaceKeyWithValue("number", "wrong").toEntity
-      ) ~> routes ~> check {
+        payloadFailingSchemaConstraints.toEntity
+      ) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
       }
     }
 
+    "fail to create a resource against a schema that does not exist" in {
+      Put(
+        "/v1/resources/myorg/myproject/pretendschema/someid",
+        payloadWithoutId.toEntity
+      ) ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
+      }
+    }
+
+    "fail if the id is blank" in {
+      Post("/v1/resources/myorg/myproject/_/", payloadWithBlankId.toEntity) ~> asWriter ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/blank-id.json"
+        )
+      }
+    }
+
+    "fail if underscore fields are present" in {
+      Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> asWriter ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/underscore-fields.json"
+        )
+      }
+    }
+
+    "succeed if underscore fields are present but the decoding is set to lenient" in {
+      val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)._1
+
+      Post(
+        "/v1/resources/myorg/myproject/_/",
+        payloadWithUnderscoreFields.toEntity
+      ) ~> asWriter ~> lenientDecodingRoutes ~> check {
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
     "fail to update a resource without resources/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id?rev=1", payload.toEntity) ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
       }
     }
 
     "update a resource" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      val encodedSchema = UrlUtils.encode(schemas.resources.toString)
-      val endpoints     = List(
-        "/v1/resources/myorg/myproject/_/myid"               -> 1,
-        s"/v1/resources/myorg/myproject/_/$myIdEncoded"      -> 2,
-        "/v1/resources/myorg/myproject/resource/myid"        -> 3,
-        s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4
-      )
-      forAll(endpoints) { case (endpoint, rev) =>
-        Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual
-            resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
+      val schema = "myschema"
+      givenAResourceWithSchema(schema) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/_/$id"                         -> 1,
+          s"/v1/resources/myorg/myproject/_/${encodeWithBase(id)}"       -> 2,
+          s"/v1/resources/myorg/myproject/$schema/$id"                   -> 3,
+          s"/v1/resources/myorg/myproject/${encodeWithBase(schema)}/$id" -> 4
+        )
+        forAll(endpoints) { case (endpoint, rev) =>
+          Put(s"$endpoint?rev=$rev", payloadUpdated(id).toEntity(Printer.noSpaces)) ~> asWriter ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual standardWriterMetadata(id, rev = rev + 1, schema1.id)
+          }
         }
       }
     }
 
     "reject the update of a non-existent resource" in {
       val payload = payloadUpdated.removeKeys(keywords.id)
-      Put("/v1/resources/myorg/myproject/_/myid10?rev=1", payload.toEntity) ~> routes ~> check {
+      Put("/v1/resources/myorg/myproject/_/doesNotExist?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
       }
     }
 
     "reject the update of a resource at a non-existent revision" in {
-      Put("/v1/resources/myorg/myproject/_/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual
-          jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 5)
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id?rev=10", payloadUpdated(id).toEntity) ~> asWriter ~> routes ~> check {
+          println(response.asJson)
+          status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual
+            jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
+        }
       }
     }
 
     "fail to refresh a resource without resources/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Put("/v1/resources/myorg/myproject/_/myid/refresh", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id/refresh", payload.toEntity) ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
       }
     }
 
     "refresh a resource" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      val encodedSchema = UrlUtils.encode(schemas.resources.toString)
-      val endpoints     = List(
-        "/v1/resources/myorg/myproject/_/myid/refresh"               -> 5,
-        s"/v1/resources/myorg/myproject/_/$myIdEncoded/refresh"      -> 6,
-        "/v1/resources/myorg/myproject/resource/myid/refresh"        -> 7,
-        s"/v1/resources/myorg/myproject/$encodedSchema/myid/refresh" -> 8
-      )
-      forAll(endpoints) { case (endpoint, rev) =>
-        Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual
-            resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
+      val schema = "myschema"
+      givenAResourceWithSchema(schema) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/_/$id/refresh"                         -> 1,
+          s"/v1/resources/myorg/myproject/_/${encodeWithBase(id)}/refresh"       -> 2,
+          s"/v1/resources/myorg/myproject/$schema/$id/refresh"                   -> 3,
+          s"/v1/resources/myorg/myproject/${encodeWithBase(schema)}/$id/refresh" -> 4
+        )
+        forAll(endpoints) { case (endpoint, rev) =>
+          Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> asWriter ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual standardWriterMetadata(id, rev = rev + 1, schema = schema1.id)
+          }
         }
       }
     }
 
     "reject the refresh of a non-existent resource" in {
       val payload = payloadUpdated.removeKeys(keywords.id)
-      Put("/v1/resources/myorg/myproject/_/myid10/refresh", payload.toEntity) ~> routes ~> check {
+      Put("/v1/resources/myorg/myproject/_/doesNotExist/refresh", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
+      }
+    }
+
+    "fail to update a schema without resources/write permission" in {
+      Put(s"/v1/resources/$projectRef/_/someId/update-schema") ~> asReader ~> routes ~> check {
+        response.shouldBeForbidden
+      }
+    }
+
+    "fail to update a schema when providing a non-existing schema" in {
+      givenAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/wrongSchema/$id/update-schema") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotFound
+          response.asJson.hcursor.get[String]("@type").toOption should contain("InvalidSchemaRejection")
+        }
+      }
+    }
+
+    "fail to update schema when providing _ as schema" in {
+      givenAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/_/$id/update-schema") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson.hcursor.get[String]("@type").toOption should contain("NoSchemaProvided")
+        }
+      }
+    }
+
+    "succeed to update the schema" in {
+      givenAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/otherSchema/$id/update-schema") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema3.id.toString)
+        }
       }
     }
 
     "fail to deprecate a resource without resources/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      givenAResource { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id?rev=1") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
       }
     }
 
     "deprecate a resource" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=9") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 10)
+      givenAResource { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 2, deprecated = true)
+        }
+      }
+    }
+
+    "fail to undeprecate a resource without resources/write permission" in {
+      givenADeprecatedResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "fail to undeprecate an non-deprecated resource" in {
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf(
+            "/resources/errors/resource-not-deprecated.json",
+            "id" -> (nxv + id)
+          )
+        }
+      }
+    }
+
+    "undeprecate a resource" in {
+      givenADeprecatedResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 3, deprecated = false)
+        }
       }
     }
 
     "reject the deprecation of a resource without rev" in {
-      Delete("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+      givenAResource { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        }
       }
     }
 
     "reject the deprecation of a already deprecated resource" in {
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=10") ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> myId)
+      givenADeprecatedResource { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id?rev=2") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> (nxv + id))
+        }
       }
     }
 
     "tag a resource" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 2)
+      val tag            = "mytag"
+      val taggingPayload = json"""{"tag": "$tag", "rev": 1}"""
+      givenAResource { id =>
+        Post(
+          s"/v1/resources/myorg/myproject/_/$id/tags?rev=1",
+          taggingPayload.toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 2)
+        }
       }
     }
 
-    "fail fetching a resource without resources/read permission" in {
-      val endpoints = List(
-        "/v1/resources/myorg/myproject/_/myid2",
-        s"/v1/resources/myorg/myproject/myschema/$myId2Encoded"
-      )
-      forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1", "?tag=mytag")) { suffix =>
-          Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+    "fail fetching a resource information without resources/read permission" in {
+      val mySchema = "myschema"
+      val myTag    = "myTag"
+      givenAResourceWithSchemaAndTag(mySchema.some, myTag.some) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/_/$id",
+          s"/v1/resources/myorg/myproject/_/$id?rev=1",
+          s"/v1/resources/myorg/myproject/_/$id?tag=$myTag",
+          s"/v1/resources/myorg/myproject/$mySchema/${encodeWithBase(id)}",
+          s"/v1/resources/myorg/myproject/_/$id/source",
+          s"/v1/resources/myorg/myproject/_/$id/source?annotate=true",
+          s"/v1/resources/myorg/myproject/_/$id/remote-contexts",
+          s"/v1/resources/myorg/myproject/_/$id/tags"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> routes ~> check {
+            response.shouldBeForbidden
           }
         }
       }
     }
 
-    "fail fetching a resource original payload without resources/read permission" in {
-      forAll(List("", "?annotate=true")) { suffix =>
-        Get(s"/v1/resources/myorg/myproject/_/myid2/source$suffix") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+    "fetch a resource" in {
+      givenAResource { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val meta = standardWriterMetadata(id, tpe = "Custom")
+          response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+          response.headers should contain(varyHeader)
         }
       }
     }
 
-    val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
-
-    "fetch a resource" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
-      Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 10)
-        response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
-      }
-    }
-
     "fetch a resource by rev and tag" in {
-      val endpoints = List(
-        "/v1/resources/myorg/myproject/myschema/myid2?rev=1",
-        "/v1/resources/myorg/myproject/_/myid2?rev=1",
-        s"/v1/resources/$uuid/$uuid/_/myid2?rev=1",
-        "/v1/resources/myorg/myproject/myschema/myid2?tag=mytag",
-        s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
-      )
-      val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = resourceMetadata(projectRef, myId2, schema1.id, "Custom", rev = 1)
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual payload.deepMerge(meta).deepMerge(resourceCtx)
+      val mySchema = "myschema"
+      val myTag    = "myTag"
+      givenAResourceWithSchemaAndTag(mySchema.some, myTag.some) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/$mySchema/$id?rev=1",
+          s"/v1/resources/myorg/myproject/_/$id?rev=1",
+          s"/v1/resources/$uuid/$uuid/_/$id?rev=1",
+          s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag",
+          s"/v1/resources/$uuid/$uuid/_/$id?tag=$myTag"
+        )
+        val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "Custom")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+            response.headers should contain(varyHeader)
+          }
         }
       }
     }
 
     "fetch a resource original payload" in {
-      Get("/v1/resources/myorg/myproject/_/myid/source") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual payloadUpdated
+      givenAResource { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id/source") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual simplePayload(id)
+        }
       }
     }
 
-    "return not found if fetching a resource original payload that does not exist" in {
-      Get("/v1/resources/myorg/myproject/_/wrongid/source") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/not-found.json",
-          "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
-          "proj" -> "myorg/myproject"
-        )
+    "fetch a resource where the source has a null value" in {
+      val payloadWithNullField = (id: String) => simplePayload(id) deepMerge json"""{ "empty": null }"""
+      givenAResourceWithPayload(payloadWithNullField(_).toEntity(Printer.noSpaces)) { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
+          response.asJson shouldEqual
+            payloadWithNullField(id).dropNullValues
+              .deepMerge(standardWriterMetadata(id, tpe = "Custom"))
+              .deepMerge(resourceCtx)
+        }
+      }
+    }
+
+    "fetch a resource original payload where the source has a null value" in {
+      val payloadWithNullField = (id: String) => json"""{ "@id": "$id", "empty": null }"""
+      givenAResourceWithPayload(payloadWithNullField(_).toEntity(Printer.noSpaces)) { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id/source") ~> asReader ~> routes ~> check {
+          response.asJson shouldEqual payloadWithNullField(id)
+        }
+      }
+    }
+
+    "fetch a resource remote contexts" in {
+      val id             = genString()
+      val payloadWithCtx = simplePayload(id).deepMerge(resourceCtx)
+      Post("/v1/resources/myorg/myproject", payloadWithCtx.toEntity) ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val tag        = "mytag"
+      val tagPayload = json"""{"tag": "$tag", "rev": 1}"""
+      Post(s"/v1/resources/myorg/myproject/_/$id/tags?rev=1", tagPayload.toEntity) ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val endpoints = List(
+        s"/v1/resources/myorg/myproject/_/$id/remote-contexts",
+        s"/v1/resources/myorg/myproject/_/$id/remote-contexts?rev=1",
+        s"/v1/resources/myorg/myproject/_/$id/remote-contexts?tag=$tag"
+      )
+
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            json"""{
+                     "@context" : "https://bluebrain.github.io/nexus/contexts/remote-contexts.json",
+                     "remoteContexts" : [
+                       { "@type": "StaticContextRef", "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json" }
+                     ]
+                  }"""
+        }
+      }
+
+    }
+
+    "return not found when a resource does not exist" in {
+      val endpoints = List(
+        "/v1/resources/myorg/myproject/_/wrongid",
+        "/v1/resources/myorg/myproject/_/wrongid?rev=1",
+        "/v1/resources/myorg/myproject/_/wrongid?tag=mytag",
+        "/v1/resources/myorg/myproject/_/wrongid/source",
+        "/v1/resources/myorg/myproject/_/wrongid/source?annotate=true",
+        "/v1/resources/myorg/myproject/_/wrongid/remote-contexts",
+        "/v1/resources/myorg/myproject/_/wrongid/tags"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf(
+            "/resources/errors/not-found.json",
+            "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
+            "proj" -> "myorg/myproject"
+          )
+          response.headers should not contain varyHeader
+        }
       }
     }
 
     "fetch a resource original payload with metadata" in {
-      Get("/v1/resources/myorg/myproject/_/myid/source?annotate=true") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual payloadUpdatedWithMetdata
+      givenAResource { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id/source?annotate=true") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual payloadWithMetadata(id)
+          response.headers should contain(varyHeader)
+        }
       }
     }
 
     "fetch a resource original payload with metadata using tags and revisions" in {
-      val endpoints = List(
-        "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1&annotate=true",
-        "/v1/resources/myorg/myproject/_/myid2/source?rev=1&annotate=true",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source?rev=1&annotate=true",
-        "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag&annotate=true",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source?tag=mytag&annotate=true"
-      )
+      val mySchema = "myschema"
+      val myTag    = "myTag"
+      givenAResourceWithSchemaAndTag(mySchema.some, myTag.some) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?rev=1&annotate=true",
+          s"/v1/resources/myorg/myproject/_/$id/source?rev=1&annotate=true",
+          s"/v1/resources/$uuid/$uuid/_/$id/source?rev=1&annotate=true",
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag&annotate=true",
+          s"/v1/resources/$uuid/$uuid/_/$id/source?tag=$myTag&annotate=true"
+        )
+        val meta      = standardWriterMetadata(id, schema = schema1.id)
 
-      val payload = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta    =
-        resourceMetadata(projectRef, myId2, schema1.id, "https://bluebrain.github.io/nexus/vocabulary/Custom", rev = 1)
-
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual payload.deepMerge(meta)
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual simplePayload(id).deepMerge(meta)
+            response.headers should contain(varyHeader)
+          }
         }
       }
     }
 
     "fetch a resource original payload by rev and tag" in {
-      val endpoints = List(
-        "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1",
-        "/v1/resources/myorg/myproject/_/myid2/source?rev=1",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source?rev=1",
-        "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source?tag=mytag"
-      )
-      val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual payload
+      val mySchema = "myschema"
+      val myTag    = "mytag"
+      givenAResourceWithSchemaAndTag(mySchema.some, myTag.some) { id =>
+        val endpoints = List(
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?rev=1",
+          s"/v1/resources/myorg/myproject/_/$id/source?rev=1",
+          s"/v1/resources/$uuid/$uuid/_/$id/source?rev=1",
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag",
+          s"/v1/resources/$uuid/$uuid/_/$id/source?tag=$myTag"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual simplePayload(id)
+            response.headers should contain(varyHeader)
+          }
         }
       }
     }
 
     "fetch the resource tags" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
-      }
-      Get("/v1/resources/myorg/myproject/myschema/myid2/tags", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
+      val tag    = "mytag"
+      val schema = "myschema"
+      givenAResourceWithSchema(schema) { id =>
+        val taggingPayload = json"""{"tag": "$tag", "rev": 1}"""
+        Post(
+          s"/v1/resources/myorg/myproject/_/$id/tags?rev=1",
+          taggingPayload.toEntity
+        ) ~> asWriter ~> routes ~> check {
+          Get(s"/v1/resources/myorg/myproject/_/$id/tags?rev=1") ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+          }
+          Get(s"/v1/resources/myorg/myproject/$schema/$id/tags") ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "$tag"}]}""".addContext(contexts.tags)
+          }
+        }
       }
     }
 
     "return not found if tag not found" in {
-      Get("/v1/resources/myorg/myproject/myschema/myid2?tag=myother") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+      givenAResourceWithTag("myTag") { id =>
+        Get(s"/v1/resources/myorg/myproject/myschema/$id?tag=myother") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+        }
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/resources/myorg/myproject/myschema/myid2?tag=mytag&rev=1") ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+      givenAResourceWithTag("myTag") { id =>
+        Get(s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+        }
       }
     }
 
     "tag a deprecated resource" in {
-      val payload = json"""{"tag": "mytag", "rev": 10}"""
-      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=10", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual resourceMetadata(
-          projectRef,
-          myId,
-          schemas.resources,
-          (nxv + "Custom").toString,
-          rev = 11,
-          deprecated = true
-        )
+      givenADeprecatedResource { id =>
+        val revToTag = 2
+        val payload  = json"""{"tag": "mytag", "rev": $revToTag}"""
+        Post(
+          s"/v1/resources/myorg/myproject/_/$id/tags?rev=$revToTag",
+          payload.toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 3, deprecated = true)
+        }
       }
     }
 
     "delete a tag on resource" in {
-      Delete("/v1/resources/myorg/myproject/_/myid2/tags/mytag?rev=2") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3)
+      val myTag = "myTag"
+      givenAResourceWithTag(myTag) { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id/tags/$myTag?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 2)
+        }
       }
     }
 
     "not return the deleted tag" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/tags") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      val myTag = "myTag"
+      givenAResourceWithTag(myTag) { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id/tags/$myTag?rev=1") ~> asWriter ~> routes ~> check {
+          Get(s"/v1/resources/myorg/myproject/_/$id/tags") ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+          }
+        }
       }
     }
 
     "fail to fetch resource by the deleted tag" in {
-      Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+      val myTag = "myTag"
+      givenAResourceWithTag(myTag) { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id/tags/$myTag?rev=1") ~> asWriter ~> routes ~> check {
+          Get(s"/v1/resources/myorg/myproject/_/$id?tag=$myTag") ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.NotFound
+            response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> myTag)
+          }
+        }
       }
     }
 
     "redirect to fusion with a given tag if the Accept header is set to text/html" in {
-      Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> Accept(`text/html`) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual Uri(
-          "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid2"
-        ).withQuery(Uri.Query("tag" -> "mytag"))
+      val myTag = "myTag"
+      givenAResourceWithTag(myTag) { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id?tag=$myTag") ~> Accept(`text/html`) ~> asReader ~> routes ~> check {
+          response.status shouldEqual StatusCodes.SeeOther
+          response.header[Location].value.uri shouldEqual Uri(
+            s"https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/$id"
+          ).withQuery(Uri.Query("tag" -> myTag))
+        }
       }
     }
   }
 
-  def resourceMetadata(
-      ref: ProjectRef,
+  private def resourceMetadata(
+      project: ProjectRef,
       id: Iri,
       schema: Iri,
       tpe: String,
-      rev: Int = 1,
-      deprecated: Boolean = false,
-      createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      rev: Int,
+      deprecated: Boolean,
+      createdBy: Subject,
+      updatedBy: Subject
   ): Json =
     jsonContentOf(
       "resources/resource-route-metadata-response.json",
-      "project"     -> ref,
-      "id"          -> id,
-      "rev"         -> rev,
-      "type"        -> tpe,
-      "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.asIri,
-      "updatedBy"   -> updatedBy.asIri,
-      "schema"      -> schema,
-      "label"       -> lastSegment(id),
-      "schemaLabel" -> (if (schema == schemas.resources) "_" else lastSegment(schema))
+      "project"    -> project,
+      "id"         -> id,
+      "rev"        -> rev,
+      "type"       -> tpe,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "schema"     -> schema,
+      "self"       -> ResourceUris.resource(project, project, id).accessUri
     )
+
+  // Metadata for a resource that has been created and updated by the writer user
+  private def standardWriterMetadata(
+      id: String,
+      rev: Int = 1,
+      schema: Iri = schemas.resources,
+      deprecated: Boolean = false,
+      tpe: String = (nxv + "Custom").toString
+  ) =
+    resourceMetadata(
+      projectRef,
+      nxv + id,
+      schema,
+      tpe,
+      rev,
+      deprecated,
+      writer,
+      writer
+    )
+
+  private def givenAResourceWithSchemaAndTag(
+      schema: Option[String],
+      tag: Option[String],
+      payload: String => RequestEntity = simplePayload(_).toEntity
+  )(
+      assertion: String => Assertion
+  ): Assertion = {
+    val id            = genString()
+    val schemaSegment = schema.getOrElse("_")
+    val tagSegment    = tag.map(t => s"?tag=$t").getOrElse("")
+    Post(s"/v1/resources/$projectRef/$schemaSegment$tagSegment", payload(id)) ~> asWriter ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+    assertion(id)
+  }
+
+  /**
+    * Provides a resource with a schema to assert on. The latest revision is 1. Note that the schema needs to be
+    * available in the context where this is used.
+    */
+  private def givenAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion =
+    givenAResourceWithSchemaAndTag(Some(schemaName), None, simplePayload(_).toEntity)(assertion)
+
+  /** Provides a simple resource to assert on. The latest revision is 1. */
+  private def givenAResource(assertion: String => Assertion): Assertion =
+    givenAResourceWithSchemaAndTag(None, None, simplePayload(_).toEntity)(assertion)
+
+  /** Provides a resource with a specific payload to assert on. The latest revision is 1. */
+  private def givenAResourceWithPayload(payload: String => RequestEntity)(assertion: String => Assertion): Assertion =
+    givenAResourceWithSchemaAndTag(None, None, payload)(assertion)
+
+  /** Provides a resource with a tag on revision 1. The latest revision is 1 */
+  private def givenAResourceWithTag(tag: String)(assertion: String => Assertion): Assertion =
+    givenAResourceWithSchemaAndTag(None, Some(tag), simplePayload(_).toEntity)(assertion)
+
+  /** Provides a deprecate resource to assert on. The latest revision is 2. */
+  private def givenADeprecatedResource(assertion: String => Assertion): Assertion =
+    givenAResource { id =>
+      Delete(s"/v1/resources/$projectRef/_/$id?rev=1") ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      assertion(id)
+    }
 
 }

@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.data.NonEmptySet
+import cats.data.{NonEmptyList, NonEmptyMap}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -13,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -34,7 +32,7 @@ import scala.concurrent.duration.FiniteDuration
   * Representation of a composite view.
   *
   * @param id
-  *   the id of the project
+  *   the id of the view
   * @param project
   *   the project to which this view belongs
   * @param sources
@@ -55,8 +53,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeView(
     id: Iri,
     project: ProjectRef,
-    sources: NonEmptySet[CompositeViewSource],
-    projections: NonEmptySet[CompositeViewProjection],
+    sources: NonEmptyMap[Iri, CompositeViewSource],
+    projections: NonEmptyMap[Iri, CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
     tags: Tags,
@@ -73,6 +71,28 @@ final case class CompositeView(
 
 object CompositeView {
 
+  def apply(
+      id: Iri,
+      project: ProjectRef,
+      sources: NonEmptyList[CompositeViewSource],
+      projections: NonEmptyList[CompositeViewProjection],
+      rebuildStrategy: Option[RebuildStrategy],
+      uuid: UUID,
+      tags: Tags,
+      source: Json,
+      updatedAt: Instant
+  ): CompositeView = CompositeView(
+    id,
+    project,
+    sources.map { s => s.id -> s }.toNem,
+    projections.map { p => p.id -> p }.toNem,
+    rebuildStrategy,
+    uuid,
+    tags,
+    source,
+    updatedAt
+  )
+
   /**
     * The rebuild strategy for a [[CompositeView]].
     */
@@ -81,11 +101,7 @@ object CompositeView {
   /**
     * Rebuild strategy defining rebuilding at a certain interval.
     */
-  final case class Interval private[model] (value: FiniteDuration) extends RebuildStrategy
-  object Interval {
-    def apply(value: FiniteDuration, config: CompositeViewsConfig): Option[Interval] =
-      Option.when(value gteq config.minIntervalRebuild)(new Interval(value))
-  }
+  final case class Interval(value: FiniteDuration) extends RebuildStrategy
 
   final case class Metadata(uuid: UUID)
 
@@ -101,6 +117,7 @@ object CompositeView {
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+    import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)
@@ -113,6 +130,7 @@ object CompositeView {
         .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)
+        .removeAllKeys("indexingRev")
         .addContext(v.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }
@@ -149,11 +167,11 @@ object CompositeView {
 
   type Shift = ResourceShift[CompositeViewState, CompositeView, Metadata]
 
-  def shift(views: CompositeViews)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+  def shift(views: CompositeViews)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[CompositeViewState, CompositeView, Metadata](
       CompositeViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 }

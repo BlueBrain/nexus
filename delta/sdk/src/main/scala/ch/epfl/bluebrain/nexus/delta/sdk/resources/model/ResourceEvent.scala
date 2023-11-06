@@ -5,9 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.{dropNullValues, JsonObjOps}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -18,9 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -71,12 +73,16 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
     *   the instant when this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional user-specified tag attached to the first revision of this resource
     */
   final case class ResourceCreated(
       id: Iri,
@@ -87,9 +93,12 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends ResourceEvent
 
   /**
@@ -111,12 +120,16 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
     *   the instant when this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional user-specified tag attached to the current resource revision when updated
     */
   final case class ResourceUpdated(
       id: Iri,
@@ -127,6 +140,20 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
+      rev: Int,
+      instant: Instant,
+      subject: Subject,
+      tag: Option[UserTag]
+  ) extends ResourceEvent
+
+  final case class ResourceSchemaUpdated(
+      id: Iri,
+      project: ProjectRef,
+      schema: ResourceRef.Revision,
+      schemaProject: ProjectRef,
+      types: Set[Iri],
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -149,6 +176,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -164,6 +193,8 @@ object ResourceEvent {
       types: Set[Iri],
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -253,14 +284,44 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
+  /**
+    * Event representing a resource undeprecation.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param types
+    *   the collection of known resource types
+    * @param rev
+    *   the resource revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class ResourceUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      types: Set[Iri],
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ResourceEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, ResourceEvent] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration = Serializer.circeConfiguration
 
-    implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
+
+    implicit val enc: Encoder.AsObject[ResourceEvent] =
+      deriveConfiguredEncoder[ResourceEvent].mapJsonObject(dropNullValues)
+    implicit val coder: Codec.AsObject[ResourceEvent] = Codec.AsObject.from(deriveConfiguredDecoder[ResourceEvent], enc)
     Serializer()
   }
 
@@ -274,12 +335,14 @@ object ResourceEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: ResourceCreated    => Created
-            case _: ResourceUpdated    => Updated
-            case _: ResourceRefreshed  => Refreshed
-            case _: ResourceTagAdded   => Tagged
-            case _: ResourceTagDeleted => TagDeleted
-            case _: ResourceDeprecated => Deprecated
+            case _: ResourceCreated       => Created
+            case _: ResourceUpdated       => Updated
+            case _: ResourceRefreshed     => Refreshed
+            case _: ResourceTagAdded      => Tagged
+            case _: ResourceTagDeleted    => TagDeleted
+            case _: ResourceDeprecated    => Deprecated
+            case _: ResourceUndeprecated  => Undeprecated
+            case _: ResourceSchemaUpdated => Updated
           },
           event.id,
           event.types,
@@ -320,10 +383,11 @@ object ResourceEvent {
       implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
       implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
-        deriveConfiguredEncoder[ResourceEvent]
-          .encodeObject(event)
+        val obj = deriveConfiguredEncoder[ResourceEvent].encodeObject(event)
+        obj.dropNulls
           .remove("compacted")
           .remove("expanded")
+          .remove("remoteContexts")
           .add(keywords.context, context.value)
       }
     }

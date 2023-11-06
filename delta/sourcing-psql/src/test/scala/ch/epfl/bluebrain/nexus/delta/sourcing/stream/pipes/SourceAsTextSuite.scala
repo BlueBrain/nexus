@@ -11,12 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
 
 import java.time.Instant
 
-class SourceAsTextSuite extends BioSuite {
+class SourceAsTextSuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -53,6 +53,6 @@ class SourceAsTextSuite extends BioSuite {
       .rightValue
       .withJsonLdConfig(ExpandedJsonLd.empty)
       .rightValue
-    pipe(elem).assert(expected)
+    pipe(elem).assertEquals(expected)
   }
 }

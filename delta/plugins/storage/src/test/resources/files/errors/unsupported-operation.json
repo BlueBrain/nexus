@@ -1,6 +1,6 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "UnsupportedOperation",
-  "reason" : "File '{{id}}' could not be linked using storage '{{storage}}'",
+  "reason" : "File '{{id}}' could not be linked using storage '{{storageId}}'",
   "details" : "Moving a file is not supported for storages of type 'https://bluebrain.github.io/nexus/vocabulary/DiskStorage'"
 }

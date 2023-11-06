@@ -1,16 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.Order
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.GraphResourceToDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -34,6 +36,12 @@ sealed trait CompositeViewProjection extends Product with Serializable {
   def uuid: UUID
 
   /**
+    * @return
+    *   the indexing revision of the projection
+    */
+  def indexingRev: IndexingRev
+
+  /**
     * SPARQL query used to create values indexed into the projection.
     */
   def query: SparqlConstructQuery
@@ -49,12 +57,6 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
-
-  /**
-    * @return
-    *   the optional tag to filter by
-    */
-  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -96,6 +98,14 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * Translates the projection into a [[PipeChain]]
     */
   def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
+
+  def transformationPipe(implicit rcr: RemoteContextResolution): Operation.Pipe
+
+  def updateIndexingRev(value: IndexingRev): CompositeViewProjection =
+    this match {
+      case e: ElasticSearchProjection => e.copy(indexingRev = value)
+      case s: SparqlProjection        => s.copy(indexingRev = value)
+    }
 }
 
 object CompositeViewProjection {
@@ -111,10 +121,10 @@ object CompositeViewProjection {
   final case class ElasticSearchProjection(
       id: Iri,
       uuid: UUID,
+      indexingRev: IndexingRev,
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       includeContext: Boolean,
@@ -128,6 +138,9 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = ElasticSearchProjectionType
     override def asSparql: Option[SparqlProjection]               = None
     override def asElasticSearch: Option[ElasticSearchProjection] = Some(this)
+
+    override def transformationPipe(implicit rcr: RemoteContextResolution) =
+      new GraphResourceToDocument(context, includeContext)
   }
 
   /**
@@ -136,10 +149,10 @@ object CompositeViewProjection {
   final case class SparqlProjection(
       id: Iri,
       uuid: UUID,
+      indexingRev: IndexingRev,
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission
@@ -148,6 +161,9 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = SparqlProjectionType
     override def asSparql: Option[SparqlProjection]               = Some(this)
     override def asElasticSearch: Option[ElasticSearchProjection] = None
+
+    override def transformationPipe(implicit rcr: RemoteContextResolution): Operation.Pipe =
+      GraphResourceToNTriples
   }
 
   @nowarn("cat=unused")
@@ -166,11 +182,5 @@ object CompositeViewProjection {
     )
     deriveConfiguredEncoder[CompositeViewProjection]
   }
-
-  implicit final def compositeViewProjectionOrdering[A <: CompositeViewProjection]: Ordering[A] =
-    Ordering.by(_.id)
-
-  implicit final def compositeViewProjectionOrder[A <: CompositeViewProjection]: Order[A] =
-    Order.by(_.id)
 
 }

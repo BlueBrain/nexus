@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Rejection
+import akka.http.scaladsl.server.{Rejection => AkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
@@ -13,11 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -32,9 +30,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None) extends Exception {
-  override def getMessage: String = reason
-}
+sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None) extends Rejection
 
 object FileRejection {
 
@@ -164,21 +160,9 @@ object FileRejection {
       )
 
   /**
-    * Rejection returned when attempting to interact with a file and the caller does not have the right permissions
-    * defined in the storage.
-    *
-    * @param address
-    *   the address on which the permission was checked
-    * @param permission
-    *   the permission that was required
-    */
-  final case class AuthorizationFailed(address: AclAddress, permission: Permission)
-      extends FileRejection(ServiceError.AuthorizationFailed.reason)
-
-  /**
     * Rejection returned when attempting to create/update a file and the unmarshaller fails
     */
-  final case class WrappedAkkaRejection(rejection: Rejection) extends FileRejection(rejection.toString)
+  final case class WrappedAkkaRejection(rejection: AkkaRejection) extends FileRejection(rejection.toString)
 
   /**
     * Rejection returned when interacting with the storage operations bundle to fetch a storage
@@ -292,11 +276,11 @@ object FileRejection {
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
       case ProjectContextRejection(rej)                                    => (rej.status, rej.headers)
-      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.NotFound, Seq.empty)
+      // If this happens it signifies a system problem rather than the user having made a mistake
+      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
-      case AuthorizationFailed(_, _)                                       => (StatusCodes.Forbidden, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)
     }
 }

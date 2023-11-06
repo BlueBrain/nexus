@@ -14,6 +14,24 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
+## Nexus metadata
+
+When using the endpoints described on this page, the responses will contain global metadata described on the
+@ref:[Nexus Metadata](../metadata.md) page. In addition, the following files specific metadata can be present
+
+- `_bytes`: size of the file in bytes
+- `_digest`: algorithm and checksum used for file integrity
+- `_filename`: name of the file
+- `_location`: path where the file is stored on the underlying storage
+- `_mediaType`: @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the type of the file
+- `_origin`: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service
+- `_storage`: `@id`, `@type`, and revision of the @ref:[Storage](storages-api.md) used for the file
+- `_uuid`: @link:[UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier){ open=new } of the file
+- `_project`: address of the file's project
+- `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
+- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
+
+
 ## Indexing
 
 All the API calls modifying a file (creation, update, tagging, deprecation) can specify whether the file should be indexed
@@ -25,11 +43,13 @@ synchronously or in the background. This behaviour is controlled using `indexing
 ## Create using POST
 
 ```
-POST /v1/files/{org_label}/{project_label}?storage={storageId}
+POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 ```
 
-... where `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional.
+... where 
+- `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional.
 When not specified, the default storage of the project is used.
+- `{tagName}` an optional label given to the file on its first revision.
 
 The json payload:
 
@@ -51,11 +71,13 @@ This alternative endpoint to create a resource is useful in case the json payloa
 to specify one. The @id will be specified in the last segment of the endpoint URI.
 
 ```
-PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tagName}
 ```
 
-... where `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional. 
+... where 
+- `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional. 
 When not specified, the default storage of the project is used.
+- `{tagName}` an optional label given to the file on its first revision.
 
 Note that if the payload contains an @id different from the `{file_id}`, the request will fail.
 
@@ -72,7 +94,7 @@ Response
 Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `S3Storage` and `RemoteDiskStorage`.
 
 ```
-POST /v1/files/{org_label}/{project_label}?storage={storageId}
+POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
   {
     "path": "{path}",
     "filename": "{filename}",
@@ -83,8 +105,9 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}
 - `{storageId}`: String - Selects a specific storage backend that supports linking existing files. This field is optional.
   When not specified, the default storage of the project is used.
 - `{path}`: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.
-- `{filenane}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
+- `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detectput
+- `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**
 
@@ -104,7 +127,7 @@ Brings a file existing in a storage to Nexus Delta as a file resource. This oper
 This alternative endpoint allows to specify the resource `@id`.
 
 ```
-PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tagName}
   {
     "path": "{path}",
     "filename": "{filename}",
@@ -117,8 +140,9 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
 - `{storageId}`: String - Selects a specific storage backend that supports linking existing files. This field is optional.
 When not specified, the default storage of the project is used.
 - `{path}`: String - the relative location (from the point of view of the storage folder) on the remote storage where the file exists.
-- `{filenane}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
+- `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
+- `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**
 
@@ -296,6 +320,7 @@ GET /v1/files/{org_label}/{project_label}?from={from}
                                          &updatedBy={updatedBy}
                                          &q={search}
                                          &sort={sort}
+                                         &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -312,6 +337,7 @@ GET /v1/files/{org_label}?from={from}
                          &updatedBy={updatedBy}
                          &q={search}
                          &sort={sort}
+                         &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -328,6 +354,7 @@ GET /v1/files?from={from}
              &updatedBy={updatedBy}
              &q={search}
              &sort={sort}
+             &aggregations={aggregations}
 ```
 
 ### Parameter description
@@ -344,6 +371,7 @@ GET /v1/files?from={from}
   (containing) the provided string
 - `{sort}`: String - can be used to sort files based on a payloads' field. This parameter can appear multiple times
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
 
 **Example**
 

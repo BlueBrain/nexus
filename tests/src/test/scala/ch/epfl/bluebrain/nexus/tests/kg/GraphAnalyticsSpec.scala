@@ -1,18 +1,26 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import akka.http.scaladsl.model.StatusCodes
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
+import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
-import org.scalatest.DoNotDiscover
 
-//TODO Reenable when graph analytics is reimplemented
-@DoNotDiscover
-final class GraphAnalyticsSpec extends BaseSpec with CirceEq {
-  private val org  = genId()
-  private val proj = genId()
-  private val ref  = s"$org/$proj"
+final class GraphAnalyticsSpec extends BaseIntegrationSpec {
+  private val org          = genId()
+  private val proj         = genId()
+  private val ref          = s"$org/$proj"
+  private val matchPerson1 = json"""{ "query": { "match": { "@id" : "http://example.com/person1" } } }"""
+
+  private def extractSources(json: Json) =
+    json.hcursor
+      .downField("hits")
+      .get[Vector[Json]]("hits")
+      .flatMap(seq => seq.traverse(_.hcursor.get[Json]("_source")))
+      .rightValue
 
   "Setting up" should {
     "succeed in setting up org, project and acls" in {
@@ -26,20 +34,15 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq {
 
   "GraphAnalytics" should {
     "add resources" in {
+      def postResource(resourcePath: String) =
+        deltaClient.post[Json](s"/resources/$ref/", jsonContentOf(resourcePath), Bojack)(expectCreated)
+
       for {
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person1.json"), Bojack)(
-               expectCreated
-             )
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person2.json"), Bojack)(
-               expectCreated
-             )
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person3.json"), Bojack)(
-               expectCreated
-             )
-        _ <-
-          deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/organization.json"), Bojack)(
-            expectCreated
-          )
+        _ <- postResource("/kg/graph-analytics/context-test.json")
+        _ <- postResource("/kg/graph-analytics/person1.json")
+        _ <- postResource("/kg/graph-analytics/person2.json")
+        _ <- postResource("/kg/graph-analytics/person3.json")
+        _ <- postResource("/kg/graph-analytics/organization.json")
       } yield succeed
     }
 
@@ -78,6 +81,27 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq {
     "fetch updated properties" in eventually {
       deltaClient.get[Json](s"/graph-analytics/$ref/properties/http%3A%2F%2Fschema.org%2FPerson", Bojack) { (json, _) =>
         json shouldEqual jsonContentOf("/kg/graph-analytics/properties-person-updated.json")
+      }
+    }
+
+    "fail to query when unauthorized" in {
+      deltaClient.post[Json](s"/graph-analytics/$ref/_search", matchPerson1, Anonymous) { expectForbidden }
+    }
+
+    "query for person1" in eventually {
+      val expected = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json", "projectRef" -> ref)
+
+      // We ignore fields that are time or project dependent.
+      // "relationships" are ignored as its "found" field can sometimes be
+      // missing and making the test flaky while not being relevant to what's being tested
+      val filterSource = filterMetadataKeys andThen filterRealmKeys andThen
+        filterKey("_project") andThen filterKey("relationships")
+
+      deltaClient.post[Json](s"/graph-analytics/$ref/_search", matchPerson1, Bojack) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val sources = extractSources(json)
+        sources.size shouldEqual 1
+        filterSource(extractSources(json).head) shouldEqual filterSource(expected)
       }
     }
   }

@@ -4,10 +4,9 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.acls.Marge
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Permission, User}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
-import monix.execution.Scheduler.Implicits.global
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 
-class AclsSpec extends BaseSpec {
+class AclsSpec extends BaseIntegrationSpec {
 
   "manage acls" should {
     val orgPath1     = genString()

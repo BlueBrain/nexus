@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
-import cats.Order
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -16,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -69,9 +66,6 @@ sealed trait CompositeViewSourceFields {
 }
 
 object CompositeViewSourceFields {
-
-  implicit def compositeViewSourceFieldsOrder[A <: CompositeViewSourceFields]: Order[A] =
-    Order.by(_.id)
 
   /**
     * Necessary fields to create/update a project source.
@@ -129,7 +123,6 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       project: ProjectRef,
       endpoint: Uri,
-      token: Option[Secret[String]] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[UserTag] = None,
@@ -145,13 +138,9 @@ object CompositeViewSourceFields {
       resourceTag,
       includeDeprecated,
       project,
-      endpoint,
-      token.map(AccessToken)
+      endpoint
     )
   }
-
-  @nowarn("cat=unused")
-  implicit private val accessTokenEncoder: Encoder[AccessToken] = deriveEncoder[AccessToken]
 
   @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSourceFields] = {

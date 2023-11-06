@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -11,34 +11,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
-import monix.bio.UIO
-import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, Inspectors}
-import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 
-class AclsImplSpec
-    extends DoobieScalaTestFixture
-    with IOValues
-    with IOFixedClock
-    with Inspectors
-    with Matchers
-    with CancelAfterFailure
-    with CirceLiteral
-    with ConfigFixtures {
+class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
-  val epoch: Instant                = Instant.EPOCH
-  val realm: Label                  = Label.unsafe("realm")
-  val realm2: Label                 = Label.unsafe("myrealm2")
-  implicit val subject: Subject     = Identity.User("user", realm)
-  implicit val caller: Caller       = Caller.unsafe(subject)
-  implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  val epoch: Instant            = Instant.EPOCH
+  val realm: Label              = Label.unsafe("realm")
+  val realm2: Label             = Label.unsafe("myrealm2")
+  implicit val subject: Subject = Identity.User("user", realm)
+  implicit val caller: Caller   = Caller.unsafe(subject)
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val user: Identity  = subject
   val group: Identity = Group("mygroup", realm2)
@@ -73,7 +63,7 @@ class AclsImplSpec
 
   "An ACLs implementation" should {
     lazy val acls: Acls = AclsImpl(
-      UIO.pure(minimumPermissions),
+      IO.pure(minimumPermissions),
       Acls.findUnknownRealms(_, Set(realm, realm2)),
       minimumPermissions,
       AclsConfig(eventLogConfig),
@@ -321,6 +311,14 @@ class AclsImplSpec
       acls.replace(userRW(AclAddress.Root), 5).accepted
       acls.subtract(userW(AclAddress.Root), 6).accepted
       acls.fetch(AclAddress.Root).accepted shouldEqual resourceFor(userR(AclAddress.Root), 7, subject)
+    }
+
+    s"should delete the entry for a project" in {
+      val project      = ProjectRef.unsafe("org", "to_delete")
+      acls.append(userR(project), 0).accepted
+      val deletionTask = Acls.projectDeletionTask(acls)
+      deletionTask(project).accepted
+      acls.fetch(project).rejectedWith[AclNotFound]
     }
 
   }

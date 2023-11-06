@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -23,15 +24,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
+class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
@@ -78,7 +79,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
   private val sink      = CacheSink.states[Json]
 
-  private val indexingRev = 1
+  private val indexingRev = IndexingRev.init
+  private val rev         = 2
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
     id,
@@ -87,7 +89,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     v,
     Json.obj("elastic" -> Json.fromString("value")),
     Tags(tag           -> 3),
-    rev = 1,
+    rev = rev,
     indexingRev = indexingRev,
     deprecated = false,
     createdAt = instant,
@@ -102,14 +104,15 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
-          indexingCustom.resourceTag,
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingCustom.pipeChain,
+          indexingCustom.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
           customMapping,
           customSettings,
           indexingCustom.context,
-          indexingRev
+          indexingRev,
+          rev
         )
       )
     )
@@ -121,14 +124,15 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
-          indexingDefault.resourceTag,
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingDefault.pipeChain,
+          indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
           defaultMapping,
           defaultSettings,
           indexingDefault.context,
-          indexingRev
+          indexingRev,
+          rev
         )
       )
     )
@@ -156,13 +160,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
+      indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
       indexingDefault.context,
-      1
+      indexingRev,
+      rev
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -174,7 +179,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
         GraphResourceStream.empty,
         sink
       )
-      .error(expectedError)
+      .intercept(expectedError)
 
     assert(
       sink.successes.isEmpty && sink.dropped.isEmpty && sink.failed.isEmpty,
@@ -187,13 +192,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(FilterDeprecated())),
+      indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
       indexingDefault.context,
-      indexingRev
+      indexingRev,
+      rev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(
@@ -215,9 +221,9 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
                       compiled.metadata,
                       ProjectionMetadata(ElasticSearchViews.entityType.value, v.projection, Some(projectRef), Some(id))
                     )
-      projection <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)
+      projection <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)
       _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
-      _          <- projection.currentProgress.assert(expectedProgress)
+      _          <- projection.currentProgress.assertEquals(expectedProgress)
     } yield ()
   }
 

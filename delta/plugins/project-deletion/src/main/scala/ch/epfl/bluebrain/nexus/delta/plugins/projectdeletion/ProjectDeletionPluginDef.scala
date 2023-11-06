@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.{Task, UIO}
 import pureconfig.ConfigSource
 
 class ProjectDeletionPluginDef extends PluginDef {
@@ -16,7 +16,7 @@ class ProjectDeletionPluginDef extends PluginDef {
     */
   override def module: ModuleDef = new ModuleDef {
     make[ProjectDeletionConfig].fromEffect {
-      UIO.delay {
+      IO.delay {
         ConfigSource
           .fromConfig(pluginConfigObject)
           .loadOrThrow[ProjectDeletionConfig]
@@ -39,6 +39,6 @@ class ProjectDeletionPluginDef extends PluginDef {
     * @return
     *   [[Plugin]] instance.
     */
-  override def initialize(locator: Locator): Task[Plugin] =
-    Task.delay(locator.get[Plugin])
+  override def initialize(locator: Locator): IO[Plugin] =
+    IO.pure(ProjectDeletionPlugin)
 }

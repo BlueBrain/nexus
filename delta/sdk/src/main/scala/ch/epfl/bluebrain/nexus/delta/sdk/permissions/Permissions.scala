@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
 
 import java.time.Instant
 
@@ -31,7 +32,7 @@ trait Permissions {
     * @return
     *   the current permissions as a resource
     */
-  def fetch: UIO[PermissionsResource]
+  def fetch: IO[PermissionsResource]
 
   /**
     * @param rev
@@ -39,13 +40,13 @@ trait Permissions {
     * @return
     *   the permissions as a resource at the specified revision
     */
-  def fetchAt(rev: Int): IO[PermissionsRejection, PermissionsResource]
+  def fetchAt(rev: Int): IO[PermissionsResource]
 
   /**
     * @return
     *   the current permissions collection without checking permissions
     */
-  def fetchPermissionSet: UIO[Set[Permission]] =
+  def fetchPermissionSet: IO[Set[Permission]] =
     fetch.map(_.value.permissions)
 
   /**
@@ -63,7 +64,7 @@ trait Permissions {
   def replace(
       permissions: Set[Permission],
       rev: Int
-  )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+  )(implicit caller: Subject): IO[PermissionsResource]
 
   /**
     * Appends the provided permissions to the current collection of permissions.
@@ -80,7 +81,7 @@ trait Permissions {
   def append(
       permissions: Set[Permission],
       rev: Int
-  )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+  )(implicit caller: Subject): IO[PermissionsResource]
 
   /**
     * Subtracts the provided permissions to the current collection of permissions.
@@ -97,7 +98,7 @@ trait Permissions {
   def subtract(
       permissions: Set[Permission],
       rev: Int
-  )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+  )(implicit caller: Subject): IO[PermissionsResource]
 
   /**
     * Removes all but the minimum permissions from the collection of permissions.
@@ -109,7 +110,7 @@ trait Permissions {
     * @return
     *   the new resource or a description of why the change was rejected
     */
-  def delete(rev: Int)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+  def delete(rev: Int)(implicit caller: Subject): IO[PermissionsResource]
 }
 
 object Permissions {
@@ -157,6 +158,7 @@ object Permissions {
     final val read: Permission   = Permission.unsafe("organizations/read")
     final val write: Permission  = Permission.unsafe("organizations/write")
     final val create: Permission = Permission.unsafe("organizations/create")
+    final val delete: Permission = Permission.unsafe("organizations/delete")
   }
 
   /**
@@ -251,15 +253,13 @@ object Permissions {
   }
 
   private[delta] def evaluate(minimum: Set[Permission])(state: PermissionsState, cmd: PermissionsCommand)(implicit
-      clock: Clock[UIO] = IO.clock
-  ): IO[PermissionsRejection, PermissionsEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils._
-
+      clock: Clock[IO]
+  ): IO[PermissionsEvent] = {
     def replace(c: ReplacePermissions) =
       if (c.rev != state.rev) IO.raiseError(IncorrectRev(c.rev, state.rev))
       else if (c.permissions.isEmpty) IO.raiseError(CannotReplaceWithEmptyCollection)
       else if ((c.permissions -- minimum).isEmpty) IO.raiseError(CannotReplaceWithEmptyCollection)
-      else instant.map(PermissionsReplaced(c.rev + 1, c.permissions, _, c.subject))
+      else now.map(PermissionsReplaced(c.rev + 1, c.permissions, _, c.subject))
 
     def append(c: AppendPermissions) =
       state match {
@@ -268,7 +268,7 @@ object Permissions {
         case s                          =>
           val appended = c.permissions -- s.permissions -- minimum
           if (appended.isEmpty) IO.raiseError(CannotAppendEmptyCollection)
-          else instant.map(PermissionsAppended(c.rev + 1, appended, _, c.subject))
+          else now.map(PermissionsAppended(c.rev + 1, appended, _, c.subject))
       }
 
     def subtract(c: SubtractPermissions) =
@@ -282,14 +282,14 @@ object Permissions {
           val subtracted    = delta -- minimum
           if (intendedDelta.nonEmpty) IO.raiseError(CannotSubtractUndefinedPermissions(intendedDelta))
           else if (subtracted.isEmpty) IO.raiseError(CannotSubtractFromMinimumCollection(minimum))
-          else instant.map(PermissionsSubtracted(c.rev + 1, subtracted, _, c.subject))
+          else now.map(PermissionsSubtracted(c.rev + 1, subtracted, _, c.subject))
       }
 
     def delete(c: DeletePermissions) =
       state match {
         case _ if state.rev != c.rev       => IO.raiseError(IncorrectRev(c.rev, state.rev))
         case s if s.permissions == minimum => IO.raiseError(CannotDeleteMinimumCollection)
-        case _                             => instant.map(PermissionsDeleted(c.rev + 1, _, c.subject))
+        case _                             => now.map(PermissionsDeleted(c.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -307,14 +307,15 @@ object Permissions {
     *   the minimum set of permissions
     */
   def definition(minimum: Set[Permission])(implicit
-      clock: Clock[UIO] = IO.clock
+      clock: Clock[IO]
   ): GlobalEntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
     val initial = PermissionsState.initial(minimum)
     GlobalEntityDefinition(
       entityType,
       StateMachine(
         Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd),
+        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
+          evaluate(minimum)(state.getOrElse(initial), cmd).toBIO[PermissionsRejection],
         (state: Option[PermissionsState], event: PermissionsEvent) =>
           Some(next(minimum)(state.getOrElse(initial), event))
       ),

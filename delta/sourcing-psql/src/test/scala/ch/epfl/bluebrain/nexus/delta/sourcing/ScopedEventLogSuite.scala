@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
@@ -12,14 +13,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestCommand, P
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.concurrent.Queue
@@ -30,7 +33,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
+class ScopedEventLogSuite extends BioSuite with CatsRunContext with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -91,7 +94,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
       }
     ),
     {
-      case s if s.id == id => Some(Set(EntityDependency(s.project, id2)))
+      case s if s.id == id => Some(Set(DependsOn(s.project, id2)))
       case _               => None
     },
     maxDuration,
@@ -100,20 +103,20 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Evaluate successfully a command and store both event and state for an initial state") {
     implicit val decoder: Decoder[PullRequestState] = PullRequestState.serializer.codec
-    val expectedDependencies                        = Set(EntityDependency(proj, id2))
+    val expectedDependencies                        = Set(DependsOn(proj, id2))
     for {
       _        <- eventLog.evaluate(proj, id, Create(id, proj)).assert((opened, state1))
       _        <- eventStore.history(proj, id).assert(opened)
       _        <- eventLog.stateOr(proj, id, NotFound).assert(state1)
       // Check dependency on id2
-      _        <- EntityDependencyStore.list(proj, id, xas).assert(expectedDependencies)
-      _        <- EntityDependencyStore.recursiveList(proj, id, xas).assert(expectedDependencies)
-      _        <- EntityDependencyStore.decodeList(proj, id, xas).assert(List.empty)
+      _        <- EntityDependencyStore.directDependencies(proj, id, xas).assert(expectedDependencies)
+      _        <- EntityDependencyStore.recursiveDependencies(proj, id, xas).assert(expectedDependencies)
+      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).assert(List.empty)
       // Create state for id2
       state1Id2 = state1.copy(id = id2)
       _        <- eventLog.evaluate(proj, id2, Create(id2, proj)).map(_._2).assert(state1Id2)
       _        <- eventLog.stateOr(proj, id2, NotFound).assert(state1Id2)
-      _        <- EntityDependencyStore.decodeList(proj, id, xas).assert(List(state1Id2))
+      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).assert(List(state1Id2))
     } yield ()
   }
 
@@ -203,7 +206,13 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   test("Stream continuously the current states") {
     for {
       queue <- Queue.unbounded[Task, Envelope[PullRequestState]]
-      _     <- eventLog.states(Predicate.root, Offset.Start).through(queue.enqueue).compile.drain.timeout(500.millis)
+      _     <- eventLog
+                 .states(Scope.root, Offset.Start)
+                 .translate(ioToTaskK)
+                 .through(queue.enqueue)
+                 .compile
+                 .drain
+                 .timeout(500.millis)
       elems <- queue.tryDequeueChunk1(Int.MaxValue).map(opt => opt.map(_.toList).getOrElse(Nil))
       _      = elems.assertSize(2)
     } yield ()

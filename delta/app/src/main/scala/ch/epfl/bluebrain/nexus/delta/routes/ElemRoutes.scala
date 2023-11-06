@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -17,13 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseElemStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 import java.time.Instant
 
@@ -39,9 +40,9 @@ class ElemRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    contextShift: ContextShift[IO]
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
   import baseUri.prefixSegment
   import schemeDirectives._
@@ -53,30 +54,32 @@ class ElemRoutes(
           pathPrefix("elems") {
             resolveProjectRef { project =>
               authorizeFor(project, events.read).apply {
-                concat(
-                  (get & pathPrefix("continuous") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/continuous") {
-                      emit(sseElemStream.continuous(project, tag.getOrElse(Tag.latest), offset))
+                (parameter("tag".as[UserTag].?) & types(project)) { (tag, types) =>
+                  concat(
+                    (get & pathPrefix("continuous")) {
+                      operationName(s"$prefixSegment/$project/elems/continuous") {
+                        emit(sseElemStream.continuous(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
+                      }
+                    },
+                    (get & pathPrefix("currents")) {
+                      operationName(s"$prefixSegment/$project/elems/currents") {
+                        emit(sseElemStream.currents(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
+                      }
+                    },
+                    (get & pathPrefix("remaining")) {
+                      operationName(s"$prefixSegment/$project/elems/remaining") {
+                        emit(
+                          sseElemStream.remaining(project, SelectFilter(types, tag.getOrElse(Latest)), offset).map {
+                            r => r.getOrElse(RemainingElems(0L, Instant.EPOCH))
+                          }
+                        )
+                      }
+                    },
+                    head {
+                      complete(OK)
                     }
-                  },
-                  (get & pathPrefix("currents") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/currents") {
-                      emit(sseElemStream.currents(project, tag.getOrElse(Tag.latest), offset))
-                    }
-                  },
-                  (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/remaining") {
-                      emit(
-                        sseElemStream.remaining(project, tag.getOrElse(Tag.latest), offset).map { r =>
-                          r.getOrElse(RemainingElems(0L, Instant.EPOCH))
-                        }
-                      )
-                    }
-                  },
-                  head {
-                    complete(OK)
-                  }
-                )
+                  )
+                }
               }
             }
           }

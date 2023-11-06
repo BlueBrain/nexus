@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.EphemeralStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
 import doobie.implicits._
 import doobie.postgres.sqlstate
-import monix.bio.IO
 
 /**
   * Event log for ephemeral entities that can be controlled through commands;
@@ -18,7 +19,7 @@ import monix.bio.IO
   * Unsuccessful commands result in rejections returned to the caller context without any events being generated or
   * state transitions applied.
   */
-trait EphemeralLog[Id, S <: EphemeralState, Command, Rejection] {
+trait EphemeralLog[Id, S <: EphemeralState, Command, R <: Rejection] {
 
   /**
     * Get the current state for the entity with the given __id__
@@ -29,7 +30,7 @@ trait EphemeralLog[Id, S <: EphemeralState, Command, Rejection] {
     * @param notFound
     *   if no state is found, fails with this rejection
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S]
+  def stateOr[R2 <: R](ref: ProjectRef, id: Id, notFound: => R2): IO[S]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -44,7 +45,7 @@ trait EphemeralLog[Id, S <: EphemeralState, Command, Rejection] {
     *   the newly generated state if the command was evaluated successfully, or the rejection of the __command__
     *   otherwise
     */
-  def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, S]
+  def evaluate(ref: ProjectRef, id: Id, command: Command): IO[S]
 
 }
 
@@ -53,20 +54,20 @@ object EphemeralLog {
   /**
     * Creates on a ephemeral log for the given definition and config
     */
-  def apply[Id, S <: EphemeralState, Command, Rejection](
-      definition: EphemeralDefinition[Id, S, Command, Rejection],
+  def apply[Id, S <: EphemeralState, Command, R <: Rejection](
+      definition: EphemeralDefinition[Id, S, Command, R],
       config: EphemeralLogConfig,
       xas: Transactors
-  ): EphemeralLog[Id, S, Command, Rejection] = {
+  )(implicit execution: EvaluationExecution): EphemeralLog[Id, S, Command, R] = {
     val stateStore = EphemeralStateStore(definition.tpe, definition.stateSerializer, config.ttl, xas)
-    new EphemeralLog[Id, S, Command, Rejection] {
+    new EphemeralLog[Id, S, Command, R] {
 
-      override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
+      override def stateOr[R2 <: R](ref: ProjectRef, id: Id, notFound: => R2): IO[S] =
         stateStore.get(ref, id).flatMap {
-          IO.fromOption(_, notFound)
+          IO.fromOption(_)(notFound)
         }
 
-      override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, S] = {
+      override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[S] = {
         for {
           newState <- definition.evaluate(command, config.maxDuration)
           res      <- stateStore
@@ -74,8 +75,7 @@ object EphemeralLog {
                         .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                           definition.onUniqueViolation(id, command)
                         }
-                        .transact(xas.write)
-                        .hideErrors
+                        .transact(xas.writeCE)
           _        <- IO.fromEither(res)
         } yield newState
       }

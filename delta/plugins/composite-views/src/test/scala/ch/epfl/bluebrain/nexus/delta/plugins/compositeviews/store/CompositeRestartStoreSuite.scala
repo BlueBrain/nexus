@@ -7,15 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class CompositeRestartStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
+class CompositeRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -28,22 +27,23 @@ class CompositeRestartStoreSuite extends BioSuite with IOFixedClock with Doobie.
   private val id1     = nxv + "id1"
   private val viewRef = ViewRef(proj, id1)
 
-  private val cr1 = FullRestart(proj, id1, Instant.EPOCH, Anonymous)
+  private val cr1 = FullRestart(viewRef, Instant.EPOCH, Anonymous)
 
-  private val id2 = nxv + "id2"
-  private val cr2 = FullRebuild(proj, id2, Instant.EPOCH, Anonymous)
+  private val id2      = nxv + "id2"
+  private val viewRef2 = ViewRef(proj, id2)
+  private val cr2      = FullRebuild(viewRef2, Instant.EPOCH, Anonymous)
 
   private val projection = nxv + "projection"
-  private val cr3        = PartialRebuild(proj, id1, projection, Instant.EPOCH.plusSeconds(5L), Anonymous)
+  private val cr3        = PartialRebuild(viewRef, projection, Instant.EPOCH.plusSeconds(5L), Anonymous)
 
   private def toElem(offset: Offset, restart: CompositeRestart) =
     SuccessElem(entityType, restart.id, Some(restart.project), restart.instant, offset, restart, 1)
 
   test("Save composite restarts") {
     for {
-      _ <- store.save(cr1).assert(())
-      _ <- store.save(cr2).assert(())
-      _ <- store.save(cr3).assert(())
+      _ <- store.save(cr1).assert
+      _ <- store.save(cr2).assert
+      _ <- store.save(cr3).assert
     } yield ()
   }
 

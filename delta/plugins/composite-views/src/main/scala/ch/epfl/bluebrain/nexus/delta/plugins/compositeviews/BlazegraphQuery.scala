@@ -1,18 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionNamespace
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionNamespace}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedBlazegraphClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewResource, ViewSparqlProjectionResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.WrappedBlazegraphClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.IO
 
 trait BlazegraphQuery {
 
@@ -34,7 +36,7 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
   /**
     * Queries the blazegraph namespace of the passed composite views' projection. We check for the caller to have the
@@ -57,7 +59,7 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
   /**
     * Queries all the blazegraph namespaces of the passed composite views' projection We check for the caller to have
@@ -77,17 +79,11 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
 }
 
 object BlazegraphQuery {
-
-  private[compositeviews] type FetchView       =
-    (IdSegmentRef, ProjectRef) => IO[CompositeViewRejection, ViewResource]
-  private[compositeviews] type FetchProjection =
-    (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewSparqlProjectionResource]
-
   final def apply(
       aclCheck: AclCheck,
       views: CompositeViews,
@@ -96,8 +92,8 @@ object BlazegraphQuery {
   ): BlazegraphQuery =
     BlazegraphQuery(
       aclCheck,
-      views.fetch,
-      views.fetchBlazegraphProjection,
+      views.fetchIndexingView,
+      views.expand,
       client,
       prefix
     )
@@ -105,7 +101,7 @@ object BlazegraphQuery {
   private[compositeviews] def apply(
       aclCheck: AclCheck,
       fetchView: FetchView,
-      fetchProjection: FetchProjection,
+      expandId: ExpandId,
       client: SparqlQueryClient,
       prefix: String
   ): BlazegraphQuery =
@@ -116,13 +112,14 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
-          viewRes    <- fetchView(id, project)
-          _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          permissions = viewRes.value.projections.map(_.permission)
-          _          <- aclCheck.authorizeForEveryOr(project, permissions.toSortedSet)(AuthorizationFailed)
-          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, prefix)
+          view       <- fetchView(id, project)
+          permissions = view.sparqlProjections.map(_.permission)
+          _          <- aclCheck.authorizeForEveryOr(project, permissions)(
+                          AuthorizationFailed(s"Defined permissions on sparql projection on '${view.ref}' are missing.")
+                        )
+          namespace   = commonNamespace(view.uuid, view.indexingRev, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -132,14 +129,14 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
-          viewRes           <- fetchProjection(id, projectionId, project)
-          _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          (view, projection) = viewRes.value
-          _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          namespace          = projectionNamespace(projection, view.uuid, viewRes.rev, prefix)
-          result            <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
+          view       <- fetchView(id, project)
+          projection <- fetchProjection(view, projectionId)
+          _          <-
+            aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
+          namespace   = projectionNamespace(projection, view.uuid, prefix)
+          result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
       override def queryProjections[R <: SparqlQueryResponse](
@@ -147,27 +144,30 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
-          viewRes    <- fetchView(id, project)
-          _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          view        = viewRes.value
-          namespaces <- allowedProjections(view, viewRes.rev, project)
+          view       <- fetchView(id, project)
+          namespaces <- allowedProjections(view, project)
           result     <- client.query(namespaces, query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
-      private def allowedProjections(
-          view: CompositeView,
-          rev: Int,
-          project: ProjectRef
-      )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
+      private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =
+        expandId(projectionId, view.project).flatMap { id =>
+          IO.fromEither(view.sparqlProjection(id))
+        }
+
+      private def allowedProjections(view: ActiveViewDef, project: ProjectRef)(implicit
+          caller: Caller
+      ): IO[Set[String]] =
         aclCheck
           .mapFilterAtAddress[SparqlProjection, String](
-            view.projections.value.collect { case p: SparqlProjection => p },
+            view.sparqlProjections,
             project,
             p => p.permission,
-            p => projectionNamespace(p, view.uuid, rev, prefix)
+            p => projectionNamespace(p, view.uuid, prefix)
           )
-          .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
+          .flatTap { namespaces =>
+            IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed(s"No views are accessible for view '${view.ref}'."))
+          }
     }
 }

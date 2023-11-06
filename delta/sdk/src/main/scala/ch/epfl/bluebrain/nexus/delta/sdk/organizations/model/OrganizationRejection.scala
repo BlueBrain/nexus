@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -18,7 +19,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class OrganizationRejection(val reason: String) extends Product with Serializable
+sealed abstract class OrganizationRejection(val reason: String) extends Rejection
 
 object OrganizationRejection {
 
@@ -68,13 +69,22 @@ object OrganizationRejection {
       )
 
   /**
-    * Signals and attempt to update/deprecate an organization that is already deprecated.
+    * Signals an attempt to update/deprecate an organization that is already deprecated.
     *
     * @param label
     *   the label of the organization
     */
   final case class OrganizationIsDeprecated(label: Label)
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
+
+  /**
+    * Signals an attempt to delete an organization that contains at least one project.
+    *
+    * @param label
+    *   the label of the organization
+    */
+  final case class OrganizationNonEmpty(label: Label)
+      extends OrganizationRejection(s"Organization '$label' cannot be deleted since it contains at least one project.")
 
   /**
     * Rejection returned when the organization initialization could not be performed.
@@ -108,6 +118,7 @@ object OrganizationRejection {
       case OrganizationRejection.OrganizationNotFound(_)      => StatusCodes.NotFound
       case OrganizationRejection.OrganizationAlreadyExists(_) => StatusCodes.Conflict
       case OrganizationRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
+      case OrganizationRejection.OrganizationNonEmpty(_)      => StatusCodes.Conflict
       case OrganizationRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
       case _                                                  => StatusCodes.BadRequest
     }
