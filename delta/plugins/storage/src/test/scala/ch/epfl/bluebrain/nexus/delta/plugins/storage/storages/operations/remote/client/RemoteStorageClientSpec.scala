@@ -58,7 +58,10 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     )
 
     "fetch the service description" in eventually {
-      client.serviceDescription(baseUri).accepted shouldEqual ServiceDescription(Name.unsafe("remoteStorage"), docker.storageVersion)
+      client.serviceDescription(baseUri).accepted shouldEqual ServiceDescription(
+        Name.unsafe("remoteStorage"),
+        docker.storageVersion
+      )
     }
 
     "check if a bucket exists" in {
