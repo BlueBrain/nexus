@@ -42,8 +42,8 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverResource] = {
     for {
-      pc                   <- fetchContext.onCreate(projectRef)
-      (iri, resolverValue) <- sourceDecoder(projectRef, pc, source)
+      pc                   <- fetchContext.onCreate(projectRef).toCatsIO
+      (iri, resolverValue) <- sourceDecoder(projectRef, pc, source).toCatsIO
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
@@ -54,9 +54,9 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverResource] = {
     for {
-      pc            <- fetchContext.onCreate(projectRef)
-      iri           <- expandIri(id, pc)
-      resolverValue <- sourceDecoder(projectRef, pc, iri, source)
+      pc            <- fetchContext.onCreate(projectRef).toCatsIO
+      iri           <- expandIri(id, pc).toCatsIO
+      resolverValue <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
@@ -67,8 +67,8 @@ final class ResolversImpl private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverResource] = {
     for {
-      pc    <- fetchContext.onCreate(projectRef)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onCreate(projectRef).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
@@ -81,9 +81,9 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverResource] = {
     for {
-      pc            <- fetchContext.onModify(projectRef)
-      iri           <- expandIri(id, pc)
-      resolverValue <- sourceDecoder(projectRef, pc, iri, source)
+      pc            <- fetchContext.onModify(projectRef).toCatsIO
+      iri           <- expandIri(id, pc).toCatsIO
+      resolverValue <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
   }.span("updateResolver")
@@ -97,8 +97,8 @@ final class ResolversImpl private (
       caller: Caller
   ): IO[ResolverResource] = {
     for {
-      pc    <- fetchContext.onModify(projectRef)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onModify(projectRef).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
@@ -114,8 +114,8 @@ final class ResolversImpl private (
       subject: Identity.Subject
   ): IO[ResolverResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(projectRef).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagResolver")
@@ -126,16 +126,16 @@ final class ResolversImpl private (
       rev: Int
   )(implicit subject: Identity.Subject): IO[ResolverResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(projectRef).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateResolver")
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverResource] = {
     for {
-      pc      <- fetchContext.onRead(projectRef)
-      iri     <- expandIri(id.value, pc)
+      pc      <- fetchContext.onRead(projectRef).toCatsIO
+      iri     <- expandIri(id.value, pc).toCatsIO
       notFound = ResolverNotFound(iri, projectRef)
       state   <- id match {
                    case Latest(_)        => log.stateOr(projectRef, iri, notFound)
@@ -154,13 +154,13 @@ final class ResolversImpl private (
   ): IO[UnscoredSearchResults[ResolverResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(scope, _.toResource).evalFilter(params.matches(_).toUIO),
+      log.currentStates(scope, _.toResource).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listResolvers")
   }
 
-  private def eval(cmd: ResolverCommand) =
+  private def eval(cmd: ResolverCommand): IO[ResolverResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 

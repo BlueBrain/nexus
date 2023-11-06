@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Transactors}
 import io.circe.Json
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Aggregates the different [[ResourceShift]] to perform operations on resources independently of their types
@@ -48,7 +47,7 @@ object ResourceShifts {
 
     override def fetch(reference: ResourceRef, project: ProjectRef): IO[Option[JsonLdContent[_, _]]] =
       for {
-        entityType <- EntityCheck.findType(reference.iri, project, xas).toCatsIO
+        entityType <- EntityCheck.findType(reference.iri, project, xas)
         shift      <- entityType.traverse(findShift)
         resource   <- shift.flatTraverse(_.fetch(reference, project))
       } yield resource

@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import cats.effect.{Blocker, IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
@@ -68,7 +69,7 @@ object Transactors {
   private[sourcing] def dropAndCreateDDLs: Task[List[String]] = ddls.map(dropScript :: _)
 
   /** Type of a cache that contains the hashed names of the projectRefs for which a partition was already created. */
-  type PartitionsCache = KeyValueStore[String, Unit]
+  type PartitionsCache = LocalCache[String, Unit]
 
   /**
     * Create a test `Transactors` from the provided parameters
@@ -122,7 +123,7 @@ object Transactors {
       read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
       write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
       streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
-      cache     <- Resource.eval(KeyValueStore.localLRU[String, Unit](config.cache))
+      cache     <- Resource.eval(LocalCache.lru[String, Unit](config.cache).toUIO)
     } yield Transactors(read, write, streaming, cache)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate) {

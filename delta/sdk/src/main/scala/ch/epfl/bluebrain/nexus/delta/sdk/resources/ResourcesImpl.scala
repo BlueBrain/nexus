@@ -89,7 +89,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
-      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
+      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
       res                   <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, schema.some)
                                else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
     } yield res
@@ -103,7 +103,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
-      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
+      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
       jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
       res                   <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
@@ -173,11 +173,11 @@ final class ResourcesImpl private (
     } yield state
   }.span("fetchResource")
 
-  private def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] = (id match {
+  private def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] = id match {
     case Latest(_)        => log.stateOr(ref, iri, notFound(iri, ref))
     case Revision(_, rev) => log.stateOr(ref, iri, rev, notFound(iri, ref), RevisionNotFound)
     case Tag(_, tag)      => log.stateOr(ref, iri, tag, notFound(iri, ref), TagNotFound(tag))
-  }).toCatsIO
+  }
 
   private def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
 

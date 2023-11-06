@@ -247,8 +247,8 @@ final class BlazegraphViews(
       project: ProjectRef
   ): IO[BlazegraphViewState] = {
     for {
-      pc      <- fetchContext.onRead(project)
-      iri     <- expandIri(id.value, pc)
+      pc      <- fetchContext.onRead(project).toCatsIO
+      iri     <- expandIri(id.value, pc).toCatsIO
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
