@@ -57,8 +57,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (as: ActorSystem[Nothing], sc: Scheduler) => HttpClient()(httpConfig, as.classicSystem, sc)
   }
 
-  make[ElasticSearchFiles].fromEffect { (t: Timer[IO]) =>
-    FilesCache.mk(CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf(_))(t).map(ElasticSearchFiles.mk)
+  make[ElasticSearchFiles].from {
+    ElasticSearchFiles.mk(CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf(_))
   }
 
   make[ElasticSearchClient].fromEffect {

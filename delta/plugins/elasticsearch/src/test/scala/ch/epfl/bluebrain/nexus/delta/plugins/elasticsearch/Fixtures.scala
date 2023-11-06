@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.testkit.elasticsearch.FilesCacheFixture
 trait Fixtures extends FilesCacheFixture with CatsRunContext {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  private val files: ElasticSearchFiles = ElasticSearchFiles.mk(filesCache)
+  private val files: ElasticSearchFiles = ElasticSearchFiles.mk()
 
   protected lazy val defaultMapping  = files.defaultElasticsearchMapping.unsafeRunSync()
   protected lazy val defaultSettings = files.defaultElasticsearchSettings.unsafeRunSync()
