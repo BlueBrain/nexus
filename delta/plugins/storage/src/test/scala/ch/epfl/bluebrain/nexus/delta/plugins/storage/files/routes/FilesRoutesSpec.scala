@@ -663,7 +663,7 @@ class FilesRoutesSpec
       createdBy: Subject = callerWriter.subject,
       updatedBy: Subject = callerWriter.subject
   )(implicit baseUri: BaseUri): Json =
-    fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
+    FilesRoutesSpec.fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
 
 }
 
