@@ -6,8 +6,8 @@ import org.testcontainers.utility.DockerImageName
 
 import java.nio.file.Path
 
-class RemoteStorageContainer(rootVolume: Path)
-    extends GenericContainer[RemoteStorageContainer](DockerImageName.parse("bluebrain/nexus-storage:1.8.0-M12")) {
+class RemoteStorageContainer(storageVersion: String, rootVolume: Path)
+    extends GenericContainer[RemoteStorageContainer](DockerImageName.parse(s"bluebrain/nexus-storage:$storageVersion")) {
 
   addEnv("JAVA_OPTS", "-Xmx256m -Dconfig.override_with_env_vars=true")
   addEnv("CONFIG_FORCE_app_subject_anonymous", "true")
