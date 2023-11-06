@@ -87,20 +87,21 @@ final class ResolversRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
-          (resolveProjectRef & indexingMode) { (ref, mode) =>
-            def index(resolver: ResolverResource): IO[Unit] = indexAction(resolver.value.project, resolver, mode)
-            val authorizeRead                               = authorizeFor(ref, Read)
-            val authorizeWrite                              = authorizeFor(ref, Write)
+          (resolveProjectRef & indexingMode) { (project, indexingMode) =>
+            def index(resolver: ResolverResource): IO[Unit] =
+              indexAction(resolver.value.project, resolver, indexingMode)
+            val authorizeRead                               = authorizeFor(project, Read)
+            val authorizeWrite                              = authorizeFor(project, Write)
             concat(
               pathEndOrSingleSlash {
                 // Create a resolver without an id segment
                 (post & noParameter("rev") & entity(as[Json])) { payload =>
                   authorizeWrite {
-                    emitMetadata(Created, resolvers.create(ref, payload).flatTap(index))
+                    emitMetadata(Created, resolvers.create(project, payload).flatTap(index))
                   }
                 }
               },
-              idSegment { id =>
+              idSegment { resolver =>
                 concat(
                   pathEndOrSingleSlash {
                     concat(
@@ -109,55 +110,63 @@ final class ResolversRoutes(
                           (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, payload)      =>
                               // Create a resolver with an id segment
-                              emitMetadata(Created, resolvers.create(id, ref, payload).flatTap(index))
+                              emitMetadata(Created, resolvers.create(resolver, project, payload).flatTap(index))
                             case (Some(rev), payload) =>
                               // Update a resolver
-                              emitMetadata(resolvers.update(id, ref, rev, payload).flatTap(index))
+                              emitMetadata(resolvers.update(resolver, project, rev, payload).flatTap(index))
                           }
                         }
                       },
                       (delete & parameter("rev".as[Int])) { rev =>
                         authorizeWrite {
                           // Deprecate a resolver
-                          emitMetadataOrReject(resolvers.deprecate(id, ref, rev).flatTap(index))
+                          emitMetadataOrReject(resolvers.deprecate(resolver, project, rev).flatTap(index))
                         }
                       },
                       // Fetches a resolver
-                      (get & idSegmentRef(id)) { id =>
+                      (get & idSegmentRef(resolver)) { resolverRef =>
                         emitOrFusionRedirect(
-                          ref,
-                          id,
+                          project,
+                          resolverRef,
                           authorizeRead {
-                            emitFetch(resolvers.fetch(id, ref))
+                            emitFetch(resolvers.fetch(resolverRef, project))
                           }
                         )
                       }
                     )
                   },
                   // Fetches a resolver original source
-                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & authorizeRead) { id =>
-                    emitSource(resolvers.fetch(id, ref))
+                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(resolver) & authorizeRead) {
+                    resolverRef =>
+                      emitSource(resolvers.fetch(resolverRef, project))
                   },
                   // Tags
                   (pathPrefix("tags") & pathEndOrSingleSlash) {
                     concat(
                       // Fetch a resolver tags
-                      (get & idSegmentRef(id) & authorizeRead) { id =>
-                        emitTags(resolvers.fetch(id, ref))
+                      (get & idSegmentRef(resolver) & authorizeRead) { resolverRef =>
+                        emitTags(resolvers.fetch(resolverRef, project))
                       },
                       // Tag a resolver
                       (post & parameter("rev".as[Int])) { rev =>
                         authorizeWrite {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emitMetadata(Created, resolvers.tag(id, ref, tag, tagRev, rev).flatTap(index))
+                            emitMetadata(Created, resolvers.tag(resolver, project, tag, tagRev, rev).flatTap(index))
                           }
                         }
                       }
                     )
                   },
                   // Fetch a resource using a resolver
-                  (idSegmentRef & pathEndOrSingleSlash) { resourceIdRef =>
-                    resolve(resourceIdRef, ref, underscoreToOption(id))
+                  (get & idSegmentRef) { resourceIdRef =>
+                    concat(
+                      pathEndOrSingleSlash {
+                        resolve(resourceIdRef, project, underscoreToOption(resolver))
+                      },
+                      (pathPrefix("source") & pathEndOrSingleSlash) {
+                        resolve(resourceIdRef, project, underscoreToOption(resolver), asSource = true)
+                      }
+                    )
                   }
                 )
               }
@@ -167,23 +176,30 @@ final class ResolversRoutes(
       }
     }
 
-  private def resolve(resourceSegment: IdSegmentRef, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
+  private def resolve(
+      resourceSegment: IdSegmentRef,
+      projectRef: ProjectRef,
+      resolverId: Option[IdSegment],
+      asSource: Boolean = false
+  )(implicit
       caller: Caller
   ): Route =
     authorizeFor(projectRef, Permissions.resources.read).apply {
       parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
-        def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) =
+        def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
           if (showReport)
             emit(io.map(_.report).attemptNarrow[ResolverRejection])
+          else if (asSource)
+            emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
           else
             emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
+        }
 
         resolverId.fold(emitResult(multiResolution(resourceSegment, projectRef))) { resolverId =>
           emitResult(multiResolution(resourceSegment, projectRef, resolverId))
         }
       }
     }
-
 }
 
 object ResolversRoutes {
