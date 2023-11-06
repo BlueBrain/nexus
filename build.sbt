@@ -891,12 +891,13 @@ lazy val storageFatJar = Seq(
       case (_, name)                                  => !name.endsWith(".jar")
     }
     filteredMappings :+ (fatJar -> ("lib/" + fatJar.getName))
-  }
+  },
+  scriptClasspath      := Seq((assembly / assemblyJarName).value)
 )
 
 lazy val storageAssemblySettings = Seq(
+  assembly / assemblyJarName       := "nexus-storage.jar",
   assembly / test                  := {},
-  assembly / assemblyOutputPath    := baseDirectory.value / "nexus-storage.jar",
   assembly / assemblyMergeStrategy := {
     case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
     case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
