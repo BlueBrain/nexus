@@ -38,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
@@ -661,6 +662,22 @@ class FilesRoutesSpec
       deprecated: Boolean = false,
       createdBy: Subject = callerWriter.subject,
       updatedBy: Subject = callerWriter.subject
+  )(implicit baseUri: BaseUri): Json =
+    fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
+
+}
+
+object FilesRoutesSpec {
+  def fileMetadata(
+      project: ProjectRef,
+      id: Iri,
+      attributes: FileAttributes,
+      storage: ResourceRef.Revision,
+      storageType: StorageType = StorageType.DiskStorage,
+      rev: Int = 1,
+      deprecated: Boolean = false,
+      createdBy: Subject,
+      updatedBy: Subject
   )(implicit baseUri: BaseUri): Json =
     jsonContentOf(
       "files/file-route-metadata-response.json",
