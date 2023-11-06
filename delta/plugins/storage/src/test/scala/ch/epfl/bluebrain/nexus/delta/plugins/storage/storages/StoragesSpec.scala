@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.CancelAfterFailure
@@ -26,7 +26,7 @@ import org.scalatest.CancelAfterFailure
 import java.util.UUID
 
 private class StoragesSpec
-    extends BioSpec
+    extends CatsEffectSpec
     with DoobieScalaTestFixture
     with CancelAfterFailure
     with ConfigFixtures

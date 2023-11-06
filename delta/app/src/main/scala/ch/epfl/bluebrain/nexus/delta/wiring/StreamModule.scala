@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO, Sync, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.{Clock, ContextShift, IO, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
@@ -10,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.UIO
 
 /**
   * Indexing specific wiring.
@@ -22,9 +20,10 @@ object StreamModule extends ModuleDef {
     (
         qc: QueryConfig,
         xas: Transactors,
-        shifts: ResourceShifts
+        shifts: ResourceShifts,
+        timer: Timer[IO]
     ) =>
-      GraphResourceStream(qc, xas, shifts)
+      GraphResourceStream(qc, xas, shifts)(timer)
   }
 
   many[PipeDef].add(DiscardMetadata)
@@ -42,17 +41,23 @@ object StreamModule extends ModuleDef {
     registry
   }
 
-  make[Projections].from { (xas: Transactors, cfg: ProjectionConfig) =>
-    Projections(xas, cfg.query, cfg.restartTtl)
+  make[Projections].from { (xas: Transactors, clock: Clock[IO], timer: Timer[IO], cfg: ProjectionConfig) =>
+    Projections(xas, cfg.query, cfg.restartTtl)(clock, timer)
   }
 
-  make[ProjectionErrors].from { (xas: Transactors, cfg: ProjectionConfig) =>
-    ProjectionErrors(xas, cfg.query)
+  make[ProjectionErrors].from { (xas: Transactors, clock: Clock[IO], cfg: ProjectionConfig) =>
+    ProjectionErrors(xas, cfg.query)(clock)
   }
 
   make[Supervisor].fromResource {
-    (projections: Projections, projectionErrors: ProjectionErrors, cfg: ProjectionConfig) =>
-      Supervisor(projections, projectionErrors, cfg).mapK(taskToIoK)
+    (
+        projections: Projections,
+        projectionErrors: ProjectionErrors,
+        timer: Timer[IO],
+        cs: ContextShift[IO],
+        cfg: ProjectionConfig
+    ) =>
+      Supervisor(projections, projectionErrors, cfg)(timer, cs)
   }
 
   make[DeleteExpired].fromEffect {
@@ -61,7 +66,7 @@ object StreamModule extends ModuleDef {
   }
 
   make[PurgeElemFailures].fromEffect {
-    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[UIO]) =>
-      toCatsIO(PurgeElemFailures(supervisor, config, xas)(clock))
+    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO], timer: Timer[IO]) =>
+      PurgeElemFailures(supervisor, config, xas)(clock, timer)
   }
 }

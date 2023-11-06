@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
@@ -164,7 +163,6 @@ class BlazegraphIndexingActionSuite extends CatsEffectSuite with Fixtures {
 
     indexingAction
       .projections(project, elem)
-      .translate(taskToIoK)
       .fold(emptyAcc) {
         case (acc, s: SuccessElem[_]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)

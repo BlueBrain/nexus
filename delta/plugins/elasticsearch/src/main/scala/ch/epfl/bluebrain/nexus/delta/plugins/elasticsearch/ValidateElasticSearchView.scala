@@ -53,14 +53,14 @@ object ValidateElasticSearchView {
     )
 
   def apply(
-             validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
-             fetchPermissionSet: IO[Set[Permission]],
-             createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => HttpResult[Unit],
-             prefix: String,
-             maxViewRefs: Int,
-             xas: Transactors,
-             defaultMapping: DefaultMapping,
-             defaultSettings: DefaultSettings
+      validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
+      fetchPermissionSet: IO[Set[Permission]],
+      createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => HttpResult[Unit],
+      prefix: String,
+      maxViewRefs: Int,
+      xas: Transactors,
+      defaultMapping: DefaultMapping,
+      defaultSettings: DefaultSettings
   ): ValidateElasticSearchView = new ValidateElasticSearchView {
 
     private val validateAggregate = ValidateAggregate(

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -44,7 +44,7 @@ final class ResourcesImpl private (
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       projectContext <- fetchContext.onCreate(projectRef).toCatsIO
-      schemeRef      <- expandResourceRef(schema, projectContext)
+      schemeRef      <- IO.fromEither(expandResourceRef(schema, projectContext))
       jsonld         <- sourceParser(projectRef, projectContext, source).toCatsIO
       res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
@@ -59,7 +59,7 @@ final class ResourcesImpl private (
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onCreate, projectRef, id)
-      schemeRef             <- expandResourceRef(schema, projectContext)
+      schemeRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
@@ -75,7 +75,7 @@ final class ResourcesImpl private (
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller, tag))
     } yield res
@@ -88,7 +88,7 @@ final class ResourcesImpl private (
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemaRef             <- expandResourceRef(schema, projectContext)
+      schemaRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
       res                   <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, schema.some)
                                else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
@@ -102,7 +102,7 @@ final class ResourcesImpl private (
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
       jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
       res                   <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
@@ -119,7 +119,7 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[DataResource] =
     (for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller))
     } yield res).span("tagResource")
 
@@ -132,7 +132,7 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[DataResource] =
     (for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller))
     } yield res).span("deleteResourceTag")
 
@@ -144,9 +144,21 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[DataResource] =
     (for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
     } yield res).span("deprecateResource")
+
+  override def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      rev: Int
+  )(implicit caller: Subject): IO[DataResource] =
+    (for {
+      (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
+      schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
+      res                   <- eval(UndeprecateResource(iri, projectRef, schemaRefOpt, rev, caller))
+    } yield res).span("undeprecateResource")
 
   def fetchState(
       id: IdSegmentRef,
@@ -155,7 +167,7 @@ final class ResourcesImpl private (
   ): IO[ResourceState] = {
     for {
       (iri, pc)    <- expandWithContext(fetchContext.onRead, projectRef, id.value)
-      schemaRefOpt <- expandResourceRef(schemaOpt, pc)
+      schemaRefOpt <- IO.fromEither(expandResourceRef(schemaOpt, pc))
       state        <- stateOrNotFound(id, iri, projectRef)
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound(iri, projectRef))
     } yield state
@@ -211,7 +223,7 @@ object ResourcesImpl {
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF = UUIDF.random): Resources =
+  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validateResource), config.eventLog, xas),
       fetchContext,

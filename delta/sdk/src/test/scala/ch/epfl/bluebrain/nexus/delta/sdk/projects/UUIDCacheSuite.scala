@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -18,7 +19,7 @@ import munit.AnyFixture
 import java.util.UUID
 import scala.concurrent.duration._
 
-class UUIDCacheSuite extends BioSuite with Doobie.Fixture {
+class UUIDCacheSuite extends BioSuite with CatsRunContext with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

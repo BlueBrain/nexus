@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -14,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, GraphResourceToDocument}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
-import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -55,8 +54,8 @@ trait CompositeSink extends Sink
   */
 final class Single[SinkFormat](
     queryGraph: SingleQueryGraph,
-    transform: GraphResource => Task[Option[SinkFormat]],
-    sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
+    transform: GraphResource => IO[Option[SinkFormat]],
+    sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration
 ) extends CompositeSink {
@@ -64,18 +63,18 @@ final class Single[SinkFormat](
   override type In = GraphResource
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  private def queryTransform: GraphResource => Task[Option[SinkFormat]] = gr =>
+  private def queryTransform: GraphResource => IO[Option[SinkFormat]] = gr =>
     for {
-      graph       <- queryGraph(gr)
+      graph       <- queryGraph(gr).toCatsIO
       transformed <- graph.flatTraverse(transform)
     } yield transformed
 
-  override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
+  override def apply(elements: Chunk[Elem[GraphResource]]): IO[Chunk[Elem[Unit]]] =
     elements
       .traverse {
         case e: SuccessElem[GraphResource] => e.evalMapFilter(queryTransform)
-        case e: DroppedElem                => Task.pure(e)
-        case e: FailedElem                 => Task.pure(e)
+        case e: DroppedElem                => IO.pure(e)
+        case e: FailedElem                 => IO.pure(e)
       }
       .flatMap(sink)
 
@@ -99,8 +98,8 @@ final class Single[SinkFormat](
   */
 final class Batch[SinkFormat](
     queryGraph: BatchQueryGraph,
-    transform: GraphResource => Task[Option[SinkFormat]],
-    sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
+    transform: GraphResource => IO[Option[SinkFormat]],
+    sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration
 )(implicit rcr: RemoteContextResolution)
@@ -114,10 +113,10 @@ final class Batch[SinkFormat](
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
-  private def query(elements: Chunk[Elem[GraphResource]]): Task[Option[Graph]] =
+  private def query(elements: Chunk[Elem[GraphResource]]): IO[Option[Graph]] =
     elements.mapFilter(elem => elem.map(_.id).toOption) match {
-      case ids if ids.nonEmpty => queryGraph(ids)
-      case _                   => Task.none
+      case ids if ids.nonEmpty => queryGraph(ids).toCatsIO
+      case _                   => IO.none
     }
 
   /** Replaces the graph of a provided [[GraphResource]] by extracting its new graph from the provided (full) graph. */
@@ -126,11 +125,12 @@ final class Batch[SinkFormat](
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
-      .flatMap(_.toGraph.toBIO[RdfError])
+      .toCatsIO
+      .flatMap(_.toGraph)
       .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
   }
 
-  override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
+  override def apply(elements: Chunk[Elem[GraphResource]]): IO[Chunk[Elem[Unit]]] =
     for {
       graph       <- query(elements).span("batchQueryGraph")
       transformed <- graph match {
@@ -141,7 +141,7 @@ final class Batch[SinkFormat](
                            }
                          }
                        case None            =>
-                         Task.pure(elements.map(_.drop))
+                         IO.pure(elements.map(_.drop))
                      }
       sank        <- sink(transformed)
     } yield sank
@@ -223,8 +223,8 @@ object CompositeSink {
       blazeClient: BlazegraphClient,
       common: String,
       query: SparqlConstructQuery,
-      transform: GraphResource => Task[Option[SinkFormat]],
-      sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
+      transform: GraphResource => IO[Option[SinkFormat]],
+      sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
       batchConfig: BatchConfig,
       sinkConfig: SinkConfig
   )(implicit rcr: RemoteContextResolution): CompositeSink = sinkConfig match {

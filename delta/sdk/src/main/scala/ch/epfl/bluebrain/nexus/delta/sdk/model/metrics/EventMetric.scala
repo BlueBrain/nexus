@@ -69,12 +69,13 @@ sealed trait EventMetric extends Product with Serializable {
 
 object EventMetric {
 
-  val Created: Label    = Label.unsafe("Created")
-  val Updated: Label    = Label.unsafe("Updated")
-  val Refreshed: Label  = Label.unsafe("Refreshed")
-  val Tagged: Label     = Label.unsafe("Tagged")
-  val TagDeleted: Label = Label.unsafe("TagDeleted")
-  val Deprecated: Label = Label.unsafe("Deprecated")
+  val Created: Label      = Label.unsafe("Created")
+  val Updated: Label      = Label.unsafe("Updated")
+  val Refreshed: Label    = Label.unsafe("Refreshed")
+  val Tagged: Label       = Label.unsafe("Tagged")
+  val TagDeleted: Label   = Label.unsafe("TagDeleted")
+  val Deprecated: Label   = Label.unsafe("Deprecated")
+  val Undeprecated: Label = Label.unsafe("Undeprecated")
 
   /**
     * Metric extracted from an event independent from an org/project

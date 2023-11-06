@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO => BIO, Task, UIO}
+import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 import scala.reflect.ClassTag
-import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 trait IOSyntax {
 
@@ -88,5 +88,7 @@ final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
 
 final class IOOps[A](private val io: IO[A]) extends AnyVal {
   def logErrors(action: String)(implicit logger: Log4CatsLogger[IO]): IO[A] =
-    io.onError(logger.warn(_)(s"Error during: '$action'"))
+    io.onError { e =>
+      logger.warn(e)(s"Error during: '$action'")
+    }
 }

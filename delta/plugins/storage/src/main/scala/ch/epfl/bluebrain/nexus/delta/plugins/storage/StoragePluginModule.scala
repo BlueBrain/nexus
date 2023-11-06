@@ -76,6 +76,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           serviceAccount: ServiceAccount,
           api: JsonLdApi,
           clock: Clock[IO],
+          timer: Timer[IO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           cs: ContextShift[IO]
@@ -94,6 +95,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )(
           api,
           clock,
+          timer,
           uuidF
         )
     }
@@ -167,6 +169,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           remoteDiskStorageClient: RemoteDiskStorageClient,
+          timer: Timer[IO],
           cs: ContextShift[IO]
       ) =>
         IO
@@ -183,6 +186,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
             )(
               clock,
               uuidF,
+              timer,
               cs,
               as
             )

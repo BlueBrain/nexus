@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
@@ -79,20 +78,20 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
       val deletionTask: ProjectDeletionTask = new ProjectDeletionTask {
         override def apply(project: ProjectRef)(implicit
             subject: Subject
-        ): Task[ProjectDeletionReport.Stage] =
-          deleted.update(_ + project).as(taskStage).toTask
+        ): IO[ProjectDeletionReport.Stage] =
+          deleted.update(_ + project).as(taskStage)
       }
       (deleted, ProjectDeletionCoordinator(projects, Set(deletionTask), config, serviceAccount, xas))
     }
 
   // Asserting partition number for both events and states
-  private def assertPartitions(expected: Int) =
+  private def assertPartitions(expected: Int): IO[List[Unit]] =
     List("scoped_events%", "scoped_states%").traverse { pattern =>
       for {
         result <- sql"""SELECT table_name from information_schema.tables where table_name like $pattern"""
                     .query[String]
                     .to[List]
-                    .transact(xas.read)
+                    .transact(xas.readCE)
         // We add +2 as there is the main table and the partition related to the organisation
         _       = result.assertSize(expected + 2)
       } yield ()
@@ -127,17 +126,17 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
   test("Run the deletion coordinator") {
     for {
       (deleted, c)      <- initCoordinator(deletionEnabled)
-      _                 <- assertPartitions(3).toCatsIO
+      _                 <- assertPartitions(3)
       // Running the coordinator
       activeCoordinator <- c match {
                              case Noop           => fail("We should have an active coordinator as deletion is enabled.")
                              case active: Active =>
-                               active.run(Offset.start).translate(taskToIoK).compile.drain.as(active)
+                               active.run(Offset.start).compile.drain.as(active)
                            }
       // Checking that the deletion task has only be run for the expected project
       _                 <- deleted.get.assertEquals(Set(markedAsDeleted), s"The deletion task should only contain '$markedAsDeleted'.")
       // Checking that the deletion report has been saved
-      savedReports      <- activeCoordinator.list(markedAsDeleted).toCatsIO
+      savedReports      <- activeCoordinator.list(markedAsDeleted)
       _                  = savedReports.assertOneElem
       expectedReport     = ProjectDeletionReport(markedAsDeleted, Instant.EPOCH, Instant.EPOCH, subject, Vector(taskStage))
       _                  = savedReports.assertContains(expectedReport)
@@ -146,7 +145,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
       _                 <- projects.fetch(deprecated)
       _                 <- projects.fetch(markedAsDeleted).intercept(ProjectNotFound(markedAsDeleted))
       // Checking that the partitions have been correctly deleted
-      _                 <- assertPartitions(2).toCatsIO
+      _                 <- assertPartitions(2)
       // Checking that the dependencies have been cleared
       _                 <- EntityDependencyStore
                              .directDependencies(markedAsDeleted, entityToDelete, xas)

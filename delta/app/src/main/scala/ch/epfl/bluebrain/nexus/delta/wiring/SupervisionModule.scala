@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Supervision module wiring config.
@@ -26,10 +25,9 @@ object SupervisionModule extends ModuleDef {
         aclCheck: AclCheck,
         supervisor: Supervisor,
         baseUri: BaseUri,
-        s: Scheduler,
         rc: RemoteContextResolution @Id("aggregate"),
         jo: JsonKeyOrdering
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, s, rc, jo)
+    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo)
   }
 
   many[RemoteContextResolution].addEffect(

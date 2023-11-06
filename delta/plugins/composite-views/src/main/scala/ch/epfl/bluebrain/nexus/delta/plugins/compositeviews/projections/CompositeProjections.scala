@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.FailedElemLogStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.{Pipe, Stream}
-import monix.bio.Task
 
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
@@ -83,7 +82,7 @@ trait CompositeProjections {
     * @param view
     *   the view reference
     */
-  def handleRestarts[A](view: ViewRef): Pipe[Task, A, A]
+  def handleRestarts[A](view: ViewRef): Pipe[IO, A, A]
 }
 
 object CompositeProjections {
@@ -96,7 +95,7 @@ object CompositeProjections {
       query: QueryConfig,
       batch: BatchConfig,
       restartCheckInterval: FiniteDuration
-  )(implicit clock: Clock[IO]): CompositeProjections =
+  )(implicit clock: Clock[IO], timer: Timer[IO], cs: ContextShift[IO]): CompositeProjections =
     new CompositeProjections {
       private val failedElemLogStore     = FailedElemLogStore(xas, query)
       private val compositeProgressStore = new CompositeProgressStore(xas)
@@ -114,7 +113,7 @@ object CompositeProjections {
             progress,
             compositeProgressStore.save(view.indexingRef, branch, _).toUIO,
             failedElemLogStore.save(view.metadata, _)
-          )(batch)
+          )(batch, timer, cs)
         )
 
       override def deleteAll(view: IndexingViewRef): IO[Unit] = compositeProgressStore.deleteAll(view)
@@ -144,7 +143,7 @@ object CompositeProjections {
         logger.debug(s"Automatically reset rebuild offsets for projection $target of composite view '$view'") >>
           compositeProgressStore.restart(PartialRebuild.auto(view, target))
 
-      override def handleRestarts[A](view: ViewRef): Pipe[Task, A, A] = (stream: Stream[Task, A]) => {
+      override def handleRestarts[A](view: ViewRef): Pipe[IO, A, A] = (stream: Stream[IO, A]) => {
         val applyRestart =
           for {
             head <- compositeRestartStore.head(view)
@@ -156,12 +155,12 @@ object CompositeProjections {
                     }
           } yield ()
 
-        def restartWhen: Stream[Task, Boolean] =
+        def restartWhen: Stream[IO, Boolean] =
           Stream
-            .awakeEvery[Task](restartCheckInterval)
-            .flatMap { _ => Stream.eval(compositeRestartStore.head(view).toUIO).map(_.nonEmpty) }
+            .awakeEvery[IO](restartCheckInterval)
+            .flatMap { _ => Stream.eval(compositeRestartStore.head(view)).map(_.nonEmpty) }
 
-        stream.interruptWhen(restartWhen).onFinalize(applyRestart.toUIO).repeat
+        stream.interruptWhen(restartWhen).onFinalize(applyRestart).repeat
       }
     }
 }

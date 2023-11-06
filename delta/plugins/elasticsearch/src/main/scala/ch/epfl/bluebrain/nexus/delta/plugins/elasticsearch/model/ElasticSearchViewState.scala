@@ -71,43 +71,44 @@ final case class ElasticSearchViewState(
   /**
     * Maps the current state to an [[ElasticSearchView]] value.
     */
-  def asElasticSearchView(defaultMapping: DefaultMapping, defaultSettings: DefaultSettings): ElasticSearchView = value match {
-    case IndexingElasticSearchViewValue(
-          name,
-          description,
-          resourceTag,
-          pipeline,
-          mapping,
-          settings,
-          context,
-          permission
-        ) =>
-      IndexingElasticSearchView(
-        id = id,
-        name = name,
-        description = description,
-        project = project,
-        uuid = uuid,
-        resourceTag = resourceTag,
-        pipeline = pipeline,
-        mapping = mapping.getOrElse(defaultMapping.value),
-        settings = settings.getOrElse(defaultSettings.value),
-        context = context,
-        permission = permission,
-        tags = tags,
-        source = source
-      )
-    case AggregateElasticSearchViewValue(name, description, views) =>
-      AggregateElasticSearchView(
-        id = id,
-        name = name,
-        description = description,
-        project = project,
-        views = views,
-        tags = tags,
-        source = source
-      )
-  }
+  def asElasticSearchView(defaultMapping: DefaultMapping, defaultSettings: DefaultSettings): ElasticSearchView =
+    value match {
+      case IndexingElasticSearchViewValue(
+            name,
+            description,
+            resourceTag,
+            pipeline,
+            mapping,
+            settings,
+            context,
+            permission
+          ) =>
+        IndexingElasticSearchView(
+          id = id,
+          name = name,
+          description = description,
+          project = project,
+          uuid = uuid,
+          resourceTag = resourceTag,
+          pipeline = pipeline,
+          mapping = mapping.getOrElse(defaultMapping.value),
+          settings = settings.getOrElse(defaultSettings.value),
+          context = context,
+          permission = permission,
+          tags = tags,
+          source = source
+        )
+      case AggregateElasticSearchViewValue(name, description, views) =>
+        AggregateElasticSearchView(
+          id = id,
+          name = name,
+          description = description,
+          project = project,
+          views = views,
+          tags = tags,
+          source = source
+        )
+    }
 
   def toResource(
       defaultMapping: DefaultMapping,

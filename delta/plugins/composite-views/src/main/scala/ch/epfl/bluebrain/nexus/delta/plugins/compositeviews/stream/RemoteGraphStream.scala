@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.RemoteSourceClientConfig
@@ -10,19 +11,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.MissingPredicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems, Source}
 import fs2.Stream
 import io.circe.Json
-import monix.bio.{Task, UIO}
 
 final class RemoteGraphStream(
     deltaClient: DeltaClient,
     config: RemoteSourceClientConfig,
     metadataPredicates: MetadataPredicates
-) {
+)(implicit timer: Timer[IO], cs: ContextShift[IO]) {
 
   /**
     * Get a continuous stream of element as a [[Source]] for the main branch
@@ -51,9 +52,9 @@ final class RemoteGraphStream(
       }
       .flatMap(Stream.chunk)
 
-  private def populateElem(remote: RemoteProjectSource, elem: Elem[Unit]): UIO[Elem[GraphResource]] =
+  private def populateElem(remote: RemoteProjectSource, elem: Elem[Unit]): IO[Elem[GraphResource]] =
     elem.evalMapFilter { _ =>
-      deltaClient.resourceAsNQuads(remote, elem.id).flatMap {
+      deltaClient.resourceAsNQuads(remote, elem.id).toCatsIO.flatMap {
         _.traverse { nquads => fromNQuads(elem, remote.project, nquads, metadataPredicates) }
       }
     }
@@ -63,8 +64,8 @@ final class RemoteGraphStream(
     * @param source
     *   the composite view source
     */
-  def remaining(source: RemoteProjectSource, offset: Offset): UIO[RemainingElems] =
-    deltaClient.remaining(source, offset).hideErrors
+  def remaining(source: RemoteProjectSource, offset: Offset): IO[RemainingElems] =
+    deltaClient.remaining(source, offset).toCatsIO
 
 }
 
@@ -78,7 +79,7 @@ object RemoteGraphStream {
       project: ProjectRef,
       nQuads: NQuads,
       metadataPredicates: MetadataPredicates
-  ): Task[GraphResource] = Task.fromEither {
+  ): IO[GraphResource] = IO.fromEither {
     for {
       graph      <- Graph(nQuads)
       valueGraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }

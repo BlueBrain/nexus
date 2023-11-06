@@ -110,16 +110,16 @@ class ElasticSearchQueryRoutes(
                 pathEndOrSingleSlash {
                   val request = DefaultSearchRequest.RootSearch(params, page, sort, resourceSchema)(fetchContext)
                   concat(
-                    aggregate(request),
-                    list(request)
+                    aggregate(IO.fromEither(request)),
+                    list(IO.fromEither(request))
                   )
                 },
                 // List all resources of type resourceSegment inside an organization
                 (label & pathEndOrSingleSlash) { org =>
                   val request = DefaultSearchRequest.OrgSearch(org, params, page, sort, resourceSchema)(fetchContext)
                   concat(
-                    aggregate(request),
-                    list(request)
+                    aggregate(IO.fromEither(request)),
+                    list(IO.fromEither(request))
                   )
                 }
               )

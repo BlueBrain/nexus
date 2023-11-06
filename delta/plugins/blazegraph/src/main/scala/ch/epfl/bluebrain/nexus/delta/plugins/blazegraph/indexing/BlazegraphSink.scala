@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
@@ -14,8 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Chunk
-import monix.bio.{Task, UIO}
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -48,7 +49,7 @@ final class BlazegraphSink(
   implicit private val kamonComponent: KamonMetricComponent =
     KamonMetricComponent(BlazegraphViews.entityType.value)
 
-  override def apply(elements: Chunk[Elem[NTriples]]): Task[Chunk[Elem[Unit]]] = {
+  override def apply(elements: Chunk[Elem[NTriples]]): IO[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(BlazegraphBulk.empty(endpoint)) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, triples, _)) =>
         acc.replace(id, triples)
@@ -60,15 +61,16 @@ final class BlazegraphSink(
     if (bulk.queries.nonEmpty)
       client
         .bulk(namespace, bulk.queries)
+        .toCatsIO
         .redeemWith(
           err =>
-            UIO
+            IO
               .delay(logger.error(s"Indexing in blazegraph namespace $namespace failed", err))
               .as(elements.map { _.failed(err) }),
-          _ => UIO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
+          _ => IO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
         )
     else
-      UIO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
+      IO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
   }.span("blazegraphSink")
 
   private def markInvalidIdsAsFailed(elements: Chunk[Elem[NTriples]], invalidIds: Set[Iri]) =

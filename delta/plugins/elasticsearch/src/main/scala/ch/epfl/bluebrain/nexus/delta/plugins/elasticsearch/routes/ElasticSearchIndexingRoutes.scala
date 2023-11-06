@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.{ContextShift, IO}
 import cats.implicits.catsSyntaxApplicativeError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -89,7 +88,7 @@ final class ElasticSearchIndexingRoutes(
                   authorizeFor(ref, Read).apply {
                     emit(
                       fetch(id, ref)
-                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection).toCatsIO)
+                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
                         .attemptNarrow[ElasticSearchViewRejection]
                         .rejectOn[ViewNotFound]
                     )
@@ -115,7 +114,7 @@ final class ElasticSearchIndexingRoutes(
                           emit(
                             fetch(id, ref)
                               .flatMap { view =>
-                                projectionErrors.search(view.ref, pagination, timeRange).toCatsIO
+                                projectionErrors.search(view.ref, pagination, timeRange)
                               }
                               .attemptNarrow[ElasticSearchViewRejection]
                               .rejectOn[ViewNotFound]
@@ -131,7 +130,7 @@ final class ElasticSearchIndexingRoutes(
                     (get & authorizeFor(ref, Read)) {
                       emit(
                         fetch(id, ref)
-                          .flatMap(v => projections.offset(v.projection).toCatsIO)
+                          .flatMap(v => projections.offset(v.projection))
                           .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]
                       )
@@ -140,7 +139,7 @@ final class ElasticSearchIndexingRoutes(
                     (delete & authorizeFor(ref, Write)) {
                       emit(
                         fetch(id, ref)
-                          .flatMap { v => projections.scheduleRestart(v.projection).toCatsIO }
+                          .flatMap { v => projections.scheduleRestart(v.projection) }
                           .as(Offset.start)
                           .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]

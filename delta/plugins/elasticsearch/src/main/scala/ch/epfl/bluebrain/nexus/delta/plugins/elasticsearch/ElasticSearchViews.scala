@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toCatsIOOps, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -327,7 +327,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   /**
     * Return all existing indexing views in a finite stream
@@ -338,7 +337,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   /**
     * Return the indexing views in a non-ending stream
@@ -349,7 +347,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
     envelope.toElem { v => Some(v.project) }.traverse { v =>
@@ -414,7 +411,7 @@ object ElasticSearchViews {
       xas: Transactors,
       defaultMapping: DefaultMapping,
       defaultSettings: DefaultSettings
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
+  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(
@@ -439,7 +436,7 @@ object ElasticSearchViews {
       Option.when(state.isEmpty) {
         ElasticSearchViewState(e.id, e.project, e.uuid, e.value, e.source, Tags.empty, e.rev, IndexingRev.init, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       }
-
+      
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
       val newIndexingRev = nextIndexingRev(s.value, e.value, s.indexingRev, e.rev)
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)

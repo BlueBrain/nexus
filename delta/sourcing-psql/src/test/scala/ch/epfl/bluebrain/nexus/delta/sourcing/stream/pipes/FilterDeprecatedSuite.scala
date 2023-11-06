@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class FilterDeprecatedSuite extends BioSuite {
+class FilterDeprecatedSuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -52,7 +52,7 @@ class FilterDeprecatedSuite extends BioSuite {
       rev = 1
     )
 
-    pipe(elem).assert(elem.dropped)
+    pipe(elem).assertEquals(elem.dropped)
   }
 
   test("Preserve non-deprecated elements") {
@@ -66,6 +66,6 @@ class FilterDeprecatedSuite extends BioSuite {
       rev = 1
     )
 
-    pipe(elem).assert(elem)
+    pipe(elem).assertEquals(elem)
   }
 }

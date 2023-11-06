@@ -1,16 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
-import fs2.Stream
-import monix.bio.Task
+import fs2.{INothing, Stream}
 
 import scala.concurrent.duration.FiniteDuration
 
-class BlazegraphSlowQueryDeleter(store: BlazegraphSlowQueryStore, deletionThreshold: FiniteDuration) {
-  def deleteOldQueries: Task[Unit] = {
-    IOUtils.instant.flatMap { now =>
-      store.removeQueriesOlderThan(now.minusMillis(deletionThreshold.toMillis))
+class BlazegraphSlowQueryDeleter(store: BlazegraphSlowQueryStore, deletionThreshold: FiniteDuration)(implicit
+    clock: Clock[IO]
+) {
+  def deleteOldQueries: IO[Unit] = {
+    IOInstant.now.flatMap { now =>
+      store.removeQueriesOlderThan(now.minusMillis(deletionThreshold.toMillis)).toCatsIO
     }
   }
 }
@@ -23,11 +26,11 @@ object BlazegraphSlowQueryDeleter {
       store: BlazegraphSlowQueryStore,
       deletionThreshold: FiniteDuration,
       deletionCheckInterval: FiniteDuration
-  ): Task[BlazegraphSlowQueryDeleter] = {
+  )(implicit timer: Timer[IO]): IO[BlazegraphSlowQueryDeleter] = {
     val runner = new BlazegraphSlowQueryDeleter(store, deletionThreshold)
 
-    val continuousStream = Stream
-      .fixedRate[Task](deletionCheckInterval)
+    val continuousStream: Stream[IO, INothing] = Stream
+      .fixedRate[IO](deletionCheckInterval)
       .evalMap(_ => runner.deleteOldQueries)
       .drain
 

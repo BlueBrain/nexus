@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, Delet
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Sub
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.Task
 
 import java.time.Instant
 
@@ -359,7 +358,7 @@ object Acls {
     * acls
     */
   def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
-    override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] = {
+    override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] = {
       val report = ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
       acls.purge(project).toTask.as(report)
     }

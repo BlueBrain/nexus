@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.implicits._
 import io.circe.Codec
@@ -25,7 +26,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFixtures {
+class ProjectsStatisticsSuite extends BioSuite with CatsRunContext with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

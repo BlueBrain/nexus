@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
+import cats.effect.{IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -8,9 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 trait GraphResourceStream {
 
@@ -48,7 +48,7 @@ trait GraphResourceStream {
     * @param start
     *   the offset to start with
     */
-  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]
+  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): IO[Option[RemainingElems]]
 }
 
 object GraphResourceStream {
@@ -58,14 +58,14 @@ object GraphResourceStream {
     */
   val empty: GraphResourceStream = new GraphResourceStream {
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      Stream.never[Task]
+      Stream.never[IO]
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource]   =
       Stream.empty
     override def remaining(
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
-    ): UIO[Option[RemainingElems]]                                                                                     = UIO.none
+    ): IO[Option[RemainingElems]]                                                                                      = IO.none
   }
 
   /**
@@ -75,10 +75,10 @@ object GraphResourceStream {
       qc: QueryConfig,
       xas: Transactors,
       shifts: ResourceShifts
-  ): GraphResourceStream = new GraphResourceStream {
+  )(implicit timer: Timer[IO]): GraphResourceStream = new GraphResourceStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _).toTask)
+      StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _))
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
       StreamingQuery.elems(
@@ -94,7 +94,7 @@ object GraphResourceStream {
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
-    ): UIO[Option[RemainingElems]] =
+    ): IO[Option[RemainingElems]] =
       StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 
@@ -114,7 +114,7 @@ object GraphResourceStream {
           project: ProjectRef,
           selectFilter: SelectFilter,
           start: Offset
-      ): UIO[Option[RemainingElems]]                                                                                   = UIO.none
+      ): IO[Option[RemainingElems]]                                                                                    = IO.none
     }
 
 }

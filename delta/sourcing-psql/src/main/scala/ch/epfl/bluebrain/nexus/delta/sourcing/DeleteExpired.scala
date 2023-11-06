@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
@@ -48,7 +47,7 @@ object DeleteExpired {
       .drain
 
     val deleteExpiredProjection =
-      CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream.translate(ioToUioK))
+      CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream)
     supervisor.run(deleteExpiredProjection).as(deleteExpired)
   }
 }

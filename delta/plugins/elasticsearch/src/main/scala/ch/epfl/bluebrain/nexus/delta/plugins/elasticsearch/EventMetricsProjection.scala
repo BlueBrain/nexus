@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import cats.effect.{ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
-import monix.bio.Task
 
 trait EventMetricsProjection
 
@@ -45,16 +45,16 @@ object EventMetricsProjection {
     *   ScopedEventMetricEncoder are silently ignored.
     */
   def apply(
-             metricEncoders: Set[ScopedEventMetricEncoder[_]],
-             supervisor: Supervisor,
-             client: ElasticSearchClient,
-             xas: Transactors,
-             batchConfig: BatchConfig,
-             queryConfig: QueryConfig,
-             indexPrefix: String,
-             metricMappings: MetricsMapping,
-             metricsSettings: MetricsSettings
-  ): Task[EventMetricsProjection] = {
+      metricEncoders: Set[ScopedEventMetricEncoder[_]],
+      supervisor: Supervisor,
+      client: ElasticSearchClient,
+      xas: Transactors,
+      batchConfig: BatchConfig,
+      queryConfig: QueryConfig,
+      indexPrefix: String,
+      metricMappings: MetricsMapping,
+      metricsSettings: MetricsSettings
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
     implicit val multiDecoder: MultiDecoder[ProjectScopedMetric] =
@@ -80,11 +80,11 @@ object EventMetricsProjection {
       sink: Sink,
       supervisor: Supervisor,
       metrics: Offset => EnvelopeStream[ProjectScopedMetric],
-      init: Task[Unit]
-  ): Task[EventMetricsProjection] = {
+      init: IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
 
     val source = Source { (offset: Offset) =>
-      metrics(offset).translate(ioToTaskK).map { e => e.toElem { m => Some(m.project) } }
+      metrics(offset).map { e => e.toElem { m => Some(m.project) } }
     }
 
     val compiledProjection =
@@ -97,7 +97,7 @@ object EventMetricsProjection {
       )
 
     for {
-      projection <- Task.fromEither(compiledProjection)
+      projection <- IO.fromEither(compiledProjection)
       _          <- supervisor.run(projection, init)
     } yield new EventMetricsProjection {}
   }

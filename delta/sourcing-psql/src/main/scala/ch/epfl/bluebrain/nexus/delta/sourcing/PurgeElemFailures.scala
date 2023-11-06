@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
@@ -9,23 +9,22 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._
 
-final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration)(implicit clock: Clock[UIO]) {
+final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration)(implicit clock: Clock[IO]) {
 
   /**
     * Deletes the projection errors that are older than the given `ttl`.
     */
-  def apply(): UIO[Unit] =
+  def apply(): IO[Unit] =
     for {
-      threshold <- IOUtils.instant.map(_.minusMillis(ttl.toMillis))
+      threshold <- IOInstant.now.map(_.minusMillis(ttl.toMillis))
       deleted   <- sql"""
                     | DELETE FROM public.failed_elem_logs
                     | WHERE instant < $threshold
-                    """.stripMargin.update.run.transact(xas.write).hideErrors
-      _         <- UIO.when(deleted > 0)(UIO.delay(logger.info(s"Deleted {} old indexing failures.", deleted)))
+                    """.stripMargin.update.run.transact(xas.writeCE)
+      _         <- IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted {} old indexing failures.", deleted)))
     } yield ()
 }
 
@@ -38,12 +37,13 @@ object PurgeElemFailures {
     * Creates a [[PurgeElemFailures]] instance and schedules in the supervisor the deletion of old projection errors.
     */
   def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors)(implicit
-      clock: Clock[UIO]
-  ): Task[PurgeElemFailures] = {
+      clock: Clock[IO],
+      timer: Timer[IO]
+  ): IO[PurgeElemFailures] = {
     val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl)
 
     val stream = Stream
-      .awakeEvery[Task](config.deleteExpiredEvery)
+      .awakeEvery[IO](config.deleteExpiredEvery)
       .evalTap(_ => purgeElemFailures())
       .drain
 

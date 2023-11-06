@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -18,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
-import monix.bio.Task
 
 sealed trait ElasticSearchCoordinator
 
@@ -26,7 +27,7 @@ object ElasticSearchCoordinator {
 
   /** If indexing is disabled we can only log */
   final private case object Noop extends ElasticSearchCoordinator {
-    def log: Task[Unit] =
+    def log: IO[Unit] =
       logger.info("Elasticsearch indexing has been disabled via config")
 
   }
@@ -48,15 +49,15 @@ object ElasticSearchCoordinator {
       fetchViews: Offset => ElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
-      cache: KeyValueStore[ViewRef, ActiveViewDef],
+      cache: LocalCache[ViewRef, ActiveViewDef],
       supervisor: Supervisor,
       sink: ActiveViewDef => Sink,
-      createIndex: ActiveViewDef => Task[Unit],
-      deleteIndex: ActiveViewDef => Task[Unit]
-  )(implicit cr: RemoteContextResolution)
+      createIndex: ActiveViewDef => IO[Unit],
+      deleteIndex: ActiveViewDef => IO[Unit]
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO])
       extends ElasticSearchCoordinator {
 
-    def run(offset: Offset): Stream[Task, Elem[Unit]] = {
+    def run(offset: Offset): Stream[IO, Elem[Unit]] = {
       fetchViews(offset).evalMap { elem =>
         elem
           .traverse { v =>
@@ -86,7 +87,7 @@ object ElasticSearchCoordinator {
                 }
               }
           }
-          .onErrorRecoverWith {
+          .recoverWith {
             // If the current view does not translate to a projection or if there is a problem
             // with the mapping with the mapping / setting then we mark it as failed and move along
             case p: ProjectionErr                                                   =>
@@ -105,7 +106,7 @@ object ElasticSearchCoordinator {
       }
     }
 
-    private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): Task[Unit] =
+    private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): IO[Unit] =
       cached match {
         case Some(v) =>
           supervisor
@@ -125,13 +126,13 @@ object ElasticSearchCoordinator {
           logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
 
-    private def compile(active: ActiveViewDef): Task[CompiledProjection] =
+    private def compile(active: ActiveViewDef): IO[CompiledProjection] =
       IndexingViewDef.compile(active, compilePipeChain, graphStream, sink(active))
 
   }
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "elasticsearch-coordinator", None, None)
-  private val logger: Logger       = Logger[ElasticSearchCoordinator]
+  private val logger               = Logger.cats[ElasticSearchCoordinator]
 
   def apply(
       views: ElasticSearchViews,
@@ -140,7 +141,7 @@ object ElasticSearchCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: ElasticSearchViewsConfig
-  )(implicit cr: RemoteContextResolution): Task[ElasticSearchCoordinator] = {
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[ElasticSearchCoordinator] = {
     if (config.indexingEnabled) {
       apply(
         views.indexingViews,
@@ -152,7 +153,8 @@ object ElasticSearchCoordinator {
         (v: ActiveViewDef) =>
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))
-            .tapError { e =>
+            .toCatsIO
+            .onError { e =>
               logger.error(e)(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,
@@ -169,11 +171,11 @@ object ElasticSearchCoordinator {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       supervisor: Supervisor,
       sink: ActiveViewDef => Sink,
-      createIndex: ActiveViewDef => Task[Unit],
-      deleteIndex: ActiveViewDef => Task[Unit]
-  )(implicit cr: RemoteContextResolution): Task[ElasticSearchCoordinator] =
+      createIndex: ActiveViewDef => IO[Unit],
+      deleteIndex: ActiveViewDef => IO[Unit]
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[ElasticSearchCoordinator] =
     for {
-      cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
+      cache      <- LocalCache[ViewRef, ActiveViewDef]()
       coordinator = new Active(
                       fetchViews,
                       graphStream,

@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class ProjectionRestartStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class ProjectionRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -28,11 +28,11 @@ class ProjectionRestartStoreSuite extends BioSuite with Doobie.Fixture with Doob
     SuccessElem(entityType, restartId(id), None, restart.instant, id, restart, 1)
 
   test("Save a projection restart") {
-    store.save(pr1).assert(())
+    store.save(pr1).assertEquals(())
   }
 
   test("Save a second projection restart") {
-    store.save(pr2).assert(())
+    store.save(pr2).assertEquals(())
   }
 
   test("Stream projection restarts") {

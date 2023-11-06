@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -127,7 +127,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         uuidF: UUIDF,
-        clock: Clock[IO]
+        clock: Clock[IO],
+        timer: Timer[IO]
     ) =>
       CompositeViews(
         fetchContext.mapRejection(ProjectContextRejection),
@@ -138,6 +139,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )(
         api,
         clock,
+        timer,
         uuidF
       )
   }
@@ -148,7 +150,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         config: CompositeViewsConfig,
         projectionConfig: ProjectionConfig,
-        clock: Clock[IO]
+        clock: Clock[IO],
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       val compositeRestartStore = new CompositeRestartStore(xas)
       val compositeProjections  =
@@ -158,10 +162,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           projectionConfig.query,
           projectionConfig.batch,
           config.restartCheckInterval
-        )(clock)
+        )(clock, timer, cs)
 
       CompositeRestartStore
-        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock, timer)
         .as(compositeProjections)
   }
 
@@ -202,8 +206,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[RemoteGraphStream].from {
-    (deltaClient: DeltaClient, config: CompositeViewsConfig, metadataPredicates: MetadataPredicates) =>
-      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)
+    (
+        deltaClient: DeltaClient,
+        config: CompositeViewsConfig,
+        metadataPredicates: MetadataPredicates,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)(timer, cs)
   }
 
   make[CompositeGraphStream].from { (local: GraphResourceStream, remote: RemoteGraphStream) =>
@@ -219,7 +229,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         graphStream: CompositeGraphStream,
         spaces: CompositeSpaces,
         sinks: CompositeSinks,
-        compositeProjections: CompositeProjections
+        compositeProjections: CompositeProjections,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       CompositeProjectionLifeCycle(
         hooks,
@@ -228,7 +240,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         spaces,
         sinks,
         compositeProjections
-      )
+      )(timer, cs)
   }
 
   private def isCompositeMigrationRunning =

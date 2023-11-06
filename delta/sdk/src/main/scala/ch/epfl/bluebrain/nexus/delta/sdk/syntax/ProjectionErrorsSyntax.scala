@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import io.circe.Printer
-import monix.bio.UIO
 
 /**
   * Allows to extend the methods from [[ProjectionErrors]] by adding higher-level methods
@@ -50,15 +50,14 @@ object ProjectionErrorsSyntax {
     def sses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
         rcr: RemoteContextResolution
     ): ServerSentEventStream =
-      projectionErrors.failedElemEntries(projectionProject, projectionId, offset).translate(taskToIoK).evalMap {
-        felem =>
-          felem.failedElemData.toCompactedJsonLd.toCatsIO.map { compactJson =>
-            ServerSentEvent(
-              defaultPrinter.print(compactJson.json),
-              "IndexingFailure",
-              felem.ordering.value.toString
-            )
-          }
+      projectionErrors.failedElemEntries(projectionProject, projectionId, offset).evalMap { felem =>
+        felem.failedElemData.toCompactedJsonLd.toCatsIO.map { compactJson =>
+          ServerSentEvent(
+            defaultPrinter.print(compactJson.json),
+            "IndexingFailure",
+            felem.ordering.value.toString
+          )
+        }
       }
 
     /**
@@ -72,7 +71,7 @@ object ProjectionErrorsSyntax {
       *   the time range to restrict on
       * @return
       */
-    def search(view: ViewRef, pagination: FromPagination, timeRange: TimeRange): UIO[SearchResults[FailedElemData]] = {
+    def search(view: ViewRef, pagination: FromPagination, timeRange: TimeRange): IO[SearchResults[FailedElemData]] = {
       for {
         results <- projectionErrors.list(view.project, view.viewId, pagination, timeRange)
         count   <- projectionErrors.count(view.project, view.viewId, timeRange)

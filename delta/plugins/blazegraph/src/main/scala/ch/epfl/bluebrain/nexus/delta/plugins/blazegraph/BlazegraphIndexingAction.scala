@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -31,9 +31,13 @@ final class BlazegraphIndexingAction(
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
     override val timeout: FiniteDuration
-) extends IndexingAction {
+)(implicit timer: Timer[IO], cs: ContextShift[IO])
+    extends IndexingAction {
 
-  private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): Task[Option[CompiledProjection]] = view match {
+  private def compile(view: IndexingViewDef, elem: Elem[GraphResource])(implicit
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ): IO[Option[CompiledProjection]] = view match {
     // Synchronous indexing only applies to views that index the latest version
     case active: ActiveViewDef if active.selectFilter.tag == Tag.Latest =>
       IndexingViewDef
@@ -44,11 +48,11 @@ final class BlazegraphIndexingAction(
           sink(active)
         )
         .map(Some(_))
-    case _: ActiveViewDef                                               => UIO.none
-    case _: DeprecatedViewDef                                           => UIO.none
+    case _: ActiveViewDef                                               => IO.none
+    case _: DeprecatedViewDef                                           => IO.none
   }
 
-  def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection] =
+  override def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection] =
     fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
 }
 
@@ -59,7 +63,7 @@ object BlazegraphIndexingAction {
       registry: ReferenceRegistry,
       client: BlazegraphClient,
       timeout: FiniteDuration
-  )(implicit baseUri: BaseUri): BlazegraphIndexingAction = {
+  )(implicit baseUri: BaseUri, timer: Timer[IO], cs: ContextShift[IO]): BlazegraphIndexingAction = {
     val batchConfig = BatchConfig.individual
     new BlazegraphIndexingAction(
       views.currentIndexingViews,

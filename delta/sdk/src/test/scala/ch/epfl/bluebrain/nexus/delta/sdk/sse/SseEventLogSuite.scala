@@ -8,14 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectMUnitAssertions, CatsEffectSuite}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 import java.util.UUID
 
-class SseEventLogSuite extends CatsEffectSuite with ConfigFixtures with CatsEffectMUnitAssertions {
+class SseEventLogSuite extends CatsEffectSuite with ConfigFixtures with CatsEffectAssertions {
 
   implicit private val jo: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 

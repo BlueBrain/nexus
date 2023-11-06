@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -19,9 +19,9 @@ class FilterDeprecated extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
-    if (!element.value.deprecated) Task.pure(element)
-    else Task.pure(element.dropped)
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] =
+    if (!element.value.deprecated) IO.pure(element)
+    else IO.pure(element.dropped)
 
 }
 

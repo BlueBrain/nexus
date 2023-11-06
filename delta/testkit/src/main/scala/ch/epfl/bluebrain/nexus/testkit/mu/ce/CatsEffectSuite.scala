@@ -17,7 +17,7 @@ abstract class CatsEffectSuite
     extends NexusSuite
     with CatsRunContext
     with CatsIOValues
-    with CatsEffectMUnitAssertions
+    with CatsEffectAssertions
     with CatsStreamAssertions
     with CollectionAssertions
     with EitherAssertions

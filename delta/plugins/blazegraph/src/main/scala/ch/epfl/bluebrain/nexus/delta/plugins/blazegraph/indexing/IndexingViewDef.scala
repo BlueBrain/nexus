@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.data.NonEmptyChain
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
-import monix.bio.Task
 
 /**
   * Definition of a Blazegraph view to build a projection
@@ -80,7 +80,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  ): Task[CompiledProjection] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -88,7 +88,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  ): Task[CompiledProjection] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
     compile(
       v,
       compilePipeChain,
@@ -101,7 +101,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  ): Task[CompiledProjection] = {
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
 
     val postPipes: Operation = GraphResourceToNTriples
 
@@ -117,8 +117,8 @@ object IndexingViewDef {
                     )
     } yield projection
 
-    Task.fromEither(compiled).tapError { e =>
-      Task.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
+    IO.fromEither(compiled).onError { e =>
+      IO.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
     }
   }
 }

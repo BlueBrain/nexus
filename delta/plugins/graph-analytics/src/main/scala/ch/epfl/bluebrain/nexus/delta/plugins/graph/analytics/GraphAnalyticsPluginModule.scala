@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
@@ -36,8 +36,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
 
-  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
-    GraphAnalyticsStream(qc, xas)
+  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors, timer: Timer[IO]) =>
+    GraphAnalyticsStream(qc, xas)(timer)
   }
 
   make[GraphAnalyticsCoordinator].fromEffect {
@@ -46,9 +46,11 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         analyticsStream: GraphAnalyticsStream,
         supervisor: Supervisor,
         client: ElasticSearchClient,
-        config: GraphAnalyticsConfig
+        config: GraphAnalyticsConfig,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config).toCatsIO
+      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)(timer, cs)
   }
 
   make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>
@@ -71,8 +73,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         graphAnalytics,
-        project =>
-          projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)).toCatsIO,
+        project => projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)),
         schemeDirectives,
         viewsQuery
       )(

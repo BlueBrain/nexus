@@ -37,7 +37,6 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
-import monix.bio.UIO
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
@@ -272,7 +271,7 @@ class ElasticSearchViewsQuerySuite
       for {
         view <- views.fetchIndexingView(ref.viewId, ref.project)
         bulk <- allResources.traverse { r =>
-                  r.asDocument(ref).toCatsIO.map { d =>
+                  r.asDocument(ref).map { d =>
                     // We create a unique id across all indices
                     ElasticSearchBulk.Index(view.index, genString(), d)
                   }
@@ -419,8 +418,8 @@ object ElasticSearchViewsQuerySuite {
 
     def asDocument(
         view: ViewRef
-    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): UIO[Json] =
-      asResourceF(view).toCompactedJsonLd.map(_.json).hideErrors
+    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] =
+      asResourceF(view).toCompactedJsonLd.toCatsIO.map(_.json)
 
   }
 }

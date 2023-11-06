@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -22,7 +22,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class GraphAnalyticsStreamSuite extends BioSuite with Doobie.Fixture with ConfigFixtures {
+class GraphAnalyticsStreamSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -55,11 +55,11 @@ class GraphAnalyticsStreamSuite extends BioSuite with Doobie.Fixture with Config
 
     for {
       // Saving samples
-      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.unsafeSave).transact(xas.write)
+      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.unsafeSave).transact(xas.writeCE)
       // Asserting relationships
-      _ <- findRelationships(project1, expectedProject1.keySet).assert(expectedProject1)
-      _ <- findRelationships(project2, expectedProject2.keySet).assert(expectedProject2)
-      _ <- findRelationships(project2, Set.empty).assert(Map.empty)
+      _ <- findRelationships(project1, expectedProject1.keySet).assertEquals(expectedProject1)
+      _ <- findRelationships(project2, expectedProject2.keySet).assertEquals(expectedProject2)
+      _ <- findRelationships(project2, Set.empty).assertEquals(Map.empty[Iri, Set[Iri]])
     } yield ()
 
   }

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -33,11 +33,12 @@ object RealmsModule extends ModuleDef {
     (
         cfg: AppConfig,
         clock: Clock[IO],
+        timer: Timer[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>
       val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock)
+      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock, timer)
   }
 
   make[RealmsRoutes].from {

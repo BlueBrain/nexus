@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
-import monix.bio.Task
 import org.typelevel.log4cats
 
 /**
@@ -20,9 +19,9 @@ import org.typelevel.log4cats
   */
 final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, StorageValue]) extends ProjectDeletionTask {
 
-  override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    (logger.info(s"Starting deletion of local files for $project") >>
-      run(project)).to[Task]
+  override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] =
+    logger.info(s"Starting deletion of local files for $project") >>
+      run(project)
 
   private def run(project: ProjectRef) =
     currentStorages(project)

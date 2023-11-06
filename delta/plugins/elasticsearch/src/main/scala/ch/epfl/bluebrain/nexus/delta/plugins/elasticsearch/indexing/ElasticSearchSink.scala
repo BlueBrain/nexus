@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -12,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import io.circe.{Json, JsonObject}
-import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -48,7 +49,7 @@ final class ElasticSearchSink private (
   implicit private val kamonComponent: KamonMetricComponent =
     KamonMetricComponent(ElasticSearchViews.entityType.value)
 
-  override def apply(elements: Chunk[Elem[Json]]): Task[Chunk[Elem[Unit]]] = {
+  override def apply(elements: Chunk[Elem[Json]]): IO[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(Vector.empty[ElasticSearchBulk]) {
       case (acc, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {
@@ -63,9 +64,10 @@ final class ElasticSearchSink private (
     if (bulk.nonEmpty) {
       client
         .bulk(bulk, refresh)
+        .toCatsIO
         .map(ElasticSearchSink.markElems(_, elements, documentId))
     } else {
-      Task.pure(elements.map(_.void))
+      IO.pure(elements.map(_.void))
     }
   }.span("elasticSearchSink")
 }

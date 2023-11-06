@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class FilterByTypeSuite extends BioSuite {
+class FilterByTypeSuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -55,21 +55,21 @@ class FilterByTypeSuite extends BioSuite {
 
   test("Do not filter elements if the expected type set is empty") {
     val elem = element(Set(iri"http://localhost/tpe1"))
-    pipe(Set.empty).apply(elem).assert(elem)
+    pipe(Set.empty).apply(elem).assertEquals(elem)
   }
 
   test("Do not filter elements if the expected and elem type set is empty") {
     val elem = element(Set.empty)
-    pipe(Set.empty).apply(elem).assert(elem)
+    pipe(Set.empty).apply(elem).assertEquals(elem)
   }
 
   test("Do not filter elements if the type intersection is not void") {
     val elem = element(Set(iri"http://localhost/tpe1", iri"http://localhost/tpe2"))
-    pipe(Set(iri"http://localhost/tpe2", iri"http://localhost/tpe3")).apply(elem).assert(elem)
+    pipe(Set(iri"http://localhost/tpe2", iri"http://localhost/tpe3")).apply(elem).assertEquals(elem)
   }
 
   test("Filter elements if the type intersection is void") {
     val elem = element(Set(iri"http://localhost/tpe1"))
-    pipe(Set(iri"http://localhost/tpe2", iri"http://localhost/tpe3")).apply(elem).assert(elem.dropped)
+    pipe(Set(iri"http://localhost/tpe2", iri"http://localhost/tpe3")).apply(elem).assertEquals(elem.dropped)
   }
 }

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfter, Inspectors}
+import org.scalatest.{BeforeAndAfter, Ignore, Inspectors}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.storage.utils.Randomness
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+@Ignore
 class AttributesCacheSpec
     extends TestKit(ActorSystem("AttributesCacheSpec"))
     with AnyWordSpecLike

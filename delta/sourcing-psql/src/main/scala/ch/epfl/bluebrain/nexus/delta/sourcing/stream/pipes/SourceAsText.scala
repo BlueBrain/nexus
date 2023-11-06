@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.Json
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -24,9 +24,9 @@ class SourceAsText extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] = {
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] = {
     val graph = element.value.metadataGraph.add(nxv.originalSource.iri, element.value.source.noSpaces)
-    Task.pure(element.map(state => state.copy(metadataGraph = graph, source = empty)))
+    IO.pure(element.map(state => state.copy(metadataGraph = graph, source = empty)))
   }
 
 }

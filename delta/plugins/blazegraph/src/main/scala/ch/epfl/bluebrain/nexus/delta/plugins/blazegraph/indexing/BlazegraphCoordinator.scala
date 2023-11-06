@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -15,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
-import monix.bio.Task
 
 sealed trait BlazegraphCoordinator
 
@@ -23,7 +24,7 @@ object BlazegraphCoordinator {
 
   /** If indexing is disabled we can only log */
   final private case object Noop extends BlazegraphCoordinator {
-    def log: Task[Unit] =
+    def log: IO[Unit] =
       logger.info("Blazegraph indexing has been disabled via config")
   }
 
@@ -44,14 +45,15 @@ object BlazegraphCoordinator {
       fetchViews: Offset => ElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
-      cache: KeyValueStore[ViewRef, ActiveViewDef],
+      cache: LocalCache[ViewRef, ActiveViewDef],
       supervisor: Supervisor,
       sink: ActiveViewDef => Sink,
-      createNamespace: ActiveViewDef => Task[Unit],
-      deleteNamespace: ActiveViewDef => Task[Unit]
-  ) extends BlazegraphCoordinator {
+      createNamespace: ActiveViewDef => IO[Unit],
+      deleteNamespace: ActiveViewDef => IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO])
+      extends BlazegraphCoordinator {
 
-    def run(offset: Offset): Stream[Task, Elem[Unit]] = {
+    def run(offset: Offset): Stream[IO, Elem[Unit]] = {
       fetchViews(offset).evalMap { elem =>
         elem
           .traverse { v =>
@@ -79,7 +81,7 @@ object BlazegraphCoordinator {
               }
             }
           }
-          .onErrorRecover {
+          .recover {
             // If the current view does not translate to a projection then we mark it as failed and move along
             case p: ProjectionErr => elem.failed(p)
           }
@@ -87,7 +89,7 @@ object BlazegraphCoordinator {
       }
     }
 
-    private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): Task[Unit] =
+    private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): IO[Unit] =
       cached match {
         case Some(v) =>
           supervisor
@@ -107,13 +109,13 @@ object BlazegraphCoordinator {
           logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
 
-    private def compile(active: ActiveViewDef): Task[CompiledProjection] =
+    private def compile(active: ActiveViewDef): IO[CompiledProjection] =
       IndexingViewDef.compile(active, compilePipeChain, graphStream, sink(active))
 
   }
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
-  private val logger: Logger       = Logger[BlazegraphCoordinator]
+  private val logger               = Logger.cats[BlazegraphCoordinator]
 
   def apply(
       views: BlazegraphViews,
@@ -122,7 +124,7 @@ object BlazegraphCoordinator {
       supervisor: Supervisor,
       client: BlazegraphClient,
       config: BlazegraphViewsConfig
-  )(implicit baseUri: BaseUri): Task[BlazegraphCoordinator] =
+  )(implicit baseUri: BaseUri, timer: Timer[IO], cs: ContextShift[IO]): IO[BlazegraphCoordinator] =
     if (config.indexingEnabled) {
       apply(
         views.indexingViews,
@@ -134,7 +136,8 @@ object BlazegraphCoordinator {
         (v: ActiveViewDef) =>
           client
             .createNamespace(v.namespace)
-            .tapError { e =>
+            .toCatsIO
+            .onError { e =>
               logger.error(e)(s"Namespace for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,
@@ -150,11 +153,11 @@ object BlazegraphCoordinator {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       supervisor: Supervisor,
       sink: ActiveViewDef => Sink,
-      createIndex: ActiveViewDef => Task[Unit],
-      deleteIndex: ActiveViewDef => Task[Unit]
-  ): Task[BlazegraphCoordinator] =
+      createIndex: ActiveViewDef => IO[Unit],
+      deleteIndex: ActiveViewDef => IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[BlazegraphCoordinator] =
     for {
-      cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
+      cache      <- LocalCache[ViewRef, ActiveViewDef]()
       coordinator = new Active(
                       fetchViews,
                       graphStream,

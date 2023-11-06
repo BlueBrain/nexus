@@ -26,15 +26,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -42,15 +39,11 @@ import scala.concurrent.duration._
 
 class DeltaClientSpec
     extends TestKit(ActorSystem("DeltaClientSpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with BioSpec
     with ScalaFutures
-    with OptionValues
-    with BIOValues
     with CatsRunContext
     with ConfigFixtures
     with BeforeAndAfterAll
-    with TestHelpers
     with QueryParamsUnmarshalling {
 
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped

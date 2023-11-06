@@ -4,6 +4,7 @@ import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -13,10 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -195,6 +196,26 @@ trait Resources {
   )(implicit caller: Subject): IO[DataResource]
 
   /**
+    * Undeprecates an existing resource.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    * @param rev
+    *   the revision of the resource
+    */
+  def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      rev: Int
+  )(implicit caller: Subject): IO[DataResource]
+
+  /**
     * Fetches a resource state.
     *
     * @param id
@@ -263,13 +284,8 @@ object Resources {
   /**
     * Expands the segment to a [[ResourceRef]]
     */
-  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[ResourceRef] =
-    expandResourceRef(segment, context, InvalidResourceId)
-
-  def expandResourceRef(segment: IdSegment, context: ProjectContext, notFound: String => Throwable): IO[ResourceRef] =
-    IO.fromOption(segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)))(
-      notFound(segment.asString)
-    )
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): Either[Rejection, ResourceRef] =
+    expandResourceRef(segment, context.apiMappings, context.base, InvalidResourceId)
 
   /**
     * Expands the segment to a [[ResourceRef]] if defined
@@ -277,11 +293,16 @@ object Resources {
   def expandResourceRef(
       segmentOpt: Option[IdSegment],
       context: ProjectContext
-  ): IO[Option[ResourceRef]] =
-    segmentOpt match {
-      case None         => IO.none
-      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
-    }
+  ): Either[Rejection, Option[ResourceRef]] =
+    segmentOpt.flatTraverse(expandResourceRef(_, context).map(_.some))
+
+  def expandResourceRef(
+      segment: IdSegment,
+      mappings: ApiMappings,
+      base: ProjectBase,
+      notFound: String => Rejection
+  ): Either[Rejection, ResourceRef] =
+    segment.toIri(mappings, base).map(ResourceRef(_)).toRight(notFound(segment.asString))
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
@@ -314,6 +335,10 @@ object Resources {
       _.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: ResourceUndeprecated): Option[ResourceState] = state.map {
+      _.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
       case e: ResourceCreated       => created(e)
       case e: ResourceUpdated       => updated(e)
@@ -321,6 +346,7 @@ object Resources {
       case e: ResourceTagAdded      => tagAdded(e)
       case e: ResourceTagDeleted    => tagDeleted(e)
       case e: ResourceDeprecated    => deprecated(e)
+      case e: ResourceUndeprecated  => undeprecated(e)
       case e: ResourceSchemaUpdated => resourceSchemaUpdated(e)
     }
   }
@@ -452,6 +478,14 @@ object Resources {
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
 
+    def undeprecate(c: UndeprecateResource) =
+      for {
+        s    <- stateWhereResourceExists(c)
+        _    <- raiseWhenDifferentSchema(c, s)
+        _    <- IO.raiseWhen(!s.deprecated)(ResourceIsNotDeprecated(c.id))
+        time <- IOInstant.now
+      } yield ResourceUndeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
+
     cmd match {
       case c: CreateResource       => create(c)
       case c: UpdateResource       => update(c)
@@ -459,6 +493,7 @@ object Resources {
       case c: TagResource          => tag(c)
       case c: DeleteResourceTag    => deleteTag(c)
       case c: DeprecateResource    => deprecate(c)
+      case c: UndeprecateResource  => undeprecate(c)
       case c: UpdateResourceSchema => updateResourceSchema(c)
     }
   }
