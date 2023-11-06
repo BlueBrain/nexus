@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
@@ -29,7 +30,6 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
-import monix.bio.UIO
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
@@ -146,7 +146,6 @@ class DefaultViewSearchSuite
   private def paginatedSearch(params: ResourcesSearchParams, pagination: Pagination, sort: SortList) =
     client
       .search(params, Set(defaultIndex.value), Uri.Query.Empty)(pagination, sort)
-      .toCatsIO
 
   private def aggregate(params: ResourcesSearchParams) =
     client.aggregate(params, Set(defaultIndex.value), Uri.Query.Empty, 100)
@@ -294,9 +293,9 @@ object DefaultViewSearchSuite {
         )
     }
 
-    def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): UIO[Json] = {
+    def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] = {
       val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
-      asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata)).hideErrors
+      asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata)).toCatsIO
     }
 
   }

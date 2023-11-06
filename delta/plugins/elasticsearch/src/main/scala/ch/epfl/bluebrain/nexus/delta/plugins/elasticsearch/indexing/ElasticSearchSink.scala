@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -64,7 +63,6 @@ final class ElasticSearchSink private (
     if (bulk.nonEmpty) {
       client
         .bulk(bulk, refresh)
-        .toCatsIO
         .map(ElasticSearchSink.markElems(_, elements, documentId))
     } else {
       IO.pure(elements.map(_.void))

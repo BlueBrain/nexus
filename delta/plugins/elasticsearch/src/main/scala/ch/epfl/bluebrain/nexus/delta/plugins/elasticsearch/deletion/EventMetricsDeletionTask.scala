@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -24,10 +23,7 @@ final class EventMetricsDeletionTask(client: ElasticSearchClient, prefix: String
     searchByProject(project).flatMap { search =>
       client
         .deleteByQuery(search, index)
-        .toCatsIO
-        .as(
-          ProjectDeletionReport.Stage("event-metrics", "Event metrics have been successfully deleted.")
-        )
+        .as(ProjectDeletionReport.Stage("event-metrics", "Event metrics have been successfully deleted."))
     }
 
   private[deletion] def searchByProject(project: ProjectRef) = IO.fromEither {

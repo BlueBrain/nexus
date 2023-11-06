@@ -47,7 +47,7 @@ object CompositeSpaces {
       val result       = view.value.projections.foldLeft[IO[Unit]](createCommon) {
         case (acc, e: ElasticSearchProjection) =>
           val index = projectionIndex(e, view.uuid, prefix)
-          acc >> esClient.createIndex(index, Some(e.mapping), e.settings).toCatsIO.void
+          acc >> esClient.createIndex(index, Some(e.mapping), e.settings).void
         case (acc, s: SparqlProjection)        =>
           val namespace = projectionNamespace(s, view.uuid, prefix)
           acc >> blazeClient.createNamespace(namespace).toCatsIO.void
@@ -69,7 +69,7 @@ object CompositeSpaces {
         projection match {
           case e: ElasticSearchProjection =>
             val index = projectionIndex(e, view.uuid, prefix)
-            esClient.deleteIndex(index).toCatsIO.void
+            esClient.deleteIndex(index).void
           case s: SparqlProjection        =>
             val namespace = projectionNamespace(s, view.uuid, prefix)
             blazeClient.deleteNamespace(namespace).toCatsIO.void

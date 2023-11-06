@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import monix.bio.UIO
 
 class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
@@ -67,7 +66,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
       IO.pure(allowedPerms),
-      (_, _, _) => UIO.unit,
+      (_, _, _) => IO.unit,
       "prefix",
       5,
       xas,

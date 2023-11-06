@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
@@ -34,7 +35,9 @@ trait GraphAnalyticsViewsQuery {
 class GraphAnalyticsViewsQueryImpl(prefix: String, client: ElasticSearchClient) extends GraphAnalyticsViewsQuery {
   override def query(projectRef: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = {
     val index = GraphAnalytics.index(prefix, projectRef)
-    client.search(query, Set(index.value), qp)(SortList.empty).mapError(WrappedElasticSearchClientError).toCatsIO
+    client.search(query, Set(index.value), qp)(SortList.empty).adaptError { case e: HttpClientError =>
+      WrappedElasticSearchClientError(e)
+    }
   }
 
 }

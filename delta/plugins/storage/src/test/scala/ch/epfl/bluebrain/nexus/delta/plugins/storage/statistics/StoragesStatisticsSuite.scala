@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -45,7 +44,7 @@ class StoragesStatisticsSuite
     StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
 
   test("Run the event metrics projection") {
-    val createIndex       = client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).toCatsIO.void
+    val createIndex       = client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).void
     val metricsProjection = EventMetricsProjection(sink, sv, _ => metricsStream, createIndex)
     metricsProjection.accepted
   }

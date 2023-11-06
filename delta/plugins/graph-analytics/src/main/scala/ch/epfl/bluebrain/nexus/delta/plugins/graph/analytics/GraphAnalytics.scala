@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalytic
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -55,8 +56,9 @@ object GraphAnalytics {
           query <- relationshipsAggQuery(config)
           stats <- client
                      .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
-                     .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
-                     .toCatsIO
+                     .adaptError { case e: HttpClientError =>
+                       WrappedElasticSearchRejection(WrappedElasticSearchClientError(e))
+                     }
         } yield stats
 
       override def properties(
@@ -68,8 +70,7 @@ object GraphAnalytics {
           implicit val d: Decoder[PropertiesStatistics] = propertiesDecoderFromEsAggregations(tpe)
           client
             .searchAs[PropertiesStatistics](QueryBuilder(query).withTotalHits(true), idx.value, Query.Empty)
-            .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
-            .toCatsIO
+            .adaptError { case e: HttpClientError => WrappedElasticSearchRejection(WrappedElasticSearchClientError(e)) }
         }
 
         for {
