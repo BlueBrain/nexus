@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
 
 class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with OptionValues with Matchers {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   def fetch(path: String, identity: Identity, self: Boolean = true, ancestors: Boolean = false)(
       assertAcls: AclListing => Assertion

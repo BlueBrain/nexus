@@ -39,7 +39,7 @@ final class ElasticSearchDeletionTask(
 
 object ElasticSearchDeletionTask {
 
-  private val logger = Logger.cats[ElasticSearchDeletionTask]
+  private val logger = Logger[ElasticSearchDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("elasticsearch")
 

@@ -131,7 +131,7 @@ object ElasticSearchCoordinator {
   }
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "elasticsearch-coordinator", None, None)
-  private val logger               = Logger.cats[ElasticSearchCoordinator]
+  private val logger               = Logger[ElasticSearchCoordinator]
 
   def apply(
       views: ElasticSearchViews,

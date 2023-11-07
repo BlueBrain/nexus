@@ -120,7 +120,7 @@ object ProjectsImpl {
   type ProjectsLog =
     ScopedEventLog[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
-  private val logger = Logger.cats[ProjectsImpl]
+  private val logger = Logger[ProjectsImpl]
 
   /**
     * Constructs a [[Projects]] instance.

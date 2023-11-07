@@ -29,7 +29,7 @@ object Main extends IOApp {
 
   private val externalConfigEnvVariable = "DELTA_EXTERNAL_CONF"
   private val pluginEnvVariable         = "DELTA_PLUGINS"
-  private val logger                    = Logger.cats[Main.type]
+  private val logger                    = Logger[Main.type]
   val pluginsMaxPriority: Int           = 100
   val pluginsMinPriority: Int           = 1
 
