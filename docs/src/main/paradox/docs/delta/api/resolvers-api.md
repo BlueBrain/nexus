@@ -393,6 +393,31 @@ Request
 Response
 :   @@snip [fetched.json](assets/resources/fetched.json)
 
+## Fetch original resource payload using resolvers
+
+Fetches the original source payload of a resource using the provided resolver.
+
+If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested
+project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&tag={tag}
+```
+where ...
+- `{resource_id}`: Iri - the @id value of the resource to be retrieved.
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetch-resource-source.sh](assets/resolvers/fetch-resource-source.sh)
+
+Response
+:   @@snip [source.json](assets/resources/payload.json)
+
 ## Server Sent Events
 
 From Delta 1.5, it is possible to fetch SSEs for all resolvers or just resolvers
