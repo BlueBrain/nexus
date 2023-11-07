@@ -5,7 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewState, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -38,9 +38,9 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
 
   implicit private val batch: BatchConfig = BatchConfig(2, 10.millis)
 
-  private val defaultMapping  = jobj"""{"defaultMapping": {}}"""
-  private val defaultSettings = jobj"""{"defaultSettings": {}}"""
-  private val prefix          = "prefix"
+  private val defaultEsMapping  = DefaultMapping(jobj"""{"defaultEsMapping": {}}""")
+  private val defaultEsSettings = DefaultSettings(jobj"""{"defaultEsSettings": {}}""")
+  private val prefix            = "prefix"
 
   private val uuid             = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   private val instant: Instant = Instant.EPOCH
@@ -100,7 +100,7 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
 
   test("Build an active view def with a custom mapping and settings") {
     assertEquals(
-      IndexingViewDef(state(indexingCustom), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingCustom), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -120,7 +120,7 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
 
   test("Build an active view def with no mapping and settings defined") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingDefault), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -128,8 +128,8 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
-          defaultMapping,
-          defaultSettings,
+          defaultEsMapping.value,
+          defaultEsSettings.value,
           indexingDefault.context,
           indexingRev,
           rev
@@ -140,7 +140,7 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
 
   test("Build an deprecated view def") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         DeprecatedViewDef(
           viewRef
@@ -151,7 +151,7 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
 
   test("Ignore aggregate views") {
     assertEquals(
-      IndexingViewDef(state(aggregate), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(aggregate), defaultEsMapping, defaultEsSettings, prefix),
       None
     )
   }
@@ -163,8 +163,8 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultMapping,
-      defaultSettings,
+      defaultEsMapping.value,
+      defaultEsSettings.value,
       indexingDefault.context,
       indexingRev,
       rev
@@ -195,8 +195,8 @@ class IndexingViewDefSuite extends CatsEffectSuite with CirceLiteral with Fixtur
       Some(PipeChain(FilterDeprecated())),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultMapping,
-      defaultSettings,
+      defaultEsMapping.value,
+      defaultEsSettings.value,
       indexingDefault.context,
       indexingRev,
       rev

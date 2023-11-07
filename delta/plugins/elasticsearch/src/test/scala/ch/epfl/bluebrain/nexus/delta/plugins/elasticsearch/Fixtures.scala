@@ -1,17 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchFiles}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 
-trait Fixtures {
+trait Fixtures extends CatsRunContext {
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  private lazy val files: ElasticSearchFiles = ElasticSearchFiles.mk().unsafeRunSync()
+
+  protected lazy val defaultMapping  = files.defaultMapping
+  protected lazy val defaultSettings = files.defaultSettings
+  protected lazy val metricsMapping  = files.metricsMapping
+  protected lazy val metricsSettings = files.metricsSettings
+  protected lazy val emptyResults    = files.emptyResults
 
   private val listingsMetadataCtx =
     List(
@@ -65,5 +74,3 @@ trait Fixtures {
     r
   }
 }
-
-object Fixtures extends Fixtures

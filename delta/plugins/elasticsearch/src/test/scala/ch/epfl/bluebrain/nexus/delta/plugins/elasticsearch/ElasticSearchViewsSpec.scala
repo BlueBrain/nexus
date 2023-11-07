@@ -42,9 +42,6 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private val defaultEsMapping  = defaultElasticsearchMapping.accepted
-  private val defaultEsSettings = defaultElasticsearchSettings.accepted
-
   "An ElasticSearchViews" should {
 
     val org         = Label.unsafe("org")
@@ -120,7 +117,7 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         value,
         source,
         tags
-      ).toResource(defaultEsMapping, defaultEsSettings)
+      ).toResource(defaultMapping, defaultSettings)
 
     val viewId          = iri"http://localhost/indexing"
     val aggregateViewId = iri"http://localhost/${genString()}"
@@ -142,11 +139,15 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         (_, _, _) => UIO.unit,
         "prefix",
         2,
-        xas
+        xas,
+        defaultMapping,
+        defaultSettings
       ),
       eventLogConfig,
       "prefix",
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ).accepted
 
     "create a view" when {
