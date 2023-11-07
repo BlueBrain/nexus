@@ -724,13 +724,14 @@ lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val storage = project
   .in(file("storage"))
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
+  .enablePlugins(UniversalPlugin, UniversalDeployPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(
     shared,
     compilation,
     assertJavaVersion,
     kamonSettings,
     storageAssemblySettings,
+    storageFatJar,
     coverage,
     release,
     servicePackaging,
@@ -882,9 +883,21 @@ lazy val kamonSettings = Seq(
   javaAgents           += kanelaAgent
 )
 
+lazy val storageFatJar = Seq(
+  Universal / mappings := {
+    val fatJar           = (Compile / assembly).value
+    val filteredMappings = (Universal / mappings).value filter {
+      case (_, name) if name.contains("kanela-agent") => true
+      case (_, name)                                  => !name.endsWith(".jar")
+    }
+    filteredMappings :+ (fatJar -> ("lib/" + fatJar.getName))
+  },
+  scriptClasspath      := Seq((assembly / assemblyJarName).value)
+)
+
 lazy val storageAssemblySettings = Seq(
+  assembly / assemblyJarName       := "nexus-storage.jar",
   assembly / test                  := {},
-  assembly / assemblyOutputPath    := baseDirectory.value / "nexus-storage.jar",
   assembly / assemblyMergeStrategy := {
     case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
     case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
