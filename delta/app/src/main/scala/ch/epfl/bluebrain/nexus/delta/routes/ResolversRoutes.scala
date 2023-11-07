@@ -198,8 +198,8 @@ final class ResolversRoutes(
       def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
         output match {
           case ResolvedResourceOutputType.Report => emit(io.map(_.report).attemptNarrow[ResolverRejection])
-          case ResolvedResourceOutputType.JsonLd => emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
-          case ResolvedResourceOutputType.Source => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.JsonLd => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.Source => emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
         }
       }
 
