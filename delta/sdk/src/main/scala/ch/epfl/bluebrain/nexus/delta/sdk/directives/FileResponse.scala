@@ -41,9 +41,14 @@ object FileResponse {
       bytes: Long,
       io: IO[Either[E, AkkaSource]]
   ) =
-    new FileResponse(Metadata(filename, contentType, bytes), io.map { r => r.leftMap {
-      e => Complete(e).map(JsonLdValue(_))
-    } })
+    new FileResponse(
+      Metadata(filename, contentType, bytes),
+      io.map { r =>
+        r.leftMap { e =>
+          Complete(e).map(JsonLdValue(_))
+        }
+      }
+    )
 
   def apply(filename: String, contentType: ContentType, bytes: Long, source: AkkaSource): FileResponse =
     new FileResponse(Metadata(filename, contentType, bytes), IO.pure(Right(source)))

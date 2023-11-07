@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, 
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, Allow, Location, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Location}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
@@ -82,12 +82,12 @@ class DeltaDirectivesSpec
 
   private val compacted = resource.toCompactedJsonLd.accepted
 
-  val ioResource: IO[Either[SimpleRejection, SimpleResource]] = IO.pure(Right(resource))
+  val ioResource: IO[Either[SimpleRejection, SimpleResource]]   = IO.pure(Right(resource))
   val ioBadRequest: IO[Either[SimpleRejection, SimpleResource]] = IO.pure(Left(badRequestRejection))
   val ioConflict: IO[Either[SimpleRejection, SimpleResource]]   = IO.pure(Left(conflictRejection))
 
-  val redirectTarget: Uri                           = s"http://localhost/${genString()}"
-  val ioRedirect: IO[Uri]          = IO.pure(redirectTarget)
+  val redirectTarget: Uri                                   = s"http://localhost/${genString()}"
+  val ioRedirect: IO[Uri]                                   = IO.pure(redirectTarget)
   val ioRedirectRejection: IO[Either[SimpleRejection, Uri]] = IO.pure(Left(badRequestRejection))
 
   private val ref: ProjectRef  = ProjectRef.unsafe("org", "proj")
@@ -444,7 +444,6 @@ class DeltaDirectivesSpec
         response.header[Location].value.uri shouldEqual redirectTarget
       }
     }
-
 
     "provide a correctly encoded error" in {
       val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted

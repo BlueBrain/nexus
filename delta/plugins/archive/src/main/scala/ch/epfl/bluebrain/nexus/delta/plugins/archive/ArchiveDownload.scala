@@ -189,8 +189,10 @@ object ArchiveDownload {
             val archiveMetadata             = Zip.metadata(path)
             val contentTask: IO[AkkaSource] = content.flatMap {
               case Left(response) =>
-                logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}") >> IO.raiseError(ArchiveDownloadError(fileMetadata.filename, response))
-              case Right(r) => IO.pure(r)
+                logger.error(
+                  s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}"
+                ) >> IO.raiseError(ArchiveDownloadError(fileMetadata.filename, response))
+              case Right(r)       => IO.pure(r)
             }
             Option((archiveMetadata, contentTask))
           }

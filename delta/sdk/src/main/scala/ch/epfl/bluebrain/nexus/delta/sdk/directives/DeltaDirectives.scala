@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, RawHeader, `Accept-Encoding`, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, `Last-Event-ID`, Accept, RawHeader}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
