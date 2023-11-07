@@ -534,7 +534,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     }
 
     def consumeContent(response: FileResponse): String = {
-      consume(response.content.accepted)
+      consume(response.content.map(_.rightValue).accepted)
     }
 
     "fetching a file content" should {

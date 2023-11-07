@@ -7,21 +7,21 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RejOrFailOrComplete, UseLeft, UseRight}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RejOrFailOrComplete, UseLeft, UseRight}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.JsonLdFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -37,9 +37,9 @@ object ResponseToJsonLd extends FileBytesInstances {
   private[directives] type RejOrFailOrComplete[E] =
     Either[Either[Reject[E], Complete[JsonLdValue]], Complete[JsonLdValue]]
 
-  private[directives] def apply[E](
-      uio: UIO[RejOrFailOrComplete[E]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  def apply[E](
+      io: IO[RejOrFailOrComplete[E]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     new ResponseToJsonLd {
 
       // Some resources may not have been created in the system with a strict configuration
@@ -48,15 +48,15 @@ object ResponseToJsonLd extends FileBytesInstances {
 
       override def apply(statusOverride: Option[StatusCode]): Route = {
 
-        val uioFinal = uio.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
+        val ioFinal = io.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
 
-        def marshaller[R: ToEntityMarshaller](handle: JsonLdValue => IO[RdfError, R]): Route = {
-          val ioRoute = uioFinal.flatMap {
-            case Left(Left(rej))                               => UIO.pure(reject(rej))
+        def marshaller[R: ToEntityMarshaller](handle: JsonLdValue => IO[R]): Route = {
+          val ioRoute = ioFinal.flatMap {
+            case Left(Left(rej))                               => IO.pure(reject(rej))
             case Left(Right(Complete(status, headers, value))) => handle(value).map(complete(status, headers, _))
             case Right(Complete(status, headers, value))       => handle(value).map(complete(status, headers, _))
           }
-          onSuccess(ioRoute.runToFuture)(identity)
+          onSuccess(ioRoute.unsafeToFuture())(identity)
         }
 
         requestMediaType {
@@ -83,18 +83,18 @@ object ResponseToJsonLd extends FileBytesInstances {
       }
     }
 
-  private[directives] def apply[E: JsonLdEncoder, A: JsonLdEncoder](
-      uio: UIO[Either[Response[E], Complete[A]]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    apply(uio.map[RejOrFailOrComplete[E]] {
+  def apply[E: JsonLdEncoder, A: JsonLdEncoder](
+      io: IO[Either[Response[E], Complete[A]]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    apply(io.map[RejOrFailOrComplete[E]] {
       case Right(c: Complete[A]) => Right(c.map(JsonLdValue(_)))
       case Left(c: Complete[E])  => Left(Right(c.map(JsonLdValue(_))))
       case Left(rej: Reject[E])  => Left(Left(rej))
     })
 
-  private[directives] def fromFile[E: JsonLdEncoder](
-      io: IO[Response[E], FileResponse]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
+  def fromFile[E: JsonLdEncoder](
+      io: IO[Either[Response[E], FileResponse]]
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
     new ResponseToJsonLd {
 
       // From the RFC 2047: "=?" charset "?" encoding "?" encoded-text "?="
@@ -104,8 +104,17 @@ object ResponseToJsonLd extends FileBytesInstances {
       }
 
       override def apply(statusOverride: Option[StatusCode]): Route = {
-        val flattened = io.flatMap { fr => fr.content.attempt.map(_.map { s => fr.metadata -> s }) }.attempt
-        onSuccess(flattened.runToFuture) {
+        val flattened = io.flatMap {
+          _.traverse { fr =>
+            fr.content.map {
+              _.map { s =>
+                fr.metadata -> s
+              }
+            }
+          }
+        }
+
+        onSuccess(flattened.unsafeToFuture()) {
           case Left(complete: Complete[E])       => emit(complete)
           case Left(reject: Reject[E])           => emit(reject)
           case Right(Left(c))                    => emit(c)
@@ -126,76 +135,77 @@ object ResponseToJsonLd extends FileBytesInstances {
 
 sealed trait FileBytesInstances extends ValueInstances {
   implicit def ioFileBytesWithReject[E: JsonLdEncoder](
-      io: IO[Response[E], FileResponse]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+      io: IO[Either[Response[E], FileResponse]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd.fromFile(io)
 
   implicit def ioFileBytes[E: JsonLdEncoder: HttpResponseFields](
-      io: IO[E, FileResponse]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd.fromFile(io.mapError(Complete(_)))
+      io: IO[Either[E, FileResponse]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd.fromFile(io.map(_.leftMap(Complete(_))))
 
   implicit def fileBytesValue(
       value: FileResponse
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd.fromFile(UIO.pure(value))
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd.fromFile(IO.pure(Right(value)))
 
 }
 
 sealed trait ValueInstances extends LowPriorityValueInstances {
 
   implicit def ioCompleteWithReject[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
-      io: IO[E, Complete[A]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.mapError(Complete(_)).attempt)
+      io: IO[Either[E, Complete[A]]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(io.map(_.leftMap(Complete(_))))
 
-  implicit def uioValueWithReject[E: JsonLdEncoder](
-      io: UIO[Reject[E]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  implicit def ioValueWithReject[E: JsonLdEncoder](
+      io: IO[Reject[E]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseLeft[E]](Left(_)))
 
-  implicit def uioValue[A: JsonLdEncoder](
-      io: UIO[A]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  implicit def ioValue[A: JsonLdEncoder](
+      io: IO[A]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
 
-  implicit def ioValueWithReject[E: JsonLdEncoder, A: JsonLdEncoder](
-      io: IO[Response[E], A]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.map(Complete(OK, Seq.empty, _)).attempt)
+  implicit def ioEitherValueOrReject[E: JsonLdEncoder, A: JsonLdEncoder](
+      io: IO[Either[Response[E], A]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd = {
+    ResponseToJsonLd(io.map(_.map(Complete(OK, Seq.empty, _))))
+  }
 
-  implicit def ioValue[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
-      io: IO[E, A]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
+  implicit def ioValueOrError[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
+      io: IO[Either[E, A]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(io.map(_.leftMap(Complete(_)).map(Complete(OK, Seq.empty, _))))
 
   implicit def ioJsonLdValue[E: JsonLdEncoder: HttpResponseFields](
-      io: IO[E, JsonLdValue]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.attempt.map[RejOrFailOrComplete[E]] {
+      io: IO[Either[E, JsonLdValue]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(io.map[RejOrFailOrComplete[E]] {
       case Left(e)      => Left(Right(Complete(e).map[JsonLdValue](JsonLdValue(_))))
       case Right(value) => Right(Complete(OK, Seq.empty, value))
     })
 
   implicit def rejectValue[E: JsonLdEncoder](
       value: Reject[E]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(UIO.pure[UseLeft[E]](Left(value)))
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(IO.pure[UseLeft[E]](Left(value)))
 
   implicit def completeValue[A: JsonLdEncoder](
       value: Complete[A]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(UIO.pure[UseRight[A]](Right(value)))
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(IO.pure[UseRight[A]](Right(value)))
 
   implicit def valueWithHttpResponseFields[A: JsonLdEncoder: HttpResponseFields](
       value: A
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(UIO.pure[UseRight[A]](Right(Complete(value))))
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(value))))
 }
 
 sealed trait LowPriorityValueInstances {
   implicit def valueWithoutHttpResponseFields[A: JsonLdEncoder](
       value: A
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(UIO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, value))))
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, value))))
 }

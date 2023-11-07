@@ -187,13 +187,11 @@ object ArchiveDownload {
           .map { case FileResponse(fileMetadata, content) =>
             val path                        = pathOf(ref, project, fileMetadata.filename)
             val archiveMetadata             = Zip.metadata(path)
-            val contentTask: IO[AkkaSource] = content
-              .tapError(response =>
-                logger
-                  .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
-                  .toUIO
-              )
-              .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
+            val contentTask: IO[AkkaSource] = content.flatMap {
+              case Left(response) =>
+                logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}") >> IO.raiseError(ArchiveDownloadError(fileMetadata.filename, response))
+              case Right(r) => IO.pure(r)
+            }
             Option((archiveMetadata, contentTask))
           }
         if (ignoreNotFound) entry.recover { case _: ResourceNotFound => None }
