@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.data.EitherT
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
@@ -222,11 +221,15 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
       val req          = Post(bulkEndpoint, entity).withHttpCredentials
 
-      EitherT(client.toJson(req).toCatsIO.attemptNarrow[HttpClientError])
-        .foldF[BulkResponse](
-          e => IO.fromEither(BulkResponse(e)).orRaise(e),
-          json => IO.fromEither(BulkResponse(json)).adaptError { e => HttpUnexpectedError(req, e.getMessage) }
-        )
+      client
+        .toJson(req)
+        .toCatsIO
+        .attemptNarrow[HttpClientError]
+        .flatMap {
+          case Left(e)     => IO.fromEither(BulkResponse(e)).orRaise(e)
+          case Right(json) =>
+            IO.fromEither(BulkResponse(json)).adaptError { e => HttpUnexpectedError(req, e.getMessage) }
+        }
     }
   }
 
