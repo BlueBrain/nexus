@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -55,7 +53,7 @@ object ValidateElasticSearchView {
   def apply(
       validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
       fetchPermissionSet: IO[Set[Permission]],
-      createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => HttpResult[Unit],
+      createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => IO[Unit],
       prefix: String,
       maxViewRefs: Int,
       xas: Transactors,
@@ -81,7 +79,7 @@ object ValidateElasticSearchView {
                IndexLabel.fromView(prefix, uuid, indexingRev),
                value.mapping.orElse(Some(defaultMapping.value)),
                value.settings.orElse(Some(defaultSettings.value))
-             ).toCatsIO
+             )
                .adaptError {
                  case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
                  case err: HttpClientError       => WrappedElasticSearchClientError(err)

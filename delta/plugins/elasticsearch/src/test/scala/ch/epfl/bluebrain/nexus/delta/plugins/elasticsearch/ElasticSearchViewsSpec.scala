@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, Filt
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.literal._
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
@@ -136,7 +135,7 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       ValidateElasticSearchView(
         PipeChain.validate(_, registry),
         IO.pure(Set(queryPermissions)),
-        (_, _, _) => UIO.unit,
+        (_, _, _) => IO.unit,
         "prefix",
         2,
         xas,

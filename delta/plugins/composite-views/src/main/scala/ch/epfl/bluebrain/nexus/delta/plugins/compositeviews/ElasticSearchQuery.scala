@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewR
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
@@ -69,7 +68,7 @@ trait ElasticSearchQuery {
 object ElasticSearchQuery {
 
   private[compositeviews] type ElasticSearchClientQuery =
-    (JsonObject, Set[String], Query) => HttpResult[Json]
+    (JsonObject, Set[String], Query) => IO[Json]
 
   final def apply(
       aclCheck: AclCheck,
@@ -101,7 +100,9 @@ object ElasticSearchQuery {
           _          <-
             aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
           index       = projectionIndex(projection, view.uuid, prefix).value
-          search     <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
+          search     <- elasticSearchQuery(query, Set(index), qp).adaptError { case e: HttpClientError =>
+                          WrappedElasticSearchClientError(e)
+                        }
         } yield search
 
       override def queryProjections(
@@ -113,7 +114,9 @@ object ElasticSearchQuery {
         for {
           view    <- fetchView(id, project)
           indices <- allowedProjections(view, project)
-          search  <- elasticSearchQuery(query, indices, qp).mapError(WrappedElasticSearchClientError)
+          search  <- elasticSearchQuery(query, indices, qp).adaptError { case e: HttpClientError =>
+                       WrappedElasticSearchClientError(e)
+                     }
         } yield search
 
       private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =

@@ -94,7 +94,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     for {
       view    <- viewStore.fetch(id, project).toCatsIO
       indices <- extractIndices(view)
-      search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
+      search  <- client.search(query, indices, qp)(SortList.empty).adaptError { case e: HttpClientError =>
+                   WrappedElasticSearchClientError(e)
+                 }
     } yield search
   }
 
@@ -119,7 +121,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       _      <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
       view   <- viewStore.fetch(id, project).toCatsIO
       idx    <- indexOrError(view, id)
-      search <- client.mapping(IndexLabel.unsafe(idx)).toCatsIO.adaptError { case e: HttpClientError =>
+      search <- client.mapping(IndexLabel.unsafe(idx)).adaptError { case e: HttpClientError =>
                   WrappedElasticSearchClientError(e)
                 }
     } yield search

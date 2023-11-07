@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
@@ -58,7 +57,7 @@ class ElasticSearchSinkSuite
     DroppedElem(membersEntity, id, None, Instant.EPOCH, offset, rev)
 
   test("Create the index") {
-    client.createIndex(index, None, None).toCatsIO.assertEquals(true)
+    client.createIndex(index, None, None).assertEquals(true)
   }
 
   test("Index a chunk of documents and retrieve them") {
@@ -68,7 +67,6 @@ class ElasticSearchSinkSuite
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
-             .toCatsIO
              .map(_.sources.toSet)
              .assertEquals(members.flatMap(_._2.asObject))
     } yield ()
@@ -81,7 +79,6 @@ class ElasticSearchSinkSuite
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
-             .toCatsIO
              .map(_.sources.toSet)
              .assertEquals(Set(bob, judy).flatMap(_._2.asObject))
     } yield ()
@@ -122,7 +119,6 @@ class ElasticSearchSinkSuite
       _       = assert(result.lift(2).flatMap(_.toOption).contains(()))
       _      <- client
                   .search(QueryBuilder.empty, Set(index.value), Query.Empty)
-                  .toCatsIO
                   .map(_.sources.toSet)
                   .assertEquals(Set(bob, judy, alice).flatMap(_._2.asObject))
     } yield ()
@@ -138,9 +134,9 @@ class ElasticSearchSinkSuite
     val sink  = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
 
     for {
-      _ <- client.createIndex(index, None, None).toCatsIO.assertEquals(true)
+      _ <- client.createIndex(index, None, None).assertEquals(true)
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
-      _ <- client.getSource[Json](index, charlie_2._1.toString).toCatsIO.assertEquals(charlie_2._2)
+      _ <- client.getSource[Json](index, charlie_2._1.toString).assertEquals(charlie_2._2)
     } yield ()
   }
 
@@ -157,11 +153,10 @@ class ElasticSearchSinkSuite
     val sink = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
 
     for {
-      _ <- client.createIndex(index, None, None).toCatsIO.assertEquals(true)
+      _ <- client.createIndex(index, None, None).assertEquals(true)
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .getSource[Json](index, charlie._1.toString)
-             .toCatsIO
              .assertError[HttpClientError](_.errorCode.contains(StatusCodes.NotFound))
     } yield ()
   }

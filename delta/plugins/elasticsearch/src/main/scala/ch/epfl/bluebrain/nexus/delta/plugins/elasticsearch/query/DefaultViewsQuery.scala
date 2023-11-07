@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQu
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
@@ -51,11 +53,11 @@ object DefaultViewsQuery {
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
           .search(request.params, views.map(_.index), Uri.Query.Empty)(request.pagination, request.sort)
-          .mapError(ElasticSearchClientError),
+          .adaptError { case e: HttpClientError => ElasticSearchClientError(e) },
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
           .aggregate(request.params, views.map(_.index), Uri.Query.Empty, config.listingBucketSize)
-          .mapError(ElasticSearchClientError)
+          .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
     )
   }
 

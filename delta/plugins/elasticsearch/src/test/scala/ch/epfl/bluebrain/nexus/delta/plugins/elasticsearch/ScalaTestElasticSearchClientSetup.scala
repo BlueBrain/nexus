@@ -33,7 +33,7 @@ trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures { sel
 
   lazy val esClient = {
     val c = new ElasticSearchClient(HttpClient(), docker.esHostConfig.endpoint, 2000, emptyResults)
-    c.createIndexTemplate("test_template", template).runSyncUnsafe()
+    c.createIndexTemplate("test_template", template).unsafeRunSync()
     c
   }
 

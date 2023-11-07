@@ -276,9 +276,9 @@ class ElasticSearchViewsQuerySuite
                     ElasticSearchBulk.Index(view.index, genString(), d)
                   }
                 }
-        _    <- client.bulk(bulk).toCatsIO
+        _    <- client.bulk(bulk)
         // We refresh explicitly
-        _    <- client.refresh(view.index).toCatsIO
+        _    <- client.refresh(view.index)
       } yield ()
     }.void
 

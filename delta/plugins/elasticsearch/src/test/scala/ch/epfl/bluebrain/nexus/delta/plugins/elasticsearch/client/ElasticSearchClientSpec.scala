@@ -4,42 +4,36 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
+import cats.implicits.catsSyntaxApplicativeError
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
-import org.scalatest.{DoNotDiscover, OptionValues}
+import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
 @DoNotDiscover
 class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with CatsEffectSpec
     with ScalaTestElasticSearchClientSetup
-    with EitherValues
-    with OptionValues
     with CirceLiteral
-    with TestHelpers
-    with BIOValues
     with Eventually {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
@@ -279,9 +273,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           // Checking docs again
           newCount <- esClient.count(index.value)
           _         = newCount shouldEqual 1L
-          doc1     <- esClient.getSource[Json](index, "1").attempt
+          doc1     <- esClient.getSource[Json](index, "1").attemptNarrow[HttpClientError]
           _         = doc1.rightValue
-          doc2     <- esClient.getSource[Json](index, "2").attempt
+          doc2     <- esClient.getSource[Json](index, "2").attemptNarrow[HttpClientError]
           _         = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
         } yield ()
       }.accepted

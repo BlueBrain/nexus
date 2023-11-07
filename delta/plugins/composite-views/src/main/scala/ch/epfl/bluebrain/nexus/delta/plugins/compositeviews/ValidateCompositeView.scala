@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -19,6 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 
 import java.util.UUID
+
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 
 /**
   * Validate an [[CompositeViewValue]] during command evaluation
@@ -52,17 +53,16 @@ object ValidateCompositeView {
         IO.raiseWhen(!perms.contains(permission))(PermissionIsNotDefined(permission))
       }
 
-    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) = toCatsIO {
+    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
       client
         .createIndex(index, Some(es.mapping), es.settings)
-        .mapError {
+        .adaptError {
           case err: HttpClientStatusError => InvalidElasticSearchProjectionPayload(err.jsonBody)
-          case err                        => WrappedElasticSearchClientError(err)
+          case err: HttpClientError       => WrappedElasticSearchClientError(err)
         }
         .void
-    }
 
-    val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems
+    val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems(_).toCatsIO
 
     val validateSource: CompositeViewSource => IO[Unit] = {
       case _: ProjectSource             => IO.unit

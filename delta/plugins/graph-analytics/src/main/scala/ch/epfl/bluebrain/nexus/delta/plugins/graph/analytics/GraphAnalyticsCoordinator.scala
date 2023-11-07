@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
@@ -145,14 +144,14 @@ object GraphAnalyticsCoordinator {
           ),
         ref =>
           graphAnalyticsMappings.flatMap { mappings =>
-            client.createIndex(index(config.prefix, ref), Some(mappings), None).toCatsIO
+            client.createIndex(index(config.prefix, ref), Some(mappings), None)
           }.void,
-        ref => client.deleteIndex(index(config.prefix, ref)).toCatsIO.void
+        ref => client.deleteIndex(index(config.prefix, ref)).void
       )
 
       for {
         script <- scriptContent
-        _      <- client.createScript(updateRelationshipsScriptId, script).toCatsIO
+        _      <- client.createScript(updateRelationshipsScriptId, script)
         c      <- coordinator
       } yield c
     } else {

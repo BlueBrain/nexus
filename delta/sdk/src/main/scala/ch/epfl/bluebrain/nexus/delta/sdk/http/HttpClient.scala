@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
@@ -33,10 +34,13 @@ trait HttpClient {
     */
   def apply[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A]
 
+  def run[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, cats.effect.IO[A]]): HttpResult[A] =
+    apply(req) { case r if handleResponse.isDefinedAt(r) => handleResponse(r).toBIO[HttpClientError] }
+
   /**
     * Execute the argument request and unmarshal the response Json response.
     */
-  def toJson(req: HttpRequest): HttpResult[Json] =
+  def toJson(req: HttpRequest): HttpResult[Json]                                                                =
     fromJsonTo[Json](req)
 
   /**
