@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.entityType
@@ -28,8 +28,7 @@ final class AclsImpl private (
   override def fetch(address: AclAddress): IO[AclResource] =
     log
       .stateOr(address, AclNotFound(address))
-      .toBIO[AclNotFound]
-      .onErrorRecover {
+      .recover {
         case AclNotFound(a) if a == AclAddress.Root => AclState.initial(minimum)
       }
       .map(_.toResource)
@@ -41,8 +40,7 @@ final class AclsImpl private (
   override def fetchAt(address: AclAddress, rev: Int): IO[AclResource] =
     log
       .stateOr(address, rev, AclNotFound(address), RevisionNotFound)
-      .toBIO[AclRejection.NotFound]
-      .onErrorRecover {
+      .recover {
         case AclNotFound(a) if a == AclAddress.Root && rev == 0 => AclState.initial(minimum)
       }
       .map(_.toResource)
@@ -51,13 +49,11 @@ final class AclsImpl private (
   override def list(filter: AclAddressFilter): IO[AclCollection] = {
     log
       .currentStates(_.toResource)
-      .translate(ioToTaskK)
       .filter { a =>
         filter.matches(a.value.address)
       }
       .compile
       .toList
-      .hideErrors
       .map { as =>
         val col = AclCollection(as: _*)
         col.value.get(AclAddress.Root) match {
@@ -89,8 +85,7 @@ final class AclsImpl private (
   override def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclResource] =
     eval(DeleteAcl(address, rev, caller)).span("deleteAcls")
 
-  private def eval(cmd: AclCommand): IO[AclResource] =
-    log.evaluate(cmd.address, cmd).toBIO[AclRejection].map(_._2.toResource)
+  private def eval(cmd: AclCommand): IO[AclResource] = log.evaluate(cmd.address, cmd).map(_._2.toResource)
   override def purge(project: AclAddress): IO[Unit]  = log.delete(project)
 }
 
