@@ -10,11 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.ResolutionType.{AllResolversInProject, SingleResolver}
+import ch.epfl.bluebrain.nexus.delta.routes.ResolutionType.SingleResolver
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UnderscoreOrIdSegment.{IdSeg, Underscore}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -102,7 +103,7 @@ final class ResolversRoutes(
                   }
                 }
               },
-              idSegment { resolver =>
+              idSegmentNoUnderscore { resolver =>
                 concat(
                   pathEndOrSingleSlash {
                     concat(
@@ -157,28 +158,29 @@ final class ResolversRoutes(
                         }
                       }
                     )
-                  },
-                  // Fetch a resource using a resolver
-                  (get & idSegmentRef) { resourceIdRef =>
-                    concat(
-                      pathEndOrSingleSlash {
-                        parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
-                          val outputType =
-                            if (showReport) ResolvedResourceOutputType.Report else ResolvedResourceOutputType.JsonLd
-                          resolveResource(resourceIdRef, project, resolutionType(resolver), outputType)
-                        }
-                      },
-                      (pathPrefix("source") & pathEndOrSingleSlash) {
-                        resolveResource(
-                          resourceIdRef,
-                          project,
-                          resolutionType(resolver),
-                          ResolvedResourceOutputType.Source
-                        )
-                      }
-                    )
                   }
                 )
+              },
+              resolutionTypeDirective { resolver => // Fetch a resource using a resolver
+                (get & idSegmentRef) { resourceIdRef =>
+                  concat(
+                    pathEndOrSingleSlash {
+                      parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
+                        val outputType =
+                          if (showReport) ResolvedResourceOutputType.Report else ResolvedResourceOutputType.JsonLd
+                        resolveResource(resourceIdRef, project, resolver, outputType)
+                      }
+                    },
+                    (pathPrefix("source") & pathEndOrSingleSlash) {
+                      resolveResource(
+                        resourceIdRef,
+                        project,
+                        resolver,
+                        ResolvedResourceOutputType.Source
+                      )
+                    }
+                  )
+                }
               }
             )
           }
@@ -209,10 +211,10 @@ final class ResolversRoutes(
       }
     }
 
-  private def resolutionType(segment: IdSegment): ResolutionType = {
-    underscoreToOption(segment) match {
-      case Some(resolver) => SingleResolver(resolver)
-      case None           => AllResolversInProject
+  private def resolutionTypeDirective: Directive1[ResolutionType] = {
+    idSegmentOrUnderscore.flatMap {
+      case Underscore     => provide(ResolutionType.AllResolversInProject)
+      case IdSeg(segment) => provide(ResolutionType.SingleResolver(segment))
     }
   }
 }
