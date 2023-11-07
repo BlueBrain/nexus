@@ -277,16 +277,6 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
-    "create a cross-project-resolver for proj2 with _" in {
-      deltaClient.put[Json](
-        s"/resolvers/$project2/_/",
-        resolverPayload.deepMerge(Json.obj("@id" -> Json.fromString("_"))),
-        Rick
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
-    }
-
     "update a cross-project-resolver for proj2" in {
       val updated = resolverPayload deepMerge Json.obj("priority" -> Json.fromInt(20))
       eventually {
