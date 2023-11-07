@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures.defaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
@@ -17,32 +18,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
 import io.circe.Json
 import monix.execution.Scheduler
+import org.scalatest.CancelAfterFailure
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors}
 
 import java.util.regex.Pattern.quote
 import scala.concurrent.duration._
 
 class SearchSparqlQuerySpec
     extends TestKit(ActorSystem("SearchSparqlQuerySpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with CatsEffectSpec
     with ConfigFixtures
     with EitherValues
     with CancelAfterFailure
-    with TestHelpers
     with Eventually
-    with Inspectors
-    with TestMatchers
-    with BIOValues
     with CatsIOValues
     with BlazegraphDocker {
 
@@ -58,7 +50,7 @@ class SearchSparqlQuerySpec
   )
 
   private lazy val endpoint = hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
 
   private def toNTriples(json: Json): NTriples = {
     for {
@@ -94,7 +86,7 @@ class SearchSparqlQuerySpec
       val q         = contentOf("construct-query.sparql").replaceAll(quote("{resource_id}"), traceId.rdfFormat)
       val query     = SparqlConstructQuery(q).rightValue
       val compacted = for {
-        ntriples  <- toCatsIO(client.query(Set(index), query, SparqlNTriples))
+        ntriples  <- client.query(Set(index), query, SparqlNTriples)
         graph     <- IO.fromEither(Graph(ntriples.value.copy(rootNode = traceId)))
         compacted <- graph.toCompactedJsonLd(ctx)
       } yield compacted

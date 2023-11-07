@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -73,7 +72,6 @@ class BlazegraphSinkSuite
   private def query(namespace: String) =
     client
       .query(Set(namespace), constructQuery, SparqlQueryResponseType.SparqlNTriples)
-      .toCatsIO
       .map { response => Graph(response.value).toOption }
 
   test("Create the namespace") {
@@ -127,7 +125,7 @@ class BlazegraphSinkSuite
     val expected = createGraph(Chunk(resource2Id -> resource2Ntriples, resource1Id -> resource1NtriplesUpdated))
 
     for {
-      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
+      _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(asElems(input))
       _ <- query(namespace).assertSome(expected)
     } yield ()
@@ -150,7 +148,7 @@ class BlazegraphSinkSuite
     val expected = createGraph(Chunk.singleton(resource2Id -> resource2Ntriples))
 
     for {
-      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
+      _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(chunk)
       _ <- query(namespace).assertSome(expected)
     } yield ()

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
@@ -172,9 +173,9 @@ object BlazegraphViewsQuery {
           responseType: Aux[R]
       )(implicit caller: Caller): IO[R] =
         for {
-          view    <- viewsStore.fetch(id, project)
-          p       <- fetchContext.onRead(project)
-          iri     <- expandIri(id, p)
+          view    <- viewsStore.fetch(id, project).toCatsIO
+          p       <- fetchContext.onRead(project).toCatsIO
+          iri     <- expandIri(id, p).toCatsIO
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck
@@ -182,7 +183,6 @@ object BlazegraphViewsQuery {
                              AuthorizationFailed(i.ref.project, i.permission)
                            )
                            .as(Set(i.index))
-                           .toBIO[BlazegraphViewRejection]
                        case a: AggregateView =>
                          aclCheck
                            .mapFilter[IndexingView, String](
@@ -190,11 +190,12 @@ object BlazegraphViewsQuery {
                              v => ProjectAcl(v.ref.project) -> v.permission,
                              _.index
                            )
-                           .toUIO
                      }
           qr      <- logSlowQueries(
                        BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
-                       client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+                       client.query(indices, query, responseType).adaptError { case e: SparqlClientError =>
+                         WrappedBlazegraphClientError(e)
+                       }
                      )
         } yield qr
 

@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import cats.data.NonEmptySet
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -42,7 +43,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
@@ -63,7 +63,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   private val noopSlowQueryLogger: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
-    override def apply[E, A](context: BlazegraphQueryContext, query: BIO[E, A]): BIO[E, A] = query
+    override def apply[A](context: BlazegraphQueryContext, query: IO[A]): IO[A] = query
   }
 
   implicit private val sc: Scheduler                = Scheduler.global
@@ -74,7 +74,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

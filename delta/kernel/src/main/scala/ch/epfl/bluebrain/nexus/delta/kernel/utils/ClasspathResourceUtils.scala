@@ -90,15 +90,6 @@ trait ClasspathResourceUtils {
       props.asScala.toMap
     }
 
-  final def bioPropertiesOf(resourcePath: String)(implicit
-      classLoader: ClassLoader
-  ): BIO[ClasspathResourceError, Map[String, String]] =
-    bioStreamOf(resourcePath).map { is =>
-      val props = new Properties()
-      props.load(is)
-      props.asScala.toMap
-    }
-
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
     * ''replacements'' with their values. The resulting string is parsed into a json value.

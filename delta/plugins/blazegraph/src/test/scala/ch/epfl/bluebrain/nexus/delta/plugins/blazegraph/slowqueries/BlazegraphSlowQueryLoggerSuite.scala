@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLoggerSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
@@ -8,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import monix.bio.Task
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
@@ -18,12 +19,12 @@ import scala.concurrent.duration.DurationInt
 object BlazegraphSlowQueryLoggerSuite {
   private val LongQueryThreshold                        = 100.milliseconds
   private val StoreWhichFails: BlazegraphSlowQueryStore = new BlazegraphSlowQueryStore {
-    override def save(query: BlazegraphSlowQuery): Task[Unit] =
-      Task.raiseError(new RuntimeException("error saving slow log"))
+    override def save(query: BlazegraphSlowQuery): IO[Unit] =
+      IO.raiseError(new RuntimeException("error saving slow log"))
 
-    override def removeQueriesOlderThan(instant: Instant): Task[Unit] = Task.unit
+    override def removeQueriesOlderThan(instant: Instant): IO[Unit] = IO.unit
 
-    override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
+    override def listForTestingOnly(view: ViewRef): IO[List[BlazegraphSlowQuery]] = IO.pure(Nil)
   }
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
@@ -31,7 +32,7 @@ object BlazegraphSlowQueryLoggerSuite {
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 }
 
-class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
+class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
 
@@ -55,7 +56,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
                    sparqlQuery,
                    user
                  ),
-                 Task.sleep(101.milliseconds)
+                 IO.sleep(101.milliseconds)
                )
       saved <- getLoggedQueries
     } yield {
@@ -75,16 +76,17 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
     val (logSlowQuery, getLoggedQueries) = fixture
 
     for {
-      _     <- logSlowQuery(
-                 BlazegraphQueryContext(
-                   view,
-                   sparqlQuery,
-                   user
-                 ),
-                 Task.sleep(101.milliseconds) >> Task.raiseError(new RuntimeException())
-               ).failed
-      saved <- getLoggedQueries
+      maybeResult <- logSlowQuery(
+                       BlazegraphQueryContext(
+                         view,
+                         sparqlQuery,
+                         user
+                       ),
+                       IO.sleep(101.milliseconds) >> IO.raiseError(new RuntimeException())
+                     ).attempt
+      saved       <- getLoggedQueries
     } yield {
+      assert(maybeResult.isLeft)
       assertEquals(saved.size, 1)
       val onlyRecord = saved.head
       assertEquals(onlyRecord.view, view)
@@ -107,7 +109,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
                    sparqlQuery,
                    user
                  ),
-                 Task.sleep(50.milliseconds)
+                 IO.sleep(50.milliseconds)
                )
       saved <- getLoggedQueries
     } yield {
@@ -127,7 +129,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
         sparqlQuery,
         user
       ),
-      Task.sleep(101.milliseconds).as("result")
-    ).assert("result")
+      IO.sleep(101.milliseconds).as("result")
+    ).assertEquals("result")
   }
 }
