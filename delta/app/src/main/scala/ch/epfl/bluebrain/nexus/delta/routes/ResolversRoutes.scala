@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.ResolutionType.{AllResolversInProject, SingleResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
@@ -161,10 +162,19 @@ final class ResolversRoutes(
                   (get & idSegmentRef) { resourceIdRef =>
                     concat(
                       pathEndOrSingleSlash {
-                        resolve(resourceIdRef, project, underscoreToOption(resolver))
+                        parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
+                          val outputType =
+                            if (showReport) ResolvedResourceOutputType.Report else ResolvedResourceOutputType.JsonLd
+                          resolveResource(resourceIdRef, project, resolutionType(resolver), outputType)
+                        }
                       },
                       (pathPrefix("source") & pathEndOrSingleSlash) {
-                        resolve(resourceIdRef, project, underscoreToOption(resolver), asSource = true)
+                        resolveResource(
+                          resourceIdRef,
+                          project,
+                          resolutionType(resolver),
+                          ResolvedResourceOutputType.Source
+                        )
                       }
                     )
                   }
@@ -176,30 +186,48 @@ final class ResolversRoutes(
       }
     }
 
-  private def resolve(
-      resourceSegment: IdSegmentRef,
-      projectRef: ProjectRef,
-      resolverId: Option[IdSegment],
-      asSource: Boolean = false
+  private def resolveResource(
+      resource: IdSegmentRef,
+      project: ProjectRef,
+      resolutionType: ResolutionType,
+      output: ResolvedResourceOutputType
   )(implicit
       caller: Caller
   ): Route =
-    authorizeFor(projectRef, Permissions.resources.read).apply {
-      parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
-        def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
-          if (showReport)
-            emit(io.map(_.report).attemptNarrow[ResolverRejection])
-          else if (asSource)
-            emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
-          else
-            emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
-        }
-
-        resolverId.fold(emitResult(multiResolution(resourceSegment, projectRef))) { resolverId =>
-          emitResult(multiResolution(resourceSegment, projectRef, resolverId))
+    authorizeFor(project, Permissions.resources.read).apply {
+      def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
+        output match {
+          case ResolvedResourceOutputType.Report => emit(io.map(_.report).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.JsonLd => emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.Source => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
         }
       }
+
+      resolutionType match {
+        case ResolutionType.AllResolversInProject => emitResult(multiResolution(resource, project))
+        case SingleResolver(resolver)             => emitResult(multiResolution(resource, project, resolver))
+      }
     }
+
+  private def resolutionType(segment: IdSegment): ResolutionType = {
+    underscoreToOption(segment) match {
+      case Some(resolver) => SingleResolver(resolver)
+      case None           => AllResolversInProject
+    }
+  }
+}
+
+sealed trait ResolutionType
+object ResolutionType {
+  case object AllResolversInProject        extends ResolutionType
+  case class SingleResolver(id: IdSegment) extends ResolutionType
+}
+
+sealed trait ResolvedResourceOutputType
+object ResolvedResourceOutputType {
+  case object Report extends ResolvedResourceOutputType
+  case object JsonLd extends ResolvedResourceOutputType
+  case object Source extends ResolvedResourceOutputType
 }
 
 object ResolversRoutes {
