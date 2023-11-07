@@ -69,8 +69,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )(timer)
   }
 
-  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
-    BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)
+  make[BlazegraphSlowQueryLogger].from {
+    (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore, clock: Clock[IO]) =>
+      BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)(clock)
   }
 
   make[BlazegraphClient].named("blazegraph-indexing-client").from {

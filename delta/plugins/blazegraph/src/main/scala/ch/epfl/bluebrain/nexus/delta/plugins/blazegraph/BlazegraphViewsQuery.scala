@@ -172,9 +172,9 @@ object BlazegraphViewsQuery {
           responseType: Aux[R]
       )(implicit caller: Caller): IO[R] =
         for {
-          view    <- viewsStore.fetch(id, project)
-          p       <- fetchContext.onRead(project)
-          iri     <- expandIri(id, p)
+          view    <- viewsStore.fetch(id, project).toCatsIO
+          p       <- fetchContext.onRead(project).toCatsIO
+          iri     <- expandIri(id, p).toCatsIO
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck
@@ -182,7 +182,6 @@ object BlazegraphViewsQuery {
                              AuthorizationFailed(i.ref.project, i.permission)
                            )
                            .as(Set(i.index))
-                           .toBIO[BlazegraphViewRejection]
                        case a: AggregateView =>
                          aclCheck
                            .mapFilter[IndexingView, String](
@@ -190,7 +189,6 @@ object BlazegraphViewsQuery {
                              v => ProjectAcl(v.ref.project) -> v.permission,
                              _.index
                            )
-                           .toUIO
                      }
           qr      <- logSlowQueries(
                        BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
