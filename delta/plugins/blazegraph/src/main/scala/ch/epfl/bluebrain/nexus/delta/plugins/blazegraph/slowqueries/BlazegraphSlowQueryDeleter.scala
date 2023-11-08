@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
 import fs2.{INothing, Stream}
@@ -13,7 +12,7 @@ class BlazegraphSlowQueryDeleter(store: BlazegraphSlowQueryStore, deletionThresh
 ) {
   def deleteOldQueries: IO[Unit] = {
     IOInstant.now.flatMap { now =>
-      store.removeQueriesOlderThan(now.minusMillis(deletionThreshold.toMillis)).toCatsIO
+      store.removeQueriesOlderThan(now.minusMillis(deletionThreshold.toMillis))
     }
   }
 }

@@ -337,13 +337,13 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete them on destroy
       _ <- spaces.destroyAll(view)
-      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(false)
-      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- bgClient.existsNamespace(commonNs).assertEquals(false)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
@@ -362,18 +362,18 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the blazegraph projection
       _ <- spaces.destroyProjection(view, blazegraphProjection)
-      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the elasticsearch projection
       _ <- spaces.destroyProjection(view, elasticSearchProjection)
-      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
@@ -436,7 +436,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
                     resultMuse,
                     resultRedHot
                   ).eventually(())
-      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO
+      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt"))
     } yield ()
   }
 
@@ -475,7 +475,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
              resultMuseMetadata,
              resultRedHotMetadata
            ).eventually(())
-      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).toCatsIO.eventually(())
+      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).eventually(())
     } yield ()
   }
 
@@ -521,7 +521,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
                resultMuse,
                resultRedHot
              ).eventually(())
-        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO.eventually(())
+        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
       } yield ()
 
     for {

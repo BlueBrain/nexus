@@ -5,21 +5,21 @@ import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
-import cats.syntax.foldable._
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
 import org.apache.jena.query.ParameterizedSparqlString
 
-import scala.util.Try
 import scala.xml.{Elem, NodeSeq}
 
 trait SparqlQueryClient {
@@ -42,7 +42,7 @@ trait SparqlQueryClient {
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
-  ): IO[SparqlClientError, R]
+  ): IO[R]
 }
 
 /**
@@ -61,7 +61,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
-  ): IO[SparqlClientError, R] =
+  ): IO[R] =
     responseType match {
       case SparqlResultsJson => sparqlResultsResponse(indices, q, additionalHeaders)
       case SparqlResultsXml  => sparqlXmlResultsResponse(indices, q, additionalHeaders)
@@ -80,17 +80,18 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @return
     *   successful Future[Unit] if update succeeded, failure otherwise
     */
-  def bulk(index: String, queries: Seq[SparqlWriteQuery]): IO[SparqlClientError, Unit] = {
+  def bulk(index: String, queries: Seq[SparqlWriteQuery]): IO[Unit] = {
     val queryString = queries.map(_.value).mkString("\n")
     val pss         = new ParameterizedSparqlString
     pss.setCommandText(queryString)
     for {
-      _          <- IO.fromTry(Try(pss.asUpdate())).mapError(th => InvalidUpdateRequest(index, queryString, th.getMessage))
+      _          <- IO(pss.asUpdate()).adaptError(e => InvalidUpdateRequest(index, queryString, e.getMessage))
       queryOpt    = uniqueGraph(queries).map(graph => Query("using-named-graph-uri" -> graph.toString))
       formData    = FormData("update" -> queryString)
       reqEndpoint = endpoint(index).withQuery(queryOpt.getOrElse(Query.Empty))
       req         = Post(reqEndpoint, formData).withHttpCredentials
-      result     <- client.discardBytes(req, ()).mapError(WrappedHttpClientError)
+      result     <-
+        client.discardBytes(req, ()).toCatsIO.adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
     } yield result
   }
 
@@ -105,7 +106,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @param data
     *   the new graph as NTriples representation
     */
-  def replace(index: String, graph: Uri, data: NTriples): IO[SparqlClientError, Unit] =
+  def replace(index: String, graph: Uri, data: NTriples): IO[Unit] =
     bulk(index, Seq(SparqlWriteQuery.replace(graph, data)))
 
   /**
@@ -121,7 +122,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @param strategy
     *   the patch strategy
     */
-  def patch(index: String, graph: Uri, data: NTriples, strategy: PatchStrategy): IO[SparqlClientError, Unit] =
+  def patch(index: String, graph: Uri, data: NTriples, strategy: PatchStrategy): IO[Unit] =
     bulk(index, Seq(SparqlWriteQuery.patch(graph, data, strategy)))
 
   /**
@@ -132,7 +133,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @param graph
     *   the graph to drop
     */
-  def drop(index: String, graph: Uri): IO[SparqlClientError, Unit] =
+  def drop(index: String, graph: Uri): IO[Unit] =
     bulk(index, Seq(SparqlWriteQuery.drop(graph)))
 
   private def uniqueGraph(query: Seq[SparqlWriteQuery]): Option[Uri] =
@@ -145,7 +146,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
       indices: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, SparqlResultsResponse] =
+  ): IO[SparqlResultsResponse] =
     indices.toList
       .foldLeftM(SparqlResults.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
@@ -154,12 +155,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError).map(results ++ _)
       }
       .map(SparqlResultsResponse)
+      .toCatsIO
 
   private def sparqlXmlResultsResponse(
       indices: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, SparqlXmlResultsResponse] =
+  ): IO[SparqlXmlResultsResponse] =
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
@@ -176,6 +178,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
           }
         }
       }
+      .toCatsIO
       .map {
         case Some(elem) => SparqlXmlResultsResponse(elem)
         case None       => SparqlXmlResultsResponse(NodeSeq.Empty)
@@ -185,7 +188,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
       indices: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, SparqlJsonLdResponse] =
+  ): IO[SparqlJsonLdResponse] =
     indices.toList
       .foldLeftM(Vector.empty[Json]) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
@@ -196,13 +199,14 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
           .mapError(WrappedHttpClientError)
           .map(results ++ _.arrayOrObject(Vector.empty[Json], identity, obj => Vector(obj.asJson)))
       }
+      .toCatsIO
       .map(vector => SparqlJsonLdResponse(Json.arr(vector: _*)))
 
   private def sparqlNTriplesResponse(
       indices: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, SparqlNTriplesResponse] =
+  ): IO[SparqlNTriplesResponse] =
     indices.toList
       .foldLeftM(NTriples.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
@@ -210,13 +214,14 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
           .withHttpCredentials
         client.fromEntityTo[String](req).mapError(WrappedHttpClientError).map(s => results ++ NTriples(s, BNode.random))
       }
+      .toCatsIO
       .map(SparqlNTriplesResponse)
 
   private def sparqlRdfXmlResponse(
       indices: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, SparqlRdfXmlResponse] =
+  ): IO[SparqlRdfXmlResponse] =
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
@@ -229,6 +234,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
           }
         }
       }
+      .toCatsIO
       .map {
         case Some(elem) => SparqlRdfXmlResponse(elem)
         case None       => SparqlRdfXmlResponse(NodeSeq.Empty)
