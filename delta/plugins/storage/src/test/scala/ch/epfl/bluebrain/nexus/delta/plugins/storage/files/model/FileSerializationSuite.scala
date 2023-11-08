@@ -55,6 +55,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
   private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, DiskStorageType, tag, 4, instant, subject)
   private val deprecated = FileDeprecated(fileId, projectRef, storageRef, DiskStorageType, 5, instant, subject)
+  private val undeprecated = FileUndeprecated(fileId, projectRef, storageRef, DiskStorageType, 6, instant, subject)
   // format: on
 
   private def expected(event: FileEvent, newFileWritten: Json, bytes: Json, mediaType: Json, origin: Json) =
@@ -121,6 +122,12 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       loadEvents("files", "file-deprecated.json"),
       Deprecated,
       expected(deprecated, Json.Null, Json.Null, Json.Null, Json.Null)
+    ),
+    (
+      undeprecated,
+      loadEvents("files", "file-undeprecated.json"),
+      Undeprecated,
+      expected(undeprecated, Json.Null, Json.Null, Json.Null, Json.Null)
     )
   )
 

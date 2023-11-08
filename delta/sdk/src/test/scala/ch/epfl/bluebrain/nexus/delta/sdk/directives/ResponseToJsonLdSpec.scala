@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentType, StatusCodes}
 import akka.http.scaladsl.server.RouteConcatenation
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -19,12 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.BlankResourceId
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleResource}
-import monix.bio.IO
-import monix.execution.Scheduler
 
 class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcatenation {
 
-  implicit val s: Scheduler                 = Scheduler.global
   implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
@@ -36,7 +34,7 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
   private def responseWithSourceError[E: JsonLdEncoder: HttpResponseFields](error: E) = {
     responseWith(
       `text/plain(UTF-8)`,
-      IO.raiseError(error)
+      IO.pure(Left(error))
     )
   }
 
@@ -47,19 +45,21 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
   private val FileContents = "hello"
 
   private def fileSourceOfString(value: String) = {
-    IO.pure(Source.single(ByteString(value)))
+    IO.pure(Right(Source.single(ByteString(value))))
   }
 
   private def responseWith[E: JsonLdEncoder: HttpResponseFields](
       contentType: ContentType,
-      contents: IO[E, AkkaSource]
+      contents: IO[Either[E, AkkaSource]]
   ) = {
     IO.pure(
-      FileResponse(
-        "file.name",
-        contentType,
-        1024,
-        contents
+      Right(
+        FileResponse(
+          "file.name",
+          contentType,
+          1024,
+          contents
+        )
       )
     )
   }
