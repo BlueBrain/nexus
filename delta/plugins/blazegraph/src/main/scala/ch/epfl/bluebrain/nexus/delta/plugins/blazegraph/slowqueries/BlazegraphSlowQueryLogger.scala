@@ -48,14 +48,13 @@ object BlazegraphSlowQueryLogger {
         context: BlazegraphQueryContext,
         isError: Boolean,
         duration: FiniteDuration
-    ): IO[Unit] = {
-      IOInstant.now
-        .flatTap(_ => logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
-        .flatMap { now =>
-          sink
-            .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
-            .handleErrorWith(e => logger.error(e)("error logging blazegraph slow query"))
-        }
-    }
+    ): IO[Unit] =
+      logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'") >>
+        IOInstant.now
+          .flatMap { now =>
+            sink
+              .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
+              .handleErrorWith(e => logger.error(e)("error logging blazegraph slow query"))
+          }
   }
 }

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLoggerSuite._
@@ -35,9 +35,6 @@ object BlazegraphSlowQueryLoggerSuite {
 class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
-
-  val realClock: Clock[IO]            = Clock.create[IO]
-  implicit val mockedClock: Clock[IO] = ceClockMocked(_ => IO.pure(Instant.EPOCH.toEpochMilli), realClock.monotonic)
 
   private def fixture = {
     val store  = blazegraphSlowQueryStore()

@@ -13,17 +13,16 @@ trait IOFixedClock {
     override def monotonic(unit: TimeUnit): UIO[Long] = UIO.pure(instant.toEpochMilli)
   }
 
+  private val realClock: Clock[IO] = Clock.create
+
   implicit def bioClock: Clock[UIO] = bioClock(Instant.EPOCH)
 
-  def ceClock(instant: Instant): Clock[IO] =
-    ceClockMocked(_ => IO.pure(instant.toEpochMilli), _ => IO.pure(instant.toEpochMilli))
+  def ceClock(instant: Instant): Clock[IO] = new Clock[IO] {
+    override def realTime(unit: TimeUnit): IO[Long]  = IO.pure(instant.toEpochMilli)
+    override def monotonic(unit: TimeUnit): IO[Long] = realClock.monotonic(unit)
+  }
 
   implicit def ceClock: Clock[IO] = ceClock(Instant.EPOCH)
-
-  def ceClockMocked(now: TimeUnit => IO[Long], mono: TimeUnit => IO[Long]): Clock[IO] = new Clock[IO] {
-    override def realTime(unit: TimeUnit): IO[Long]  = now(unit)
-    override def monotonic(unit: TimeUnit): IO[Long] = mono(unit)
-  }
 }
 
 object IOFixedClock extends IOFixedClock
