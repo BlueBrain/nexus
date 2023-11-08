@@ -114,7 +114,7 @@ trait FailedElemLogStore {
 
 object FailedElemLogStore {
 
-  private val logger = Logger.cats[ProjectionStore]
+  private val logger = Logger[ProjectionStore]
 
   def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): FailedElemLogStore =
     new FailedElemLogStore {

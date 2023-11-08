@@ -131,6 +131,14 @@ object FileRejection {
   final case class FileIsDeprecated(id: Iri) extends FileRejection(s"File '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a file that is already deprecated.
+    *
+    * @param id
+    *   the file identifier
+    */
+  final case class FileIsNotDeprecated(id: Iri) extends FileRejection(s"File '$id' is not deprecated.")
+
+  /**
     * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
     * filename.
     *

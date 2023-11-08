@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -28,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import io.circe.syntax._
-import monix.bio.UIO
 
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
@@ -54,7 +54,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
   private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
   private val fetchContext    = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => IO.none, _ => IO.none)
 
   private lazy val views: CompositeViews = CompositeViews(
     fetchContext,

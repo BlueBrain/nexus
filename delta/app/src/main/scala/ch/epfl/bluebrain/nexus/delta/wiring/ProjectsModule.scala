@@ -24,14 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Projects wiring
@@ -67,8 +66,7 @@ object ProjectsModule extends ModuleDef {
             .fetchActiveOrganization(_)
             .adaptError { case e: OrganizationRejection =>
               WrappedOrganizationRejection(e)
-            }
-            .toBIO[ProjectRejection],
+            },
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializations,
           mappings.merge,
@@ -120,12 +118,11 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
-    toCatsIO(UUIDCache(config.projects.cache, config.organizations.cache, xas))
+    UUIDCache(config.projects.cache, config.organizations.cache, xas)
   }
 
-  make[DeltaSchemeDirectives].from {
-    (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache, s: Scheduler) =>
-      DeltaSchemeDirectives(fetchContext, uuidCache)(s)
+  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache) =>
+    DeltaSchemeDirectives(fetchContext, uuidCache)
   }
 
   make[ProjectsRoutes].from {

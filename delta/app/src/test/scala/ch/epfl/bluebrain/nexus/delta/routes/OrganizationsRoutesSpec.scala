@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitializ
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 
 import java.util.UUID

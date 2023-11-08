@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 object KamonMonitoring {
 
-  private val logger = Logger.cats[Tracing]
+  private val logger = Logger[Tracing]
 
   def enabled: Boolean =
     sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)

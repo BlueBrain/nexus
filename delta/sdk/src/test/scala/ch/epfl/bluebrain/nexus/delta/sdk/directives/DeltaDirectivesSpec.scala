@@ -9,6 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Location}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -33,11 +34,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -49,6 +49,7 @@ class DeltaDirectivesSpec
     with OptionValues
     with CirceMarshalling
     with CirceLiteral
+    with CatsIOValues
     with BIOValues
     with TestMatchers
     with TestHelpers
@@ -63,8 +64,6 @@ class DeltaDirectivesSpec
     FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-
-  implicit private val s: Scheduler = Scheduler.global
 
   private val id                = nxv + "myresource"
   private val resource          = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
@@ -83,17 +82,16 @@ class DeltaDirectivesSpec
 
   private val compacted = resource.toCompactedJsonLd.accepted
 
-  val ioResource: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Right(resource))
-  val ioBadRequest: IO[SimpleRejection, SimpleResource] = IO.fromEither(Left(badRequestRejection))
-  val ioConflict: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Left(conflictRejection))
+  val ioResource: IO[Either[SimpleRejection, SimpleResource]]   = IO.pure(Right(resource))
+  val ioBadRequest: IO[Either[SimpleRejection, SimpleResource]] = IO.pure(Left(badRequestRejection))
+  val ioConflict: IO[Either[SimpleRejection, SimpleResource]]   = IO.pure(Left(conflictRejection))
 
-  val redirectTarget: Uri                           = s"http://localhost/${genString()}"
-  val uioRedirect: UIO[Uri]                         = IO.pure(redirectTarget)
-  val ioRedirect: IO[SimpleRejection, Uri]          = uioRedirect
-  val ioRedirectRejection: IO[SimpleRejection, Uri] = IO.raiseError(badRequestRejection)
+  val redirectTarget: Uri                                   = s"http://localhost/${genString()}"
+  val ioRedirect: IO[Uri]                                   = IO.pure(redirectTarget)
+  val ioRedirectRejection: IO[Either[SimpleRejection, Uri]] = IO.pure(Left(badRequestRejection))
 
   private val ref: ProjectRef  = ProjectRef.unsafe("org", "proj")
-  private val ioProject        = UIO.pure(ref.asJson)
+  private val ioProject        = IO.pure(ref.asJson)
   private val projectFusionUri = Uri("https://bbp.epfl.ch/nexus/web/admin/org/proj")
 
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
@@ -103,7 +101,7 @@ class DeltaDirectivesSpec
     get {
       concat(
         path("uio") {
-          emit(Accepted, UIO.pure(resource))
+          emit(Accepted, IO.pure(resource))
         },
         path("io") {
           emit(Accepted, ioResource)
@@ -131,13 +129,10 @@ class DeltaDirectivesSpec
         path("redirectIO") {
           emitRedirect(StatusCodes.SeeOther, ioRedirect)
         },
-        path("redirectUIO") {
-          emitRedirect(StatusCodes.SeeOther, uioRedirect)
-        },
         pathPrefix("resources") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
             },
             path("redirectFusionLatest") {
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
@@ -149,14 +144,14 @@ class DeltaDirectivesSpec
               emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
             },
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
             }
           )
         },
         pathPrefix("projects") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false), s)
+              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false))
             },
             path("redirectFusion") {
               emitOrFusionRedirect(ref, emit(ioProject))
@@ -445,13 +440,6 @@ class DeltaDirectivesSpec
 
     "redirect a successful io" in {
       Get("/redirectIO") ~> route ~> check {
-        response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual redirectTarget
-      }
-    }
-
-    "redirect a successful uio" in {
-      Get("/redirectUIO") ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
         response.header[Location].value.uri shouldEqual redirectTarget
       }

@@ -8,7 +8,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.UseRight
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -36,7 +35,7 @@ object ResponseToJsonLdDiscardingEntity extends DiscardValueInstances {
         extractRequest { request =>
           extractMaterializer { implicit mat =>
             request.discardEntityBytes()
-            CatsResponseToJsonLd(io.map[UseRight[A]](Right(_))).apply(statusOverride) ~ fallbackAsPlainJson
+            ResponseToJsonLd(io.map[UseRight[A]](Right(_))).apply(statusOverride) ~ fallbackAsPlainJson
           }
         }
     }

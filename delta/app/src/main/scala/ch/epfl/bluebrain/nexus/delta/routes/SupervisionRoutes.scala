@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.SupervisionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.emit
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities

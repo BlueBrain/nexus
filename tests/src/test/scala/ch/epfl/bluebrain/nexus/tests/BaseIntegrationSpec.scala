@@ -57,7 +57,7 @@ trait BaseIntegrationSpec
     with AppendedClues
     with ScalaFutures {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   implicit val config: TestsConfig = load[TestsConfig](ConfigFactory.load(), "tests")
 

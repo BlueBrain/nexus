@@ -34,7 +34,7 @@ trait CompositeSpaces {
 
 object CompositeSpaces {
 
-  private val logger = Logger.cats[CompositeSpaces]
+  private val logger = Logger[CompositeSpaces]
 
   def apply(
       prefix: String,

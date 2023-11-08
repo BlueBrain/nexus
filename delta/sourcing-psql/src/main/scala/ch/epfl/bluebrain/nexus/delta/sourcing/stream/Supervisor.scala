@@ -108,7 +108,7 @@ trait Supervisor {
 
 object Supervisor {
 
-  private val log = Logger.cats[Supervisor]
+  private val log = Logger[Supervisor]
 
   private val ignored = Control(
     status = IO.pure(ExecutionStatus.Ignored),

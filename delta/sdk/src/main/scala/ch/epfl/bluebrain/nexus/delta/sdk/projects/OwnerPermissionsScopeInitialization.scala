@@ -28,7 +28,7 @@ class OwnerPermissionsScopeInitialization(appendAcls: Acl => IO[Unit], ownerPerm
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent("ownerPermissions")
 
-  private val logger = Logger.cats[OwnerPermissionsScopeInitialization]
+  private val logger = Logger[OwnerPermissionsScopeInitialization]
 
   override def onOrganizationCreation(
       organization: Organization,

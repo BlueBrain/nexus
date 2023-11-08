@@ -52,7 +52,7 @@ object ResolverScopeInitialization {
 
   type CreateResolver = (ProjectRef, ResolverValue) => IO[Unit]
 
-  private val logger = Logger.cats[ResolverScopeInitialization]
+  private val logger = Logger[ResolverScopeInitialization]
 
   def apply(resolvers: Resolvers, serviceAccount: ServiceAccount, defaults: Defaults) = {
     implicit val caller: Caller        = serviceAccount.caller

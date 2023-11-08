@@ -39,8 +39,6 @@ import io.circe.Json
   *   a source decoder for [[ArchiveValue]]
   * @param config
   *   the log config
-  * @param uuidF
-  *   the uuid generator
   * @param rcr
   *   the archive remote context resolution
   */
@@ -82,7 +80,7 @@ class Archives(
     */
   def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveResource] =
     (for {
-      p            <- toCatsIO(fetchContext.onRead(project))
+      p            <- fetchContext.onRead(project)
       (iri, value) <- toCatsIO(sourceDecoder(p, source))
       res          <- create(iri, project, value)
     } yield res).span("createArchive")
@@ -149,12 +147,11 @@ class Archives(
       source   <- archiveDownload(value.value, project, ignoreNotFound)
     } yield source).span("downloadArchive")
 
-  private def expandWithContext(id: IdSegment, project: ProjectRef) = toCatsIO {
+  private def expandWithContext(id: IdSegment, project: ProjectRef) =
     for {
       p   <- fetchContext.onRead(project)
       iri <- expandIri(id, p)
     } yield (iri, p)
-  }
 
   private def eval(cmd: CreateArchive): IO[ArchiveResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map { _.toResource(config.ttl) }
