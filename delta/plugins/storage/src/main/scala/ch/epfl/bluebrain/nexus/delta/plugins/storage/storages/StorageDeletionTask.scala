@@ -57,7 +57,7 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, Storag
 
 object StorageDeletionTask {
 
-  private val logger: log4cats.Logger[IO] = Logger.cats[StorageDeletionTask]
+  private val logger: log4cats.Logger[IO] = Logger[StorageDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("storage")
 

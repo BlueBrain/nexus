@@ -43,7 +43,7 @@ sealed trait CompositeViewDef extends Product with Serializable {
 
 object CompositeViewDef {
 
-  private val logger = Logger.cats[CompositeViewDef]
+  private val logger = Logger[CompositeViewDef]
 
   /**
     * Active view eligible to be run as a projection by the supervisor

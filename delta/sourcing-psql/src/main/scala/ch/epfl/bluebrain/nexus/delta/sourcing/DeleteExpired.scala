@@ -28,7 +28,7 @@ final class DeleteExpired private[sourcing] (xas: Transactors)(implicit clock: C
 }
 
 object DeleteExpired {
-  private val logger = Logger.cats[DeleteExpired]
+  private val logger = Logger[DeleteExpired]
 
   private val metadata: ProjectionMetadata = ProjectionMetadata("system", "delete-expired", None, None)
 

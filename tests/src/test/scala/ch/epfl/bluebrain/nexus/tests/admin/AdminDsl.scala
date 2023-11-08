@@ -15,7 +15,7 @@ import org.scalatest.matchers.should.Matchers
 
 class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with CirceUnmarshalling with Matchers {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   def orgPayload(description: String = genString()): Json =
     jsonContentOf("/admin/orgs/payload.json", "description" -> description)

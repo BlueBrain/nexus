@@ -67,7 +67,7 @@ trait ArchiveDownload {
 
 object ArchiveDownload {
 
-  private val logger = Logger.cats[ArchiveDownload]
+  private val logger = Logger[ArchiveDownload]
 
   case class ArchiveDownloadError(filename: String, response: Complete[JsonLdValue]) extends SDKError {
     override def getMessage: String = {

@@ -92,7 +92,7 @@ final class CompositeRestartStore(xas: Transactors) {
 }
 
 object CompositeRestartStore {
-  private val logger = Logger.cats[CompositeRestartStore]
+  private val logger = Logger[CompositeRestartStore]
 
   private val purgeCompositeRestartMetadata = ProjectionMetadata("composite-views", "purge-composite-restarts")
 

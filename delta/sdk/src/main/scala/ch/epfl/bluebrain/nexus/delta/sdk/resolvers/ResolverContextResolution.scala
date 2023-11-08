@@ -66,7 +66,7 @@ final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveR
 
 object ResolverContextResolution {
 
-  private val logger = Logger.cats[ResolverContextResolution]
+  private val logger = Logger[ResolverContextResolution]
 
   /**
     * A remote context defined in Nexus as a resource

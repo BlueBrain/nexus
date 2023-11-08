@@ -38,7 +38,7 @@ final class CompositeViewsDeletionTask(
 
 object CompositeViewsDeletionTask {
 
-  private val logger = Logger.cats[CompositeViewsDeletionTask]
+  private val logger = Logger[CompositeViewsDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("compositeviews")
 

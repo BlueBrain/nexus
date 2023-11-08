@@ -80,7 +80,7 @@ object IndexingAction {
     */
   def noop[A]: Execute[A] = (_, _, _) => IO.unit
 
-  private val logger = Logger.cats[IndexingAction]
+  private val logger = Logger[IndexingAction]
 
   /**
     * An instance of [[IndexingAction]] which executes other [[IndexingAction]] s in parallel.
