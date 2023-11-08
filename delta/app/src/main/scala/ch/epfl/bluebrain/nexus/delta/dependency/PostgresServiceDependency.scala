@@ -20,7 +20,7 @@ class PostgresServiceDependency(xas: Transactors) extends ServiceDependency {
     sql"select version()"
       .query[String]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
       .map {
         case versionString :: _ =>
           versionString match {

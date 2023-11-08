@@ -41,9 +41,9 @@ class CompositeRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture wit
 
   test("Save composite restarts") {
     for {
-      _ <- store.save(cr1).assert
-      _ <- store.save(cr2).assert
-      _ <- store.save(cr3).assert
+      _ <- store.save(cr1).assertUnit
+      _ <- store.save(cr2).assertUnit
+      _ <- store.save(cr3).assertUnit
     } yield ()
   }
 

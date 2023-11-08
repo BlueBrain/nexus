@@ -11,7 +11,6 @@ import cats.data.NonEmptyList
 import cats.effect.{Clock, ContextShift, IO, Resource, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -65,8 +64,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   implicit val scheduler: Scheduler = Scheduler.global
 
-  make[Transactors].fromResource {
-    Transactors.init(appCfg.database).mapK(taskToIoK)
+  make[Transactors].fromResource { (cs: ContextShift[IO]) =>
+    Transactors.init(appCfg.database)(classLoader, cs)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }

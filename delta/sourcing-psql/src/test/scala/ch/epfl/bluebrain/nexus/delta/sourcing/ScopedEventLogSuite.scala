@@ -157,7 +157,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
       .query[(EntityType, Label, Label, Iri, Tag, Instant)]
       .unique
-      .transact(xas.readCE)
+      .transact(xas.read)
     for {
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).intercept(TagNotFound)
       _ <- query.assertEquals((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))

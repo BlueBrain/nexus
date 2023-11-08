@@ -40,7 +40,7 @@ object Doobie {
       name: String,
       user: String = PostgresUser,
       pass: String = PostgresPassword
-  )(implicit cl: ClassLoader,cs: ContextShift[IO]): IOFixture[Transactors] =
+  )(implicit cl: ClassLoader, cs: ContextShift[IO]): IOFixture[Transactors] =
     ResourceFixture.suiteLocal(name, resource(user, pass))
 
   trait Fixture { self: NexusSuite with CatsRunContext =>

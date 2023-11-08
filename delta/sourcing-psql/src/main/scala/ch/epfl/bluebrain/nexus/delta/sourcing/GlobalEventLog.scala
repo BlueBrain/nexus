@@ -177,7 +177,7 @@ object GlobalEventLog {
               .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                 onUniqueViolation(id, command)
               }
-              .transact(xas.writeCE)
+              .transact(xas.write)
               .flatMap(IO.fromEither)
           }
       }
@@ -188,7 +188,7 @@ object GlobalEventLog {
       }
 
     override def delete(id: Id): IO[Unit] =
-      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.writeCE)
+      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
 
     override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
 

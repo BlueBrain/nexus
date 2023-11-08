@@ -171,7 +171,7 @@ class EntityDependencyStoreSuite extends CatsEffectSuite with Doobie.Fixture {
 
   test(s"Delete all dependencies for $proj") {
     for {
-      _ <- EntityDependencyStore.deleteAll(proj).transact(xas.writeCE)
+      _ <- EntityDependencyStore.deleteAll(proj).transact(xas.write)
       _ <- projEntities.traverse { id =>
              EntityDependencyStore
                .directDependencies(proj, id, xas)

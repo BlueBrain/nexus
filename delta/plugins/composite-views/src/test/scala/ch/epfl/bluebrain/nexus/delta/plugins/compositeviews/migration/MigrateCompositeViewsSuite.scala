@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -47,7 +46,7 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture wit
 
   test("Insert states and events and run migration") {
     for {
-      _ <- initPartitions(xas, proj).toCatsIO
+      _ <- initPartitions(xas, proj)
       // Events to migrate
       _ <- loadEvent("migration/event-created.json")
       _ <- loadEvent("migration/event-updated.json")
@@ -131,7 +130,7 @@ object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
            |  $rev,
            |  ${json.asJson},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.writeCE)
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)
@@ -164,7 +163,7 @@ object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
            |  ${json.asJson},
            |  ${false},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.writeCE)
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)

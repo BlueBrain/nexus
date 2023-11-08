@@ -223,8 +223,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       val proj = view1Proj1.project
       viewsQuery
         .query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon)
-        .toBIO[BlazegraphViewRejection]
-        .terminated[AuthorizationFailed]
+        .rejectedWith[AuthorizationFailed]
     }
 
     "query a deprecated indexed view" in eventually {

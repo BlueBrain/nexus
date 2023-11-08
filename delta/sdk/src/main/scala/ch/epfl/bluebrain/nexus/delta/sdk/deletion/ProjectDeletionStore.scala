@@ -21,7 +21,7 @@ final private[deletion] class ProjectDeletionStore(xas: Transactors) {
       deleteProject(report.project) >>
         EntityDependencyStore.deleteAll(report.project) >>
         saveReport(report)
-    ).transact(xas.writeCE)
+    ).transact(xas.write)
 
   /**
     * Delete partitions of the projects in events and states
@@ -44,6 +44,6 @@ final private[deletion] class ProjectDeletionStore(xas: Transactors) {
     sql"""SELECT value FROM deleted_project_reports WHERE value->>'project' = $project"""
       .query[ProjectDeletionReport]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
 }

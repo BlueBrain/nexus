@@ -95,7 +95,7 @@ object AclsImpl {
 
   def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[Unit] = {
     GlobalStateStore
-      .listIds(Realms.entityType, xas.readCE)
+      .listIds(Realms.entityType, xas.read)
       .compile
       .toList
       .flatMap { existing =>

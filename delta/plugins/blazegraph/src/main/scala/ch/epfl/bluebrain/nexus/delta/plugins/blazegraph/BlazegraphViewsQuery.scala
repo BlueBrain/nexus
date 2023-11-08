@@ -172,9 +172,9 @@ object BlazegraphViewsQuery {
           responseType: Aux[R]
       )(implicit caller: Caller): IO[R] =
         for {
-          view    <- viewsStore.fetch(id, project).toCatsIO
-          p       <- fetchContext.onRead(project).toCatsIO
-          iri     <- expandIri(id, p).toCatsIO
+          view    <- viewsStore.fetch(id, project)
+          p       <- fetchContext.onRead(project)
+          iri     <- expandIri(id, p)
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck

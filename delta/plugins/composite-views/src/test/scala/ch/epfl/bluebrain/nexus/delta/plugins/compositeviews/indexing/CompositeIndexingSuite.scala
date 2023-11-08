@@ -88,7 +88,7 @@ trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
 
   private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
     (
-      Doobie.resource().mapK(taskToIoK),
+      Doobie.resource(),
       ElasticSearchClientSetup.resource(),
       BlazegraphClientSetup.resource().mapK(taskToIoK)
     )

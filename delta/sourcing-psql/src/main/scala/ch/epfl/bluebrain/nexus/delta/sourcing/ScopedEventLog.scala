@@ -285,7 +285,7 @@ object ScopedEventLog {
                             .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                               onUniqueViolation(id, command)
                             }
-                            .transact(xas.writeCE)
+                            .transact(xas.write)
               _        <- init.updateCache(xas.cache)
             } yield res
           }

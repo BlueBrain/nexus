@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.{Clock, ContextShift, IO, Resource, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, taskToIoK}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -48,7 +48,7 @@ object SupervisorSetup {
   def resource(
       config: ProjectionConfig
   )(implicit clock: Clock[IO], timer: Timer[IO], cs: ContextShift[IO], cl: ClassLoader): Resource[IO, SupervisorSetup] =
-    Doobie.resource().mapK(taskToIoK).flatMap { xas =>
+    Doobie.resource().flatMap { xas =>
       val projections      = Projections(xas, config.query, config.restartTtl)
       val projectionErrors = ProjectionErrors(xas, config.query)
       Supervisor(projections, projectionErrors, config).map(s => SupervisorSetup(s, projections, projectionErrors))

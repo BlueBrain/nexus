@@ -29,12 +29,8 @@ final case class Transactors(
     cache: PartitionsCache
 ) {
 
-  def readCE: Transactor[IO]      = read
-  def writeCE: Transactor[IO]     = write
-  def streamingCE: Transactor[IO] = streaming
-
   private def execDDL(ddl: String)(implicit cl: ClassLoader): IO[Unit] =
-    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(writeCE)).void
+    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
 
   def execDDLs(ddls: List[String])(implicit cl: ClassLoader): IO[Unit] =
     ddls.traverse(execDDL).void
@@ -96,11 +92,13 @@ object Transactors {
     init(databaseConfig)(getClass.getClassLoader, cs)
   }
 
-  def init(config: DatabaseConfig)(implicit classLoader: ClassLoader, cs: ContextShift[IO]): Resource[IO, Transactors] = {
+  def init(
+      config: DatabaseConfig
+  )(implicit classLoader: ClassLoader, cs: ContextShift[IO]): Resource[IO, Transactors] = {
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
-        ce <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
-        blocker <- Blocker[IO]
+        ce        <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
+        blocker   <- Blocker[IO]
         dataSource = {
           val ds = new HikariDataSource
           ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
@@ -117,10 +115,10 @@ object Transactors {
     }
 
     val transactors = for {
-      read <- transactor(config.read, readOnly = true, poolName = "ReadPool")
-      write <- transactor(config.write, readOnly = false, poolName = "WritePool")
+      read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
+      write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
       streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
-      cache <- Resource.eval(LocalCache.lru[String, Unit](config.cache))
+      cache     <- Resource.eval(LocalCache.lru[String, Unit](config.cache))
     } yield Transactors(read, write, streaming, cache)
 
     transactors.evalTap { xas =>

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddress, AclRejection}
@@ -25,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO, UIO}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.time.Instant
@@ -70,8 +71,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private def fetchOrg: FetchOrganization = {
     case `org1`     => UIO.pure(Organization(org1, orgUuid, None))
     case `usersOrg` => UIO.pure(Organization(usersOrg, orgUuid, None))
-    case `org2`     => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2)))
-    case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case `org2`     => BIO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2)))
+    case other      => BIO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
   private val provisioningConfig = AutomaticProvisioningConfig(
@@ -92,8 +93,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 
   private val projectsStatistics: ProjectsStatistics = {
-    case `ref` => UIO.some(projectStats)
-    case _     => UIO.none
+    case `ref` => IO.pure(Some(projectStats))
+    case _     => IO.none
   }
 
   private lazy val projects     = ProjectsImpl(fetchOrg, _ => UIO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)

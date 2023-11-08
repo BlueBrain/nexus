@@ -2,19 +2,20 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
 import cats.effect.{ContextShift, IO, Resource, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}
 import izumi.distage.model.plan.Roots
 import izumi.distage.planning.solver.PlanVerifier
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.nio.file.{Files, Paths}
@@ -73,7 +74,7 @@ object MainSuite {
   trait Fixture { self: CatsEffectSuite =>
 
     // Overload config via system properties
-    private def acquire(postgres: PostgresContainer, elastic: ElasticSearchContainer) = Task.delay {
+    private def acquire(postgres: PostgresContainer, elastic: ElasticSearchContainer): IO[Unit] = IO.delay {
       val resourceTypesFile = Files.createTempFile("resource-types", ".json")
       Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
       val mappingFile       = Files.createTempFile("mapping", ".json")
@@ -105,7 +106,7 @@ object MainSuite {
     }
 
     // Resetting system properties
-    private def release = Task.delay {
+    private def release = IO.delay {
       System.clearProperty("app.defaults.database.access.host")
       System.clearProperty("app.defaults.database.access.port")
       System.clearProperty("app.defaults.database.access.username")
@@ -127,11 +128,11 @@ object MainSuite {
     private def resource() =
       for {
         postgres <- PostgresContainer.resource(PostgresUser, PostgresPassword)
-        elastic  <- ElasticSearchContainer.resource()
+        elastic  <- ElasticSearchContainer.resource().mapK(taskToIoK)
         _        <- Resource.make(acquire(postgres, elastic))(_ => release)
       } yield ()
 
-    val main: ResourceFixture.TaskFixture[Unit] = ResourceFixture.suiteLocal("main", resource())
+    val main: IOFixture[Unit] = ResourceFixture.suiteLocal("main", resource())
 
   }
 

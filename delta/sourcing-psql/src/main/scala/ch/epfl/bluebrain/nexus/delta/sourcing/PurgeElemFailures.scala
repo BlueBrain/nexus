@@ -23,7 +23,7 @@ final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDu
       deleted   <- sql"""
                     | DELETE FROM public.failed_elem_logs
                     | WHERE instant < $threshold
-                    """.stripMargin.update.run.transact(xas.writeCE)
+                    """.stripMargin.update.run.transact(xas.write)
       _         <- IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted {} old indexing failures.", deleted)))
     } yield ()
 }

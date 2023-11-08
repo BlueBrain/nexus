@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SerializerSuite.{Bar, Foo}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie._
 import doobie.implicits._
@@ -40,8 +38,7 @@ class SerializerSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.As
       """{"x": 10, "y": 2}"""
     )
 
-    val value: IO[(Set[String], Set[Foo])] = insertGet.transact(xas.write)
-    value(expectedString -> Set(foo, foo2))
+    insertGet.transact(xas.write).assertEquals(expectedString -> Set(foo, foo2))
   }
 
   test("Check bar serializer dropping nulls") {
