@@ -143,8 +143,8 @@ object BlazegraphViewsQuery {
           base: BaseUri
       ): IO[SearchResults[SparqlLink]] =
         for {
-          p        <- fetchContext.onRead(projectRef).toCatsIO
-          iri      <- expandIri(id, p).toCatsIO
+          p        <- fetchContext.onRead(projectRef)
+          iri      <- expandIri(id, p)
           q         = SparqlQuery(replace(incomingQuery, iri, pagination))
           bindings <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
           links     = toSparqlLinks(bindings.value)
@@ -157,8 +157,8 @@ object BlazegraphViewsQuery {
           includeExternalLinks: Boolean
       )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]] =
         for {
-          p            <- fetchContext.onRead(projectRef).toCatsIO
-          iri          <- expandIri(id, p).toCatsIO
+          p            <- fetchContext.onRead(projectRef)
+          iri          <- expandIri(id, p)
           queryTemplate = if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
           q             = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings     <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)

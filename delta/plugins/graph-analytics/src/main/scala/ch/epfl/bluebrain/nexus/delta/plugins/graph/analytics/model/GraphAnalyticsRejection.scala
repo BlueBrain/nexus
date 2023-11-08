@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -19,7 +20,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class GraphAnalyticsRejection(val reason: String) extends Exception(reason)
+sealed abstract class GraphAnalyticsRejection(val reason: String) extends Rejection
 
 object GraphAnalyticsRejection {
 

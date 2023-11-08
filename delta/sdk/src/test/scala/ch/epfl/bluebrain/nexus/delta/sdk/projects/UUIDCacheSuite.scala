@@ -8,18 +8,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectState
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class UUIDCacheSuite extends BioSuite with CatsRunContext with Doobie.Fixture {
+class UUIDCacheSuite extends CatsEffectSuite with CatsRunContext with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -34,7 +34,7 @@ class UUIDCacheSuite extends BioSuite with CatsRunContext with Doobie.Fixture {
 
   private lazy val xas = doobie()
 
-  private lazy val uuidCache = UUIDCache(cacheConfig, cacheConfig, xas).runSyncUnsafe()
+  private lazy val uuidCache = UUIDCache(cacheConfig, cacheConfig, xas).unsafeRunSync()
 
   private lazy val orgStore     = GlobalStateStore(Organizations.entityType, OrganizationState.serializer, queryConfig, xas)
   private lazy val projectStore = ScopedStateStore(Projects.entityType, ProjectState.serializer, queryConfig, xas)

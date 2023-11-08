@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
@@ -62,7 +61,6 @@ object DefaultSearchRequest {
     )(fetchContext: FetchContext[ElasticSearchQueryError]): IO[ProjectSearch] =
       fetchContext
         .onRead(ref)
-        .toCatsIO
         .flatMap { context =>
           IO.fromEither(expandResourceRef(schema, context.apiMappings, context.base))
         }

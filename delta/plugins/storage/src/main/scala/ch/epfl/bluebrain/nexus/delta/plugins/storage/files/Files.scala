@@ -96,7 +96,7 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      pc                    <- fetchContext.onCreate(projectRef).toCatsIO
+      pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
@@ -159,7 +159,7 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      pc  <- fetchContext.onCreate(projectRef).toCatsIO
+      pc  <- fetchContext.onCreate(projectRef)
       iri <- generateId(pc)
       res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
     } yield res
@@ -473,7 +473,9 @@ final class Files(
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
-    Storages.expandIri(segment, pc).mapError(WrappedStorageRejection).toCatsIO
+    Storages.expandIri(segment, pc).adaptError { case s: StorageRejection =>
+      WrappedStorageRejection(s)
+    }
 
   private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
     uuidF().toCatsIO.map(uuid => pc.base.iri / uuid.toString)

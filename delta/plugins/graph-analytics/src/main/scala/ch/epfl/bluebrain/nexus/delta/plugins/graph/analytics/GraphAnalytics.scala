@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
@@ -52,7 +51,7 @@ object GraphAnalytics {
 
       override def relationships(projectRef: ProjectRef): IO[AnalyticsGraph] =
         for {
-          _     <- fetchContext.onRead(projectRef).toCatsIO
+          _     <- fetchContext.onRead(projectRef)
           query <- relationshipsAggQuery(config)
           stats <- client
                      .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
@@ -74,8 +73,8 @@ object GraphAnalytics {
         }
 
         for {
-          pc     <- fetchContext.onRead(projectRef).toCatsIO
-          tpeIri <- expandIri(tpe, pc).toCatsIO
+          pc     <- fetchContext.onRead(projectRef)
+          tpeIri <- expandIri(tpe, pc)
           query  <- propertiesAggQueryFor(tpeIri)
           stats  <- search(tpeIri, index(prefix, projectRef), query)
         } yield stats
