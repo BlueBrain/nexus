@@ -50,9 +50,7 @@ object BlazegraphSlowQueryLogger {
         duration: FiniteDuration
     ): IO[Unit] = {
       IOInstant.now
-        .flatTap(_ =>
-          IO.delay(logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
-        )
+        .flatTap(_ => logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
         .flatMap { now =>
           sink
             .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
