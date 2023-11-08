@@ -15,7 +15,7 @@ const GettingStartedList: React.FC = () => {
           </a>
         </li>
         <li>
-          <a href="https://bluebrainnexus.io/docs/getting-started/running-nexus.html">
+          <a href="https://bluebrainnexus.io/docs/getting-started/running-nexus/">
             Running Nexus
           </a>
         </li>
