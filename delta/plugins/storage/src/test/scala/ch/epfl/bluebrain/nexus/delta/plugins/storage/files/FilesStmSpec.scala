@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{Compute
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestAlreadyComputed, DigestNotComputed, FileIsDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestAlreadyComputed, DigestNotComputed, FileIsDeprecated, FileIsNotDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
@@ -98,6 +98,12 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           FileDeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
       }
 
+      "create a new event from a UndeprecateFile command" in {
+        val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
+        evaluate(Some(current), UndeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
+          FileUndeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
+      }
+
       "reject with IncorrectRev" in {
         val current  = FileGen.state(id, projectRef, storageRef, attributes)
         val commands = List(
@@ -141,6 +147,11 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         forAll(commands) { cmd =>
           evaluate(Some(current), cmd).rejectedWith[FileIsDeprecated]
         }
+      }
+
+      "reject with FileIsNotDeprecated" in {
+        val current = FileGen.state(id, projectRef, storageRef, attributes, deprecated = false)
+        evaluate(Some(current), UndeprecateFile(id, projectRef, 1, alice)).rejectedWith[FileIsNotDeprecated]
       }
 
       "reject with RevisionNotFound" in {
@@ -205,6 +216,20 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         next(Some(current), event).value shouldEqual current.copy(
           rev = 2,
           deprecated = true,
+          updatedAt = time2,
+          updatedBy = alice
+        )
+      }
+
+      "from a new FileUndeprecated event" in {
+        val event   = FileUndeprecated(id, projectRef, storageRef, DiskStorageType, 2, time2, alice)
+        val current = FileGen.state(id, projectRef, storageRef, attributes, deprecated = true)
+
+        next(None, event) shouldEqual None
+
+        next(Some(current), event).value shouldEqual current.copy(
+          rev = 2,
+          deprecated = false,
           updatedAt = time2,
           updatedBy = alice
         )

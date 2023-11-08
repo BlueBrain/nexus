@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.SchemaInput._
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.{GenerateSchema, GenerationInput}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities

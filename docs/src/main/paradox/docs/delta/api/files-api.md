@@ -237,7 +237,7 @@ Locks the file, so no further operations can be performed.
 Deprecating a file is considered to be an update as well. 
 
 ```
-DELETE /v1/files/{org_label}/{project_label}?rev={previous_rev}
+DELETE /v1/files/{org_label}/{project_label}/{file_id}?rev={previous_rev}
 ```
 
 ... where `{previous_rev}` is the last known revision number for the file.
@@ -249,6 +249,26 @@ Request
 
 Response
 :   @@snip [deprecated.json](assets/files/deprecated.json)
+
+## Undeprecate
+
+Unlocks a previously deprecated file. Further operations can then be performed. The file will again be found when listing/querying.
+
+Undeprecating a file is considered to be an update as well.
+
+```
+PUT /v1/file/{org_label}/{project_label}/{file_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the resource.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/files/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/files/undeprecated.json)
 
 ## Fetch
 

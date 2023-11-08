@@ -13,8 +13,10 @@ trait RemoteStorageDocker extends BeforeAndAfterAll { this: Suite =>
   private val rwx             = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
   private val tmpFolder: Path = Files.createTempDirectory("root", rwx)
 
+  val storageVersion: String = "1.8.0-M12"
+
   protected val container: RemoteStorageContainer =
-    new RemoteStorageContainer(tmpFolder)
+    new RemoteStorageContainer(storageVersion, tmpFolder)
       .withReuse(false)
       .withStartupTimeout(60.seconds.toJava)
 

@@ -176,4 +176,18 @@ object FileCommand {
     *   the identity associated to this command
     */
   final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends FileCommand
+
+  /**
+    * Command to undeprecate a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
+    */
+  final case class UndeprecateFile(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends FileCommand
 }

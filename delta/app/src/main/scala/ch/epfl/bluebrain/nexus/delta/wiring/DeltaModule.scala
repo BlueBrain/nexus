@@ -157,10 +157,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
 
-  many[PriorityRoute].add {
-    (cfg: AppConfig, s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-      val route = new ErrorRoutes()(cfg.http.baseUri, s, cr, ordering)
-      PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add { (cfg: AppConfig, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+    val route = new ErrorRoutes()(cfg.http.baseUri, cr, ordering)
+    PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
   }
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
