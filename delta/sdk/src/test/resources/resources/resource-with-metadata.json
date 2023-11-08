@@ -7,7 +7,7 @@
   "number": 24,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/realms/wonderland/users/bob",
+  "_createdBy": "http://localhost/v1/realms/wonderland/users/writer",
   "_deprecated": false,
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
@@ -16,5 +16,5 @@
   "_schemaProject": "http://localhost/v1/projects/myorg/myproject",
   "_self": "{{self}}",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/realms/wonderland/users/bob"
+  "_updatedBy": "http://localhost/v1/realms/wonderland/users/writer"
 }

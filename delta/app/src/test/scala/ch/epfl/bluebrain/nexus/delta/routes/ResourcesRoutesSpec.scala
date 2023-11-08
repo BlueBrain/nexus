@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
@@ -44,16 +44,16 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private val reader = alice
-  private val writer = bob
+  private val reader = User("reader", realm)
+  private val writer = User("writer", realm)
 
-  implicit private val callerAlice: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerBob: Caller   =
-    Caller(bob, Set(bob, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerReader: Caller =
+    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerWriter: Caller =
+    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val asReader = addCredentials(OAuth2BearerToken("alice"))
-  private val asWriter = addCredentials(OAuth2BearerToken("bob"))
+  private val asReader = addCredentials(OAuth2BearerToken("reader"))
+  private val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
   private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
@@ -114,7 +114,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     (
       Route.seal(
         ResourcesRoutes(
-          IdentitiesDummy(callerAlice, callerBob),
+          IdentitiesDummy(callerReader, callerWriter),
           aclCheck,
           resources,
           DeltaSchemeDirectives(
