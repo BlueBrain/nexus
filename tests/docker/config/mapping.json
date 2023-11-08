@@ -99,6 +99,28 @@
         "endedAt": { "type": "date" }
       }
     },
+    "preSynapticPathway": {
+      "properties": {
+        "postSynaptic": {
+          "properties": {
+            "about": { "type": "text" },
+            "label": { "type": "text" },
+            "notation": { "type": "text" }
+          }
+        }
+      }
+    },
+    "postSynapticPathway": {
+      "properties": {
+        "postSynaptic": {
+          "properties": {
+            "about": { "type": "text" },
+            "label": { "type": "text" },
+            "notation": { "type": "text" }
+          }
+        }
+      }
+    },
     "createdAt": {
       "type": "date"
     },
