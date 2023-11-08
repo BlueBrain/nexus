@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -93,9 +92,9 @@ abstract class ResourceShift[State <: ScopedState, A, M](
     val metadata = content.metadata
     val id       = resource.resolvedId
     for {
-      graph             <- valueJsonLdEncoder.graph(resource.value).toCatsIO
+      graph             <- valueJsonLdEncoder.graph(resource.value)
       rootGraph          = graph.replaceRootNode(id)
-      resourceMetaGraph <- resourceFJsonLdEncoder.graph(resource.void).toCatsIO
+      resourceMetaGraph <- resourceFJsonLdEncoder.graph(resource.void)
       metaGraph         <- encodeMetadata(id, metadata)
       rootMetaGraph      = metaGraph.fold(resourceMetaGraph)(_ ++ resourceMetaGraph)
       typesGraph         = rootMetaGraph.rootTypesGraph
@@ -116,7 +115,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
 
   private def encodeMetadata(id: Iri, metadata: Option[M])(implicit cr: RemoteContextResolution, opts: JsonLdOptions) =
     (metadata, metadataEncoder) match {
-      case (Some(m), Some(e)) => e.graph(m).toCatsIO.map { g => Some(g.replaceRootNode(id)) }
+      case (Some(m), Some(e)) => e.graph(m).map { g => Some(g.replaceRootNode(id)) }
       case (_, _)             => IO.none
     }
 

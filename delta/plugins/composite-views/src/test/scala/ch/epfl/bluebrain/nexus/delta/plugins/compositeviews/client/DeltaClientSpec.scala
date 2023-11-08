@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
@@ -42,6 +43,7 @@ class DeltaClientSpec
     with BioSpec
     with ScalaFutures
     with CatsRunContext
+    with CatsIOValues
     with ConfigFixtures
     with BeforeAndAfterAll
     with QueryParamsUnmarshalling {

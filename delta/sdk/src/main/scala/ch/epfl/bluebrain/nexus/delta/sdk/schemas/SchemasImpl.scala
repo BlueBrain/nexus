@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -72,8 +71,8 @@ final class SchemasImpl private (
     for {
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).toCatsIO.map { j => (j.compacted, j.expanded) }
-      expandedResolved      <- resolveImports(iri, projectRef, expanded).toCatsIO
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).map { j => (j.compacted, j.expanded) }
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
     } yield res
@@ -87,10 +86,8 @@ final class SchemasImpl private (
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).toCatsIO.map { j =>
-                                 (j.compacted, j.expanded)
-                               }
-      expandedResolved      <- resolveImports(iri, projectRef, expanded).toCatsIO
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).map { j => (j.compacted, j.expanded) }
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))
     } yield res
@@ -154,13 +151,12 @@ final class SchemasImpl private (
     log.dryRun(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
   private def resolveImports(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit caller: Caller) =
-    schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema)).toBIO[SchemaRejection]
+    schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema))
 }
 
 object SchemasImpl {
 
-  type SchemasLog =
-    ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+  type SchemasLog = ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
 
   /**
     * Constructs a [[Schemas]] instance.

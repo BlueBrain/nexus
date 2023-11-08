@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -50,7 +49,7 @@ object ValidationReport {
             .toRight(new IllegalStateException("Unable to find predicate sh:conforms in the validation report graph"))
         )
       graph          = tmpGraph.replaceRootNode(rootNode)
-      compacted     <- toCatsIO(graph.toCompactedJsonLd(shaclCtx))
+      compacted     <- graph.toCompactedJsonLd(shaclCtx)
       json           = compacted.json
       conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms"))
       targetedNodes <- IO.fromEither(json.hcursor.get[Int]("targetedNodes"))

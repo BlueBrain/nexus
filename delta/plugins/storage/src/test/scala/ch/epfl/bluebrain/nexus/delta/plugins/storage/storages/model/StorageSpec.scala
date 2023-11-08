@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class StorageSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
+class StorageSpec extends CatsEffectSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   "A Storage" should {
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))

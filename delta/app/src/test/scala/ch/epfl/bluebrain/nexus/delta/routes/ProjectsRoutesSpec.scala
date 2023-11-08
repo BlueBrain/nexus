@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddress, AclRejection}
@@ -25,8 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
-import monix.bio.{IO, UIO}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
@@ -68,8 +69,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val ref = ProjectRef.unsafe("org1", "proj")
 
   private def fetchOrg: FetchOrganization = {
-    case `org1`     => UIO.pure(Organization(org1, orgUuid, None))
-    case `usersOrg` => UIO.pure(Organization(usersOrg, orgUuid, None))
+    case `org1`     => IO.pure(Organization(org1, orgUuid, None))
+    case `usersOrg` => IO.pure(Organization(usersOrg, orgUuid, None))
     case `org2`     => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2)))
     case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }

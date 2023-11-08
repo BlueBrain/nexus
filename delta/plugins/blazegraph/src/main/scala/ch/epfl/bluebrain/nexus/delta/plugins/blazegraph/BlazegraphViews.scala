@@ -64,7 +64,7 @@ final class BlazegraphViews(
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
       pc               <- fetchContext.onCreate(project)
-      (iri, viewValue) <- sourceDecoder(project, pc, source).toCatsIO
+      (iri, viewValue) <- sourceDecoder(project, pc, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _                <- createNamespace(res)
     } yield res
@@ -88,7 +88,7 @@ final class BlazegraphViews(
     for {
       pc        <- fetchContext.onCreate(project)
       iri       <- expandIri(id, pc)
-      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
@@ -135,7 +135,7 @@ final class BlazegraphViews(
     for {
       pc        <- fetchContext.onModify(project)
       iri       <- expandIri(id, pc)
-      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
     } yield res

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 
 import java.util.UUID
@@ -22,7 +21,7 @@ final case class FileDescription(uuid: UUID, filename: String, mediaType: Option
 object FileDescription {
 
   final def apply(filename: String, mediaType: Option[ContentType])(implicit uuidF: UUIDF): IO[FileDescription] =
-    uuidF().toCatsIO.map(FileDescription(_, filename, mediaType))
+    uuidF().map(FileDescription(_, filename, mediaType))
 
   final def apply(filename: String, mediaType: ContentType)(implicit uuidF: UUIDF): IO[FileDescription] =
     apply(filename, Some(mediaType))

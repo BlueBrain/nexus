@@ -152,7 +152,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       implicit jsonldEncoder: JsonLdEncoder[A]
   ): IO[SuccessElem[GraphResource]] = {
     for {
-      graph     <- jsonldEncoder.graph(value).toCatsIO
+      graph     <- jsonldEncoder.graph(value)
       entityType = EntityType(value.getClass.getSimpleName)
       resource   = GraphResource(
                      entityType,

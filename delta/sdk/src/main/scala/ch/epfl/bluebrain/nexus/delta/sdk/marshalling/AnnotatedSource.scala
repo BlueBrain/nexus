@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import io.circe.Json
-import monix.bio.IO
 
 object AnnotatedSource {
 
@@ -19,7 +18,7 @@ object AnnotatedSource {
   def apply(resourceF: ResourceF[_], source: Json)(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution
-  ): IO[RdfError, Json] =
+  ): IO[Json] =
     metadataJson(resourceF)
       .map(mergeOriginalPayloadWithMetadata(source, _))
 

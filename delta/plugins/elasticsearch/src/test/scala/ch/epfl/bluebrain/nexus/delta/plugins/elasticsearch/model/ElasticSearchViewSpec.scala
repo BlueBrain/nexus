@@ -12,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral}
 
 import java.util.UUID
 
-class ElasticSearchViewSpec extends BioSpec with CirceLiteral with CirceEq with Fixtures {
+class ElasticSearchViewSpec extends CatsEffectSpec with CirceLiteral with CirceEq with Fixtures {
 
   private val id      = nxv + "myview"
   private val project = ProjectRef.unsafe("org", "project")

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -37,14 +36,14 @@ final case class ResourceGenerationResult(
       encoder: JsonLdEncoder[A],
       rcr: RemoteContextResolution
   ) =
-    value.toCompactedJsonLd.toCatsIO.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
+    value.toCompactedJsonLd.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
 
   private def toJsonField[A](fieldName: String, value: ResourceF[A])(implicit
       encoder: JsonLdEncoder[A],
       base: BaseUri,
       rcr: RemoteContextResolution
   ) =
-    value.toCompactedJsonLd.toCatsIO.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
+    value.toCompactedJsonLd.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
 }
 
 object ResourceGenerationResult {

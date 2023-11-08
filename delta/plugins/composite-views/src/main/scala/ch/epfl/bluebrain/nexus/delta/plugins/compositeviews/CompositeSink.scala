@@ -125,7 +125,6 @@ final class Batch[SinkFormat](
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
-      .toCatsIO
       .flatMap(_.toGraph)
       .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
   }

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.data.{NonEmptyList, NonEmptyMap}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -21,7 +21,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-import monix.bio.IO
 
 import java.time.Instant
 import java.util.UUID
@@ -117,7 +116,6 @@ object CompositeView {
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
-    import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)
@@ -149,12 +147,12 @@ object CompositeView {
 
       override def expand(
           value: CompositeView
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         underlying.expand(value)
 
       override def compact(
           value: CompositeView
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         underlying.compact(value).map(c => c.copy(obj = stringToJson(c.obj)))
     }
   }

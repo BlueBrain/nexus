@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
@@ -419,7 +418,7 @@ object ElasticSearchViewsQuerySuite {
     def asDocument(
         view: ViewRef
     )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] =
-      asResourceF(view).toCompactedJsonLd.toCatsIO.map(_.json)
+      asResourceF(view).toCompactedJsonLd.map(_.json)
 
   }
 }

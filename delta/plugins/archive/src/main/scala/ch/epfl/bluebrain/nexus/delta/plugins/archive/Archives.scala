@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -81,7 +80,7 @@ class Archives(
   def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveResource] =
     (for {
       p            <- fetchContext.onRead(project)
-      (iri, value) <- toCatsIO(sourceDecoder(p, source))
+      (iri, value) <- sourceDecoder(p, source)
       res          <- create(iri, project, value)
     } yield res).span("createArchive")
 
@@ -106,7 +105,7 @@ class Archives(
   )(implicit subject: Subject): IO[ArchiveResource] =
     (for {
       (iri, p) <- expandWithContext(id, project)
-      value    <- toCatsIO(sourceDecoder(p, iri, source))
+      value    <- sourceDecoder(p, iri, source)
       res      <- create(iri, project, value)
     } yield res).span("createArchive")
 

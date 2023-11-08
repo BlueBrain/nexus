@@ -1,25 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource.Metadata
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ResourceFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
-import monix.bio.IO
 
 /**
   * A resource representation
@@ -60,12 +57,12 @@ object Resource {
 
       override def compact(
           value: Resource
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         IO.pure(value.compacted)
 
       override def expand(
           value: Resource
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         IO.pure(value.expanded)
 
       override def context(value: Resource): ContextValue =
@@ -84,7 +81,7 @@ object Resource {
   def shift(resources: Resources)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[ResourceState, Resource, Metadata](
       Resources.entityType,
-      (ref, project) => resources.fetch(IdSegmentRef(ref), project, None).toBIO[ResourceFetchRejection],
+      (ref, project) => resources.fetch(IdSegmentRef(ref), project, None),
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

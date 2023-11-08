@@ -14,12 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
 
 import java.util.UUID
 
-class BlazegraphViewDecodingSpec extends BioSpec with Fixtures {
+class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
 
   private val context = ProjectContext.unsafe(
     ApiMappings.empty,

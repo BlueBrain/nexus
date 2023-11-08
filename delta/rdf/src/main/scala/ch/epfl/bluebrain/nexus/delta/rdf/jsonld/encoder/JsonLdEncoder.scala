@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
-import monix.bio.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import io.circe.{Encoder, Json}
 
 trait JsonLdEncoder[A] {
 
@@ -27,7 +26,7 @@ trait JsonLdEncoder[A] {
     */
   def expand(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd]
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd]
 
   /**
     * Converts a value to [[CompactedJsonLd]]
@@ -36,7 +35,7 @@ trait JsonLdEncoder[A] {
     */
   def compact(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd]
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd]
 
   /**
     * Converts a value of type ''A'' to [[Dot]] format.
@@ -46,7 +45,7 @@ trait JsonLdEncoder[A] {
     */
   def dot(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Dot] =
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[Dot] =
     for {
       graph <- graph(value)
       dot   <- graph.toDot(context(value))
@@ -60,7 +59,7 @@ trait JsonLdEncoder[A] {
     */
   def ntriples(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NTriples] =
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[NTriples] =
     for {
       graph    <- graph(value)
       ntriples <- IO.fromEither(graph.toNTriples)
@@ -74,7 +73,7 @@ trait JsonLdEncoder[A] {
     */
   def nquads(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NQuads] =
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[NQuads] =
     for {
       graph    <- graph(value)
       ntriples <- IO.fromEither(graph.toNQuads)
@@ -88,7 +87,7 @@ trait JsonLdEncoder[A] {
     */
   def graph(
       value: A
-  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Graph] =
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[Graph] =
     for {
       expanded <- expand(value)
       graph    <- IO.fromEither(expanded.toGraph)
@@ -136,15 +135,15 @@ object JsonLdEncoder {
 
       override def compact(
           value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         for {
           (expanded, context) <- expandAndExtractContext(value)
-          compacted           <- expanded.toCompacted(context).toBIO[RdfError]
+          compacted           <- expanded.toCompacted(context)
         } yield compacted
 
       override def expand(
           value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         expandAndExtractContext(value).map(_._1)
 
       private def expandAndExtractContext(
@@ -153,7 +152,6 @@ object JsonLdEncoder {
         val json    = value.asJson
         val context = contextFromJson(json)
         ExpandedJsonLd(json.replaceContext(context.contextObj))
-          .toBIO[RdfError]
           .map {
             case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
             case expanded                                                => expanded.replaceId(fId(value))
@@ -169,12 +167,12 @@ object JsonLdEncoder {
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {
     override def compact(
         value: Unit
-    )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+    )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
       IO.pure(CompactedJsonLd.empty)
 
     override def expand(
         value: Unit
-    )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+    )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
       IO.pure(ExpandedJsonLd.empty)
 
     override def context(value: Unit): ContextValue = ContextValue.empty

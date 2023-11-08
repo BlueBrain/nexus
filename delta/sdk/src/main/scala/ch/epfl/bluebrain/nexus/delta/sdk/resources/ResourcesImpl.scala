@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -44,7 +43,7 @@ final class ResourcesImpl private (
     for {
       projectContext <- fetchContext.onCreate(projectRef)
       schemeRef      <- IO.fromEither(expandResourceRef(schema, projectContext))
-      jsonld         <- sourceParser(projectRef, projectContext, source).toCatsIO
+      jsonld         <- sourceParser(projectRef, projectContext, source)
       res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -59,7 +58,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onCreate, projectRef, id)
       schemeRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -75,7 +74,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller, tag))
     } yield res
   }.span("updateResource")
@@ -103,7 +102,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source)
       res                   <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
   }.span("refreshResource")

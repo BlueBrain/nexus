@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
 import cats.implicits.catsSyntaxApplicativeError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
@@ -86,7 +85,7 @@ object ResourcesTrial {
       for {
         projectContext <- fetchContext.onRead(project)
         schemaRef      <- IO.fromEither(Resources.expandResourceRef(schema, projectContext))
-        jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
+        jsonld         <- sourceParser(project, projectContext, source.value)
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
@@ -99,7 +98,7 @@ object ResourcesTrial {
     ): IO[ResourceGenerationResult] = {
       for {
         projectContext <- fetchContext.onRead(project)
-        jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
+        jsonld         <- sourceParser(project, projectContext, source.value)
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result

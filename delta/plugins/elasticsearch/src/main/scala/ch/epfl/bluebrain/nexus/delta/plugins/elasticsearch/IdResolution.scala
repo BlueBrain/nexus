@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.RootSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.JsonObject
-import monix.bio.{IO => BIO}
 
 import java.rmi.UnexpectedException
 
@@ -124,7 +122,7 @@ object IdResolutionResponse {
 
       override def expand(
           value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): BIO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         value match {
           case SingleResult(_, _, content)    => encoder(content).expand(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
@@ -132,7 +130,7 @@ object IdResolutionResponse {
 
       override def compact(
           value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): BIO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         value match {
           case SingleResult(_, _, content)    => encoder(content).compact(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
