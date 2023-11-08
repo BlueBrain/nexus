@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -32,7 +32,6 @@ import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
@@ -126,7 +125,7 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       q: JsonObject,
       indices: Set[String],
       qp: Query
-  ): HttpResult[Json] =
+  ): IO[Json] =
     if (q == query)
       IO.pure(Json.arr(indices.foldLeft(Seq.empty[Json])((acc, idx) => acc :+ indexResults(idx).asJson): _*))
     else IO.raiseError(HttpUnexpectedError(HttpRequest(), ""))

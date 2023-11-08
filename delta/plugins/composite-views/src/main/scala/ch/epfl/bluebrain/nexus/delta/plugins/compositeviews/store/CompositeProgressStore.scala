@@ -109,7 +109,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
 
 object CompositeProgressStore {
 
-  private val logger = Logger.cats[CompositeProgressStore]
+  private val logger = Logger[CompositeProgressStore]
 
   final private[store] case class CompositeProgressRow(
       view: IndexingViewRef,

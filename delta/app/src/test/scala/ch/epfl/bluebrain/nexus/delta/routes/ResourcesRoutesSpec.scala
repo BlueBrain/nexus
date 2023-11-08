@@ -219,7 +219,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     "reject the creation of a resource which already exists" in {
       givenAResource { id =>
         Put(s"/v1/resources/myorg/myproject/_/$id", simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
-          println(response.asJson)
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
             jsonContentOf("/resources/errors/already-exists.json", "id" -> (nxv + id), "project" -> "myorg/myproject")
@@ -315,7 +314,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     "reject the update of a resource at a non-existent revision" in {
       givenAResource { id =>
         Put(s"/v1/resources/myorg/myproject/_/$id?rev=10", payloadUpdated(id).toEntity) ~> asWriter ~> routes ~> check {
-          println(response.asJson)
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
             jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)

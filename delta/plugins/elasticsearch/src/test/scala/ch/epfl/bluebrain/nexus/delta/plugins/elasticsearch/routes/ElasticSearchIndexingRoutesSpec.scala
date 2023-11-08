@@ -5,12 +5,12 @@ import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidResourceId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchIndexingRoutes.FetchIndexingView
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.JsonObject
-import monix.bio.UIO
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -86,14 +85,18 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
       IO.pure(allowedPerms),
-      (_, _, _) => UIO.unit,
+      (_, _, _) => IO.unit,
       "prefix",
       5,
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ),
     eventLogConfig,
     "prefix",
-    xas
+    xas,
+    defaultMapping,
+    defaultSettings
   ).accepted
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)

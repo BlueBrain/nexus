@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
@@ -18,7 +17,8 @@ class EventMetricsDeletionTaskSuite
     with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
-    with TestHelpers {
+    with TestHelpers
+    with Fixtures {
 
   implicit private val subject: Subject = Anonymous
 
@@ -44,19 +44,19 @@ class EventMetricsDeletionTaskSuite
     def countMetrics(project: ProjectRef) =
       for {
         query  <- task.searchByProject(project)
-        result <- client.search(QueryBuilder(query), Set(index.value), Query.Empty).toCatsIO
+        result <- client.search(QueryBuilder(query), Set(index.value), Query.Empty)
       } yield result.total
 
     for {
       // Indexing and checking count
-      _ <- EventMetricsProjection.initMetricsIndex(client, index)
-      _ <- client.bulk(operations).toCatsIO
-      _ <- client.refresh(index).toCatsIO
-      _ <- client.count(index.value).toCatsIO.assertEquals(4L)
+      _ <- client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value))
+      _ <- client.bulk(operations)
+      _ <- client.refresh(index)
+      _ <- client.count(index.value).assertEquals(4L)
       // Running the task and checking the index again
       _ <- task(projectToDelete)
-      _ <- client.refresh(index).toCatsIO
-      _ <- client.count(index.value).toCatsIO.assertEquals(2L)
+      _ <- client.refresh(index)
+      _ <- client.count(index.value).assertEquals(2L)
       _ <- countMetrics(projectToDelete).assertEquals(0L)
       _ <- countMetrics(anotherProject).assertEquals(2L)
     } yield ()

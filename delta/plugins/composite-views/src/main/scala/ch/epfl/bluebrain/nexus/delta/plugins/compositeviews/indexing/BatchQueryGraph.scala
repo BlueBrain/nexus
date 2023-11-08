@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
@@ -24,7 +25,7 @@ import java.util.regex.Pattern.quote
   */
 final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger: Logger = Logger[BatchQueryGraph]
+  private val logger = Logger[BatchQueryGraph]
 
   private def newGraph(ntriples: NTriples): Task[Option[Graph]] =
     if (ntriples.isEmpty) Task.none
@@ -35,7 +36,7 @@ final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: 
       ntriples    <- client.query(Set(namespace), replaceIds(query, ids), SparqlNTriples)
       graphResult <- newGraph(ntriples.value)
       _           <- Task.when(graphResult.isEmpty)(
-                       logger.debug(s"Querying blazegraph did not return any triples, '$ids' will be dropped.")
+                       logger.debug(s"Querying blazegraph did not return any triples, '$ids' will be dropped.").toUIO
                      )
     } yield graphResult
 

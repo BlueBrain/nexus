@@ -30,7 +30,7 @@ class StorageScopeInitialization(
     defaults: Defaults
 ) extends ScopeInitialization {
 
-  private val logger                                        = Logger.cats[StorageScopeInitialization]
+  private val logger                                        = Logger[StorageScopeInitialization]
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   implicit private val caller: Caller = serviceAccount.caller

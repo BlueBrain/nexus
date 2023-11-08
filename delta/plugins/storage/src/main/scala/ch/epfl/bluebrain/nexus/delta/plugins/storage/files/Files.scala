@@ -370,7 +370,7 @@ final class Files(
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
-    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.toBIO[FileRejection])
+    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.attemptNarrow[FileRejection])
   }.span("fetchFileContent")
 
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
@@ -578,7 +578,7 @@ final class Files(
 
 object Files {
 
-  private val logger = Logger.cats[Files]
+  private val logger = Logger[Files]
 
   /**
     * The file entity type.

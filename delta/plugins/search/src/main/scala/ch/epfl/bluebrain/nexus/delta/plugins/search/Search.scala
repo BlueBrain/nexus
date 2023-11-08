@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -13,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.{Unkno
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
@@ -98,7 +100,9 @@ object Search {
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
                                  p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
-          results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
+          results           <- client.search(payload, accessibleIndices, qp)().adaptError { case e: HttpClientError =>
+                                 WrappedElasticSearchClientError(e)
+                               }
         } yield results
 
       override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =

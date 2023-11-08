@@ -33,7 +33,7 @@ trait CompositeProjectionLifeCycle {
 
 object CompositeProjectionLifeCycle {
 
-  private val logger = Logger.cats[CompositeProjectionLifeCycle]
+  private val logger = Logger[CompositeProjectionLifeCycle]
 
   /**
     * Hook that allows to capture changes to apply before starting the indexing of a composite view

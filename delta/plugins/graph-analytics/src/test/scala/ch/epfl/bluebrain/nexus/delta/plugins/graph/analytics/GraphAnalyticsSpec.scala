@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
@@ -16,17 +16,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
 import scala.concurrent.duration._
@@ -34,13 +31,11 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("GraphAnalyticsSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with BIOValues
+    with CatsEffectSpec
     with IOFixedClock
     with ConfigFixtures
-    with Eventually {
+    with Eventually
+    with Fixtures {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
 
@@ -55,7 +50,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   )
 
   private lazy val endpoint                       = docker.esHostConfig.endpoint
-  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000, emptyResults)
   private val prefix                              = "test"
   private lazy val graphAnalytics: GraphAnalytics =
     GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))
@@ -81,7 +76,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch relationships" in eventually {
-      graphAnalytics.relationships(project.ref).toBIO[GraphAnalyticsRejection].accepted shouldEqual
+      graphAnalytics.relationships(project.ref).accepted shouldEqual
         AnalyticsGraph(
           List(Node(schema.Person, "Person", 3)),
           List(Edge(schema.Person, schema.Person, 3, Vector(EdgePath(schema + "brother", "brother"))))
@@ -89,7 +84,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch properties" in {
-      graphAnalytics.properties(project.ref, schema.Person).toBIO[GraphAnalyticsRejection].accepted shouldEqual
+      graphAnalytics.properties(project.ref, schema.Person).accepted shouldEqual
         PropertiesStatistics(
           Metadata(schema.Person, "Person", 3),
           List(

@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, Filt
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.literal._
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
@@ -41,9 +40,6 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  private val defaultEsMapping  = defaultElasticsearchMapping.accepted
-  private val defaultEsSettings = defaultElasticsearchSettings.accepted
 
   "An ElasticSearchViews" should {
 
@@ -120,7 +116,7 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         value,
         source,
         tags
-      ).toResource(defaultEsMapping, defaultEsSettings)
+      ).toResource(defaultMapping, defaultSettings)
 
     val viewId          = iri"http://localhost/indexing"
     val aggregateViewId = iri"http://localhost/${genString()}"
@@ -139,14 +135,18 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       ValidateElasticSearchView(
         PipeChain.validate(_, registry),
         IO.pure(Set(queryPermissions)),
-        (_, _, _) => UIO.unit,
+        (_, _, _) => IO.unit,
         "prefix",
         2,
-        xas
+        xas,
+        defaultMapping,
+        defaultSettings
       ),
       eventLogConfig,
       "prefix",
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ).accepted
 
     "create a view" when {

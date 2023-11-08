@@ -85,7 +85,7 @@ object IdentitiesImpl {
   type GroupsCache = LocalCache[String, Set[Group]]
   type RealmCache  = LocalCache[String, Realm]
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   def extractGroups(
       getUserInfo: (Uri, OAuth2BearerToken) => IO[Json]

@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, ElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -37,7 +35,9 @@ object ValidateElasticSearchView {
       client: ElasticSearchClient,
       prefix: String,
       maxViewRefs: Int,
-      xas: Transactors
+      xas: Transactors,
+      defaultMapping: DefaultMapping,
+      defaultSettings: DefaultSettings
   ): ValidateElasticSearchView =
     apply(
       validatePipeChain,
@@ -45,16 +45,20 @@ object ValidateElasticSearchView {
       client.createIndex(_, _, _).void,
       prefix,
       maxViewRefs,
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     )
 
   def apply(
       validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
       fetchPermissionSet: IO[Set[Permission]],
-      createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => HttpResult[Unit],
+      createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => IO[Unit],
       prefix: String,
       maxViewRefs: Int,
-      xas: Transactors
+      xas: Transactors,
+      defaultMapping: DefaultMapping,
+      defaultSettings: DefaultSettings
   ): ValidateElasticSearchView = new ValidateElasticSearchView {
 
     private val validateAggregate = ValidateAggregate(
@@ -67,34 +71,29 @@ object ValidateElasticSearchView {
 
     private def validateIndexing(uuid: UUID, indexingRev: IndexingRev, value: IndexingElasticSearchViewValue) =
       for {
-        defaultMapping  <- defaultElasticsearchMapping
-        defaultSettings <- defaultElasticsearchSettings
-        _               <- fetchPermissionSet.flatMap { set =>
-                             IO.raiseUnless(set.contains(value.permission))(PermissionIsNotDefined(value.permission))
-                           }
-        _               <- IO.fromEither(value.pipeChain.traverse(validatePipeChain).leftMap(InvalidPipeline))
-        _               <- createIndex(
-                             IndexLabel.fromView(prefix, uuid, indexingRev),
-                             value.mapping.orElse(Some(defaultMapping)),
-                             value.settings.orElse(Some(defaultSettings))
-                           ).toCatsIO
-                             .adaptError {
-                               case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
-                               case err: HttpClientError       => WrappedElasticSearchClientError(err)
-                             }
+        _ <- fetchPermissionSet.flatMap { set =>
+               IO.raiseUnless(set.contains(value.permission))(PermissionIsNotDefined(value.permission))
+             }
+        _ <- IO.fromEither(value.pipeChain.traverse(validatePipeChain).leftMap(InvalidPipeline))
+        _ <- createIndex(
+               IndexLabel.fromView(prefix, uuid, indexingRev),
+               value.mapping.orElse(Some(defaultMapping.value)),
+               value.settings.orElse(Some(defaultSettings.value))
+             )
+               .adaptError {
+                 case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
+                 case err: HttpClientError       => WrappedElasticSearchClientError(err)
+               }
       } yield ()
 
     override def apply(
         uuid: UUID,
         indexingRev: IndexingRev,
         value: ElasticSearchViewValue
-    ): IO[Unit] =
-      value match {
-        case v: AggregateElasticSearchViewValue =>
-          validateAggregate(v.views)
-        case v: IndexingElasticSearchViewValue  =>
-          validateIndexing(uuid, indexingRev, v)
-      }
+    ): IO[Unit] = value match {
+      case v: AggregateElasticSearchViewValue => validateAggregate(v.views)
+      case v: IndexingElasticSearchViewValue  => validateIndexing(uuid, indexingRev, v)
+    }
 
   }
 

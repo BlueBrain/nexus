@@ -174,6 +174,14 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
+    "fetch the original payload through a resolver" in {
+      deltaClient.get[Json](s"/resolvers/$project1/_/test-resource:1/source", Morty) { (json, response) =>
+        val expected = SimpleResource.sourcePayload(resource1Id, 5)
+        response.status shouldEqual StatusCodes.OK
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
     "fetch the original payload with metadata" in {
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1/source?annotate=true", Morty) {
         (json, response) =>

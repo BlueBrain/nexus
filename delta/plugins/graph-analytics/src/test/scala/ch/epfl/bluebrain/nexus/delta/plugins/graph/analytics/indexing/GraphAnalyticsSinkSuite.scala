@@ -95,9 +95,9 @@ class GraphAnalyticsSinkSuite
   test("Create the update script and the index") {
     for {
       script  <- scriptContent
-      _       <- client.createScript(updateRelationshipsScriptId, script).toCatsIO
+      _       <- client.createScript(updateRelationshipsScriptId, script)
       mapping <- graphAnalyticsMappings
-      _       <- client.createIndex(index, Some(mapping), None).toCatsIO.assertEquals(true)
+      _       <- client.createIndex(index, Some(mapping), None).assertEquals(true)
     } yield ()
   }
 
@@ -135,13 +135,13 @@ class GraphAnalyticsSinkSuite
       // - `resource1` with the relationship to `resource3` resolved
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
-      _                  <- client.count(index.value).toCatsIO.eventually(3L)
+      _                  <- client.count(index.value).eventually(3L)
       expected1          <- ioJsonContentOf("result/resource1.json")
       expected2          <- ioJsonContentOf("result/resource2.json")
       expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
-      _                  <- client.getSource[Json](index, resource1.toString).toCatsIO.eventually(expected1)
-      _                  <- client.getSource[Json](index, resource2.toString).toCatsIO.eventually(expected2)
-      _                  <- client.getSource[Json](index, deprecatedResource.toString).toCatsIO.eventually(expectedDeprecated)
+      _                  <- client.getSource[Json](index, resource1.toString).eventually(expected1)
+      _                  <- client.getSource[Json](index, resource2.toString).eventually(expected2)
+      _                  <- client.getSource[Json](index, deprecatedResource.toString).eventually(expectedDeprecated)
     } yield ()
 
   }
@@ -167,12 +167,12 @@ class GraphAnalyticsSinkSuite
       _         <- sink(chunk).assertEquals(chunk.map(_.void))
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
-      _         <- client.refresh(index).toCatsIO
+      _         <- client.refresh(index)
       expected1 <- ioJsonContentOf("result/resource1_updated.json")
       expected2 <- ioJsonContentOf("result/resource2.json")
-      _         <- client.count(index.value).toCatsIO.eventually(3L)
-      _         <- client.getSource[Json](index, resource1.toString).toCatsIO.eventually(expected1)
-      _         <- client.getSource[Json](index, resource2.toString).toCatsIO.eventually(expected2)
+      _         <- client.count(index.value).eventually(3L)
+      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
+      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
     } yield ()
   }
 

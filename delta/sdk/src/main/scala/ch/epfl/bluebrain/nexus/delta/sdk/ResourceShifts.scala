@@ -30,7 +30,7 @@ trait ResourceShifts {
 
 object ResourceShifts {
 
-  private val logger = Logger.cats[ResourceShifts]
+  private val logger = Logger[ResourceShifts]
 
   private case class NoShiftAvailable(entityType: EntityType)
       extends Exception(s"No shift is available for entity type $entityType")

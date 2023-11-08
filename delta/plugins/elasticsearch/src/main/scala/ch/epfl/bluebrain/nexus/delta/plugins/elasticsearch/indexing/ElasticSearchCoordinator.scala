@@ -5,7 +5,6 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -132,7 +131,7 @@ object ElasticSearchCoordinator {
   }
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "elasticsearch-coordinator", None, None)
-  private val logger               = Logger.cats[ElasticSearchCoordinator]
+  private val logger               = Logger[ElasticSearchCoordinator]
 
   def apply(
       views: ElasticSearchViews,
@@ -153,7 +152,6 @@ object ElasticSearchCoordinator {
         (v: ActiveViewDef) =>
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))
-            .toCatsIO
             .onError { e =>
               logger.error(e)(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }

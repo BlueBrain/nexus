@@ -81,13 +81,11 @@ class ElasticSearchViewsQuerySuite
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
   ).accepted
 
-  private val mappings = jsonObjectContentOf("defaults/default-mapping.json")
-
   private val indexingValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
-      mapping = Some(mappings),
+      mapping = Some(defaultMapping.value),
       settings = None,
       permission = queryPermission,
       context = None
@@ -200,11 +198,15 @@ class ElasticSearchViewsQuerySuite
       client.createIndex(_, _, _).void,
       prefix,
       10,
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ),
     eventLogConfig,
     prefix,
-    xas
+    xas,
+    defaultMapping,
+    defaultSettings
   ).unsafeRunSync()
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(
@@ -245,7 +247,7 @@ class ElasticSearchViewsQuerySuite
 
   // Match all resources and sort them by created date and date
   private val matchAllSorted                               = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
-//  private val sort                                         = SortList.byCreationDateAndId
+  //  private val sort                                         = SortList.byCreationDateAndId
   implicit private val defaultSort: Ordering[DataResource] = Ordering.by { r => r.createdAt -> r.id }
 
   /**
@@ -274,9 +276,9 @@ class ElasticSearchViewsQuerySuite
                     ElasticSearchBulk.Index(view.index, genString(), d)
                   }
                 }
-        _    <- client.bulk(bulk).toCatsIO
+        _    <- client.bulk(bulk)
         // We refresh explicitly
-        _    <- client.refresh(view.index).toCatsIO
+        _    <- client.refresh(view.index)
       } yield ()
     }.void
 

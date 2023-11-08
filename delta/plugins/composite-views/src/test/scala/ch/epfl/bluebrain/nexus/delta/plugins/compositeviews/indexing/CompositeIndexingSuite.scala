@@ -87,7 +87,11 @@ trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
     )
 
   private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
-    (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource())
+    (
+      Doobie.resource().mapK(taskToIoK),
+      ElasticSearchClientSetup.resource(),
+      BlazegraphClientSetup.resource().mapK(taskToIoK)
+    )
       .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
@@ -96,7 +100,6 @@ trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
         val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
         Setup(esClient, bgClient, projections, spaces, sinks)
       }
-      .mapK(taskToIoK)
   }
 
   def suiteLocalFixture(name: String, sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
@@ -336,12 +339,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- spaces.init(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
-      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete them on destroy
       _ <- spaces.destroyAll(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(false)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
-      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
 
@@ -361,17 +364,17 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- spaces.init(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
-      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the blazegraph projection
       _ <- spaces.destroyProjection(view, blazegraphProjection)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
-      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the elasticsearch projection
       _ <- spaces.destroyProjection(view, elasticSearchProjection)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
-      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
 
@@ -574,14 +577,13 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*): IO[Unit] = {
     val page = FromPagination(0, 5000)
     for {
-      _       <- esClient.refresh(index).toCatsIO
+      _       <- esClient.refresh(index)
       results <- esClient
                    .search(
                      QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
                      Set(index.value),
                      Query.Empty
                    )
-                   .toCatsIO
       _        = assertEquals(results.sources.size, expected.size)
       _        = results.sources.zip(expected).foreach { case (obtained, expected) =>
                    obtained.asJson.equalsIgnoreArrayOrder(expected)

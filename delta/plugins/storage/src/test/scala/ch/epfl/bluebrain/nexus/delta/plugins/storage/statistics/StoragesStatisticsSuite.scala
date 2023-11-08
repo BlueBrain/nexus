@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.{eventMetricsIndex, initMetricsIndex}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream.{metricsStream, projectRef1, projectRef2}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -26,7 +26,8 @@ class StoragesStatisticsSuite
     with ElasticSearchClientSetup.Fixture
     with BIOValues
     with SupervisorSetup.Fixture
-    with TestHelpers {
+    with TestHelpers
+    with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)
 
@@ -43,8 +44,8 @@ class StoragesStatisticsSuite
     StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
 
   test("Run the event metrics projection") {
-    val metricsProjection =
-      EventMetricsProjection(sink, sv, _ => metricsStream, initMetricsIndex(client, index))
+    val createIndex       = client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).void
+    val metricsProjection = EventMetricsProjection(sink, sv, _ => metricsStream, createIndex)
     metricsProjection.accepted
   }
 

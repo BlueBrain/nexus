@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -74,17 +74,17 @@ final class ResourcesRoutes(
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { ref =>
+          resolveProjectRef.apply { project =>
             concat(
               // Create a resource without schema nor id segment
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
                 (source, mode, tag) =>
-                  authorizeFor(ref, Write).apply {
+                  authorizeFor(project, Write).apply {
                     emit(
                       Created,
                       resources
-                        .create(ref, resourceSchema, source.value, tag)
-                        .flatTap(indexUIO(ref, _, mode))
+                        .create(project, resourceSchema, source.value, tag)
+                        .flatTap(indexUIO(project, _, mode))
                         .map(_.void)
                         .attemptNarrow[ResourceRejection]
                     )
@@ -95,13 +95,13 @@ final class ResourcesRoutes(
                 concat(
                   // Create a resource with schema but without id segment
                   (post & pathEndOrSingleSlash & noParameter("rev") & tagParam) { tag =>
-                    authorizeFor(ref, Write).apply {
+                    authorizeFor(project, Write).apply {
                       entity(as[NexusSource]) { source =>
                         emit(
                           Created,
                           resources
-                            .create(ref, schema, source.value, tag)
-                            .flatTap(indexUIO(ref, _, mode))
+                            .create(project, schema, source.value, tag)
+                            .flatTap(indexUIO(project, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
                             .rejectWhen(wrongJsonOrNotFound)
@@ -109,21 +109,21 @@ final class ResourcesRoutes(
                       }
                     }
                   },
-                  idSegment { id =>
+                  idSegment { resource =>
                     concat(
                       pathEndOrSingleSlash {
                         concat(
                           // Create or update a resource
                           put {
-                            authorizeFor(ref, Write).apply {
+                            authorizeFor(project, Write).apply {
                               (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource]) & tagParam) {
                                 case (None, source, tag)      =>
                                   // Create a resource with schema and id segments
                                   emit(
                                     Created,
                                     resources
-                                      .create(id, ref, schema, source.value, tag)
-                                      .flatTap(indexUIO(ref, _, mode))
+                                      .create(resource, project, schema, source.value, tag)
+                                      .flatTap(indexUIO(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
@@ -132,8 +132,8 @@ final class ResourcesRoutes(
                                   // Update a resource
                                   emit(
                                     resources
-                                      .update(id, ref, schemaOpt, rev, source.value, tag)
-                                      .flatTap(indexUIO(ref, _, mode))
+                                      .update(resource, project, schemaOpt, rev, source.value, tag)
+                                      .flatTap(indexUIO(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
@@ -143,11 +143,11 @@ final class ResourcesRoutes(
                           },
                           // Deprecate a resource
                           (delete & parameter("rev".as[Int])) { rev =>
-                            authorizeFor(ref, Write).apply {
+                            authorizeFor(project, Write).apply {
                               emit(
                                 resources
-                                  .deprecate(id, ref, schemaOpt, rev)
-                                  .flatTap(indexUIO(ref, _, mode))
+                                  .deprecate(resource, project, schemaOpt, rev)
+                                  .flatTap(indexUIO(project, _, mode))
                                   .map(_.void)
                                   .attemptNarrow[ResourceRejection]
                                   .rejectWhen(wrongJsonOrNotFound)
@@ -155,14 +155,14 @@ final class ResourcesRoutes(
                             }
                           },
                           // Fetch a resource
-                          (get & idSegmentRef(id) & varyAcceptHeaders) { id =>
+                          (get & idSegmentRef(resource) & varyAcceptHeaders) { resourceRef =>
                             emitOrFusionRedirect(
-                              ref,
-                              id,
-                              authorizeFor(ref, Read).apply {
+                              project,
+                              resourceRef,
+                              authorizeFor(project, Read).apply {
                                 emit(
                                   resources
-                                    .fetch(id, ref, schemaOpt)
+                                    .fetch(resourceRef, project, schemaOpt)
                                     .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
@@ -173,11 +173,11 @@ final class ResourcesRoutes(
                       },
                       // Undeprecate a resource
                       (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
                           emit(
                             resources
-                              .undeprecate(id, ref, schemaOpt, rev)
-                              .flatTap(indexUIO(ref, _, mode))
+                              .undeprecate(resource, project, schemaOpt, rev)
+                              .flatTap(indexUIO(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -185,14 +185,14 @@ final class ResourcesRoutes(
                         }
                       },
                       (pathPrefix("update-schema") & put & pathEndOrSingleSlash) {
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
 
                           emit(
                             IO.fromOption(schemaOpt)(NoSchemaProvided)
                               .flatMap { schema =>
                                 resources
-                                  .updateAttachedSchema(id, ref, schema)
-                                  .flatTap(indexUIO(ref, _, mode))
+                                  .updateAttachedSchema(resource, project, schema)
+                                  .flatTap(indexUIO(project, _, mode))
                               }
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -201,12 +201,12 @@ final class ResourcesRoutes(
                         }
                       },
                       (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
                           emit(
                             OK,
                             resources
-                              .refresh(id, ref, schemaOpt)
-                              .flatTap(indexUIO(ref, _, mode))
+                              .refresh(resource, project, schemaOpt)
+                              .flatTap(indexUIO(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -214,62 +214,65 @@ final class ResourcesRoutes(
                         }
                       },
                       // Fetch a resource original source
-                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & varyAcceptHeaders) { id =>
-                        authorizeFor(ref, Read).apply {
-                          parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
-                            implicit val source: Printer = sourcePrinter
-                            if (annotate) {
-                              emit(
-                                resources
-                                  .fetch(id, ref, schemaOpt)
-                                  .flatMap(asSourceWithMetadata)
-                                  .attemptNarrow[ResourceRejection]
-                              )
-                            } else {
-                              emit(
-                                resources
-                                  .fetch(id, ref, schemaOpt)
-                                  .map(_.value.source)
-                                  .attemptNarrow[ResourceRejection]
-                                  .rejectWhen(wrongJsonOrNotFound)
-                              )
+                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(resource) & varyAcceptHeaders) {
+                        resourceRef =>
+                          authorizeFor(project, Read).apply {
+                            parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
+                              implicit val source: Printer = sourcePrinter
+                              if (annotate) {
+                                emit(
+                                  resources
+                                    .fetch(resourceRef, project, schemaOpt)
+                                    .flatMap(asSourceWithMetadata)
+                                    .attemptNarrow[ResourceRejection]
+                                )
+                              } else {
+                                emit(
+                                  resources
+                                    .fetch(resourceRef, project, schemaOpt)
+                                    .map(_.value.source)
+                                    .attemptNarrow[ResourceRejection]
+                                    .rejectWhen(wrongJsonOrNotFound)
+                                )
+                              }
                             }
                           }
-                        }
                       },
                       // Get remote contexts
                       pathPrefix("remote-contexts") {
-                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                          emit(
-                            resources
-                              .fetchState(id, ref, schemaOpt)
-                              .map(_.remoteContexts)
-                              .attemptNarrow[ResourceRejection]
-                          )
+                        (get & idSegmentRef(resource) & pathEndOrSingleSlash & authorizeFor(project, Read)) {
+                          resourceRef =>
+                            emit(
+                              resources
+                                .fetchState(resourceRef, project, schemaOpt)
+                                .map(_.remoteContexts)
+                                .attemptNarrow[ResourceRejection]
+                            )
                         }
                       },
                       // Tag a resource
                       pathPrefix("tags") {
                         concat(
                           // Fetch a resource tags
-                          (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                            emit(
-                              resources
-                                .fetch(id, ref, schemaOpt)
-                                .map(_.value.tags)
-                                .attemptNarrow[ResourceRejection]
-                                .rejectWhen(wrongJsonOrNotFound)
-                            )
+                          (get & idSegmentRef(resource) & pathEndOrSingleSlash & authorizeFor(project, Read)) {
+                            resourceRef =>
+                              emit(
+                                resources
+                                  .fetch(resourceRef, project, schemaOpt)
+                                  .map(_.value.tags)
+                                  .attemptNarrow[ResourceRejection]
+                                  .rejectWhen(wrongJsonOrNotFound)
+                              )
                           },
                           // Tag a resource
                           (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
-                            authorizeFor(ref, Write).apply {
+                            authorizeFor(project, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
                                   resources
-                                    .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                    .flatTap(indexUIO(ref, _, mode))
+                                    .tag(resource, project, schemaOpt, tag, tagRev, rev)
+                                    .flatTap(indexUIO(project, _, mode))
                                     .map(_.void)
                                     .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
@@ -279,13 +282,13 @@ final class ResourcesRoutes(
                           },
                           // Delete a tag
                           (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
-                            ref,
+                            project,
                             Write
                           )) { (tag, rev) =>
                             emit(
                               resources
-                                .deleteTag(id, ref, schemaOpt, tag, rev)
-                                .flatTap(indexUIO(ref, _, mode))
+                                .deleteTag(resource, project, schemaOpt, tag, rev)
+                                .flatTap(indexUIO(project, _, mode))
                                 .map(_.void)
                                 .attemptNarrow[ResourceRejection]
                                 .rejectOn[ResourceNotFound]

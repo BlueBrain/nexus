@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
@@ -24,7 +25,7 @@ import java.util.regex.Pattern.quote
   */
 final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger: Logger = Logger[SingleQueryGraph]
+  private val logger = Logger[SingleQueryGraph]
 
   private def newGraph(ntriples: NTriples, id: Iri): Task[Option[Graph]] =
     if (ntriples.isEmpty) {
@@ -40,7 +41,7 @@ final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query:
       ntriples    <- client.query(Set(namespace), replaceId(query, graphResource.id), SparqlNTriples)
       graphResult <- newGraph(ntriples.value, graphResource.id)
       _           <- Task.when(graphResult.isEmpty)(
-                       logger.debug(s"Querying blazegraph did not return any triples, '$graphResource' will be dropped.")
+                       logger.debug(s"Querying blazegraph did not return any triples, '$graphResource' will be dropped.").toUIO
                      )
     } yield graphResult.map(g => graphResource.copy(graph = g))
 

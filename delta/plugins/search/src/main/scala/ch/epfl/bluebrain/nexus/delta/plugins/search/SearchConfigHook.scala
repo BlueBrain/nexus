@@ -29,7 +29,7 @@ final class SearchConfigHook(
 
 object SearchConfigHook {
 
-  private val logger = Logger.cats[SearchConfigHook]
+  private val logger = Logger[SearchConfigHook]
 
   def apply(compositeViews: CompositeViews, defaults: Defaults, indexingConfig: IndexingConfig)(implicit
       baseUri: BaseUri,

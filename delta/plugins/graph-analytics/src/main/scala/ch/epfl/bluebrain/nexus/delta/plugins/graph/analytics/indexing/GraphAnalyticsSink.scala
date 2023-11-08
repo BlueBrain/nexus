@@ -15,7 +15,6 @@ import fs2.Chunk
 import io.circe.JsonObject
 import io.circe.literal._
 import io.circe.syntax.EncoderOps
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -86,8 +85,8 @@ final class GraphAnalyticsSink(
       case (acc, _: FailedElem)                              => acc
     }
 
-    client.bulk(result.bulk, Refresh.True).toCatsIO.map(ElasticSearchSink.markElems(_, elements, documentId)) <*
-      client.updateByQuery(relationshipsQuery(result.updates), Set(index.value)).toCatsIO
+    client.bulk(result.bulk, Refresh.True).map(ElasticSearchSink.markElems(_, elements, documentId)) <*
+      client.updateByQuery(relationshipsQuery(result.updates), Set(index.value))
   }.span("graphAnalyticsSink")
 }
 

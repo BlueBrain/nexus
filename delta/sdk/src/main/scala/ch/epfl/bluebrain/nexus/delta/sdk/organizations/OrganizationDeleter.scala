@@ -23,7 +23,7 @@ object OrganizationDeleter {
 
   def apply(xas: Transactors): OrganizationDeleter = new OrganizationDeleter {
 
-    private val log: Log4CatsLogger[IO] = Logger.cats[OrganizationDeleter]
+    private val log: Log4CatsLogger[IO] = Logger[OrganizationDeleter]
 
     def delete(id: Label): IO[Unit] =
       for {

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
@@ -39,7 +38,7 @@ object StoragesStatistics {
       indexPrefix: String
   ): StoragesStatistics = {
     val search = (jsonObject: JsonObject) =>
-      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)().toCatsIO
+      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)()
 
     (idSegment: IdSegment, project: ProjectRef) => {
       for {

@@ -6,10 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.{ElasticSearchContainer, ElasticSearchDocker}
 import monix.execution.Scheduler
 
-trait ScalaTestElasticSearchClientSetup extends CirceLiteral {
+trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures { self: CatsRunContext =>
 
   private val template = jobj"""{
                                  "index_patterns" : ["*"],
@@ -31,8 +32,8 @@ trait ScalaTestElasticSearchClientSetup extends CirceLiteral {
   implicit private val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.Credentials
 
   lazy val esClient = {
-    val c = new ElasticSearchClient(HttpClient(), docker.esHostConfig.endpoint, 2000)
-    c.createIndexTemplate("test_template", template).runSyncUnsafe()
+    val c = new ElasticSearchClient(HttpClient(), docker.esHostConfig.endpoint, 2000, emptyResults)
+    c.createIndexTemplate("test_template", template).unsafeRunSync()
     c
   }
 
