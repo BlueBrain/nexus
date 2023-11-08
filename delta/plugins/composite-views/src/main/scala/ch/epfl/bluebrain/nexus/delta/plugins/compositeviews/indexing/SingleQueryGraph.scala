@@ -24,7 +24,7 @@ import java.util.regex.Pattern.quote
   */
 final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger = Logger.cats[SingleQueryGraph]
+  private val logger = Logger[SingleQueryGraph]
 
   private def newGraph(ntriples: NTriples, id: Iri): IO[Option[Graph]] =
     if (ntriples.isEmpty) {

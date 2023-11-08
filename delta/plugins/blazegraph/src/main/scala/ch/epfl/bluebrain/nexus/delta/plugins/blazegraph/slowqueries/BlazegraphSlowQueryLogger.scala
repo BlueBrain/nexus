@@ -29,7 +29,7 @@ trait BlazegraphSlowQueryLogger {
 
 object BlazegraphSlowQueryLogger {
 
-  private val logger = Logger.cats[BlazegraphSlowQueryLogger]
+  private val logger = Logger[BlazegraphSlowQueryLogger]
 
   def apply(sink: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
       clock: Clock[IO]

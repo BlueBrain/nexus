@@ -173,7 +173,7 @@ object BlazegraphViewsQuery {
           responseType: Aux[R]
       )(implicit caller: Caller): IO[R] =
         for {
-          view    <- viewsStore.fetch(id, project).toCatsIO
+          view    <- viewsStore.fetch(id, project)
           p       <- fetchContext.onRead(project).toCatsIO
           iri     <- expandIri(id, p).toCatsIO
           indices <- view match {
