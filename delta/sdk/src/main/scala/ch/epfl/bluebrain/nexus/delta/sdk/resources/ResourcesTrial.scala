@@ -84,7 +84,7 @@ object ResourcesTrial {
         caller: Caller
     ): IO[ResourceGenerationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project).toCatsIO
+        projectContext <- fetchContext.onRead(project)
         schemaRef      <- IO.fromEither(Resources.expandResourceRef(schema, projectContext))
         jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
@@ -98,7 +98,7 @@ object ResourcesTrial {
         caller: Caller
     ): IO[ResourceGenerationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project).toCatsIO
+        projectContext <- fetchContext.onRead(project)
         jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
         result         <- toResourceF(project, jsonld, source, validation)
@@ -111,7 +111,7 @@ object ResourcesTrial {
         caller: Caller
     ): IO[ValidationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project).toCatsIO
+        projectContext <- fetchContext.onRead(project)
         schemaRefOpt   <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
         resource       <- fetchResource(id, project)
         report         <- validateResource(

@@ -66,7 +66,7 @@ final class Storages private (
       source: Json
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc                   <- fetchContext.onCreate(projectRef).toCatsIO
+      pc                   <- fetchContext.onCreate(projectRef)
       (iri, storageFields) <- sourceDecoder(projectRef, pc, source).toCatsIO
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -89,8 +89,8 @@ final class Storages private (
       source: Json
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc            <- fetchContext.onCreate(projectRef).toCatsIO
-      iri           <- expandIri(id, pc).toCatsIO
+      pc            <- fetchContext.onCreate(projectRef)
+      iri           <- expandIri(id, pc)
       storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -113,8 +113,8 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc    <- fetchContext.onCreate(projectRef).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onCreate(projectRef)
+      iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -149,8 +149,8 @@ final class Storages private (
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc            <- fetchContext.onModify(projectRef).toCatsIO
-      iri           <- expandIri(id, pc).toCatsIO
+      pc            <- fetchContext.onModify(projectRef)
+      iri           <- expandIri(id, pc)
       storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _             <- IO.whenA(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
@@ -176,8 +176,8 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc    <- fetchContext.onModify(projectRef).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onModify(projectRef)
+      iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -206,8 +206,8 @@ final class Storages private (
       rev: Int
   )(implicit subject: Subject): IO[StorageResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagStorage")
@@ -228,8 +228,8 @@ final class Storages private (
       rev: Int
   )(implicit subject: Subject): IO[StorageResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateStorage")
@@ -260,8 +260,8 @@ final class Storages private (
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
     for {
-      pc      <- fetchContext.onRead(project).toCatsIO
-      iri     <- expandIri(id.value, pc).toCatsIO
+      pc      <- fetchContext.onRead(project)
+      iri     <- expandIri(id.value, pc)
       notFound = StorageNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)

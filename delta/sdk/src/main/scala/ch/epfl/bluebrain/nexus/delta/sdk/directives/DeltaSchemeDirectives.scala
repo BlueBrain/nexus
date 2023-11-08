@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
@@ -11,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, UUIDCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 
 import java.util.UUID
 import scala.util.Try
@@ -27,11 +26,10 @@ import scala.util.Try
   *   fetch a project by its uuid
   */
 final class DeltaSchemeDirectives(
-    fetchContext: ProjectRef => IO[_, ProjectContext],
-    fetchOrgByUuid: UUID => UIO[Option[Label]],
-    fetchProjByUuid: UUID => UIO[Option[ProjectRef]]
-)(implicit s: Scheduler)
-    extends QueryParamsUnmarshalling {
+    fetchContext: ProjectRef => IO[ProjectContext],
+    fetchOrgByUuid: UUID => IO[Option[Label]],
+    fetchProjByUuid: UUID => IO[Option[ProjectRef]]
+) extends QueryParamsUnmarshalling {
 
   /**
     * Extracts the organization segment and converts it to UUID. If the conversion is possible, it attempts to fetch the
@@ -41,7 +39,7 @@ final class DeltaSchemeDirectives(
     pathPrefix(Segment).flatMap { segment =>
       Try(UUID.fromString(segment))
         .map(uuid =>
-          onSuccess(fetchOrgByUuid(uuid).attempt.runToFuture).flatMap {
+          onSuccess(fetchOrgByUuid(uuid).attempt.unsafeToFuture()).flatMap {
             case Right(Some(label)) => provide(label)
             case _                  => label(segment)
           }
@@ -62,7 +60,7 @@ final class DeltaSchemeDirectives(
       } yield ProjectRef(org, proj)
 
     def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (oUuid, pUuid) =>
-      onSuccess(fetchProjByUuid(pUuid).attempt.runToFuture).flatMap {
+      onSuccess(fetchProjByUuid(pUuid).attempt.unsafeToFuture()).flatMap {
         case Right(Some(project)) => provide(project)
         case _                    => projectRefFromString(oUuid.toString, pUuid.toString)
       }
@@ -72,7 +70,7 @@ final class DeltaSchemeDirectives(
   }
 
   def projectContext(projectRef: ProjectRef): Directive1[ProjectContext] =
-    onSuccess(fetchContext(projectRef).attempt.runToFuture).flatMap {
+    onSuccess(fetchContext(projectRef).attempt.unsafeToFuture()).flatMap {
       case Right(pc) => provide(pc)
       case Left(_)   => reject()
     }
@@ -83,7 +81,7 @@ final class DeltaSchemeDirectives(
     */
   def iriSegment(projectRef: ProjectRef): Directive1[Iri] =
     idSegment.flatMap { idSegment =>
-      onSuccess(fetchContext(projectRef).attempt.runToFuture).flatMap {
+      onSuccess(fetchContext(projectRef).attempt.unsafeToFuture()).flatMap {
         case Right(pc) => idSegment.toIri(pc.apiMappings, pc.base).map(provide).getOrElse(reject())
         case Left(_)   => reject()
       }
@@ -127,7 +125,7 @@ final class DeltaSchemeDirectives(
     * Extract the ''type'' query parameter(s) as Iri
     */
   def types(implicit projectRef: ProjectRef): Directive1[Set[Iri]] =
-    onSuccess(fetchContext(projectRef).attempt.runToFuture).flatMap {
+    onSuccess(fetchContext(projectRef).attempt.unsafeToFuture()).flatMap {
       case Right(projectContext) =>
         implicit val pc: ProjectContext = projectContext
         parameter("type".as[IriVocab].*).map(_.toSet.map((iriVocab: IriVocab) => iriVocab.value))
@@ -137,31 +135,31 @@ final class DeltaSchemeDirectives(
 
 object DeltaSchemeDirectives extends QueryParamsUnmarshalling {
 
-  def empty(implicit s: Scheduler): DeltaSchemeDirectives = onlyResolveOrgUuid(_ => UIO.none)
+  def empty: DeltaSchemeDirectives = onlyResolveOrgUuid(_ => IO.none)
 
-  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => UIO[Option[Label]])(implicit s: Scheduler) = new DeltaSchemeDirectives(
+  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]]) = new DeltaSchemeDirectives(
     (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
     fetchOrgByUuid,
-    _ => UIO.none
+    _ => IO.none
   )
 
-  def onlyResolveProjUuid(fetchProjByUuid: UUID => UIO[Option[ProjectRef]])(implicit s: Scheduler) =
+  def onlyResolveProjUuid(fetchProjByUuid: UUID => IO[Option[ProjectRef]]) =
     new DeltaSchemeDirectives(
       (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
-      _ => UIO.none,
+      _ => IO.none,
       fetchProjByUuid
     )
 
-  def apply(fetchContext: FetchContext[_], uuidCache: UUIDCache)(implicit s: Scheduler): DeltaSchemeDirectives =
+  def apply(fetchContext: FetchContext[_], uuidCache: UUIDCache): DeltaSchemeDirectives =
     apply(fetchContext, uuidCache.orgLabel, uuidCache.projectRef)
 
-  def apply(fetchContext: FetchContext[_])(implicit s: Scheduler): DeltaSchemeDirectives =
-    new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), _ => UIO.none, _ => UIO.none)
+  def apply(fetchContext: FetchContext[_]): DeltaSchemeDirectives =
+    new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), _ => IO.none, _ => IO.none)
 
   def apply(
       fetchContext: FetchContext[_],
-      fetchOrgByUuid: UUID => UIO[Option[Label]],
-      fetchProjByUuid: UUID => UIO[Option[ProjectRef]]
-  )(implicit s: Scheduler): DeltaSchemeDirectives =
+      fetchOrgByUuid: UUID => IO[Option[Label]],
+      fetchProjByUuid: UUID => IO[Option[ProjectRef]]
+  ): DeltaSchemeDirectives =
     new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), fetchOrgByUuid, fetchProjByUuid)
 }

@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConf
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 import monix.bio.{IO, UIO}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._

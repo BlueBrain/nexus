@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{ExpandIri, JsonLdContent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
@@ -40,7 +39,7 @@ final class MultiResolution(
   )(implicit caller: Caller): IO[MultiResolutionResult[ResourceResolutionReport]] =
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- toCatsIO(expandResourceIri(resourceSegment, project))
+      resourceRef <- expandResourceIri(resourceSegment, project)
       result      <- resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))
@@ -66,8 +65,8 @@ final class MultiResolution(
 
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- toCatsIO(expandResourceIri(resourceSegment, project))
-      resolverId  <- toCatsIO(Resolvers.expandIri(resolverSegment, project))
+      resourceRef <- expandResourceIri(resourceSegment, project)
+      resolverId  <- Resolvers.expandIri(resolverSegment, project)
       result      <- resourceResolution.resolveReport(resourceRef, projectRef, resolverId).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))

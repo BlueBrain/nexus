@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 
 import java.time.Instant

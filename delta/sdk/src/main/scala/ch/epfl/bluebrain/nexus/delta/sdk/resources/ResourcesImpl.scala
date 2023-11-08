@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
-import monix.bio.{IO => BIO}
 
 final class ResourcesImpl private (
     log: ResourcesLog,
@@ -43,7 +42,7 @@ final class ResourcesImpl private (
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onCreate(projectRef).toCatsIO
+      projectContext <- fetchContext.onCreate(projectRef)
       schemeRef      <- IO.fromEither(expandResourceRef(schema, projectContext))
       jsonld         <- sourceParser(projectRef, projectContext, source).toCatsIO
       res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
@@ -188,11 +187,11 @@ final class ResourcesImpl private (
   ): IO[DataResource] = fetchState(id, projectRef, schemaOpt).map(_.toResource)
 
   private def expandWithContext(
-      fetchCtx: ProjectRef => BIO[ProjectContextRejection, ProjectContext],
+      fetchCtx: ProjectRef => IO[ProjectContext],
       ref: ProjectRef,
       id: IdSegment
   ): IO[(Iri, ProjectContext)]                             =
-    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc)).toCatsIO
+    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc))
 
   private def eval(cmd: ResourceCommand): IO[DataResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)

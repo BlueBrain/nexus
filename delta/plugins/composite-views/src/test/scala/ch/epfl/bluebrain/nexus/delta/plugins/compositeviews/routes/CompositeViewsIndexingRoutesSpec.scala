@@ -32,7 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionProgress, RemainingElems}
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.UIO
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -44,7 +43,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
   private val nowPlus5 = now.plusSeconds(5)
 
   private val fetchContext    = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => IO.none, _ => IO.none)
 
   private val myId         = nxv + "myid"
   private val view         = CompositeViewsGen.resourceFor(projectRef, myId, uuid, viewValue, source = Json.obj())

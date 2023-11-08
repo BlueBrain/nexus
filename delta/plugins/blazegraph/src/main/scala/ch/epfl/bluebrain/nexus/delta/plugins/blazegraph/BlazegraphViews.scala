@@ -63,7 +63,7 @@ final class BlazegraphViews(
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc               <- fetchContext.onCreate(project).toCatsIO
+      pc               <- fetchContext.onCreate(project)
       (iri, viewValue) <- sourceDecoder(project, pc, source).toCatsIO
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _                <- createNamespace(res)
@@ -86,8 +86,8 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onCreate(project).toCatsIO
-      iri       <- expandIri(id, pc).toCatsIO
+      pc        <- fetchContext.onCreate(project)
+      iri       <- expandIri(id, pc)
       viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _         <- createNamespace(res)
@@ -107,8 +107,8 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onCreate(project).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onCreate(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject))
       _     <- createNamespace(res)
@@ -133,8 +133,8 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onModify(project).toCatsIO
-      iri       <- expandIri(id, pc).toCatsIO
+      pc        <- fetchContext.onModify(project)
+      iri       <- expandIri(id, pc)
       viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
@@ -157,8 +157,8 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onModify(project).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject))
       _     <- createNamespace(res)
@@ -187,8 +187,8 @@ final class BlazegraphViews(
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res
@@ -210,8 +210,8 @@ final class BlazegraphViews(
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
@@ -247,8 +247,8 @@ final class BlazegraphViews(
       project: ProjectRef
   ): IO[BlazegraphViewState] = {
     for {
-      pc      <- fetchContext.onRead(project).toCatsIO
-      iri     <- expandIri(id.value, pc).toCatsIO
+      pc      <- fetchContext.onRead(project)
+      iri     <- expandIri(id.value, pc)
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
