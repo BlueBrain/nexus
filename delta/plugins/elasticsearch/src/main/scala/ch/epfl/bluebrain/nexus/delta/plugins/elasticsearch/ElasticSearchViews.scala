@@ -36,7 +36,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
-import monix.bio.{IO => BIO}
 
 import java.util.UUID
 
@@ -109,7 +108,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc           <- fetchContext.onCreate(project).toCatsIO
+      pc           <- fetchContext.onCreate(project)
       (iri, value) <- sourceDecoder(project, pc, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
@@ -359,11 +358,11 @@ final class ElasticSearchViews private (
       .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
 
   private def expandWithContext(
-      fetchCtx: ProjectRef => BIO[ElasticSearchViewRejection, ProjectContext],
+      fetchCtx: ProjectRef => IO[ProjectContext],
       ref: ProjectRef,
       id: IdSegment
   ): IO[(Iri, ProjectContext)] =
-    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc)).toCatsIO
+    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc))
 }
 
 object ElasticSearchViews {

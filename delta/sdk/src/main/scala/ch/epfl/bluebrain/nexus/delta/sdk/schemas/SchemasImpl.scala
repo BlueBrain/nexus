@@ -70,8 +70,8 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onModify(projectRef).toCatsIO
-      iri                   <- expandIri(id, pc).toCatsIO
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).toCatsIO.map { j => (j.compacted, j.expanded) }
       expandedResolved      <- resolveImports(iri, projectRef, expanded).toCatsIO
       res                   <-
@@ -84,8 +84,8 @@ final class SchemasImpl private (
       projectRef: ProjectRef
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onModify(projectRef).toCatsIO
-      iri                   <- expandIri(id, pc).toCatsIO
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).toCatsIO.map { j =>
                                  (j.compacted, j.expanded)
@@ -104,8 +104,8 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller))
     } yield res
   }.span("tagSchema")
@@ -117,8 +117,8 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] =
     (for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller))
     } yield res).span("deleteSchemaTag")
 
@@ -128,15 +128,15 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] =
     (for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateSchema(iri, projectRef, rev, caller))
     } yield res).span("deprecateSchema")
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource] = {
     for {
-      pc    <- fetchContext.onRead(projectRef).toCatsIO
-      iri   <- expandIri(id.value, pc).toCatsIO
+      pc    <- fetchContext.onRead(projectRef)
+      iri   <- expandIri(id.value, pc)
       state <- id match {
                  case Latest(_)        => log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
                  case Revision(_, rev) =>

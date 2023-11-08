@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDum
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 
 class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {

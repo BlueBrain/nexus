@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResolverResolutionGen, ResourceGen, SchemaGen}

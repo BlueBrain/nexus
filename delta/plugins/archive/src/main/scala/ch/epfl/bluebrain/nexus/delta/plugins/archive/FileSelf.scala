@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -101,9 +100,7 @@ object FileSelf {
           case Array(org, project, id) =>
             for {
               project        <- IO.fromEither(ProjectRef.parse(org, project).leftMap(_ => InvalidProject(self)))
-              projectContext <- toCatsIO(
-                                  fetchContext.onRead(project).mapError { _ => InvalidProjectContext(self, project) }
-                                )
+              projectContext <- fetchContext.onRead(project).adaptError { _ => InvalidProjectContext(self, project) }
               decodedId       = UrlUtils.decode(id)
               iriOption       =
                 IdSegment(decodedId).toIri(projectContext.apiMappings, projectContext.base).map(ResourceRef(_))

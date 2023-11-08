@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -12,10 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import monix.bio.UIO
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -27,12 +25,9 @@ class DeltaSchemeDirectivesSpec
     with OptionValues
     with CirceLiteral
     with UriDirectives
-    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {
-
-  implicit private val sc: Scheduler = Scheduler.global
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost/base//", Label.unsafe("v1"))
   private val schemaView                = nxv + "schema"
@@ -40,10 +35,10 @@ class DeltaSchemeDirectivesSpec
   private val mappings = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base, "view" -> schemaView)
   private val vocab    = iri"http://localhost/vocab/"
 
-  private val fetchContext = (_: ProjectRef) => UIO.pure(ProjectContext.unsafe(mappings, nxv.base, vocab))
+  private val fetchContext = (_: ProjectRef) => IO.pure(ProjectContext.unsafe(mappings, nxv.base, vocab))
 
-  private val fetchOrgByUuid     = (_: UUID) => UIO.none
-  private val fetchProjectByUuid = (_: UUID) => UIO.none
+  private val fetchOrgByUuid     = (_: UUID) => IO.none
+  private val fetchProjectByUuid = (_: UUID) => IO.none
 
   private val schemeDirectives = new DeltaSchemeDirectives(fetchContext, fetchOrgByUuid, fetchProjectByUuid)
 
