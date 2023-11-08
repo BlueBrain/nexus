@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
@@ -128,7 +127,7 @@ object MainSuite {
     private def resource() =
       for {
         postgres <- PostgresContainer.resource(PostgresUser, PostgresPassword)
-        elastic  <- ElasticSearchContainer.resource().mapK(taskToIoK)
+        elastic  <- ElasticSearchContainer.resource()
         _        <- Resource.make(acquire(postgres, elastic))(_ => release)
       } yield ()
 

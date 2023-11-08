@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.blazegraph
 
-import cats.effect.Resource
-import monix.bio.Task
+import cats.effect.{IO, Resource}
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -21,7 +20,7 @@ object BlazegraphContainer {
   /**
     * A running blazegraph container wrapped in a Resource. The container will be stopped upon release.
     */
-  def resource(): Resource[Task, BlazegraphContainer] = {
+  def resource(): Resource[IO, BlazegraphContainer] = {
     def createAndStartContainer = {
       val container = new BlazegraphContainer()
         .withReuse(false)
@@ -29,7 +28,7 @@ object BlazegraphContainer {
       container.start()
       container
     }
-    Resource.make(Task.delay(createAndStartContainer))(container => Task.delay(container.stop()))
+    Resource.make(IO.delay(createAndStartContainer))(container => IO.delay(container.stop()))
   }
 
 }

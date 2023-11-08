@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit.elasticsearch
 
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.effect.Resource
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer.Version
-import monix.bio.Task
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -42,7 +41,7 @@ object ElasticSearchContainer {
   /**
     * A running elasticsearch container wrapped in a Resource. The container will be stopped upon release.
     */
-  def resource(): Resource[Task, ElasticSearchContainer] = {
+  def resource(): Resource[IO, ElasticSearchContainer] = {
     def createAndStartContainer = {
       val container = new ElasticSearchContainer(ElasticSearchPassword)
         .withReuse(false)
@@ -50,6 +49,6 @@ object ElasticSearchContainer {
       container.start()
       container
     }
-    Resource.make(Task.delay(createAndStartContainer))(container => Task.delay(container.stop()))
+    Resource.make(IO.delay(createAndStartContainer))(container => IO.delay(container.stop()))
   }
 }

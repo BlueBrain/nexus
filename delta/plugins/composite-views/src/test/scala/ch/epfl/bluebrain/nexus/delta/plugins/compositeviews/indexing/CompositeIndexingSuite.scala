@@ -90,7 +90,7 @@ trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
     (
       Doobie.resource(),
       ElasticSearchClientSetup.resource(),
-      BlazegraphClientSetup.resource().mapK(taskToIoK)
+      BlazegraphClientSetup.resource()
     )
       .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.{Clock, ContextShift, IO, Resource, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -11,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 
 import scala.concurrent.duration._
 
@@ -59,13 +59,13 @@ object SupervisorSetup {
       timer: Timer[IO],
       cs: ContextShift[IO],
       cl: ClassLoader
-  ): ResourceFixture.TaskFixture[SupervisorSetup] =
-    ResourceFixture.suiteLocal(name, resource(cluster).mapK(ioToTaskK))
+  ): IOFixture[SupervisorSetup] =
+    ResourceFixture.suiteLocal(name, resource(cluster))
 
   trait Fixture { self: NexusSuite with CatsRunContext with IOFixedClock =>
-    val supervisor: ResourceFixture.TaskFixture[SupervisorSetup]    =
+    val supervisor: IOFixture[SupervisorSetup]    =
       SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0))
-    val supervisor3_1: ResourceFixture.TaskFixture[SupervisorSetup] =
+    val supervisor3_1: IOFixture[SupervisorSetup] =
       SupervisorSetup.suiteLocalFixture("supervisor3", ClusterConfig(3, 1))
   }
 
