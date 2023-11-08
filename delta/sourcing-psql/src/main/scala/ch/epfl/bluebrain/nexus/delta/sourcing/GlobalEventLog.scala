@@ -188,7 +188,7 @@ object GlobalEventLog {
       }
 
     override def delete(id: Id): IO[Unit] =
-      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write).hideErrors
+      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.writeCE)
 
     override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
 
