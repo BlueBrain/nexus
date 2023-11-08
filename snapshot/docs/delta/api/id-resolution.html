@@ -243,6 +243,15 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/delta/api/id-resolution.html#resolve" class="header">Resolve</a></li>
     <li><a href="../../../docs/delta/api/id-resolution.html#example" class="header">Example</a></li>
+    <li><a href="../../../docs/delta/api/id-resolution.html#resolve-proxy-pass-" class="header">Resolve (Proxy Pass)</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/id-resolution.html#configuration" class="header">Configuration</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html#redirection" class="header">Redirection</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html#example" class="header">Example</a>
+      <ul>
+        <li><a href="../../../docs/delta/api/id-resolution.html#remark" class="header">Remark</a></li>
+      </ul></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -268,6 +277,15 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/delta/api/id-resolution.html#resolve" class="header">Resolve</a></li>
     <li><a href="../../../docs/delta/api/id-resolution.html#example" class="header">Example</a></li>
+    <li><a href="../../../docs/delta/api/id-resolution.html#resolve-proxy-pass-" class="header">Resolve (Proxy Pass)</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/id-resolution.html#configuration" class="header">Configuration</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html#redirection" class="header">Redirection</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html#example" class="header">Example</a>
+      <ul>
+        <li><a href="../../../docs/delta/api/id-resolution.html#remark" class="header">Remark</a></li>
+      </ul></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -306,13 +324,28 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   </dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/id-resolution/single-resolution-response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@vocab&quot;: &quot;https://schema.org/&quot;
-  },
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+    {
+      &quot;@vocab&quot;: &quot;https://schema.org/&quot;
+    }
+  ],
   &quot;@id&quot;: &quot;https://example.com/Alice&quot;,
   &quot;@type&quot;: &quot;Person&quot;,
   &quot;name&quot;: &quot;Alice&quot;,
-  &quot;age&quot;: 42
+  &quot;age&quot;: 42,
+  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
+  &quot;_createdAt&quot; : &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot; : &quot;http://localhost/v1/anonymous&quot;,
+  &quot;_deprecated&quot; : false,
+  &quot;_incoming&quot; : &quot;http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice/incoming&quot;,
+  &quot;_outgoing&quot; : &quot;http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice/outgoing&quot;,
+  &quot;_project&quot; : &quot;http://localhost/v1/projects/myorg/myproject&quot;,
+  &quot;_rev&quot; : 1,
+  &quot;_schemaProject&quot; : &quot;http://localhost/v1/projects/myorg/myproject&quot;,
+  &quot;_self&quot; : &quot;http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice&quot;,
+  &quot;_updatedAt&quot; : &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_updatedBy&quot; : &quot;http://localhost/v1/anonymous&quot;
 }</code></pre></dd>
   <dt>Response (multiple choices)
   </dt>
@@ -360,6 +393,58 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_maxScore&quot; : 0.0
 }</code></pre></dd>
 </dl>
+<h2><a href="#resolve-proxy-pass-" name="resolve-proxy-pass-" class="anchor"><span class="anchor-link"></span></a>Resolve (Proxy Pass)</h2><div class="callout note warning"><div class="callout-title">Note</div>
+<p>This endpoint is designed for the Nexus deployment at the Blue Brain Project and as such might not suit the needs of other deployments.</p></div>
+<p>The <a href="id-resolution.html#resolve">resolve</a> endpoint offers resource resolution on the resources the caller has access to. As such, if the client is a browser and does not have the ability to include an authorization header in the request, it is possible to use the proxy pass version of the resolve endpoint which will lead the client to a Nexus Fusion authentication page. This will allow to &ldquo;inject&rdquo; the user&rsquo;s token in a subsequent <a href="id-resolution.html#resolve">resolve</a> request made by Nexus Fusion.</p>
+<h3><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h3>
+<ul>
+  <li><code>app.fusion.base</code>: String - base URL for Nexus Fusion</li>
+  <li><code>app.fusion.enable-redirects</code>: Boolean - needs to be <code>true</code> in order for redirects to work (defaults to <code>false</code>)</li>
+  <li><code>app.fusion.resolve-base</code>: String - base URL to use when reconstructing the resource identifier in the  proxy pass endpoint</li>
+</ul>
+<h3><a href="#redirection" name="redirection" class="anchor"><span class="anchor-link"></span></a>Redirection</h3>
+<ol>
+  <li>The client calls <code>/v1/resolve-proxy-pass/{segment}</code></li>
+  <li>Nexus Delta reconstructs the resource identifier
+    <ul>
+      <li><code>{resourceId}</code> = <code>{resolveBase}/{segment}</code></li>
+    </ul>
+  </li>
+  <li>Nexus Delta redirects the client to&hellip;
+    <ul>
+      <li>the <code>{fusionBaseUrl}/resolve/{resourceId}</code> Fusion endpoint if the <code>Accept: text/html</code> header is present</li>
+      <li>the <code>/v1/resolve/{resourceId}</code> Delta endpoint otherwise</li>
+    </ul>
+  </li>
+</ol>
+<p>The Nexus Fusion resolve page allows the user to authenticate (if they are not already authenticated) and will perform a call to the Nexus Delta <code>/v1/resolve/{resourceId}</code> with the user&rsquo;s authentication token.</p>
+<p>All calls to the <code>/v1/resolve-proxy-pass</code> endpoint lead to <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303" title="303 See Other responses">303 See Other responses</a>.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p>The example below assumes that:</p>
+<ul>
+  <li><code>{fusionBaseUrl}</code> = <code>http://localhost:8080/fusion</code></li>
+  <li><code>{segment}</code> = <code>nexus/data/identifier</code></li>
+  <li><code>{resolveBase}</code> = <code>https://example.com</code></li>
+</ul>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/id-resolution/proxy-request.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resolve-proxy-pass/nexus/data/identifier&quot;</code></pre></dd>
+  <dt>Redirect (when <code>Acccept:text/html</code> is provided)
+  </dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/id-resolution/proxy-response-fusion.html" target="_blank" title="Go to snippet source">source</a><code class="language-html">303 See Other
+The response to the request can be found under &lt;a href=&quot;http://localhost:8080/fusion/resolve/https:%2F%2Fexample.com%2Fnexus%2Fdata%2Fidentifier&quot;&gt;this URI&lt;/a&gt; using a
+GET method.</code></pre></dd>
+  <dt>Redirect (no <code>Accept:text/html</code> provided)
+  </dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/id-resolution/proxy-response-delta.html" target="_blank" title="Go to snippet source">source</a><code class="language-html">303 See Other
+The response to the request can be found under &lt;a href=&quot;https://localhost:8080/v1/resolve/https:%2F%2Fexample.com%2Fnexus%2Fdata%2Fidentifier&quot;&gt;this URI&lt;/a&gt; using a
+GET method.</code></pre></dd>
+</dl>
+<h4><a href="#remark" name="remark" class="anchor"><span class="anchor-link"></span></a>Remark</h4>
+<p>In your networking setup, if a proxy pass is enabled to map <code>https://example.com/nexus/data/*</code> to <code>https://localhost:8080/v1/resolve-proxy-pass/nexus/data/*</code>, the proxy pass allows to de facto resolve resource with identifier of the type <code>https://example.com/nexus/data/*</code> by simply querying their <code>@id</code>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/id-resolution.md" title="Edit this page" class="md-source-file md-edit">

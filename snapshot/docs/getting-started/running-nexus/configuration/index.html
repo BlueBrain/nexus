@@ -339,7 +339,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.http.interface=&quot;127.0.0.1&quot;</code>.</li>
   <li>Using <a href="https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides" title="FORCE_CONFIG_{property}" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_{property}</a>  environment variables. In order to enable this style of configuration, the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. Once set, a configuration flag can be overridden. For example: <code>CONFIG_FORCE_app_http_interface=&quot;127.0.0.1&quot;</code>.</li>
 </ul>
-<p>In terms of JVM pool memory allocation, we recommend setting the following values to the <code>JAVA_OPTS</code> environment variable: <code>-Xms4g -Xmx4g</code>. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.</p>
+<p>In terms of JVM pool memory allocation, we recommend setting the following values to the <code>JAVA_OPTS</code> environment variable: <code>-Xms4g -Xmx4g --add-opens=java.base/java.lang=ALL-UNNAMED</code>. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.</p>
 <p>In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified</p>
 <h2><a href="#http-configuration" name="http-configuration" class="anchor"><span class="anchor-link"></span></a>Http configuration</h2>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L11" title="The `http` section" target="_blank" rel="noopener noreferrer">The <code>http</code> section</a> of the configuration defines the binding address and port where the service will be listening.</p>
@@ -399,6 +399,27 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>For disk storages the most relevant configuration flag is <code>plugins.storage.storages.disk.default-volume</code>, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.</li>
   <li>For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: <code>plugins.storage.storages.amazon.default-endpoint</code>, <code>plugins.storage.storages.amazon.default-access-key</code> and <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
   <li>For remote disk storages the most relevant configuration flags are <code>plugins.storage.storages.remote-disk.default-endpoint</code> (the endpoint where the remote storage service is running) and <code>plugins.storage.storages.remote-disk.credentials</code> (the method to authenticate to the remote storage service).</li>
+</ul>
+<h4><a href="#file-configuration" name="file-configuration" class="anchor"><span class="anchor-link"></span></a>File configuration</h4>
+<p>When the media type is not provided by the user, Delta relies on automatic detection based on the file extension in order to provide one.</p>
+<p>From 1.9, it is possible to provide a list of extensions with an associated media type to compute the media type.</p>
+<p>This list can be defined at <code>files.media-type-detector.extensions</code>:</p>
+<pre class="prettyprint"><code class="language-hocon">files {
+  # Allows to define default media types for the given file extensions
+  media-type-detector {
+    extensions {
+      custom = &quot;application/custom&quot;
+      ntriples = &quot;application/n-triples&quot;
+    }
+  }
+}
+</code></pre>
+<p>The media type resolution process follow this order stopping at the first successful step:</p>
+<ul>
+  <li>Select the <code>Content-Type</code> header from the file creation/update request</li>
+  <li>Compare the extension to the custom list provided in the configuratio</li>
+  <li>Fallback on akka automatic detection</li>
+  <li>Fallback to the default value <code>application/octet-stream</code></li>
 </ul>
 <h4><a href="#remote-storage-configuration" name="remote-storage-configuration" class="anchor"><span class="anchor-link"></span></a>Remote storage configuration</h4>
 <p>Authentication for remote storage can be specified in three different ways. The value of <code>plugins.storage.storages.remote-disk.credentials</code> can be:</p>

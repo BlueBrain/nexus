@@ -244,6 +244,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#remote-authentication" class="header">Remote authentication</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#java-options" class="header">Java options</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,6 +271,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#remote-authentication" class="header">Remote authentication</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#java-options" class="header">Java options</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -316,6 +318,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Currently, both remote storages and composite views with remote sources can hold auth tokens for communications with these remote endpoints. In v1.9, we now expect authentication to be dealt with in the Delta configuration</p>
 <p>A remote storage might currently have a token stored in the storage definition. In 1.9, this should be moved to <code>plugins.storage.storages.remote-disk.credentials</code>, as shown <a href="../getting-started/running-nexus/configuration/index.html#remote-storage-configuration">here</a></p>
 <p>A composite view might currently have a token stored in the view definition. In 1.9, this should be moved to <code>plugins.composite-views.remote-source-credentials</code>, as shown <a href="../getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration">here</a></p>
+<h2><a href="#java-options" name="java-options" class="anchor"><span class="anchor-link"></span></a>Java options</h2>
+<p>As the official Nexus Delta image moves to JRE 17, one dependency now requires the addition of <code>--add-opens=java.base/java.lang=ALL-UNNAMED</code> in <code>JAVA_OPTS</code>. This option is present by default in the image. However, if you are setting a custom value for <code>JAVA_OPTS</code> in your deployment, it is required to append <code>--add-opens=java.base/java.lang=ALL-UNNAMED</code> to it. This is because the custom value will override the one from the image.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.8-to-v1.9-migration.md" title="Edit this page" class="md-source-file md-edit">

@@ -241,7 +241,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/user-permissions-api.html#user-permissions" class="header">User Permissions</a>
   <ul>
-    <li><a href="../../../docs/delta/api/user-permissions-api.html#head" class="header">Head</a></li>
+    <li><a href="../../../docs/delta/api/user-permissions-api.html#standard-permissions" class="header">Standard permissions</a></li>
+    <li><a href="../../../docs/delta/api/user-permissions-api.html#storage-access-permissions" class="header">Storage access permissions</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -265,7 +266,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/user-permissions-api.html#user-permissions" class="header">User Permissions</a>
   <ul>
-    <li><a href="../../../docs/delta/api/user-permissions-api.html#head" class="header">Head</a></li>
+    <li><a href="../../../docs/delta/api/user-permissions-api.html#standard-permissions" class="header">Standard permissions</a></li>
+    <li><a href="../../../docs/delta/api/user-permissions-api.html#storage-access-permissions" class="header">Storage access permissions</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -287,18 +289,23 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>A user of delta is given certain permissions. This is done using the <a href="acls-api.html">ACLs API</a> </p>
 <p>Sometimes for the sake of simplicity, it can be easier to ask whether the current user has a specific permission in a specific context. This is why the user permissions API exists</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>The described endpoints are experimental and the responses structure might change in the future.</p></div>
-<h2><a href="#head" name="head" class="anchor"><span class="anchor-link"></span></a>Head</h2>
+<dl>
+  <dt>Requests</dt>
+  <dd>All requests should have no body</dd>
+  <dt>Responses</dt>
+  <dd>A response will have a 204 (no content) status code if the user is authorised</dd>
+  <dd>A response will have a 403 (forbidden) status code if the user is not authorised</dd>
+</dl>
+<h2><a href="#standard-permissions" name="standard-permissions" class="anchor"><span class="anchor-link"></span></a>Standard permissions</h2>
 <p>This operation determines whether the current logged in user has a specific permission in a specific context</p>
 <pre><code>HEAD /v1/user/permissions/{org_label}/{project_label}?permission={permission}
 </code></pre>
 <p>where - <code>{permission}</code>: String - the permission to check</p>
-<dl>
-  <dt>Request</dt>
-  <dd>The request should have no body</dd>
-  <dt>Response</dt>
-  <dd>The response will have a 204 (no content) status code if the user is authorised</dd>
-  <dd>The response will have a 403 (forbidden) status code if the user is not authorised</dd>
-</dl>
+<h2><a href="#storage-access-permissions" name="storage-access-permissions" class="anchor"><span class="anchor-link"></span></a>Storage access permissions</h2>
+<p>This operation determines whether the current logged in user would be able to access files on a specific storage</p>
+<pre><code>HEAD /v1/user/permissions/{org_label}/{project_label}?storage={storage_id}&amp;type={access_type}
+</code></pre>
+<p>where - <code>{storage_id}</code>: String - the id of the storage - <code>{access_type}</code>: String - the access type of the storage. Can be <code>read</code> or <code>write</code></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/user-permissions-api.md" title="Edit this page" class="md-source-file md-edit">

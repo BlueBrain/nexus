@@ -345,13 +345,13 @@ class TestPluginRoutes(baseUri: BaseUri) {
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/test-plugin/src/main/scala/ch/epfl/bluebrain/nexus/delta/testplugin/TestPluginDef.scala" target="_blank" title="Go to snippet source">source</a><code class="language-scala">package ch.epfl.bluebrain.nexus.delta.testplugin
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.Task
 
 case class TestPluginDef() extends PluginDef {
 
@@ -368,7 +368,7 @@ case class TestPluginDef() extends PluginDef {
 
   override val info: PluginDescription = PluginDescription(Name.unsafe(&quot;testplugin&quot;), &quot;0.1.0&quot;)
 
-  override def initialize(locator: Locator): Task[Plugin] = Task.pure(locator.get[TestPlugin])
+  override def initialize(locator: Locator): IO[Plugin] = IO.pure(locator.get[TestPlugin])
 
 }</code></pre></dd>
 </dl>

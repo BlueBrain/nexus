@@ -250,6 +250,8 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
@@ -302,6 +304,8 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
@@ -433,9 +437,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <h2><a href="#create-using-put" name="create-using-put" class="anchor"><span class="anchor-link"></span></a>Create using PUT</h2>
 <p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
-<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
   {...}
 </code></pre>
+<p>&hellip; where <code>{tag}</code> is an optional tag associated with the first revision of this resource. </p>
 <p>The <code>{schema_id}</code> has the same behaviour as <a href="resources-api.html#create-using-post">the creation using post operation</a>.</p>
 <p>Note that if the payload contains an @id different from the <code>{resource_id}</code>, the request will fail.</p>
 <p><strong>Example</strong></p>
@@ -491,10 +496,14 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2>
 <p>This operation overrides the payload.</p>
 <p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
-<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}&amp;tag={tag}
   {...}
 </code></pre>
-<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p>&hellip; where </p>
+<ul>
+  <li><code>{previous_rev}</code> is the last known revision number for the resource.</li>
+  <li><code>{tag}</code> is an optional tag associated with the same revision as the current update. For example, if <code>previous_rev</code> is 2, both the updated payload and <code>tag</code> will be associated with revision 3; the new latest revision.</li>
+</ul>
 <p>The <code>{schema_id}</code> segment allows to define an existing SHACL schema to validate the resource with:</p>
 <ul>
   <li>If <code>_</code> is provided, no SHACL validation will be performed with the latest version of its current schema</li>
@@ -700,6 +709,69 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2021-04-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks a previously deprecated resource. Further operations can then be performed. The resource will again be found when listing/querying.</p>
+<p>Undeprecating a resource is considered to be an update as well.</p>
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     -H &quot;Content-Type: application/json&quot; \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/undeprecate?rev=3&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 5,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-04-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#change-schema" name="change-schema" class="anchor"><span class="anchor-link"></span></a>Change schema</h2>
+<p>This operation allows to only change the schema of a resource without providing any payload.</p>
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/update-schema
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/schema-change.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/update-schema&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/schema-changed.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myId&quot;,
+  &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId&quot;,
+  &quot;_constrainedBy&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/_/myNewSchema&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-04-17T14:56:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
 </dl>

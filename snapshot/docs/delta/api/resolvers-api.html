@@ -263,6 +263,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#parameter-description" class="header">Parameter description</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-resource-using-resolvers" class="header">Fetch resource using resolvers</a></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-resource-payload-using-resolvers" class="header">Fetch original resource payload using resolvers</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -309,6 +310,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#parameter-description" class="header">Parameter description</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-resource-using-resolvers" class="header">Fetch resource using resolvers</a></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-resource-payload-using-resolvers" class="header">Fetch original resource payload using resolvers</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -821,6 +823,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                              &amp;updatedBy={updatedBy}
                                              &amp;q={search}
                                              &amp;sort={sort}
+                                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only resolvers from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -833,6 +836,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                              &amp;updatedBy={updatedBy}
                              &amp;q={search}
                              &amp;sort={sort}
+                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only resolvers from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -845,6 +849,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                  &amp;updatedBy={updatedBy}
                  &amp;q={search}
                  &amp;sort={sort}
+                 &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
@@ -857,6 +862,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resolvers based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the resolvers in the collection that have attribute values  matching (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort resolvers based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -960,6 +966,31 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2021-04-17T15:02:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#fetch-original-resource-payload-using-resolvers" name="fetch-original-resource-payload-using-resolvers" class="anchor"><span class="anchor-link"></span></a>Fetch original resource payload using resolvers</h2>
+<p>Fetches the original source payload of a resource using the provided resolver.</p>
+<p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}
+</code></pre>
+<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</p>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/fetch-resource-source.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resolvers/myorg/myproj/nxv:myresolver/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/source&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/payload.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;ex&quot;: &quot;http://localhost:8080/&quot;,
+    &quot;@vocab&quot;: &quot;http://localhost:8080/&quot;
+  },
+  &quot;@type&quot;: &quot;ex:Custom&quot;,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;bool&quot;: false
 }</code></pre></dd>
 </dl>
 <h2><a href="#server-sent-events" name="server-sent-events" class="anchor"><span class="anchor-link"></span></a>Server Sent Events</h2>

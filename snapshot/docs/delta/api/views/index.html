@@ -374,6 +374,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                          &amp;updatedBy={updatedBy}
                                          &amp;q={search}
                                          &amp;sort={sort}
+                                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only views from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -386,6 +387,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                          &amp;updatedBy={updatedBy}
                          &amp;q={search}
                          &amp;sort={sort}
+                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only views from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -398,6 +400,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
              &amp;updatedBy={updatedBy}
              &amp;q={search}
              &amp;sort={sort}
+             &amp;aggregations={aggregations}
 </code></pre>
 <h4><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h4>
 <ul>
@@ -410,6 +413,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting views based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the views in the collection that have attribute values matching  (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort views based on a payloads&rsquo; field. This parameter can appear multiple times to  enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="../resources-api.html#aggregations">Aggregations</a>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
