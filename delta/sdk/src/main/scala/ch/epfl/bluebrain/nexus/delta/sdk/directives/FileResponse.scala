@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.ContentType
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse.{Content, Metadata}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import monix.bio.IO
 
 /**
   * A file response content
@@ -20,7 +21,7 @@ final case class FileResponse(metadata: Metadata, content: Content)
 
 object FileResponse {
 
-  type Content = IO[Complete[JsonLdValue], AkkaSource]
+  type Content = IO[Either[Complete[JsonLdValue], AkkaSource]]
 
   /**
     * Metadata for the file response
@@ -38,10 +39,17 @@ object FileResponse {
       filename: String,
       contentType: ContentType,
       bytes: Long,
-      io: IO[E, AkkaSource]
+      io: IO[Either[E, AkkaSource]]
   ) =
-    new FileResponse(Metadata(filename, contentType, bytes), io.mapError { e => Complete(e).map(JsonLdValue(_)) })
+    new FileResponse(
+      Metadata(filename, contentType, bytes),
+      io.map { r =>
+        r.leftMap { e =>
+          Complete(e).map(JsonLdValue(_))
+        }
+      }
+    )
 
   def apply(filename: String, contentType: ContentType, bytes: Long, source: AkkaSource): FileResponse =
-    new FileResponse(Metadata(filename, contentType, bytes), IO.pure(source))
+    new FileResponse(Metadata(filename, contentType, bytes), IO.pure(Right(source)))
 }
