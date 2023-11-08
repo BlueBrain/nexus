@@ -14,7 +14,7 @@ import izumi.distage.modules.DefaultModule
 
 object WiringInitializer {
 
-  private val logger = Logger.cats[WiringInitializer.type]
+  private val logger = Logger[WiringInitializer.type]
 
   /**
     * Combines the [[ModuleDef]] of the passed ''serviceModule'' with the ones provided by the plugins. Afterwards

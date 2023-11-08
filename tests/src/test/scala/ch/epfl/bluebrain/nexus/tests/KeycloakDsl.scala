@@ -26,7 +26,7 @@ class KeycloakDsl(implicit
     executionContext: ExecutionContext
 ) extends TestHelpers {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}")
   private val keycloakClient = HttpClient(keycloakUrl)

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig.logger
@@ -30,12 +31,12 @@ final case class HttpClientConfig(
     *   the retry strategy from the current configuration
     */
   def strategy: RetryStrategy[HttpClientError] =
-    RetryStrategy(retry, isWorthRetrying, RetryStrategy.logError(logger, "http client"))
+    RetryStrategy(retry, isWorthRetrying, RetryStrategy.logError(logger, "http client")(_, _).toUIO)
 }
 
 object HttpClientConfig {
 
-  private[http] val logger: Logger = Logger[HttpClientConfig]
+  private[http] val logger = Logger[HttpClientConfig]
 
   def noRetry(compression: Boolean): HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)

@@ -31,7 +31,7 @@ class BlazegraphScopeInitialization(
     defaults: Defaults
 ) extends ScopeInitialization {
 
-  private val logger                                        = Logger.cats[BlazegraphScopeInitialization]
+  private val logger                                        = Logger[BlazegraphScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 

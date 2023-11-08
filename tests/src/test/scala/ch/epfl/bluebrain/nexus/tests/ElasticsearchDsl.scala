@@ -23,7 +23,7 @@ class ElasticsearchDsl(implicit
     with CirceUnmarshalling
     with Matchers {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   private val elasticUrl    = s"http://${sys.props.getOrElse("elasticsearch-url", "localhost:9200")}"
   private val elasticClient = HttpClient(elasticUrl)

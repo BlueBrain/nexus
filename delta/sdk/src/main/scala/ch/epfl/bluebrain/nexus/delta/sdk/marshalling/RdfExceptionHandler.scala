@@ -20,7 +20,7 @@ import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 object RdfExceptionHandler {
-  private val logger = Logger.cats[RdfExceptionHandler.type]
+  private val logger = Logger[RdfExceptionHandler.type]
 
   /**
     * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples) depending

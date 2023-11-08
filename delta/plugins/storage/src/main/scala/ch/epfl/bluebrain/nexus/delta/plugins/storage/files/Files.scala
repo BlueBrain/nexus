@@ -558,7 +558,7 @@ final class Files(
 
 object Files {
 
-  private val logger = Logger.cats[Files]
+  private val logger = Logger[Files]
 
   /**
     * The file entity type.
