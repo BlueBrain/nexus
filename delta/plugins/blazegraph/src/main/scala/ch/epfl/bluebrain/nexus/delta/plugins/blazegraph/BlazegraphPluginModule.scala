@@ -77,7 +77,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)(c)
   }
 
-  make[BlazegraphClient].named("blazegraph-indexing-client").fromEffect {
+  make[BlazegraphClient].named("blazegraph-indexing-client").from {
     (
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
@@ -92,7 +92,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       HttpClient()(cfg.queryClient, as.classicSystem, sc)
   }
 
-  make[BlazegraphClient].named("blazegraph-query-client").fromEffect {
+  make[BlazegraphClient].named("blazegraph-query-client").from {
     (
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-query-client"),
