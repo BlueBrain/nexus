@@ -9,7 +9,7 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoringCats
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
@@ -29,7 +29,7 @@ object Main extends IOApp {
 
   private val externalConfigEnvVariable = "DELTA_EXTERNAL_CONF"
   private val pluginEnvVariable         = "DELTA_PLUGINS"
-  private val logger                    = Logger.cats[Main.type]
+  private val logger                    = Logger[Main.type]
   val pluginsMaxPriority: Int           = 100
   val pluginsMinPriority: Int           = 1
 
@@ -51,7 +51,7 @@ object Main extends IOApp {
       _                             <- Resource.eval(logger.info(s"Starting Nexus Delta version '${BuildInfo.version}'."))
       _                             <- Resource.eval(logger.info(s"Loading plugins and config..."))
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
-      _                             <- Resource.eval(KamonMonitoringCats.initialize(config))
+      _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
       (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
       _                             <- bootstrap(locator, plugins)
@@ -153,7 +153,7 @@ object Main extends IOApp {
         s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}"
       ) >> plugins
         .traverse(_.stop())
-        .timeout(30.seconds) >> KamonMonitoringCats.terminate
+        .timeout(30.seconds) >> KamonMonitoring.terminate
     }
 
     val release = IO.fromFuture(IO(as.terminate()))

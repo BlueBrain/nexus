@@ -78,7 +78,7 @@ object CompositeViewsCoordinator {
   }
 
   private val metadata: ProjectionMetadata = ProjectionMetadata("system", "composite-views-coordinator", None, None)
-  private val logger                       = Logger.cats[CompositeViewsCoordinator]
+  private val logger                       = Logger[CompositeViewsCoordinator]
 
   def cleanupCurrent(
       cache: LocalCache[ViewRef, ActiveViewDef],

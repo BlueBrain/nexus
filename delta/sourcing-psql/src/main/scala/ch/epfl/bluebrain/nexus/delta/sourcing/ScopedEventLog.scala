@@ -179,7 +179,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
 
 object ScopedEventLog {
 
-  private val logger = Logger.cats[ScopedEventLog.type]
+  private val logger = Logger[ScopedEventLog.type]
 
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 

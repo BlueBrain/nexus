@@ -18,7 +18,7 @@ import java.time.Instant
 
 class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, projectStatistics: ProjectsStatistics) {
 
-  private val logger = Logger.cats[ProjectDeletionRunner]
+  private val logger = Logger[ProjectDeletionRunner]
 
   private def lastEventTime(pr: ProjectResource, now: Instant): IO[Instant] = {
     projectStatistics

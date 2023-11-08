@@ -64,18 +64,18 @@ final class ResolverResolution[R](
     * Attempts to resolve the resource against the given resolver and return the resource if found and a report of how
     * the resolution went
     *
-    * @param ref
+    * @param resource
     *   the resource reference
-    * @param projectRef
+    * @param project
     *   the project reference
     */
-  def resolveReport(ref: ResourceRef, projectRef: ProjectRef)(implicit
+  def resolveReport(resource: ResourceRef, project: ProjectRef)(implicit
       caller: Caller
   ): IO[(ResourceResolutionReport, Option[R])] = {
     val initial: (ResourceResolutionReport, Option[R]) =
       ResourceResolutionReport() -> None
 
-    listResolvers(projectRef)
+    listResolvers(project)
       .flatMap { resolvers =>
         resolvers
           .sortBy { r => (r.value.priority.value, r.id.toString) }
@@ -85,7 +85,7 @@ final class ResolverResolution[R](
               case (report, result @ Some(_)) => IO.pure(report -> result)
               // No resolution was successful yet, we carry on
               case (report, None)             =>
-                resolveReport(ref, projectRef, resolver).map { case (resolverReport, result) =>
+                resolveReport(resource, project, resolver).map { case (resolverReport, result) =>
                   report.copy(history = report.history :+ resolverReport) -> result
                 }
             }

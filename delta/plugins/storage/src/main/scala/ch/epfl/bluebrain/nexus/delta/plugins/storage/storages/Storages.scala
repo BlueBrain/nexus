@@ -351,7 +351,7 @@ object Storages {
     */
   val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
 
-  implicit private[storages] val logger: log4cats.Logger[IO] = Logger.cats[Storages]
+  implicit private[storages] val logger: log4cats.Logger[IO] = Logger[Storages]
 
   private[storages] def next(state: Option[StorageState], event: StorageEvent): Option[StorageState] = {
 

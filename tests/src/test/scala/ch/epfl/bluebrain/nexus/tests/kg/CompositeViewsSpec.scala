@@ -14,7 +14,7 @@ import io.circe.optics.JsonPath._
 
 class CompositeViewsSpec extends BaseIntegrationSpec {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   case class Stats(totalEvents: Long, remainingEvents: Long)
 

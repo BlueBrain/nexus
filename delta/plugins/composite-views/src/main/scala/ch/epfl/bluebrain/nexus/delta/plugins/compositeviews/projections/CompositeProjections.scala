@@ -87,7 +87,7 @@ trait CompositeProjections {
 
 object CompositeProjections {
 
-  private val logger = Logger.cats[CompositeProjections]
+  private val logger = Logger[CompositeProjections]
 
   def apply(
       compositeRestartStore: CompositeRestartStore,

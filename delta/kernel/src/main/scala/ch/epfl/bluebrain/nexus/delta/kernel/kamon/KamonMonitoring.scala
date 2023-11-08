@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 
-import cats.effect.ExitCase
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.Logger
-import kamon.{Kamon, Tracing}
 import kamon.tag.TagSet
 import kamon.trace.Span
-import monix.bio.Cause.Termination
-import monix.bio.{Cause, IO, Task, UIO}
+import kamon.{Kamon, Tracing}
 
 import scala.concurrent.duration._
 
 object KamonMonitoring {
 
-  private val logger: Logger = Logger[Tracing]
+  private val logger = Logger[Tracing]
 
   def enabled: Boolean =
     sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
@@ -23,21 +23,20 @@ object KamonMonitoring {
     * @param config
     *   the configuration
     */
-  def initialize(config: Config): UIO[Unit] =
-    UIO.when(enabled) {
-      UIO.delay("Initializing Kamon") >> UIO.delay(Kamon.init(config))
+  def initialize(config: Config): IO[Unit] =
+    IO.whenA(enabled) {
+      logger.info("Initializing Kamon") >> IO.delay(Kamon.init(config))
     }
 
   /**
     * Terminate Kamon
     */
-  def terminate: Task[Unit] =
-    Task.when(enabled) {
-      Task
-        .deferFuture(Kamon.stopModules())
+  def terminate(implicit contextShift: ContextShift[IO], timer: Timer[IO]): IO[Unit] =
+    IO.whenA(enabled) {
+      IO.fromFuture { IO { Kamon.stopModules() } }
         .timeout(15.seconds)
-        .tapError { e =>
-          UIO.delay(logger.error("Something went wrong while terminating Kamon", e))
+        .onError { e =>
+          logger.error(e)("Something went wrong while terminating Kamon")
         }
         .void
     }
@@ -59,12 +58,12 @@ object KamonMonitoring {
     * @return
     *   the same effect wrapped within a named span
     */
-  def operationName[E, A](
+  def operationName[A](
       name: String,
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[E, A]): IO[E, A] =
+  )(io: IO[A]): IO[A]                                                                      = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
@@ -72,32 +71,26 @@ object KamonMonitoring {
         case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
+  }.onError { case e: Rejection => logger.debug(e)(e.getMessage) }
 
-  private def buildSpan(name: String, component: String, tags: Map[String, Any]): UIO[Span] =
-    UIO.delay(
+  private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
+    IO {
       Kamon
         .serverSpanBuilder(name, component)
         .asChildOf(Kamon.currentSpan())
         .tagMetrics(TagSet.from(tags))
         .start()
-    )
+    }
 
-  private def finishSpan(span: Span, takeSamplingDecision: Boolean): UIO[Unit] =
-    UIO.delay {
+  private def finishSpan(span: Span, takeSamplingDecision: Boolean): IO[Unit] =
+    IO {
       val s = if (takeSamplingDecision) span.takeSamplingDecision() else span
       s.finish()
     }
 
-  private def failSpan[E](span: Span, cause: Cause[E], takeSamplingDecision: Boolean): UIO[Unit] =
-    cause match {
-      case Cause.Error(e)  =>
-        UIO.delay {
-          span.tag("error", value = true).fail(e.toString)
-        } >> finishSpan(span, takeSamplingDecision)
-      case Termination(th) =>
-        UIO.delay {
-          span.tag("error", value = true).fail(th)
-        } >> finishSpan(span, takeSamplingDecision)
-    }
+  private def failSpan(span: Span, throwable: Throwable, takeSamplingDecision: Boolean): IO[Unit] =
+    IO.delay {
+      span.tag("error", value = true).fail(throwable)
+    } >> finishSpan(span, takeSamplingDecision)
 
 }

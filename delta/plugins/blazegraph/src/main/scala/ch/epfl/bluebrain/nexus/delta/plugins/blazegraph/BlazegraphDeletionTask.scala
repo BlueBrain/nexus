@@ -38,7 +38,7 @@ final class BlazegraphDeletionTask(
 }
 
 object BlazegraphDeletionTask {
-  private val logger = Logger.cats[BlazegraphDeletionTask]
+  private val logger = Logger[BlazegraphDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("blazegraph")
 

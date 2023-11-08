@@ -67,7 +67,7 @@ final class MigrateCompositeViews(xas: Transactors) {
 
 object MigrateCompositeViews {
 
-  private val logger = Logger.cats[MigrateCompositeViews]
+  private val logger = Logger[MigrateCompositeViews]
 
   private[migration] def eventsToMigrate(xas: Transactors) =
     sql"""SELECT org, project, id, rev, value
