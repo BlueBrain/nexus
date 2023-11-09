@@ -45,7 +45,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
@@ -57,15 +58,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        sc: Scheduler,
-        c: ContextShift[IO],
+        ec: ExecutionContext,
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, ec, timer, cs)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as,
-        sc,
-        c
+        cs
       )
   }
 
@@ -74,6 +75,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
       BlazegraphClient(
@@ -82,7 +85,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg.blazegraphAccess.credentials,
         cfg.blazegraphAccess.queryTimeout,
         properties.value
-      )(as.classicSystem)
+      )(as.classicSystem, timer, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-composite-query-client").from {
@@ -90,6 +93,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-query-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
       BlazegraphClient(
@@ -98,7 +103,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg.blazegraphAccess.credentials,
         cfg.blazegraphAccess.queryTimeout,
         properties.value
-      )(as.classicSystem)
+      )(as.classicSystem, timer, cs)
   }
 
   make[ValidateCompositeView].from {

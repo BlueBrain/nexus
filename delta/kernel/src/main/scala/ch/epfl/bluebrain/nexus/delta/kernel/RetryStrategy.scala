@@ -1,10 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
-import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import cats.effect.{IO, Timer}
 import com.typesafe.scalalogging.{Logger => ScalaLoggingLogger}
-
-import monix.bio.{IO => BIO, UIO}
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
@@ -15,6 +12,7 @@ import retry.syntax.all._
 import retry.{RetryDetails, RetryPolicies, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 /**
@@ -29,9 +27,9 @@ import scala.util.control.NonFatal
 final case class RetryStrategy[E](
     config: RetryStrategyConfig,
     retryWhen: E => Boolean,
-    onError: (E, RetryDetails) => BIO[E, Unit]
+    onError: (E, RetryDetails) => IO[Unit]
 ) {
-  val policy: RetryPolicy[BIO[E, *]] = config.toPolicy[E]
+  val policy: RetryPolicy[IO[*]] = config.toPolicy[E]
 }
 
 object RetryStrategy {
@@ -39,23 +37,30 @@ object RetryStrategy {
   /**
     * Apply the provided strategy on the given io
     */
-  def use[E, A](io: BIO[E, A], retryStrategy: RetryStrategy[E]): BIO[E, A] =
+  def use[E: ClassTag, A](io: IO[A], retryStrategy: RetryStrategy[E])(implicit timer: Timer[IO]): IO[A] =
     io.retryingOnSomeErrors(
-      retryStrategy.retryWhen,
+      {
+        case error: E => retryStrategy.retryWhen(error)
+        case _        => false
+      },
       retryStrategy.policy,
-      retryStrategy.onError
+      (error, retryDetails) =>
+        error match {
+          case error: E => retryStrategy.onError(error, retryDetails)
+          case _        => IO.unit
+        }
     )
 
   /**
     * Log errors when retrying
     */
-  def logError[E](logger: ScalaLoggingLogger, action: String): (E, RetryDetails) => BIO[E, Unit] = {
+  def logError[E](logger: ScalaLoggingLogger, action: String): (E, RetryDetails) => IO[Unit] = {
     case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
       val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
-      UIO.delay(logger.warn(message))
+      IO.delay(logger.warn(message))
     case (err, GivingUp(totalRetries, _))                     =>
       val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
-      UIO.delay(logger.error(message))
+      IO.delay(logger.error(message))
   }
 
   /**
@@ -75,7 +80,7 @@ object RetryStrategy {
     * @param onError
     *   what action to perform on error
     */
-  def alwaysGiveUp[E](onError: (E, RetryDetails) => BIO[E, Unit]): RetryStrategy[E] =
+  def alwaysGiveUp[E](onError: (E, RetryDetails) => IO[Unit]): RetryStrategy[E] =
     RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, onError)
 
   /**
@@ -93,7 +98,7 @@ object RetryStrategy {
       constant: FiniteDuration,
       maxRetries: Int,
       retryWhen: E => Boolean,
-      onError: (E, RetryDetails) => BIO[E, Unit]
+      onError: (E, RetryDetails) => IO[Unit]
   ): RetryStrategy[E] =
     RetryStrategy(
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
@@ -130,7 +135,7 @@ object RetryStrategy {
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logError[Throwable](logger, action)(t, d).toBIOThrowable
+      (t: Throwable, d: RetryDetails) => logError[Throwable](logger, action)(t, d)
     )
 
 }
@@ -139,7 +144,7 @@ object RetryStrategy {
   * Configuration for a [[RetryStrategy]]
   */
 sealed trait RetryStrategyConfig extends Product with Serializable {
-  def toPolicy[E]: RetryPolicy[BIO[E, *]]
+  def toPolicy[E]: RetryPolicy[IO[*]]
 
 }
 
@@ -149,7 +154,7 @@ object RetryStrategyConfig {
     * Fails without retry
     */
   case object AlwaysGiveUp extends RetryStrategyConfig {
-    override def toPolicy[E]: RetryPolicy[BIO[E, *]] = alwaysGiveUp[BIO[E, *]]
+    override def toPolicy[E]: RetryPolicy[IO[*]] = alwaysGiveUp[IO[*]]
   }
 
   /**
@@ -160,8 +165,8 @@ object RetryStrategyConfig {
     *   the maximum number of retries
     */
   final case class ConstantStrategyConfig(delay: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
-    override def toPolicy[E]: RetryPolicy[BIO[E, *]] =
-      constantDelay[BIO[E, *]](delay) join limitRetries(maxRetries)
+    override def toPolicy[E]: RetryPolicy[IO[*]] =
+      constantDelay[IO[*]](delay) join limitRetries(maxRetries)
   }
 
   /**
@@ -170,8 +175,8 @@ object RetryStrategyConfig {
     *   the interval before the retry will be attempted
     */
   final case class OnceStrategyConfig(delay: FiniteDuration) extends RetryStrategyConfig {
-    override def toPolicy[E]: RetryPolicy[BIO[E, *]] =
-      constantDelay[BIO[E, *]](delay) join limitRetries(1)
+    override def toPolicy[E]: RetryPolicy[IO[*]] =
+      constantDelay[IO[*]](delay) join limitRetries(1)
   }
 
   /**
@@ -185,8 +190,8 @@ object RetryStrategyConfig {
     */
   final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
       extends RetryStrategyConfig {
-    override def toPolicy[E]: RetryPolicy[BIO[E, *]] =
-      capDelay[BIO[E, *]](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
+    override def toPolicy[E]: RetryPolicy[IO[*]] =
+      capDelay[IO[*]](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
   }
 
   /**
@@ -198,7 +203,7 @@ object RetryStrategyConfig {
     */
   final case class MaximumCumulativeDelayConfig(threshold: FiniteDuration, delay: FiniteDuration)
       extends RetryStrategyConfig {
-    override def toPolicy[E]: RetryPolicy[BIO[E, *]] =
+    override def toPolicy[E]: RetryPolicy[IO[*]] =
       RetryPolicies.limitRetriesByCumulativeDelay(
         threshold,
         RetryPolicies.constantDelay(delay)

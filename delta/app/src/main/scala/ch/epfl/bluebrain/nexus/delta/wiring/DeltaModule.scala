@@ -35,9 +35,9 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
-import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
 /**
@@ -62,7 +62,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
 
-  implicit val scheduler: Scheduler = Scheduler.global
+  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   make[Transactors].fromResource { (cs: ContextShift[IO]) =>
     Transactors.init(appCfg.database)(classLoader, cs)
@@ -114,7 +114,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Clock[IO]].from(Clock.create[IO])
   make[EvaluationExecution].from(EvaluationExecution(_, _))
   make[UUIDF].from(UUIDF.random)
-  make[Scheduler].from(scheduler)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
@@ -136,6 +135,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     }
     Resource.make(make)(release)
   }
+  make[ExecutionContext].from((as: ActorSystem[Nothing]) => as.executionContext)
 
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }

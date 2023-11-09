@@ -1,8 +1,5 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 import munit.{Assertions, Location}
@@ -75,26 +72,6 @@ trait BioAssertions { self: Assertions =>
       },
       a => assertEquals(a, expected, clue)
     )
-
-    def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): UIO[Unit] = {
-      val strategy = RetryStrategy[Throwable](
-        MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
-        retryWhen,
-        onError = (_, _) => UIO.unit
-      )
-      assert(expected, patience.timeout).absorb
-        .retry(strategy)
-        .hideErrors
-    }
-
-    def eventually(expected: A)(implicit patience: PatienceConfig): UIO[Unit] =
-      eventually(
-        expected,
-        {
-          case _: AssertionError => true
-          case _                 => false
-        }
-      )
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)
@@ -185,10 +162,6 @@ trait BioAssertions { self: Assertions =>
 
   implicit class MonixBioAssertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E], loc: Location) {
     def assertSome(expected: A): UIO[Unit] = io.assert(Some(expected))
-
-    def eventuallySome(expected: A)(implicit patience: PatienceConfig): UIO[Unit] = io.eventually(Some(expected))
-
-    def eventuallyNone(implicit patience: PatienceConfig): UIO[Unit] = io.eventually(None)
 
     def assertNone: UIO[Unit] = io.assert(None)
   }

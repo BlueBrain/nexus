@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -20,7 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Realms module wiring config.
@@ -53,8 +53,9 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, sc)
+  make[HttpClient].named("realm").from {
+    (as: ActorSystem[Nothing], ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]) =>
+      HttpClient.noRetry(compression = false)(as.classicSystem, ec, timer, cs)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }

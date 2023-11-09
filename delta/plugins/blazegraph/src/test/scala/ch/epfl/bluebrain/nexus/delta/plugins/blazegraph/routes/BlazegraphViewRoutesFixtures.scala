@@ -32,7 +32,6 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, TestHelpers}
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 
@@ -62,7 +61,6 @@ trait BlazegraphViewRoutesFixtures
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val typedSystem: ActorSystem[Nothing] = system.toTyped
-  implicit val sc: Scheduler                     = Scheduler.global
   implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit val ordering: JsonKeyOrdering          =

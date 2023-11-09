@@ -20,11 +20,11 @@ import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 import org.scalatest.concurrent.Eventually
 
 import java.util.regex.Pattern.quote
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class SearchSparqlQuerySpec
@@ -41,7 +41,7 @@ class SearchSparqlQuerySpec
 
   private val searchDocument = contexts + "search-document.json"
 
-  implicit private val sc: Scheduler                = Scheduler.global
+  implicit private val ec: ExecutionContext         = ExecutionContext.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
   implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(

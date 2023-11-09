@@ -37,7 +37,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Blazegraph plugin wiring
@@ -53,8 +54,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[HttpClient].named("http-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.indexingClient, as.classicSystem, sc)
+    (
+        cfg: BlazegraphViewsConfig,
+        as: ActorSystem[Nothing],
+        ec: ExecutionContext,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      HttpClient()(cfg.indexingClient, as.classicSystem, ec, timer, cs)
   }
 
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
@@ -83,14 +90,26 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
+        as.classicSystem,
+        timer,
+        cs
+      )
   }
 
   make[HttpClient].named("http-query-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.queryClient, as.classicSystem, sc)
+    (
+        cfg: BlazegraphViewsConfig,
+        as: ActorSystem[Nothing],
+        ec: ExecutionContext,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      HttpClient()(cfg.queryClient, as.classicSystem, ec, timer, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
@@ -98,9 +117,15 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-query-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
+        as.classicSystem,
+        timer,
+        cs
+      )
   }
 
   make[ValidateBlazegraphView].from {

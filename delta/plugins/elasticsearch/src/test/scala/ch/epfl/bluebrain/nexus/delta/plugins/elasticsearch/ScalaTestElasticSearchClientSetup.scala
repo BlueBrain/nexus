@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.{ElasticSearchContainer, ElasticSearchDocker}
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures { self: CatsRunContext =>
 
@@ -26,7 +27,7 @@ trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures { sel
 
   def docker: ElasticSearchDocker
   implicit def system: ActorSystem
-  implicit val sc: Scheduler                                     = Scheduler.global
+  implicit val ec: ExecutionContext                              = ExecutionContext.global
   implicit val httpConfig: HttpClientConfig                      =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
   implicit private val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.Credentials
