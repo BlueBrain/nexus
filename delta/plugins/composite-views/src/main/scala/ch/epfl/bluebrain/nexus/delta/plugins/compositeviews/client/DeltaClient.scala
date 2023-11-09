@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Get, Head}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{Accept, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import cats.effect.{ContextShift, IO}

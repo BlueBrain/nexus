@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -26,7 +26,7 @@ trait Fixtures {
   )
 
   val defaultProperties: Map[String, String] =
-    CatsEffectsClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").unsafeRunSync()
+    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").unsafeRunSync()
 
   def alwaysValidate: ValidateBlazegraphView = (_: BlazegraphViewValue) => IO.unit
 }

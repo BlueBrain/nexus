@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 
@@ -35,7 +35,7 @@ object ElasticSearchFiles {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  private def fetchFile(resourcePath: String) = CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf(resourcePath)
+  private def fetchFile(resourcePath: String) = ClasspathResourceUtils.ioJsonObjectContentOf(resourcePath)
 
   def mk(): IO[ElasticSearchFiles] =
     for {
