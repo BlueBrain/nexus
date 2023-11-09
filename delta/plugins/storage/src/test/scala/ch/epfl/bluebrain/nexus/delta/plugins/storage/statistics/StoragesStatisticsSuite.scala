@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import munit.AnyFixture
 
 import scala.concurrent.duration.DurationInt

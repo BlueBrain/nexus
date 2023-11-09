@@ -52,8 +52,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
 import io.circe.generic.extras.Configuration

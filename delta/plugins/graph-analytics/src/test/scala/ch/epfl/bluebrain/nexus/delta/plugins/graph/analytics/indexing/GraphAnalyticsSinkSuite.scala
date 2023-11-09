@@ -16,8 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
