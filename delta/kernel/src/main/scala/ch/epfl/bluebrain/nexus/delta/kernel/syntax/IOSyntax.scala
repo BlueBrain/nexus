@@ -4,15 +4,11 @@ import cats.effect.{IO, Timer}
 import cats.implicits.catsSyntaxApplicativeError
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import com.typesafe.scalalogging.Logger
-import monix.bio.{Task, UIO}
 import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 import scala.reflect.ClassTag
 
 trait IOSyntax {
-
-  implicit final def taskSyntaxLogErrors[A](task: Task[A]): TaskOps[A] = new TaskOps(task)
 
   implicit final def ioSyntaxLogErrors[A](io: IO[A]): IOOps[A] = new IOOps(io)
 
@@ -30,17 +26,6 @@ final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
   def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E], timer: Timer[IO]): IO[A] =
     RetryStrategy.use(io, retryStrategy)
 
-}
-
-final class TaskOps[A](private val task: Task[A]) extends AnyVal {
-
-  /**
-    * Log errors before hiding them
-    */
-  def logAndDiscardErrors(action: String)(implicit logger: Logger): UIO[A] =
-    task.onErrorHandleWith { ex =>
-      UIO.delay(logger.warn(s"A Task is hiding an error while '$action'", ex)) >> UIO.terminate(ex)
-    }
 }
 
 final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {

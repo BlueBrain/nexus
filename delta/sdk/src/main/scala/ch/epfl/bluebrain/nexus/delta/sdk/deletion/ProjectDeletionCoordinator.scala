@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-//import monix.bio.Task
 
 /**
   * Stream to delete project from the system after those are marked as deleted
