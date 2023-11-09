@@ -6,6 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
@@ -72,13 +73,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
-        as: ActorSystem[Nothing]
+        as: ActorSystem[Nothing],
+        properties: DefaultProperties
     ) =>
       BlazegraphClient(
         client,
         cfg.blazegraphAccess.base,
         cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout
+        cfg.blazegraphAccess.queryTimeout,
+        properties.value
       )(as.classicSystem)
   }
 
@@ -86,13 +89,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-query-client"),
-        as: ActorSystem[Nothing]
+        as: ActorSystem[Nothing],
+        properties: DefaultProperties
     ) =>
       BlazegraphClient(
         client,
         cfg.blazegraphAccess.base,
         cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout
+        cfg.blazegraphAccess.queryTimeout,
+        properties.value
       )(as.classicSystem)
   }
 

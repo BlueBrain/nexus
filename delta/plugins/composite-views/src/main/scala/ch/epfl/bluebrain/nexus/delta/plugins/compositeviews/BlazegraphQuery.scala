@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
@@ -120,7 +119,9 @@ object BlazegraphQuery {
                           AuthorizationFailed(s"Defined permissions on sparql projection on '${view.ref}' are missing.")
                         )
           namespace   = commonNamespace(view.uuid, view.indexingRev, prefix)
-          result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
+          result     <- client.query(Set(namespace), query, responseType).adaptError { case e: SparqlClientError =>
+                          WrappedBlazegraphClientError(e)
+                        }
         } yield result
 
       override def query[R <: SparqlQueryResponse](
@@ -136,7 +137,9 @@ object BlazegraphQuery {
           _          <-
             aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
           namespace   = projectionNamespace(projection, view.uuid, prefix)
-          result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
+          result     <- client.query(Set(namespace), query, responseType).adaptError { case e: SparqlClientError =>
+                          WrappedBlazegraphClientError(e)
+                        }
         } yield result
 
       override def queryProjections[R <: SparqlQueryResponse](
@@ -148,7 +151,9 @@ object BlazegraphQuery {
         for {
           view       <- fetchView(id, project)
           namespaces <- allowedProjections(view, project)
-          result     <- client.query(namespaces, query, responseType).mapError(WrappedBlazegraphClientError)
+          result     <- client.query(namespaces, query, responseType).adaptError { case e: SparqlClientError =>
+                          WrappedBlazegraphClientError(e)
+                        }
         } yield result
 
       private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =

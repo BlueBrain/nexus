@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import com.typesafe.scalalogging.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Chunk
 import shapeless.Typeable
 
@@ -61,7 +60,6 @@ final class BlazegraphSink(
     if (bulk.queries.nonEmpty)
       client
         .bulk(namespace, bulk.queries)
-        .toCatsIO
         .redeemWith(
           err =>
             IO

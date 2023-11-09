@@ -17,8 +17,8 @@ import java.time.Instant
   */
 trait BlazegraphSlowQueryStore {
   def save(query: BlazegraphSlowQuery): IO[Unit]
-  def removeQueriesOlderThan(instant: Instant): IO[Unit]
   def listForTestingOnly(view: ViewRef): IO[List[BlazegraphSlowQuery]]
+  def removeQueriesOlderThan(instant: Instant): IO[Unit]
 }
 
 object BlazegraphSlowQueryStore {

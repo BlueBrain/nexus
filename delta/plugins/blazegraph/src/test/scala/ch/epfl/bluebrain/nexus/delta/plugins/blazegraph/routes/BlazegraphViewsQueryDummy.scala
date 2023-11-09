@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClientError, SparqlQueryClient, SparqlQueryResponse}
@@ -47,7 +46,7 @@ private[routes] class BlazegraphViewsQueryDummy(
     for {
       view     <- views.fetch(id, project)
       _        <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
-      response <- client.query(Set(id.toString), query, responseType).toCatsIO.adaptError { case e: SparqlClientError =>
+      response <- client.query(Set(id.toString), query, responseType).adaptError { case e: SparqlClientError =>
                     WrappedBlazegraphClientError(e)
                   }
     } yield response

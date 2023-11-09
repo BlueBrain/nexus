@@ -12,7 +12,7 @@ import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
-object BlazegraphClientSetup {
+object BlazegraphClientSetup extends Fixtures {
 
   def resource()(implicit s: Scheduler): Resource[IO, BlazegraphClient] = {
     for {
@@ -24,7 +24,8 @@ object BlazegraphClientSetup {
         httpClient,
         s"http://${container.getHost}:${container.getMappedPort(9999)}/blazegraph",
         None,
-        10.seconds
+        10.seconds,
+        defaultProperties
       )
     }
   }

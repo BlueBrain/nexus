@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object BlazegraphSlowQueryLoggerSuite {
   private val LongQueryThreshold                        = 100.milliseconds
@@ -45,6 +45,15 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
     (logger, store.listForTestingOnly(view))
   }
 
+  private def assertSavedQuery(actual: BlazegraphSlowQuery, failed: Boolean, minDuration: FiniteDuration): Unit = {
+    assertEquals(actual.view, view)
+    assertEquals(actual.query, sparqlQuery)
+    assertEquals(actual.subject, user)
+    assertEquals(actual.failed, failed)
+    assertEquals(actual.instant, Instant.EPOCH)
+    assert(actual.duration >= minDuration)
+  }
+
   test("slow query logged") {
 
     val (logSlowQuery, getLoggedQueries) = fixture
@@ -61,7 +70,8 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
       saved <- getLoggedQueries
     } yield {
       assertEquals(saved.size, 1)
-      val onlyRecord = saved.head
+      assertSavedQuery(saved.head, failed = false, 101.millis)
+      val onlyRecord: BlazegraphSlowQuery = saved.head
       assertEquals(onlyRecord.view, view)
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
@@ -88,13 +98,7 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
     } yield {
       assert(attempt.isLeft)
       assertEquals(saved.size, 1)
-      val onlyRecord = saved.head
-      assertEquals(onlyRecord.view, view)
-      assertEquals(onlyRecord.query, sparqlQuery)
-      assertEquals(onlyRecord.subject, user)
-      assertEquals(onlyRecord.failed, true)
-      assertEquals(onlyRecord.instant, Instant.EPOCH)
-      assert(onlyRecord.duration > 100.milliseconds)
+      assertSavedQuery(saved.head, failed = true, 101.millis)
     }
   }
 

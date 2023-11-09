@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.{Clock, IO}
-import cats.implicits.toFlatMapOps
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.IoOps
@@ -48,14 +48,13 @@ object BlazegraphSlowQueryLogger {
         context: BlazegraphQueryContext,
         isError: Boolean,
         duration: FiniteDuration
-    ): IO[Unit] = {
-      IOInstant.now
-        .flatTap(_ => logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
-        .flatMap { now =>
-          sink
-            .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
-            .handleErrorWith(e => logger.error(e)("error logging blazegraph slow query"))
-        }
-    }
+    ): IO[Unit] =
+      logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'") >>
+        IOInstant.now
+          .flatMap { now =>
+            sink
+              .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
+              .handleErrorWith(e => logger.error(e)("error logging blazegraph slow query"))
+          }
   }
 }

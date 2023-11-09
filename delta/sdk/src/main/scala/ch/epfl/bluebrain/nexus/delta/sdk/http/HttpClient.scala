@@ -9,14 +9,15 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO => BIO, Task, UIO}
+import cats.effect.IO
 import monix.execution.Scheduler
 
 import java.net.UnknownHostException
@@ -34,13 +35,13 @@ trait HttpClient {
     */
   def apply[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A]
 
-  def run[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, cats.effect.IO[A]]): HttpResult[A] =
-    apply(req) { case r if handleResponse.isDefinedAt(r) => handleResponse(r).toBIO[HttpClientError] }
+  def run[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, IO[A]]): IO[A] =
+    apply(req) { case r if handleResponse.isDefinedAt(r) => handleResponse(r).toBIO[HttpClientError] }.toCatsIO
 
   /**
     * Execute the argument request and unmarshal the response Json response.
     */
-  def toJson(req: HttpRequest): HttpResult[Json]                                                                =
+  def toJson(req: HttpRequest): HttpResult[Json]                                            =
     fromJsonTo[Json](req)
 
   /**
@@ -69,7 +70,7 @@ trait HttpClient {
 
 object HttpClient {
 
-  type HttpResult[A] = IO[HttpClientError, A]
+  type HttpResult[A] = BIO[HttpClientError, A]
 
   private val acceptEncoding =
     AcceptEncoding.create(HttpEncodingRange.create(HttpEncodings.gzip), HttpEncodingRange.create(HttpEncodings.deflate))
@@ -103,12 +104,12 @@ object HttpClient {
   )(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient =
     new HttpClient {
 
-      private def decodeResponse(req: HttpRequest, response: HttpResponse): IO[InvalidEncoding, HttpResponse] = {
+      private def decodeResponse(req: HttpRequest, response: HttpResponse): BIO[InvalidEncoding, HttpResponse] = {
         val decoder = response.encoding match {
-          case HttpEncodings.gzip     => IO.pure(Coders.Gzip)
-          case HttpEncodings.deflate  => IO.pure(Coders.Deflate)
-          case HttpEncodings.identity => IO.pure(Coders.NoCoding)
-          case encoding               => IO.raiseError(InvalidEncoding(req, encoding))
+          case HttpEncodings.gzip     => BIO.pure(Coders.Gzip)
+          case HttpEncodings.deflate  => BIO.pure(Coders.Deflate)
+          case HttpEncodings.identity => BIO.pure(Coders.NoCoding)
+          case encoding               => BIO.raiseError(InvalidEncoding(req, encoding))
         }
         decoder.map(_.decodeMessage(response))
       }
@@ -154,7 +155,7 @@ object HttpClient {
       override def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A] =
         apply(req) {
           case resp if resp.status.isSuccess() =>
-            UIO.delay(resp.discardEntityBytes()) >> IO.pure(returnValue)
+            UIO.delay(resp.discardEntityBytes()) >> BIO.pure(returnValue)
         }
 
       private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): HttpResult[A] =
@@ -163,8 +164,8 @@ object HttpClient {
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
           .redeemWith(
-            error => IO.raiseError(HttpUnexpectedError(req, error.getMessage)),
-            consumedString => IO.raiseError(HttpClientError(req, resp.status, consumedString))
+            error => BIO.raiseError(HttpUnexpectedError(req, error.getMessage)),
+            consumedString => BIO.raiseError(HttpClientError(req, resp.status, consumedString))
           )
 
     }

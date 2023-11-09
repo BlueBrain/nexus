@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
@@ -192,7 +193,9 @@ object BlazegraphViewsQuery {
                      }
           qr      <- logSlowQueries(
                        BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
-                       client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+                       client.query(indices, query, responseType).adaptError { case e: SparqlClientError =>
+                         WrappedBlazegraphClientError(e)
+                       }
                      )
         } yield qr
 
