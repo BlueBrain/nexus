@@ -6,16 +6,12 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO => BIO, Task, UIO}
+import monix.bio.{Task, UIO}
 import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 import scala.reflect.ClassTag
 
 trait IOSyntax {
-
-  implicit final def bioFunctorOps[E, A, F[_]: Functor](io: BIO[E, F[A]]): BIOFunctorOps[E, A, F] = new BIOFunctorOps(
-    io
-  )
 
   implicit final def taskSyntaxLogErrors[A](task: Task[A]): TaskOps[A] = new TaskOps(task)
 
@@ -35,19 +31,6 @@ final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
   def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E], timer: Timer[IO]): IO[A] =
     RetryStrategy.use(io.toBIO[E], retryStrategy)
 
-}
-
-final class BIOFunctorOps[E, A, F[_]: Functor](private val io: BIO[E, F[A]]) {
-
-  /**
-    * Map value of [[F]] wrapped in an [[IO]].
-    *
-    * @param f
-    *   the mapping function
-    * @return
-    *   a new [[F]] with value being the result of applying [[f]] to the value of old [[F]]
-    */
-  def mapValue[B](f: A => B): BIO[E, F[B]] = io.map(_.map(f))
 }
 
 final class TaskOps[A](private val task: Task[A]) extends AnyVal {

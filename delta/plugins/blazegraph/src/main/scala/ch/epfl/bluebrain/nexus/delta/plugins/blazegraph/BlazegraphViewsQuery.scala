@@ -125,8 +125,7 @@ object BlazegraphViewsQuery {
                                                  )
                                                )
                                            }
-                                         }
-                                         .toBIO[BlazegraphViewRejection],
+                                         },
                                      xas
                                    )
     } yield new BlazegraphViewsQuery {

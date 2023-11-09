@@ -10,7 +10,6 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
@@ -29,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe._
 import io.circe.syntax._
-import monix.bio.{IO => BIO}
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -104,8 +102,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def existsIndex(index: IndexLabel): IO[Boolean] =
     client.run(Head(endpoint / index.value).withHttpCredentials) {
-      case resp if resp.status == OK       => BIO.pure(true)
-      case resp if resp.status == NotFound => BIO.pure(false)
+      case resp if resp.status == OK       => IO.pure(true)
+      case resp if resp.status == NotFound => IO.pure(false)
     }
 
   /**
