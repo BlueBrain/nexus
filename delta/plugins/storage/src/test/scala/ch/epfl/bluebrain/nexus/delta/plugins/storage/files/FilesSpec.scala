@@ -38,7 +38,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
@@ -50,7 +49,6 @@ import java.net.URLDecoder
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
     with CatsEffectSpec
-    with BioRunContext
     with DoobieScalaTestFixture
     with ConfigFixtures
     with StorageFixtures

@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.testkit
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO => BIO}
-import monix.execution.Scheduler
 
-import java.io.InputStream
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -34,17 +31,6 @@ trait TestHelpers extends ClasspathResourceUtils {
 
     inner("", length)
   }
-
-  /**
-    * Loads the content of the argument classpath resource as an [[InputStream]].
-    *
-    * @param resourcePath
-    *   the path of a resource available on the classpath
-    * @return
-    *   the content of the referenced resource as an [[InputStream]]
-    */
-  final def streamOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): InputStream =
-    bioRunAcceptOrThrow(bioStreamOf(resourcePath))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -102,12 +88,6 @@ trait TestHelpers extends ClasspathResourceUtils {
     */
   final def propertiesOf(resourcePath: String): Map[String, String] =
     runAcceptOrThrow(ioPropertiesOf(resourcePath))
-
-  private def bioRunAcceptOrThrow[A](io: BIO[ClasspathResourceError, A])(implicit s: Scheduler): A =
-    io.attempt.runSyncUnsafe() match {
-      case Left(value)  => throw new IllegalArgumentException(value.toString)
-      case Right(value) => value
-    }
 
   private def runAcceptOrThrow[A](io: IO[A]): A =
     io.attempt.unsafeRunSync() match {

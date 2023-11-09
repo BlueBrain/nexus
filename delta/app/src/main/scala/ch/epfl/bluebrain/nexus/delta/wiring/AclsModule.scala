@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermis
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Acls module wiring config.
@@ -37,7 +36,7 @@ object AclsModule extends ModuleDef {
         timer: Timer[IO]
     ) =>
       acls.AclsImpl(
-        permissions.fetchPermissionSet.toUIO,
+        permissions.fetchPermissionSet,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
         config.acls,

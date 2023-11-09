@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
 import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
@@ -20,7 +19,7 @@ import io.circe.Json
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
   */
-class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateEffectSyntax {
+class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
 
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm

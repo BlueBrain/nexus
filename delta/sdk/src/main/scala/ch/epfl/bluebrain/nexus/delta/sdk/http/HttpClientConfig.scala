@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig.logger
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig.logger
 import pureconfig.generic.semiauto.deriveReader
 
 import scala.annotation.nowarn
@@ -31,7 +30,7 @@ final case class HttpClientConfig(
     *   the retry strategy from the current configuration
     */
   def strategy: RetryStrategy[HttpClientError] =
-    RetryStrategy(retry, isWorthRetrying, RetryStrategy.logError(logger, "http client")(_, _).toUIO)
+    RetryStrategy(retry, isWorthRetrying, RetryStrategy.logError(logger, "http client")(_, _))
 }
 
 object HttpClientConfig {

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -16,13 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
@@ -30,7 +26,6 @@ import scala.concurrent.duration._
 
 class GraphAnalyticsSinkSuite
     extends CatsEffectSuite
-    with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with TestHelpers {
@@ -70,21 +65,18 @@ class GraphAnalyticsSinkSuite
   // File linked by 'resource1', resolved after an update by query
   private val file1     = iri"http://localhost/file1"
 
-  private def loadExpanded(path: String): IO[ExpandedJsonLd] =
-    bioJsonContentOf(path)
-      .flatMap { json =>
-        Task.fromEither(ExpandedJsonLd.expanded(json))
-      }
-      .memoizeOnSuccess
-      .toCatsIO
+  private def loadExpanded(path: String): ExpandedJsonLd =
+    ioJsonContentOf(path).flatMap { json =>
+      IO.fromEither(ExpandedJsonLd.expanded(json))
+    }.accepted
 
   private def getTypes(expandedJsonLd: ExpandedJsonLd): IO[Set[Iri]] =
     IO.pure(expandedJsonLd.cursor.getTypes.getOrElse(Set.empty))
 
   private val findRelationships: IO[Map[Iri, Set[Iri]]] = {
     for {
-      resource1Types <- expanded1.flatMap(getTypes)
-      resource2Types <- expanded2.flatMap(getTypes)
+      resource1Types <- getTypes(expanded1)
+      resource2Types <- getTypes(expanded2)
     } yield Map(
       resource1 -> resource1Types,
       resource2 -> resource2Types,
@@ -105,11 +97,10 @@ class GraphAnalyticsSinkSuite
     SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
 
   test("Push index results") {
-    def indexActive(id: Iri, io: IO[ExpandedJsonLd]) = {
+    def indexActive(id: Iri, expanded: ExpandedJsonLd) = {
       for {
-        expanded <- io
-        types    <- getTypes(expanded)
-        doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
+        types <- getTypes(expanded)
+        doc   <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
         val result =
           Index.active(project, id, remoteContexts, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)

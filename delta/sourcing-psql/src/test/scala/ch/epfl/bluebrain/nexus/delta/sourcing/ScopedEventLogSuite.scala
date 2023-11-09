@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioAssertions
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -30,7 +29,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with Doobie.Fixture {
+class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

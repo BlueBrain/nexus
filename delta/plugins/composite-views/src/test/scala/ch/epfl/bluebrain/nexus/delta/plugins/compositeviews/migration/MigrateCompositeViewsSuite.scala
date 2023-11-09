@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViewsSuite.{loadEvent, loadState}
@@ -24,7 +24,7 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with CatsEffectsClasspathResourceUtils {
+class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with ClasspathResourceUtils {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 
@@ -99,7 +99,7 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture wit
   }
 }
 
-object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
+object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
 
   def extractIdentifiers(json: JsonObject) = IO.fromOption {
     for {

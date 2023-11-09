@@ -31,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
@@ -43,7 +42,6 @@ import java.time.Instant
 class ElasticSearchViewsQuerySuite
     extends CatsEffectSuite
     with Doobie.Fixture
-    with BioRunContext // to use ES client setup fixture
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with TestHelpers

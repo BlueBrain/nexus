@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -286,7 +285,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[IdResolution].from { (defaultViewsQuery: DefaultViewsQuery.Elasticsearch, shifts: ResourceShifts) =>
-    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef).toUIO)
+    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef))
   }
 
   make[IdResolutionRoutes].from {
