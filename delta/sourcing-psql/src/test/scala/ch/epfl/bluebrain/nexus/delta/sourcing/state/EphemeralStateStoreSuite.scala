@@ -41,8 +41,8 @@ class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with 
 
   test("save the states") {
     for {
-      _ <- store.save(message1).transact(xas.writeCE).assert
-      _ <- store.save(message2).transact(xas.writeCE).assert
+      _ <- store.save(message1).transact(xas.write).assertUnit
+      _ <- store.save(message2).transact(xas.write).assertUnit
     } yield ()
   }
 

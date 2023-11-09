@@ -4,6 +4,7 @@ import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.IoOps
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 
@@ -35,9 +36,8 @@ object BlazegraphSlowQueryLogger {
       clock: Clock[IO]
   ): BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
     def apply[A](context: BlazegraphQueryContext, query: IO[A]): IO[A] = {
-      IOInstant
-        .timed(query.attempt)
-        .flatMap { case (outcome, duration) =>
+      query.attempt.timed
+        .flatMap { case (duration, outcome) =>
           IO
             .whenA(duration >= longQueryThreshold)(logSlowQuery(context, outcome.isLeft, duration))
             .flatMap(_ => IO.fromEither(outcome))

@@ -10,11 +10,8 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 abstract class BioSuite
     extends NexusSuite
     with BioRunContext
-    with BioFixtures
-    with BioFunFixtures
     with BioAssertions
     with BIOValues
-    with BIOStreamAssertions
     with CatsIOValues
     with CollectionAssertions
     with EitherAssertions

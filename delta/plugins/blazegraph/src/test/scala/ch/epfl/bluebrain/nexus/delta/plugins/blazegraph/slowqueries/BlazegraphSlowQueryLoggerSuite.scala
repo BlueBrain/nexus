@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLoggerSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
@@ -86,17 +86,17 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
     val (logSlowQuery, getLoggedQueries) = fixture
 
     for {
-      maybeResult <- logSlowQuery(
-                       BlazegraphQueryContext(
-                         view,
-                         sparqlQuery,
-                         user
-                       ),
-                       IO.sleep(101.milliseconds) >> IO.raiseError(new RuntimeException())
-                     ).attempt
-      saved       <- getLoggedQueries
+      attempt <- logSlowQuery(
+                   BlazegraphQueryContext(
+                     view,
+                     sparqlQuery,
+                     user
+                   ),
+                   IO.sleep(101.milliseconds) >> IO.raiseError(new RuntimeException())
+                 ).attempt
+      saved   <- getLoggedQueries
     } yield {
-      assert(maybeResult.isLeft)
+      assert(attempt.isLeft)
       assertEquals(saved.size, 1)
       assertSavedQuery(saved.head, failed = true, 101.millis)
     }

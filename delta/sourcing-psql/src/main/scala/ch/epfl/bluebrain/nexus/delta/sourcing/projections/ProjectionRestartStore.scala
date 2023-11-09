@@ -29,19 +29,19 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implic
     sql"""INSERT INTO public.projection_restarts (name, value, instant, acknowledged)
            |VALUES (${restart.name}, ${restart.asJson} ,${restart.instant}, false)
            |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
 
   def acknowledge(id: Offset): IO[Unit] =
     sql"""UPDATE public.projection_restarts SET acknowledged = true
          |WHERE ordering = ${id.value}
          |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
 
   def deleteExpired(instant: Instant): IO[Unit] =
     sql"""DELETE FROM public.projection_restarts WHERE instant < $instant""".update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .flatTap { deleted =>
         IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted $deleted projection restarts.")))
       }

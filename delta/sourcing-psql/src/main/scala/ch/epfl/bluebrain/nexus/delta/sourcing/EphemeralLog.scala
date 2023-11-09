@@ -75,7 +75,7 @@ object EphemeralLog {
                         .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                           definition.onUniqueViolation(id, command)
                         }
-                        .transact(xas.writeCE)
+                        .transact(xas.write)
           _        <- IO.fromEither(res)
         } yield newState
       }

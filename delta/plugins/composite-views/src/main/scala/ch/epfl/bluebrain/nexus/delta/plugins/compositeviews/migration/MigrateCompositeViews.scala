@@ -36,7 +36,7 @@ final class MigrateCompositeViews(xas: Transactors) {
           _.traverse { case (org, project, id, rev, value) =>
             val migrated = injectRev(value, rev)
             updateEvent(org, project, id, rev, migrated)
-          }.transact(xas.writeCE)
+          }.transact(xas.write)
         }
         .map { list =>
           Option.when(list.nonEmpty)((count + list.size, count + list.size))
@@ -53,7 +53,7 @@ final class MigrateCompositeViews(xas: Transactors) {
           _.traverse { case (org, project, id, tag, rev, value) =>
             val migrated = injectRev(value, rev)
             updateState(org, project, id, tag, migrated)
-          }.transact(xas.writeCE)
+          }.transact(xas.write)
         }
         .map { list =>
           Option.when(list.nonEmpty)((count + list.size, count + list.size))
@@ -78,7 +78,7 @@ object MigrateCompositeViews {
          |LIMIT 500""".stripMargin
       .query[(Label, Label, Iri, Int, Json)]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   private[migration] def updateEvent(org: Label, project: Label, id: Iri, rev: Int, value: Json) =
     sql"""
@@ -111,7 +111,7 @@ object MigrateCompositeViews {
          |LIMIT 500""".stripMargin
       .query[(Label, Label, Iri, Tag, Int, Json)]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   private[migration] def updateState(org: Label, project: Label, id: Iri, tag: Tag, value: Json) =
     sql"""

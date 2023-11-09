@@ -181,7 +181,7 @@ object ResolversImpl {
       sql"SELECT id FROM scoped_states WHERE type = ${Resolvers.entityType} AND org = ${ref.organization} AND project = ${ref.project}  AND id != $self AND (value->'value'->'priority')::int = ${priority.value} "
         .query[Iri]
         .option
-        .transact(xas.readCE)
+        .transact(xas.read)
         .flatMap {
           case Some(other) => IO.raiseError(PriorityAlreadyExists(ref, other, priority))
           case None        => IO.unit

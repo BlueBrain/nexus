@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOStreamAssertions, BioAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioAssertions
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -33,7 +33,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStreamAssertions with Doobie.Fixture {
+class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -157,7 +157,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
       .query[(EntityType, Label, Label, Iri, Tag, Instant)]
       .unique
-      .transact(xas.readCE)
+      .transact(xas.read)
     for {
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).intercept(TagNotFound)
       _ <- query.assertEquals((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))

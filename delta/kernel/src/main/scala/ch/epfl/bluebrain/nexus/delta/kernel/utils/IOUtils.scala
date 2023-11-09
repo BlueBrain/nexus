@@ -16,6 +16,16 @@ trait IOUtils {
     */
   def instant(implicit clock: Clock[UIO]): UIO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+
+  implicit class IoOps[A](val io: IO[A]) {
+    def timed(implicit clock: Clock[IO]): IO[(FiniteDuration, A)] = {
+      for {
+        start  <- clock.monotonic(MILLISECONDS)
+        result <- io
+        finish <- clock.monotonic(MILLISECONDS)
+      } yield ((finish - start).milliseconds, result)
+    }
+  }
 }
 
 object IOUtils extends IOUtils
@@ -23,13 +33,6 @@ object IOUtils extends IOUtils
 trait IOInstant {
   def now(implicit clock: Clock[IO]): IO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
-
-  def timed[A](io: IO[A])(implicit c: Clock[IO]): IO[(A, FiniteDuration)] =
-    for {
-      start  <- c.monotonic(MILLISECONDS)
-      result <- io
-      finish <- c.monotonic(MILLISECONDS)
-    } yield (result, (finish - start).millis)
 }
 
 object IOInstant extends IOInstant

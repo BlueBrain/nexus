@@ -48,7 +48,7 @@ class AclCheckSuite extends CatsEffectSuite {
   List(alice, bob).foreach { caller =>
     test(s"Grant access to alice to  $caller to `proj11` with `resources/read`") {
       for {
-        _ <- aclCheck.authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(caller).assert
+        _ <- aclCheck.authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(caller).assertUnit
         _ <- aclCheck.authorizeFor(AclAddress.Project(proj11), resources.read)(caller).assertEquals(true)
       } yield ()
     }
@@ -75,7 +75,7 @@ class AclCheckSuite extends CatsEffectSuite {
   test("Grant access to alice to `proj11` with both `resources.read` and `resources/write`") {
     aclCheck
       .authorizeForEveryOr(AclAddress.Project(proj11), Set(resources.read, resources.write))(unauthorizedError)(alice)
-      .assert
+      .assertUnit
   }
 
   test("Prevent bob to access `proj11` with both `resources.read` and `resources/write`") {
@@ -90,7 +90,7 @@ class AclCheckSuite extends CatsEffectSuite {
       _ <-
         aclCheck
           .authorizeForEveryOr(AclAddress.Project(proj11), Set(resources.read, resources.write))(unauthorizedError)(bob)
-          .assert
+          .assertUnit
       _ <- aclCheck.subtract(AclAddress.Organization(org1), bobUser -> Set(resources.write))
     } yield ()
   }

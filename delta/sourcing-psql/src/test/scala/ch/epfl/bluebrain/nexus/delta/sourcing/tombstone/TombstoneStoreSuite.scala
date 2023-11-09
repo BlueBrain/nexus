@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.tombstone
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -11,16 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.Cause
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{entityType, SimpleResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 
-class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
+class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -41,14 +41,14 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
 
   private def selectAsCause(id: Iri, tag: Tag) =
     select(id, tag).flatMap {
-      case None       => Task.none
-      case Some(json) => Task.fromEither(json.as[Cause]).map(Some(_))
+      case None       => IO.none
+      case Some(json) => IO.fromEither(json.as[Cause]).map(Some(_))
     }
 
   test("Save a tombstone for the given tag") {
     val tag = UserTag.unsafe("v1")
     for {
-      _ <- TombstoneStore.save(entityType, state, tag).transact(xas.write).assert(())
+      _ <- TombstoneStore.save(entityType, state, tag).transact(xas.write).assertUnit
       _ <- select(id1, tag).assertSome(Cause.deleted.asJson)
     } yield ()
   }
@@ -60,7 +60,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
       _ <- TombstoneStore
              .save(entityType, None, newState)
              .transact(xas.write)
-             .assert(())
+             .assertUnit
       _ <- select(id2, Tag.latest).assertNone
     } yield ()
   }
@@ -72,7 +72,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
       _ <- TombstoneStore
              .save(entityType, Some(state), newState)
              .transact(xas.write)
-             .assert(())
+             .assertUnit
       _ <- select(id2, Tag.latest).assertNone
     } yield ()
   }
@@ -81,7 +81,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val id3      = nxv + "id3"
     val newState = SimpleResource(id3, Set(nxv + "SimpleResource2"), Latest(nxv + "schema"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
       _ <- selectAsCause(id3, Tag.latest).assertSome(
              Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), None)
            )
@@ -92,7 +92,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val id4      = nxv + "id4"
     val newState = SimpleResource(id4, state.types, Latest(nxv + "schema2"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
       _ <- selectAsCause(id4, Tag.latest).assertSome(Cause.diff(Set.empty, Some(state.schema)))
     } yield ()
   }
@@ -101,7 +101,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val id5      = nxv + "id5"
     val newState = SimpleResource(id5, Set(nxv + "SimpleResource2"), Latest(nxv + "schema2"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
       _ <- selectAsCause(id5, Tag.latest).assertSome(
              Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
            )

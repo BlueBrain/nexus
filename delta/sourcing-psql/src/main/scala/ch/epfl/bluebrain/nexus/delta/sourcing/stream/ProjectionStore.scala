@@ -84,7 +84,7 @@ object ProjectionStore {
                |  failed = EXCLUDED.failed,
                |  updated_at = EXCLUDED.updated_at;
                |""".stripMargin.update.run
-            .transact(xas.writeCE)
+            .transact(xas.write)
             .void
         }
 
@@ -99,7 +99,7 @@ object ProjectionStore {
                     updated_at = $instant
                 WHERE name = $name
              """.stripMargin.update.run
-            .transact(xas.writeCE)
+            .transact(xas.write)
             .void
         }
 
@@ -110,20 +110,20 @@ object ProjectionStore {
           .query[ProjectionProgressRow]
           .map(_.progress)
           .option
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       override def delete(name: String): IO[Unit] =
         sql"""DELETE FROM projection_offsets
              |WHERE name = $name;
              |""".stripMargin.update.run
-          .transact(xas.writeCE)
+          .transact(xas.write)
           .void
 
       override def entries: Stream[IO, ProjectionProgressRow] =
         sql"""SELECT * from projection_offsets;"""
           .query[ProjectionProgressRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.readCE)
+          .transact(xas.read)
     }
 
   final case class ProjectionProgressRow(

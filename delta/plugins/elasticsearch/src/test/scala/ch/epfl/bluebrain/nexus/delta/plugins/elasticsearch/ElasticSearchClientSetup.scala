@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.{IO, Resource}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -30,7 +29,7 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
                                }"""
 
   def resource()(implicit s: Scheduler): Resource[IO, ElasticSearchClient] = {
-    (for {
+    for {
       (httpClient, actorSystem) <- HttpClientSetup(compression = true)
       container                 <- ElasticSearchContainer.resource()
     } yield {
@@ -42,7 +41,7 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
         2000,
         emptyResults
       )
-    }).mapK(taskToIoK)
+    }
   }.evalTap { client =>
     client.createIndexTemplate("test_template", template)
   }

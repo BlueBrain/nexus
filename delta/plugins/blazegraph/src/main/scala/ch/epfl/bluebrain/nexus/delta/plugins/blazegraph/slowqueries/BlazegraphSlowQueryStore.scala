@@ -28,7 +28,7 @@ object BlazegraphSlowQueryStore {
         sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query, failed)
              | VALUES(${query.view.project}, ${query.view.viewId}, ${query.instant}, ${query.duration}, ${query.subject.asJson}, ${query.query.value}, ${query.failed})
         """.stripMargin.update.run
-          .transact(xas.writeCE)
+          .transact(xas.write)
           .void
       }
 
@@ -38,7 +38,7 @@ object BlazegraphSlowQueryStore {
            """.stripMargin
           .query[BlazegraphSlowQuery]
           .stream
-          .transact(xas.readCE)
+          .transact(xas.read)
           .compile
           .toList
       }
@@ -47,7 +47,7 @@ object BlazegraphSlowQueryStore {
         sql""" DELETE FROM public.blazegraph_queries
              |WHERE instant < $instant
            """.stripMargin.update.run
-          .transact(xas.writeCE)
+          .transact(xas.write)
           .void
       }
     }

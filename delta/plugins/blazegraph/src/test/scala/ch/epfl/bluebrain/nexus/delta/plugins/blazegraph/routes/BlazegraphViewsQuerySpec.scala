@@ -7,7 +7,6 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
@@ -223,8 +222,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       val proj = view1Proj1.project
       viewsQuery
         .query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon)
-        .toBIO[BlazegraphViewRejection]
-        .terminated[AuthorizationFailed]
+        .rejectedWith[AuthorizationFailed]
     }
 
     "query a deprecated indexed view" in eventually {

@@ -12,11 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -26,7 +25,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class ProjectsStatisticsSuite extends BioSuite with CatsRunContext with Doobie.Fixture with ConfigFixtures {
+class ProjectsStatisticsSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -48,7 +47,7 @@ class ProjectsStatisticsSuite extends BioSuite with CatsRunContext with Doobie.F
     xas
   )
 
-  private lazy val stats = ProjectsStatistics(xas).runSyncUnsafe()
+  private lazy val stats = ProjectsStatistics(xas).accepted
 
   private val org  = Label.unsafe("org")
   private val org2 = Label.unsafe("org2")
@@ -65,7 +64,7 @@ class ProjectsStatisticsSuite extends BioSuite with CatsRunContext with Doobie.F
         cheeseStore.unsafeSave(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
         fruitStore.unsafeSave(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
         cheeseStore.unsafeSave(Cheese(proj2, nxv + "morbier", 3, epoch))
-    ).transact(xas.write).assert(())
+    ).transact(xas.write).assertUnit
   }
 
   test("Return the expected stats for proj1") {

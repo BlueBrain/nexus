@@ -64,11 +64,11 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   private val envelopeUpdated1 = Envelope(PullRequest.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(7L))
 
   private def assertCount(expected: Int) =
-    sql"select count(*) from scoped_states".query[Int].unique.transact(xas.readCE).assertEquals(expected)
+    sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assertEquals(expected)
 
   test("Save state 1, state 2 and state 3 successfully") {
     for {
-      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.writeCE)
+      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.write)
       _ <- assertCount(4)
     } yield ()
   }
@@ -79,7 +79,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Save state 1 and state 3 with user tag successfully") {
     for {
-      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.writeCE)
+      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.write)
       _ <- assertCount(6)
     } yield ()
   }
@@ -118,7 +118,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.unsafeSave(updatedState1).transact(xas.writeCE)
+      _ <- store.unsafeSave(updatedState1).transact(xas.write)
       _ <- assertCount(6)
       _ <- store.get(project1, id1).assertEquals(updatedState1)
     } yield ()
@@ -130,7 +130,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Delete tagged state 3 successfully") {
     for {
-      _ <- store.delete(project2, id1, customTag).transact(xas.writeCE)
+      _ <- store.delete(project2, id1, customTag).transact(xas.write)
       _ <- assertCount(5)
       _ <- store.get(project2, id1, customTag).intercept(TagNotFound)
     } yield ()
@@ -198,7 +198,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Delete state 2 successfully") {
     for {
-      _ <- store.delete(project1, id2, Latest).transact(xas.writeCE)
+      _ <- store.delete(project1, id2, Latest).transact(xas.write)
       _ <- assertCount(4)
       _ <- store.get(project1, id2).intercept(UnknownState)
     } yield ()

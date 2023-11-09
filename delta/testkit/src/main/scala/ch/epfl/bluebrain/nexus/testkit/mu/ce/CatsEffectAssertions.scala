@@ -230,7 +230,7 @@ trait CatsEffectAssertions { self: Assertions =>
       *   IO.unit.assert // OK
       * }}}
       */
-    def assert(implicit loc: Location): IO[Unit] =
+    def assertUnit(implicit loc: Location): IO[Unit] =
       assertIO_(io)
   }
 

@@ -260,7 +260,7 @@ object ScopedStateStore {
         .map(_.isDefined)
 
     override def get(ref: ProjectRef, id: Id): IO[S] =
-      getValue(ref, id, Latest).transact(xas.readCE).flatMap { s =>
+      getValue(ref, id, Latest).transact(xas.read).flatMap { s =>
         IO.fromOption(s)(UnknownState)
       }
 
@@ -269,7 +269,7 @@ object ScopedStateStore {
         value  <- getValue(ref, id, tag)
         exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
-    }.transact(xas.readCE).flatMap { case (s, exists) =>
+    }.transact(xas.read).flatMap { case (s, exists) =>
       IO.fromOption(s)(if (exists) TagNotFound else UnknownState)
     }
 

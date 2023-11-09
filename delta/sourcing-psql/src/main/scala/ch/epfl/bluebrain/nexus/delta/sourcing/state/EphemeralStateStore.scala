@@ -70,7 +70,7 @@ object EphemeralStateStore {
         sql"""SELECT value FROM public.ephemeral_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id"""
           .query[S]
           .option
-          .transact(xas.readCE)
+          .transact(xas.read)
     }
 
 }

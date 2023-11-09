@@ -52,7 +52,7 @@ object GraphAnalyticsStream {
          |""".stripMargin
       .query[(Iri, Option[Json])]
       .to[List]
-      .transact(xas.streamingCE)
+      .transact(xas.streaming)
       .map { l =>
         l.foldLeft(emptyMapType) { case (acc, (id, json)) =>
           val types = json.flatMap(_.as[Set[Iri]].toOption).getOrElse(Set.empty)
