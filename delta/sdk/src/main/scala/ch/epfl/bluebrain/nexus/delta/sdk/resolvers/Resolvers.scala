@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -395,7 +394,7 @@ object Resolvers {
   def definition(validatePriority: ValidatePriority)(implicit clock: Clock[IO]): ResolverDefinition =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validatePriority)(_, _).toBIO[ResolverRejection], next),
+      StateMachine(None, evaluate(validatePriority)(_, _), next),
       ResolverEvent.serializer,
       ResolverState.serializer,
       Tagger[ResolverEvent](

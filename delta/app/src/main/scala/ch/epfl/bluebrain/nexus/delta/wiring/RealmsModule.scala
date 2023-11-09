@@ -31,12 +31,13 @@ object RealmsModule extends ModuleDef {
     (
         cfg: AppConfig,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>
       val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock, timer)
+      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock, contextShift, timer)
   }
 
   make[RealmsRoutes].from {

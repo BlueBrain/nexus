@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import monix.bio.IO
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -23,7 +23,7 @@ import scala.annotation.nowarn
 object Arithmetic {
   val entityType: EntityType = EntityType("calculator")
 
-  val stateMachine: StateMachine[Total, ArithmeticCommand, ArithmeticEvent, ArithmeticRejection] = StateMachine(
+  val stateMachine: StateMachine[Total, ArithmeticCommand, ArithmeticEvent] = StateMachine(
     None,
     (state: Option[Total], command: ArithmeticCommand) =>
       (state, command) match {
@@ -33,7 +33,7 @@ object Arithmetic {
         case (Some(r), Subtract(value)) =>
           val newValue = r.value - value
           IO.raiseWhen(newValue < 0)(NegativeTotal(newValue)).as(Minus(r.rev + 1, value))
-        case (_, Boom(message))         => IO.terminate(new RuntimeException(message))
+        case (_, Boom(message))         => IO.raiseError(new RuntimeException(message))
         case (_, Never)                 => IO.never
       },
     (state: Option[Total], event: ArithmeticEvent) =>

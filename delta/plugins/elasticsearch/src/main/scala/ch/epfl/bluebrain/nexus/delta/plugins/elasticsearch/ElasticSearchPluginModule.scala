@@ -106,6 +106,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         uuidF: UUIDF
     ) =>
@@ -118,7 +119,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas,
         files.defaultMapping,
         files.defaultSettings
-      )(api, clock, timer, uuidF)
+      )(api, clock, contextShift, timer, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {

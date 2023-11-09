@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
-import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityType, labelId}
@@ -17,8 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 final class PermissionsImpl private (
     override val minimum: Set[Permission],
     log: PermissionsLog
-) extends Permissions
-    with MigrateEffectSyntax {
+) extends Permissions {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -86,6 +84,6 @@ object PermissionsImpl {
   final def apply(
       config: PermissionsConfig,
       xas: Transactors
-  )(implicit clock: Clock[IO], timer: Timer[IO]): Permissions =
+  )(implicit clock: Clock[IO], contextShift: ContextShift[IO], timer: Timer[IO]): Permissions =
     new PermissionsImpl(config.minimum, GlobalEventLog(Permissions.definition(config.minimum), config.eventLog, xas))
 }

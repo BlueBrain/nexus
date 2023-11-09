@@ -56,6 +56,7 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         baseUri: BaseUri,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         uuidF: UUIDF
     ) =>
@@ -71,7 +72,7 @@ object ProjectsModule extends ModuleDef {
           mappings.merge,
           config.projects,
           xas
-        )(baseUri, clock, timer, uuidF)
+        )(baseUri, clock, contextShift, timer, uuidF)
       )
   }
 

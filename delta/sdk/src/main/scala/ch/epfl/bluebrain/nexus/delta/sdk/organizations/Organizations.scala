@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
@@ -202,8 +201,7 @@ object Organizations {
       entityType,
       StateMachine(
         None,
-        (state: Option[OrganizationState], command: OrganizationCommand) =>
-          evaluate(state, command).toBIO[OrganizationRejection],
+        (state: Option[OrganizationState], command: OrganizationCommand) => evaluate(state, command),
         next
       ),
       OrganizationEvent.serializer,

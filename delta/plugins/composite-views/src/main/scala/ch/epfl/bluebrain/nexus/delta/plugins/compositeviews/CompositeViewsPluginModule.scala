@@ -135,7 +135,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         uuidF: UUIDF,
         clock: Clock[IO],
-        timer: Timer[IO]
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       CompositeViews(
         fetchContext.mapRejection(ProjectContextRejection),
@@ -147,6 +148,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api,
         clock,
         timer,
+        cs,
         uuidF
       )
   }

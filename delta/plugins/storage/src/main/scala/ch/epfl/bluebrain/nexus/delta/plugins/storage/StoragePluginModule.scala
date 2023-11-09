@@ -95,6 +95,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           api,
           clock,
           timer,
+          cs,
           uuidF
         )
     }

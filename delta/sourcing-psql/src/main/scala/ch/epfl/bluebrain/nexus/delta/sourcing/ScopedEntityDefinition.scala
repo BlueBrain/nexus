@@ -25,9 +25,9 @@ import doobie.{Get, Put}
   * @param onUniqueViolation
   *   to handle gracefully unique constraint violations in database by a rejection
   */
-final case class ScopedEntityDefinition[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+final case class ScopedEntityDefinition[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
     tpe: EntityType,
-    stateMachine: StateMachine[S, Command, E, Rejection],
+    stateMachine: StateMachine[S, Command, E],
     eventSerializer: Serializer[Id, E],
     stateSerializer: Serializer[Id, S],
     tagger: Tagger[E],
@@ -40,9 +40,9 @@ object ScopedEntityDefinition {
   /**
     * Creates an entity definition which is not meant to be tagged
     */
-  def untagged[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+  def untagged[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
       tpe: EntityType,
-      stateMachine: StateMachine[S, Command, E, Rejection],
+      stateMachine: StateMachine[S, Command, E],
       eventSerializer: Serializer[Id, E],
       stateSerializer: Serializer[Id, S],
       onUniqueViolation: (Id, Command) => Rejection

@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, ContextShift, IO}
-import cats.implicits.catsSyntaxFlatMapOps
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,10 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCre
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import fs2.Stream
 
 trait Projects {
@@ -184,7 +183,9 @@ object Projects {
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
     val f: FetchOrganization = label =>
-      orgs.fetchActiveOrganization(label).toBIO[OrganizationRejection].mapError(WrappedOrganizationRejection(_))
+      orgs
+        .fetchActiveOrganization(label)
+        .adaptError { case o: OrganizationRejection => WrappedOrganizationRejection(o) }
     evaluate(f, validateDeletion)(state, command)
   }
 
@@ -284,7 +285,7 @@ object Projects {
   ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion)(_, _).toBIO[ProjectRejection], next),
+      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
       onUniqueViolation = (id: ProjectRef, c: ProjectCommand) =>

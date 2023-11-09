@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -58,14 +57,16 @@ object ArchivePluginModule extends ModuleDef {
         uuidF: UUIDF,
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[IO],
-        ec: EvaluationExecution
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas)(
         api,
         uuidF,
         rcr,
         clock,
-        ec
+        timer,
+        cs
       )
   }
 

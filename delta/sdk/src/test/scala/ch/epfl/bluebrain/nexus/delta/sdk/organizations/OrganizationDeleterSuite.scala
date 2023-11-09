@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl
@@ -20,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
-import monix.bio.{IO => BIO}
 import munit.AnyFixture
 
 import java.util.UUID
@@ -31,9 +29,9 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
   private val org2 = Label.unsafe("org2")
 
   private def fetchOrg: FetchOrganization = {
-    case `org1` => BIO.pure(Organization(org1, UUID.randomUUID(), None))
-    case `org2` => BIO.pure(Organization(org2, UUID.randomUUID(), None))
-    case other  => BIO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case `org1` => IO.pure(Organization(org1, UUID.randomUUID(), None))
+    case `org2` => IO.pure(Organization(org2, UUID.randomUUID(), None))
+    case other  => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
@@ -48,7 +46,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
   private lazy val orgs            = OrganizationsImpl(Set(), orgConfig, xas)
   private val permission           = Permissions.resources.read
-  private lazy val acls            = AclsImpl(BIO.pure(Set(permission)), _ => BIO.unit, Set(), aclsConfig, xas)
+  private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas)
 
   implicit val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
   implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
