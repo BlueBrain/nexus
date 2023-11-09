@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
@@ -72,7 +70,7 @@ class GraphAnalyticsSinkSuite
 
   private def loadExpanded(path: String): ExpandedJsonLd =
     ioJsonContentOf(path).flatMap { json =>
-      Task.fromEither(ExpandedJsonLd.expanded(json))
+      IO.fromEither(ExpandedJsonLd.expanded(json))
     }.accepted
 
   private def getTypes(expandedJsonLd: ExpandedJsonLd): IO[Set[Iri]] =
