@@ -148,6 +148,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           xas: Transactors,
           api: JsonLdApi,
           clock: Clock[IO],
+          contextShift: ContextShift[IO],
           timer: Timer[IO],
           uuidF: UUIDF
       ) =>
@@ -159,7 +160,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config.eventLog,
           config.prefix,
           xas
-        )(api, clock, timer, uuidF)
+        )(api, clock, contextShift, timer, uuidF)
     }
 
   make[BlazegraphCoordinator].fromEffect {

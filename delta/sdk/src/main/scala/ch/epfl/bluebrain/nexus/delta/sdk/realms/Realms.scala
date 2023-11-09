@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -20,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.{IO => BIO}
 
 /**
   * Operations pertaining to managing realms.
@@ -209,11 +207,9 @@ object Realms {
       wellKnown: Uri => IO[WellKnown],
       openIdExists: (Label, Uri) => IO[Unit]
   )(implicit clock: Clock[IO]): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] = {
-    def evaluateMonix(state: Option[RealmState], cmd: RealmCommand): BIO[RealmRejection, RealmEvent] =
-      evaluate(wellKnown, openIdExists)(state, cmd).toBIO[RealmRejection]
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluateMonix, next),
+      StateMachine(None, evaluate(wellKnown, openIdExists), next),
       RealmEvent.serializer,
       RealmState.serializer,
       onUniqueViolation = (id: Label, c: RealmCommand) =>

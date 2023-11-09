@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{IO, Timer}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.sqlstate
@@ -187,7 +186,7 @@ object ScopedEventLog {
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
       definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
@@ -204,13 +203,13 @@ object ScopedEventLog {
       entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
-      stateMachine: StateMachine[S, Command, E, Rejection],
+      stateMachine: StateMachine[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
       extractDependencies: S => Option[Set[DependsOn]],
       maxDuration: FiniteDuration,
       xas: Transactors
-  ): ScopedEventLog[Id, S, Command, E, Rejection] =
+  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
       override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[S] =
@@ -236,7 +235,7 @@ object ScopedEventLog {
           notFound: => R,
           invalidRevision: (Int, Int) => R
       ): IO[S] =
-        stateMachine.computeState(eventStore.history(ref, id, rev).translate(ioToTaskK)).toCatsIO.flatMap {
+        stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)
@@ -250,8 +249,7 @@ object ScopedEventLog {
               IO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
-                .computeState(eventStore.history(ref, id, Some(rev)).translate(ioToTaskK))
-                .toCatsIO
+                .computeState(eventStore.history(ref, id, Some(rev)))
                 .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
 
@@ -298,7 +296,7 @@ object ScopedEventLog {
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
-          result        <- stateMachine.evaluate(originalState, command, maxDuration).toCatsIO
+          result        <- stateMachine.evaluate(originalState, command, maxDuration)
           _             <- persist(result._1, originalState, result._2)
         } yield result
       }.adaptError {
@@ -309,7 +307,7 @@ object ScopedEventLog {
 
       override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
         stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
-          stateMachine.evaluate(state, command, maxDuration).toCatsIO
+          stateMachine.evaluate(state, command, maxDuration)
         }
 
       override def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E] =

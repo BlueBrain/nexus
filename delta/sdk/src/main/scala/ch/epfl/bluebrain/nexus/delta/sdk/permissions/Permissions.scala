@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
 
 import java.time.Instant
@@ -314,8 +313,7 @@ object Permissions {
       entityType,
       StateMachine(
         Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
-          evaluate(minimum)(state.getOrElse(initial), cmd).toBIO[PermissionsRejection],
+        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd),
         (state: Option[PermissionsState], event: PermissionsEvent) =>
           Some(next(minimum)(state.getOrElse(initial), event))
       ),

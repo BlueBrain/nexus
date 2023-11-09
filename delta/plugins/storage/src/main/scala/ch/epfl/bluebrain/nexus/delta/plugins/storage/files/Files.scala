@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -733,7 +732,7 @@ object Files {
   ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(_, _).toBIO[FileRejection], next),
+      StateMachine(None, evaluate(_, _), next),
       FileEvent.serializer,
       FileState.serializer,
       Tagger[FileEvent](

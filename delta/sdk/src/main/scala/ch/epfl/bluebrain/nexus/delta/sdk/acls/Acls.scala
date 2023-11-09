@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
@@ -344,7 +343,7 @@ object Acls {
   )(implicit clock: Clock[IO]): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms)(_, _).toBIO[AclRejection], next),
+      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms)(_, _), next),
       AclEvent.serializer,
       AclState.serializer,
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>
@@ -360,7 +359,7 @@ object Acls {
   def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
     override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] = {
       val report = ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
-      acls.purge(project).toTask.as(report)
+      acls.purge(project).as(report)
     }
   }
 }

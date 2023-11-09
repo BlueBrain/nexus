@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
@@ -27,7 +27,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.concurrent.Queue
 import io.circe.Decoder
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
@@ -205,10 +204,9 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with Doobie
 
   test("Stream continuously the current states") {
     for {
-      queue <- Queue.unbounded[Task, Envelope[PullRequestState]]
+      queue <- Queue.unbounded[IO, Envelope[PullRequestState]]
       _     <- eventLog
                  .states(Scope.root, Offset.Start)
-                 .translate(ioToTaskK)
                  .through(queue.enqueue)
                  .compile
                  .drain

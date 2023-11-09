@@ -51,6 +51,7 @@ object SchemasModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         uuidF: UUIDF
     ) =>
@@ -61,7 +62,7 @@ object SchemasModule extends ModuleDef {
         validate,
         config.schemas,
         xas
-      )(api, clock, timer, uuidF)
+      )(api, clock, contextShift, timer, uuidF)
   }
 
   make[SchemaImports].from {

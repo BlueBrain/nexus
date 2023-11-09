@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInP
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -60,8 +59,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       IO.pure(Source.empty)
   }
 
-  implicit val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
-  private lazy val archives            = Archives(fetchContext, download, cfg, xas)
+  private lazy val archives = Archives(fetchContext, download, cfg, xas)
 
   "An Archives module" should {
     "create an archive from source" in {
