@@ -4,8 +4,8 @@ import cats.effect.IO
 import cats.implicits.toFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
@@ -14,7 +14,7 @@ trait DoobieScalaTestFixture
     with PostgresDocker
     with TestHelpers
     with CatsIOValues
-    with IOFixedClock {
+    with FixedClock {
 
   self: Suite with CatsRunContext =>
 

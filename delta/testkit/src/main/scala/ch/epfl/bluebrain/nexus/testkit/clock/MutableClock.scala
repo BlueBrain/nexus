@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.clock
 
 import cats.effect.concurrent.Ref
 import cats.effect.{Clock, IO, Resource}
@@ -23,6 +23,6 @@ object MutableClock {
 
   trait Fixture {
     self: CatsEffectSuite =>
-    val clock: ResourceFixture.IOFixture[MutableClock] = suiteLocalFixture
+    val mutableClockFixture: ResourceFixture.IOFixture[MutableClock] = suiteLocalFixture
   }
 }

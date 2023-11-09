@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioRunContext, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValues, NexusSuite}
 import monix.bio.IO
@@ -16,7 +17,7 @@ abstract class BioSuite
     with CollectionAssertions
     with EitherAssertions
     with EitherValues
-    with IOFixedClock {
+    with FixedClock {
 
   protected val ioTimeout: FiniteDuration = 45.seconds
 
