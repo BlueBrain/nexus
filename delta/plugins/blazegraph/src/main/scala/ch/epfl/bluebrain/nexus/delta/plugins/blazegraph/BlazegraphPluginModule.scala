@@ -53,8 +53,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[HttpClient].named("http-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.indexingClient, as.classicSystem, sc)
+    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler, cs: ContextShift[IO]) =>
+      HttpClient()(cfg.indexingClient, as.classicSystem, sc, cs)
   }
 
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
@@ -83,14 +83,20 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
+        as.classicSystem,
+        timer,
+        cs
+      )
   }
 
   make[HttpClient].named("http-query-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.queryClient, as.classicSystem, sc)
+    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler, cs: ContextShift[IO]) =>
+      HttpClient()(cfg.queryClient, as.classicSystem, sc, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
@@ -98,9 +104,15 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-query-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
+        as.classicSystem,
+        timer,
+        cs
+      )
   }
 
   make[ValidateBlazegraphView].from {

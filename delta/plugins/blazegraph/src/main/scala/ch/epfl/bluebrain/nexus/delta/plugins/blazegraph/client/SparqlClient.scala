@@ -7,7 +7,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
@@ -91,7 +90,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
       reqEndpoint = endpoint(index).withQuery(queryOpt.getOrElse(Query.Empty))
       req         = Post(reqEndpoint, formData).withHttpCredentials
       result     <-
-        client.discardBytes(req, ()).toCatsIO.adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
+        client.discardBytes(req, ()).adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
     } yield result
   }
 
@@ -152,10 +151,14 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         val req = Post(endpoint(index), FormData("query" -> q.value))
           .withHeaders(accept(SparqlResultsJson.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
-        client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError).map(results ++ _)
+        client
+          .fromJsonTo[SparqlResults](req)
+          .adaptError { case e: HttpClientError =>
+            WrappedHttpClientError(e)
+          }
+          .map(results ++ _)
       }
       .map(SparqlResultsResponse)
-      .toCatsIO
 
   private def sparqlXmlResultsResponse(
       indices: Iterable[String],
@@ -167,18 +170,22 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         val req = Post(endpoint(index), FormData("query" -> q.value))
           .withHeaders(accept(SparqlResultsXml.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
-        client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
-          elem match {
-            case Some(root) =>
-              val results = (root \ "results").collect { case results: Elem =>
-                results.copy(child = results.child ++ nodeSeq \\ "result")
-              }
-              Some(root.copy(child = root.child.filterNot(_.label == "results") ++ results))
-            case None       => nodeSeq.headOption.collect { case root: Elem => root }
+        client
+          .fromEntityTo[NodeSeq](req)
+          .adaptError { case e: HttpClientError =>
+            WrappedHttpClientError(e)
           }
-        }
+          .map { nodeSeq =>
+            elem match {
+              case Some(root) =>
+                val results = (root \ "results").collect { case results: Elem =>
+                  results.copy(child = results.child ++ nodeSeq \\ "result")
+                }
+                Some(root.copy(child = root.child.filterNot(_.label == "results") ++ results))
+              case None       => nodeSeq.headOption.collect { case root: Elem => root }
+            }
+          }
       }
-      .toCatsIO
       .map {
         case Some(elem) => SparqlXmlResultsResponse(elem)
         case None       => SparqlXmlResultsResponse(NodeSeq.Empty)
@@ -196,10 +203,11 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
           .withHttpCredentials
         client
           .toJson(req)
-          .mapError(WrappedHttpClientError)
+          .adaptError { case e: HttpClientError =>
+            WrappedHttpClientError(e)
+          }
           .map(results ++ _.arrayOrObject(Vector.empty[Json], identity, obj => Vector(obj.asJson)))
       }
-      .toCatsIO
       .map(vector => SparqlJsonLdResponse(Json.arr(vector: _*)))
 
   private def sparqlNTriplesResponse(
@@ -212,9 +220,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         val req = Post(endpoint(index), FormData("query" -> q.value))
           .withHeaders(accept(SparqlNTriples.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
-        client.fromEntityTo[String](req).mapError(WrappedHttpClientError).map(s => results ++ NTriples(s, BNode.random))
+        client
+          .fromEntityTo[String](req)
+          .adaptError { case e: HttpClientError =>
+            WrappedHttpClientError(e)
+          }
+          .map(s => results ++ NTriples(s, BNode.random))
       }
-      .toCatsIO
       .map(SparqlNTriplesResponse)
 
   private def sparqlRdfXmlResponse(
@@ -227,14 +239,18 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         val req = Post(endpoint(index), FormData("query" -> q.value))
           .withHeaders(accept(SparqlRdfXml.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
-        client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
-          elem match {
-            case Some(root) => Some(root.copy(child = root.child ++ nodeSeq \ "_"))
-            case None       => nodeSeq.headOption.collect { case root: Elem => root }
+        client
+          .fromEntityTo[NodeSeq](req)
+          .adaptError { case e: HttpClientError =>
+            WrappedHttpClientError(e)
           }
-        }
+          .map { nodeSeq =>
+            elem match {
+              case Some(root) => Some(root.copy(child = root.child ++ nodeSeq \ "_"))
+              case None       => nodeSeq.headOption.collect { case root: Elem => root }
+            }
+          }
       }
-      .toCatsIO
       .map {
         case Some(elem) => SparqlRdfXmlResponse(elem)
         case None       => SparqlRdfXmlResponse(NodeSeq.Empty)

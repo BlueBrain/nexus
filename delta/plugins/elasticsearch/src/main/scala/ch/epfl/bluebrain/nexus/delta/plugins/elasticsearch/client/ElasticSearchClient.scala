@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
@@ -40,7 +40,9 @@ import scala.reflect.ClassTag
 class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int, esEmptyResults: EmptyResults)(
     implicit
     credentials: Option[BasicHttpCredentials],
-    as: ActorSystem
+    as: ActorSystem,
+    timer: Timer[IO],
+    cs: ContextShift[IO]
 ) {
   import as.dispatcher
   private val logger: Logger                                        = Logger[ElasticSearchClient]
@@ -89,7 +91,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       .timeout(3.seconds)
       .redeem(
         _ => ServiceDescription.unresolved(serviceName),
-        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
+        _.copy(name = serviceName)
       )
 
   /**
@@ -223,7 +225,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 
       client
         .toJson(req)
-        .toCatsIO
         .attemptNarrow[HttpClientError]
         .flatMap {
           case Left(e)     => IO.fromEither(BulkResponse(e)).orRaise(e)
@@ -239,7 +240,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   def createScript(id: String, content: String): IO[Unit] = {
     val payload = Json.obj("script" -> Json.obj("lang" -> "painless".asJson, "source" -> content.asJson))
     val req     = Put(endpoint / scriptPath / UrlUtils.encode(id), payload).withHttpCredentials
-    client.toJson(req).toCatsIO.flatMap { json =>
+    client.toJson(req).flatMap { json =>
       IO.raiseWhen(!json.hcursor.get[Boolean]("acknowledged").contains(true))(
         HttpClientStatusError(req, BadRequest, json.noSpaces)
       )
@@ -260,7 +261,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     val updateEndpoint = (endpoint / indexPath / updateByQueryPath).withQuery(Uri.Query(defaultUpdateByQuery))
     val req            = Post(updateEndpoint, q.build).withHttpCredentials
     for {
-      json   <- client.toJson(req).toCatsIO
+      json   <- client.toJson(req)
       taskId <-
         IO.fromEither(json.hcursor.get[String]("task")).orRaise(HttpClientStatusError(req, BadRequest, json.noSpaces))
       taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
@@ -313,7 +314,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 
       client
         .toJson(req)
-        .toCatsIO
         .flatMap { json =>
           IO.fromOption(json.hcursor.downField("docs").focus.flatMap(_.asArray).map {
             _.mapFilter { r =>
@@ -338,7 +338,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def count(index: String): IO[Long] = {
     val req = Get(endpoint / index / countPath).withHttpCredentials
-    client.toJson(req).toCatsIO.flatMap { json =>
+    client.toJson(req).flatMap { json =>
       val count = json.hcursor.downField("count").focus.flatMap(_.asNumber.flatMap(_.toLong))
       IO.fromOption(count)(
         HttpClientStatusError(req, BadRequest, json.noSpaces)

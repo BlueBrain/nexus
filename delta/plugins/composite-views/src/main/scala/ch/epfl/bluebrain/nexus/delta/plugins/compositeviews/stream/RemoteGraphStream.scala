@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.MissingPredicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -54,7 +53,7 @@ final class RemoteGraphStream(
 
   private def populateElem(remote: RemoteProjectSource, elem: Elem[Unit]): IO[Elem[GraphResource]] =
     elem.evalMapFilter { _ =>
-      deltaClient.resourceAsNQuads(remote, elem.id).toCatsIO.flatMap {
+      deltaClient.resourceAsNQuads(remote, elem.id).flatMap {
         _.traverse { nquads => fromNQuads(elem, remote.project, nquads, metadataPredicates) }
       }
     }
@@ -65,7 +64,7 @@ final class RemoteGraphStream(
     *   the composite view source
     */
   def remaining(source: RemoteProjectSource, offset: Offset): IO[RemainingElems] =
-    deltaClient.remaining(source, offset).toCatsIO
+    deltaClient.remaining(source, offset)
 
 }
 

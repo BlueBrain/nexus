@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -38,11 +38,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.execution.Scheduler
-import org.scalatest.{Assertion, DoNotDiscover}
 import org.scalatest.concurrent.Eventually
+import org.scalatest.{Assertion, DoNotDiscover}
 
 import java.net.URLDecoder
 
@@ -50,6 +50,7 @@ import java.net.URLDecoder
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
     with CatsEffectSpec
+    with BioRunContext
     with DoobieScalaTestFixture
     with ConfigFixtures
     with StorageFixtures
@@ -57,15 +58,15 @@ class FilesSpec(docker: RemoteStorageDocker)
     with RemoteContextResolutionFixture
     with FileFixtures
     with Eventually {
-  implicit private val sc: Scheduler = Scheduler.global
 
   private val realm = Label.unsafe("myrealm")
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
   "The Files operations bundle" when {
+    implicit val hcc: HttpClientConfig                   = httpClientConfig
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
+    implicit val httpClient: HttpClient                  = HttpClient()
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
     val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)

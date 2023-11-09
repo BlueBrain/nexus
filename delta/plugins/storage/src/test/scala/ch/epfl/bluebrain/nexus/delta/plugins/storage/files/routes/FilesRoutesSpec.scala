@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -55,7 +55,8 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-  val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
+  implicit val hcc: HttpClientConfig                   = httpClientConfig
+  val httpClient: HttpClient                           = HttpClient()
   val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.anonymousForTest
   val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 

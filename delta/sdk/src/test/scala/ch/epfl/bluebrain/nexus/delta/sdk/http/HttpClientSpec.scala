@@ -7,6 +7,8 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
+import cats.effect.IO
+import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.OnceStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpSingleRequest
@@ -14,30 +16,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusE
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSpec.{Count, Value}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientWorthRetry.onServerError
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.generic.semiauto._
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
-import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 
 class HttpClientSpec
     extends TestKit(ActorSystem("HttpClientSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BIOValues
+    with CatsEffectSpec
     with CirceLiteral
-    with TestHelpers
     with ScalaFutures
     with BeforeAndAfterEach
     with EitherValues {
@@ -68,25 +64,25 @@ class HttpClientSpec
   "An Http client" should {
 
     val httpSingleReq = new HttpSingleRequest {
-      override def execute(request: HttpRequest): Task[HttpResponse] =
+      override def execute(request: HttpRequest): IO[HttpResponse] =
         request.uri match {
           case `getUri`         =>
-            Task.delay(count.reqGetValue.incrementAndGet()) >>
-              Task(response(HttpEntity(`application/json`, value1.asJson.noSpaces)))
+            IO.delay(count.reqGetValue.incrementAndGet()) >>
+              IO.delay(response(HttpEntity(`application/json`, value1.asJson.noSpaces)))
           case `streamUri`      =>
-            Task.delay(count.reqStreamValues.incrementAndGet()) >>
-              Task(response(HttpEntity(`application/octet-stream`, toSource(List(value1.asJson, value2.asJson)))))
+            IO.delay(count.reqStreamValues.incrementAndGet()) >>
+              IO.delay(response(HttpEntity(`application/octet-stream`, toSource(List(value1.asJson, value2.asJson)))))
           case `clientErrorUri` =>
-            Task.delay(count.reqClientError.incrementAndGet()) >>
-              Task(response(HttpEntity(`application/json`, json"""{"error": "client"}""".noSpaces), BadRequest))
+            IO.delay(count.reqClientError.incrementAndGet()) >>
+              IO.delay(response(HttpEntity(`application/json`, json"""{"error": "client"}""".noSpaces), BadRequest))
           case `serverErrorUri` =>
-            Task.delay(count.reqServerError.incrementAndGet()) >>
-              Task(
+            IO.delay(count.reqServerError.incrementAndGet()) >>
+              IO.delay(
                 response(HttpEntity(`application/json`, json"""{"error": "server"}""".noSpaces), InternalServerError)
               )
           case _                =>
-            Task.delay(count.reqOtherError.incrementAndGet()) >>
-              Task.raiseError(new IllegalArgumentException("wrong request"))
+            IO.delay(count.reqOtherError.incrementAndGet()) >>
+              IO.raiseError(new IllegalArgumentException("wrong request"))
         }
     }
 

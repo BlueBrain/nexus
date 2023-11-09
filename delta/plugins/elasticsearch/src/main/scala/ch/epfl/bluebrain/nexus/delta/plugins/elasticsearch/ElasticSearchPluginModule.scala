@@ -55,7 +55,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem[Nothing], sc: Scheduler) => HttpClient()(httpConfig, as.classicSystem, sc)
+    (as: ActorSystem[Nothing], sc: Scheduler, cs: ContextShift[IO]) =>
+      HttpClient()(httpConfig, as.classicSystem, sc, cs)
   }
 
   make[ElasticSearchClient].from {
@@ -63,11 +64,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cfg: ElasticSearchViewsConfig,
         client: HttpClient @Id("elasticsearch-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         files: ElasticSearchFiles
     ) =>
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength, files.emptyResults)(
         cfg.credentials,
-        as.classicSystem
+        as.classicSystem,
+        timer,
+        cs
       )
   }
 
