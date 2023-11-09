@@ -33,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.DurationInt
@@ -106,7 +105,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     new JsonLdJavaApi(appCfg.jsonLdApi)(contextShift)
   }
 
-  make[Clock[UIO]].from(Clock[UIO])
   make[Clock[IO]].from(Clock.create[IO])
   make[UUIDF].from(UUIDF.random)
   make[JsonKeyOrdering].from(
