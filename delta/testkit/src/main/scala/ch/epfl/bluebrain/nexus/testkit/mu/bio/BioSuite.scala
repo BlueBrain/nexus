@@ -12,7 +12,6 @@ abstract class BioSuite
     extends NexusSuite
     with BioRunContext
     with BioAssertions
-    with BIOValues
     with CatsIOValues
     with CollectionAssertions
     with EitherAssertions

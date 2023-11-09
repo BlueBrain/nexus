@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOValues, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
@@ -24,7 +24,6 @@ class StoragesStatisticsSuite
     extends CatsEffectSuite
     with BioRunContext
     with ElasticSearchClientSetup.Fixture
-    with BIOValues
     with SupervisorSetup.Fixture
     with TestHelpers
     with Fixtures {
