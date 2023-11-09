@@ -61,8 +61,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], ec: ExecutionContext, cs: ContextShift[IO]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, ec, cs)
+  make[HttpClient].named("storage").from {
+    (as: ActorSystem[Nothing], ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]) =>
+      HttpClient.noRetry(compression = false)(as.classicSystem, ec, timer, cs)
   }
 
   make[Storages]

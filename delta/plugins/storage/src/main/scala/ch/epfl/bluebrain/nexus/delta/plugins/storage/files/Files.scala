@@ -66,6 +66,7 @@ final class Files(
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem,
+    timer: Timer[IO],
     contextShift: ContextShift[IO]
 ) {
 
@@ -497,7 +498,7 @@ final class Files(
                              case DigestNotComputed(_)                                                => true
                              case _                                                                   => false
                            },
-                           RetryStrategy.logError(logger, "file attributes update")(_, _).toBIOThrowable
+                           RetryStrategy.logError(logger, "file attributes update")(_, _)
                          )
                        }
       // We cache storage information

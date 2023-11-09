@@ -54,8 +54,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[HttpClient].named("http-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], ec: ExecutionContext, cs: ContextShift[IO]) =>
-      HttpClient()(cfg.indexingClient, as.classicSystem, ec, cs)
+    (
+        cfg: BlazegraphViewsConfig,
+        as: ActorSystem[Nothing],
+        ec: ExecutionContext,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      HttpClient()(cfg.indexingClient, as.classicSystem, ec, timer, cs)
   }
 
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
@@ -96,8 +102,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[HttpClient].named("http-query-client").from {
-    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], ec: ExecutionContext, cs: ContextShift[IO]) =>
-      HttpClient()(cfg.queryClient, as.classicSystem, ec, cs)
+    (
+        cfg: BlazegraphViewsConfig,
+        as: ActorSystem[Nothing],
+        ec: ExecutionContext,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
+    ) =>
+      HttpClient()(cfg.queryClient, as.classicSystem, ec, timer, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
