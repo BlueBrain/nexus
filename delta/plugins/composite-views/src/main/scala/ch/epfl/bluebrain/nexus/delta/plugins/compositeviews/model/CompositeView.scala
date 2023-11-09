@@ -116,6 +116,7 @@ object CompositeView {
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+    import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)
