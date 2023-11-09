@@ -20,8 +20,6 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
-import scala.concurrent.ExecutionContext
-
 @DoNotDiscover
 class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
@@ -32,7 +30,6 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     with BeforeAndAfterAll
     with ConfigFixtures {
 
-  implicit private val ec: ExecutionContext         = ExecutionContext.global
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   private val httpClient: HttpClient                = HttpClient()
   private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest

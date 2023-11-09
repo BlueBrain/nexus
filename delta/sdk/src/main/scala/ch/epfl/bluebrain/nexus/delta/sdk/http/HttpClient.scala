@@ -85,7 +85,6 @@ object HttpClient {
   final def apply()(implicit
       httpConfig: HttpClientConfig,
       as: ActorSystem,
-      ec: ExecutionContext,
       timer: Timer[IO],
       cs: ContextShift[IO]
   ): HttpClient = {
@@ -97,7 +96,7 @@ object HttpClient {
     */
   final def noRetry(
       compression: Boolean
-  )(implicit as: ActorSystem, ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]): HttpClient = {
+  )(implicit as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO]): HttpClient = {
     implicit val config: HttpClientConfig = HttpClientConfig.noRetry(compression)
     apply()
   }
@@ -107,11 +106,11 @@ object HttpClient {
   )(implicit
       httpConfig: HttpClientConfig,
       as: ActorSystem,
-      ec: ExecutionContext,
       timer: Timer[IO],
       cs: ContextShift[IO]
   ): HttpClient =
     new HttpClient {
+      implicit private val ec: ExecutionContext = as.dispatcher
 
       private def decodeResponse(req: HttpRequest, response: HttpResponse): IO[HttpResponse] = {
         val decoder = response.encoding match {

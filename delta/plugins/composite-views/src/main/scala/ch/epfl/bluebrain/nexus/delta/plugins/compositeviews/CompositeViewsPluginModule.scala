@@ -46,8 +46,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegist
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 
-import scala.concurrent.ExecutionContext
-
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
@@ -58,12 +56,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        ec: ExecutionContext,
         timer: Timer[IO],
         cs: ContextShift[IO],
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, ec, timer, cs)
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, timer, cs)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as,
         cs

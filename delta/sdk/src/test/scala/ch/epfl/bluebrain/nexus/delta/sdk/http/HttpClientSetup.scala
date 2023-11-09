@@ -4,13 +4,11 @@ import akka.actor.ActorSystem
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 
-import scala.concurrent.ExecutionContext
-
 object HttpClientSetup {
 
   def apply(
       compression: Boolean
-  )(implicit ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]): Resource[IO, (HttpClient, ActorSystem)] = {
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Resource[IO, (HttpClient, ActorSystem)] = {
     implicit val httpConfig: HttpClientConfig =
       HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)
     Resource

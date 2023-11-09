@@ -48,8 +48,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 
-import scala.concurrent.ExecutionContext
-
 /**
   * Storages and Files wiring
   */
@@ -61,9 +59,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[HttpClient].named("storage").from {
-    (as: ActorSystem[Nothing], ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]) =>
-      HttpClient.noRetry(compression = false)(as.classicSystem, ec, timer, cs)
+  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem, timer, cs)
   }
 
   make[Storages]

@@ -41,8 +41,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
-import scala.concurrent.ExecutionContext
-
 /**
   * ElasticSearch plugin wiring.
   */
@@ -56,8 +54,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem[Nothing], ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]) =>
-      HttpClient()(httpConfig, as.classicSystem, ec, timer, cs)
+    (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
+      HttpClient()(httpConfig, as.classicSystem, timer, cs)
   }
 
   make[ElasticSearchClient].from {
