@@ -8,12 +8,12 @@ import munit.FunSuite
 import java.time.Instant
 import scala.concurrent.duration._
 
-
 class IOUtilsSuite extends FunSuite {
   test("Test timer") {
     implicit val clock = new TimeMachine
 
-    val (duration, value) = IO.pure("value")
+    val (duration, value) = IO
+      .pure("value")
       .flatTap(_ => IO.delay(clock.goForwards(5.seconds)))
       .timed
       .unsafeRunSync()
@@ -23,11 +23,11 @@ class IOUtilsSuite extends FunSuite {
   }
 
   class TimeMachine extends Clock[IO] {
-    private var currentTime = Instant.now
+    private var currentTime                          = Instant.now
     def goForwards(duration: FiniteDuration): Unit = {
       currentTime = currentTime.plusMillis(duration.toMillis)
     }
-    override def realTime(unit: TimeUnit): IO[Long] = IO.pure(currentTime.toEpochMilli)
+    override def realTime(unit: TimeUnit): IO[Long]  = IO.pure(currentTime.toEpochMilli)
     override def monotonic(unit: TimeUnit): IO[Long] = IO.pure(currentTime.toEpochMilli)
   }
 }
