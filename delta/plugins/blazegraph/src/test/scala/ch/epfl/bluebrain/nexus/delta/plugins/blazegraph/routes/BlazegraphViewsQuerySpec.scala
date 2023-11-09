@@ -46,7 +46,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
 import java.time.Instant
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 @DoNotDiscover
@@ -65,7 +64,6 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     override def apply[A](context: BlazegraphQueryContext, query: IO[A]): IO[A] = query
   }
 
-  implicit private val ec: ExecutionContext         = ExecutionContext.global
   implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, false)
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
 

@@ -27,7 +27,6 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class HttpClientSpec
@@ -39,7 +38,6 @@ class HttpClientSpec
     with EitherValues {
 
   implicit private val config: HttpClientConfig = HttpClientConfig(OnceStrategyConfig(200.millis), onServerError, false)
-  implicit private val ec: ExecutionContext     = ExecutionContext.global
 
   private val value1 = Value("first", 1, deprecated = false)
   private val value2 = Value("second", 2, deprecated = true)

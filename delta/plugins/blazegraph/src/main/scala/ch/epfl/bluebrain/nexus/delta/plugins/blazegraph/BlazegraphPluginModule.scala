@@ -38,8 +38,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
-import scala.concurrent.ExecutionContext
-
 /**
   * Blazegraph plugin wiring
   */
@@ -57,11 +55,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
-        ec: ExecutionContext,
         timer: Timer[IO],
         cs: ContextShift[IO]
     ) =>
-      HttpClient()(cfg.indexingClient, as.classicSystem, ec, timer, cs)
+      HttpClient()(cfg.indexingClient, as.classicSystem, timer, cs)
   }
 
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
@@ -105,11 +102,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
-        ec: ExecutionContext,
         timer: Timer[IO],
         cs: ContextShift[IO]
     ) =>
-      HttpClient()(cfg.queryClient, as.classicSystem, ec, timer, cs)
+      HttpClient()(cfg.queryClient, as.classicSystem, timer, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
