@@ -6,14 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientS
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioAssertions
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import munit.AnyFixture
 
 class EventMetricsDeletionTaskSuite
     extends CatsEffectSuite
-    with BioAssertions
     with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
