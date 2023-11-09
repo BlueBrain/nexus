@@ -4,7 +4,6 @@ import cats.effect.{IO, Timer}
 import cats.implicits.catsSyntaxApplicativeError
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{Task, UIO}
 import org.typelevel.log4cats.{Logger => Log4CatsLogger}
@@ -29,7 +28,7 @@ final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
     * Apply the retry strategy on the provided IO
     */
   def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E], timer: Timer[IO]): IO[A] =
-    RetryStrategy.use(io.toBIO[E], retryStrategy)
+    RetryStrategy.use(io, retryStrategy)
 
 }
 

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 
 import cats.effect.IO
-import cats.~>
 import monix.bio.{IO => BIO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
 import shapeless.=:!=
@@ -15,25 +14,13 @@ trait MigrateEffectSyntax {
   implicit def toCatsIO[E <: Throwable, A](io: BIO[E, A]): IO[A]                        = io.to[IO]
   implicit def uioToCatsIO[E <: Throwable, A](io: UIO[A]): IO[A]                        = io.to[IO]
   implicit def toCatsIOOps[E <: Throwable, A](io: BIO[E, A]): MonixBioToCatsIOOps[E, A] = new MonixBioToCatsIOOps(io)
-  implicit def toCatsIOEitherOps[E, A](io: BIO[E, A]): MonixBioToCatsIOEitherOps[E, A]  = new MonixBioToCatsIOEitherOps(
-    io
-  )
 
   implicit def toMonixBIOOps[A](io: IO[A]): CatsIOToBioOps[A] = new CatsIOToBioOps(io)
-
-  val taskToIoK: Task ~> IO = λ[Task ~> IO](toCatsIO(_))
-  val uioToIoK: UIO ~> IO   = λ[UIO ~> IO](uioToCatsIO(_))
-  val ioToUioK: IO ~> UIO   = λ[IO ~> UIO](_.toUIO)
-  val ioToTaskK: IO ~> Task = λ[IO ~> Task](Task.from(_))
 
 }
 
 final class MonixBioToCatsIOOps[E <: Throwable, A](private val io: BIO[E, A]) extends AnyVal {
   def toCatsIO: IO[A] = io.to[IO]
-}
-
-final class MonixBioToCatsIOEitherOps[E, A](private val io: BIO[E, A]) extends AnyVal {
-  def toCatsIOEither: IO[Either[E, A]] = io.attempt.to[IO]
 }
 
 final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
