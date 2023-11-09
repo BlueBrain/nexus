@@ -18,7 +18,7 @@ class IOUtilsSuite extends FunSuite {
       .timed
       .unsafeRunSync()
 
-    assertEquals(duration, 8.seconds)
+    assertEquals(duration, 5.seconds)
     assertEquals(value, "value")
   }
 
