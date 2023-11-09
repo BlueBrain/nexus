@@ -200,7 +200,7 @@ object Projects {
       case None =>
         for {
           org  <- fetchAndValidateOrg(c.ref.organization)
-          uuid <- uuidF().toCatsIO
+          uuid <- uuidF()
           now  <- IOInstant.now
         } yield ProjectCreated(
           c.ref.project,

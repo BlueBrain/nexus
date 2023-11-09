@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class StorageFieldsSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
+class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   implicit private val cfg: Configuration = StorageDecoderConfiguration.apply.accepted
   val sourceDecoder                       = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)

@@ -83,7 +83,7 @@ final class CompositeViews private (
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
       pc           <- fetchContext.onCreate(project)
-      (iri, value) <- sourceDecoder(project, pc, source).toCatsIO
+      (iri, value) <- sourceDecoder(project, pc, source)
       res          <- eval(CreateCompositeView(iri, project, value, source, caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
@@ -103,7 +103,7 @@ final class CompositeViews private (
     for {
       pc        <- fetchContext.onCreate(project)
       iri       <- expandIri(id, pc)
-      viewValue <- toCatsIO(sourceDecoder(project, pc, iri, source))
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(CreateCompositeView(iri, project, viewValue, source, caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
@@ -157,7 +157,7 @@ final class CompositeViews private (
     for {
       pc        <- fetchContext.onModify(project)
       iri       <- expandIri(id, pc)
-      viewValue <- toCatsIO(sourceDecoder(project, pc, iri, source))
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateCompositeView(iri, project, rev, viewValue, source, caller.subject, pc.base))
     } yield res
   }.span("updateCompositeView")
@@ -398,7 +398,7 @@ object CompositeViews {
       case None    =>
         for {
           t     <- IOInstant.now
-          u     <- toCatsIO(uuidF())
+          u     <- uuidF()
           value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
           _     <- validate(u, value)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1, t, c.subject)

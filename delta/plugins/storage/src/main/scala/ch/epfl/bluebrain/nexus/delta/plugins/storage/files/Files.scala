@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -478,7 +478,7 @@ final class Files(
     }
 
   private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
-    uuidF().toCatsIO.map(uuid => pc.base.iri / uuid.toString)
+    uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   /**
     * Starts a stream that attempts to update file attributes asynchronously for linked files in remote storages

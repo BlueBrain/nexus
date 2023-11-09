@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -67,7 +67,7 @@ final class ElasticSearchViews private (
       project: ProjectRef,
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ViewResource] =
-    uuidF().toCatsIO.flatMap(uuid => create(uuid.toString, project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
     * Creates a new ElasticSearchView with a provided id.
@@ -468,7 +468,7 @@ object ElasticSearchViews {
       case None    =>
         for {
           t <- IOInstant.now
-          u <- uuidF().toCatsIO
+          u <- uuidF()
           _ <- validate(u, IndexingRev.init, c.value)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))

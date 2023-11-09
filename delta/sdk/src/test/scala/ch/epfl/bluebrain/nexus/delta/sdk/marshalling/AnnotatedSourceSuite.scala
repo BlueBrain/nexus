@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class AnnotatedSourceSuite extends BioSuite with CirceLiteral {
+class AnnotatedSourceSuite extends CatsEffectSuite with CirceLiteral {
 
   implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private def res: RemoteContextResolution =
@@ -60,13 +60,13 @@ class AnnotatedSourceSuite extends BioSuite with CirceLiteral {
 
   test("Merge metadata and source injecting the missing id from the source") {
     val source = json"""{"source": "original payload"}"""
-    AnnotatedSource(resource, source).assert(expected(id))
+    AnnotatedSource(resource, source).assertEquals(expected(id))
   }
 
   test("Merge metadata and source keeping the id from the source") {
     val sourceId = nxv + "sourceId"
     val source   = json"""{ "@id": "$sourceId", "source": "original payload"}"""
-    AnnotatedSource(resource, source).assert(expected(sourceId))
+    AnnotatedSource(resource, source).assertEquals(expected(sourceId))
   }
 
 }

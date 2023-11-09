@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.{Json, JsonObject}
 import io.circe.syntax._
-import monix.bio.IO
+import io.circe.{Json, JsonObject}
 
 /**
   * A Json-LD context with its relevant fields.
@@ -222,8 +220,8 @@ object JsonLdContext {
     */
   def apply(
       contextValue: ContextValue
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, JsonLdContext] =
-    api.context(contextValue).toBIO[RdfError]
+  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[JsonLdContext] =
+    api.context(contextValue)
 
   /**
     * @return

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -125,7 +124,6 @@ final class Batch[SinkFormat](
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
-      .toCatsIO
       .flatMap(_.toGraph)
       .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
   }

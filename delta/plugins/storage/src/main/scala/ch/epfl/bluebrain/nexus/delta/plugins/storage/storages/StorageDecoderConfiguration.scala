@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
@@ -12,7 +11,7 @@ private[storages] object StorageDecoderConfiguration {
   def apply(implicit jsonLdApi: JsonLdApi, rcr: RemoteContextResolution): IO[Configuration] =
     for {
       contextValue  <- IO.delay { ContextValue(contexts.storages) }
-      jsonLdContext <- JsonLdContext(contextValue).toCatsIO
+      jsonLdContext <- JsonLdContext(contextValue)
     } yield {
       val ctx = jsonLdContext
         .addAlias("DiskStorageFields", StorageType.DiskStorage.iri)

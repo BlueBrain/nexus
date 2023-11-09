@@ -203,11 +203,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      toCatsIO(
-        JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
-          .map(_.aliasesInv.keySet.map(Triple.predicate))
-          .map(MetadataPredicates)
-      )
+      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
+        .map(_.aliasesInv.keySet.map(Triple.predicate))
+        .map(MetadataPredicates)
   }
 
   make[RemoteGraphStream].from {

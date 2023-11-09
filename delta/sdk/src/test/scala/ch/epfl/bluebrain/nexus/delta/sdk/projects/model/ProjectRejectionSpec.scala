@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ProjectRejectionSpec extends BioSpec with Fixtures {
+class ProjectRejectionSpec extends CatsEffectSpec with Fixtures {
 
   "A ProjectRejection" should {
     val incorrectRev  = IncorrectRev(2, 3)

@@ -7,7 +7,6 @@ import cats.data.NonEmptyList
 import cats.effect.concurrent.Ref
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -152,7 +151,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       implicit jsonldEncoder: JsonLdEncoder[A]
   ): IO[SuccessElem[GraphResource]] = {
     for {
-      graph     <- jsonldEncoder.graph(value).toCatsIO
+      graph     <- jsonldEncoder.graph(value)
       entityType = EntityType(value.getClass.getSimpleName)
       resource   = GraphResource(
                      entityType,

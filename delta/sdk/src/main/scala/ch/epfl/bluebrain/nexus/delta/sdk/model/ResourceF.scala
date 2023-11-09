@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Functor
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.bio.IO
 
 import java.time.Instant
 
@@ -232,7 +231,7 @@ object ResourceF {
 
       override def compact(
           value: ResourceF[A]
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] = {
         implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
         for {
           idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toCompactedJsonLd
@@ -244,7 +243,7 @@ object ResourceF {
 
       override def expand(
           value: ResourceF[A]
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] = {
         implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
 
         for {

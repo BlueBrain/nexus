@@ -9,9 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
-import io.circe.{Json, JsonObject}
 import io.circe.syntax.EncoderOps
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import io.circe.{Json, JsonObject}
 import shapeless.Typeable
 
 /**
@@ -40,13 +39,11 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
       if (element.source.isEmpty())
         graph
           .toCompactedJsonLd(context)
-          .toCatsIO
           .map(ld => injectContext(ld.obj.asJson))
       else {
         val id = getSourceId(element.source).getOrElse(element.id.toString)
         (graph -- graph.rootTypesGraph)
           .toCompactedJsonLd(context)
-          .toCatsIO
           .map(ld => injectContext(mergeJsonLd(element.source, ld.json)))
           .map(json => injectId(json, id))
       }

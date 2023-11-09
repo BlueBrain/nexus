@@ -161,7 +161,7 @@ object Organizations {
       state match {
         case None =>
           for {
-            uuid <- uuidf().toCatsIO
+            uuid <- uuidf()
             now  <- IOInstant.now
           } yield OrganizationCreated(c.label, uuid, 1, c.description, now, c.subject)
         case _    => IO.raiseError(OrganizationAlreadyExists(c.label))

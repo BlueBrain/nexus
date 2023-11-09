@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewProjection, CompositeViewProjectionFields, CompositeViewSource, CompositeViewSourceFields, CompositeViewValue}
@@ -63,15 +62,12 @@ object CompositeViewFactory {
   }
 
   // Generate an id and a uuid for a source or a projection
-  private def generate(implicit projectBase: ProjectBase, uuidF: UUIDF) = toCatsIO {
-    uuidF().map { uuid =>
-      uuid -> projectBase.iri / uuid.toString
-    }
-  }
+  private def generate(implicit projectBase: ProjectBase, uuidF: UUIDF) =
+    uuidF().map { uuid => uuid -> projectBase.iri / uuid.toString }
 
   private[compositeviews] def create(
       input: CompositeViewSourceFields
-  )(implicit projectBase: ProjectBase, uuidF: UUIDF) =
+  )(implicit projectBase: ProjectBase, uuidF: UUIDF)                    =
     generate.map { case (uuid, id) =>
       val source = input.toSource(uuid, id)
       source.id -> source

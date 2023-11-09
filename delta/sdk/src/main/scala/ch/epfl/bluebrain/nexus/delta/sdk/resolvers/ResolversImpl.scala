@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -43,7 +42,7 @@ final class ResolversImpl private (
   )(implicit caller: Caller): IO[ResolverResource] = {
     for {
       pc                   <- fetchContext.onCreate(projectRef)
-      (iri, resolverValue) <- sourceDecoder(projectRef, pc, source).toCatsIO
+      (iri, resolverValue) <- sourceDecoder(projectRef, pc, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
@@ -56,7 +55,7 @@ final class ResolversImpl private (
     for {
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
-      resolverValue <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
+      resolverValue <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
@@ -83,7 +82,7 @@ final class ResolversImpl private (
     for {
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
-      resolverValue <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
+      resolverValue <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
   }.span("updateResolver")

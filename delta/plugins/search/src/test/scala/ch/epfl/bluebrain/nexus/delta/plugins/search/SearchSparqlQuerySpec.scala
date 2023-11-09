@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures.defaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples

@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class OrganizationRejectionsSpec extends BioSpec with Fixtures {
+class OrganizationRejectionsSpec extends CatsEffectSpec with Fixtures {
 
   "An OrganizationRejection" should {
 

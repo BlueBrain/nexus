@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.nio.file.{Files, Path}
 
-class DiskStorageAccessSpec extends BioSpec {
+class DiskStorageAccessSpec extends CatsEffectSpec {
 
   "A DiskStorage access operations" should {
     val iri = iri"http://localhost/disk"

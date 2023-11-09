@@ -4,9 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesSta
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class PropertiesStatisticsSpec extends BioSpec with ContextFixtures {
+class PropertiesStatisticsSpec extends CatsEffectSpec with ContextFixtures {
 
   "PropertiesStatistics" should {
 

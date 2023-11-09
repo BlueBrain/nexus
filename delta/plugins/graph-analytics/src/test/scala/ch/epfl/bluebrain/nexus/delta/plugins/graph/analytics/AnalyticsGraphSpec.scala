@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class AnalyticsGraphSpec extends BioSpec with ContextFixtures {
+class AnalyticsGraphSpec extends CatsEffectSpec with ContextFixtures {
 
   "A AnalyticsGraph" should {
 

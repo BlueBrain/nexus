@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 
-sealed abstract class JsonLdRejection(val reason: String) extends Product with Serializable
+sealed abstract class JsonLdRejection(val reason: String) extends Rejection
 
 object JsonLdRejection {
 

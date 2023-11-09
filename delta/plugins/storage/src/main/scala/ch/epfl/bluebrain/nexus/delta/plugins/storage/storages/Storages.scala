@@ -67,7 +67,7 @@ final class Storages private (
   )(implicit caller: Caller): IO[StorageResource] = {
     for {
       pc                   <- fetchContext.onCreate(projectRef)
-      (iri, storageFields) <- sourceDecoder(projectRef, pc, source).toCatsIO
+      (iri, storageFields) <- sourceDecoder(projectRef, pc, source)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -91,7 +91,7 @@ final class Storages private (
     for {
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
+      storageFields <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -151,7 +151,7 @@ final class Storages private (
     for {
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
+      storageFields <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _             <- IO.whenA(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res

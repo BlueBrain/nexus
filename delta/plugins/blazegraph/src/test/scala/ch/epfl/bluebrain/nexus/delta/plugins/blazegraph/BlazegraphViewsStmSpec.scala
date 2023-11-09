@@ -18,13 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 
 import java.time.Instant
 import java.util.UUID
 
-class BlazegraphViewsStmSpec extends BioSpec with Fixtures {
+class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
 
   "A Blazegraph STM" when {
 

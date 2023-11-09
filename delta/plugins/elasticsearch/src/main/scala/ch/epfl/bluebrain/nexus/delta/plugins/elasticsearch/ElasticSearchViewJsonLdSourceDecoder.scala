@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -44,7 +43,7 @@ class ElasticSearchViewJsonLdSourceDecoder private (
   def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
   ): IO[(Iri, ElasticSearchViewValue)] =
-    decoder(ref, context, mapJsonToString(source)).toCatsIO.map { case (iri, fields) =>
+    decoder(ref, context, mapJsonToString(source)).map { case (iri, fields) =>
       iri -> toValue(fields)
     }
 
@@ -56,7 +55,7 @@ class ElasticSearchViewJsonLdSourceDecoder private (
       context,
       iri,
       mapJsonToString(source)
-    ).toCatsIO.map(toValue)
+    ).map(toValue)
 
   private def mapJsonToString(json: Json): Json = json
     .mapAllKeys("mapping", _.noSpaces.asJson)
