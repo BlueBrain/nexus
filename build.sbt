@@ -47,8 +47,6 @@ val log4catsVersion         = "1.7.0"
 val logbackVersion          = "1.4.11"
 val magnoliaVersion         = "1.1.6"
 val mockitoVersion          = "1.17.27"
-val monixVersion            = "3.4.1"
-val monixBioVersion         = "1.2.0"
 val munitVersion            = "1.0.0-M10"
 val nimbusJoseJwtVersion    = "9.37"
 val postgresJdbcVersion     = "42.6.0"
@@ -113,7 +111,6 @@ lazy val log4cats           = "org.typelevel"                %% "log4cats-slf4j"
 lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
-lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
@@ -212,7 +209,6 @@ lazy val kernel = project
       circeCore,
       circeParser,
       handleBars,
-      monixBio,
       nimbusJoseJwt,
       kamonCore,
       log4cats,
@@ -242,7 +238,6 @@ lazy val testkit = project
       ),
       catsRetry,
       doobiePostgres,
-      monixBio,
       munit,
       scalaTest,
       testContainers
@@ -267,7 +262,6 @@ lazy val sourcingPsql = project
       distageCore,
       fs2,
       fs2io,
-      monixBio,
       munit          % Test,
       catsEffectLaws % Test,
       logback        % Test
@@ -295,7 +289,6 @@ lazy val rdf = project
       jenaArq,
       jsonldjava,
       magnolia,
-      monixBio,
       topBraidShacl,
       akkaSlf4j   % Test,
       akkaTestKit % Test,
@@ -325,7 +318,6 @@ lazy val sdk = project
       circeGenericExtras,
       distageCore,
       fs2,
-      monixBio,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
@@ -804,7 +796,6 @@ lazy val tests = project
       circeGenericExtras,
       fs2,
       logback,
-      monixBio,
       scalaLogging,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
