@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -32,7 +32,7 @@ import scala.concurrent.duration._
 class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("GraphAnalyticsSpec"))
     with CatsEffectSpec
-    with IOFixedClock
+    with FixedClock
     with ConfigFixtures
     with Eventually
     with Fixtures {

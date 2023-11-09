@@ -135,6 +135,7 @@ object ProjectsImpl {
   )(implicit
       base: BaseUri,
       clock: Clock[IO],
+      contextShift: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF
   ): Projects =

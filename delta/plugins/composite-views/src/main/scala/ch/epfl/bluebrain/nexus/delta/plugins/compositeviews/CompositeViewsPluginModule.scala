@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
@@ -116,7 +115,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       ValidateCompositeView(
         aclCheck,
         projects,
-        permissions.fetchPermissionSet.toUIO,
+        permissions.fetchPermissionSet,
         client,
         deltaClient,
         config.prefix,
@@ -135,7 +134,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         uuidF: UUIDF,
         clock: Clock[IO],
-        timer: Timer[IO]
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       CompositeViews(
         fetchContext.mapRejection(ProjectContextRejection),
@@ -147,6 +147,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api,
         clock,
         timer,
+        cs,
         uuidF
       )
   }

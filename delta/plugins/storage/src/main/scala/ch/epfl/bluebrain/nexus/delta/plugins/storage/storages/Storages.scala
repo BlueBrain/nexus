@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
@@ -498,7 +497,7 @@ object Storages {
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config)(_, _).toBIO[StorageRejection], next),
+      StateMachine(None, evaluate(access, fetchPermissions, config)(_, _), next),
       StorageEvent.serializer,
       StorageState.serializer,
       Tagger[StorageEvent](
@@ -533,6 +532,7 @@ object Storages {
       api: JsonLdApi,
       clock: Clock[IO],
       timer: Timer[IO],
+      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr

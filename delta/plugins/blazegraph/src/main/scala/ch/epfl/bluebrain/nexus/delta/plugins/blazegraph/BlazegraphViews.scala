@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
@@ -492,7 +491,7 @@ object BlazegraphViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _).toBIO[BlazegraphViewRejection],
+        evaluate(validate)(_, _),
         next
       ),
       BlazegraphViewEvent.serializer,
@@ -534,6 +533,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      contextShift: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
@@ -560,6 +560,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      contextShift: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {

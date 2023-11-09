@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -409,7 +408,13 @@ object ElasticSearchViews {
       xas: Transactors,
       defaultMapping: DefaultMapping,
       defaultSettings: DefaultSettings
-  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[IO],
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      uuidF: UUIDF
+  ): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(
@@ -527,7 +532,7 @@ object ElasticSearchViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _).toBIO[ElasticSearchViewRejection],
+        evaluate(validate)(_, _),
         next
       ),
       ElasticSearchViewEvent.serializer,

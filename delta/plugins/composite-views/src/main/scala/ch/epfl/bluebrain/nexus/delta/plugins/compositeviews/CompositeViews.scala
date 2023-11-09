@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -460,7 +459,7 @@ object CompositeViews {
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _).toBIO[CompositeViewRejection], next),
+      StateMachine(None, evaluate(validate)(_, _), next),
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
       Tagger[CompositeViewEvent](
@@ -497,6 +496,7 @@ object CompositeViews {
       api: JsonLdApi,
       clock: Clock[IO],
       timer: Timer[IO],
+      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
@@ -350,7 +349,7 @@ object Schemas {
   ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _).toBIO[SchemaRejection], next),
+      StateMachine(None, evaluate(validate)(_, _), next),
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](

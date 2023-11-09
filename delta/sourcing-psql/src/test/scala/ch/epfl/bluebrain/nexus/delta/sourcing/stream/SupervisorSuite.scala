@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNod
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import fs2.Stream
 import munit.AnyFixture
 

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -43,7 +42,7 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
       .flatMap {
         case result if result.value.isEmpty && source.topContextValueOrEmpty.isEmpty =>
           val ctx = defaultCtx(context)
-          ExpandedJsonLd.explain(source.addContext(ctx.contextObj)).map(ctx -> _).toBIO[RdfError]
+          ExpandedJsonLd.explain(source.addContext(ctx.contextObj)).map(ctx -> _)
         case result                                                                  =>
           IO.pure(source.topContextValueOrEmpty -> result)
       }
@@ -118,7 +117,7 @@ object JsonLdSourceProcessor {
         originalExpanded = result.value
         iri             <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded         = originalExpanded.replaceId(iri)
-        compacted       <- expanded.toCompacted(ctx).toBIO[RdfError].mapError(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
       } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 
@@ -145,7 +144,7 @@ object JsonLdSourceProcessor {
         (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
-        compacted       <- expanded.toCompacted(ctx).toBIO[RdfError].mapError(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
       } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
@@ -109,7 +108,7 @@ object BlazegraphViewsQuery {
       outgoingScopedQuery       <- ioContentOf("blazegraph/outgoing_scoped.txt")
       viewsStore                 = ViewsStore[BlazegraphViewRejection, BlazegraphViewState](
                                      BlazegraphViewState.serializer,
-                                     views.fetchState(_, _).toBIO[BlazegraphViewRejection],
+                                     views.fetchState(_, _),
                                      view =>
                                        IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
                                          .as {
@@ -125,8 +124,7 @@ object BlazegraphViewsQuery {
                                                  )
                                                )
                                            }
-                                         }
-                                         .toBIO[BlazegraphViewRejection],
+                                         },
                                      xas
                                    )
     } yield new BlazegraphViewsQuery {

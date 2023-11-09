@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal, NotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticCommand, ArithmeticEvent, ArithmeticRejection, Total}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
@@ -42,14 +42,15 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   private val maxDuration = 100.millis
 
-  private lazy val eventLog = GlobalEventLog(
-    eventStore,
-    stateStore,
-    Arithmetic.stateMachine,
-    AlreadyExists,
-    maxDuration,
-    xas
-  )
+  private lazy val eventLog: GlobalEventLog[Iri, Total, ArithmeticCommand, ArithmeticEvent, ArithmeticRejection] =
+    GlobalEventLog(
+      eventStore,
+      stateStore,
+      Arithmetic.stateMachine,
+      AlreadyExists,
+      maxDuration,
+      xas
+    )
 
   private val plus2  = Plus(1, 2)
   private val plus3  = Plus(2, 3)

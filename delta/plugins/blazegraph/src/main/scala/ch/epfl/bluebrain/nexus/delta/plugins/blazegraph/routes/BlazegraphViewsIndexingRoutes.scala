@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -122,7 +121,7 @@ class BlazegraphViewsIndexingRoutes(
                   (delete & authorizeFor(ref, Write)) {
                     emit(
                       fetch(id, ref)
-                        .flatMap { r => projections.scheduleRestart(r.projection).toUIO }
+                        .flatMap { r => projections.scheduleRestart(r.projection) }
                         .as(Offset.start)
                         .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]

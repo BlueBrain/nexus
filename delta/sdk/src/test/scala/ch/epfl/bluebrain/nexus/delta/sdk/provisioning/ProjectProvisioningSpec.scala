@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
@@ -64,8 +63,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
     xas
   )
 
-  private lazy val provisioning =
-    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
+  private lazy val provisioning = ProjectProvisioning(aclCheck.append(_), projects, provisioningConfig)
 
   "Provisioning projects" should {
 

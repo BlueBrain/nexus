@@ -43,7 +43,6 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers
@@ -61,7 +60,6 @@ class ArchiveDownloadSpec
     with EitherValues
     with CatsRunContext
     with CatsIOValues
-    with BIOValues
     with OptionValues
     with TestHelpers
     with StorageFixtures

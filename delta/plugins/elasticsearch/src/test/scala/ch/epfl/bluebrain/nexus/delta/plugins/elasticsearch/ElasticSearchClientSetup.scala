@@ -6,7 +6,6 @@ import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
@@ -48,7 +47,7 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
   def suiteLocalFixture(name: String): IOFixture[ElasticSearchClient] =
     ResourceFixture.suiteLocal(name, resource())
 
-  trait Fixture { self: Suite with BioRunContext =>
+  trait Fixture { self: Suite =>
     val esClient: IOFixture[ElasticSearchClient] =
       ElasticSearchClientSetup.suiteLocalFixture("esclient")
   }

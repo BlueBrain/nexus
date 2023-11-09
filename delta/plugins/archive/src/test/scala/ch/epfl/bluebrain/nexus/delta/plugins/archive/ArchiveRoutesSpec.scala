@@ -43,24 +43,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchiveRoutesSpec extends BaseRouteSpec with BIOValues with StorageFixtures with ArchiveHelpers {
+class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveHelpers {
 
   private val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
-
-  implicit private val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
 
   implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -42,6 +42,7 @@ object ResolversModule extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         uuidF: UUIDF
     ) =>
@@ -50,7 +51,7 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution,
         config.resolvers,
         xas
-      )(api, clock, uuidF, timer)
+      )(api, clock, uuidF, contextShift, timer)
   }
 
   make[MultiResolution].from {

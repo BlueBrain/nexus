@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -221,7 +221,13 @@ object ResourcesImpl {
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF = UUIDF.random): Resources =
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[IO],
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      uuidF: UUIDF = UUIDF.random
+  ): Resources =
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validateResource), config.eventLog, xas),
       fetchContext,

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
-import monix.bio.IO
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -28,11 +28,11 @@ object PullRequest {
 
   val entityType: EntityType = EntityType("merge-request")
 
-  val stateMachine: StateMachine[PullRequestState, PullRequestCommand, PullRequestEvent, PullRequestRejection] =
+  val stateMachine: StateMachine[PullRequestState, PullRequestCommand, PullRequestEvent] =
     StateMachine(
       None,
       (state: Option[PullRequestState], command: PullRequestCommand) =>
-        state.fold[IO[PullRequestRejection, PullRequestEvent]] {
+        state.fold[IO[PullRequestEvent]] {
           command match {
             case Create(id, project) => IO.pure(PullRequestCreated(id, project, Instant.EPOCH, Anonymous))
             case _                   => IO.raiseError(NotFound)
@@ -46,7 +46,7 @@ object PullRequest {
               IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
             case (_: PullRequestActive, Merge(id, project, rev))            =>
               IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_, Boom(_, _, message))                                   => IO.terminate(new RuntimeException(message))
+            case (_, Boom(_, _, message))                                   => IO.raiseError(new RuntimeException(message))
             case (_, _: Never)                                              => IO.never
             case (_: PullRequestClosed, _)                                  => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
           }

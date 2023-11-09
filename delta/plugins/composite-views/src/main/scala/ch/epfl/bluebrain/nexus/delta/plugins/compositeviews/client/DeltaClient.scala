@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import cats.effect.{ContextShift, IO}
 import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxFlatMapOps}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -87,8 +86,7 @@ object DeltaClient {
   )(implicit
       as: ActorSystem[Nothing],
       c: ContextShift[IO]
-  ) extends DeltaClient
-      with MigrateEffectSyntax {
+  ) extends DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics] = {
       for {

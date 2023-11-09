@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
@@ -74,7 +75,7 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
 
   test("Reset an offset") {
     val later      = Instant.EPOCH.plusSeconds(1000)
-    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(ceClock(later))
+    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(FixedClock.atInstant(later))
 
     for {
       _ <- store.save(metadata, progress)
