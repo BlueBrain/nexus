@@ -20,10 +20,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphSinkSuite
-    extends CatsEffectSuite
-    with BlazegraphClientSetup.Fixture
-    with TestHelpers {
+class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fixture with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 

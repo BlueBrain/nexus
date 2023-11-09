@@ -14,11 +14,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.DurationInt
 
-class ProjectDeletionRoutesSpec
-    extends RouteHelpers
-    with CirceMarshalling
-    with Matchers
-    with TestHelpers {
+class ProjectDeletionRoutesSpec extends RouteHelpers with CirceMarshalling with Matchers with TestHelpers {
 
   implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()

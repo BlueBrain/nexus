@@ -21,10 +21,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchSinkSuite
-    extends CatsEffectSuite
-    with ElasticSearchClientSetup.Fixture
-    with CirceLiteral {
+class ElasticSearchSinkSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
