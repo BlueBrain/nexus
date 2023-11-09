@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
-import monix.execution.Scheduler
 import munit.Suite
+
+import scala.concurrent.ExecutionContext
 
 object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fixtures {
 
@@ -28,7 +29,7 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
                                  }
                                }"""
 
-  def resource()(implicit s: Scheduler): Resource[IO, ElasticSearchClient] = {
+  def resource()(implicit ec: ExecutionContext): Resource[IO, ElasticSearchClient] = {
     for {
       (httpClient, actorSystem) <- HttpClientSetup(compression = true)
       container                 <- ElasticSearchContainer.resource()
@@ -46,7 +47,7 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
     client.createIndexTemplate("test_template", template)
   }
 
-  def suiteLocalFixture(name: String)(implicit s: Scheduler): IOFixture[ElasticSearchClient] =
+  def suiteLocalFixture(name: String)(implicit ec: ExecutionContext): IOFixture[ElasticSearchClient] =
     ResourceFixture.suiteLocal(name, resource())
 
   trait Fixture { self: Suite with BioRunContext =>

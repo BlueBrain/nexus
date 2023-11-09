@@ -19,7 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Realms module wiring config.
@@ -52,8 +53,8 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler, cs: ContextShift[IO]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, sc, cs)
+  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], ec: ExecutionContext, cs: ContextShift[IO]) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem, ec, cs)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }

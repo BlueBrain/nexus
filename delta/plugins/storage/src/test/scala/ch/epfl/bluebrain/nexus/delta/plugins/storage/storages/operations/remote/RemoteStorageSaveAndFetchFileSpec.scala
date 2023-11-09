@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
@@ -44,7 +43,6 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
     with StorageFixtures
     with ConfigFixtures {
 
-  implicit private val sc: Scheduler                = Scheduler.global
   implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   private val httpClient: HttpClient                = HttpClient()

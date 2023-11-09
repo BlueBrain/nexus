@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import doobie.postgres.sqlstate
-//import monix.bio.{IO => BIO, Task, UIO}
 import munit.Location
 import org.postgresql.util.PSQLException
 

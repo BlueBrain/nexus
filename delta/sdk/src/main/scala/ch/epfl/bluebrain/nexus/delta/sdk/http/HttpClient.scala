@@ -16,10 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
-import monix.execution.Scheduler
 
 import java.net.UnknownHostException
-import scala.concurrent.TimeoutException
+import scala.concurrent.{ExecutionContext, TimeoutException}
 import scala.reflect.ClassTag
 
 /**
@@ -86,7 +85,7 @@ object HttpClient {
   final def apply()(implicit
       httpConfig: HttpClientConfig,
       as: ActorSystem,
-      scheduler: Scheduler,
+      ec: ExecutionContext,
       cs: ContextShift[IO]
   ): HttpClient = {
     apply(HttpSingleRequest.default)
@@ -97,14 +96,14 @@ object HttpClient {
     */
   final def noRetry(
       compression: Boolean
-  )(implicit as: ActorSystem, scheduler: Scheduler, cs: ContextShift[IO]): HttpClient = {
+  )(implicit as: ActorSystem, ec: ExecutionContext, cs: ContextShift[IO]): HttpClient = {
     implicit val config: HttpClientConfig = HttpClientConfig.noRetry(compression)
     apply()
   }
 
   private[http] def apply(
       client: HttpSingleRequest
-  )(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler, cs: ContextShift[IO]): HttpClient =
+  )(implicit httpConfig: HttpClientConfig, as: ActorSystem, ec: ExecutionContext, cs: ContextShift[IO]): HttpClient =
     new HttpClient {
 
       private def decodeResponse(req: HttpRequest, response: HttpResponse): IO[HttpResponse] = {

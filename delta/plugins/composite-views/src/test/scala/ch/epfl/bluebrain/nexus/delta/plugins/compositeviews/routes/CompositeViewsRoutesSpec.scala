@@ -243,7 +243,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       )
 
       forAll(endpoints) { endpoint =>
-        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, sc) ~> asBob ~> routes ~> check {
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual esResult
         }
@@ -306,7 +306,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       )
 
       forAll(endpoints) { endpoint =>
-        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, sc) ~> asBob ~> routes ~> check {
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
             "routes/errors/view-deprecated.json",

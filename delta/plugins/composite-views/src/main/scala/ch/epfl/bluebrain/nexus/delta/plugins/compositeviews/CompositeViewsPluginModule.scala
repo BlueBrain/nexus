@@ -45,7 +45,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
@@ -57,11 +58,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        sc: Scheduler,
+        ec: ExecutionContext,
         cs: ContextShift[IO],
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc, cs)
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, ec, cs)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as,
         cs

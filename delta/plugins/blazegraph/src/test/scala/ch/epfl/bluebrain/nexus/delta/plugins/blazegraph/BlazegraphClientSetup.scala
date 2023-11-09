@@ -9,13 +9,17 @@ import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
-import monix.execution.Scheduler
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object BlazegraphClientSetup extends Fixtures {
 
-  def resource()(implicit s: Scheduler, timer: Timer[IO], cs: ContextShift[IO]): Resource[IO, BlazegraphClient] = {
+  def resource()(implicit
+      ec: ExecutionContext,
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ): Resource[IO, BlazegraphClient] = {
     for {
       (httpClient, actorSystem) <- HttpClientSetup(compression = false)
       container                 <- BlazegraphContainer.resource()
@@ -33,7 +37,7 @@ object BlazegraphClientSetup extends Fixtures {
 
   def suiteLocalFixture(
       name: String
-  )(implicit s: Scheduler, timer: Timer[IO], cs: ContextShift[IO]): IOFixture[BlazegraphClient] =
+  )(implicit ec: ExecutionContext, timer: Timer[IO], cs: ContextShift[IO]): IOFixture[BlazegraphClient] =
     ResourceFixture.suiteLocal(name, resource())
 
   trait Fixture { self: CatsRunContext with BioRunContext =>

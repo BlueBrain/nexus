@@ -20,12 +20,12 @@ import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 @DoNotDiscover
@@ -39,7 +39,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
 
-  implicit val sc: Scheduler         = Scheduler.global
+  implicit val ec: ExecutionContext  = ExecutionContext.global
   implicit val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 

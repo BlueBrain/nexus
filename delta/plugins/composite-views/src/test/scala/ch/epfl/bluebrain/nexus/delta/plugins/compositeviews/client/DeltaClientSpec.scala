@@ -28,12 +28,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
-import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class DeltaClientSpec
@@ -63,10 +63,10 @@ class DeltaClientSpec
           "maxInstant" : "1970-01-01T00:00:00Z"
         }"""
 
-  implicit val sc: Scheduler = Scheduler.global
-  private val nQuads         = contentOf("remote/resource.nq")
-  private val nQuadsEntity   = HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads)
-  private val resourceId     = iri"https://example.com/testresource"
+  implicit val ec: ExecutionContext = ExecutionContext.global
+  private val nQuads                = contentOf("remote/resource.nq")
+  private val nQuadsEntity          = HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads)
+  private val resourceId            = iri"https://example.com/testresource"
 
   private val project    = ProjectRef.unsafe("org", "proj")
   private val validTag   = Some(UserTag.unsafe("knowntag"))
