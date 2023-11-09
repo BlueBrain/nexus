@@ -114,7 +114,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Clock[IO]].from(Clock.create[IO])
   make[EvaluationExecution].from(EvaluationExecution(_, _))
   make[UUIDF].from(UUIDF.random)
-  make[ExecutionContext].from(executionContext)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
@@ -136,6 +135,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     }
     Resource.make(make)(release)
   }
+  make[ExecutionContext].from((as: ActorSystem[Nothing]) => as.executionContext)
 
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
