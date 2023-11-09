@@ -4,7 +4,6 @@ import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -77,7 +76,7 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
-    toCatsIO(ProjectsStatistics(xas))
+    ProjectsStatistics(xas)
   }
 
   make[ProjectProvisioning].from {

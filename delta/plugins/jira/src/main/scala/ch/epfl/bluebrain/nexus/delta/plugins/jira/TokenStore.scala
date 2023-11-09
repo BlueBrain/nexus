@@ -45,7 +45,7 @@ object TokenStore {
         sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
           .query[Json]
           .option
-          .transact(xas.readCE)
+          .transact(xas.read)
           .flatMap {
             case Some(token) =>
               IO.fromEither(token.as[OAuthToken]).map(Some(_))
@@ -57,7 +57,7 @@ object TokenStore {
           sql""" INSERT INTO jira_tokens(realm, subject, instant, token_value)
                    | VALUES(${user.realm.value}, ${user.subject}, $now, ${oauthToken.asJson})
                    | ON CONFLICT (realm, subject) DO UPDATE SET instant = EXCLUDED.instant, token_value = EXCLUDED.token_value
-              """.stripMargin.update.run.transact(xas.writeCE).void
+              """.stripMargin.update.run.transact(xas.write).void
         }
     }
   }

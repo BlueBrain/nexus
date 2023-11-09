@@ -39,7 +39,7 @@ object UUIDCache {
           sql"SELECT value->>'label' FROM global_states WHERE type = ${Organizations.entityType} AND value->>'uuid' = ${uuid.toString} "
             .query[Label]
             .option
-            .transact(xas.readCE)
+            .transact(xas.read)
         )
 
       override def projectRef(uuid: UUID): IO[Option[ProjectRef]] =
@@ -49,7 +49,7 @@ object UUIDCache {
             .query[(Label, Label)]
             .map { case (o, p) => ProjectRef(o, p) }
             .option
-            .transact(xas.readCE)
+            .transact(xas.read)
         )
     }
 

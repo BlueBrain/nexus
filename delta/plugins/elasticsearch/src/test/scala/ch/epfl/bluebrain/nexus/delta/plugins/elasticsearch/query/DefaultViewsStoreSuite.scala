@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStoreFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
@@ -49,7 +49,7 @@ class DefaultViewsStoreSuite extends CatsEffectSuite {
       deprecated = deprecated
     )
 
-  val defaultViewsStore: ResourceFixture.TaskFixture[DefaultViewsStore] = {
+  val defaultViewsStore: ResourceFixture.IOFixture[DefaultViewsStore] = {
 
     val tag = Tag.UserTag.unsafe("my-tag")
 

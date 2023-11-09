@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.http.scaladsl.model.HttpHeader
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy.bNode
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import io.circe.Json
-import monix.bio.IO
 
 import scala.xml.NodeSeq
 
@@ -23,7 +23,7 @@ class SparqlQueryClientDummy(
       q: SparqlQuery,
       responseType: Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
-  ): IO[SparqlClientError, R] =
+  ): IO[R] =
     responseType match {
       case SparqlResultsJson =>
         IO.pure(SparqlResultsResponse(sparqlResults(indices)))

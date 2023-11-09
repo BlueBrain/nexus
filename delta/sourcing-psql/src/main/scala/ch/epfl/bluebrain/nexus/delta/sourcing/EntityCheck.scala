@@ -21,7 +21,7 @@ object EntityCheck {
          | AND project = ${project.project}
          | AND id = $id
          | AND tag = ${Tag.latest}
-         |""".stripMargin.query[EntityType].option.transact(xas.readCE)
+         |""".stripMargin.query[EntityType].option.transact(xas.read)
 
   /**
     * Raises the defined error if at least one of the provided references does not exist or is deprecated
@@ -49,7 +49,7 @@ object EntityCheck {
         ProjectRef(org, proj) -> id
       }
       .to[Set]
-      .transact(xas.readCE)
+      .transact(xas.read)
       .flatMap { result =>
         IO.raiseWhen(result.size < refs.size) {
           onUnknownOrDeprecated(refs.diff(result))

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.{QuotasConfig, QuotasImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import monix.bio.UIO
 
 class QuotasRoutesSpec extends BaseRouteSpec {
 
@@ -35,7 +35,7 @@ class QuotasRoutesSpec extends BaseRouteSpec {
     ServiceAccount(User("internal", Label.unsafe("sa")))
   )
 
-  private val projectsStatistics: ProjectsStatistics = (_ => UIO.none)
+  private val projectsStatistics: ProjectsStatistics = (_ => IO.none)
 
   private val quotas = new QuotasImpl(projectsStatistics)
 

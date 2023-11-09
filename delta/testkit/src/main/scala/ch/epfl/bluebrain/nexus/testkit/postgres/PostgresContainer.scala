@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import cats.effect.Resource
-import monix.bio.Task
+import cats.effect.{IO, Resource}
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -27,7 +26,7 @@ object PostgresContainer {
     * @param password
     *   the db password
     */
-  def resource(user: String, password: String): Resource[Task, PostgresContainer] = {
+  def resource(user: String, password: String): Resource[IO, PostgresContainer] = {
     def createAndStartContainer = {
       val container = new PostgresContainer(user, password)
         .withReuse(false)
@@ -35,7 +34,7 @@ object PostgresContainer {
       container.start()
       container
     }
-    Resource.make(Task.delay(createAndStartContainer))(container => Task.delay(container.stop()))
+    Resource.make(IO.delay(createAndStartContainer))(container => IO.delay(container.stop()))
   }
 
 }

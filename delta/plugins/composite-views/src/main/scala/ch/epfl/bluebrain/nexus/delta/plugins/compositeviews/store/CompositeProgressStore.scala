@@ -44,7 +44,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
            |  failed = EXCLUDED.failed,
            |  updated_at = EXCLUDED.updated_at;
            |""".stripMargin.update.run
-          .transact(xas.writeCE)
+          .transact(xas.write)
           .void
       }
   }
@@ -59,7 +59,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
       .query[CompositeProgressRow]
       .map { row => row.branch -> row.progress }
       .toMap
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   /**
     * Reset the offset according to the provided restart
@@ -92,7 +92,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
          |  updated_at = $instant
          |$where
          |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
   }
 
@@ -103,7 +103,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
     sql"""DELETE FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
 }
 

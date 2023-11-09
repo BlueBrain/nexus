@@ -55,7 +55,7 @@ object StreamingQuery {
         maxInstant.map { m => RemainingElems(count, m) }
       }
       .unique
-      .transact(xas.readCE)
+      .transact(xas.read)
   }
 
   /**
@@ -199,7 +199,7 @@ object StreamingQuery {
   )(implicit timer: Timer[IO]): Stream[IO, A] =
     Stream
       .unfoldChunkEval[IO, Offset, A](start) { offset =>
-        query(offset).accumulate[Chunk].transact(xas.streamingCE).flatMap { elems =>
+        query(offset).accumulate[Chunk].transact(xas.streaming).flatMap { elems =>
           elems.last.fold(refreshOrStop[A](cfg, offset)) { last =>
             IO.pure(Some((elems, extractOffset(last))))
           }
@@ -235,7 +235,7 @@ object StreamingQuery {
   )(implicit timer: Timer[IO]): Stream[IO, A] =
     Stream
       .unfoldChunkEval[IO, Offset, A](start) { offset =>
-        query(offset).to[List].transact(xas.streamingCE).flatMap { elems =>
+        query(offset).to[List].transact(xas.streaming).flatMap { elems =>
           elems.lastOption.fold(refreshOrStop[A](cfg, offset)) { last =>
             IO.pure(Some((dropDuplicates(elems, extractId), extractOffset(last))))
           }

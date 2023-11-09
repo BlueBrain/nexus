@@ -111,7 +111,7 @@ object GlobalEventStore {
             Fragments.whereAndOpt(Some(fr"type = $tpe"), Some(fr"id = $id"), to.map { t => fr" rev <= $t" }) ++
             fr"ORDER BY rev"
 
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.readCE)
+        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
       }
 
       private def events(offset: Offset, strategy: RefreshStrategy): Stream[IO, Envelope[E]] =

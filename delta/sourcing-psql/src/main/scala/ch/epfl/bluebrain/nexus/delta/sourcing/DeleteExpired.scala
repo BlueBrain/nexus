@@ -21,7 +21,7 @@ final class DeleteExpired private[sourcing] (xas: Transactors)(implicit clock: C
       deleted <- sql"""
                   | DELETE FROM public.ephemeral_states
                   | WHERE expires < $instant
-                  """.stripMargin.update.run.transact(xas.writeCE)
+                  """.stripMargin.update.run.transact(xas.write)
       _       <- IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted expired ephemeral states"))
     } yield ()
   }

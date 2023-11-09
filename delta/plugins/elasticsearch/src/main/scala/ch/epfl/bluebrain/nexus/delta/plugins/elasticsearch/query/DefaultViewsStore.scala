@@ -49,7 +49,7 @@ object DefaultViewsStore {
           ))
           .query[Json]
           .to[List]
-          .transact(xas.readCE)
+          .transact(xas.read)
           .flatMap { rows =>
             rows.traverse { r =>
               IO.fromEither(r.as[ElasticSearchViewState]).map(asIndexingView(prefix, _))

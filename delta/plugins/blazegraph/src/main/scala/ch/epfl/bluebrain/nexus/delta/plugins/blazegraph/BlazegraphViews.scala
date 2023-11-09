@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
@@ -542,9 +542,8 @@ object BlazegraphViews {
         case i: IndexingBlazegraphView =>
           client
             .createNamespace(BlazegraphViews.namespace(i, prefix))
-            .mapError(WrappedBlazegraphClientError.apply)
+            .adaptError { case e: SparqlClientError => WrappedBlazegraphClientError(e) }
             .void
-            .toCatsIO
         case _                         => IO.unit
       }
     apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)

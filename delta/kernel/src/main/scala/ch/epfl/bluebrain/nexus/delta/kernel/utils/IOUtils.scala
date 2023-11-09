@@ -7,6 +7,7 @@ import monix.bio.UIO
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{DurationLong, FiniteDuration, MILLISECONDS}
 
 trait IOUtils {
 
@@ -15,6 +16,16 @@ trait IOUtils {
     */
   def instant(implicit clock: Clock[UIO]): UIO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+
+  implicit class IoOps[A](val io: IO[A]) {
+    def timed(implicit clock: Clock[IO]): IO[(FiniteDuration, A)] = {
+      for {
+        start  <- clock.monotonic(MILLISECONDS)
+        result <- io
+        finish <- clock.monotonic(MILLISECONDS)
+      } yield ((finish - start).milliseconds, result)
+    }
+  }
 }
 
 object IOUtils extends IOUtils
