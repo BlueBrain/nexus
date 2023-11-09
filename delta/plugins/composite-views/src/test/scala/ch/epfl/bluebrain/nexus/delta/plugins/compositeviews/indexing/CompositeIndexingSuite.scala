@@ -51,7 +51,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
@@ -69,7 +68,7 @@ import scala.concurrent.duration.DurationInt
 class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
 class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
 
-trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
+trait CompositeIndexingFixture extends CatsEffectSuite {
 
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never

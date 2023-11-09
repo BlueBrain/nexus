@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Chunk
 import io.circe.Json
@@ -24,7 +23,6 @@ import scala.concurrent.duration._
 
 class ElasticSearchSinkSuite
     extends CatsEffectSuite
-    with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral {
 

@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
@@ -27,7 +26,6 @@ import scala.concurrent.duration._
 
 class GraphAnalyticsSinkSuite
     extends CatsEffectSuite
-    with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with TestHelpers {
