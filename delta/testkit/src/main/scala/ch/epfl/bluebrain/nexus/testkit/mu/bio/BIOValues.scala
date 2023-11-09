@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import munit.Assertions.fail
 import munit.{Location, Suite}
@@ -12,11 +12,6 @@ import scala.util.control.NonFatal
 
 trait BIOValues {
   self: Suite =>
-
-  implicit class UIOValuesOps[A](private val uio: UIO[A]) {
-    def accepted(implicit s: Scheduler = Scheduler.global): A =
-      uio.runSyncUnsafe()
-  }
 
   implicit class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E]) {
 

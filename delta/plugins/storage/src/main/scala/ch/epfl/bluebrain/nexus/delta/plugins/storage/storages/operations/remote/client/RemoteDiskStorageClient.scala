@@ -66,7 +66,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       val endpoint = baseUri.endpoint / "buckets" / bucket.value
       val req      = Head(endpoint).withCredentials(authToken)
       client(req) {
-        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).void.toUIO
+        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).void
       }
     }
   }

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
@@ -77,7 +76,6 @@ object DefaultViewsQuery {
               v => ProjectAcl(v.ref.project) -> permissions.read,
               identity
             )(caller)
-            .toUIO
         }
         .flatMap {
           case views if views.isEmpty => IO.raiseError(AuthorizationFailed("No views are accessible."))

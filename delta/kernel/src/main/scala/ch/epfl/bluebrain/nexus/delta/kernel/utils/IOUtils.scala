@@ -33,7 +33,7 @@ object IOInstant extends IOInstant
 trait UUIDF {
 
   /**
-    * Creates a UUID wrapped in an [[UIO]]
+    * Creates a UUID wrapped in an [[IO]]
     */
   def apply(): IO[UUID]
 }

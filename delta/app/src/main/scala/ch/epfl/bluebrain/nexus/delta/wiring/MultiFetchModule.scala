@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.MultiFetchRoutes
@@ -23,7 +22,7 @@ object MultiFetchModule extends ModuleDef {
     ) =>
       MultiFetch(
         aclCheck,
-        (input: MultiFetchRequest.Input) => shifts.fetch(input.id, input.project).toUIO
+        (input: MultiFetchRequest.Input) => shifts.fetch(input.id, input.project)
       )
   }
 
