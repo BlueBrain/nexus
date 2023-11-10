@@ -1,23 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
+import cats.implicits.catsSyntaxApplicativeId
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.{esProjection, projectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDefSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewFactory, CompositeViewsFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterDeprecated
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, ProjectionProgress, RemainingElems, Source}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import fs2.Stream
 import shapeless.Typeable
 
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.duration._
 
 class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
@@ -27,27 +35,11 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
   private val sleep = IO.sleep(50.millis)
 
   test("Compile correctly the source") {
-
-    def makeSource(nameValue: String): Source = new Source {
-      override type Out = Unit
-      override def outType: Typeable[Unit]                 = Typeable[Unit]
-      override def apply(offset: Offset): ElemStream[Unit] = Stream.empty[IO]
-      override def name: String                            = nameValue
-    }
-
-    val graphStream = new CompositeGraphStream {
-      override def main(source: CompositeViewSource, project: ProjectRef): Source                                    = makeSource("main")
-      override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source      =
-        makeSource("rebuild")
-      override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] =
-        _ => IO.none
-    }
-
     CompositeViewDef
       .compileSource(
         project.ref,
         _ => Right(FilterDeprecated.withConfig(())),
-        graphStream,
+        emptyGraphStream,
         new NoopSink[NTriples](),
         Set.empty
       )(projectSource)
@@ -118,5 +110,94 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
       _                     <- value.get.eventually(paused + 4)
     } yield ()
   }
+
+  test("Rebuild condition is not satisfied when there is no diff in main progress") {
+    val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
+    val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
+    val progress        = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
+
+    CompositeViewDef
+      .rebuildWhen(
+        activeViewWithRebuild,
+        Ref.unsafe[IO, CompositeProgress](progress),
+        progress.pure[IO],
+        emptyGraphStream
+      )
+      .assertEquals(false)
+  }
+
+  test("Rebuild condition is not satisfied when there is a diff in main but there are remaining elements in main") {
+    val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
+    val newMainProgress = ProjectionProgress(Offset.at(11L), Instant.EPOCH, 11L, 5L, 0L)
+    val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
+    val oldProgress     = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
+    val newProgress     = CompositeProgress(Map(mainBranch -> newMainProgress, rebuildBranch -> rebuildProgress))
+
+    CompositeViewDef
+      .rebuildWhen(
+        activeViewWithRebuild,
+        Ref.unsafe[IO, CompositeProgress](oldProgress),
+        newProgress.pure[IO],
+        graphStreamWithRemainingElems
+      )
+      .assertEquals(false)
+  }
+
+  test("Rebuild condition is satisfied when there is a diff in main and there are no remaining elements in main") {
+    val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
+    val newMainProgress = ProjectionProgress(Offset.at(11L), Instant.EPOCH, 11L, 5L, 0L)
+    val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
+    val oldProgress     = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
+    val newProgress     = CompositeProgress(Map(mainBranch -> newMainProgress, rebuildBranch -> rebuildProgress))
+
+    CompositeViewDef
+      .rebuildWhen(
+        activeViewWithRebuild,
+        Ref.unsafe[IO, CompositeProgress](oldProgress),
+        newProgress.pure[IO],
+        emptyGraphStream
+      )
+      .assertEquals(true)
+  }
+
+}
+
+object CompositeViewDefSuite {
+
+  def makeSource(nameValue: String): Source = new Source {
+    override type Out = Unit
+    override def outType: Typeable[Unit]                 = Typeable[Unit]
+    override def apply(offset: Offset): ElemStream[Unit] = Stream.empty[IO]
+    override def name: String                            = nameValue
+  }
+
+  private val emptyGraphStream = new CompositeGraphStream {
+    override def main(source: CompositeViewSource, project: ProjectRef): Source                                    = makeSource("main")
+    override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source      =
+      makeSource("rebuild")
+    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] =
+      _ => IO.none
+  }
+
+  private val graphStreamWithRemainingElems = new CompositeGraphStream {
+    override def main(source: CompositeViewSource, project: ProjectRef): Source                                    = makeSource("main")
+    override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source      =
+      makeSource("rebuild")
+    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] =
+      _ => IO.pure(Some(RemainingElems(5L, Instant.EPOCH)))
+  }
+
+  private val ref                   = ViewRef(ProjectRef.unsafe("org", "proj"), nxv + "id")
+  private val uuid                  = UUID.randomUUID()
+  private val rev                   = 2
+  private val rebuild               = CompositeViewFactory.unsafe(
+    NonEmptyList.of(projectSource),
+    NonEmptyList.of(esProjection),
+    Some(Interval(2.seconds))
+  )
+  private val activeViewWithRebuild = ActiveViewDef(ref, uuid, rev, rebuild)
+
+  private val mainBranch    = CompositeBranch(projectSource.id, esProjection.id, CompositeBranch.Run.Main)
+  private val rebuildBranch = CompositeBranch(projectSource.id, esProjection.id, CompositeBranch.Run.Rebuild)
 
 }

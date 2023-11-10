@@ -360,17 +360,12 @@ object CompositeViewDef {
                            !previousProgress.sourceMainOffset(s.id).contains(offset),
                            s"An offset difference has been spotted with previous progress for source '${s.id}' in view '${view.ref}'."
                          )
-          diffRebuild <- test(
-                           !progress.sourceRebuildOffset(s.id).contains(offset),
-                           s"An offset difference has been spotted between main and rebuild for source '${s.id}' in view '${view.ref}'."
-                         )
-          diffOffset   = diffMain || diffRebuild
           noRemaining <-
-            if (diffOffset)
+            if (diffMain)
               graphStream.remaining(s, view.ref.project)(offset).map(r => r.isEmpty || r.exists(_.count == 0L))
             else IO.pure(false)
           _           <- test(noRemaining, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
-        } yield RebuildCondition(diffOffset, noRemaining)
+        } yield RebuildCondition(diffMain, noRemaining)
       }
 
     for {
