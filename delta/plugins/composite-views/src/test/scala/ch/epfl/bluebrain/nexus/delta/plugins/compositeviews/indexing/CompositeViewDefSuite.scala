@@ -73,13 +73,14 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
 
   private def rebuild(strategy: Option[RebuildStrategy]) = {
     for {
-      start <- Ref.of[IO, Boolean](false)
-      value <- Ref.of[IO, Int](0)
-      reset <- Ref.of[IO, Int](0)
-      inc    = Stream.eval(value.getAndUpdate(_ + 1))
-      result = CompositeViewDef
-                 .rebuild[Int](ViewRef(projectRef, id), strategy, start.get, reset.update(_ + 1))
-      _     <- result(inc).compile.drain.start
+      start  <- Ref.of[IO, Boolean](false)
+      value  <- Ref.of[IO, Int](0)
+      reset  <- Ref.of[IO, Int](0)
+      update <- Ref.of[IO, Boolean](false)
+      inc     = Stream.eval(value.getAndUpdate(_ + 1))
+      result  = CompositeViewDef
+                  .rebuild[Int](ViewRef(projectRef, id), strategy, start.get, reset.update(_ + 1), update)
+      _      <- result(inc).compile.drain.start
     } yield (start, value, reset)
   }
 
@@ -111,7 +112,7 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
     } yield ()
   }
 
-  test("Rebuild condition is not satisfied when there is no diff in main progress") {
+  test("Rebuild condition is not satisfied when there is no update on the main branch") {
     val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
     val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
     val progress        = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
@@ -119,43 +120,41 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
     CompositeViewDef
       .rebuildWhen(
         activeViewWithRebuild,
-        Ref.unsafe[IO, CompositeProgress](progress),
         progress.pure[IO],
-        emptyGraphStream
+        emptyGraphStream,
+        Ref.unsafe[IO, Boolean](false)
       )
       .assertEquals(false)
   }
 
-  test("Rebuild condition is not satisfied when there is a diff in main but there are remaining elements in main") {
-    val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
+  test(
+    "Rebuild condition is not satisfied when there is an update on main but there are still remaining elements in main"
+  ) {
     val newMainProgress = ProjectionProgress(Offset.at(11L), Instant.EPOCH, 11L, 5L, 0L)
     val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
-    val oldProgress     = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
     val newProgress     = CompositeProgress(Map(mainBranch -> newMainProgress, rebuildBranch -> rebuildProgress))
 
     CompositeViewDef
       .rebuildWhen(
         activeViewWithRebuild,
-        Ref.unsafe[IO, CompositeProgress](oldProgress),
         newProgress.pure[IO],
-        graphStreamWithRemainingElems
+        graphStreamWithRemainingElems,
+        Ref.unsafe[IO, Boolean](true)
       )
       .assertEquals(false)
   }
 
-  test("Rebuild condition is satisfied when there is a diff in main and there are no remaining elements in main") {
-    val mainProgress    = ProjectionProgress(Offset.at(10L), Instant.EPOCH, 10L, 5L, 0L)
+  test("Rebuild condition is satisfied when there an update in main AND there are no remaining elements in main") {
     val newMainProgress = ProjectionProgress(Offset.at(11L), Instant.EPOCH, 11L, 5L, 0L)
     val rebuildProgress = ProjectionProgress(Offset.at(5L), Instant.EPOCH, 10L, 5L, 0L)
-    val oldProgress     = CompositeProgress(Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress))
     val newProgress     = CompositeProgress(Map(mainBranch -> newMainProgress, rebuildBranch -> rebuildProgress))
 
     CompositeViewDef
       .rebuildWhen(
         activeViewWithRebuild,
-        Ref.unsafe[IO, CompositeProgress](oldProgress),
         newProgress.pure[IO],
-        emptyGraphStream
+        emptyGraphStream,
+        Ref.unsafe[IO, Boolean](true)
       )
       .assertEquals(true)
   }

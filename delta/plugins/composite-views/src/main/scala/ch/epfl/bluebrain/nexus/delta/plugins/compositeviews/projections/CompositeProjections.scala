@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
+import cats.effect.concurrent.Ref
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -8,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.{CompositeProgressStore, CompositeRestartStore}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingViewRef, ViewRef}
@@ -36,12 +38,21 @@ trait CompositeProjections {
     *
     * Saves both the progress and the errors
     *
+    * @param view
+    *   view for which to save the progress
     * @param branch
-    *   the composite branch
+    *   composite branch for which to save the progress
     * @param progress
-    *   the offset to save
+    *   offset to save
+    * @param mainUpdatedRef
+    *   [[Ref]] used to indicate that there was a progress change on the main branch
     */
-  def saveOperation(view: ActiveViewDef, branch: CompositeBranch, progress: ProjectionProgress): Operation
+  def saveOperation(
+      view: ActiveViewDef,
+      branch: CompositeBranch,
+      progress: ProjectionProgress,
+      mainUpdatedRef: Ref[IO, Boolean]
+  ): Operation
 
   /**
     * Delete all entries for the given view
@@ -105,15 +116,23 @@ object CompositeProjections {
       override def saveOperation(
           view: ActiveViewDef,
           branch: CompositeBranch,
-          progress: ProjectionProgress
-      ): Operation =
+          progress: ProjectionProgress,
+          mainUpdatedRef: Ref[IO, Boolean]
+      ): Operation = {
+
+        val signalMainHasBeenUpdated = branch.run match {
+          case Main    => mainUpdatedRef.update(_ => true)
+          case Rebuild => IO.unit
+        }
+
         Operation.fromFs2Pipe[Unit](
           Projection.persist(
             progress,
-            compositeProgressStore.save(view.indexingRef, branch, _),
+            compositeProgressStore.save(view.indexingRef, branch, _) >> signalMainHasBeenUpdated,
             failedElemLogStore.save(view.metadata, _)
           )(batch, timer, cs)
         )
+      }
 
       override def deleteAll(view: IndexingViewRef): IO[Unit] = compositeProgressStore.deleteAll(view)
 

@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
 import cats.data.{NonEmptyChain, NonEmptyMap}
-import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.kernel.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -199,12 +199,13 @@ object CompositeViewDef {
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
-    def compileAll(progressRef: Ref[IO, CompositeProgress]) = {
+    def compileAll(mainUpdated: Ref[IO, Boolean]) = {
       def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
         view.ref,
         view.value.rebuildStrategy,
-        CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
-        compositeProjections.resetRebuild(view.ref)
+        CompositeViewDef.rebuildWhen(view, fetchProgress, graphStream, mainUpdated),
+        compositeProjections.resetRebuild(view.ref),
+        mainUpdated
       )
 
       compile(
@@ -214,7 +215,7 @@ object CompositeViewDef {
         compileTarget,
         rebuild,
         compositeProjections.handleRestarts(view.ref),
-        compositeProjections.saveOperation(view, _, _)
+        compositeProjections.saveOperation(view, _, _, mainUpdated)
       ).map { stream =>
         CompiledProjection.fromStream(
           metadata,
@@ -225,9 +226,8 @@ object CompositeViewDef {
     }
 
     for {
-      initProgress <- fetchProgress
-      progressRef  <- Ref.of[IO, CompositeProgress](initProgress)
-      projection   <- compileAll(progressRef)
+      mainUpdated <- Ref.of[IO, Boolean](false)
+      projection  <- compileAll(mainUpdated)
     } yield projection
   }
 
@@ -316,14 +316,16 @@ object CompositeViewDef {
       view: ViewRef,
       rebuildStrategy: Option[RebuildStrategy],
       predicate: IO[Boolean],
-      resetProgress: IO[Unit]
+      resetProgress: IO[Unit],
+      mainUpdatedRef: Ref[IO, Boolean]
   )(implicit timer: Timer[IO], cs: ContextShift[IO]): Pipe[IO, A, A] = { stream =>
     rebuildStrategy match {
       case Some(Interval(fixedRate)) =>
-        val rebuildWhen       = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
-        val waitingForRebuild = Stream.never[IO].interruptWhen(rebuildWhen).drain
+        val rebuildWhen            = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
+        val waitingForRebuild      = Stream.never[IO].interruptWhen(rebuildWhen).drain
+        val resetMainUpdatedStatus = Stream.eval(mainUpdatedRef.update(_ => false)).drain
         Stream.eval(logger.debug(s"Rebuild has been defined at $fixedRate for view '$view'.")) >>
-          (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
+          (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ resetMainUpdatedStatus ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
         Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '$view'.")) >>
@@ -336,14 +338,14 @@ object CompositeViewDef {
     *
     * The conditions are:
     *
-    *   - At least one of the main branches indexed at least a new element
-    *   - All the main branches consumed all existing elements
+    *   - An update has been spotted on the main branch
+    *   - There are no remaining elements to process on the main branch
     */
   def rebuildWhen(
       view: ActiveViewDef,
-      progressRef: Ref[IO, CompositeProgress],
       fetchProgress: IO[CompositeProgress],
-      graphStream: CompositeGraphStream
+      graphStream: CompositeGraphStream,
+      mainUpdatedRef: Ref[IO, Boolean]
   ): IO[Boolean] = {
 
     def test(condition: Boolean, message: String): IO[Boolean] =
@@ -351,44 +353,41 @@ object CompositeViewDef {
 
     def checkSource(
         s: CompositeViewSource,
-        progress: CompositeProgress,
-        previousProgress: CompositeProgress
+        progress: CompositeProgress
     ): IO[RebuildCondition] =
       progress.sourceMainOffset(s.id).fold(IO.pure(RebuildCondition.start)) { offset =>
         for {
-          diffMain    <- test(
-                           !previousProgress.sourceMainOffset(s.id).contains(offset),
-                           s"An offset difference has been spotted with previous progress for source '${s.id}' in view '${view.ref}'."
-                         )
-          noRemaining <-
-            if (diffMain)
+          mainUpdated       <- mainUpdatedRef.get
+          _                 <- test(mainUpdated, "An updated has been spotted on the main branch.")
+          noRemainingOnMain <-
+            if (mainUpdated)
               graphStream.remaining(s, view.ref.project)(offset).map(r => r.isEmpty || r.exists(_.count == 0L))
             else IO.pure(false)
-          _           <- test(noRemaining, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
-        } yield RebuildCondition(diffMain, noRemaining)
+          _                 <-
+            test(noRemainingOnMain, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
+        } yield RebuildCondition(mainUpdated, noRemainingOnMain)
       }
 
     for {
-      newProgress      <- fetchProgress
-      previousProgress <- progressRef.getAndSet(newProgress)
-      condition        <- view.value.sources
-                            .reduceMapM(checkSource(_, newProgress, previousProgress))
-                            .map { r => r.diffOffset && r.noRemaining }
-      _                <- test(condition, s"All conditions are met to trigger the rebuild for view '${view.ref}'.")
-    } yield condition
+      progress      <- fetchProgress
+      shouldRebuild <- view.value.sources
+                         .reduceMapM(checkSource(_, progress))
+                         .map { r => r.mainUpdated && r.noRemainingOnMain }
+      _             <- test(shouldRebuild, s"All conditions are met to trigger the rebuild for view '${view.ref}'.")
+    } yield shouldRebuild
   }
 
   /**
     * Conditions to trigger a rebuild
     */
-  final case class RebuildCondition(diffOffset: Boolean, noRemaining: Boolean)
+  final case class RebuildCondition(mainUpdated: Boolean, noRemainingOnMain: Boolean)
 
   object RebuildCondition {
 
-    val start: RebuildCondition = RebuildCondition(diffOffset = false, noRemaining = false)
+    val start: RebuildCondition = RebuildCondition(mainUpdated = false, noRemainingOnMain = false)
 
     implicit val rebuildConditionSemigroup: Semigroup[RebuildCondition] = (x: RebuildCondition, y: RebuildCondition) =>
-      RebuildCondition(x.diffOffset || y.diffOffset, x.noRemaining && y.noRemaining)
+      RebuildCondition(x.mainUpdated || y.mainUpdated, x.noRemainingOnMain && y.noRemainingOnMain)
   }
 
   /**
