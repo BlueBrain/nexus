@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.data.NonEmptyChain
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
-import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Pull, Stream}
 import shapeless.Typeable
 
@@ -205,7 +205,7 @@ object Operation {
       acc.andThen(e)
     }
 
-  private[stream] val logger: Logger = Logger[Operation]
+  private[stream] val logger = Logger[Operation]
 
   /**
     * Pipes represent individual steps in a [[Projection]] where [[SuccessElem]] values are processed to produce other
@@ -261,10 +261,8 @@ object Operation {
                   .eval(
                     apply(value)
                       .handleErrorWith { err =>
-                        IO
-                          .delay(
-                            logger.error(s"Error while applying pipe $name on element ${value.id}", err)
-                          )
+                        logger
+                          .error(err)(s"Error while applying pipe $name on element ${value.id}")
                           .as(value.failed(err))
                       }
                   )

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.storage.StorageError._
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
@@ -11,8 +12,7 @@ import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Rejection, StorageError, Storages}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, StorageError, Storages}
 
 import scala.util.control.NonFatal
 
@@ -42,11 +42,14 @@ object Routes {
       case err: PathInvalid     =>
         complete(err: StorageError)
       case err: StorageError    =>
-        logger.error("Exception caught during routes processing", err)
-        completeGeneric()
+        onComplete(logger.error(err)("Exception caught during routes processing").unsafeToFuture()) { _ =>
+          completeGeneric()
+        }
       case NonFatal(err)        =>
-        logger.error("Exception caught during routes processing", err)
-        completeGeneric()
+        onComplete(logger.error(err)("Exception caught during routes processing").unsafeToFuture()) { _ =>
+          completeGeneric()
+        }
+
     }
   }
 
@@ -54,13 +57,8 @@ object Routes {
     * @return
     *   a complete RejectionHandler for all library and code rejections
     */
-  final val rejectionHandler: RejectionHandler = {
-    val custom = RejectionHandling.apply { r: Rejection =>
-      logger.debug(s"Handling rejection '$r'")
-      r
-    }
-    custom withFallback RejectionHandling.notFound withFallback RejectionHandler.default
-  }
+  final val rejectionHandler: RejectionHandler =
+    RejectionHandling.apply withFallback RejectionHandling.notFound withFallback RejectionHandler.default
 
   /**
     * Wraps the provided route with rejection and exception handling.

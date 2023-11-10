@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 
 /**
@@ -25,7 +24,7 @@ sealed trait ProjectDeletionCoordinator
 
 object ProjectDeletionCoordinator {
 
-  private val logger: Logger = Logger[ProjectDeletionCoordinator]
+  private val logger = Logger[ProjectDeletionCoordinator]
 
   /**
     * If deletion is disabled, we do nothing
@@ -63,7 +62,7 @@ object ProjectDeletionCoordinator {
 
     private[deletion] def delete(project: ProjectState): IO[Unit] =
       for {
-        _         <- IO.delay(logger.warn(s"Starting deletion of project ${project.project}"))
+        _         <- logger.warn(s"Starting deletion of project ${project.project}")
         now       <- IOInstant.now
         // Running preliminary tasks before deletion like deprecating and stopping views,
         // removing acl related to the project, etc...
@@ -76,7 +75,7 @@ object ProjectDeletionCoordinator {
         _         <- IO.sleep(deletionConfig.propagationDelay)
         // Delete the events and states and save the deletion report
         _         <- deletionStore.deleteAndSaveReport(report)
-        _         <- IO.delay(logger.info(s"Project ${project.project} has been successfully deleted."))
+        _         <- logger.info(s"Project ${project.project} has been successfully deleted.")
       } yield ()
 
     private[deletion] def list(project: ProjectRef): IO[List[ProjectDeletionReport]] =
@@ -118,7 +117,7 @@ object ProjectDeletionCoordinator {
   )(implicit clock: Clock[IO], timer: Timer[IO]): IO[ProjectDeletionCoordinator] = {
     val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas)
     stream match {
-      case Noop           => IO.delay(logger.info("Projection deletion is disabled.")).as(Noop)
+      case Noop           => logger.info("Projection deletion is disabled.").as(Noop)
       case active: Active =>
         val metadata: ProjectionMetadata = ProjectionMetadata("system", "project-deletion", None, None)
         supervisor
