@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import cats.effect.{ContextShift, IO}
 import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxFlatMapOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import com.typesafe.scalalogging.Logger
 import io.circe.parser.decode
 import fs2._
 
@@ -74,7 +74,7 @@ trait DeltaClient {
 
 object DeltaClient {
 
-  private val logger: Logger = Logger[DeltaClient.type]
+  private val logger = Logger[DeltaClient.type]
 
   private val accept = Accept(`application/json`.mediaType, RdfMediaTypes.`application/ld+json`)
 
@@ -144,8 +144,8 @@ object DeltaClient {
           decode[Elem[Unit]](sse.data) match {
             case Right(elem) => Stream.emit(elem)
             case Left(err)   =>
-              logger.error(s"Failed to decode sse event '$sse'", err)
-              Stream.empty
+              Stream.eval(logger.error(err)(s"Failed to decode sse event '$sse'")) >>
+                Stream.empty
           }
         }
     }

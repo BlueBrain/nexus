@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
 import cats.effect.{ExitCase, IO, Timer}
-import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxFlatMapOps}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import com.typesafe.scalalogging.Logger
 import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -27,7 +27,7 @@ import scala.collection.mutable.ListBuffer
   */
 object StreamingQuery {
 
-  private val logger: Logger = Logger[StreamingQuery.type]
+  private val logger = Logger[StreamingQuery.type]
 
   private val newState = "newState"
 
@@ -163,11 +163,8 @@ object StreamingQuery {
       .evalMapChunk { e =>
         e.evalMap { value =>
           decodeValue(e.tpe, value).onError { err =>
-            IO.delay(
-              logger.error(
-                s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$project'.",
-                err
-              )
+            logger.error(err)(
+              s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$project'."
             )
           }
         }
@@ -263,17 +260,13 @@ object StreamingQuery {
     Chunk.buffer(buffer)
   }
 
-  private def logQuery[A, E](query: Query0[A]): ExitCase[E] => IO[Unit] = {
-    case ExitCase.Completed =>
-      IO.delay(
-        logger.debug("Reached the end of the single evaluation of query '{}'.", query.sql)
-      )
-    case ExitCase.Error(e)  =>
-      IO.delay(logger.error(s"Single evaluation of query '${query.sql}' failed.", e))
-    case ExitCase.Canceled  =>
-      IO.delay(
-        logger.debug("Reached the end of the single evaluation of query '{}'.", query.sql)
-      )
+  private def logQuery[A, E <: Throwable](query: Query0[A]): ExitCase[E] => IO[Unit] = {
+    case ExitCase.Completed    =>
+      logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
+    case ExitCase.Error(cause) =>
+      logger.error(cause)(s"Single evaluation of query '${query.sql}' failed.")
+    case ExitCase.Canceled     =>
+      logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
   }
 
   private def stateFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {

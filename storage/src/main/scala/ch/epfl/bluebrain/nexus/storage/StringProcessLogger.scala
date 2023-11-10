@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 
 import scala.sys.process.ProcessLogger
 
@@ -16,7 +16,7 @@ import scala.sys.process.ProcessLogger
   */
 class StringProcessLogger(cmd: Seq[String], arg: Option[String]) extends ProcessLogger {
 
-  private val logger = Logger(cmd.mkString(" "))
+  private val logger = LoggerFactory.getLogger(cmd.mkString(" "))
 
   private val builder = new StringBuilder
 

@@ -51,7 +51,6 @@ val munitVersion            = "1.0.0-M10"
 val nimbusJoseJwtVersion    = "9.37"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
-val scalaLoggingVersion     = "3.9.5"
 val scalaTestVersion        = "3.2.17"
 val scalaXmlVersion         = "2.2.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
@@ -115,7 +114,7 @@ lazy val munit              = "org.scalameta"                %% "munit"         
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
-lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
+lazy val scalaReflect       = "org.scala-lang"                % "scala-reflect"            % scalaCompilerVersion
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
 lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
@@ -214,7 +213,6 @@ lazy val kernel = project
       log4cats,
       pureconfig,
       pureconfigCats,
-      scalaLogging,
       munit     % Test,
       scalaTest % Test
     ),
@@ -289,6 +287,7 @@ lazy val rdf = project
       jenaArq,
       jsonldjava,
       magnolia,
+      scalaReflect,
       topBraidShacl,
       akkaSlf4j   % Test,
       akkaTestKit % Test,
@@ -762,7 +761,6 @@ lazy val storage = project
       circeGenericExtras,
       logback,
       pureconfig,
-      scalaLogging,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       mockito         % Test,
@@ -796,7 +794,6 @@ lazy val tests = project
       circeGenericExtras,
       fs2,
       logback,
-      scalaLogging,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
       awsSdk          % Test,

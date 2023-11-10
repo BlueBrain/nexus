@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.effect.{IO, Timer}
-import com.typesafe.scalalogging.{Logger => ScalaLoggingLogger}
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
@@ -54,18 +53,6 @@ object RetryStrategy {
   /**
     * Log errors when retrying
     */
-  def logError[E](logger: ScalaLoggingLogger, action: String): (E, RetryDetails) => IO[Unit] = {
-    case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
-      val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
-      IO.delay(logger.warn(message))
-    case (err, GivingUp(totalRetries, _))                     =>
-      val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
-      IO.delay(logger.error(message))
-  }
-
-  /**
-    * Log errors when retrying
-    */
   def logError[E](logger: org.typelevel.log4cats.Logger[IO], action: String): (E, RetryDetails) => IO[Unit] = {
     case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
       val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
@@ -104,27 +91,6 @@ object RetryStrategy {
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
       onError
-    )
-
-  /**
-    * Retry strategy which retries on all non fatal errors and just outputs a log when an error occurs
-    *
-    * @param config
-    *   the retry configuration
-    * @param logger
-    *   the logger to use
-    * @param action
-    *   the action that was performed
-    */
-  def retryOnNonFatal(
-      config: RetryStrategyConfig,
-      logger: ScalaLoggingLogger,
-      action: String
-  ): RetryStrategy[Throwable] =
-    RetryStrategy(
-      config,
-      (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d)
     )
 
   def retryOnNonFatal(
