@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.typesafe.config.impl.ConfigImpl
 import org.scalatest.BeforeAndAfterAll
@@ -26,7 +26,7 @@ class AppConfigSpec extends CatsEffectSpec with BeforeAndAfterAll {
 
   "AppConfig" should {
 
-    val externalConfigPath = CatsEffectsClasspathResourceUtils.absolutePath("/config/external.conf").accepted
+    val externalConfigPath = ClasspathResourceUtils.absolutePath("/config/external.conf").accepted
 
     "load conf" in {
       val (conf, _) = AppConfig.load().accepted

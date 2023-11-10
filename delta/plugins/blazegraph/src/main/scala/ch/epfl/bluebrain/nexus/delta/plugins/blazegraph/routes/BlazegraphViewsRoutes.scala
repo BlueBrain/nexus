@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -15,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
@@ -26,8 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
@@ -66,9 +65,6 @@ class BlazegraphViewsRoutes(
 
   import schemeDirectives._
 
-  private def indexUIO(project: ProjectRef, resource: ResourceF[BlazegraphView], mode: IndexingMode) =
-    index(project, resource, mode).toUIO
-
   def routes: Route =
     concat(
       pathPrefix("views") {
@@ -82,7 +78,7 @@ class BlazegraphViewsRoutes(
                     Created,
                     views
                       .create(ref, source)
-                      .flatTap(indexUIO(ref, _, mode))
+                      .flatTap(index(ref, _, mode))
                       .mapValue(_.metadata)
                       .attemptNarrow[BlazegraphViewRejection]
                       .rejectWhen(decodingFailedOrViewNotFound)
@@ -102,7 +98,7 @@ class BlazegraphViewsRoutes(
                                 Created,
                                 views
                                   .create(id, ref, source)
-                                  .flatTap(indexUIO(ref, _, mode))
+                                  .flatTap(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
@@ -112,7 +108,7 @@ class BlazegraphViewsRoutes(
                               emit(
                                 views
                                   .update(id, ref, rev, source)
-                                  .flatTap(indexUIO(ref, _, mode))
+                                  .flatTap(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
@@ -126,7 +122,7 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .deprecate(id, ref, rev)
-                              .flatTap(indexUIO(ref, _, mode))
+                              .flatTap(index(ref, _, mode))
                               .mapValue(_.metadata)
                               .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
@@ -186,7 +182,7 @@ class BlazegraphViewsRoutes(
                               Created,
                               views
                                 .tag(id, ref, tag, tagRev, rev)
-                                .flatTap(indexUIO(ref, _, mode))
+                                .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[BlazegraphViewRejection]
                                 .rejectOn[ViewNotFound]

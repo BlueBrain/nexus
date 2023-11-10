@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
-import ch.epfl.bluebrain.nexus.testkit.MutableClock
+import ch.epfl.bluebrain.nexus.testkit.clock.MutableClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.{AnyFixture, Location}
 
@@ -26,11 +26,11 @@ class FailedElemLogStoreSuite
     with Doobie.Fixture
     with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, clock)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, mutableClockFixture)
 
   private lazy val xas = doobie()
 
-  implicit private lazy val mutableClock: MutableClock = clock()
+  implicit private lazy val mutableClock: MutableClock = mutableClockFixture()
 
   private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop))
 

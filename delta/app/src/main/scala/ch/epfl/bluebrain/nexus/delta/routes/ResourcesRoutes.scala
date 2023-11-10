@@ -5,7 +5,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -14,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -28,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, NoSchemaProvided, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, Printer}
 
 /**
@@ -68,9 +66,6 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
-  private def indexUIO(project: ProjectRef, resource: ResourceF[Resource], mode: IndexingMode) =
-    index(project, resource, mode).toUIO
-
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
@@ -85,7 +80,7 @@ final class ResourcesRoutes(
                       Created,
                       resources
                         .create(project, resourceSchema, source.value, tag)
-                        .flatTap(indexUIO(project, _, mode))
+                        .flatTap(index(project, _, mode))
                         .map(_.void)
                         .attemptNarrow[ResourceRejection]
                     )
@@ -102,7 +97,7 @@ final class ResourcesRoutes(
                           Created,
                           resources
                             .create(project, schema, source.value, tag)
-                            .flatTap(indexUIO(project, _, mode))
+                            .flatTap(index(project, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
                             .rejectWhen(wrongJsonOrNotFound)
@@ -124,7 +119,7 @@ final class ResourcesRoutes(
                                     Created,
                                     resources
                                       .create(resource, project, schema, source.value, tag)
-                                      .flatTap(indexUIO(project, _, mode))
+                                      .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
@@ -134,7 +129,7 @@ final class ResourcesRoutes(
                                   emit(
                                     resources
                                       .update(resource, project, schemaOpt, rev, source.value, tag)
-                                      .flatTap(indexUIO(project, _, mode))
+                                      .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
@@ -148,7 +143,7 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .deprecate(resource, project, schemaOpt, rev)
-                                  .flatTap(indexUIO(project, _, mode))
+                                  .flatTap(index(project, _, mode))
                                   .map(_.void)
                                   .attemptNarrow[ResourceRejection]
                                   .rejectWhen(wrongJsonOrNotFound)
@@ -178,7 +173,7 @@ final class ResourcesRoutes(
                           emit(
                             resources
                               .undeprecate(resource, project, schemaOpt, rev)
-                              .flatTap(indexUIO(project, _, mode))
+                              .flatTap(index(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -193,7 +188,7 @@ final class ResourcesRoutes(
                               .flatMap { schema =>
                                 resources
                                   .updateAttachedSchema(resource, project, schema)
-                                  .flatTap(indexUIO(project, _, mode))
+                                  .flatTap(index(project, _, mode))
                               }
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -207,7 +202,7 @@ final class ResourcesRoutes(
                             OK,
                             resources
                               .refresh(resource, project, schemaOpt)
-                              .flatTap(indexUIO(project, _, mode))
+                              .flatTap(index(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
@@ -273,7 +268,7 @@ final class ResourcesRoutes(
                                   Created,
                                   resources
                                     .tag(resource, project, schemaOpt, tag, tagRev, rev)
-                                    .flatTap(indexUIO(project, _, mode))
+                                    .flatTap(index(project, _, mode))
                                     .map(_.void)
                                     .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
@@ -289,7 +284,7 @@ final class ResourcesRoutes(
                             emit(
                               resources
                                 .deleteTag(resource, project, schemaOpt, tag, rev)
-                                .flatTap(indexUIO(project, _, mode))
+                                .flatTap(index(project, _, mode))
                                 .map(_.void)
                                 .attemptNarrow[ResourceRejection]
                                 .rejectOn[ResourceNotFound]

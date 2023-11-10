@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.concurrent.Ref
 import cats.effect.{Clock, IO}
-import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
@@ -10,12 +9,6 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{DurationLong, FiniteDuration, MILLISECONDS}
 
 trait IOUtils {
-
-  /**
-    * Creates an Instant deferring its evaluation to the to ''clock'' scheduler
-    */
-  def instant(implicit clock: Clock[UIO]): UIO[Instant] =
-    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
 
   implicit class IoOps[A](val io: IO[A]) {
     def timed(implicit clock: Clock[IO]): IO[(FiniteDuration, A)] = {
@@ -40,7 +33,7 @@ object IOInstant extends IOInstant
 trait UUIDF {
 
   /**
-    * Creates a UUID wrapped in an [[UIO]]
+    * Creates a UUID wrapped in an [[IO]]
     */
   def apply(): IO[UUID]
 }

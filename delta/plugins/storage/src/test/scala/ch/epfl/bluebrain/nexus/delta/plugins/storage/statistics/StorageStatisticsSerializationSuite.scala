@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import munit.FunSuite
 
-class StorageStatisticsSerializationSuite extends BioSuite {
+class StorageStatisticsSerializationSuite extends FunSuite {
 
   test("Statistics responses are deserialized correctly") {
     val json     = jsonContentOf("storages/statistics/single-storage-stats-response.json")

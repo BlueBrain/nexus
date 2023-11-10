@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -87,7 +86,7 @@ object GraphResourceStream {
         selectFilter,
         qc.copy(refreshStrategy = RefreshStrategy.Stop),
         xas,
-        shifts.decodeGraphResource(_, _).toTask
+        shifts.decodeGraphResource(_, _)
       )
 
     override def remaining(

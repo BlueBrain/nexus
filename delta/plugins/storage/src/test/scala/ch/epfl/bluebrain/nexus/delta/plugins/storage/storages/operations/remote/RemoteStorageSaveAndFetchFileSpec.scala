@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.scalatest.concurrent.Eventually
@@ -37,7 +36,6 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageSaveAndFetchFileSpec"))
     with CatsEffectSpec
     with AkkaSourceHelpers
-    with BIOValues
     with Eventually
     with BeforeAndAfterAll
     with StorageFixtures

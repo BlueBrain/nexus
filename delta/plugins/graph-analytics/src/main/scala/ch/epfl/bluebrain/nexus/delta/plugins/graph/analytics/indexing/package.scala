@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.JsonObject
@@ -18,12 +18,12 @@ package object indexing {
   val updateRelationshipsScriptId = "updateRelationships"
 
   val scriptContent: IO[String] =
-    CatsEffectsClasspathResourceUtils
+    ClasspathResourceUtils
       .ioContentOf("elasticsearch/update_relationships_script.painless")
       .onError(e => logger.warn(e)("ElasticSearch script 'update_relationships_script.painless' template not found"))
 
   val graphAnalyticsMappings: IO[JsonObject] =
-    CatsEffectsClasspathResourceUtils
+    ClasspathResourceUtils
       .ioJsonObjectContentOf("elasticsearch/mappings.json")
       .onError(e => logger.warn(e)("ElasticSearch mapping 'mappings.json' template not found"))
 

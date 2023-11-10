@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CatsEffectsClasspathResourceUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
@@ -48,7 +47,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
   make[DefaultProperties].fromEffect {
-    CatsEffectsClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").map(DefaultProperties)
+    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").map(DefaultProperties)
   }
 
   make[HttpClient].named("http-indexing-client").from {
@@ -131,7 +130,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors
     ) =>
       ValidateBlazegraphView(
-        permissions.fetchPermissionSet.toUIO,
+        permissions.fetchPermissionSet,
         config.maxViewRefs,
         xas
       )

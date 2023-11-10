@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Chunk
 import munit.AnyFixture
@@ -21,11 +20,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphSinkSuite
-    extends CatsEffectSuite
-    with BioRunContext
-    with BlazegraphClientSetup.Fixture
-    with TestHelpers {
+class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fixture with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 

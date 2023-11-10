@@ -186,7 +186,7 @@ object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with Cats
   val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
   val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
 
-  implicit val clock: Clock[IO] = Clock.create
+  implicit val realClock: Clock[IO] = Clock.create
 
   def shouldBeDeleted(
       config: ProjectDeletionConfig,

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.BucketName
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -27,7 +26,6 @@ import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageClientSpec"))
     with CatsEffectSpec
-    with BioRunContext
     with AkkaSourceHelpers
     with Eventually
     with BeforeAndAfterAll

@@ -6,7 +6,6 @@ import cats.syntax.eq._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
 import munit.{Assertions, Compare, FailException, Location}
 
 import scala.reflect.ClassTag
