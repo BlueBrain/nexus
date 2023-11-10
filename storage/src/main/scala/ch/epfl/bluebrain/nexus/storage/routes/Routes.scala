@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.storage.routes
 
-import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
+import akka.http.scaladsl.model.headers.{HttpChallenges, `WWW-Authenticate`}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, StorageError, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Rejection, StorageError, Storages}
 
 import scala.util.control.NonFatal
 
@@ -58,7 +58,7 @@ object Routes {
     *   a complete RejectionHandler for all library and code rejections
     */
   final val rejectionHandler: RejectionHandler =
-    RejectionHandling.apply withFallback RejectionHandling.notFound withFallback RejectionHandler.default
+    RejectionHandling.apply { r: Rejection => r } withFallback RejectionHandling.notFound withFallback RejectionHandler.default
 
   /**
     * Wraps the provided route with rejection and exception handling.
