@@ -1,5 +1,8 @@
 <http://music.com/muse> <http://music.com/album> <http://music.com/absolution> .
+<http://music.com/absolution> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://music.com/Album> .
+<http://music.com/absolution> <http://www.w3.org/2000/01/rdf-schema#label> "Absolution" .
 <http://music.com/absolution> <http://music.com/title> "Absolution" .
+<http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/project> "org/proj" .
 <http://music.com/muse> <http://music.com/album> <http://music.com/black_holes_and_revelations> .
 <http://music.com/black_holes_and_revelations> <http://music.com/title> "Black Holes & Revelations" .
 <http://music.com/muse> <http://music.com/genre> "alternative rock" .
