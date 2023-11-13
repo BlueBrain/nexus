@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -31,10 +30,8 @@ trait CompositeGraphStream {
     *   the composite view source
     * @param project
     *   the enclosing project
-    * @param projectionTypes
-    *   the projection resource types to use to filter the stream
     */
-  def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source
+  def rebuild(source: CompositeViewSource, project: ProjectRef): Source
 
   /**
     * Get information about the remaining elements
@@ -65,20 +62,13 @@ object CompositeGraphStream {
       }
     }
 
-    override def rebuild(
-        source: CompositeViewSource,
-        project: ProjectRef,
-        projectionTypes: Set[Iri]
-    ): Source = {
+    override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
       source match {
         case p: ProjectSource       =>
-          val filter = p.selectFilter.copy(types = p.selectFilter.types ++ projectionTypes)
-          Source(local.currents(project, filter, _).through(drainSource))
+          Source(local.currents(project, p.selectFilter, _).through(drainSource))
         case c: CrossProjectSource  =>
-          val filter = c.selectFilter.copy(types = c.selectFilter.types ++ projectionTypes)
-          Source(local.currents(c.project, filter, _).through(drainSource))
-        case r: RemoteProjectSource =>
-          remote.rebuild(r)
+          Source(local.currents(c.project, c.selectFilter, _).through(drainSource))
+        case r: RemoteProjectSource => remote.rebuild(r)
       }
     }
 

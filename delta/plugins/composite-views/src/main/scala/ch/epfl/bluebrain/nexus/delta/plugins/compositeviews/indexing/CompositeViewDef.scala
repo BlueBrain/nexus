@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
 import cats.data.{NonEmptyChain, NonEmptyMap}
-import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.kernel.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -189,13 +189,7 @@ object CompositeViewDef {
     val fetchProgress: IO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(
-        view.ref.project,
-        compilePipeChain,
-        graphStream,
-        sinks.commonSink(view),
-        projectionTypes(view)
-      )(_)
+      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_)
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
@@ -515,30 +509,26 @@ object CompositeViewDef {
     *   generates the element stream for the source in the context of a branch
     * @param sink
     *   the sink for the common space
-    * @param projectionTypes
-    *   the view's projection resource types to use to filter the rebuild stream
     */
   def compileSource(
       project: ProjectRef,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
-      sink: Sink,
-      projectionTypes: Set[Iri]
-  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] =
-    IO.fromEither {
-      for {
-        pipes        <- source.pipeChain.traverse(compilePipeChain)
-        // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
-        tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
-        chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
-        operation    <- Operation.merge(chain)
-        // We create the elem stream for the two types of branch
-        // The main source produces an infinite stream and waits for new elements
-        mainSource    = graphStream.main(source, project)
-        // The rebuild one a finite one with only the current elements
-        rebuildSource = graphStream.rebuild(source, project, projectionTypes)
-      } yield (source.id, mainSource, rebuildSource, operation)
-    }
+      sink: Sink
+  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] = IO.fromEither {
+    for {
+      pipes        <- source.pipeChain.traverse(compilePipeChain)
+      // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
+      tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
+      chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
+      operation    <- Operation.merge(chain)
+      // We create the elem stream for the two types of branch
+      // The main source produces an infinite stream and waits for new elements
+      mainSource    = graphStream.main(source, project)
+      // The rebuild one a finite one with only the current elements
+      rebuildSource = graphStream.rebuild(source, project)
+    } yield (source.id, mainSource, rebuildSource, operation)
+  }
 
   /**
     * Compiles a composite projection into an operation
@@ -562,13 +552,6 @@ object CompositeViewDef {
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
       result <- Operation.merge(chain)
     } yield target.id -> result
-  }
-
-  /** Union of all resourceTypes specified in the view's projections */
-  private def projectionTypes(view: ActiveViewDef): Set[Iri] = {
-    val targets = view.value.projections
-    if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
-    else targets.foldLeft(Set.empty[Iri])(_ ++ _.resourceTypes)
   }
 
 }

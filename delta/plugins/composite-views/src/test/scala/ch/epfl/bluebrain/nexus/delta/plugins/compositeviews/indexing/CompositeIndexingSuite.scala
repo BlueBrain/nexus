@@ -233,7 +233,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[IO])
     }
 
-    override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source = {
+    override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
       val (p, s) = stream(source, project)
       Source(_ => s.onFinalize(increment(rebuildCompleted, p)))
     }

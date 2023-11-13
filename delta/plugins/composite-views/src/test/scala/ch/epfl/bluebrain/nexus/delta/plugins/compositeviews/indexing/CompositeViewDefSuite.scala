@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixtur
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -37,8 +36,7 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
 
     val graphStream = new CompositeGraphStream {
       override def main(source: CompositeViewSource, project: ProjectRef): Source                                    = makeSource("main")
-      override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source      =
-        makeSource("rebuild")
+      override def rebuild(source: CompositeViewSource, project: ProjectRef): Source                                 = makeSource("rebuild")
       override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] =
         _ => IO.none
     }
@@ -48,8 +46,7 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
         project.ref,
         _ => Right(FilterDeprecated.withConfig(())),
         graphStream,
-        new NoopSink[NTriples](),
-        Set.empty
+        new NoopSink[NTriples]()
       )(projectSource)
       .map { case (id, mainSource, rebuildSource, operation) =>
         assertEquals(id, projectSource.id)
