@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.Queries.{batchQuery, singleQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
@@ -401,20 +401,22 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val resultMuseMetadata   = jsonContentOf("indexing/result_muse_metadata.json")
   private val resultRedHotMetadata = jsonContentOf("indexing/result_red_hot_metadata.json")
 
-  test("Indexing resources without rebuild") {
+  private def viewFromValue(value: CompositeViewValue): ActiveViewDef = {
     val uuid   = UUID.randomUUID()
-    val viewId = iri"https://bbp.epfl.ch/composite"
+    val viewId = iri"https://bbp.epfl.ch/composite-${uuid}"
     val rev    = 1
+    ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
+  }
 
-    val viewRef = ViewRef(project1, viewId)
-    val view    = ActiveViewDef(viewRef, uuid, rev, noRebuild)
+  test("Indexing resources without rebuild") {
+    val view = viewFromValue(noRebuild)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, view.uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, view.uuid, prefix)
 
     val projectionName   = s"composite-views-${view.ref.project}-${view.ref.viewId}-${view.rev}"
     val expectedMetadata =
-      ProjectionMetadata(CompositeViews.entityType.value, projectionName, Some(project1), Some(viewId))
+      ProjectionMetadata(CompositeViews.entityType.value, projectionName, Some(project1), Some(view.id))
 
     val expectedProgress = CompositeProgress(
       Map(
@@ -464,14 +466,10 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       None
     )
 
-    val uuid   = UUID.randomUUID()
-    val viewId = iri"https://bbp.epfl.ch/composite2"
-    val rev    = 1
+    val view = viewFromValue(value)
 
-    val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
-
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, view.uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, view.uuid, prefix)
 
     for {
       _ <- resetCompleted
@@ -490,17 +488,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   }
 
   test("Indexing resources with interval restart") {
-    val uuid = UUID.randomUUID()
 
     val rebuild = noRebuild.copy(rebuildStrategy = Some(CompositeView.Interval(2.seconds)))
+    val view    = viewFromValue(rebuild)
 
-    val viewId  = iri"https://bbp.epfl.ch/composite3"
-    val rev     = 1
-    val viewRef = ViewRef(project1, viewId)
-    val view    = ActiveViewDef(viewRef, uuid, rev, rebuild)
-
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, view.uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, view.uuid, prefix)
 
     implicit def mapSemigroup[A, B]: Semigroup[Map[A, B]] = (x: Map[A, B], y: Map[A, B]) => x ++ y
 
@@ -544,7 +537,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(1))
       _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(1))
       _ <- checkIndexingState
-      _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
+      _ <- projections.scheduleFullRestart(view.ref)(Anonymous)
       _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(2))
       _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(2))
       _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(2))
@@ -556,18 +549,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   }
 
   test("A rebuild should only run once after main is completed") {
-    val uuid = UUID.randomUUID()
-
-    val viewValue = CompositeViewFactory.unsafe(
+    val singleTarget = CompositeViewFactory.unsafe(
       NonEmptyList.of(projectSource),
       NonEmptyList.of(elasticSearchProjection),
       Some(CompositeView.Interval(500.millis))
     )
-
-    val viewId  = iri"https://bbp.epfl.ch/composite-$uuid"
-    val rev     = 1
-    val viewRef = ViewRef(project1, viewId)
-    val view    = ActiveViewDef(viewRef, uuid, rev, viewValue)
+    val view         = viewFromValue(singleTarget)
 
     val rebuildCount          = Ref.unsafe[IO, Int](0)
     val incrementRebuildCount = rebuildCount.getAndUpdate(_ + 1).void
@@ -590,12 +577,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       None
     )
 
-    val uuid = UUID.randomUUID()
-
-    val viewId       = iri"https://bbp.epfl.ch/composite4"
-    val rev          = 1
-    val view         = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
-    val elasticIndex = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val view         = viewFromValue(value)
+    val elasticIndex = projectionIndex(elasticSearchProjection, view.uuid, prefix)
 
     for {
       _ <- resetCompleted
