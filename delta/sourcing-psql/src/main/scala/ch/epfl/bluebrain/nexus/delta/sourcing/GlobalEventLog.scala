@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{IO, Timer}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
@@ -16,6 +15,7 @@ import doobie.postgres.sqlstate
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Event log for global entities that can be controlled through commands;
@@ -25,7 +25,7 @@ import scala.concurrent.duration.FiniteDuration
   * Unsuccessful commands result in rejections returned to the caller context without any events being generated or
   * state transitions applied.
   */
-trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection] {
+trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable] {
 
   /**
     * Get the current state for the entity with the given __id__
@@ -127,11 +127,11 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
 
 object GlobalEventLog {
 
-  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
+  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable: ClassTag](
       definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
+  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
     apply(
       GlobalEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       GlobalStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
@@ -141,66 +141,65 @@ object GlobalEventLog {
       xas
     )
 
-  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
+  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable: ClassTag](
       eventStore: GlobalEventStore[Id, E],
       stateStore: GlobalStateStore[Id, S],
-      stateMachine: StateMachine[S, Command, E, Rejection],
+      stateMachine: StateMachine[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
       maxDuration: FiniteDuration,
       xas: Transactors
-  ): GlobalEventLog[Id, S, Command, E, Rejection] = new GlobalEventLog[Id, S, Command, E, Rejection] {
+  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
+    new GlobalEventLog[Id, S, Command, E, Rejection] {
 
-    override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[S] = stateStore.get(id).flatMap {
-      IO.fromOption(_)(notFound)
+      override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[S] = stateStore.get(id).flatMap {
+        IO.fromOption(_)(notFound)
+      }
+
+      override def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[S] =
+        stateMachine.computeState(eventStore.history(id, rev)).flatMap {
+          case Some(s) if s.rev == rev => IO.pure(s)
+          case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
+          case None                    => IO.raiseError(notFound)
+        }
+
+      override def evaluate(id: Id, command: Command): IO[(E, S)] =
+        stateStore.get(id).flatMap { current =>
+          stateMachine
+            .evaluate(current, command, maxDuration)
+            .adaptError {
+              case e: Rejection            => e
+              case e: EvaluationTimeout[_] => e
+              case e: Throwable            => EvaluationFailure(command, e)
+            }
+            .flatTap { case (event, state) =>
+              (eventStore.save(event) >> stateStore.save(state))
+                .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                  onUniqueViolation(id, command)
+                }
+                .transact(xas.write)
+                .flatMap(IO.fromEither)
+            }
+        }
+
+      override def dryRun(id: Id, command: Command): IO[(E, S)] =
+        stateStore.get(id).flatMap { current =>
+          stateMachine.evaluate(current, command, maxDuration)
+        }
+
+      override def delete(id: Id): IO[Unit] =
+        (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
+
+      override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
+
+      override def events(offset: Offset): EnvelopeStream[E] = eventStore.events(offset)
+
+      override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
+        currentStates(offset).map { e =>
+          f(e.value)
+        }
+
+      override def currentStates(offset: Offset): EnvelopeStream[S] = stateStore.currentStates(offset)
+
     }
-
-    override def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[S] =
-      stateMachine.computeState(eventStore.history(id, rev).translate(ioToTaskK)).toCatsIO.flatMap {
-        case Some(s) if s.rev == rev => IO.pure(s)
-        case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
-        case None                    => IO.raiseError(notFound)
-      }
-
-    override def evaluate(id: Id, command: Command): IO[(E, S)] =
-      stateStore.get(id).flatMap { current =>
-        stateMachine
-          .evaluate(current, command, maxDuration)
-          .attempt
-          .toCatsIO
-          .adaptError {
-            case e: EvaluationTimeout[_] => e
-            case e: Throwable            => EvaluationFailure(command, e)
-          }
-          .flatMap(IO.fromEither)
-          .flatTap { case (event, state) =>
-            (eventStore.save(event) >> stateStore.save(state))
-              .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                onUniqueViolation(id, command)
-              }
-              .transact(xas.writeCE)
-              .flatMap(IO.fromEither)
-          }
-      }
-
-    override def dryRun(id: Id, command: Command): IO[(E, S)] =
-      stateStore.get(id).flatMap { current =>
-        stateMachine.evaluate(current, command, maxDuration)
-      }
-
-    override def delete(id: Id): IO[Unit] =
-      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write).hideErrors
-
-    override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
-
-    override def events(offset: Offset): EnvelopeStream[E] = eventStore.events(offset)
-
-    override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
-      currentStates(offset).map { e =>
-        f(e.value)
-      }
-
-    override def currentStates(offset: Offset): EnvelopeStream[S] = stateStore.currentStates(offset)
-
-  }
 
 }

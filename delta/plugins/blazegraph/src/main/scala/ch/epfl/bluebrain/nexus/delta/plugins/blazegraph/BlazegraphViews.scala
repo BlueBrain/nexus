@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
@@ -63,8 +62,8 @@ final class BlazegraphViews(
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc               <- fetchContext.onCreate(project).toCatsIO
-      (iri, viewValue) <- sourceDecoder(project, pc, source).toCatsIO
+      pc               <- fetchContext.onCreate(project)
+      (iri, viewValue) <- sourceDecoder(project, pc, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _                <- createNamespace(res)
     } yield res
@@ -86,9 +85,9 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onCreate(project).toCatsIO
-      iri       <- expandIri(id, pc).toCatsIO
-      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
+      pc        <- fetchContext.onCreate(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
@@ -107,8 +106,8 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onCreate(project).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onCreate(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject))
       _     <- createNamespace(res)
@@ -133,9 +132,9 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onModify(project).toCatsIO
-      iri       <- expandIri(id, pc).toCatsIO
-      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
+      pc        <- fetchContext.onModify(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
@@ -157,8 +156,8 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onModify(project).toCatsIO
-      iri   <- expandIri(id, pc).toCatsIO
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject))
       _     <- createNamespace(res)
@@ -187,8 +186,8 @@ final class BlazegraphViews(
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res
@@ -210,8 +209,8 @@ final class BlazegraphViews(
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
@@ -247,8 +246,8 @@ final class BlazegraphViews(
       project: ProjectRef
   ): IO[BlazegraphViewState] = {
     for {
-      pc      <- fetchContext.onRead(project).toCatsIO
-      iri     <- expandIri(id.value, pc).toCatsIO
+      pc      <- fetchContext.onRead(project)
+      iri     <- expandIri(id.value, pc)
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
@@ -492,7 +491,7 @@ object BlazegraphViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _).toBIO[BlazegraphViewRejection],
+        evaluate(validate)(_, _),
         next
       ),
       BlazegraphViewEvent.serializer,
@@ -534,6 +533,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      contextShift: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
@@ -542,9 +542,8 @@ object BlazegraphViews {
         case i: IndexingBlazegraphView =>
           client
             .createNamespace(BlazegraphViews.namespace(i, prefix))
-            .mapError(WrappedBlazegraphClientError.apply)
+            .adaptError { case e: SparqlClientError => WrappedBlazegraphClientError(e) }
             .void
-            .toCatsIO
         case _                         => IO.unit
       }
     apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)
@@ -561,6 +560,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      contextShift: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {

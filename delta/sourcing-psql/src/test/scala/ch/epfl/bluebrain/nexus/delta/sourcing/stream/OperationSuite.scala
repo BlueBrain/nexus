@@ -9,14 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BIOStreamAssertions
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import shapeless.Typeable
 
 import java.time.Instant
 
-class OperationSuite extends CatsEffectSuite with BIOStreamAssertions {
+class OperationSuite extends CatsEffectSuite {
 
   test("Run the double stream") {
     val sink       = CacheSink.states[Int]

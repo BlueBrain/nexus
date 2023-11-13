@@ -3,16 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.{IO, Resource}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
-import monix.execution.Scheduler
 import munit.Suite
 
 object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fixtures {
@@ -29,8 +26,8 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
                                  }
                                }"""
 
-  def resource()(implicit s: Scheduler): Resource[IO, ElasticSearchClient] = {
-    (for {
+  def resource(): Resource[IO, ElasticSearchClient] = {
+    for {
       (httpClient, actorSystem) <- HttpClientSetup(compression = true)
       container                 <- ElasticSearchContainer.resource()
     } yield {
@@ -42,15 +39,15 @@ object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fi
         2000,
         emptyResults
       )
-    }).mapK(taskToIoK)
+    }
   }.evalTap { client =>
     client.createIndexTemplate("test_template", template)
   }
 
-  def suiteLocalFixture(name: String)(implicit s: Scheduler): IOFixture[ElasticSearchClient] =
+  def suiteLocalFixture(name: String): IOFixture[ElasticSearchClient] =
     ResourceFixture.suiteLocal(name, resource())
 
-  trait Fixture { self: Suite with BioRunContext =>
+  trait Fixture { self: Suite =>
     val esClient: IOFixture[ElasticSearchClient] =
       ElasticSearchClientSetup.suiteLocalFixture("esclient")
   }

@@ -109,7 +109,7 @@ trait SseEventLog {
 
 object SseEventLog {
 
-  private val logger = Logger.cats[SseEventLog]
+  private val logger = Logger[SseEventLog]
 
   private[sse] def toServerSentEvent(
       envelope: Envelope[SseData],

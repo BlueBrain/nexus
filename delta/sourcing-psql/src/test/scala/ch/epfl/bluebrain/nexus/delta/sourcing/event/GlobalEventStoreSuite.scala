@@ -47,11 +47,11 @@ class GlobalEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   private val envelope4 = Envelope(Arithmetic.entityType, id2, 1, event4, Instant.EPOCH, Offset.at(4L))
 
   private def assertCount =
-    sql"select count(*) from global_events".query[Int].unique.transact(xas.readCE).assertEquals(4)
+    sql"select count(*) from global_events".query[Int].unique.transact(xas.read).assertEquals(4)
 
   test("Save events successfully") {
     for {
-      _ <- List(event1, event2, event3, event4).traverse(store.save).transact(xas.writeCE)
+      _ <- List(event1, event2, event3, event4).traverse(store.save).transact(xas.write)
       _ <- assertCount
     } yield ()
   }
@@ -59,7 +59,7 @@ class GlobalEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   test("Fail when the PK already exists") {
     for {
       _ <-
-        store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.writeCE).expectUniqueViolation
+        store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.write).expectUniqueViolation
       _ <- assertCount
     } yield ()
   }
@@ -94,7 +94,7 @@ class GlobalEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test(s"Delete events for $id") {
     for {
-      _ <- store.delete(id).transact(xas.writeCE)
+      _ <- store.delete(id).transact(xas.write)
       _ <- store.history(id).assertSize(0)
     } yield ()
   }

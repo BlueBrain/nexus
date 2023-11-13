@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 
 import java.util.UUID
 
@@ -18,8 +19,9 @@ object ProjectsFixture {
   def init(fetchOrgs: FetchOrganization, apiMappings: ApiMappings, config: ProjectsConfig)(implicit
       clock: Clock[IO],
       timer: Timer[IO],
+      cs: ContextShift[IO],
       cl: ClassLoader
-  ): ResourceFixture.TaskFixture[(Transactors, Projects)] = {
+  ): IOFixture[(Transactors, Projects)] = {
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
     init(fetchOrgs, Set.empty, apiMappings, config)
@@ -33,10 +35,11 @@ object ProjectsFixture {
   )(implicit
       base: BaseUri,
       clock: Clock[IO],
+      cs: ContextShift[IO],
       timer: Timer[IO],
       uuidF: UUIDF,
       cl: ClassLoader
-  ): ResourceFixture.TaskFixture[(Transactors, Projects)] =
+  ): IOFixture[(Transactors, Projects)] =
     ResourceFixture.suiteLocal(
       "projects",
       Doobie.resource().map { xas =>

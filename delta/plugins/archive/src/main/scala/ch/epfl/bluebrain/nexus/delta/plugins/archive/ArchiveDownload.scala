@@ -6,7 +6,6 @@ import akka.util.ByteString
 import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
@@ -35,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import fs2.Stream
 import io.circe.{Json, Printer}
-import monix.bio.UIO
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -67,7 +65,7 @@ trait ArchiveDownload {
 
 object ArchiveDownload {
 
-  private val logger = Logger.cats[ArchiveDownload]
+  private val logger = Logger[ArchiveDownload]
 
   case class ArchiveDownloadError(filename: String, response: Complete[JsonLdValue]) extends SDKError {
     override def getMessage: String = {
@@ -187,13 +185,13 @@ object ArchiveDownload {
           .map { case FileResponse(fileMetadata, content) =>
             val path                        = pathOf(ref, project, fileMetadata.filename)
             val archiveMetadata             = Zip.metadata(path)
-            val contentTask: IO[AkkaSource] = content
-              .tapError(response =>
-                logger
-                  .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
-                  .toUIO
-              )
-              .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
+            val contentTask: IO[AkkaSource] = content.flatMap {
+              case Left(response) =>
+                logger.error(
+                  s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}"
+                ) >> IO.raiseError(ArchiveDownloadError(fileMetadata.filename, response))
+              case Right(r)       => IO.pure(r)
+            }
             Option((archiveMetadata, contentTask))
           }
         if (ignoreNotFound) entry.recover { case _: ResourceNotFound => None }
@@ -241,10 +239,10 @@ object ArchiveDownload {
       private def valueToByteString[A](
           value: JsonLdContent[A, _],
           repr: ResourceRepresentation
-      ): IO[ByteString] = toCatsIO {
+      ): IO[ByteString] = {
         implicit val encoder: JsonLdEncoder[A] = value.encoder
         repr match {
-          case SourceJson          => UIO.pure(ByteString(prettyPrintSource(value.source)))
+          case SourceJson          => IO.pure(ByteString(prettyPrintSource(value.source)))
           case AnnotatedSourceJson =>
             AnnotatedSource(value.resource, value.source).map { json =>
               ByteString(prettyPrintSource(json))

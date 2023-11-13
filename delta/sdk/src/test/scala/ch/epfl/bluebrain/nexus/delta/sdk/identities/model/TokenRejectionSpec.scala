@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class TokenRejectionSpec extends BioSpec with CirceLiteral with Fixtures {
+class TokenRejectionSpec extends CatsEffectSpec with CirceLiteral with Fixtures {
 
   "A TokenRejection" should {
 

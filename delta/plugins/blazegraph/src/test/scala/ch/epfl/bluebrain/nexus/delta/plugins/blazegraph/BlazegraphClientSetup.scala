@@ -1,21 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.ActorSystem
-import cats.effect.Resource
+import cats.effect.{ContextShift, IO, Resource, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
-import monix.bio.Task
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 
 import scala.concurrent.duration._
 
-object BlazegraphClientSetup {
+object BlazegraphClientSetup extends Fixtures {
 
-  def resource()(implicit s: Scheduler): Resource[Task, BlazegraphClient] = {
+  def resource()(implicit
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ): Resource[IO, BlazegraphClient] = {
     for {
       (httpClient, actorSystem) <- HttpClientSetup(compression = false)
       container                 <- BlazegraphContainer.resource()
@@ -25,16 +26,19 @@ object BlazegraphClientSetup {
         httpClient,
         s"http://${container.getHost}:${container.getMappedPort(9999)}/blazegraph",
         None,
-        10.seconds
+        10.seconds,
+        defaultProperties
       )
     }
   }
 
-  def suiteLocalFixture(name: String)(implicit s: Scheduler): TaskFixture[BlazegraphClient] =
+  def suiteLocalFixture(
+      name: String
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IOFixture[BlazegraphClient] =
     ResourceFixture.suiteLocal(name, resource())
 
-  trait Fixture { self: BioRunContext =>
-    val blazegraphClient: ResourceFixture.TaskFixture[BlazegraphClient] =
+  trait Fixture { self: CatsRunContext =>
+    val blazegraphClient: ResourceFixture.IOFixture[BlazegraphClient] =
       BlazegraphClientSetup.suiteLocalFixture("blazegraphClient")
   }
 

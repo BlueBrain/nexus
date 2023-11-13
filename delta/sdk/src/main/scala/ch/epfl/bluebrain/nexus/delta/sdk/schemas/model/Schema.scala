@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -15,14 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.{Encoder, Json}
-import monix.bio.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema.Metadata
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
 
 /**
   * A schema representation
@@ -82,12 +80,12 @@ object Schema {
 
       override def compact(
           value: Schema
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         IO.pure(value.compacted)
 
       override def expand(
           value: Schema
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         IO.pure(ExpandedJsonLd.unsafe(value.expanded.head.rootId, value.expanded.head.obj))
 
       override def context(value: Schema): ContextValue =
@@ -106,7 +104,7 @@ object Schema {
   def shift(schemas: Schemas)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[SchemaState, Schema, Metadata](
       Schemas.entityType,
-      (ref, project) => schemas.fetch(IdSegmentRef(ref), project).toBIO[SchemaRejection],
+      (ref, project) => schemas.fetch(IdSegmentRef(ref), project),
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

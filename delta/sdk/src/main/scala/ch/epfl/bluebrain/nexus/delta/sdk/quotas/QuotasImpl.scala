@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
@@ -29,7 +28,7 @@ final class QuotasImpl(
     val quota = quotasFromConfig(ref).toOption
     IO.unlessA(quota.isEmpty || subject == serviceAccountConfig.value.subject) {
       for {
-        countsOpt <- projectsStatistics.get(ref).toCatsIO
+        countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
                          quotaReached(count.resources, quota.flatMap(_.resources)) { QuotaResourcesReached(ref, _) }
@@ -46,7 +45,7 @@ final class QuotasImpl(
     val quota = quotasFromConfig(ref).toOption
     IO.unlessA(quota.isEmpty || subject == serviceAccountConfig.value.subject) {
       for {
-        countsOpt <- projectsStatistics.get(ref).toCatsIO
+        countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
                          quotaReached(count.events, quota.flatMap(_.events)) { QuotaEventsReached(ref, _) }

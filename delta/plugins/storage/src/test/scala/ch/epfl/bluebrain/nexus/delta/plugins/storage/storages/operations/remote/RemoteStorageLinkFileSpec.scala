@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 import java.util.UUID
@@ -39,7 +38,6 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
     with BeforeAndAfterAll
     with ConfigFixtures {
 
-  implicit private val sc: Scheduler                = Scheduler.global
   implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   private val httpClient: HttpClient                = HttpClient()

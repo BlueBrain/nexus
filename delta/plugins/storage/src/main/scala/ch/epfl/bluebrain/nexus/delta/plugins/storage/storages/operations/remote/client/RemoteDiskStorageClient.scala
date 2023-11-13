@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxMonadError, toFunctorOps}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
@@ -39,7 +38,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     as: ActorSystem,
     cs: ContextShift[IO],
     timer: Timer[IO]
-) extends MigrateEffectSyntax {
+) {
   import as.dispatcher
 
   private val serviceName = Name.unsafe("remoteStorage")
@@ -50,7 +49,6 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
   def serviceDescription(implicit baseUri: BaseUri): IO[ServiceDescription] =
     client
       .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
-      .toCatsIO
       .map(_.copy(name = serviceName))
       .widen[ServiceDescription]
       .timeout(3.seconds)
@@ -67,8 +65,8 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       val endpoint = baseUri.endpoint / "buckets" / bucket.value
       val req      = Head(endpoint).withCredentials(authToken)
       client(req) {
-        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).void.toUIO
-      }.toCatsIO
+        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).void
+      }
     }
   }
 
@@ -93,7 +91,6 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       val multipartForm = FormData(BodyPart("file", entity, Map("filename" -> filename))).toEntity()
       client
         .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials(authToken))
-        .toCatsIO
         .adaptError {
           case HttpClientStatusError(_, `Conflict`, _) =>
             SaveFileRejection.ResourceAlreadyExists(relativePath.toString)
@@ -116,7 +113,6 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       client
         .toDataBytes(Get(endpoint).withCredentials(authToken))
-        .toCatsIO
         .adaptError {
           case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
             FetchFileRejection.FileNotFound(relativePath.toString)
@@ -140,7 +136,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
   )(implicit baseUri: BaseUri): IO[RemoteDiskStorageFileAttributes] = {
     getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
-      client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).toCatsIO.adaptError {
+      client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).adaptError {
         case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
           FetchFileRejection.FileNotFound(relativePath.toString)
         case error: HttpClientError                                                        =>
@@ -169,7 +165,6 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
       client
         .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials(authToken))
-        .toCatsIO
         .adaptError {
           case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
             MoveFileRejection.FileNotFound(sourceRelativePath.toString)

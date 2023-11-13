@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -40,9 +40,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.execution.Scheduler
-import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
+import org.scalatest.{Assertion, DoNotDiscover}
 
 import java.net.URLDecoder
 
@@ -57,15 +56,15 @@ class FilesSpec(docker: RemoteStorageDocker)
     with RemoteContextResolutionFixture
     with FileFixtures
     with Eventually {
-  implicit private val sc: Scheduler = Scheduler.global
 
   private val realm = Label.unsafe("myrealm")
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
   "The Files operations bundle" when {
+    implicit val hcc: HttpClientConfig                   = httpClientConfig
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
+    implicit val httpClient: HttpClient                  = HttpClient()
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
     val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
@@ -490,6 +489,44 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     }
 
+    "undeprecating a file" should {
+
+      "succeed" in {
+        givenADeprecatedFile { id =>
+          files.undeprecate(id, 2).accepted.deprecated shouldEqual false
+          assertActive(id)
+        }
+      }
+
+      "reject if file doesn't exists" in {
+        files.undeprecate(fileId("404"), 1).rejectedWith[FileNotFound]
+      }
+
+      "reject if file is not deprecated" in {
+        givenAFile { id =>
+          files.undeprecate(id, 1).assertRejectedWith[FileIsNotDeprecated]
+          assertRemainsActive(id)
+        }
+      }
+
+      "reject if the revision passed is incorrect" in {
+        givenADeprecatedFile { id =>
+          files.undeprecate(id, 3).assertRejectedEquals(IncorrectRev(3, 2))
+          assertRemainsDeprecated(id)
+        }
+      }
+
+      "reject if project does not exist" in {
+        val wrongProject = ProjectRef(org, Label.unsafe("other"))
+        files.deprecate(FileId(nxv + "id", wrongProject), 1).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        files.undeprecate(FileId(nxv + "id", deprecatedProject.ref), 2).rejectedWith[ProjectContextRejection]
+      }
+
+    }
+
     "fetching a file" should {
       val resourceRev1 = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
       val resourceRev4 = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
@@ -534,7 +571,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     }
 
     def consumeContent(response: FileResponse): String = {
-      consume(response.content.accepted)
+      consume(response.content.map(_.rightValue).accepted)
     }
 
     "fetching a file content" should {
@@ -583,6 +620,29 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
     }
+
+    def givenAFile(assertion: FileId => Assertion): Assertion = {
+      val filename = genString()
+      val id       = fileId(filename)
+      files.create(id, Some(diskId), randomEntity(filename, 1), None).accepted
+      files.fetch(id).accepted
+      assertion(id)
+    }
+
+    def givenADeprecatedFile(assertion: FileId => Assertion): Assertion = {
+      givenAFile { id =>
+        files.deprecate(id, 1).accepted
+        files.fetch(id).accepted.deprecated shouldEqual true
+        assertion(id)
+      }
+    }
+
+    def assertRemainsDeprecated(id: FileId): Assertion =
+      files.fetch(id).accepted.deprecated shouldEqual true
+    def assertActive(id: FileId): Assertion            =
+      files.fetch(id).accepted.deprecated shouldEqual false
+    def assertRemainsActive(id: FileId): Assertion     =
+      assertActive(id)
   }
 
 }

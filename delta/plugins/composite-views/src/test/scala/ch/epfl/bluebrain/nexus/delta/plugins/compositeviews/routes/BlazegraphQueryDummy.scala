@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClient, SparqlQueryResponse}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClientError, SparqlQueryClient, SparqlQueryResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
@@ -22,7 +22,9 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
-      res  <- client.query(Set("queryCommonNs"), query, responseType).mapError(WrappedBlazegraphClientError)
+      res  <- client.query(Set("queryCommonNs"), query, responseType).adaptError { case e: SparqlClientError =>
+                WrappedBlazegraphClientError(e)
+              }
     } yield res
 
   override def query[R <: SparqlQueryResponse](
@@ -35,7 +37,9 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
-      res  <- client.query(Set("queryProjection"), query, responseType).mapError(WrappedBlazegraphClientError)
+      res  <- client.query(Set("queryProjection"), query, responseType).adaptError { case e: SparqlClientError =>
+                WrappedBlazegraphClientError(e)
+              }
     } yield res
 
   override def queryProjections[R <: SparqlQueryResponse](
@@ -47,7 +51,9 @@ class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) ext
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
-      res  <- client.query(Set("queryProjections"), query, responseType).mapError(WrappedBlazegraphClientError)
+      res  <- client.query(Set("queryProjections"), query, responseType).adaptError { case e: SparqlClientError =>
+                WrappedBlazegraphClientError(e)
+              }
     } yield res
 
 }

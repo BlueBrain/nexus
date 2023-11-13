@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Chunk
 import munit.AnyFixture
@@ -22,11 +20,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphSinkSuite
-    extends CatsEffectSuite
-    with BioRunContext
-    with BlazegraphClientSetup.Fixture
-    with TestHelpers {
+class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fixture with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 
@@ -73,7 +67,6 @@ class BlazegraphSinkSuite
   private def query(namespace: String) =
     client
       .query(Set(namespace), constructQuery, SparqlQueryResponseType.SparqlNTriples)
-      .toCatsIO
       .map { response => Graph(response.value).toOption }
 
   test("Create the namespace") {
@@ -127,7 +120,7 @@ class BlazegraphSinkSuite
     val expected = createGraph(Chunk(resource2Id -> resource2Ntriples, resource1Id -> resource1NtriplesUpdated))
 
     for {
-      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
+      _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(asElems(input))
       _ <- query(namespace).assertSome(expected)
     } yield ()
@@ -150,7 +143,7 @@ class BlazegraphSinkSuite
     val expected = createGraph(Chunk.singleton(resource2Id -> resource2Ntriples))
 
     for {
-      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
+      _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(chunk)
       _ <- query(namespace).assertSome(expected)
     } yield ()

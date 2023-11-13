@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, SparqlConstr
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
 import org.apache.jena.graph.{Node, Triple => JenaTriple}
 import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
@@ -209,13 +208,12 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     */
   def toDot(
       contextValue: ContextValue = ContextValue.empty
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, Dot] =
+  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[Dot] =
     for {
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <-
         ioTryOrRdfError(RDFWriter.create().lang(DOT).source(collapseGraphs).context(ctx).asString(), DOT.getName)
-          .toBIO[RdfError]
     } yield Dot(string, rootNode)
 
   /**
@@ -228,14 +226,14 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd] = {
+  ): IO[CompactedJsonLd] = {
 
-    def computeCompacted(id: IriOrBNode, input: Json): IO[RdfError, CompactedJsonLd] = {
-      if (triples.isEmpty) UIO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
+    def computeCompacted(id: IriOrBNode, input: Json): IO[CompactedJsonLd] = {
+      if (triples.isEmpty) IO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
       else if (value.listGraphNodes().asScala.nonEmpty) {
-        CompactedJsonLd(id, contextValue, input).toBIO[RdfError]
+        CompactedJsonLd(id, contextValue, input)
       } else {
-        CompactedJsonLd.frame(id, contextValue, input).toBIO[RdfError]
+        CompactedJsonLd.frame(id, contextValue, input)
       }
     }
 
@@ -259,8 +257,8 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, ExpandedJsonLd] =
-    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded.toBIO[RdfError])
+  ): IO[ExpandedJsonLd] =
+    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
 
   /**
     * Merges the current graph with the passed ''that'' while keeping the current ''rootNode''

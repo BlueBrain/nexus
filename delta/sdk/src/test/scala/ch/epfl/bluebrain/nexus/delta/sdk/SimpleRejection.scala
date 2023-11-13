@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.Allow
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -16,7 +17,7 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 import scala.annotation.nowarn
 
-sealed trait SimpleRejection {
+sealed trait SimpleRejection extends Rejection {
   def reason: String
 }
 

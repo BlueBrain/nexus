@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
@@ -52,7 +51,6 @@ class ElasticSearchViewsRoutesFixtures
     )
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit val s: Scheduler                       = Scheduler.global
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply

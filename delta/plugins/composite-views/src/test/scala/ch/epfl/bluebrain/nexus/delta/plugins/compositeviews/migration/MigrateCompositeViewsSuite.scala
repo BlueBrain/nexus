@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViewsSuite.{loadEvent, loadState}
@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -25,7 +24,7 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with CatsEffectsClasspathResourceUtils {
+class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with ClasspathResourceUtils {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 
@@ -47,7 +46,7 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture wit
 
   test("Insert states and events and run migration") {
     for {
-      _ <- initPartitions(xas, proj).toCatsIO
+      _ <- initPartitions(xas, proj)
       // Events to migrate
       _ <- loadEvent("migration/event-created.json")
       _ <- loadEvent("migration/event-updated.json")
@@ -100,7 +99,7 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture wit
   }
 }
 
-object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
+object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
 
   def extractIdentifiers(json: JsonObject) = IO.fromOption {
     for {
@@ -131,7 +130,7 @@ object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
            |  $rev,
            |  ${json.asJson},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.writeCE)
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)
@@ -164,7 +163,7 @@ object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
            |  ${json.asJson},
            |  ${false},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.writeCE)
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)

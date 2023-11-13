@@ -5,12 +5,12 @@ import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -19,7 +19,7 @@ import io.circe.Json
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
   */
-class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateEffectSyntax {
+class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
 
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
@@ -58,7 +58,9 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateE
             .toEntity
         )
       )
-      .hideErrorsWith(AuthTokenHttpError)
+      .adaptError { case e: HttpClientError =>
+        AuthTokenHttpError(e)
+      }
   }
 
   private def parseResponse(json: Json): IO[ParsedToken] = {

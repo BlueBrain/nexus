@@ -120,7 +120,7 @@ object GlobalStateStore {
       sql"""SELECT value FROM global_states WHERE type = $tpe AND id = $id"""
         .query[S]
         .option
-        .transact(xas.readCE)
+        .transact(xas.read)
 
     private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
       StreamingQuery[Envelope[S]](

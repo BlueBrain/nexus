@@ -42,7 +42,7 @@ private class CachingOpenIdAuthTokenProvider(
     clock: Clock[IO]
 ) extends AuthTokenProvider {
 
-  private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
+  private val logger = Logger[CachingOpenIdAuthTokenProvider]
 
   override def apply(credentials: Credentials): IO[Option[AuthToken]] = {
 

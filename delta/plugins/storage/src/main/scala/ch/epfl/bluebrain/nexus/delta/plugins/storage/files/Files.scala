@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -66,6 +65,7 @@ final class Files(
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem,
+    timer: Timer[IO],
     contextShift: ContextShift[IO]
 ) {
 
@@ -96,7 +96,7 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      pc                    <- fetchContext.onCreate(projectRef).toCatsIO
+      pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
@@ -159,7 +159,7 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      pc  <- fetchContext.onCreate(projectRef).toCatsIO
+      pc  <- fetchContext.onCreate(projectRef)
       iri <- generateId(pc)
       res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
     } yield res
@@ -335,6 +335,26 @@ final class Files(
   }.span("deprecateFile")
 
   /**
+    * Undeprecate an existing file
+    *
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file belongs
+    * @param rev
+    *   the current revision of the file
+    */
+  def undeprecate(
+      id: FileId,
+      rev: Int
+  )(implicit subject: Subject): IO[FileResource] = {
+    for {
+      (iri, _) <- id.expandIri(fetchContext.onModify)
+      res      <- eval(UndeprecateFile(iri, id.project, rev, subject))
+    } yield res
+  }.span("undeprecateFile")
+
+  /**
     * Fetch the last version of a file content
     *
     * @param id
@@ -350,7 +370,7 @@ final class Files(
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
-    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.toBIO[FileRejection])
+    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.attemptNarrow[FileRejection])
   }.span("fetchFileContent")
 
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
@@ -453,10 +473,12 @@ final class Files(
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
-    Storages.expandIri(segment, pc).mapError(WrappedStorageRejection).toCatsIO
+    Storages.expandIri(segment, pc).adaptError { case s: StorageRejection =>
+      WrappedStorageRejection(s)
+    }
 
   private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
-    uuidF().toCatsIO.map(uuid => pc.base.iri / uuid.toString)
+    uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   /**
     * Starts a stream that attempts to update file attributes asynchronously for linked files in remote storages
@@ -475,7 +497,7 @@ final class Files(
                              case DigestNotComputed(_)                                                => true
                              case _                                                                   => false
                            },
-                           RetryStrategy.logError(logger, "file attributes update")(_, _).toBIOThrowable
+                           RetryStrategy.logError(logger, "file attributes update")(_, _)
                          )
                        }
       // We cache storage information
@@ -558,7 +580,7 @@ final class Files(
 
 object Files {
 
-  private val logger = Logger.cats[Files]
+  private val logger = Logger[Files]
 
   /**
     * The file entity type.
@@ -604,6 +626,10 @@ object Files {
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: FileUndeprecated): Option[FileState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
       case e: FileCreated           => created(e)
       case e: FileUpdated           => updated(e)
@@ -611,6 +637,7 @@ object Files {
       case e: FileTagAdded          => tagAdded(e)
       case e: FileTagDeleted        => tagDeleted(e)
       case e: FileDeprecated        => deprecated(e)
+      case e: FileUndeprecated      => undeprecated(e)
     }
   }
 
@@ -678,6 +705,14 @@ object Files {
         IOInstant.now.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
+    def undeprecate(c: UndeprecateFile) = state match {
+      case None                      => IO.raiseError(FileNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if !s.deprecated  => IO.raiseError(FileIsNotDeprecated(c.id))
+      case Some(s)                   =>
+        IOInstant.now.map(FileUndeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
+    }
+
     cmd match {
       case c: CreateFile           => create(c)
       case c: UpdateFile           => update(c)
@@ -685,6 +720,7 @@ object Files {
       case c: TagFile              => tag(c)
       case c: DeleteFileTag        => deleteTag(c)
       case c: DeprecateFile        => deprecate(c)
+      case c: UndeprecateFile      => undeprecate(c)
     }
   }
 
@@ -696,7 +732,7 @@ object Files {
   ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(_, _).toBIO[FileRejection], next),
+      StateMachine(None, evaluate(_, _), next),
       FileEvent.serializer,
       FileState.serializer,
       Tagger[FileEvent](

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermis
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Acls module wiring config.
@@ -33,15 +32,16 @@ object AclsModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO]
     ) =>
       acls.AclsImpl(
-        permissions.fetchPermissionSet.toUIO,
+        permissions.fetchPermissionSet,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
         config.acls,
         xas
-      )(clock, timer)
+      )(clock, contextShift, timer)
   }
 
   make[AclCheck].from { (acls: Acls) => AclCheck(acls) }

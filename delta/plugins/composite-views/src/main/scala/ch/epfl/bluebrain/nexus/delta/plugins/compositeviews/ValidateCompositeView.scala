@@ -19,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
-
 /**
   * Validate an [[CompositeViewValue]] during command evaluation
   */
@@ -62,7 +60,7 @@ object ValidateCompositeView {
         }
         .void
 
-    val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems(_).toCatsIO
+    val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems(_)
 
     val validateSource: CompositeViewSource => IO[Unit] = {
       case _: ProjectSource             => IO.unit

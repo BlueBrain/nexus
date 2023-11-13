@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotasDisab
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.UIO
 
 import java.time.Instant
 
@@ -31,8 +31,8 @@ class QuotasImplSpec extends CatsEffectSpec {
   )
 
   private val projectStatistics: ProjectsStatistics = {
-    case `project` => UIO.some(ProjectStatistics(events = 10, resources = 8, Instant.EPOCH))
-    case _         => UIO.none
+    case `project` => IO.pure(Some(ProjectStatistics(events = 10, resources = 8, Instant.EPOCH)))
+    case _         => IO.none
   }
 
   private val quotas = new QuotasImpl(projectStatistics)

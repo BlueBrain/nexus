@@ -35,7 +35,7 @@ final class CompositeRestartStore(xas: Transactors) {
     sql"""INSERT INTO public.composite_restarts (project, id, value, instant, acknowledged)
          |VALUES (${restart.view.project}, ${restart.view.viewId}, ${restart.asJson} ,${restart.instant}, false)
          |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
 
   /**
@@ -45,7 +45,7 @@ final class CompositeRestartStore(xas: Transactors) {
     sql"""UPDATE public.composite_restarts SET acknowledged = true
          |WHERE ordering = ${offset.value}
          |""".stripMargin.update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .void
 
   /**
@@ -53,7 +53,7 @@ final class CompositeRestartStore(xas: Transactors) {
     */
   def deleteExpired(instant: Instant): IO[Unit] =
     sql"""DELETE FROM public.composite_restarts WHERE instant < $instant""".update.run
-      .transact(xas.writeCE)
+      .transact(xas.write)
       .flatTap { deleted =>
         IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted composite restarts."))
       }
@@ -86,13 +86,13 @@ final class CompositeRestartStore(xas: Transactors) {
         Elem.fromEither(entityType, id, Some(project), instant, offset, json.as[CompositeRestart], 1)
       }
       .option
-      .transact(xas.readCE)
+      .transact(xas.read)
   }
 
 }
 
 object CompositeRestartStore {
-  private val logger = Logger.cats[CompositeRestartStore]
+  private val logger = Logger[CompositeRestartStore]
 
   private val purgeCompositeRestartMetadata = ProjectionMetadata("composite-views", "purge-composite-restarts")
 

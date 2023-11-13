@@ -90,7 +90,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
         result <- sql"""SELECT table_name from information_schema.tables where table_name like $pattern"""
                     .query[String]
                     .to[List]
-                    .transact(xas.readCE)
+                    .transact(xas.read)
         // We add +2 as there is the main table and the partition related to the organisation
         _       = result.assertSize(expected + 2)
       } yield ()

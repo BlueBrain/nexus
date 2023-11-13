@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
@@ -21,19 +20,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOStreamAssertions, BioAssertions}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import doobie.postgres.implicits._
-import fs2.concurrent.Queue
 import io.circe.Decoder
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStreamAssertions with Doobie.Fixture {
+class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -157,7 +153,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
       .query[(EntityType, Label, Label, Iri, Tag, Instant)]
       .unique
-      .transact(xas.readCE)
+      .transact(xas.read)
     for {
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).intercept(TagNotFound)
       _ <- query.assertEquals((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))
@@ -204,18 +200,9 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
   }
 
   test("Stream continuously the current states") {
-    for {
-      queue <- Queue.unbounded[Task, Envelope[PullRequestState]]
-      _     <- eventLog
-                 .states(Scope.root, Offset.Start)
-                 .translate(ioToTaskK)
-                 .through(queue.enqueue)
-                 .compile
-                 .drain
-                 .timeout(500.millis)
-      elems <- queue.tryDequeueChunk1(Int.MaxValue).map(opt => opt.map(_.toList).getOrElse(Nil))
-      _      = elems.assertSize(2)
-    } yield ()
+    eventLog
+      .states(Scope.root, Offset.Start)
+      .assertSize(2)
   }
 
 }

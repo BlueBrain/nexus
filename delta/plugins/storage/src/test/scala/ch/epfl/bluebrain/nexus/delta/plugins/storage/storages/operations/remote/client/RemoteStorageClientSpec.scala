@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.BucketName
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
@@ -39,8 +38,8 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    val httpConfig: HttpClientConfig    = httpClientConfig
-    implicit val httpClient: HttpClient = HttpClient()(httpConfig, system, Scheduler.global)
+    implicit val httpConfig: HttpClientConfig = httpClientConfig
+    implicit val httpClient: HttpClient       = HttpClient()
 
     client = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
     baseUri = BaseUri(docker.hostConfig.endpoint).rightValue
@@ -58,7 +57,10 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     )
 
     "fetch the service description" in eventually {
-      client.serviceDescription(baseUri).accepted shouldEqual ServiceDescription(Name.unsafe("remoteStorage"), "1.7.0")
+      client.serviceDescription(baseUri).accepted shouldEqual ServiceDescription(
+        Name.unsafe("remoteStorage"),
+        docker.storageVersion
+      )
     }
 
     "check if a bucket exists" in {

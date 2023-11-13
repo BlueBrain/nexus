@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
 import cats.data.{NonEmptyChain, NonEmptyMap}
-import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.kernel.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -43,7 +43,7 @@ sealed trait CompositeViewDef extends Product with Serializable {
 
 object CompositeViewDef {
 
-  private val logger = Logger.cats[CompositeViewDef]
+  private val logger = Logger[CompositeViewDef]
 
   /**
     * Active view eligible to be run as a projection by the supervisor
@@ -189,13 +189,7 @@ object CompositeViewDef {
     val fetchProgress: IO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(
-        view.ref.project,
-        compilePipeChain,
-        graphStream,
-        sinks.commonSink(view),
-        projectionTypes(view)
-      )(_)
+      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_)
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
@@ -515,15 +509,12 @@ object CompositeViewDef {
     *   generates the element stream for the source in the context of a branch
     * @param sink
     *   the sink for the common space
-    * @param projectionTypes
-    *   the view's projection resource types to use to filter the rebuild stream
     */
   def compileSource(
       project: ProjectRef,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
-      sink: Sink,
-      projectionTypes: Set[Iri]
+      sink: Sink
   )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] =
     IO.fromEither {
       for {
@@ -536,7 +527,7 @@ object CompositeViewDef {
         // The main source produces an infinite stream and waits for new elements
         mainSource    = graphStream.main(source, project)
         // The rebuild one a finite one with only the current elements
-        rebuildSource = graphStream.rebuild(source, project, projectionTypes)
+        rebuildSource = graphStream.rebuild(source, project)
       } yield (source.id, mainSource, rebuildSource, operation)
     }
 
@@ -562,13 +553,6 @@ object CompositeViewDef {
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
       result <- Operation.merge(chain)
     } yield target.id -> result
-  }
-
-  /** Union of all resourceTypes specified in the view's projections */
-  private def projectionTypes(view: ActiveViewDef): Set[Iri] = {
-    val targets = view.value.projections
-    if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
-    else targets.foldLeft(Set.empty[Iri])(_ ++ _.resourceTypes)
   }
 
 }

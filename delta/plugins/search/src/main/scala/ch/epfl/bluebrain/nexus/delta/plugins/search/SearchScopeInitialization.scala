@@ -25,7 +25,7 @@ final class SearchScopeInitialization(
 )(implicit baseUri: BaseUri)
     extends ScopeInitialization {
 
-  private val logger = Logger.cats[SearchScopeInitialization]
+  private val logger = Logger[SearchScopeInitialization]
 
   implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 

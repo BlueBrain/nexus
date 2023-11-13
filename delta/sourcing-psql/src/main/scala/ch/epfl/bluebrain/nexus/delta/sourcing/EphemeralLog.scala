@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.EphemeralStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
@@ -58,7 +57,7 @@ object EphemeralLog {
       definition: EphemeralDefinition[Id, S, Command, R],
       config: EphemeralLogConfig,
       xas: Transactors
-  )(implicit execution: EvaluationExecution): EphemeralLog[Id, S, Command, R] = {
+  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): EphemeralLog[Id, S, Command, R] = {
     val stateStore = EphemeralStateStore(definition.tpe, definition.stateSerializer, config.ttl, xas)
     new EphemeralLog[Id, S, Command, R] {
 
@@ -75,7 +74,7 @@ object EphemeralLog {
                         .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                           definition.onUniqueViolation(id, command)
                         }
-                        .transact(xas.writeCE)
+                        .transact(xas.write)
           _        <- IO.fromEither(res)
         } yield newState
       }

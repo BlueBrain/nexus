@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils.ioStreamOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.query.DatasetFactory

@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageRejection.{AlreadyExists, MessageTooLong, NotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageRejection.{AlreadyExists, MessageTooLong, NotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.{CreateMessage, MessageRejection, MessageState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -27,8 +26,6 @@ class EphemeralLogSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.
       MessageState.serializer,
       (_, command) => AlreadyExists(command.id, command.project)
     )
-
-  implicit val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
 
   private lazy val log = EphemeralLog(
     definition,

@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 
 /**
   * A definition of a value that can be converted to JSONLD
@@ -32,14 +31,14 @@ object JsonLdValue {
 
   implicit val jsonLdEncoder: JsonLdEncoder[JsonLdValue] = {
     new JsonLdEncoder[JsonLdValue] {
-      override def context(value: JsonLdValue): ContextValue                                                       = value.encoder.context(value.value)
+      override def context(value: JsonLdValue): ContextValue                                             = value.encoder.context(value.value)
       override def expand(
           value: JsonLdValue
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd]  =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd]  =
         value.encoder.expand(value.value)
       override def compact(
           value: JsonLdValue
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
         value.encoder.compact(value.value)
     }
   }

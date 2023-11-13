@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -26,22 +26,20 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
-import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class DeltaClientSpec
     extends TestKit(ActorSystem("DeltaClientSpec"))
-    with BioSpec
+    with CatsEffectSpec
     with ScalaFutures
-    with CatsRunContext
     with ConfigFixtures
     with BeforeAndAfterAll
     with QueryParamsUnmarshalling {
@@ -65,10 +63,10 @@ class DeltaClientSpec
           "maxInstant" : "1970-01-01T00:00:00Z"
         }"""
 
-  implicit val sc: Scheduler = Scheduler.global
-  private val nQuads         = contentOf("remote/resource.nq")
-  private val nQuadsEntity   = HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads)
-  private val resourceId     = iri"https://example.com/testresource"
+  implicit val ec: ExecutionContext = ExecutionContext.global
+  private val nQuads                = contentOf("remote/resource.nq")
+  private val nQuadsEntity          = HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads)
+  private val resourceId            = iri"https://example.com/testresource"
 
   private val project    = ProjectRef.unsafe("org", "proj")
   private val validTag   = Some(UserTag.unsafe("knowntag"))
@@ -160,7 +158,11 @@ class DeltaClientSpec
     }
 
     "fail if project is unknown" in {
-      deltaClient.projectStatistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
+      deltaClient
+        .projectStatistics(unknownProjectSource)
+        .rejectedWith[HttpClientError]
+        .errorCode
+        .value shouldEqual StatusCodes.NotFound
     }
   }
 
@@ -173,7 +175,7 @@ class DeltaClientSpec
     "fail if project is unknown" in {
       deltaClient
         .remaining(unknownProjectSource, Offset.Start)
-        .rejected
+        .rejectedWith[HttpClientError]
         .errorCode
         .value shouldEqual StatusCodes.NotFound
     }

@@ -18,9 +18,9 @@ import doobie.{Get, Put}
   * @param onUniqueViolation
   *   to handle gracefully unique constraint violations in database by a rejection
   */
-final case class GlobalEntityDefinition[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection](
+final case class GlobalEntityDefinition[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
     tpe: EntityType,
-    stateMachine: StateMachine[S, Command, E, Rejection],
+    stateMachine: StateMachine[S, Command, E],
     eventSerializer: Serializer[Id, E],
     stateSerializer: Serializer[Id, S],
     onUniqueViolation: (Id, Command) => Rejection

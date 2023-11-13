@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class RealmsRejectionSpec extends BioSpec with CirceLiteral with Fixtures {
+class RealmsRejectionSpec extends CatsEffectSpec with CirceLiteral with Fixtures {
 
   "A RealmsRejection" should {
 

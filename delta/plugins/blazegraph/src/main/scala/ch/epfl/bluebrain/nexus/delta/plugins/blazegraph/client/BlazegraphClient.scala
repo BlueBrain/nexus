@@ -7,19 +7,19 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, 
 import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import cats.effect.{ContextShift, IO, Timer}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, WrappedHttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import monix.bio.{IO, UIO}
 
 import scala.concurrent.duration._
 
@@ -29,24 +29,20 @@ import scala.concurrent.duration._
 class BlazegraphClient(
     client: HttpClient,
     endpoint: Uri,
-    queryTimeout: Duration
-)(implicit credentials: Option[HttpCredentials], as: ActorSystem)
+    queryTimeout: Duration,
+    defaultProperties: Map[String, String]
+)(implicit credentials: Option[HttpCredentials], as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO])
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   private val serviceVersion = """(buildVersion">)([^<]*)""".r
   private val serviceName    = Name.unsafe("blazegraph")
-
-  private val defaultProperties =
-    ClasspathResourceUtils.bioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
 
   override def query[R <: SparqlQueryResponse](
       indices: Iterable[String],
       q: SparqlQuery,
       responseType: Aux[R],
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlClientError, R] = {
+  ): IO[R] = {
     val headers = queryTimeout match {
       case finite: FiniteDuration => additionalHeaders :+ RawHeader(timeoutHeader, finite.toMillis.toString)
       case _                      => additionalHeaders
@@ -57,23 +53,22 @@ class BlazegraphClient(
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription: UIO[ServiceDescription] =
+  def serviceDescription: IO[ServiceDescription] =
     client
       .fromEntityTo[ResolvedServiceDescription](Get(endpoint / "status"))
       .timeout(5.seconds)
-      .redeem(
-        _ => ServiceDescription.unresolved(serviceName),
-        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
-      )
+      .redeem(_ => ServiceDescription.unresolved(serviceName), _.copy(name = serviceName))
 
   /**
     * Check whether the passed namespace ''namespace'' exists.
     */
-  def existsNamespace(namespace: String): IO[SparqlClientError, Boolean] =
-    client(Get(endpoint / "namespace" / namespace)) {
-      case resp if resp.status == OK       => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
-      case resp if resp.status == NotFound => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
-    }.mapError(WrappedHttpClientError)
+  def existsNamespace(namespace: String): IO[Boolean]                                  =
+    client
+      .run(Get(endpoint / "namespace" / namespace)) {
+        case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).as(true)
+        case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).as(false)
+      }
+      .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
 
   /**
     * Attempts to create a namespace (if it doesn't exist) recovering gracefully when the namespace already exists.
@@ -85,17 +80,19 @@ class BlazegraphClient(
     * @return
     *   ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
     */
-  def createNamespace(namespace: String, properties: Map[String, String]): IO[SparqlClientError, Boolean] =
+  def createNamespace(namespace: String, properties: Map[String, String]): IO[Boolean] =
     existsNamespace(namespace).flatMap {
       case true  => IO.pure(false)
       case false =>
         val updated = properties + ("com.bigdata.rdf.sail.namespace" -> namespace)
         val payload = updated.map { case (key, value) => s"$key=$value" }.mkString("\n")
         val req     = Post(endpoint / "namespace", HttpEntity(payload))
-        client(req) {
-          case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
-          case resp if resp.status == Conflict => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
-        }.mapError(WrappedHttpClientError)
+        client
+          .run(req) {
+            case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).as(true)
+            case resp if resp.status == Conflict => IO.delay(resp.discardEntityBytes()).as(false)
+          }
+          .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
     }
 
   /**
@@ -107,8 +104,7 @@ class BlazegraphClient(
     * @return
     *   ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
     */
-  def createNamespace(namespace: String): IO[SparqlClientError, Boolean] =
-    defaultProperties.flatMap(createNamespace(namespace, _))
+  def createNamespace(namespace: String): IO[Boolean] = createNamespace(namespace, defaultProperties)
 
   /**
     * Attempts to delete a namespace recovering gracefully when the namespace does not exists.
@@ -116,16 +112,18 @@ class BlazegraphClient(
     * @return
     *   ''true'' wrapped in ''F'' when namespace has been deleted and ''false'' wrapped in ''F'' when it does not existe
     */
-  def deleteNamespace(namespace: String): IO[SparqlClientError, Boolean] =
-    client(Delete(endpoint / "namespace" / namespace)) {
-      case resp if resp.status == OK       => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
-      case resp if resp.status == NotFound => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
-    }.mapError(WrappedHttpClientError)
+  def deleteNamespace(namespace: String): IO[Boolean] =
+    client
+      .run(Delete(endpoint / "namespace" / namespace)) {
+        case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).as(true)
+        case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).as(false)
+      }
+      .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
 
   /**
     * Count all the triples on an index
     */
-  def count(index: String): IO[SparqlClientError, Long] = {
+  def count(index: String): IO[Long] = {
     val sparqlQuery = SparqlConstructQuery.unsafe("SELECT (COUNT(?s) AS ?count) WHERE { ?s ?p ?o }")
     query(Set(index), sparqlQuery, SparqlResultsJson)
       .flatMap { response =>
@@ -135,7 +133,7 @@ class BlazegraphClient(
           count         <- countAsString.value.toLongOption
         } yield count
 
-        IO.fromOption(count, InvalidCountRequest(index, sparqlQuery.value))
+        IO.fromOption(count)(InvalidCountRequest(index, sparqlQuery.value))
       }
   }
 
@@ -163,10 +161,11 @@ object BlazegraphClient {
       client: HttpClient,
       endpoint: Uri,
       credentials: Option[Credentials],
-      queryTimeout: Duration
-  )(implicit as: ActorSystem): BlazegraphClient = {
+      queryTimeout: Duration,
+      defaultProperties: Map[String, String]
+  )(implicit as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO]): BlazegraphClient = {
     implicit val cred: Option[BasicHttpCredentials] =
       credentials.map { cred => BasicHttpCredentials(cred.username, cred.password.value) }
-    new BlazegraphClient(client, endpoint, queryTimeout)
+    new BlazegraphClient(client, endpoint, queryTimeout, defaultProperties)
   }
 }

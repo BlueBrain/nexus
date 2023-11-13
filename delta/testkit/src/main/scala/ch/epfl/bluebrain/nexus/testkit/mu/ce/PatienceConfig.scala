@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.mu.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import scala.concurrent.duration.FiniteDuration
 

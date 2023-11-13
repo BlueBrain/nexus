@@ -11,7 +11,6 @@ import cats.data.NonEmptyList
 import cats.effect.{Clock, ContextShift, IO, Resource, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -31,12 +30,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.DurationInt
@@ -63,10 +59,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
 
-  implicit val scheduler: Scheduler = Scheduler.global
-
-  make[Transactors].fromResource {
-    Transactors.init(appCfg.database).mapK(taskToIoK)
+  make[Transactors].fromResource { (cs: ContextShift[IO]) =>
+    Transactors.init(appCfg.database)(classLoader, cs)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
@@ -111,11 +105,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     new JsonLdJavaApi(appCfg.jsonLdApi)(contextShift)
   }
 
-  make[Clock[UIO]].from(Clock[UIO])
   make[Clock[IO]].from(Clock.create[IO])
-  make[EvaluationExecution].from(EvaluationExecution(_, _))
   make[UUIDF].from(UUIDF.random)
-  make[Scheduler].from(scheduler)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
@@ -137,7 +128,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     }
     Resource.make(make)(release)
   }
-
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
@@ -157,10 +147,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
 
-  many[PriorityRoute].add {
-    (cfg: AppConfig, s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-      val route = new ErrorRoutes()(cfg.http.baseUri, s, cr, ordering)
-      PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add { (cfg: AppConfig, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+    val route = new ErrorRoutes()(cfg.http.baseUri, cr, ordering)
+    PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
   }
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>

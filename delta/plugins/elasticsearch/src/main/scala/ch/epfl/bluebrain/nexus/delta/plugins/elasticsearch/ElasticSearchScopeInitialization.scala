@@ -33,7 +33,7 @@ class ElasticSearchScopeInitialization(
     defaults: Defaults
 ) extends ScopeInitialization {
 
-  private val logger                                        = Logger.cats[ElasticSearchScopeInitialization]
+  private val logger                                        = Logger[ElasticSearchScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 

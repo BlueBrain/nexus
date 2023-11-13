@@ -31,29 +31,26 @@ val catsVersion             = "2.10.0"
 val circeVersion            = "0.14.6"
 val circeOpticsVersion      = "0.15.0"
 val circeExtrasVersions     = "0.14.3"
-val classgraphVersion       = "4.8.163"
+val classgraphVersion       = "4.8.164"
 val distageVersion          = "1.0.10"
 val doobieVersion           = "0.13.4"
 val fs2Version              = "2.5.11"
 val googleAuthClientVersion = "1.34.1"
 val handleBarsVersion       = "4.3.1"
-val hikariVersion           = "5.0.1"
+val hikariVersion           = "5.1.0"
 val jenaVersion             = "4.2.0"
-val jsonldjavaVersion       = "0.13.4"
+val jsonldjavaVersion       = "0.13.6"
 val kamonVersion            = "2.6.5"
 val kanelaAgentVersion      = "1.0.18"
 val kindProjectorVersion    = "0.13.2"
 val log4catsVersion         = "1.7.0"
 val logbackVersion          = "1.4.11"
 val magnoliaVersion         = "1.1.6"
-val mockitoVersion          = "1.17.27"
-val monixVersion            = "3.4.1"
-val monixBioVersion         = "1.2.0"
+val mockitoVersion          = "1.17.29"
 val munitVersion            = "1.0.0-M10"
-val nimbusJoseJwtVersion    = "9.37"
+val nimbusJoseJwtVersion    = "9.37.1"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
-val scalaLoggingVersion     = "3.9.5"
 val scalaTestVersion        = "3.2.17"
 val scalaXmlVersion         = "2.2.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
@@ -113,12 +110,11 @@ lazy val log4cats           = "org.typelevel"                %% "log4cats-slf4j"
 lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
-lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
-lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
+lazy val scalaReflect       = "org.scala-lang"                % "scala-reflect"            % scalaCompilerVersion
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
 lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
@@ -212,13 +208,11 @@ lazy val kernel = project
       circeCore,
       circeParser,
       handleBars,
-      monixBio,
       nimbusJoseJwt,
       kamonCore,
       log4cats,
       pureconfig,
       pureconfigCats,
-      scalaLogging,
       munit     % Test,
       scalaTest % Test
     ),
@@ -242,7 +236,6 @@ lazy val testkit = project
       ),
       catsRetry,
       doobiePostgres,
-      monixBio,
       munit,
       scalaTest,
       testContainers
@@ -267,7 +260,6 @@ lazy val sourcingPsql = project
       distageCore,
       fs2,
       fs2io,
-      monixBio,
       munit          % Test,
       catsEffectLaws % Test,
       logback        % Test
@@ -295,7 +287,7 @@ lazy val rdf = project
       jenaArq,
       jsonldjava,
       magnolia,
-      monixBio,
+      scalaReflect,
       topBraidShacl,
       akkaSlf4j   % Test,
       akkaTestKit % Test,
@@ -325,7 +317,6 @@ lazy val sdk = project
       circeGenericExtras,
       distageCore,
       fs2,
-      monixBio,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
@@ -770,7 +761,6 @@ lazy val storage = project
       circeGenericExtras,
       logback,
       pureconfig,
-      scalaLogging,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       mockito         % Test,
@@ -804,8 +794,6 @@ lazy val tests = project
       circeGenericExtras,
       fs2,
       logback,
-      monixBio,
-      scalaLogging,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
       awsSdk          % Test,

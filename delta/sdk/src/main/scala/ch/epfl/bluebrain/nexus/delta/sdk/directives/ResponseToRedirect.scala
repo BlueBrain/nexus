@@ -8,10 +8,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import monix.bio.{IO => BIO, UIO}
-import monix.execution.Scheduler
 
 /**
   * Redirection response magnet.
@@ -21,25 +18,6 @@ sealed trait ResponseToRedirect {
 }
 
 object ResponseToRedirect {
-
-  implicit def uioRedirect(io: UIO[Uri])(implicit s: Scheduler): ResponseToRedirect =
-    new ResponseToRedirect {
-      override def apply(redirection: Redirection): Route =
-        onSuccess(io.runToFuture) { uri =>
-          redirect(uri, redirection)
-        }
-    }
-
-  implicit def bioRedirect[E: JsonLdEncoder: HttpResponseFields](
-      io: BIO[E, Uri]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToRedirect =
-    new ResponseToRedirect {
-      override def apply(redirection: Redirection): Route =
-        onSuccess(io.attempt.runToFuture) {
-          case Left(value)     => ResponseToJsonLd.valueWithHttpResponseFields(value).apply(None)
-          case Right(location) => redirect(location, redirection)
-        }
-    }
 
   implicit def ioRedirect(io: IO[Uri]): ResponseToRedirect =
     new ResponseToRedirect {
@@ -55,7 +33,7 @@ object ResponseToRedirect {
     new ResponseToRedirect {
       override def apply(redirection: Redirection): Route =
         onSuccess(io.unsafeToFuture()) {
-          case Left(value)     => CatsResponseToJsonLd.valueWithHttpResponseFields[E](value).apply(None)
+          case Left(value)     => ResponseToJsonLd.valueWithHttpResponseFields[E](value).apply(None)
           case Right(location) => redirect(location, redirection)
         }
     }

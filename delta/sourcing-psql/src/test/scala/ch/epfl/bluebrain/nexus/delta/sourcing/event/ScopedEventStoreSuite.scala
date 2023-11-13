@@ -13,20 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsStreamAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventStoreSuite
-    extends BioSuite
-    with CatsRunContext
-    with CatsStreamAssertions
-    with Doobie.Fixture
-    with Doobie.Assertions {
+class ScopedEventStoreSuite extends CatsEffectSuite with CatsRunContext with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -64,7 +58,7 @@ class ScopedEventStoreSuite
   private val envelope5 = Envelope(PullRequest.entityType, id1, 1, event5, Instant.EPOCH, Offset.at(5L))
   private val envelope6 = Envelope(PullRequest.entityType, id3, 1, event6, Instant.EPOCH, Offset.at(6L))
 
-  private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assert(6)
+  private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assertEquals(6)
 
   test("Save events") {
     for {

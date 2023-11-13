@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.execution.schedulers.CanBlock
 import org.scalatest.{OptionValues, TestSuite}
 
 trait Fixtures extends CirceLiteral {
@@ -29,7 +28,6 @@ trait Fixtures extends CirceLiteral {
   // format: on
 
   implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(remoteContexts.toSeq: _*)
-  implicit val pm: CanBlock                              = CanBlock.permit
 
   object vocab {
     val value                  = iri"http://example.com/"

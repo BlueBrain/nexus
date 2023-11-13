@@ -4,7 +4,6 @@ import akka.actor
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -47,7 +46,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Storages and Files wiring
@@ -60,8 +58,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, sc)
+  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem, timer, cs)
   }
 
   make[Storages]
@@ -87,7 +85,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
-          permissions.fetchPermissionSet.toUIO,
+          permissions.fetchPermissionSet,
           StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
           xas,
           cfg.storages,
@@ -96,6 +94,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           api,
           clock,
           timer,
+          cs,
           uuidF
         )
     }

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
@@ -18,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 
 trait Search {
 
@@ -62,7 +60,7 @@ object Search {
       compositeViews
         .list(
           Pagination.OnePage,
-          CompositeViewSearchParams(deprecated = Some(false), filter = v => UIO.pure(v.id == defaultViewId)),
+          CompositeViewSearchParams(deprecated = Some(false), filter = v => IO.pure(v.id == defaultViewId)),
           Ordering.by(_.createdAt)
         )
         .map(

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -65,7 +64,7 @@ final class Single[SinkFormat](
 
   private def queryTransform: GraphResource => IO[Option[SinkFormat]] = gr =>
     for {
-      graph       <- queryGraph(gr).toCatsIO
+      graph       <- queryGraph(gr)
       transformed <- graph.flatTraverse(transform)
     } yield transformed
 
@@ -115,7 +114,7 @@ final class Batch[SinkFormat](
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
   private def query(elements: Chunk[Elem[GraphResource]]): IO[Option[Graph]] =
     elements.mapFilter(elem => elem.map(_.id).toOption) match {
-      case ids if ids.nonEmpty => queryGraph(ids).toCatsIO
+      case ids if ids.nonEmpty => queryGraph(ids)
       case _                   => IO.none
     }
 
@@ -125,7 +124,6 @@ final class Batch[SinkFormat](
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
-      .toCatsIO
       .flatMap(_.toGraph)
       .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
   }

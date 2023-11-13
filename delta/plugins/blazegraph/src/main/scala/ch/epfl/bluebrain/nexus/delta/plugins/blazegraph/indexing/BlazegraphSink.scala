@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
@@ -14,8 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import com.typesafe.scalalogging.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Chunk
 import shapeless.Typeable
 
@@ -61,11 +60,10 @@ final class BlazegraphSink(
     if (bulk.queries.nonEmpty)
       client
         .bulk(namespace, bulk.queries)
-        .toCatsIO
         .redeemWith(
           err =>
-            IO
-              .delay(logger.error(s"Indexing in blazegraph namespace $namespace failed", err))
+            logger
+              .error(err)(s"Indexing in blazegraph namespace $namespace failed")
               .as(elements.map { _.failed(err) }),
           _ => IO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
         )
@@ -85,7 +83,7 @@ final class BlazegraphSink(
 
 object BlazegraphSink {
 
-  private val logger: Logger = Logger[BlazegraphSink]
+  private val logger = Logger[BlazegraphSink]
 
   def apply(client: BlazegraphClient, batchConfig: BatchConfig, namespace: String)(implicit base: BaseUri) =
     new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace = namespace)

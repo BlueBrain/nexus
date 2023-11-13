@@ -114,7 +114,7 @@ trait FailedElemLogStore {
 
 object FailedElemLogStore {
 
-  private val logger = Logger.cats[ProjectionStore]
+  private val logger = Logger[ProjectionStore]
 
   def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): FailedElemLogStore =
     new FailedElemLogStore {
@@ -125,12 +125,12 @@ object FailedElemLogStore {
         sql"SELECT count(ordering) FROM public.failed_elem_logs"
           .query[Long]
           .unique
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       override def save(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit] = {
         val log  = logger.debug(s"[${metadata.name}] Saving ${failures.length} failed elems.")
         val save = IOInstant.now.flatMap { instant =>
-          failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.writeCE).void
+          failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.write).void
         }
         log >> save
       }
@@ -184,7 +184,7 @@ object FailedElemLogStore {
            |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       override def stream(projectionName: String, offset: Offset): Stream[IO, FailedElemLogRow] =
         sql"""SELECT * from public.failed_elem_logs
@@ -193,13 +193,13 @@ object FailedElemLogStore {
            |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): IO[Long] =
         sql"SELECT count(ordering) from public.failed_elem_logs  ${whereClause(project, projectionId, timeRange)}"
           .query[Long]
           .unique
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       override def list(
           project: ProjectRef,
@@ -213,7 +213,7 @@ object FailedElemLogStore {
              |LIMIT ${pagination.size} OFFSET ${pagination.from}""".stripMargin
           .query[FailedElemLogRow]
           .to[List]
-          .transact(xas.readCE)
+          .transact(xas.read)
 
       private def whereClause(project: ProjectRef, projectionId: Iri, timeRange: TimeRange) = Fragments.whereAndOpt(
         Some(fr"projection_project = $project"),

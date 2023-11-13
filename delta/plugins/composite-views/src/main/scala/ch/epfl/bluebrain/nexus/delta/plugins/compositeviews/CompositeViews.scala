@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -63,8 +62,8 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[ViewResource] = {
     for {
-      pc  <- toCatsIO(fetchContext.onCreate(project))
-      iri <- toCatsIO(expandIri(id, pc))
+      pc  <- fetchContext.onCreate(project)
+      iri <- expandIri(id, pc)
       res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, pc.base))
     } yield res
   }.span("createCompositeView")
@@ -82,8 +81,8 @@ final class CompositeViews private (
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc           <- toCatsIO(fetchContext.onCreate(project))
-      (iri, value) <- toCatsIO(sourceDecoder(project, pc, source))
+      pc           <- fetchContext.onCreate(project)
+      (iri, value) <- sourceDecoder(project, pc, source)
       res          <- eval(CreateCompositeView(iri, project, value, source, caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
@@ -101,9 +100,9 @@ final class CompositeViews private (
     */
   def create(id: IdSegment, project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- toCatsIO(fetchContext.onCreate(project))
-      iri       <- toCatsIO(expandIri(id, pc))
-      viewValue <- toCatsIO(sourceDecoder(project, pc, iri, source))
+      pc        <- fetchContext.onCreate(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(CreateCompositeView(iri, project, viewValue, source, caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
@@ -132,8 +131,8 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[ViewResource] = {
     for {
-      pc    <- toCatsIO(fetchContext.onModify(project))
-      iri   <- toCatsIO(expandIri(id, pc))
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
       source = value.toJson(iri)
       res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, pc.base))
     } yield res
@@ -155,9 +154,9 @@ final class CompositeViews private (
     */
   def update(id: IdSegment, project: ProjectRef, rev: Int, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- toCatsIO(fetchContext.onModify(project))
-      iri       <- toCatsIO(expandIri(id, pc))
-      viewValue <- toCatsIO(sourceDecoder(project, pc, iri, source))
+      pc        <- fetchContext.onModify(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateCompositeView(iri, project, rev, viewValue, source, caller.subject, pc.base))
     } yield res
   }.span("updateCompositeView")
@@ -186,8 +185,8 @@ final class CompositeViews private (
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- toCatsIO(fetchContext.onModify(project))
-      iri <- toCatsIO(expandIri(id, pc))
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagCompositeView")
@@ -210,8 +209,8 @@ final class CompositeViews private (
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- toCatsIO(fetchContext.onModify(project))
-      iri <- toCatsIO(expandIri(id, pc))
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateCompositeView(iri, project, rev, subject))
     } yield res
   }.span("deprecateCompositeView")
@@ -249,8 +248,8 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewState] = {
     for {
-      pc      <- fetchContext.onRead(project).toCatsIO
-      iri     <- expandIri(id.value, pc).toCatsIO
+      pc      <- fetchContext.onRead(project)
+      iri     <- expandIri(id.value, pc)
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
@@ -398,7 +397,7 @@ object CompositeViews {
       case None    =>
         for {
           t     <- IOInstant.now
-          u     <- toCatsIO(uuidF())
+          u     <- uuidF()
           value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
           _     <- validate(u, value)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1, t, c.subject)
@@ -460,7 +459,7 @@ object CompositeViews {
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _).toBIO[CompositeViewRejection], next),
+      StateMachine(None, evaluate(validate)(_, _), next),
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
       Tagger[CompositeViewEvent](
@@ -497,6 +496,7 @@ object CompositeViews {
       api: JsonLdApi,
       clock: Clock[IO],
       timer: Timer[IO],
+      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO

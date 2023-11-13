@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields, CompositeViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -27,21 +27,13 @@ final class CompositeViewFieldsJsonLdSourceDecoder private (
 ) {
   def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
-  ): IO[CompositeViewRejection, (Iri, CompositeViewFields)] = {
+  ): IO[(Iri, CompositeViewFields)] =
     decoder(ref, context, mapJsonToString(source))
-  }
 
   def apply(ref: ProjectRef, context: ProjectContext, iri: Iri, source: Json)(implicit
       caller: Caller
-  ): IO[CompositeViewRejection, CompositeViewFields] = {
-
-    decoder(
-      ref,
-      context,
-      iri,
-      mapJsonToString(source)
-    )
-  }
+  ): IO[CompositeViewFields] =
+    decoder(ref, context, iri, mapJsonToString(source))
 
   private def mapJsonToString(json: Json): Json = json
     .mapAllKeys("mapping", _.noSpaces.asJson)

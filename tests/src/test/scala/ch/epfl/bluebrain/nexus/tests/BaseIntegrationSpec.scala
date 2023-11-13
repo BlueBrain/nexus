@@ -11,8 +11,8 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsIOValues}
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
@@ -44,7 +44,7 @@ trait BaseIntegrationSpec
     with Inspectors
     with CatsRunContext
     with CatsIOValues
-    with IOFixedClock
+    with FixedClock
     with CirceUnmarshalling
     with CirceLiteral
     with CirceEq
@@ -57,7 +57,7 @@ trait BaseIntegrationSpec
     with AppendedClues
     with ScalaFutures {
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   implicit val config: TestsConfig = load[TestsConfig](ConfigFactory.load(), "tests")
 

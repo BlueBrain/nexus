@@ -7,7 +7,6 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -85,7 +84,7 @@ object IdentitiesImpl {
   type GroupsCache = LocalCache[String, Set[Group]]
   type RealmCache  = LocalCache[String, Realm]
 
-  private val logger = Logger.cats[this.type]
+  private val logger = Logger[this.type]
 
   def extractGroups(
       getUserInfo: (Uri, OAuth2BearerToken) => IO[Json]

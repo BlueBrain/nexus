@@ -13,12 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
 
 import java.nio.file.Paths
 
-class ArchivesDecodingSpec extends BioSpec with RemoteContextResolutionFixture {
+class ArchivesDecodingSpec extends CatsEffectSpec with RemoteContextResolutionFixture {
 
   implicit private val uuidF: UUIDF   = UUIDF.random
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict

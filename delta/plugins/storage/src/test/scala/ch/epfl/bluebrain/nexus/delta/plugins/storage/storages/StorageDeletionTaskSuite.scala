@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile
@@ -25,7 +24,7 @@ class StorageDeletionTaskSuite extends CatsEffectSuite with StorageFixtures {
       )
     val storageDir                              = diskVal.rootDirectory(project)
     for {
-      uuid        <- UUIDF.random().toCatsIO
+      uuid        <- UUIDF.random()
       // We create the storage directory the same way as in real conditions, when the first
       // file is written
       (file, _)   <- DiskStorageSaveFile.initLocation(project, diskVal, uuid, "trace")

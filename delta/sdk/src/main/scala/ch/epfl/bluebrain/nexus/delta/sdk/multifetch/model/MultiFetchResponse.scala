@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -17,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
-import monix.bio.UIO
 
 /**
   * A response for a multi-fetch operation
@@ -94,7 +92,7 @@ object MultiFetchResponse {
           val value                              = content.resource
           val source                             = content.source
           repr match {
-            case SourceJson          => UIO.pure(source.asJson)
+            case SourceJson          => IO.pure(source.asJson)
             case AnnotatedSourceJson => AnnotatedSource(value, source)
             case CompactedJsonLd     => value.toCompactedJsonLd.map { v => v.json }
             case ExpandedJsonLd      => value.toExpandedJsonLd.map { v => v.json }
@@ -106,7 +104,7 @@ object MultiFetchResponse {
 
         def onError(error: Error): IO[Json] =
           repr match {
-            case SourceJson | AnnotatedSourceJson => UIO.pure(error.asJson)
+            case SourceJson | AnnotatedSourceJson => IO.pure(error.asJson)
             case CompactedJsonLd                  => error.toCompactedJsonLd.map { v => v.json }
             case ExpandedJsonLd                   => error.toExpandedJsonLd.map { v => v.json }
             case NTriples                         => error.toNTriples.map { v => v.value.asJson }

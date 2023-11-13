@@ -24,7 +24,7 @@ object OpenIdExists {
     sql"SELECT count(id) FROM global_states WHERE type = ${Realms.entityType} AND id != $id AND value->>'openIdConfig' = ${openIdUri.toString()} "
       .query[Int]
       .unique
-      .transact(xas.readCE)
+      .transact(xas.read)
       .flatMap { c =>
         IO.raiseWhen(c > 0)(RealmOpenIdConfigAlreadyExists(self, openIdUri))
       }

@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class OrganizationSpec extends BioSpec with CirceLiteral with Fixtures {
+class OrganizationSpec extends CatsEffectSpec with CirceLiteral with Fixtures {
 
   "An Organization" should {
 

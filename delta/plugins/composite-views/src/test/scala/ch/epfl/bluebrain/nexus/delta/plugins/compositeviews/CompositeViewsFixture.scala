@@ -22,10 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import io.circe.{Json, JsonObject}
-import monix.execution.Scheduler
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 trait CompositeViewsFixture extends ConfigFixtures {
@@ -37,9 +37,9 @@ trait CompositeViewsFixture extends ConfigFixtures {
       "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
     ).getOrElse(throw new RuntimeException("Should never happen"))
 
-  val uuid                   = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
-  implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-  implicit val sc: Scheduler = Scheduler.global
+  val uuid                          = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
+  implicit val uuidF: UUIDF         = UUIDF.fixed(uuid)
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   val epoch           = Instant.EPOCH
   val epochPlus10     = Instant.EPOCH.plusMillis(10L)

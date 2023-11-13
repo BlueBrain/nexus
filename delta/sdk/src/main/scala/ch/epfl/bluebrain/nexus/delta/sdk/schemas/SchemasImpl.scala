@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -70,10 +69,10 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onModify(projectRef).toCatsIO
-      iri                   <- expandIri(id, pc).toCatsIO
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).toCatsIO.map { j => (j.compacted, j.expanded) }
-      expandedResolved      <- resolveImports(iri, projectRef, expanded).toCatsIO
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).map { j => (j.compacted, j.expanded) }
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
     } yield res
@@ -84,13 +83,11 @@ final class SchemasImpl private (
       projectRef: ProjectRef
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onModify(projectRef).toCatsIO
-      iri                   <- expandIri(id, pc).toCatsIO
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).toCatsIO.map { j =>
-                                 (j.compacted, j.expanded)
-                               }
-      expandedResolved      <- resolveImports(iri, projectRef, expanded).toCatsIO
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).map { j => (j.compacted, j.expanded) }
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))
     } yield res
@@ -104,8 +101,8 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller))
     } yield res
   }.span("tagSchema")
@@ -117,8 +114,8 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] =
     (for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller))
     } yield res).span("deleteSchemaTag")
 
@@ -128,15 +125,15 @@ final class SchemasImpl private (
       rev: Int
   )(implicit caller: Subject): IO[SchemaResource] =
     (for {
-      pc  <- fetchContext.onModify(projectRef).toCatsIO
-      iri <- expandIri(id, pc).toCatsIO
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
       res <- eval(DeprecateSchema(iri, projectRef, rev, caller))
     } yield res).span("deprecateSchema")
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource] = {
     for {
-      pc    <- fetchContext.onRead(projectRef).toCatsIO
-      iri   <- expandIri(id.value, pc).toCatsIO
+      pc    <- fetchContext.onRead(projectRef)
+      iri   <- expandIri(id.value, pc)
       state <- id match {
                  case Latest(_)        => log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
                  case Revision(_, rev) =>
@@ -154,13 +151,12 @@ final class SchemasImpl private (
     log.dryRun(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
   private def resolveImports(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit caller: Caller) =
-    schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema)).toBIO[SchemaRejection]
+    schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema))
 }
 
 object SchemasImpl {
 
-  type SchemasLog =
-    ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+  type SchemasLog = ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
 
   /**
     * Constructs a [[Schemas]] instance.
@@ -172,7 +168,13 @@ object SchemasImpl {
       validate: ValidateSchema,
       config: SchemasConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): Schemas = {
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[IO],
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      uuidF: UUIDF
+  ): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),

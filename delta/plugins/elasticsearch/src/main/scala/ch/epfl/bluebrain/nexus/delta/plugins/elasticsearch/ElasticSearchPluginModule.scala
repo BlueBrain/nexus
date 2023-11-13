@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -40,7 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * ElasticSearch plugin wiring.
@@ -55,7 +53,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem[Nothing], sc: Scheduler) => HttpClient()(httpConfig, as.classicSystem, sc)
+    (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
+      HttpClient()(httpConfig, as.classicSystem, timer, cs)
   }
 
   make[ElasticSearchClient].from {
@@ -63,11 +62,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cfg: ElasticSearchViewsConfig,
         client: HttpClient @Id("elasticsearch-client"),
         as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         files: ElasticSearchFiles
     ) =>
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength, files.emptyResults)(
         cfg.credentials,
-        as.classicSystem
+        as.classicSystem,
+        timer,
+        cs
       )
   }
 
@@ -102,6 +105,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
+        contextShift: ContextShift[IO],
         timer: Timer[IO],
         uuidF: UUIDF
     ) =>
@@ -114,7 +118,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas,
         files.defaultMapping,
         files.defaultSettings
-      )(api, clock, timer, uuidF)
+      )(api, clock, contextShift, timer, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -281,7 +285,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[IdResolution].from { (defaultViewsQuery: DefaultViewsQuery.Elasticsearch, shifts: ResourceShifts) =>
-    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef).toUIO)
+    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef))
   }
 
   make[IdResolutionRoutes].from {

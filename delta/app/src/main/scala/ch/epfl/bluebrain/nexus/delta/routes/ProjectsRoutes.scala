@@ -6,14 +6,13 @@ import akka.http.scaladsl.server._
 import cats.data.OptionT
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -75,7 +74,7 @@ final class ProjectsRoutes(
           createdBy,
           updatedBy,
           label,
-          proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, allAcls).toUIO
+          proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, allAcls)
         )
       }
     }
@@ -161,7 +160,7 @@ final class ProjectsRoutes(
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, resources.read).apply {
-                      val stats = projectsStatistics.get(ref).toCatsIO
+                      val stats = projectsStatistics.get(ref)
                       emit(
                         OptionT(stats).toRight[ProjectRejection](ProjectNotFound(ref)).value
                       )

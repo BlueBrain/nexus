@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileId.iriExpander
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.InvalidFileId
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -10,11 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import monix.bio.{IO => BIO}
 
 final case class FileId(id: IdSegmentRef, project: ProjectRef) {
-  def expandIri(fetchContext: ProjectRef => BIO[FileRejection, ProjectContext]): IO[(Iri, ProjectContext)] =
-    fetchContext(project).flatMap(pc => iriExpander(id.value, pc).map(iri => (iri, pc))).toCatsIO
+  def expandIri(fetchContext: ProjectRef => IO[ProjectContext]): IO[(Iri, ProjectContext)] =
+    fetchContext(project).flatMap(pc => iriExpander(id.value, pc).map(iri => (iri, pc)))
 }
 
 object FileId {

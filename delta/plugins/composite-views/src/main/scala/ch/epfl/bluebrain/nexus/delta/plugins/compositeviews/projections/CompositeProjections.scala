@@ -4,7 +4,6 @@ import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
@@ -87,7 +86,7 @@ trait CompositeProjections {
 
 object CompositeProjections {
 
-  private val logger = Logger.cats[CompositeProjections]
+  private val logger = Logger[CompositeProjections]
 
   def apply(
       compositeRestartStore: CompositeRestartStore,
@@ -111,7 +110,7 @@ object CompositeProjections {
         Operation.fromFs2Pipe[Unit](
           Projection.persist(
             progress,
-            compositeProgressStore.save(view.indexingRef, branch, _).toUIO,
+            compositeProgressStore.save(view.indexingRef, branch, _),
             failedElemLogStore.save(view.metadata, _)
           )(batch, timer, cs)
         )

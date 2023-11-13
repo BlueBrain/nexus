@@ -4,7 +4,6 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -115,7 +114,7 @@ object BlazegraphCoordinator {
   }
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
-  private val logger               = Logger.cats[BlazegraphCoordinator]
+  private val logger               = Logger[BlazegraphCoordinator]
 
   def apply(
       views: BlazegraphViews,
@@ -136,7 +135,6 @@ object BlazegraphCoordinator {
         (v: ActiveViewDef) =>
           client
             .createNamespace(v.namespace)
-            .toCatsIO
             .onError { e =>
               logger.error(e)(s"Namespace for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }

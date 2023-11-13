@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 import cats.effect.{Clock, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
@@ -18,7 +17,7 @@ import java.time.Instant
 
 class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, projectStatistics: ProjectsStatistics) {
 
-  private val logger = Logger.cats[ProjectDeletionRunner]
+  private val logger = Logger[ProjectDeletionRunner]
 
   private def lastEventTime(pr: ProjectResource, now: Instant): IO[Instant] = {
     projectStatistics
@@ -33,7 +32,7 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
     projects
       .list(
         Pagination.OnePage,
-        ProjectSearchParams(filter = _ => IO.pure(true).toUIO),
+        ProjectSearchParams(filter = _ => IO.pure(true)),
         Ordering.by(_.updatedAt) // this is not needed, we are forced to specify an ordering
       )
       .map(_.results)

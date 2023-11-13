@@ -18,7 +18,7 @@ final case class StoragePluginConfig(
 
 object StoragePluginConfig {
 
-  private val logger = Logger.cats[StoragePluginConfig]
+  private val logger = Logger[StoragePluginConfig]
 
   /**
     * Converts a [[Config]] into an [[StoragePluginConfig]]

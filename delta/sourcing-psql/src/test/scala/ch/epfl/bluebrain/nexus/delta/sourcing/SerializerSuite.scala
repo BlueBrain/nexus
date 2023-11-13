@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SerializerSuite.{Bar, Foo}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie._
 import doobie.implicits._
 import io.circe.Codec
@@ -13,7 +13,7 @@ import munit.AnyFixture
 
 import scala.annotation.nowarn
 
-class SerializerSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class SerializerSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -38,7 +38,7 @@ class SerializerSuite extends BioSuite with Doobie.Fixture with Doobie.Assertion
       """{"x": 10, "y": 2}"""
     )
 
-    insertGet.transact(xas.write).assert(expectedString -> Set(foo, foo2))
+    insertGet.transact(xas.write).assertEquals(expectedString -> Set(foo, foo2))
   }
 
   test("Check bar serializer dropping nulls") {
@@ -60,7 +60,7 @@ class SerializerSuite extends BioSuite with Doobie.Fixture with Doobie.Assertion
       """{"x": 10, "y": 2}"""
     )
 
-    insertGet.transact(xas.write).assert(expectedString -> Set(bar, bar2))
+    insertGet.transact(xas.write).assertEquals(expectedString -> Set(bar, bar2))
   }
 
 }

@@ -45,17 +45,17 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   private val envelope3 = Envelope(Arithmetic.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(3L))
 
   private def assertCount(expected: Int) =
-    sql"select count(*) from global_states".query[Int].unique.transact(xas.readCE).assertEquals(expected)
+    sql"select count(*) from global_states".query[Int].unique.transact(xas.read).assertEquals(expected)
 
   test("Save state 1 and state 2 successfully") {
     for {
-      _ <- List(state1, state2).traverse(store.save).transact(xas.writeCE)
+      _ <- List(state1, state2).traverse(store.save).transact(xas.write)
       _ <- assertCount(2)
     } yield ()
   }
 
   test("List ids") {
-    GlobalStateStore.listIds(Arithmetic.entityType, xas.readCE).assert(List(id1, id2))
+    GlobalStateStore.listIds(Arithmetic.entityType, xas.read).assert(List(id1, id2))
   }
 
   test("get state 1") {
@@ -80,7 +80,7 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.save(updatedState1).transact(xas.writeCE)
+      _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(2)
       _ <- store.get(id1).assertSome(updatedState1)
     } yield ()
@@ -92,7 +92,7 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
 
   test("Delete state 2 successfully") {
     for {
-      _ <- store.delete(id2).transact(xas.writeCE)
+      _ <- store.delete(id2).transact(xas.write)
       _ <- assertCount(1)
       _ <- store.get(id2).assertNone
     } yield ()

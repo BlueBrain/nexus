@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import doobie.implicits._
 import doobie.postgres.implicits._
-import monix.bio.UIO
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -16,14 +16,14 @@ trait ProjectsStatistics {
   /**
     * Retrieve the current counts (and latest instant) of events for the passed ''project''
     */
-  def get(project: ProjectRef): UIO[Option[ProjectStatistics]]
+  def get(project: ProjectRef): IO[Option[ProjectStatistics]]
 }
 
 object ProjectsStatistics {
 
-  def apply(xas: Transactors): UIO[ProjectsStatistics] = {
+  def apply(xas: Transactors): IO[ProjectsStatistics] = {
     // TODO make the cache configurable
-    KeyValueStore.local[ProjectRef, ProjectStatistics](500, 3.seconds).map { cache => (project: ProjectRef) =>
+    LocalCache.apply[ProjectRef, ProjectStatistics](500, 3.seconds).map { cache => (project: ProjectRef) =>
       cache.getOrElseAttemptUpdate(
         project,
         sql"""
@@ -37,7 +37,6 @@ object ProjectsStatistics {
             case (_, _, _)                                => None
           }
           .transact(xas.read)
-          .hideErrors
       )
     }
   }

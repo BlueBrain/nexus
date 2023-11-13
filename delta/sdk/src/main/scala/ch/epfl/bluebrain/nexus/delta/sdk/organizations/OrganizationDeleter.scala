@@ -23,7 +23,7 @@ object OrganizationDeleter {
 
   def apply(xas: Transactors): OrganizationDeleter = new OrganizationDeleter {
 
-    private val log: Log4CatsLogger[IO] = Logger.cats[OrganizationDeleter]
+    private val log: Log4CatsLogger[IO] = Logger[OrganizationDeleter]
 
     def delete(id: Label): IO[Unit] =
       for {
@@ -36,7 +36,7 @@ object OrganizationDeleter {
       (for {
         _ <- List("scoped_events", "scoped_states").traverse(dropPartition(id, _))
         _ <- List("global_events", "global_states").traverse(deleteGlobal(id, _))
-      } yield ()).transact(xas.writeCE).void
+      } yield ()).transact(xas.write).void
 
     private def dropPartition(id: Label, table: String): ConnectionIO[Unit] =
       Update0(s"DROP TABLE IF EXISTS ${PartitionInit.orgPartition(table, id)}", None).run.void
@@ -55,7 +55,7 @@ object OrganizationDeleter {
         .query[Label]
         .option
         .map(_.isEmpty)
-        .transact(xas.readCE)
+        .transact(xas.read)
   }
 
 }

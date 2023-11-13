@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -36,7 +35,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
-import monix.bio.{IO => BIO}
 
 import java.util.UUID
 
@@ -68,7 +66,7 @@ final class ElasticSearchViews private (
       project: ProjectRef,
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ViewResource] =
-    uuidF().toCatsIO.flatMap(uuid => create(uuid.toString, project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
     * Creates a new ElasticSearchView with a provided id.
@@ -109,7 +107,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc           <- fetchContext.onCreate(project).toCatsIO
+      pc           <- fetchContext.onCreate(project)
       (iri, value) <- sourceDecoder(project, pc, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
@@ -359,11 +357,11 @@ final class ElasticSearchViews private (
       .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
 
   private def expandWithContext(
-      fetchCtx: ProjectRef => BIO[ElasticSearchViewRejection, ProjectContext],
+      fetchCtx: ProjectRef => IO[ProjectContext],
       ref: ProjectRef,
       id: IdSegment
   ): IO[(Iri, ProjectContext)] =
-    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc)).toCatsIO
+    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc))
 }
 
 object ElasticSearchViews {
@@ -410,7 +408,13 @@ object ElasticSearchViews {
       xas: Transactors,
       defaultMapping: DefaultMapping,
       defaultSettings: DefaultSettings
-  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[IO],
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      uuidF: UUIDF
+  ): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(
@@ -469,7 +473,7 @@ object ElasticSearchViews {
       case None    =>
         for {
           t <- IOInstant.now
-          u <- uuidF().toCatsIO
+          u <- uuidF()
           _ <- validate(u, IndexingRev.init, c.value)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -528,7 +532,7 @@ object ElasticSearchViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _).toBIO[ElasticSearchViewRejection],
+        evaluate(validate)(_, _),
         next
       ),
       ElasticSearchViewEvent.serializer,

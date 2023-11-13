@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -37,12 +37,12 @@ class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with 
   private val m2       = nxv + "m2"
   private val message2 = MessageState(m2, project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
 
-  private lazy val deleteExpired = new DeleteExpired(xas)(IOFixedClock.ceClock(Instant.EPOCH.plusSeconds(6L)))
+  private lazy val deleteExpired = new DeleteExpired(xas)(FixedClock.atInstant(Instant.EPOCH.plusSeconds(6L)))
 
   test("save the states") {
     for {
-      _ <- store.save(message1).transact(xas.writeCE).assert
-      _ <- store.save(message2).transact(xas.writeCE).assert
+      _ <- store.save(message1).transact(xas.write).assertUnit
+      _ <- store.save(message2).transact(xas.write).assertUnit
     } yield ()
   }
 

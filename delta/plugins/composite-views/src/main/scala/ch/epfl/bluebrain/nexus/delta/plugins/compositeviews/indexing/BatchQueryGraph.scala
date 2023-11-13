@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import fs2.Chunk
-import monix.bio.Task
 
 import java.util.regex.Pattern.quote
 
@@ -24,17 +24,17 @@ import java.util.regex.Pattern.quote
   */
 final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger: Logger = Logger[BatchQueryGraph]
+  private val logger = Logger[BatchQueryGraph]
 
-  private def newGraph(ntriples: NTriples): Task[Option[Graph]] =
-    if (ntriples.isEmpty) Task.none
-    else Task.fromEither(Graph(ntriples)).map(Some(_))
+  private def newGraph(ntriples: NTriples): IO[Option[Graph]] =
+    if (ntriples.isEmpty) IO.none
+    else IO.fromEither(Graph(ntriples)).map(Some(_))
 
-  def apply(ids: Chunk[Iri]): Task[Option[Graph]] =
+  def apply(ids: Chunk[Iri]): IO[Option[Graph]] =
     for {
       ntriples    <- client.query(Set(namespace), replaceIds(query, ids), SparqlNTriples)
       graphResult <- newGraph(ntriples.value)
-      _           <- Task.when(graphResult.isEmpty)(
+      _           <- IO.whenA(graphResult.isEmpty)(
                        logger.debug(s"Querying blazegraph did not return any triples, '$ids' will be dropped.")
                      )
     } yield graphResult

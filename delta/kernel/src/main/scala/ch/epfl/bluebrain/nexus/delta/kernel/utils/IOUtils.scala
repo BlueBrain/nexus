@@ -1,20 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.{Clock, IO}
 import cats.effect.concurrent.Ref
-import monix.bio.{Task, UIO}
+import cats.effect.{Clock, IO}
 
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{DurationLong, FiniteDuration, MILLISECONDS}
 
 trait IOUtils {
 
-  /**
-    * Creates an Instant deferring its evaluation to the to ''clock'' scheduler
-    */
-  def instant(implicit clock: Clock[UIO]): UIO[Instant] =
-    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+  implicit class IoOps[A](val io: IO[A]) {
+    def timed(implicit clock: Clock[IO]): IO[(FiniteDuration, A)] = {
+      for {
+        start  <- clock.monotonic(MILLISECONDS)
+        result <- io
+        finish <- clock.monotonic(MILLISECONDS)
+      } yield ((finish - start).milliseconds, result)
+    }
+  }
 }
 
 object IOUtils extends IOUtils
@@ -29,9 +33,9 @@ object IOInstant extends IOInstant
 trait UUIDF {
 
   /**
-    * Creates a UUID wrapped in an [[UIO]]
+    * Creates a UUID wrapped in an [[IO]]
     */
-  def apply(): UIO[UUID]
+  def apply(): IO[UUID]
 }
 
 trait StatefulUUIDF extends UUIDF {
@@ -41,7 +45,7 @@ trait StatefulUUIDF extends UUIDF {
     * @param uuid
     *   the new UUID to present
     */
-  def fixed(uuid: UUID): UIO[Unit]
+  def fixed(uuid: UUID): IO[Unit]
 }
 
 object UUIDF {
@@ -52,12 +56,12 @@ object UUIDF {
     * @param uuid
     *   the fixed [[UUID]] to return
     */
-  final def fixed(uuid: UUID): UUIDF = () => UIO.pure(uuid)
+  final def fixed(uuid: UUID): UUIDF = () => IO.pure(uuid)
 
   /**
     * Creates a [[UUIDF]] that returns a new [[UUID]] each time.
     */
-  final def random: UUIDF = () => UIO.delay(UUID.randomUUID())
+  final def random: UUIDF = () => IO.delay(UUID.randomUUID())
 
   /**
     * Creates a [[UUIDF]] that returns a fixed [[UUID]] each time with the ability to modify the fixed value.
@@ -65,15 +69,15 @@ object UUIDF {
     * @param initial
     *   the initial fixed [[UUID]] to return
     */
-  final def stateful(initial: UUID): UIO[StatefulUUIDF] =
-    (for {
-      ref  <- Ref.of[Task, UUID](initial)
+  final def stateful(initial: UUID): IO[StatefulUUIDF] =
+    for {
+      ref  <- Ref.of[IO, UUID](initial)
       uuidF = new StatefulUUIDF {
-                private val uuidRef                       = ref
-                override def fixed(uuid: UUID): UIO[Unit] = uuidRef.set(uuid).hideErrors
-                override def apply(): UIO[UUID]           = uuidRef.get.hideErrors
+                private val uuidRef                      = ref
+                override def fixed(uuid: UUID): IO[Unit] = uuidRef.set(uuid)
+                override def apply(): IO[UUID]           = uuidRef.get
               }
-    } yield uuidF).hideErrors
+    } yield uuidF
 
   /**
     * Creates a [[UUIDF]] sourcing [[UUID]] values from a mutable reference.
@@ -81,5 +85,5 @@ object UUIDF {
     * @param ref
     *   the pre-initialised mutable reference used to store the [[UUID]]
     */
-  final def fromRef(ref: Ref[Task, UUID]): UUIDF = () => ref.get.hideErrors
+  final def fromRef(ref: Ref[IO, UUID]): UUIDF = () => ref.get
 }

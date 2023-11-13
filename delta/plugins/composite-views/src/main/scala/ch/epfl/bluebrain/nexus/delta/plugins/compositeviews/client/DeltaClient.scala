@@ -8,7 +8,8 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import cats.effect.{ContextShift, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
+import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxFlatMapOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
@@ -25,11 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import com.typesafe.scalalogging.Logger
 import io.circe.parser.decode
 import fs2._
-import monix.bio.{IO => BIO, UIO}
-import monix.execution.Scheduler
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -42,12 +39,12 @@ trait DeltaClient {
   /**
     * Fetches the [[ProjectStatistics]] for the remote source
     */
-  def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics]
+  def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics]
 
   /**
     * Fetches the [[RemainingElems]] for the remote source
     */
-  def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems]
+  def remaining(source: RemoteProjectSource, offset: Offset): IO[RemainingElems]
 
   /**
     * Checks whether the events endpoint and token provided by the source are correct
@@ -55,7 +52,7 @@ trait DeltaClient {
     * @param source
     *   the source
     */
-  def checkElems(source: RemoteProjectSource): HttpResult[Unit]
+  def checkElems(source: RemoteProjectSource): IO[Unit]
 
   /**
     * Produces a stream of elems with their offset for the provided ''source''.
@@ -72,12 +69,12 @@ trait DeltaClient {
   /**
     * Fetches a resource with a given id in n-quads format.
     */
-  def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[Option[NQuads]]
+  def resourceAsNQuads(source: RemoteProjectSource, id: Iri): IO[Option[NQuads]]
 }
 
 object DeltaClient {
 
-  private val logger: Logger = Logger[DeltaClient.type]
+  private val logger = Logger[DeltaClient.type]
 
   private val accept = Accept(`application/json`.mediaType, RdfMediaTypes.`application/ld+json`)
 
@@ -88,14 +85,12 @@ object DeltaClient {
       retryDelay: FiniteDuration
   )(implicit
       as: ActorSystem[Nothing],
-      scheduler: Scheduler,
       c: ContextShift[IO]
-  ) extends DeltaClient
-      with MigrateEffectSyntax {
+  ) extends DeltaClient {
 
-    override def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
+    override def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIOThrowable
+        authToken <- authTokenProvider(credentials)
         request    =
           Get(
             source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
@@ -106,9 +101,9 @@ object DeltaClient {
       }
     }
 
-    override def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems] = {
+    override def remaining(source: RemoteProjectSource, offset: Offset): IO[RemainingElems] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIOThrowable
+        authToken <- authTokenProvider(credentials)
         request    = Get(elemAddress(source) / "remaining")
                        .addHeader(accept)
                        .addHeader(`Last-Event-ID`(offset.value.toString))
@@ -117,11 +112,11 @@ object DeltaClient {
       } yield result
     }
 
-    override def checkElems(source: RemoteProjectSource): HttpResult[Unit] = {
+    override def checkElems(source: RemoteProjectSource): IO[Unit] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIOThrowable
+        authToken <- authTokenProvider(credentials)
         result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
-                       case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> BIO.unit
+                       case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()) >> IO.unit
                      }
       } yield result
     }
@@ -134,9 +129,9 @@ object DeltaClient {
 
       def send(request: HttpRequest): Future[HttpResponse] = {
         (for {
-          authToken <- authTokenProvider(credentials).toBIOThrowable
-          result    <- client[HttpResponse](request.withCredentials(authToken))(BIO.pure(_))
-        } yield result).runToFuture
+          authToken <- authTokenProvider(credentials)
+          result    <- client[HttpResponse](request.withCredentials(authToken))(IO.pure(_))
+        } yield result).unsafeToFuture()
       }
 
       val suffix = run match {
@@ -149,8 +144,8 @@ object DeltaClient {
           decode[Elem[Unit]](sse.data) match {
             case Right(elem) => Stream.emit(elem)
             case Left(err)   =>
-              logger.error(s"Failed to decode sse event '$sse'", err)
-              Stream.empty
+              Stream.eval(logger.error(err)(s"Failed to decode sse event '$sse'")) >>
+                Stream.empty
           }
         }
     }
@@ -164,15 +159,15 @@ object DeltaClient {
         .withQuery(Query("tag" -> source.selectFilter.tag.toString))
         .withQuery(typeQuery(source.selectFilter.types))
 
-    override def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[Option[NQuads]] = {
+    override def resourceAsNQuads(source: RemoteProjectSource, id: Iri): IO[Option[NQuads]] = {
       val resourceUrl =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
       for {
-        authToken <- authTokenProvider(credentials).toBIOThrowable
+        authToken <- authTokenProvider(credentials)
         req        = Get(
                        source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
                      ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials(authToken)
-        result    <- client.fromEntityTo[String](req).map(nq => Some(NQuads(nq, id))).onErrorRecover {
+        result    <- client.fromEntityTo[String](req).map[Option[NQuads]](nq => Some(NQuads(nq, id))).recover {
                        case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
                      }
       } yield result
@@ -189,7 +184,6 @@ object DeltaClient {
       retryDelay: FiniteDuration
   )(implicit
       as: ActorSystem[Nothing],
-      sc: Scheduler,
       c: ContextShift[IO]
   ): DeltaClient =
     new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)

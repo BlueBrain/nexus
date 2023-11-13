@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import monix.bio.IO
 
-final class ExpandIri[R](val onError: String => R) extends AnyVal {
+final class ExpandIri[R <: Rejection](val onError: String => R) extends AnyVal {
 
   /**
     * Expand the given segment to an Iri using the provided project if necessary
@@ -15,7 +16,7 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
     * @param projectContext
     *   the project context
     */
-  def apply(segment: IdSegment, projectContext: ProjectContext): IO[R, Iri] =
+  def apply(segment: IdSegment, projectContext: ProjectContext): IO[Iri] =
     apply(IdSegmentRef(segment), projectContext).map(_.iri)
 
   /**
@@ -27,7 +28,7 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
     * @param projectContext
     *   the project context
     */
-  def apply(segment: IdSegmentRef, projectContext: ProjectContext): IO[R, ResourceRef] =
+  def apply(segment: IdSegmentRef, projectContext: ProjectContext): IO[ResourceRef] =
     IO.fromOption(
       segment.value.toIri(projectContext.apiMappings, projectContext.base).map { iri =>
         segment match {
@@ -35,7 +36,6 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
           case IdSegmentRef.Revision(_, rev) => ResourceRef.Revision(iri, rev)
           case IdSegmentRef.Tag(_, tag)      => ResourceRef.Tag(iri, tag)
         }
-      },
-      onError(segment.value.asString)
-    )
+      }
+    )(onError(segment.value.asString))
 }

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -51,7 +50,7 @@ object ProjectionErrorsSyntax {
         rcr: RemoteContextResolution
     ): ServerSentEventStream =
       projectionErrors.failedElemEntries(projectionProject, projectionId, offset).evalMap { felem =>
-        felem.failedElemData.toCompactedJsonLd.toCatsIO.map { compactJson =>
+        felem.failedElemData.toCompactedJsonLd.map { compactJson =>
           ServerSentEvent(
             defaultPrinter.print(compactJson.json),
             "IndexingFailure",

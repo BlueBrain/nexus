@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures.defaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
@@ -22,16 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, Suite}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover}
 
 import scala.concurrent.duration._
 import scala.xml.Elem
@@ -39,27 +34,18 @@ import scala.xml.Elem
 @DoNotDiscover
 class BlazegraphClientSpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphClientSpec"))
-    with Suite
-    with AnyWordSpecLike
-    with Matchers
+    with CatsEffectSpec
     with ConfigFixtures
-    with EitherValues
     with CancelAfterFailure
-    with TestHelpers
-    with Eventually
-    with Inspectors
-    with TestMatchers
-    with BIOValues
-    with CatsIOValues {
+    with Eventually {
 
-  implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
   implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
   private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {

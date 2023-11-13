@@ -5,8 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import cats.syntax.eq._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import munit.{Assertions, Compare, FailException, Location}
 
 import scala.reflect.ClassTag
@@ -16,7 +15,7 @@ import scala.util.control.NonFatal
   * Adapted from: from
   * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectAssertions.scala
   */
-trait CatsEffectAssertions { self: Assertions =>
+trait CatsEffectAssertions { self: Assertions with CatsRunContext =>
 
   def assertIO[A, B](
       obtained: IO[A],
@@ -204,7 +203,7 @@ trait CatsEffectAssertions { self: Assertions =>
       val strategy = RetryStrategy[Throwable](
         MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
         retryWhen,
-        onError = (_, _) => UIO.unit
+        onError = (_, _) => IO.unit
       )
       assertEquals(expected, patience.timeout)
         .retry(strategy)
@@ -230,7 +229,7 @@ trait CatsEffectAssertions { self: Assertions =>
       *   IO.unit.assert // OK
       * }}}
       */
-    def assert(implicit loc: Location): IO[Unit] =
+    def assertUnit(implicit loc: Location): IO[Unit] =
       assertIO_(io)
   }
 

@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
@@ -44,7 +44,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
@@ -56,15 +55,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        sc: Scheduler,
-        c: ContextShift[IO],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, timer, cs)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as,
-        sc,
-        c
+        cs
       )
   }
 
@@ -72,28 +70,36 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
-        as: ActorSystem[Nothing]
+        as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
+        properties: DefaultProperties
     ) =>
       BlazegraphClient(
         client,
         cfg.blazegraphAccess.base,
         cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout
-      )(as.classicSystem)
+        cfg.blazegraphAccess.queryTimeout,
+        properties.value
+      )(as.classicSystem, timer, cs)
   }
 
   make[BlazegraphClient].named("blazegraph-composite-query-client").from {
     (
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-query-client"),
-        as: ActorSystem[Nothing]
+        as: ActorSystem[Nothing],
+        timer: Timer[IO],
+        cs: ContextShift[IO],
+        properties: DefaultProperties
     ) =>
       BlazegraphClient(
         client,
         cfg.blazegraphAccess.base,
         cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout
-      )(as.classicSystem)
+        cfg.blazegraphAccess.queryTimeout,
+        properties.value
+      )(as.classicSystem, timer, cs)
   }
 
   make[ValidateCompositeView].from {
@@ -109,7 +115,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       ValidateCompositeView(
         aclCheck,
         projects,
-        permissions.fetchPermissionSet.toUIO,
+        permissions.fetchPermissionSet,
         client,
         deltaClient,
         config.prefix,
@@ -128,7 +134,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         uuidF: UUIDF,
         clock: Clock[IO],
-        timer: Timer[IO]
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
       CompositeViews(
         fetchContext.mapRejection(ProjectContextRejection),
@@ -140,6 +147,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api,
         clock,
         timer,
+        cs,
         uuidF
       )
   }
@@ -198,11 +206,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      toCatsIO(
-        JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
-          .map(_.aliasesInv.keySet.map(Triple.predicate))
-          .map(MetadataPredicates)
-      )
+      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
+        .map(_.aliasesInv.keySet.map(Triple.predicate))
+        .map(MetadataPredicates)
   }
 
   make[RemoteGraphStream].from {

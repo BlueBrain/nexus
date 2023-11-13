@@ -69,7 +69,7 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   /**
     * Get direct references from other projects for the given project
@@ -87,7 +87,7 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => ReferencedBy(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   private def recursiveDependencies[Id](ref: ProjectRef, id: Id)(implicit put: Put[Id]) =
     fr"""
@@ -114,7 +114,7 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.readCE)
+      .transact(xas.read)
 
   /**
     * Get and decode latest state values for direct dependencies for the provided id in the given project
@@ -135,7 +135,7 @@ object EntityDependencyStore {
          | AND s.id = d.target_id""".stripMargin
       .query[Json]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
       .flatMap { rows =>
         IO.fromEither(rows.traverse(_.as[A]))
       }
@@ -158,7 +158,7 @@ object EntityDependencyStore {
        """.stripMargin
       .query[Json]
       .to[List]
-      .transact(xas.readCE)
+      .transact(xas.read)
       .flatMap { rows =>
         IO.fromEither(rows.traverse(_.as[A]))
       }

@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
@@ -32,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
@@ -44,7 +42,6 @@ import java.time.Instant
 class ElasticSearchViewsQuerySuite
     extends CatsEffectSuite
     with Doobie.Fixture
-    with BioRunContext // to use ES client setup fixture
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with TestHelpers
@@ -419,7 +416,7 @@ object ElasticSearchViewsQuerySuite {
     def asDocument(
         view: ViewRef
     )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] =
-      asResourceF(view).toCompactedJsonLd.toCatsIO.map(_.json)
+      asResourceF(view).toCompactedJsonLd.map(_.json)
 
   }
 }

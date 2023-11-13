@@ -40,7 +40,7 @@ class ResolverScopeInitializationSuite extends CatsEffectSuite {
       (project, _) => IO.raiseError(ResourceAlreadyExists(nxv.defaultResolver, project)),
       defaults
     )
-    scopeInit.onProjectCreation(project, bob).assert
+    scopeInit.onProjectCreation(project, bob).assertUnit
   }
 
   test("Raises a failure otherwise") {

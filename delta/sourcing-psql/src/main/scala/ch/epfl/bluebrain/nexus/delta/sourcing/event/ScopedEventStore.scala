@@ -125,7 +125,7 @@ object ScopedEventStore {
             ) ++
             fr"ORDER BY rev"
 
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.readCE)
+        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
       }
 
       private def events(

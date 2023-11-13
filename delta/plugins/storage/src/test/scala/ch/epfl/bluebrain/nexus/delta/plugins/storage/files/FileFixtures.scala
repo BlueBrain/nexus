@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart, Uri}
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -14,20 +15,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import monix.bio.Task
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.Suite
 
 import java.nio.file.{Files => JavaFiles}
-import java.util.UUID
+import java.util.{Base64, UUID}
 
-trait FileFixtures extends EitherValues with BIOValues {
+trait FileFixtures extends EitherValues with CatsIOValues {
 
   self: Suite =>
 
   val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                    = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
-  val ref                      = Ref.of[Task, UUID](uuid).accepted
+  val ref                      = Ref.of[IO, UUID](uuid).accepted
   implicit val uuidF: UUIDF    = UUIDF.fromRef(ref)
   val org                      = Label.unsafe("org")
   val orgDeprecated            = Label.unsafe("org-deprecated")
@@ -41,6 +41,7 @@ trait FileFixtures extends EitherValues with BIOValues {
   val fileTagged               = nxv + "fileTagged"
   val fileTagged2              = nxv + "fileTagged2"
   val file1Encoded             = UrlUtils.encode(file1.toString)
+  val encodeId                 = (id: String) => UrlUtils.encode((nxv + id).toString)
   val generatedId              = project.base.iri / uuid.toString
   val generatedId2             = project.base.iri / uuid2.toString
 
@@ -51,7 +52,7 @@ trait FileFixtures extends EitherValues with BIOValues {
 
   def withUUIDF[T](id: UUID)(test: => T): T = (for {
     old <- ref.getAndSet(id)
-    t   <- Task.delay(test).onError(_ => ref.set(old))
+    t   <- IO.delay(test).onError(_ => ref.set(old))
     _   <- ref.set(old)
   } yield t).accepted
 
@@ -82,4 +83,9 @@ trait FileFixtures extends EitherValues with BIOValues {
         Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, "0" * size), Map("filename" -> filename))
       )
       .toEntity()
+
+  def base64encode(input: String) = {
+    val encodedBytes = Base64.getEncoder.encode(input.getBytes("UTF-8"))
+    new String(encodedBytes, "UTF-8")
+  }
 }

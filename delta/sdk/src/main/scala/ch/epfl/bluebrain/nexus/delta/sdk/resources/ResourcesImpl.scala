@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -26,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
-import monix.bio.{IO => BIO}
 
 final class ResourcesImpl private (
     log: ResourcesLog,
@@ -43,9 +41,9 @@ final class ResourcesImpl private (
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onCreate(projectRef).toCatsIO
+      projectContext <- fetchContext.onCreate(projectRef)
       schemeRef      <- IO.fromEither(expandResourceRef(schema, projectContext))
-      jsonld         <- sourceParser(projectRef, projectContext, source).toCatsIO
+      jsonld         <- sourceParser(projectRef, projectContext, source)
       res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -60,7 +58,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onCreate, projectRef, id)
       schemeRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -76,7 +74,7 @@ final class ResourcesImpl private (
     for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller, tag))
     } yield res
   }.span("updateResource")
@@ -104,7 +102,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
+      jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source)
       res                   <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
   }.span("refreshResource")
@@ -188,11 +186,11 @@ final class ResourcesImpl private (
   ): IO[DataResource] = fetchState(id, projectRef, schemaOpt).map(_.toResource)
 
   private def expandWithContext(
-      fetchCtx: ProjectRef => BIO[ProjectContextRejection, ProjectContext],
+      fetchCtx: ProjectRef => IO[ProjectContext],
       ref: ProjectRef,
       id: IdSegment
   ): IO[(Iri, ProjectContext)]                             =
-    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc)).toCatsIO
+    fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc))
 
   private def eval(cmd: ResourceCommand): IO[DataResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
@@ -223,7 +221,13 @@ object ResourcesImpl {
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF = UUIDF.random): Resources =
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[IO],
+      contextShift: ContextShift[IO],
+      timer: Timer[IO],
+      uuidF: UUIDF = UUIDF.random
+  ): Resources =
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validateResource), config.eventLog, xas),
       fetchContext,

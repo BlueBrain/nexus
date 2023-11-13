@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -24,5 +25,10 @@ trait Fixtures {
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )
 
+  val defaultProperties: Map[String, String] =
+    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").unsafeRunSync()
+
   def alwaysValidate: ValidateBlazegraphView = (_: BlazegraphViewValue) => IO.unit
 }
+
+object Fixtures extends Fixtures
