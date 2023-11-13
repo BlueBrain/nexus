@@ -515,20 +515,21 @@ object CompositeViewDef {
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       sink: Sink
-  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] = IO.fromEither {
-    for {
-      pipes        <- source.pipeChain.traverse(compilePipeChain)
-      // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
-      tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
-      chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
-      operation    <- Operation.merge(chain)
-      // We create the elem stream for the two types of branch
-      // The main source produces an infinite stream and waits for new elements
-      mainSource    = graphStream.main(source, project)
-      // The rebuild one a finite one with only the current elements
-      rebuildSource = graphStream.rebuild(source, project)
-    } yield (source.id, mainSource, rebuildSource, operation)
-  }
+  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] =
+    IO.fromEither {
+      for {
+        pipes        <- source.pipeChain.traverse(compilePipeChain)
+        // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
+        tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
+        chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
+        operation    <- Operation.merge(chain)
+        // We create the elem stream for the two types of branch
+        // The main source produces an infinite stream and waits for new elements
+        mainSource    = graphStream.main(source, project)
+        // The rebuild one a finite one with only the current elements
+        rebuildSource = graphStream.rebuild(source, project)
+      } yield (source.id, mainSource, rebuildSource, operation)
+    }
 
   /**
     * Compiles a composite projection into an operation
