@@ -183,8 +183,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     Stream.evalSeq(
       List(
         elem(project1, absolution, 1L),
-        elem(project1, blackHoles, 2L, deprecated = true),
-        elem(project1, muse, 3L)
+        elem(project1, muse, 2L),
+        elem(project1, blackHoles, 3L, deprecated = true)
       ).sequence
     )
 
@@ -209,33 +209,39 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private def increment(map: Ref[IO, Map[ProjectRef, Int]], project: ProjectRef) =
     map.update(_.updatedWith(project)(_.map(_ + 1).orElse(Some(1))))
 
-  private val compositeStream = new CompositeGraphStream {
+  type TestStream = (CompositeViewSource, ProjectRef) => (ProjectRef, ElemStream[GraphResource])
 
-    private def stream(source: CompositeViewSource, p: ProjectRef): (ProjectRef, ElemStream[GraphResource]) = {
-      val project = source match {
-        case _: ProjectSource         => p
-        case cps: CrossProjectSource  => cps.project
-        case rps: RemoteProjectSource => rps.project
-      }
+  private def streamInProject: TestStream = (_, p) => p -> elems1
 
-      val s = project match {
-        case `project1` => elems1
-        case `project2` => elems2
-        case `project3` => elems3
-        case _          => Stream.empty
-      }
-
-      project -> s
+  private def stream3sources(source: CompositeViewSource, p: ProjectRef): (ProjectRef, ElemStream[GraphResource]) = {
+    val project = source match {
+      case _: ProjectSource         => p
+      case cps: CrossProjectSource  => cps.project
+      case rps: RemoteProjectSource => rps.project
     }
 
+    val s = project match {
+      case `project1` => elems1
+      case `project2` => elems2
+      case `project3` => elems3
+      case _          => Stream.empty
+    }
+
+    project -> s
+  }
+
+  private def compositeStream(stream: TestStream, rebuildFinalizeIO: IO[Unit]) = new CompositeGraphStream {
     override def main(source: CompositeViewSource, project: ProjectRef): Source = {
       val (p, s) = stream(source, project)
       Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[IO])
     }
 
     override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source = {
-      val (p, s) = stream(source, project)
-      Source(_ => s.onFinalize(increment(rebuildCompleted, p)))
+      val (p, s)         = stream(source, project)
+      val filteredStream =
+        if (projectionTypes.isEmpty) s
+        else s.filter(_.exists(gr => gr.types.intersect(projectionTypes).nonEmpty))
+      Source(_ => filteredStream.onFinalize(rebuildFinalizeIO >> increment(rebuildCompleted, p)))
     }
 
     override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] = {
@@ -375,9 +381,16 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     } yield ()
   }
 
-  private def start(view: ActiveViewDef) = {
+  private def start(view: ActiveViewDef, testStream: TestStream, rebuildFinalize: IO[Unit] = IO.unit) = {
     for {
-      compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
+      compiled <-
+        CompositeViewDef.compile(
+          view,
+          sinks,
+          PipeChain.compile(_, registry),
+          compositeStream(testStream, rebuildFinalize),
+          projections
+        )
       _        <- spaces.init(view)
       _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig, timer, contextShift)
     } yield compiled
@@ -421,7 +434,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     )
 
     for {
-      compiled <- start(view)
+      compiled <- start(view, stream3sources)
       _         = assertEquals(compiled.metadata, expectedMetadata)
       _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
       _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
@@ -462,7 +475,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     for {
       _ <- resetCompleted
-      _ <- start(view)
+      _ <- start(view, stream3sources)
       _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
@@ -523,7 +536,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     for {
       _ <- resetCompleted
-      _ <- start(view)
+      _ <- start(view, stream3sources)
       _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
@@ -542,6 +555,34 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     } yield ()
   }
 
+  test("A rebuild should only run once after main is completed") {
+    val uuid = UUID.randomUUID()
+
+    val viewValue = CompositeViewFactory.unsafe(
+      NonEmptyList.of(projectSource),
+      NonEmptyList.of(elasticSearchProjection),
+      Some(CompositeView.Interval(500.millis))
+    )
+
+    val viewId  = iri"https://bbp.epfl.ch/composite-$uuid"
+    val rev     = 1
+    val viewRef = ViewRef(project1, viewId)
+    val view    = ActiveViewDef(viewRef, uuid, rev, viewValue)
+
+    val rebuildCount          = Ref.unsafe[IO, Int](0)
+    val incrementRebuildCount = rebuildCount.getAndUpdate(_ + 1).void
+
+    for {
+      _ <- resetCompleted
+      _ <- start(view, streamInProject, incrementRebuildCount)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- IO.sleep(5.seconds)
+      _ <- rebuildCount.get.assertEquals(1)
+    } yield ()
+
+  }
+
   test("Indexing resources with included JSON-LD context") {
     val value = CompositeViewFactory.unsafe(
       NonEmptyList.of(projectSource, crossProjectSource, remoteProjectSource),
@@ -558,7 +599,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     for {
       _ <- resetCompleted
-      _ <- start(view)
+      _ <- start(view, stream3sources)
       _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
       _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
