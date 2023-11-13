@@ -121,7 +121,7 @@ object CompositeProjections {
       ): Operation = {
 
         val signalMainHasBeenUpdated = branch.run match {
-          case Main    => mainUpdatedRef.update(_ => true)
+          case Main    => mainUpdatedRef.set(true)
           case Rebuild => IO.unit
         }
 

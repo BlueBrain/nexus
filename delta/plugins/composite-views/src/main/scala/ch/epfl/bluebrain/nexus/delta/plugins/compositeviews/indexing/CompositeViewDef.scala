@@ -323,7 +323,7 @@ object CompositeViewDef {
       case Some(Interval(fixedRate)) =>
         val rebuildWhen            = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
         val waitingForRebuild      = Stream.never[IO].interruptWhen(rebuildWhen).drain
-        val resetMainUpdatedStatus = Stream.eval(mainUpdatedRef.update(_ => false)).drain
+        val resetMainUpdatedStatus = Stream.eval(mainUpdatedRef.set(false)).drain
         Stream.eval(logger.debug(s"Rebuild has been defined at $fixedRate for view '$view'.")) >>
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ resetMainUpdatedStatus ++ stream).repeat
       case None                      =>
