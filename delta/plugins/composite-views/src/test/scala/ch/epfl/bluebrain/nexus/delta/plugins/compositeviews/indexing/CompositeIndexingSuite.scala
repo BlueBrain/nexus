@@ -201,8 +201,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   // Elems for project 3
   private val elems3: ElemStream[GraphResource] = Stream.eval(elem(project3, theGateway, 7L))
 
+  type BranchCounter = Ref[IO, Map[ProjectRef, Int]]
   private val mainCompleted    = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
   private val rebuildCompleted = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
+  implicit class BranchCounterOps(bc: BranchCounter) {
+    def countFor(project: ProjectRef): IO[Option[Int]] = bc.get.map(_.get(project))
+  }
 
   private def resetCompleted = mainCompleted.set(Map.empty) >> rebuildCompleted.set(Map.empty)
 
@@ -438,9 +442,9 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       compiled <- start(view, stream3sources)
       _         = assertEquals(compiled.metadata, expectedMetadata)
-      _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _        <- mainCompleted.countFor(project1).eventually(Some(1))
+      _        <- mainCompleted.countFor(project2).eventually(Some(1))
+      _        <- mainCompleted.countFor(project3).eventually(Some(1))
       _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
       _        <- checkElasticSearchDocuments(
@@ -474,9 +478,9 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view, stream3sources)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.countFor(project1).eventually(Some(1))
+      _ <- mainCompleted.countFor(project2).eventually(Some(1))
+      _ <- mainCompleted.countFor(project3).eventually(Some(1))
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
@@ -530,20 +534,20 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view, stream3sources)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.countFor(project1).eventually(Some(1))
+      _ <- mainCompleted.countFor(project2).eventually(Some(1))
+      _ <- mainCompleted.countFor(project3).eventually(Some(1))
+      _ <- rebuildCompleted.countFor(project1).eventually(Some(1))
+      _ <- rebuildCompleted.countFor(project2).eventually(Some(1))
+      _ <- rebuildCompleted.countFor(project3).eventually(Some(1))
       _ <- checkIndexingState
       _ <- projections.scheduleFullRestart(view.ref)(Anonymous)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(2))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(2))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(2))
+      _ <- mainCompleted.countFor(project1).eventually(Some(2))
+      _ <- mainCompleted.countFor(project2).eventually(Some(2))
+      _ <- mainCompleted.countFor(project3).eventually(Some(2))
+      _ <- rebuildCompleted.countFor(project1).eventually(Some(2))
+      _ <- rebuildCompleted.countFor(project2).eventually(Some(2))
+      _ <- rebuildCompleted.countFor(project3).eventually(Some(2))
       _ <- checkIndexingState
     } yield ()
   }
@@ -562,8 +566,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view, streamInProject, incrementRebuildCount)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.countFor(project1).eventually(Some(1))
+      _ <- rebuildCompleted.countFor(project1).eventually(Some(1))
       _ <- IO.sleep(5.seconds)
       _ <- rebuildCount.get.assertEquals(1)
     } yield ()
@@ -583,9 +587,9 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view, stream3sources)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.countFor(project1).eventually(Some(1))
+      _ <- mainCompleted.countFor(project2).eventually(Some(1))
+      _ <- mainCompleted.countFor(project3).eventually(Some(1))
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
