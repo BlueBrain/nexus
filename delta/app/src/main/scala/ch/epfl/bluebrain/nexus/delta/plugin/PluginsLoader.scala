@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugin
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, MultiplePluginDefClassesFound, PluginLoadErrors}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import com.typesafe.scalalogging.Logger
 import io.github.classgraph.ClassGraph
 
 import java.io.{File, FilenameFilter}
@@ -24,7 +24,7 @@ import scala.jdk.CollectionConverters._
   *   [[PluginsLoader]] configuration
   */
 class PluginsLoader(loaderConfig: PluginLoaderConfig) {
-  private val logger: Logger = Logger[PluginsLoader]
+  private val logger = Logger[PluginsLoader]
 
   private val parentClassLoader = this.getClass.getClassLoader
 
@@ -98,8 +98,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                                  value => IO.pure(value)
                                )
                              case Nil              =>
-                               logger.warn(s"Jar file '$jar' does not contain a 'PluginDef' implementation.")
-                               IO.none
+                               logger.warn(s"Jar file '$jar' does not contain a 'PluginDef' implementation.").as(None)
                              case multiple         =>
                                IO.raiseError(MultiplePluginDefClassesFound(jar, multiple.toSet))
 
