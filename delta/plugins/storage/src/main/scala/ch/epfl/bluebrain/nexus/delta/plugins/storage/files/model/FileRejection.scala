@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -33,8 +32,6 @@ import io.circe.{Encoder, JsonObject}
 sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None) extends Rejection
 
 object FileRejection {
-
-  private val logger: Logger = Logger[FileRejection]
 
   /**
     * Rejection returned when a subject intends to retrieve a file at a specific revision, but the provided revision
@@ -251,7 +248,6 @@ object FileRejection {
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
-      r.loggedDetails.foreach(loggedDetails => logger.error(s"${r.reason}. Details '$loggedDetails'"))
       r match {
         case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
         case WrappedStorageRejection(rejection)        => rejection.asJsonObject

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.jira
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraError.{AccessTokenExpected, NoTokenError, RequestTokenExpected}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, RequestToken}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import com.google.api.client.auth.oauth.{OAuthAuthorizeTemporaryTokenUrl, OAuthGetAccessToken, OAuthGetTemporaryToken, OAuthRsaSigner}
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.http.{ByteArrayContent, GenericUrl}
-import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import org.apache.commons.codec.binary.Base64
@@ -76,7 +76,7 @@ trait JiraClient {
 
 object JiraClient {
 
-  private val logger: Logger   = Logger[JiraClient]
+  private val logger           = Logger[JiraClient]
   private val accessTokenUrl   = Uri.Path("/plugins/servlet/oauth/access-token")
   private val authorizationUrl = Uri.Path("/plugins/servlet/oauth/authorize")
   private val requestTokenUrl  = Uri.Path("/plugins/servlet/oauth/request-token")
@@ -117,49 +117,49 @@ object JiraClient {
 
           private val netHttpTransport = new NetHttpTransport()
 
-          override def requestToken()(implicit caller: User): IO[AuthenticationRequest] =
-            IO {
-              val tempToken = new JiraOAuthGetTemporaryToken(jiraConfig.base)
-              tempToken.consumerKey = jiraConfig.consumerKey
-              tempToken.signer = signer
-              tempToken.transport = netHttpTransport
-              tempToken.callback = "oob"
-              val response  = tempToken.execute()
-              logger.debug(s"Request Token value: ${response.token}")
-              response.token
-            }
-              .flatMap { token =>
-                store.save(caller, RequestToken(token)).as {
-                  val authorizationURL =
-                    new OAuthAuthorizeTemporaryTokenUrl((jiraConfig.base / authorizationUrl).toString())
-                  authorizationURL.temporaryToken = token
-                  AuthenticationRequest(Uri(authorizationURL.toString))
-                }
-              }
-              .adaptError { e => JiraError.from(e) }
+          override def requestToken()(implicit caller: User): IO[AuthenticationRequest] = {
+            for {
+              token <- IO {
+                         val tempToken = new JiraOAuthGetTemporaryToken(jiraConfig.base)
+                         tempToken.consumerKey = jiraConfig.consumerKey
+                         tempToken.signer = signer
+                         tempToken.transport = netHttpTransport
+                         tempToken.callback = "oob"
+                         val response  = tempToken.execute()
 
-          override def accessToken(verifier: Verifier)(implicit caller: User): IO[Unit] =
-            store
-              .get(caller)
-              .flatMap {
-                case None                      => IO.raiseError(NoTokenError)
-                case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
-                case Some(RequestToken(value)) =>
-                  IO {
-                    val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
-                    accessToken.consumerKey = jiraConfig.consumerKey
-                    accessToken.signer = signer
-                    accessToken.transport = netHttpTransport
-                    accessToken.verifier = verifier.value
-                    accessToken.temporaryToken = value
-                    accessToken.execute().token
-                  }
-                    .flatMap { token =>
-                      logger.debug("Access Token:" + token)
-                      store.save(caller, AccessToken(token))
-                    }
-              }
-              .adaptError { e => JiraError.from(e) }
+                         response.token
+                       }
+              _     <- logger.debug(s"Request Token value: $token")
+              _     <- store.save(caller, RequestToken(token))
+            } yield {
+              val authorizationURL =
+                new OAuthAuthorizeTemporaryTokenUrl((jiraConfig.base / authorizationUrl).toString())
+              authorizationURL.temporaryToken = token
+              AuthenticationRequest(Uri(authorizationURL.toString))
+            }
+          }.adaptError { e => JiraError.from(e) }
+
+          override def accessToken(verifier: Verifier)(implicit caller: User): IO[Unit] = {
+            for {
+              tokenOpt <- store.get(caller)
+              token    <- tokenOpt match {
+                            case None                      => IO.raiseError(NoTokenError)
+                            case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
+                            case Some(RequestToken(value)) =>
+                              IO {
+                                val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
+                                accessToken.consumerKey = jiraConfig.consumerKey
+                                accessToken.signer = signer
+                                accessToken.transport = netHttpTransport
+                                accessToken.verifier = verifier.value
+                                accessToken.temporaryToken = value
+                                accessToken.execute().token
+                              }
+                          }
+              _        <- store.save(caller, AccessToken(token))
+              _        <- logger.debug("Access Token:" + token)
+            } yield ()
+          }.adaptError { e => JiraError.from(e) }
 
           override def createIssue(payload: JsonObject)(implicit caller: User): IO[JiraResponse] =
             requestFactory(caller).flatMap { factory =>

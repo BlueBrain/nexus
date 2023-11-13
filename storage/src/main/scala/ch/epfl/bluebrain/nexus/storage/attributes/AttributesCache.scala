@@ -1,19 +1,18 @@
 package ch.epfl.bluebrain.nexus.storage.attributes
 
-import java.nio.file.Path
-import java.time.Clock
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.util.Timeout
 import cats.effect.{ContextShift, Effect, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.storage.File.FileAttributes
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, OperationTimedOut}
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCacheActor.Protocol._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig
-import com.typesafe.scalalogging.Logger
 
+import java.nio.file.Path
+import java.time.Clock
 import scala.util.control.NonFatal
 
 trait AttributesCache[F[_]] {
@@ -41,7 +40,8 @@ trait AttributesCache[F[_]] {
 }
 
 object AttributesCache {
-  private[this] val logger = Logger[this.type]
+
+  private val logger = Logger[this.type]
 
   def apply[F[_], Source](implicit
       system: ActorSystem,
@@ -65,15 +65,15 @@ object AttributesCache {
           .flatMap[FileAttributes] {
             case attributes: FileAttributes => F.pure(attributes)
             case other                      =>
-              logger.error(s"Received unexpected reply from the file attributes cache: '$other'")
-              F.raiseError(InternalError("Unexpected reply from the file attributes cache"))
+              logger.error(s"Received unexpected reply from the file attributes cache: '$other'").to[F] >>
+                F.raiseError(InternalError("Unexpected reply from the file attributes cache"))
           }
           .recoverWith {
             case _: AskTimeoutException =>
               F.raiseError(OperationTimedOut("reply from the file attributes cache timed out"))
             case NonFatal(th)           =>
-              logger.error("Exception caught while exchanging messages with the file attributes cache", th)
-              F.raiseError(InternalError("Exception caught while exchanging messages with the file attributes cache"))
+              logger.error(th)("Exception caught while exchanging messages with the file attributes cache").to[F] >>
+                F.raiseError(InternalError("Exception caught while exchanging messages with the file attributes cache"))
           }
 
       override def asyncComputePut(filePath: Path, algorithm: String): Unit =

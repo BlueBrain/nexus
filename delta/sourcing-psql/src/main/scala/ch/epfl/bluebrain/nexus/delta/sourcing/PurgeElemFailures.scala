@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
-import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
@@ -24,7 +24,7 @@ final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDu
                     | DELETE FROM public.failed_elem_logs
                     | WHERE instant < $threshold
                     """.stripMargin.update.run.transact(xas.write)
-      _         <- IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted {} old indexing failures.", deleted)))
+      _         <- IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted old indexing failures."))
     } yield ()
 }
 
