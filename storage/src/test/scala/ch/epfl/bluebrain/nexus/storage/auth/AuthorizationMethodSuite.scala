@@ -39,7 +39,7 @@ class AuthorizationMethodSuite extends FunSuite {
         |  issuer = bbp
         |  subject = admin
         |  audiences = [dev, staging]
-        |  keys = [ "${key1.toJSONString}", "${key2.toJSONString}"]
+        |  keys = [ ${key1.toJSONString}, ${key2.toJSONString}]
         |}
         |""".stripMargin
     )
@@ -60,7 +60,7 @@ class AuthorizationMethodSuite extends FunSuite {
          |  type = verify-token
          |  issuer = bbp
          |  subject = admin
-         |  keys = [ "${key1.toJSONString}" ]
+         |  keys = [ ${key1.toJSONString} ]
          |}
          |""".stripMargin
     )
@@ -80,7 +80,7 @@ class AuthorizationMethodSuite extends FunSuite {
          |authorization {
          |  type = verify-token
          |  subject = admin
-         |  keys = [ "${key1.toJSONString}" ]
+         |  keys = [ ${key1.toJSONString} ]
          |}
          |""".stripMargin
     )
@@ -96,7 +96,7 @@ class AuthorizationMethodSuite extends FunSuite {
          |authorization {
          |  type = verify-token
          |  issuer = bbp
-         |  keys = [ "${key1.toJSONString}" ]
+         |  keys = [ ${key1.toJSONString} ]
          |}
          |""".stripMargin
     )

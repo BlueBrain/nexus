@@ -9,9 +9,9 @@ import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.module.cats._
 
+import java.util
 import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
-import scala.util.Try
 
 /**
   * Authorization config
@@ -55,12 +55,13 @@ object AuthorizationMethod {
 
   @nowarn("cat=unused")
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
-    implicit val jwkReader: ConfigReader[JWK]           = ConfigReader.fromStringTry { s => Try(JWK.parse(s)) }
-    implicit val jwkSetReader: ConfigReader[JWKSet]     = ConfigReader[NonEmptyList[JWK]].map { l =>
-      new JWKSet(l.toList.asJava)
+    implicit val jsonObjectReader: ConfigReader[util.Map[String, AnyRef]] =
+      ConfigReader.configObjectConfigReader.map(configObj => configObj.unwrapped())
+    implicit val jwkSetReader: ConfigReader[JWKSet]                       = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].map {
+      jwkKeys => new JWKSet(jwkKeys.map(key => JWK.parse(key)).toList.asJava)
     }
-    implicit val anonymousReader                        = deriveReader[Anonymous.type]
-    implicit val verifyToken: ConfigReader[VerifyToken] = deriveReader[VerifyToken]
+    implicit val anonymousReader                                          = deriveReader[Anonymous.type]
+    implicit val verifyToken: ConfigReader[VerifyToken]                   = deriveReader[VerifyToken]
 
     deriveReader[AuthorizationMethod]
   }
