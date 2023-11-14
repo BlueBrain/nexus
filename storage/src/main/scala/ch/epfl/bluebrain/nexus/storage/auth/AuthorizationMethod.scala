@@ -57,8 +57,8 @@ object AuthorizationMethod {
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
     implicit val jsonObjectReader: ConfigReader[util.Map[String, AnyRef]] =
       ConfigReader.configObjectConfigReader.map(co => co.unwrapped())
-    implicit val jwkSetReader: ConfigReader[JWKSet]                       = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].map { l =>
-      new JWKSet(l.map(li => JWK.parse(li)).toList.asJava)
+    implicit val jwkSetReader: ConfigReader[JWKSet]                       = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].map {
+      jwkKeys => new JWKSet(jwkKeys.map(key => JWK.parse(key)).toList.asJava)
     }
     implicit val anonymousReader                                          = deriveReader[Anonymous.type]
     implicit val verifyToken: ConfigReader[VerifyToken]                   = deriveReader[VerifyToken]
