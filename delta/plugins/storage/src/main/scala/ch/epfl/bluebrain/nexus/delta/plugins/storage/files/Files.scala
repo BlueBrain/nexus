@@ -9,7 +9,7 @@ import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -646,7 +646,7 @@ object Files {
 
     def create(c: CreateFile) = state match {
       case None    =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag)
         )
       case Some(_) =>
@@ -659,7 +659,7 @@ object Files {
       case Some(s) if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
       case Some(s) if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
       case Some(s)                                             =>
-        IOInstant.now
+        clock.realTimeInstant
           .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1, _, c.subject, c.tag))
     }
 
@@ -670,7 +670,7 @@ object Files {
       case Some(s) if s.attributes.digest.computed => IO.raiseError(DigestAlreadyComputed(s.id))
       case Some(s)                                 =>
         // format: off
-        IOInstant.now
+        clock.realTimeInstant
           .map(FileAttributesUpdated(c.id, c.project, s.storage, s.storageType, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
       // format: on
     }
@@ -680,7 +680,7 @@ object Files {
       case Some(s) if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                             =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           FileTagAdded(c.id, c.project, s.storage, s.storageType, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -691,7 +691,7 @@ object Files {
         case Some(s) if s.rev != c.rev          => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
         case Some(s)                            =>
-          IOInstant.now.map(
+          clock.realTimeInstant.map(
             FileTagDeleted(c.id, c.project, s.storage, s.storageType, c.tag, s.rev + 1, _, c.subject)
           )
       }
@@ -701,7 +701,7 @@ object Files {
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(FileIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
     def undeprecate(c: UndeprecateFile) = state match {
@@ -709,7 +709,7 @@ object Files {
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if !s.deprecated  => IO.raiseError(FileIsNotDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(FileUndeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(FileUndeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
     cmd match {

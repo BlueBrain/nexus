@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
@@ -267,7 +266,7 @@ object Acls {
         IO.raiseWhen(!acl.permissions.subsetOf(permissions))(UnknownPermissions(acl.permissions -- permissions))
       } >>
         findUnknownRealms(acl.value.keySet.collect { case id: IdentityRealm => id.realm }) >>
-        IOInstant.now.map(f)
+        clock.realTimeInstant.map(f)
 
     def replace(c: ReplaceAcl)   =
       state match {
@@ -323,7 +322,7 @@ object Acls {
         case None                      => IO.raiseError(AclNotFound(c.address))
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case Some(s) if s.acl.isEmpty  => IO.raiseError(AclIsEmpty(c.address))
-        case Some(_)                   => IOInstant.now.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
+        case Some(_)                   => clock.realTimeInstant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
       }
 
     cmd match {

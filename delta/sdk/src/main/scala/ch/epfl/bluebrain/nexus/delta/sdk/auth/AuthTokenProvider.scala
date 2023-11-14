@@ -4,7 +4,6 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 
 import java.time.{Duration, Instant}
@@ -56,7 +55,7 @@ private class CachingOpenIdAuthTokenProvider(
   private def clientCredentialsFlow(credentials: ClientCredentials): IO[Some[AuthToken]] = {
     for {
       existingValue <- cache.get(credentials)
-      now           <- IOInstant.now
+      now           <- clock.realTimeInstant
       finalValue    <- existingValue match {
                          case None                                 =>
                            logger.info("Fetching auth token, no initial value.") *>

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
@@ -426,7 +426,7 @@ object BlazegraphViews {
       case None    =>
         for {
           _ <- validate(c.value)
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
           u <- uuidF()
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -444,7 +444,7 @@ object BlazegraphViews {
       case Some(s)                               =>
         for {
           _ <- validate(c.value)
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
         } yield BlazegraphViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
@@ -456,7 +456,7 @@ object BlazegraphViews {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -469,7 +469,9 @@ object BlazegraphViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(
+          BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject)
+        )
     }
 
     cmd match {

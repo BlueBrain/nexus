@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expandIri, ArchiveLog}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
@@ -212,7 +212,7 @@ object Archives {
   private[archive] def evaluate(
       command: CreateArchive
   )(implicit clock: Clock[IO]): IO[ArchiveState] =
-    IOInstant.now.map { now =>
+    clock.realTimeInstant.map { now =>
       ArchiveState(command.id, command.project, command.value.resources, now, command.subject)
     }
 

@@ -210,8 +210,6 @@ object Resolvers {
     Label.unsafe("resolvers") -> schemas.resolvers
   )
 
-  import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
-
   private[delta] def next(state: Option[ResolverState], event: ResolverEvent): Option[ResolverState] = {
 
     def created(e: ResolverCreated): Option[ResolverState] =
@@ -286,7 +284,7 @@ object Resolvers {
       case None    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- now
+          now <- clock.realTimeInstant
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
@@ -317,7 +315,7 @@ object Resolvers {
         for {
           _   <- IO.raiseWhen(s.value.tpe != c.value.tpe)(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- now
+          now <- clock.realTimeInstant
         } yield ResolverUpdated(
           id = c.id,
           project = c.project,
@@ -340,7 +338,7 @@ object Resolvers {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        now.map { now =>
+        clock.realTimeInstant.map { now =>
           ResolverTagAdded(
             id = c.id,
             project = c.project,
@@ -364,7 +362,7 @@ object Resolvers {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ResolverIsDeprecated(s.id))
       case Some(s)                   =>
-        now.map { now =>
+        clock.realTimeInstant.map { now =>
           ResolverDeprecated(
             id = c.id,
             project = c.project,

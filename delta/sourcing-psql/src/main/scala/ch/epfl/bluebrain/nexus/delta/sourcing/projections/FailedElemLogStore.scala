@@ -6,7 +6,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -130,7 +129,7 @@ object FailedElemLogStore {
 
       override def save(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit] = {
         val log  = logger.debug(s"[${metadata.name}] Saving ${failures.length} failed elems.")
-        val save = IOInstant.now.flatMap { instant =>
+        val save = clock.realTimeInstant.flatMap { instant =>
           failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.write).void
         }
         log >> save

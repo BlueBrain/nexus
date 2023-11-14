@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -256,7 +255,7 @@ object Schemas {
       state match {
         case None =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, now, c.subject)
             }
         case _    => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -272,7 +271,7 @@ object Schemas {
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, now, c.subject)
             }
       }
@@ -287,7 +286,7 @@ object Schemas {
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, now, c.subject)
             }
       }
@@ -301,7 +300,7 @@ object Schemas {
         case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case Some(s)                                            =>
-          IOInstant.now.map(
+          clock.realTimeInstant.map(
             SchemaTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1, _: java.time.Instant, c.subject)
           )
 
@@ -316,7 +315,7 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          IOInstant.now.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
+          clock.realTimeInstant.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
       }
 
     def deleteTag(c: DeleteSchemaTag) =
@@ -327,7 +326,9 @@ object Schemas {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
         case Some(s)                            =>
-          IOInstant.now.map(SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject))
+          clock.realTimeInstant.map(
+            SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject)
+          )
       }
 
     cmd match {

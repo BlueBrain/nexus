@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore.logger
@@ -108,7 +107,7 @@ object CompositeRestartStore {
       clock: Clock[IO]
   ): IO[Unit] = {
     val deleteExpiredRestarts =
-      IOInstant.now.flatMap { now =>
+      clock.realTimeInstant.flatMap { now =>
         store.deleteExpired(now.minusMillis(config.restartTtl.toMillis))
       }
     supervisor

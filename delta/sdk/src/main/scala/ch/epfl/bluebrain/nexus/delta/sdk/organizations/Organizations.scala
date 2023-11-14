@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
@@ -161,7 +160,7 @@ object Organizations {
         case None =>
           for {
             uuid <- uuidf()
-            now  <- IOInstant.now
+            now  <- clock.realTimeInstant
           } yield OrganizationCreated(c.label, uuid, 1, c.description, now, c.subject)
         case _    => IO.raiseError(OrganizationAlreadyExists(c.label))
       }
@@ -172,7 +171,8 @@ object Organizations {
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if s.deprecated   =>
           IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
-        case Some(s) => now.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
+        case Some(s) =>
+          clock.realTimeInstant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
       }
 
     def deprecate(c: DeprecateOrganization) =
@@ -180,7 +180,7 @@ object Organizations {
         case None                      => IO.raiseError(OrganizationNotFound(c.label))
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label))
-        case Some(s)                   => now.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
+        case Some(s)                   => clock.realTimeInstant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
       }
 
     command match {

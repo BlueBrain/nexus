@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -447,7 +447,7 @@ object Storages {
       case None    =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOInstant.now
+          instant <- clock.realTimeInstant
         } yield StorageCreated(c.id, c.project, value, c.source, 1, instant, c.subject)
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -462,7 +462,7 @@ object Storages {
       case Some(s)                                =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOInstant.now
+          instant <- clock.realTimeInstant
         } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1, instant, c.subject)
     }
 
@@ -471,14 +471,17 @@ object Storages {
       case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(
+          StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject)
+        )
     }
 
     def deprecate(c: DeprecateStorage) = state match {
       case None                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(StorageIsDeprecated(c.id))
-      case Some(s)                   => IOInstant.now.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
     }
 
     cmd match {

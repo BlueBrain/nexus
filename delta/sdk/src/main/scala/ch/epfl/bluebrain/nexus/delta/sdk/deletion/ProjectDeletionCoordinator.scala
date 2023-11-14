@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.IO
+import cats.effect.kernel.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -40,7 +40,8 @@ object ProjectDeletionCoordinator {
       deletionConfig: DeletionConfig,
       serviceAccount: ServiceAccount,
       deletionStore: ProjectDeletionStore
-  ) extends ProjectDeletionCoordinator {
+  )(implicit clock: Clock[IO])
+      extends ProjectDeletionCoordinator {
 
     implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
@@ -62,7 +63,7 @@ object ProjectDeletionCoordinator {
     private[deletion] def delete(project: ProjectState): IO[Unit] =
       for {
         _         <- logger.warn(s"Starting deletion of project ${project.project}")
-        now       <- IOInstant.now
+        now       <- clock.realTimeInstant
         // Running preliminary tasks before deletion like deprecating and stopping views,
         // removing acl related to the project, etc...
         initReport = ProjectDeletionReport(project.project, project.updatedAt, now, project.updatedBy)

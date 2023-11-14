@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
@@ -202,7 +202,7 @@ object Projects {
         for {
           org  <- fetchAndValidateOrg(c.ref.organization)
           uuid <- uuidF()
-          now  <- IOInstant.now
+          now  <- clock.realTimeInstant
         } yield ProjectCreated(
           c.ref.project,
           uuid,
@@ -232,7 +232,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-              IOInstant.now.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
+              clock.realTimeInstant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
 
@@ -249,7 +249,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-              IOInstant.now.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
+              clock.realTimeInstant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
 
@@ -264,7 +264,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           validateDeletion(c.ref) >>
-            IOInstant.now.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
+            clock.realTimeInstant.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
         // format: on
       }
 

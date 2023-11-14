@@ -4,7 +4,6 @@ import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.instantSyntax
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 
@@ -35,7 +34,7 @@ object ShouldDeleteProject {
     def deletableDueToBeingIdle(pr: ProjectResource): IO[Boolean] = {
       implicit val and = andSemigroup
       for {
-        now  <- IOInstant.now
+        now  <- clock.realTimeInstant
         idle <- NonEmptyList.of(IO.pure(projectIsIdle(pr, now)), resourcesAreIdle(pr, now)).reduce
       } yield {
         idle

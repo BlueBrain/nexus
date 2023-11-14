@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -129,7 +129,7 @@ object ResourcesTrial {
         source: NexusSource,
         validation: ValidationResult
     )(implicit caller: Caller): IO[DataResource] = {
-      IOInstant.now.map { now =>
+      clock.realTimeInstant.map { now =>
         ResourceState(
           id = jsonld.iri,
           project = project,

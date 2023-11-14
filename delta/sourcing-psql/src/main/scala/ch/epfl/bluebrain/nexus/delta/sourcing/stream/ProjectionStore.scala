@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -70,7 +69,7 @@ object ProjectionStore {
           metadata: ProjectionMetadata,
           progress: ProjectionProgress
       ): IO[Unit] =
-        IOInstant.now.flatMap { instant =>
+        clock.realTimeInstant.flatMap { instant =>
           sql"""INSERT INTO projection_offsets (name, module, project, resource_id, ordering, processed, discarded, failed, created_at, updated_at)
                |VALUES (${metadata.name}, ${metadata.module} ,${metadata.project}, ${metadata.resourceId}, ${progress.offset.value}, ${progress.processed}, ${progress.discarded}, ${progress.failed}, $instant, $instant)
                |ON CONFLICT (name)
@@ -89,7 +88,7 @@ object ProjectionStore {
         }
 
       override def reset(name: String): IO[Unit] =
-        IOInstant.now.flatMap { instant =>
+        clock.realTimeInstant.flatMap { instant =>
           sql"""UPDATE projection_offsets
                 SET ordering   = 0,
                     processed  = 0,

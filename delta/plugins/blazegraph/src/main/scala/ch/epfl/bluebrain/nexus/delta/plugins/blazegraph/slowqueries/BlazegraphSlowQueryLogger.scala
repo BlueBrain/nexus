@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 
@@ -48,7 +47,7 @@ object BlazegraphSlowQueryLogger {
         duration: FiniteDuration
     ): IO[Unit] =
       logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'") >>
-        IOInstant.now
+        clock.realTimeInstant
           .flatMap { now =>
             sink
               .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
@@ -53,7 +52,7 @@ object TokenStore {
           }
 
       override def save(user: Identity.User, oauthToken: OAuthToken): IO[Unit] =
-        IOInstant.now.flatMap { now =>
+        clock.realTimeInstant.flatMap { now =>
           sql""" INSERT INTO jira_tokens(realm, subject, instant, token_value)
                    | VALUES(${user.realm.value}, ${user.subject}, $now, ${oauthToken.asJson})
                    | ON CONFLICT (realm, subject) DO UPDATE SET instant = EXCLUDED.instant, token_value = EXCLUDED.token_value

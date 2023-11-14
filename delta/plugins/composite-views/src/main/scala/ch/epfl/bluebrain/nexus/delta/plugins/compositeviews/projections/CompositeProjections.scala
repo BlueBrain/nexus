@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
@@ -128,7 +127,7 @@ object CompositeProjections {
 
       private def scheduleRestart(f: Instant => CompositeRestart) =
         for {
-          now    <- IOInstant.now
+          now    <- clock.realTimeInstant
           restart = f(now)
           _      <- logger.info(s"Scheduling a ${restart.getClass.getSimpleName} from composite view '${restart.view}'")
           _      <- compositeRestartStore.save(restart)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
@@ -17,7 +16,7 @@ final class DeleteExpired private[sourcing] (xas: Transactors)(implicit clock: C
 
   def apply(): IO[Unit] = {
     for {
-      instant <- IOInstant.now
+      instant <- clock.realTimeInstant
       deleted <- sql"""
                   | DELETE FROM public.ephemeral_states
                   | WHERE expires < $instant

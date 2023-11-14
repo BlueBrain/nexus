@@ -1,17 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.{Clock, IO, Ref}
+import cats.effect.{IO, Ref}
 
-import java.time.Instant
 import java.util.UUID
-
-trait IOInstant {
-  def now(implicit clock: Clock[IO]): IO[Instant] = {
-    clock.realTimeInstant
-  }
-}
-
-object IOInstant extends IOInstant
 
 trait UUIDF {
 

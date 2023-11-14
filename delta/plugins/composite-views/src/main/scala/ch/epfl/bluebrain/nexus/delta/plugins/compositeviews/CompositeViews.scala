@@ -4,7 +4,7 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
@@ -396,7 +396,7 @@ object CompositeViews {
     def create(c: CreateCompositeView) = state match {
       case None    =>
         for {
-          t     <- IOInstant.now
+          t     <- clock.realTimeInstant
           u     <- uuidF()
           value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
           _     <- validate(u, value)
@@ -417,7 +417,7 @@ object CompositeViews {
         for {
           value <- CompositeViewFactory.update(c.value, s.value, newIndexingRev)(c.projectBase, uuidF)
           _     <- validate(s.uuid, value)
-          t     <- IOInstant.now
+          t     <- clock.realTimeInstant
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
@@ -429,7 +429,7 @@ object CompositeViews {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           CompositeViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -442,7 +442,7 @@ object CompositeViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
     }
 
     cmd match {
