@@ -158,10 +158,9 @@ object Realms {
 
   private[delta] def evaluate(
       wellKnown: Uri => IO[WellKnown],
-      openIdExists: (Label, Uri) => IO[Unit]
-  )(state: Option[RealmState], cmd: RealmCommand)(implicit
+      openIdExists: (Label, Uri) => IO[Unit],
       clock: Clock[IO]
-  ): IO[RealmEvent] = {
+  )(state: Option[RealmState], cmd: RealmCommand): IO[RealmEvent] = {
     // format: off
     def create(c: CreateRealm) =
       state.fold {
@@ -205,11 +204,12 @@ object Realms {
     */
   def definition(
       wellKnown: Uri => IO[WellKnown],
-      openIdExists: (Label, Uri) => IO[Unit]
-  )(implicit clock: Clock[IO]): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] = {
+      openIdExists: (Label, Uri) => IO[Unit],
+      clock: Clock[IO]
+  ): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] = {
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(wellKnown, openIdExists), next),
+      StateMachine(None, evaluate(wellKnown, openIdExists, clock), next),
       RealmEvent.serializer,
       RealmState.serializer,
       onUniqueViolation = (id: Label, c: RealmCommand) =>

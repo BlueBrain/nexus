@@ -84,10 +84,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
           xas,
           cfg.storages,
-          serviceAccount
+          serviceAccount,
+          clock
         )(
           api,
-          clock,
           uuidF
         )
     }
@@ -175,9 +175,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               xas,
               storageTypeConfig,
               cfg.files,
-              remoteDiskStorageClient
+              remoteDiskStorageClient,
+              clock
             )(
-              clock,
               uuidF,
               as,
               runtime

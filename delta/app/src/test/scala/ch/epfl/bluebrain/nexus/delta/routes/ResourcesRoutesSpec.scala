@@ -109,7 +109,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       fetchContext,
       resolverContextResolution,
       ResourcesConfig(eventLogConfig, decodingOption),
-      xas
+      xas,
+      clock
     )
     (
       Route.seal(

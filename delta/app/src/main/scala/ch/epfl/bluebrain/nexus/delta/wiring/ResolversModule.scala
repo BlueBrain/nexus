@@ -48,8 +48,9 @@ object ResolversModule extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config.resolvers,
-        xas
-      )(api, clock, uuidF)
+        xas,
+        clock
+      )(api, uuidF)
   }
 
   make[MultiResolution].from {

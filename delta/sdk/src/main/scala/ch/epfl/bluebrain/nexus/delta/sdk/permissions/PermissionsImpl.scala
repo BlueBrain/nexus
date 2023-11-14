@@ -83,7 +83,11 @@ object PermissionsImpl {
     */
   final def apply(
       config: PermissionsConfig,
-      xas: Transactors
-  )(implicit clock: Clock[IO]): Permissions =
-    new PermissionsImpl(config.minimum, GlobalEventLog(Permissions.definition(config.minimum), config.eventLog, xas))
+      xas: Transactors,
+      clock: Clock[IO]
+  ): Permissions =
+    new PermissionsImpl(
+      config.minimum,
+      GlobalEventLog(Permissions.definition(config.minimum, clock), config.eventLog, xas)
+    )
 }

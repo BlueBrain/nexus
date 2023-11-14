@@ -58,7 +58,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       IO.pure(Source.empty)
   }
 
-  private lazy val archives = Archives(fetchContext, download, cfg, xas)
+  private lazy val archives = Archives(fetchContext, download, cfg, xas, clock)
 
   "An Archives module" should {
     "create an archive from source" in {

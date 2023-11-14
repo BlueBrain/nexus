@@ -64,18 +64,19 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
-    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig) =>
+    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig, clock: Clock[IO]) =>
       BlazegraphSlowQueryDeleter.start(
         supervisor,
         store,
         cfg.slowQueries.logTtl,
-        cfg.slowQueries.deleteExpiredLogsEvery
+        cfg.slowQueries.deleteExpiredLogsEvery,
+        clock
       )
   }
 
   make[BlazegraphSlowQueryLogger].from {
     (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore, clock: Clock[IO]) =>
-      BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)(clock)
+      BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold, clock)
   }
 
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
@@ -143,8 +144,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           client,
           config.eventLog,
           config.prefix,
-          xas
-        )(api, clock, uuidF)
+          xas,
+          clock
+        )(api, uuidF)
     }
 
   make[BlazegraphCoordinator].fromEffect {

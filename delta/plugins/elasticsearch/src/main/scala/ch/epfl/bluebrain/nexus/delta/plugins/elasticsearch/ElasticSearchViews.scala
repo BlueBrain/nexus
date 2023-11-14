@@ -407,16 +407,16 @@ object ElasticSearchViews {
       prefix: String,
       xas: Transactors,
       defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings
+      defaultSettings: DefaultSettings,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(
-          definition(validate),
+          definition(validate, clock),
           eventLogConfig,
           xas
         ),
@@ -461,9 +461,9 @@ object ElasticSearchViews {
   }
 
   private[elasticsearch] def evaluate(
-      validate: ValidateElasticSearchView
+      validate: ValidateElasticSearchView,
+      clock: Clock[IO]
   )(state: Option[ElasticSearchViewState], cmd: ElasticSearchViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ElasticSearchViewEvent] = {
 
@@ -520,8 +520,9 @@ object ElasticSearchViews {
   }
 
   def definition(
-      validate: ValidateElasticSearchView
-  )(implicit clock: Clock[IO], uuidF: UUIDF): ScopedEntityDefinition[
+      validate: ValidateElasticSearchView,
+      clock: Clock[IO]
+  )(implicit uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     ElasticSearchViewState,
     ElasticSearchViewCommand,
@@ -532,7 +533,7 @@ object ElasticSearchViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _),
+        evaluate(validate, clock)(_, _),
         next
       ),
       ElasticSearchViewEvent.serializer,

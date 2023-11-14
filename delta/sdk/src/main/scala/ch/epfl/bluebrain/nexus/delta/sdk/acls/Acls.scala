@@ -258,8 +258,9 @@ object Acls {
 
   private[delta] def evaluate(
       fetchPermissionSet: IO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[Unit]
-  )(state: Option[AclState], cmd: AclCommand)(implicit clock: Clock[IO]): IO[AclEvent] = {
+      findUnknownRealms: Set[Label] => IO[Unit],
+      clock: Clock[IO]
+  )(state: Option[AclState], cmd: AclCommand): IO[AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
       fetchPermissionSet.flatMap { permissions =>
@@ -338,11 +339,12 @@ object Acls {
     */
   def definition(
       fetchPermissionSet: IO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[Unit]
-  )(implicit clock: Clock[IO]): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
+      findUnknownRealms: Set[Label] => IO[Unit],
+      clock: Clock[IO]
+  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms)(_, _), next),
+      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms, clock)(_, _), next),
       AclEvent.serializer,
       AclState.serializer,
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>

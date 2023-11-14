@@ -91,7 +91,7 @@ trait CompositeIndexingFixture extends CatsEffectSuite {
       .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
-          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
+          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds, clock)
         val spaces                = CompositeSpaces(prefix, esClient, bgClient)
         val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
         Setup(esClient, bgClient, projections, spaces, sinks)

@@ -68,8 +68,9 @@ object ProjectsModule extends ModuleDef {
           scopeInitializations,
           mappings.merge,
           config.projects,
-          xas
-        )(baseUri, clock, uuidF)
+          xas,
+          clock
+        )(baseUri, uuidF)
       )
   }
 
@@ -99,7 +100,8 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         serviceAccount: ServiceAccount,
         supervisor: Supervisor,
-        xas: Transactors
+        xas: Transactors,
+        clock: Clock[IO]
     ) =>
       ProjectDeletionCoordinator(
         projects,
@@ -107,7 +109,8 @@ object ProjectsModule extends ModuleDef {
         config.projects.deletion,
         serviceAccount,
         supervisor,
-        xas
+        xas,
+        clock
       )
   }
 

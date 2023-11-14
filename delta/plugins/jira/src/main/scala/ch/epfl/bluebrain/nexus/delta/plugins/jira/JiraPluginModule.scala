@@ -21,7 +21,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraConfig].from { JiraConfig.load(_) }
 
   make[JiraClient].fromEffect { (xas: Transactors, jiraConfig: JiraConfig, clock: Clock[IO]) =>
-    JiraClient(TokenStore(xas)(clock), jiraConfig)
+    JiraClient(TokenStore(xas, clock), jiraConfig)
   }
 
   make[JiraRoutes].from {

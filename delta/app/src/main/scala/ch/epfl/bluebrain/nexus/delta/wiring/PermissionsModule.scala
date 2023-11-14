@@ -27,8 +27,9 @@ object PermissionsModule extends ModuleDef {
   make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO]) =>
     PermissionsImpl(
       cfg.permissions,
-      xas
-    )(clock)
+      xas,
+      clock
+    )
   }
 
   make[PermissionsRoutes].from {

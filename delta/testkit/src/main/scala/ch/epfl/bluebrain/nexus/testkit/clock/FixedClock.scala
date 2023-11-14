@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 
 trait FixedClock {
-  implicit def clock: Clock[IO] = atInstant(Instant.EPOCH)
+  def clock: Clock[IO] = atInstant(Instant.EPOCH)
 }
 
 object FixedClock {

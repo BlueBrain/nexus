@@ -145,7 +145,8 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       "prefix",
       xas,
       defaultMapping,
-      defaultSettings
+      defaultSettings,
+      clock
     ).accepted
 
     "create a view" when {

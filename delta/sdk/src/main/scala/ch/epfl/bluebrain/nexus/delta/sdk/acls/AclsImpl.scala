@@ -113,10 +113,11 @@ object AclsImpl {
       findUnknownRealms: Set[Label] => IO[Unit],
       minimum: Set[Permission],
       config: AclsConfig,
-      xas: Transactors
-  )(implicit clock: Clock[IO]): Acls =
+      xas: Transactors,
+      clock: Clock[IO]
+  ): Acls =
     new AclsImpl(
-      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms), config.eventLog, xas),
+      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms, clock), config.eventLog, xas),
       minimum
     )
 

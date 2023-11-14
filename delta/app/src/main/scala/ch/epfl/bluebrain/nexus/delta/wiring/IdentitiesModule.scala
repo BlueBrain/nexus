@@ -35,7 +35,7 @@ object IdentitiesModule extends ModuleDef {
   }
 
   make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService, clock: Clock[IO]) =>
-    AuthTokenProvider(authService)(clock)
+    AuthTokenProvider(authService, clock)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/identities.json").map { ctx =>

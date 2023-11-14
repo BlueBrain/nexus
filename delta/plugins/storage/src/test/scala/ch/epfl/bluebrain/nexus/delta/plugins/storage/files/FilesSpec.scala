@@ -117,7 +117,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       (_, _) => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, cfg),
-      ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
+      ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
+      clock
     ).accepted
 
     lazy val files: Files = Files(
@@ -128,7 +129,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       xas,
       cfg,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient
+      remoteDiskStorageClient,
+      clock
     )
 
     def fileId(file: String): FileId = FileId(file, projectRef)

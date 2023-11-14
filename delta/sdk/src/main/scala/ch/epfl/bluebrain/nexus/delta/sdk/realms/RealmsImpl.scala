@@ -89,10 +89,13 @@ object RealmsImpl {
     * @param xas
     *   the doobie transactors
     */
-  final def apply(config: RealmsConfig, resolveWellKnown: Uri => IO[WellKnown], xas: Transactors)(implicit
+  final def apply(
+      config: RealmsConfig,
+      resolveWellKnown: Uri => IO[WellKnown],
+      xas: Transactors,
       clock: Clock[IO]
   ): Realms = new RealmsImpl(
-    GlobalEventLog(Realms.definition(resolveWellKnown, OpenIdExists(xas)), config.eventLog, xas)
+    GlobalEventLog(Realms.definition(resolveWellKnown, OpenIdExists(xas), clock), config.eventLog, xas)
   )
 
 }

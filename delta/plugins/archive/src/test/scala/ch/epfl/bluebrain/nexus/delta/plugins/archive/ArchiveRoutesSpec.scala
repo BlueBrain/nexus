@@ -148,7 +148,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
                               case _          => IO.raiseError(InvalidPath(input))
                             }
                         )
-      archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
+      archives        =
+        Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas, clock)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
       r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
     } yield r

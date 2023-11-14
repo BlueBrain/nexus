@@ -37,7 +37,8 @@ class SearchScopeInitializationSpec
     ResolverContextResolution(rcr),
     alwaysValidate,
     config,
-    xas
+    xas,
+    clock
   ).accepted
 
   private val indexingConfig =

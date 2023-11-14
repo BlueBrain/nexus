@@ -73,7 +73,7 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas =
-    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas)
+    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas, clock)
 
   private def schemaSourceWithId(id: Iri) = {
     source deepMerge json"""{"@id": "$id"}"""

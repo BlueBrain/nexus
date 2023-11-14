@@ -73,7 +73,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
   }
 
   private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> ProjectsImpl(fetchOrg, validateDeletion, Set(scopeInitLog), defaultApiMappings, config, xas)
+    scopeInitLog -> ProjectsImpl(fetchOrg, validateDeletion, Set(scopeInitLog), defaultApiMappings, config, xas, clock)
   }.accepted
 
   "The Projects operations bundle" should {

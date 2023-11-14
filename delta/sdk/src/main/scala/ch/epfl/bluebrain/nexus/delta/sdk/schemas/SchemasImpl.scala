@@ -167,10 +167,10 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       validate: ValidateSchema,
       config: SchemasConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): Schemas = {
     val parser =
@@ -180,7 +180,7 @@ object SchemasImpl {
         uuidF
       )
     new SchemasImpl(
-      ScopedEventLog(Schemas.definition(validate), config.eventLog, xas),
+      ScopedEventLog(Schemas.definition(validate, clock), config.eventLog, xas),
       fetchContext,
       schemaImports,
       parser

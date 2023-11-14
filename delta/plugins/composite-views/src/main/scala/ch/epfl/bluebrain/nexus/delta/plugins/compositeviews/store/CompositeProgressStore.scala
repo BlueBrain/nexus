@@ -21,7 +21,7 @@ import doobie.postgres.implicits._
 
 import java.time.Instant
 
-final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) {
+final class CompositeProgressStore(xas: Transactors, clock: Clock[IO]) {
 
   /**
     * Saves a projection offset.

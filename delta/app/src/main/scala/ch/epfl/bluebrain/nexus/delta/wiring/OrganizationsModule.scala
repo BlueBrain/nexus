@@ -37,8 +37,9 @@ object OrganizationsModule extends ModuleDef {
       OrganizationsImpl(
         scopeInitializations,
         config.organizations,
-        xas
-      )(clock, uuidF)
+        xas,
+        clock
+      )(uuidF)
   }
 
   make[OrganizationDeleter].from { (xas: Transactors) =>

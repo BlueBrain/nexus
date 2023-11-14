@@ -352,10 +352,9 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      validateResource: ValidateResource
-  )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
+      validateResource: ValidateResource,
       clock: Clock[IO]
-  ): IO[ResourceEvent] = {
+  )(state: Option[ResourceState], cmd: ResourceCommand): IO[ResourceEvent] = {
 
     def validate(
         id: Iri,
@@ -501,13 +500,12 @@ object Resources {
     * Entity definition for [[Resources]]
     */
   def definition(
-      resourceValidator: ValidateResource
-  )(implicit
+      resourceValidator: ValidateResource,
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(resourceValidator)(_, _), next),
+      StateMachine(None, evaluate(resourceValidator, clock)(_, _), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

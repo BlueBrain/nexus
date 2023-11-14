@@ -150,8 +150,7 @@ object Organizations {
       case (_, _) => None
     }
 
-  private[delta] def evaluate(state: Option[OrganizationState], command: OrganizationCommand)(implicit
-      clock: Clock[IO],
+  private[delta] def evaluate(clock: Clock[IO])(state: Option[OrganizationState], command: OrganizationCommand)(implicit
       uuidf: UUIDF
   ): IO[OrganizationEvent] = {
 
@@ -193,15 +192,14 @@ object Organizations {
   /**
     * Entity definition for [[Organization]]
     */
-  def definition(implicit
-      clock: Clock[IO],
+  def definition(clock: Clock[IO])(implicit
       uuidf: UUIDF
   ): GlobalEntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] =
     GlobalEntityDefinition(
       entityType,
       StateMachine(
         None,
-        (state: Option[OrganizationState], command: OrganizationCommand) => evaluate(state, command),
+        evaluate(clock),
         next
       ),
       OrganizationEvent.serializer,

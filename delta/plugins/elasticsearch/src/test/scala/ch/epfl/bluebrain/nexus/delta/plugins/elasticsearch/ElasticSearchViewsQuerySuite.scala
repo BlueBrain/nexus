@@ -201,7 +201,8 @@ class ElasticSearchViewsQuerySuite
     prefix,
     xas,
     defaultMapping,
-    defaultSettings
+    defaultSettings,
+    clock
   ).unsafeRunSync()
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(

@@ -91,7 +91,8 @@ class AclsRoutesSpec extends BaseRouteSpec {
       Acls.findUnknownRealms(_, Set(realm1, realm2)),
       Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read),
       AclsConfig(EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)),
-      xas
+      xas,
+      clock
     )
   lazy val routes       = Route.seal(AclsRoutes(identities, acls, AclCheck(acls)).routes)
 

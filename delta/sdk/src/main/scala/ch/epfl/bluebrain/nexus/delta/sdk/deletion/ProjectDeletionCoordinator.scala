@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
-import cats.effect.IO
-import cats.effect.kernel.Clock
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
@@ -39,9 +38,9 @@ object ProjectDeletionCoordinator {
       deletionTasks: List[ProjectDeletionTask],
       deletionConfig: DeletionConfig,
       serviceAccount: ServiceAccount,
-      deletionStore: ProjectDeletionStore
-  )(implicit clock: Clock[IO])
-      extends ProjectDeletionCoordinator {
+      deletionStore: ProjectDeletionStore,
+      clock: Clock[IO]
+  ) extends ProjectDeletionCoordinator {
 
     implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
@@ -90,7 +89,8 @@ object ProjectDeletionCoordinator {
       deletionTasks: Set[ProjectDeletionTask],
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   ): ProjectDeletionCoordinator =
     if (deletionConfig.enabled) {
       new Active(
@@ -98,7 +98,8 @@ object ProjectDeletionCoordinator {
         deletionTasks.toList,
         deletionConfig,
         serviceAccount,
-        new ProjectDeletionStore(xas)
+        new ProjectDeletionStore(xas),
+        clock
       )
     } else
       Noop
@@ -113,9 +114,10 @@ object ProjectDeletionCoordinator {
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
       supervisor: Supervisor,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   ): IO[ProjectDeletionCoordinator] = {
-    val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas)
+    val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas, clock)
     stream match {
       case Noop           => logger.info("Projection deletion is disabled.").as(Noop)
       case active: Active =>

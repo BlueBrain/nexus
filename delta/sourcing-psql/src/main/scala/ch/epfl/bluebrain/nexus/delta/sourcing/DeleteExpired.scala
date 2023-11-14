@@ -12,7 +12,7 @@ import fs2.Stream
 /**
   * Allow to delete expired ephemeral states
   */
-final class DeleteExpired private[sourcing] (xas: Transactors)(implicit clock: Clock[IO]) {
+final class DeleteExpired private[sourcing] (xas: Transactors, clock: Clock[IO]) {
 
   def apply(): IO[Unit] = {
     for {
@@ -34,10 +34,8 @@ object DeleteExpired {
   /**
     * Creates a [[DeleteExpired]] instance and schedules in the supervisor the deletion of expired ephemeral states
     */
-  def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors)(implicit
-      clock: Clock[IO]
-  ): IO[DeleteExpired] = {
-    val deleteExpired = new DeleteExpired(xas)
+  def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]): IO[DeleteExpired] = {
+    val deleteExpired = new DeleteExpired(xas, clock)
 
     val stream = Stream
       .awakeEvery[IO](config.deleteExpiredEvery)

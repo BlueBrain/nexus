@@ -250,9 +250,10 @@ object Permissions {
     }
   }
 
-  private[delta] def evaluate(minimum: Set[Permission])(state: PermissionsState, cmd: PermissionsCommand)(implicit
+  private[delta] def evaluate(
+      minimum: Set[Permission],
       clock: Clock[IO]
-  ): IO[PermissionsEvent] = {
+  )(state: PermissionsState, cmd: PermissionsCommand): IO[PermissionsEvent] = {
     def replace(c: ReplacePermissions) =
       if (c.rev != state.rev) IO.raiseError(IncorrectRev(c.rev, state.rev))
       else if (c.permissions.isEmpty) IO.raiseError(CannotReplaceWithEmptyCollection)
@@ -304,7 +305,8 @@ object Permissions {
     * @param minimum
     *   the minimum set of permissions
     */
-  def definition(minimum: Set[Permission])(implicit
+  def definition(
+      minimum: Set[Permission],
       clock: Clock[IO]
   ): GlobalEntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
     val initial = PermissionsState.initial(minimum)
@@ -312,7 +314,8 @@ object Permissions {
       entityType,
       StateMachine(
         Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd),
+        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
+          evaluate(minimum, clock)(state.getOrElse(initial), cmd),
         (state: Option[PermissionsState], event: PermissionsEvent) =>
           Some(next(minimum)(state.getOrElse(initial), event))
       ),

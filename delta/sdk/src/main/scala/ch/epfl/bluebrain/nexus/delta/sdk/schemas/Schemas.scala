@@ -240,10 +240,10 @@ object Schemas {
     }
   }
 
-  private[delta] def evaluate(shaclValidation: ValidateSchema)(
+  private[delta] def evaluate(shaclValidation: ValidateSchema, clock: Clock[IO])(
       state: Option[SchemaState],
       cmd: SchemaCommand
-  )(implicit clock: Clock[IO]): IO[SchemaEvent] = {
+  ): IO[SchemaEvent] = {
     def validate(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[Unit] =
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
@@ -344,12 +344,13 @@ object Schemas {
   /**
     * Entity definition for [[Schemas]]
     */
-  def definition(validate: ValidateSchema)(implicit
+  def definition(
+      validate: ValidateSchema,
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _), next),
+      StateMachine(None, evaluate(validate, clock), next),
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](

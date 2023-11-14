@@ -640,9 +640,7 @@ object Files {
     }
   }
 
-  private[files] def evaluate(state: Option[FileState], cmd: FileCommand)(implicit
-      clock: Clock[IO]
-  ): IO[FileEvent] = {
+  private[files] def evaluate(clock: Clock[IO])(state: Option[FileState], cmd: FileCommand): IO[FileEvent] = {
 
     def create(c: CreateFile) = state match {
       case None    =>
@@ -726,12 +724,12 @@ object Files {
   /**
     * Entity definition for [[Files]]
     */
-  def definition(implicit
+  def definition(
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(_, _), next),
+      StateMachine(None, evaluate(clock)(_, _), next),
       FileEvent.serializer,
       FileState.serializer,
       Tagger[FileEvent](
@@ -765,9 +763,9 @@ object Files {
       xas: Transactors,
       storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
-      remoteDiskStorageClient: RemoteDiskStorageClient
+      remoteDiskStorageClient: RemoteDiskStorageClient,
+      clock: Clock[IO]
   )(implicit
-      clock: Clock[IO],
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       runtime: IORuntime
@@ -775,7 +773,7 @@ object Files {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     new Files(
       FormDataExtractor(config.mediaTypeDetector),
-      ScopedEventLog(definition, config.eventLog, xas),
+      ScopedEventLog(definition(clock), config.eventLog, xas),
       aclCheck,
       fetchContext,
       storages,

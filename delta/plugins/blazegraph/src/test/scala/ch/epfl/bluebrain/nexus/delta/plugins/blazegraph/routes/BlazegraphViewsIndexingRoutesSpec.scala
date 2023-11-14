@@ -31,8 +31,8 @@ import scala.concurrent.duration._
 
 class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures with IOFromMap with CatsRunContext {
 
-  private lazy val projections      = Projections(xas, queryConfig, 1.hour)
-  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
+  private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
+  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
     Map(project.ref -> project.context),

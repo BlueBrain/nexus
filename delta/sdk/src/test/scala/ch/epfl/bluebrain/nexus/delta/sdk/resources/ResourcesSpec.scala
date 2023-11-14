@@ -41,7 +41,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
     val schema1 = nxv + "myschema"
 
     val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceEvent] =
-      evaluate(alwaysValidate)
+      evaluate(alwaysValidate, clock)
 
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {

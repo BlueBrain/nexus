@@ -6,9 +6,7 @@ import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
 
-class BlazegraphSlowQueryDeleter(store: BlazegraphSlowQueryStore, deletionThreshold: FiniteDuration)(implicit
-    clock: Clock[IO]
-) {
+class BlazegraphSlowQueryDeleter(store: BlazegraphSlowQueryStore, deletionThreshold: FiniteDuration, clock: Clock[IO]) {
   def deleteOldQueries: IO[Unit] = {
     clock.realTimeInstant.flatMap { now =>
       store.removeQueriesOlderThan(now.minusMillis(deletionThreshold.toMillis))
@@ -23,9 +21,10 @@ object BlazegraphSlowQueryDeleter {
       supervisor: Supervisor,
       store: BlazegraphSlowQueryStore,
       deletionThreshold: FiniteDuration,
-      deletionCheckInterval: FiniteDuration
+      deletionCheckInterval: FiniteDuration,
+      clock: Clock[IO]
   ): IO[BlazegraphSlowQueryDeleter] = {
-    val runner = new BlazegraphSlowQueryDeleter(store, deletionThreshold)
+    val runner = new BlazegraphSlowQueryDeleter(store, deletionThreshold, clock)
 
     val continuousStream: Stream[IO, Nothing] = Stream
       .fixedRate[IO](deletionCheckInterval)

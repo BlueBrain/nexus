@@ -133,10 +133,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         contextResolution,
         validate,
         config,
-        xas
+        xas,
+        clock
       )(
         api,
-        clock,
         uuidF
       )
   }
@@ -156,11 +156,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           xas,
           projectionConfig.query,
           projectionConfig.batch,
-          config.restartCheckInterval
-        )(clock)
+          config.restartCheckInterval,
+          clock
+        )
 
       CompositeRestartStore
-        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig, clock)
         .as(compositeProjections)
   }
 

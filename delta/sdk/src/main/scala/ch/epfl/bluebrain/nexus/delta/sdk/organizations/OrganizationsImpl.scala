@@ -88,13 +88,13 @@ object OrganizationsImpl {
   def apply(
       scopeInitializations: Set[ScopeInitialization],
       config: OrganizationsConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
-      clock: Clock[IO],
       uuidf: UUIDF
   ): Organizations =
     new OrganizationsImpl(
-      GlobalEventLog(Organizations.definition, config.eventLog, xas),
+      GlobalEventLog(Organizations.definition(clock), config.eventLog, xas),
       scopeInitializations
     )
 

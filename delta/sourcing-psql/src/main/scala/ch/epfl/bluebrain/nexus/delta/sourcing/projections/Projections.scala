@@ -98,9 +98,9 @@ trait Projections {
 
 object Projections {
 
-  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration)(implicit clock: Clock[IO]): Projections =
+  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration, clock: Clock[IO]): Projections =
     new Projections {
-      private val projectionStore        = ProjectionStore(xas, config)
+      private val projectionStore        = ProjectionStore(xas, config, clock)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
 
       override def progress(name: String): IO[Option[ProjectionProgress]] = projectionStore.offset(name)

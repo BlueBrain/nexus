@@ -78,7 +78,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
     for {
       expectedData <-
@@ -94,7 +95,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
 
     val anotherSchema = nxv + "anotherSchema"
@@ -118,7 +120,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
       (_, _) => fetchResourceFail,
       alwaysFail(expectedError),
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
 
     assertError(trial.generate(projectRef, resourceSchema, source))(None, expectedError)
@@ -135,7 +138,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
                     (_, _) => IO.pure(resource),
                     alwaysValidate,
                     fetchContext,
-                    resolverContextResolution
+                    resolverContextResolution,
+                    clock
                   )
       result   <- trial.validate(id, projectRef, Some(anotherSchema))
     } yield {
@@ -152,7 +156,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
                     (_, _) => IO.pure(resource),
                     alwaysValidate,
                     fetchContext,
-                    resolverContextResolution
+                    resolverContextResolution,
+                    clock
                   )
       result   <- trial.validate(id, projectRef, None)
     } yield {
@@ -172,7 +177,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
                         (_, _) => IO.pure(resource),
                         alwaysFail(expectedError),
                         fetchContext,
-                        resolverContextResolution
+                        resolverContextResolution,
+                        clock
                       )
       result       <- trial.validate(id, projectRef, Some(anotherSchema)).attempt
     } yield {

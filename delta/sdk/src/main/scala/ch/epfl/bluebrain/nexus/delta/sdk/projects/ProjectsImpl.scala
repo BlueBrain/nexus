@@ -132,14 +132,14 @@ object ProjectsImpl {
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       base: BaseUri,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion), config.eventLog, xas),
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
       scopeInitializations,
       defaultApiMappings
     )

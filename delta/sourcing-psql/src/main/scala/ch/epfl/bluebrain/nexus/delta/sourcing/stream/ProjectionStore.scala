@@ -63,7 +63,7 @@ trait ProjectionStore {
 
 object ProjectionStore {
 
-  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): ProjectionStore =
+  def apply(xas: Transactors, config: QueryConfig, clock: Clock[IO]): ProjectionStore =
     new ProjectionStore {
       override def save(
           metadata: ProjectionMetadata,

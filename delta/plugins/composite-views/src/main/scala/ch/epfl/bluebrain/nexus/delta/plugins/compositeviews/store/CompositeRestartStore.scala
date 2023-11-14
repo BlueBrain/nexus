@@ -103,7 +103,10 @@ object CompositeRestartStore {
     * @param config
     *   the projection config
     */
-  def deleteExpired(store: CompositeRestartStore, supervisor: Supervisor, config: ProjectionConfig)(implicit
+  def deleteExpired(
+      store: CompositeRestartStore,
+      supervisor: Supervisor,
+      config: ProjectionConfig,
       clock: Clock[IO]
   ): IO[Unit] = {
     val deleteExpiredRestarts =

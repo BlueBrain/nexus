@@ -41,8 +41,9 @@ object ResourcesTrialModule extends ModuleDef {
         resources.fetch(_, _, None),
         validate,
         fetchContext.mapRejection(ProjectContextRejection),
-        contextResolution
-      )(api, clock, uuidF)
+        contextResolution,
+        clock
+      )(api, uuidF)
   }
 
   make[ResourcesTrialRoutes].from {

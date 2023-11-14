@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
 import munit.{Assertions, Location}
 
@@ -105,7 +106,12 @@ class ShouldDeleteProjectSuite extends CatsEffectSuite {
   }
 }
 
-object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with CatsEffectAssertions with Generators {
+object ShouldDeleteProjectSuite
+    extends Assertions
+    with CatsRunContext
+    with CatsEffectAssertions
+    with Generators
+    with FixedClock {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -192,7 +198,8 @@ object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with Cats
   ): IO[Boolean] = {
     val shouldDeleteProject = ShouldDeleteProject(
       config,
-      lastEventTime = (_, _) => IO.pure(project.lastEventTime)
+      lastEventTime = (_, _) => IO.pure(project.lastEventTime),
+      clock
     )
 
     shouldDeleteProject(project.resource)

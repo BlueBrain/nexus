@@ -256,10 +256,9 @@ object Resolvers {
   }
 
   private[delta] def evaluate(
-      validatePriority: ValidatePriority
-  )(state: Option[ResolverState], command: ResolverCommand)(implicit
+      validatePriority: ValidatePriority,
       clock: Clock[IO]
-  ): IO[ResolverEvent] = {
+  )(state: Option[ResolverState], command: ResolverCommand): IO[ResolverEvent] = {
 
     def validateResolverValue(
         project: ProjectRef,
@@ -388,10 +387,10 @@ object Resolvers {
   /**
     * Entity definition for [[Resolvers]]
     */
-  def definition(validatePriority: ValidatePriority)(implicit clock: Clock[IO]): ResolverDefinition =
+  def definition(validatePriority: ValidatePriority, clock: Clock[IO]): ResolverDefinition =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validatePriority)(_, _), next),
+      StateMachine(None, evaluate(validatePriority, clock)(_, _), next),
       ResolverEvent.serializer,
       ResolverState.serializer,
       Tagger[ResolverEvent](

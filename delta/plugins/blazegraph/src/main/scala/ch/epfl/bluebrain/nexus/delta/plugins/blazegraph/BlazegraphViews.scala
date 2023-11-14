@@ -416,9 +416,9 @@ object BlazegraphViews {
   }
 
   private[blazegraph] def evaluate(
-      validate: ValidateBlazegraphView
+      validate: ValidateBlazegraphView,
+      clock: Clock[IO]
   )(state: Option[BlazegraphViewState], cmd: BlazegraphViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViewEvent] = {
 
@@ -482,7 +482,7 @@ object BlazegraphViews {
     }
   }
 
-  def definition(validate: ValidateBlazegraphView)(implicit clock: Clock[IO], uuidF: UUIDF): ScopedEntityDefinition[
+  def definition(validate: ValidateBlazegraphView, clock: Clock[IO])(implicit uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     BlazegraphViewState,
     BlazegraphViewCommand,
@@ -493,7 +493,7 @@ object BlazegraphViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _),
+        evaluate(validate, clock),
         next
       ),
       BlazegraphViewEvent.serializer,
@@ -531,10 +531,10 @@ object BlazegraphViews {
       client: BlazegraphClient,
       eventLogConfig: EventLogConfig,
       prefix: String,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     val createNameSpace = (v: ViewResource) =>
@@ -546,7 +546,7 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)
+    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas, clock)
   }
 
   private[blazegraph] def apply(
@@ -556,10 +556,10 @@ object BlazegraphViews {
       createNamespace: ViewResource => IO[Unit],
       eventLogConfig: EventLogConfig,
       prefix: String,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
@@ -575,7 +575,7 @@ object BlazegraphViews {
       .map { sourceDecoder =>
         new BlazegraphViews(
           ScopedEventLog(
-            definition(validate),
+            definition(validate, clock),
             eventLogConfig,
             xas
           ),

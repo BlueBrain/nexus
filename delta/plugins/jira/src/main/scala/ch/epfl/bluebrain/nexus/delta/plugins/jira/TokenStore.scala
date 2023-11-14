@@ -38,7 +38,7 @@ object TokenStore {
   /**
     * Create a token store
     */
-  def apply(xas: Transactors)(implicit clock: Clock[IO]): TokenStore = {
+  def apply(xas: Transactors, clock: Clock[IO]): TokenStore = {
     new TokenStore {
       override def get(user: Identity.User): IO[Option[OAuthToken]] =
         sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"

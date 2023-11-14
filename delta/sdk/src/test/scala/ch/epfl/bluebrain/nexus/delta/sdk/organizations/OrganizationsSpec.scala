@@ -26,13 +26,13 @@ class OrganizationsSpec extends CatsEffectSpec {
     "evaluating an incoming command" should {
 
       "create a new event" in {
-        evaluate(None, CreateOrganization(label, desc, subject)).accepted shouldEqual
+        evaluate(clock)(None, CreateOrganization(label, desc, subject)).accepted shouldEqual
           OrganizationCreated(label, uuid, 1, desc, epoch, subject)
 
-        evaluate(Some(state), UpdateOrganization(label, 1, desc2, subject)).accepted shouldEqual
+        evaluate(clock)(Some(state), UpdateOrganization(label, 1, desc2, subject)).accepted shouldEqual
           OrganizationUpdated(label, uuid, 2, desc2, epoch, subject)
 
-        evaluate(Some(state), DeprecateOrganization(label, 1, subject)).accepted shouldEqual
+        evaluate(clock)(Some(state), DeprecateOrganization(label, 1, subject)).accepted shouldEqual
           OrganizationDeprecated(label, uuid, 2, epoch, subject)
       }
 
@@ -42,12 +42,12 @@ class OrganizationsSpec extends CatsEffectSpec {
           state -> DeprecateOrganization(label, 2, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(Some(state), cmd).rejectedWith[IncorrectRev]
+          evaluate(clock)(Some(state), cmd).rejectedWith[IncorrectRev]
         }
       }
 
       "reject with OrganizationAlreadyExists" in {
-        evaluate(Some(state), CreateOrganization(label, desc, subject)).rejectedWith[OrganizationAlreadyExists]
+        evaluate(clock)(Some(state), CreateOrganization(label, desc, subject)).rejectedWith[OrganizationAlreadyExists]
       }
 
       "reject with OrganizationIsDeprecated" in {
@@ -56,7 +56,7 @@ class OrganizationsSpec extends CatsEffectSpec {
           state.copy(deprecated = true) -> DeprecateOrganization(label, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(Some(state), cmd).rejectedWith[OrganizationIsDeprecated]
+          evaluate(clock)(Some(state), cmd).rejectedWith[OrganizationIsDeprecated]
         }
       }
 
@@ -66,7 +66,7 @@ class OrganizationsSpec extends CatsEffectSpec {
           None -> DeprecateOrganization(label, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[OrganizationNotFound]
+          evaluate(clock)(state, cmd).rejectedWith[OrganizationNotFound]
         }
       }
     }

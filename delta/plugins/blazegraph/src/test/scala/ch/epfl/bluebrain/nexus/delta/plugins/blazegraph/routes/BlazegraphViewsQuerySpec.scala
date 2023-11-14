@@ -162,7 +162,8 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       client,
       eventLogConfig,
       "prefix",
-      xas
+      xas,
+      clock
     ).accepted
 
     lazy val viewsQuery = AclSimpleCheck(

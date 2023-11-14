@@ -16,8 +16,9 @@ object ShouldDeleteProject {
 
   def apply(
       config: ProjectDeletionConfig,
-      lastEventTime: (ProjectResource, Instant) => IO[Instant]
-  )(implicit clock: Clock[IO]): ProjectResource => IO[Boolean] = (pr: ProjectResource) => {
+      lastEventTime: (ProjectResource, Instant) => IO[Instant],
+      clock: Clock[IO]
+  ): ProjectResource => IO[Boolean] = (pr: ProjectResource) => {
 
     def isIncluded(pr: ProjectResource): Boolean = {
       config.includedProjects.exists(regex => regex.matches(pr.value.ref.toString))

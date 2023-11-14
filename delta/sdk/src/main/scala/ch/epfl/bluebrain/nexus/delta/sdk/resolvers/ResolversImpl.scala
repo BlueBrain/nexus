@@ -174,10 +174,10 @@ object ResolversImpl {
       fetchContext: FetchContext[ResolverRejection],
       contextResolution: ResolverContextResolution,
       config: ResolversConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): Resolvers = {
     def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[Unit] = {
@@ -192,7 +192,7 @@ object ResolversImpl {
     }
 
     new ResolversImpl(
-      ScopedEventLog(Resolvers.definition(priorityAlreadyExists), config.eventLog, xas),
+      ScopedEventLog(Resolvers.definition(priorityAlreadyExists, clock), config.eventLog, xas),
       fetchContext,
       new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](
         contexts.resolvers,

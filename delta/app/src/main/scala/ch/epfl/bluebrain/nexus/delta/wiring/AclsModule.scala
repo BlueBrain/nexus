@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
+import cats.effect.{Clock, IO}
 import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -29,14 +30,16 @@ object AclsModule extends ModuleDef {
     (
         permissions: Permissions,
         config: AppConfig,
-        xas: Transactors
+        xas: Transactors,
+        clock: Clock[IO]
     ) =>
       acls.AclsImpl(
         permissions.fetchPermissionSet,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
         config.acls,
-        xas
+        xas,
+        clock
       )
   }
 

@@ -395,11 +395,12 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       fetchPermissions: IO[Set[Permission]],
-      config: StorageTypeConfig
+      config: StorageTypeConfig,
+      clock: Clock[IO]
   )(
       state: Option[StorageState],
       cmd: StorageCommand
-  )(implicit clock: Clock[IO]): IO[StorageEvent] = {
+  ): IO[StorageEvent] = {
 
     def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
       target == parent || target.value.descendantOf(parent.value)
@@ -495,13 +496,12 @@ object Storages {
   def definition(
       config: StorageTypeConfig,
       access: StorageAccess,
-      fetchPermissions: IO[Set[Permission]]
-  )(implicit
+      fetchPermissions: IO[Set[Permission]],
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config)(_, _), next),
+      StateMachine(None, evaluate(access, fetchPermissions, config, clock)(_, _), next),
       StorageEvent.serializer,
       StorageState.serializer,
       Tagger[StorageEvent](
@@ -531,10 +531,10 @@ object Storages {
       access: StorageAccess,
       xas: Transactors,
       config: StoragesConfig,
-      serviceAccount: ServiceAccount
+      serviceAccount: ServiceAccount,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
@@ -545,7 +545,7 @@ object Storages {
       }
       .map { sourceDecoder =>
         new Storages(
-          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions), config.eventLog, xas),
+          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions, clock), config.eventLog, xas),
           fetchContext,
           sourceDecoder,
           serviceAccount

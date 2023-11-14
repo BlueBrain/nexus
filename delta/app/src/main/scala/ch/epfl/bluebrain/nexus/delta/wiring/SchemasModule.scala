@@ -59,8 +59,9 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         validate,
         config.schemas,
-        xas
-      )(api, clock, uuidF)
+        xas,
+        clock
+      )(api, uuidF)
   }
 
   make[SchemaImports].from {

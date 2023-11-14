@@ -121,7 +121,8 @@ class FilesRoutesSpec
     (_, _) => IO.unit,
     xas,
     StoragesConfig(eventLogConfig, pagination, stCfg),
-    ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
+    ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
+    clock
   ).accepted
   lazy val files: Files                                    =
     Files(
@@ -132,8 +133,9 @@ class FilesRoutesSpec
       xas,
       config,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient
-    )(clock, uuidF, typedSystem, runtime)
+      remoteDiskStorageClient,
+      clock
+    )(uuidF, typedSystem, runtime)
   private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 

@@ -177,23 +177,23 @@ object Projects {
 
   private[delta] def evaluate(
       orgs: Organizations,
-      validateDeletion: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion,
+      clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
     val f: FetchOrganization = label =>
       orgs
         .fetchActiveOrganization(label)
         .adaptError { case o: OrganizationRejection => WrappedOrganizationRejection(o) }
-    evaluate(f, validateDeletion)(state, command)
+    evaluate(f, validateDeletion, clock)(state, command)
   }
 
   private[sdk] def evaluate(
       fetchAndValidateOrg: FetchOrganization,
-      validateDeletion: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion,
+      clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
 
@@ -279,13 +279,12 @@ object Projects {
   /**
     * Entity definition for [[Projects]]
     */
-  def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion)(implicit
-      clock: Clock[IO],
-      uuidF: UUIDF
+  def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
+      implicit uuidF: UUIDF
   ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion)(_, _), next),
+      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion, clock)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
       onUniqueViolation = (id: ProjectRef, c: ProjectCommand) =>

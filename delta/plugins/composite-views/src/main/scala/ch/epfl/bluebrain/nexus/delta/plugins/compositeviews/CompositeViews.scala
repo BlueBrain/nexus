@@ -387,9 +387,9 @@ object CompositeViews {
   }
 
   private[compositeviews] def evaluate(
-      validate: ValidateCompositeView
+      validate: ValidateCompositeView,
+      clock: Clock[IO]
   )(state: Option[CompositeViewState], cmd: CompositeViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[CompositeViewEvent] = {
 
@@ -453,13 +453,12 @@ object CompositeViews {
     }
   }
 
-  def definition(validate: ValidateCompositeView)(implicit
-      clock: Clock[IO],
+  def definition(validate: ValidateCompositeView, clock: Clock[IO])(implicit
       uuidF: UUIDF
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _), next),
+      StateMachine(None, evaluate(validate, clock)(_, _), next),
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
       Tagger[CompositeViewEvent](
@@ -491,10 +490,10 @@ object CompositeViews {
       contextResolution: ResolverContextResolution,
       validate: ValidateCompositeView,
       config: CompositeViewsConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO
@@ -504,7 +503,7 @@ object CompositeViews {
       .map { sourceDecoder =>
         new CompositeViews(
           ScopedEventLog(
-            definition(validate),
+            definition(validate, clock),
             config.eventLog,
             xas
           ),

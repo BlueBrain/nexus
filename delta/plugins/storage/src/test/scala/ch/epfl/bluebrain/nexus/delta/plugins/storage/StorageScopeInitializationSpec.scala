@@ -53,7 +53,8 @@ class StorageScopeInitializationSpec
       (_, _) => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, config),
-      serviceAccount
+      serviceAccount,
+      clock
     ).accepted
 
     val defaults  = Defaults("defaultName", "defaultDescription")

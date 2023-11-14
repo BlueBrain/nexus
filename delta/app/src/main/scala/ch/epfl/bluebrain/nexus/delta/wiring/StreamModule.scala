@@ -40,12 +40,12 @@ object StreamModule extends ModuleDef {
     registry
   }
 
-  make[Projections].from { (xas: Transactors, cfg: ProjectionConfig) =>
-    Projections(xas, cfg.query, cfg.restartTtl)
+  make[Projections].from { (xas: Transactors, cfg: ProjectionConfig, clock: Clock[IO]) =>
+    Projections(xas, cfg.query, cfg.restartTtl, clock)
   }
 
   make[ProjectionErrors].from { (xas: Transactors, clock: Clock[IO], cfg: ProjectionConfig) =>
-    ProjectionErrors(xas, cfg.query)(clock)
+    ProjectionErrors(xas, cfg.query, clock)
   }
 
   make[Supervisor].fromResource {
@@ -59,10 +59,11 @@ object StreamModule extends ModuleDef {
 
   make[DeleteExpired].fromEffect {
     (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]) =>
-      DeleteExpired(supervisor, config, xas)(clock)
+      DeleteExpired(supervisor, config, xas, clock)
   }
 
-  make[PurgeElemFailures].fromEffect { (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors) =>
-    PurgeElemFailures(supervisor, config, xas)
+  make[PurgeElemFailures].fromEffect {
+    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]) =>
+      PurgeElemFailures(supervisor, config, xas, clock)
   }
 }

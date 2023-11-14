@@ -92,11 +92,12 @@ object CompositeProjections {
       xas: Transactors,
       query: QueryConfig,
       batch: BatchConfig,
-      restartCheckInterval: FiniteDuration
-  )(implicit clock: Clock[IO]): CompositeProjections =
+      restartCheckInterval: FiniteDuration,
+      clock: Clock[IO]
+  ): CompositeProjections =
     new CompositeProjections {
-      private val failedElemLogStore     = FailedElemLogStore(xas, query)
-      private val compositeProgressStore = new CompositeProgressStore(xas)
+      private val failedElemLogStore     = FailedElemLogStore(xas, query, clock)
+      private val compositeProgressStore = new CompositeProgressStore(xas, clock)
 
       override def progress(view: IndexingViewRef): IO[CompositeProgress] =
         compositeProgressStore.progress(view).map(CompositeProgress(_))

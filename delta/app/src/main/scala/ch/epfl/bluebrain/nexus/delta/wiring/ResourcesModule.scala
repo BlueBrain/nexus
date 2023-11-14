@@ -59,10 +59,10 @@ object ResourcesModule extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config,
-        xas
+        xas,
+        clock
       )(
         api,
-        clock,
         uuidF
       )
   }

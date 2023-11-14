@@ -58,11 +58,10 @@ object ArchivePluginModule extends ModuleDef {
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[IO]
     ) =>
-      Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas)(
+      Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas, clock)(
         api,
         uuidF,
-        rcr,
-        clock
+        rcr
       )
   }
 

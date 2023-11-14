@@ -90,7 +90,8 @@ class ResourcesImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
     fetchContext,
     resolverContextResolution,
     config,
-    xas
+    xas,
+    clock
   )
 
   private val simpleSourcePaylod = (id: IdSegment) => json"""{ "@id": "$id", "some": "content" }"""

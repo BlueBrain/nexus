@@ -40,6 +40,6 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
         projectStatistics: ProjectsStatistics,
         supervisor: Supervisor,
         clock: Clock[IO]
-    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)(clock)
+    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor, clock)
   }
 }

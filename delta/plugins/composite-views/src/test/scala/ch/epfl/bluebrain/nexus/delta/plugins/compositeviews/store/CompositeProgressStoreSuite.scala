@@ -21,7 +21,7 @@ class CompositeProgressStoreSuite extends CatsEffectSuite with Doobie.Fixture wi
 
   private lazy val xas = doobie()
 
-  private lazy val store = new CompositeProgressStore(xas)
+  private lazy val store = new CompositeProgressStore(xas, clock)
 
   private val project     = ProjectRef.unsafe("org", "proj")
   private val viewRef     = ViewRef(project, nxv + "id")

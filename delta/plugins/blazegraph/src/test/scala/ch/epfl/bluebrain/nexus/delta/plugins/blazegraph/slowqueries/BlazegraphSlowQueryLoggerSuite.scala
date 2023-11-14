@@ -39,7 +39,8 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
     val store  = blazegraphSlowQueryStore()
     val logger = BlazegraphSlowQueryLogger(
       store,
-      LongQueryThreshold
+      LongQueryThreshold,
+      clock
     )
     (logger, store.listForTestingOnly(view))
   }
@@ -123,7 +124,8 @@ class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture
   test("continue when saving slow query log fails") {
     val logSlowQueries = BlazegraphSlowQueryLogger(
       StoreWhichFails,
-      LongQueryThreshold
+      LongQueryThreshold,
+      clock
     )
 
     logSlowQueries(

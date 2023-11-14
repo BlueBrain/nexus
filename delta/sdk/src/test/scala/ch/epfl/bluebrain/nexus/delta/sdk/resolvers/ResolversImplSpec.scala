@@ -79,7 +79,8 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
     fetchContext,
     resolverContextResolution,
     ResolversConfig(eventLogConfig, defaults),
-    xas
+    xas,
+    clock
   )
 
   "The Resolvers module" when {

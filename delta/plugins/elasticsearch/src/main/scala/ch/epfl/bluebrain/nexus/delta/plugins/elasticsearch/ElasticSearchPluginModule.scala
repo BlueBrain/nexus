@@ -109,8 +109,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         xas,
         files.defaultMapping,
-        files.defaultSettings
-      )(api, clock, uuidF)
+        files.defaultSettings,
+        clock
+      )(api, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {

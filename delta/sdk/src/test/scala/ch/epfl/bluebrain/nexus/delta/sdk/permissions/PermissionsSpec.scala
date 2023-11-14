@@ -24,7 +24,7 @@ class PermissionsSpec extends CatsEffectSpec {
 
     val initial = PermissionsState.initial(minimum)
     val next    = Permissions.next(minimum) _
-    val eval    = Permissions.evaluate(minimum) _
+    val eval    = Permissions.evaluate(minimum, clock) _
 
     "compute the next state" when {
       "state is Initial and event is PermissionsAppended" in {

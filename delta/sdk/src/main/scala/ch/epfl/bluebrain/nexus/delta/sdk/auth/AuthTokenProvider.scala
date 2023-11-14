@@ -16,9 +16,9 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(authService: OpenIdAuthService)(implicit clock: Clock[IO]): IO[AuthTokenProvider] = {
+  def apply(authService: OpenIdAuthService, clock: Clock[IO]): IO[AuthTokenProvider] = {
     LocalCache[ClientCredentials, ParsedToken]()
-      .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache))
+      .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache, clock))
   }
   def anonymousForTest: AuthTokenProvider            = new AnonymousAuthTokenProvider
   def fixedForTest(token: String): AuthTokenProvider = new AuthTokenProvider {
@@ -36,8 +36,7 @@ private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   */
 private class CachingOpenIdAuthTokenProvider(
     service: OpenIdAuthService,
-    cache: LocalCache[ClientCredentials, ParsedToken]
-)(implicit
+    cache: LocalCache[ClientCredentials, ParsedToken],
     clock: Clock[IO]
 ) extends AuthTokenProvider {
 

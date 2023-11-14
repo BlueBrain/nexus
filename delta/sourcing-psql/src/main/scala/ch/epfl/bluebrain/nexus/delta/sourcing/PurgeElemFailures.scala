@@ -11,7 +11,7 @@ import fs2.Stream
 
 import scala.concurrent.duration._
 
-final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration)(implicit clock: Clock[IO]) {
+final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration, clock: Clock[IO]) {
 
   /**
     * Deletes the projection errors that are older than the given `ttl`.
@@ -35,8 +35,13 @@ object PurgeElemFailures {
   /**
     * Creates a [[PurgeElemFailures]] instance and schedules in the supervisor the deletion of old projection errors.
     */
-  def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors): IO[PurgeElemFailures] = {
-    val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl)
+  def apply(
+      supervisor: Supervisor,
+      config: ProjectionConfig,
+      xas: Transactors,
+      clock: Clock[IO]
+  ): IO[PurgeElemFailures] = {
+    val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl, clock)
 
     val stream = Stream
       .awakeEvery[IO](config.deleteExpiredEvery)

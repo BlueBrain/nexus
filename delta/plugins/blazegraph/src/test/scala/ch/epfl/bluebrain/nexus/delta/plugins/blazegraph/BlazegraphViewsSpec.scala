@@ -91,7 +91,8 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
       _ => IO.unit,
       eventLogConfig,
       prefix,
-      xas
+      xas,
+      clock
     ).accepted
 
     "creating a view" should {

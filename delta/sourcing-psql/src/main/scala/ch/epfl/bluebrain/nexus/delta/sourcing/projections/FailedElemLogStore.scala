@@ -116,7 +116,7 @@ object FailedElemLogStore {
 
   private val logger = Logger[ProjectionStore]
 
-  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): FailedElemLogStore =
+  def apply(xas: Transactors, config: QueryConfig, clock: Clock[IO]): FailedElemLogStore =
     new FailedElemLogStore {
 
       implicit val timeRangeFragmentEncoder: FragmentEncoder[TimeRange] = createTimeRangeFragmentEncoder("instant")

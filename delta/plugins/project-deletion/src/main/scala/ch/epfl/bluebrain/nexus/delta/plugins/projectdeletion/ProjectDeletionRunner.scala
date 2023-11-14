@@ -48,9 +48,9 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
       .void
   }
 
-  def projectDeletionPass(implicit clock: Clock[IO]): IO[Unit] = {
+  def projectDeletionPass(clock: Clock[IO]): IO[Unit] = {
 
-    val shouldDeleteProject = ShouldDeleteProject(config, lastEventTime)
+    val shouldDeleteProject = ShouldDeleteProject(config, lastEventTime, clock)
 
     def possiblyDelete(project: ProjectResource): IO[Unit] = {
       shouldDeleteProject(project).flatMap {
@@ -76,14 +76,15 @@ object ProjectDeletionRunner {
       projects: Projects,
       config: ProjectDeletionConfig,
       projectStatistics: ProjectsStatistics,
-      supervisor: Supervisor
-  )(implicit clock: Clock[IO]): IO[ProjectDeletionRunner] = {
+      supervisor: Supervisor,
+      clock: Clock[IO]
+  ): IO[ProjectDeletionRunner] = {
 
     val runner = new ProjectDeletionRunner(projects, config, projectStatistics)
 
     val continuousStream = Stream
       .fixedRate[IO](config.idleCheckPeriod)
-      .evalMap(_ => runner.projectDeletionPass)
+      .evalMap(_ => runner.projectDeletionPass(clock))
       .drain
 
     val compiledProjection =

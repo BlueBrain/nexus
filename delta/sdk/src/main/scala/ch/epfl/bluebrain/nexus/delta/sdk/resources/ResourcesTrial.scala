@@ -74,8 +74,9 @@ object ResourcesTrial {
       fetchResource: (IdSegmentRef, ProjectRef) => IO[DataResource],
       validateResource: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
-      contextResolution: ResolverContextResolution
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
+      contextResolution: ResolverContextResolution,
+      clock: Clock[IO]
+  )(implicit api: JsonLdApi, uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
     private val sourceParser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
 
