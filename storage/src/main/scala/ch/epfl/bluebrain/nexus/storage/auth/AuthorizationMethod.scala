@@ -56,7 +56,7 @@ object AuthorizationMethod {
   @nowarn("cat=unused")
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
     implicit val jsonObjectReader: ConfigReader[util.Map[String, AnyRef]] =
-      ConfigReader.configObjectConfigReader.map(co => co.unwrapped())
+      ConfigReader.configObjectConfigReader.map(configObj => configObj.unwrapped())
     implicit val jwkSetReader: ConfigReader[JWKSet]                       = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].map {
       jwkKeys => new JWKSet(jwkKeys.map(key => JWK.parse(key)).toList.asJava)
     }
