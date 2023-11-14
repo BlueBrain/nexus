@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
+import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
 import munit.{Assertions, Location}
@@ -105,7 +105,7 @@ class ShouldDeleteProjectSuite extends CatsEffectSuite {
   }
 }
 
-object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with CatsEffectAssertions {
+object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with CatsEffectAssertions with Generators {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -185,8 +185,6 @@ object ShouldDeleteProjectSuite extends Assertions with CatsRunContext with Cats
 
   val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
   val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
-
-  implicit val realClock: Clock[IO] = Clock.create
 
   def shouldBeDeleted(
       config: ProjectDeletionConfig,

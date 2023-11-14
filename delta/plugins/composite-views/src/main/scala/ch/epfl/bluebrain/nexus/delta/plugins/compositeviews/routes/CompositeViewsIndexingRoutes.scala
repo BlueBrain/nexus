@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
+
 class CompositeViewsIndexingRoutes(
     identities: Identities,
     aclCheck: AclCheck,
@@ -42,9 +43,9 @@ class CompositeViewsIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    c: ContextShift[IO],
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    runtime: IORuntime
 ) extends AuthDirectives(identities, aclCheck)
     with DeltaDirectives
     with CirceUnmarshalling
@@ -280,9 +281,9 @@ object CompositeViewsIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      c: ContextShift[IO],
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      runtime: IORuntime
   ): Route =
     new CompositeViewsIndexingRoutes(
       identities,

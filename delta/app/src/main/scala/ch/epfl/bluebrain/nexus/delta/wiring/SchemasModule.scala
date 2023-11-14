@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -34,7 +35,6 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   * Schemas wiring
   */
 object SchemasModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ValidateSchema].fromEffect { (api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
     ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
@@ -51,8 +51,6 @@ object SchemasModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
@@ -62,7 +60,7 @@ object SchemasModule extends ModuleDef {
         validate,
         config.schemas,
         xas
-      )(api, clock, contextShift, timer, uuidF)
+      )(api, clock, uuidF)
   }
 
   make[SchemaImports].from {
@@ -70,10 +68,9 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         resources: Resources,
-        schemas: Schemas,
-        contextShift: ContextShift[IO]
+        schemas: Schemas
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)(contextShift)
+      SchemaImports(aclCheck, resolvers, schemas, resources)
   }
 
   make[SchemasRoutes].from {
@@ -87,12 +84,14 @@ object SchemasModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
         cr,
         ordering,
+        runtime,
         fusionConfig
       )
   }

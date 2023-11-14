@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -38,7 +39,7 @@ object ResponseToJsonLd extends FileBytesInstances {
 
   def apply[E](
       io: IO[RejOrFailOrComplete[E]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     new ResponseToJsonLd {
 
       // Some resources may not have been created in the system with a strict configuration
@@ -84,7 +85,7 @@ object ResponseToJsonLd extends FileBytesInstances {
 
   def apply[E: JsonLdEncoder, A: JsonLdEncoder](
       io: IO[Either[Response[E], Complete[A]]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     apply(io.map[RejOrFailOrComplete[E]] {
       case Right(c: Complete[A]) => Right(c.map(JsonLdValue(_)))
       case Left(c: Complete[E])  => Left(Right(c.map(JsonLdValue(_))))
@@ -93,7 +94,7 @@ object ResponseToJsonLd extends FileBytesInstances {
 
   def fromFile[E: JsonLdEncoder](
       io: IO[Either[Response[E], FileResponse]]
-  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, runtime: IORuntime): ResponseToJsonLd =
     new ResponseToJsonLd {
 
       // From the RFC 2047: "=?" charset "?" encoding "?" encoded-text "?="
@@ -135,17 +136,17 @@ object ResponseToJsonLd extends FileBytesInstances {
 sealed trait FileBytesInstances extends ValueInstances {
   implicit def ioFileBytesWithReject[E: JsonLdEncoder](
       io: IO[Either[Response[E], FileResponse]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd.fromFile(io)
 
   implicit def ioFileBytes[E: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, FileResponse]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd.fromFile(io.map(_.leftMap(Complete(_))))
 
   implicit def fileBytesValue(
       value: FileResponse
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd.fromFile(IO.pure(Right(value)))
 
 }
@@ -154,33 +155,33 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
 
   implicit def ioCompleteWithReject[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[Either[E, Complete[A]]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(io.map(_.leftMap(Complete(_))))
 
   implicit def ioValueWithReject[E: JsonLdEncoder](
       io: IO[Reject[E]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseLeft[E]](Left(_)))
 
   implicit def ioValue[A: JsonLdEncoder](
       io: IO[A]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
 
   implicit def ioEitherValueOrReject[E: JsonLdEncoder, A: JsonLdEncoder](
       io: IO[Either[Response[E], A]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd = {
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd = {
     ResponseToJsonLd(io.map(_.map(Complete(OK, Seq.empty, _))))
   }
 
   implicit def ioValueOrError[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[Either[E, A]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(io.map(_.leftMap(Complete(_)).map(Complete(OK, Seq.empty, _))))
 
   implicit def ioJsonLdValue[E: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, JsonLdValue]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(io.map[RejOrFailOrComplete[E]] {
       case Left(e)      => Left(Right(Complete(e).map[JsonLdValue](JsonLdValue(_))))
       case Right(value) => Right(Complete(OK, Seq.empty, value))
@@ -188,23 +189,23 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
 
   implicit def rejectValue[E: JsonLdEncoder](
       value: Reject[E]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(IO.pure[UseLeft[E]](Left(value)))
 
   implicit def completeValue[A: JsonLdEncoder](
       value: Complete[A]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(IO.pure[UseRight[A]](Right(value)))
 
   implicit def valueWithHttpResponseFields[A: JsonLdEncoder: HttpResponseFields](
       value: A
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(value))))
 }
 
 sealed trait LowPriorityValueInstances {
   implicit def valueWithoutHttpResponseFields[A: JsonLdEncoder](
       value: A
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToJsonLd =
     ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, value))))
 }

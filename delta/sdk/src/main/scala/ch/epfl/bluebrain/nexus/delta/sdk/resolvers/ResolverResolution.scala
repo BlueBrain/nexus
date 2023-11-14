@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck

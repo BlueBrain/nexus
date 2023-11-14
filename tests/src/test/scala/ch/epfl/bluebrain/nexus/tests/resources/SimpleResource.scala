@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.resources
 
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.{HandleBarsFixture, SelfFixture}
@@ -14,8 +15,8 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
 
   def fetchResponse(user: Authenticated, project: String, resourceId: String, rev: Int, priority: Int)(implicit
       config: TestsConfig
-  ): Json =
-    jsonContentOf(
+  ): IO[Json] =
+    ioJsonContentOf(
       "/kg/resources/simple-resource-response.json",
       replacements(
         user,
@@ -29,8 +30,8 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
 
   def annotatedResource(user: Authenticated, project: String, resourceId: String, rev: Int, priority: Int)(implicit
       config: TestsConfig
-  ): Json =
-    jsonContentOf(
+  ): IO[Json] =
+    ioJsonContentOf(
       "/kg/resources/simple-resource-with-metadata.json",
       replacements(
         user,
@@ -42,21 +43,21 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
       ): _*
     )
 
-  def sourcePayload(id: String, priority: Int): Json =
-    jsonContentOf(
+  def sourcePayload(id: String, priority: Int): IO[Json] =
+    ioJsonContentOf(
       "/kg/resources/simple-resource.json",
       "resourceId" -> id,
       "priority"   -> priority.toString
     )
 
-  def sourcePayload(priority: Int): Json =
-    jsonContentOf(
+  def sourcePayload(priority: Int): IO[Json] =
+    ioJsonContentOf(
       "/kg/resources/simple-resource.json",
       "priority" -> priority.toString
     )
 
-  def sourcePayloadWithType(resourceType: String, priority: Int): Json =
-    jsonContentOf(
+  def sourcePayloadWithType(resourceType: String, priority: Int): IO[Json] =
+    ioJsonContentOf(
       "/kg/resources/simple-resource.json",
       "priority"     -> priority.toString,
       "resourceType" -> resourceType

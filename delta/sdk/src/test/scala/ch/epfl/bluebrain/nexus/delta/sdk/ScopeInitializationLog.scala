@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import cats.effect.Ref
 
 /**
   * Simple implementation that records created orgs and projects

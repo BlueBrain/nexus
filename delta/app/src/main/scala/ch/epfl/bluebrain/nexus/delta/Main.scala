@@ -53,7 +53,7 @@ object Main extends IOApp {
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
-      (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
+      (plugins, locator)            <- WiringInitializer(modules, pluginDefs)(runtime)
       _                             <- bootstrap(locator, plugins)
     } yield locator
 

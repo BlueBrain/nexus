@@ -5,10 +5,12 @@ import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, PUT}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCode}
 import akka.stream.Materializer
-import cats.effect.{ContextShift, IO}
-import cats.syntax.all._
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.ExecutionContext
@@ -16,9 +18,9 @@ import scala.concurrent.ExecutionContext
 class ElasticsearchDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
-    contextShift: ContextShift[IO],
-    ec: ExecutionContext
-) extends TestHelpers
+    ec: ExecutionContext,
+    runtime: IORuntime
+) extends ClasspathResourceUtils
     with CirceLiteral
     with CirceUnmarshalling
     with Matchers {
@@ -30,24 +32,25 @@ class ElasticsearchDsl(implicit
   private val credentials   = BasicHttpCredentials("elastic", "password")
 
   def createTemplate(): IO[StatusCode] = {
-    val json = jsonContentOf("/elasticsearch/template.json")
-
-    logger.info("Creating template for Elasticsearch indices") >>
-      elasticClient(
-        HttpRequest(
-          method = PUT,
-          uri = s"$elasticUrl/_index_template/test_template",
-          entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
-        ).addCredentials(credentials)
-      ).map(_.status)
+    for {
+      json   <- ioJsonContentOf("/elasticsearch/template.json")
+      _      <- logger.info("Creating template for Elasticsearch indices")
+      result <- elasticClient(
+                  HttpRequest(
+                    method = PUT,
+                    uri = s"$elasticUrl/_index_template/test_template",
+                    entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
+                  ).addCredentials(credentials)
+                ).map(_.status)
+    } yield result
   }
 
-  def includes(indices: String*) =
+  def includes(indices: String*): IO[Assertion] =
     allIndices.map { all =>
       all should contain allElementsOf (indices)
     }
 
-  def excludes(indices: String*) =
+  def excludes(indices: String*): IO[Assertion] =
     allIndices.map { all =>
       all should not contain allElementsOf(indices)
     }

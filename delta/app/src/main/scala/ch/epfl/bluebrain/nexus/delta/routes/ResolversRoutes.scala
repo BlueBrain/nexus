@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolutionType.{AllResolversInProject, SingleResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -56,6 +56,7 @@ final class ResolversRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
+    runtime: IORuntime,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -247,6 +248,7 @@ object ResolversRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
+      runtime: IORuntime,
       fusionConfig: FusionConfig
   ): Route =
     new ResolversRoutes(identities, aclCheck, resolvers, multiResolution, schemeDirectives, index).routes

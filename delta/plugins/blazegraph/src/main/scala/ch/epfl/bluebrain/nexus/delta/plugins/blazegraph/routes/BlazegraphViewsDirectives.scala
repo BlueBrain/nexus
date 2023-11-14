@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.server.Directives.{extractRequest, provide}
 import akka.http.scaladsl.server.{Directive, Directive1, Route}
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryResponse, SparqlQueryResponseType}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -29,13 +30,15 @@ trait BlazegraphViewsDirectives {
     */
   private def emitUnacceptedMediaType(implicit
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      runtime: IORuntime
   ): Route =
     discardEntityAndForceEmit(unacceptedMediaTypeRejection(queryMediaTypes))
 
   def queryResponseType(implicit
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      runtime: IORuntime
   ): Directive1[SparqlQueryResponseType.Aux[SparqlQueryResponse]] =
     extractRequest.flatMap { req =>
       HeadersUtils.findFirst(req.headers, queryMediaTypes).flatMap(SparqlQueryResponseType.fromMediaType) match {

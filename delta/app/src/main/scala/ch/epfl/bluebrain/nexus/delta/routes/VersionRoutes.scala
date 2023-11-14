@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription, Name}
@@ -33,7 +33,8 @@ class VersionRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    runtime: IORuntime
 ) extends AuthDirectives(identities, aclCheck) {
 
   def routes: Route =
@@ -90,7 +91,8 @@ object VersionRoutes {
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      runtime: IORuntime
   ): VersionRoutes = {
     new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, dependencies, cfg.env)
   }

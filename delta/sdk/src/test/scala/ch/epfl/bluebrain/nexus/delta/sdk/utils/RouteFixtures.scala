@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 
 trait RouteFixtures {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
+  self: CatsRunContext =>
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 

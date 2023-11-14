@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
-import cats.effect.IO._
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -22,8 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 final class OrganizationsImpl private (
     log: OrganizationsLog,
     scopeInitializations: Set[ScopeInitialization]
-)(implicit contextShift: ContextShift[IO])
-    extends Organizations {
+) extends Organizations {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -93,9 +91,7 @@ object OrganizationsImpl {
       xas: Transactors
   )(implicit
       clock: Clock[IO],
-      uuidf: UUIDF,
-      contextShift: ContextShift[IO],
-      timer: Timer[IO]
+      uuidf: UUIDF
   ): Organizations =
     new OrganizationsImpl(
       GlobalEventLog(Organizations.definition, config.eventLog, xas),

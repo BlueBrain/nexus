@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -28,7 +28,8 @@ class SupervisionRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    runtime: IORuntime
 ) extends AuthDirectives(identities, aclCheck) {
 
   import baseUri.prefixSegment
@@ -66,7 +67,8 @@ object SupervisionRoutes {
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      runtime: IORuntime
   ): SupervisionRoutes =
     new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())
 

@@ -4,7 +4,8 @@ import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -64,9 +65,7 @@ final class Files(
     config: StorageTypeConfig
 )(implicit
     uuidF: UUIDF,
-    system: ClassicActorSystem,
-    timer: Timer[IO],
-    contextShift: ContextShift[IO]
+    system: ClassicActorSystem
 ) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -770,9 +769,8 @@ object Files {
   )(implicit
       clock: Clock[IO],
       uuidF: UUIDF,
-      timer: Timer[IO],
-      cs: ContextShift[IO],
-      as: ActorSystem[Nothing]
+      as: ActorSystem[Nothing],
+      runtime: IORuntime
   ): Files = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     new Files(

@@ -20,37 +20,32 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
-import DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.Inspectors
 
 import java.time.Instant
 
 class DeltaDirectivesSpec
     extends RouteHelpers
-    with Matchers
-    with OptionValues
+    with CatsEffectSpec
     with CirceMarshalling
     with CirceLiteral
-    with CatsIOValues
     with TestMatchers
-    with TestHelpers
     with Inspectors {
 
   implicit private val ordering: JsonKeyOrdering =
@@ -130,7 +125,7 @@ class DeltaDirectivesSpec
         pathPrefix("resources") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), runtime)
             },
             path("redirectFusionLatest") {
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
@@ -142,14 +137,14 @@ class DeltaDirectivesSpec
               emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
             },
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), runtime)
             }
           )
         },
         pathPrefix("projects") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false))
+              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false), runtime)
             },
             path("redirectFusion") {
               emitOrFusionRedirect(ref, emit(ioProject))

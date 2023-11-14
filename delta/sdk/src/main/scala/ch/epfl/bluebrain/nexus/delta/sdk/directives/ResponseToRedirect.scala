@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -19,7 +20,7 @@ sealed trait ResponseToRedirect {
 
 object ResponseToRedirect {
 
-  implicit def ioRedirect(io: IO[Uri]): ResponseToRedirect =
+  implicit def ioRedirect(io: IO[Uri])(implicit runtime: IORuntime): ResponseToRedirect =
     new ResponseToRedirect {
       override def apply(redirection: Redirection): Route =
         onSuccess(io.unsafeToFuture()) { uri =>
@@ -29,7 +30,7 @@ object ResponseToRedirect {
 
   implicit def ioRedirectWithError[E <: Throwable: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, Uri]]
-  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToRedirect =
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering, runtime: IORuntime): ResponseToRedirect =
     new ResponseToRedirect {
       override def apply(redirection: Redirection): Route =
         onSuccess(io.unsafeToFuture()) {

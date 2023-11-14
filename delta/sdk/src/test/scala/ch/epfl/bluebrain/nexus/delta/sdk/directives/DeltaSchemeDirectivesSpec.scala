@@ -12,21 +12,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 
 class DeltaSchemeDirectivesSpec
     extends RouteHelpers
-    with Matchers
+    with CatsEffectSpec
     with OptionValues
     with CirceLiteral
     with UriDirectives
     with TestMatchers
-    with TestHelpers
     with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost/base//", Label.unsafe("v1"))

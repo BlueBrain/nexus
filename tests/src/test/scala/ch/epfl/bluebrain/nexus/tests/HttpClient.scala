@@ -12,7 +12,8 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import io.circe.Json
@@ -30,12 +31,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     as: ActorSystem,
     materializer: Materializer,
-    contextShift: ContextShift[IO],
+    runtime: IORuntime,
     ec: ExecutionContext
 ) extends Matchers
     with AppendedClues {
 
-  private def fromFuture[A](future: => Future[A]) = IO.fromFuture { IO(future) }
+  private def fromFuture[A](future: => Future[A]) = IO.fromFuture { IO.delay(future) }
 
   def apply(req: HttpRequest): IO[HttpResponse] =
     fromFuture(httpExt.singleRequest(req))
@@ -55,10 +56,22 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
+  def post2[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (A, HttpResponse) => Assertion
+  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
+    body.flatMap(body => requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse))
+  }
+
   def put[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
+
+  def put2[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (A, HttpResponse) => Assertion
+  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
+    body.flatMap(body => requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse))
+  }
 
   def putAttachmentFromPath[A](
       url: String,
@@ -301,7 +314,7 @@ object HttpClient {
   def apply(baseUrl: Uri)(implicit
       as: ActorSystem,
       materializer: Materializer,
-      contextShift: ContextShift[IO],
+      runtime: IORuntime,
       ec: ExecutionContext
   ) = new HttpClient(baseUrl, Http())
 }

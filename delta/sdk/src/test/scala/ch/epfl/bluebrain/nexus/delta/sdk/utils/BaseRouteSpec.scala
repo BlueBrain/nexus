@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.utils
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFromMap}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.matchers.should.Matchers
@@ -15,6 +15,7 @@ trait BaseRouteSpec
     with CatsRunContext
     with Matchers
     with CatsIOValues
+    with IOFromMap
     with CirceLiteral
     with CirceEq
     with OptionValues

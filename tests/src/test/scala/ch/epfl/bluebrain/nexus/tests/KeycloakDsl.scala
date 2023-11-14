@@ -7,10 +7,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.Materializer
-import cats.syntax.all._
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.tests.Identity.{ClientCredentials, UserCredentials}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import io.circe.Json
@@ -22,9 +22,9 @@ class KeycloakDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
     um: FromEntityUnmarshaller[Json],
-    contextShift: ContextShift[IO],
-    executionContext: ExecutionContext
-) extends TestHelpers {
+    executionContext: ExecutionContext,
+    runtime: IORuntime
+) {
 
   private val logger = Logger[this.type]
 
@@ -47,16 +47,15 @@ class KeycloakDsl(implicit
       ).asJava
     }.asJava
 
-    val json = jsonContentOf(
-      "/iam/keycloak/import.json",
-      "realm"         -> realm.name,
-      "client"        -> clientCredentials.id,
-      "client_secret" -> clientCredentials.secret,
-      "users"         -> users
-    )
-
     for {
       _          <- logger.info(s"Creating realm $realm in Keycloak...")
+      json       <- ioJsonContentOf(
+                      "/iam/keycloak/import.json",
+                      "realm"         -> realm.name,
+                      "client"        -> clientCredentials.id,
+                      "client_secret" -> clientCredentials.secret,
+                      "users"         -> users
+                    )
       adminToken <- userToken(keycloakAdmin, adminClient)
       response   <- keycloakClient(
                       HttpRequest(

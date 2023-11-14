@@ -4,7 +4,8 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
 import cats.effect._
-import cats.implicits._
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect.unsafe.IORuntime
 import fs2._
 
 /**
@@ -14,9 +15,7 @@ import fs2._
   */
 object StreamConverter {
 
-  private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A])(implicit
-      contextShift: ContextShift[IO]
-  ): Stream[IO, Unit] = {
+  private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A]): Stream[IO, Unit] = {
     def publish(a: A): IO[Option[Unit]] = IO
       .fromFuture(IO.delay(publisher.offer(a)))
       .flatMap {
@@ -45,12 +44,12 @@ object StreamConverter {
       .evalMap(publish)
       .unNoneTerminate
       .onFinalizeCase {
-        case ExitCase.Completed | ExitCase.Canceled => complete
-        case ExitCase.Error(e)                      => fail(e)
+        case ExitCase.Succeeded | ExitCase.Canceled => complete
+        case ExitCase.Errored(e)                    => fail(e)
       }
   }
 
-  def apply[A](stream: Stream[IO, A])(implicit contextShift: ContextShift[IO]): Graph[SourceShape[A], NotUsed] = {
+  def apply[A](stream: Stream[IO, A])(implicit runtime: IORuntime): Graph[SourceShape[A], NotUsed] = {
     val source = AkkaSource.queue[A](0, OverflowStrategy.backpressure)
     // A sink that runs an FS2 publisherStream when consuming the publisher actor (= materialized value) of source
     val sink   = AkkaSink.foreach[SourceQueueWithComplete[A]] { p =>
@@ -70,7 +69,7 @@ object StreamConverter {
 
   def apply[A](
       source: Graph[SourceShape[A], NotUsed]
-  )(implicit materializer: Materializer, contextShift: ContextShift[IO]): Stream[IO, A] =
+  )(implicit materializer: Materializer): Stream[IO, A] =
     Stream.force {
       IO.delay {
         val subscriber = AkkaSource.fromGraph(source).toMat(AkkaSink.queue[A]())(Keep.right).run()
@@ -80,7 +79,7 @@ object StreamConverter {
 
   private def subscriberStream[A](
       subscriber: SinkQueueWithCancel[A]
-  )(implicit contextShift: ContextShift[IO]): Stream[IO, A] = {
+  ): Stream[IO, A] = {
     val pull   = IO.fromFuture(IO.delay(subscriber.pull()))
     val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)

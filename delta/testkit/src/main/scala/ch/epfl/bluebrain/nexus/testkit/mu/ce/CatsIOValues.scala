@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import munit.Assertions.fail
-import munit.{Location, Suite}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import munit.{Assertions, Location}
 
 import scala.concurrent.duration.DurationInt
 
 trait CatsIOValues {
 
-  self: Suite =>
+  self: Assertions with CatsRunContext =>
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted(implicit loc: Location): A =

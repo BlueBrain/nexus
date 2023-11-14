@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -39,13 +39,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
+import cats.effect.unsafe.IORuntime
 
 /**
   * ElasticSearch plugin wiring.
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
-
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
@@ -53,8 +52,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
-      HttpClient()(httpConfig, as.classicSystem, timer, cs)
+    (as: ActorSystem[Nothing]) => HttpClient()(httpConfig, as.classicSystem)
   }
 
   make[ElasticSearchClient].from {
@@ -62,15 +60,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cfg: ElasticSearchViewsConfig,
         client: HttpClient @Id("elasticsearch-client"),
         as: ActorSystem[Nothing],
-        timer: Timer[IO],
-        cs: ContextShift[IO],
         files: ElasticSearchFiles
     ) =>
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength, files.emptyResults)(
         cfg.credentials,
-        as.classicSystem,
-        timer,
-        cs
+        as.classicSystem
       )
   }
 
@@ -105,8 +99,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ElasticSearchViews(
@@ -118,7 +110,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas,
         files.defaultMapping,
         files.defaultSettings
-      )(api, clock, contextShift, timer, uuidF)
+      )(api, clock, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -129,9 +121,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate"),
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchCoordinator(
         views,
@@ -140,7 +130,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor,
         client,
         config
-      )(cr, timer, cs)
+      )(cr)
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -150,9 +140,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        files: ElasticSearchFiles,
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        files: ElasticSearchFiles
     ) =>
       EventMetricsProjection(
         metricEncoders,
@@ -164,7 +152,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         files.metricsMapping,
         files.metricsSettings
-      )(timer, cs)
+      )
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -206,6 +194,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new ElasticSearchViewsRoutes(
@@ -219,7 +208,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        fusionConfig
+        fusionConfig,
+        runtime
       )
   }
 
@@ -232,6 +222,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
         esConfig: ElasticSearchViewsConfig,
         fetchContext: FetchContext[ContextRejection]
@@ -248,6 +239,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         esConfig.pagination,
         cr,
         ordering,
+        runtime,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
       )
   }
@@ -261,7 +253,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        c: ContextShift[IO],
+        runtime: IORuntime,
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
         ordering: JsonKeyOrdering,
@@ -278,9 +270,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        c,
         cr,
-        ordering
+        ordering,
+        runtime
       )
   }
 
@@ -294,6 +286,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         idResolution: IdResolution,
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig,
         baseUri: BaseUri
@@ -302,6 +295,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         ordering,
         rcr,
+        runtime,
         fusionConfig
       )
   }
@@ -397,14 +391,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate"),
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)(
-        cr,
-        timer,
-        cs
+        cr
       )
   }
 

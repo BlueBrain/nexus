@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart, Uri}
-import cats.effect.IO
-import cats.effect.concurrent.Ref
-import cats.implicits.catsSyntaxApplicativeError
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
@@ -14,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.Suite
@@ -23,7 +22,7 @@ import java.util.{Base64, UUID}
 
 trait FileFixtures extends EitherValues with CatsIOValues {
 
-  self: Suite =>
+  self: Suite with CatsRunContext =>
 
   val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                    = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")

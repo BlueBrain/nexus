@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
@@ -49,8 +49,7 @@ object BlazegraphCoordinator {
       sink: ActiveViewDef => Sink,
       createNamespace: ActiveViewDef => IO[Unit],
       deleteNamespace: ActiveViewDef => IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO])
-      extends BlazegraphCoordinator {
+  ) extends BlazegraphCoordinator {
 
     def run(offset: Offset): Stream[IO, Elem[Unit]] = {
       fetchViews(offset).evalMap { elem =>
@@ -123,7 +122,7 @@ object BlazegraphCoordinator {
       supervisor: Supervisor,
       client: BlazegraphClient,
       config: BlazegraphViewsConfig
-  )(implicit baseUri: BaseUri, timer: Timer[IO], cs: ContextShift[IO]): IO[BlazegraphCoordinator] =
+  )(implicit baseUri: BaseUri): IO[BlazegraphCoordinator] =
     if (config.indexingEnabled) {
       apply(
         views.indexingViews,
@@ -153,7 +152,7 @@ object BlazegraphCoordinator {
       sink: ActiveViewDef => Sink,
       createIndex: ActiveViewDef => IO[Unit],
       deleteIndex: ActiveViewDef => IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[BlazegraphCoordinator] =
+  ): IO[BlazegraphCoordinator] =
     for {
       cache      <- LocalCache[ViewRef, ActiveViewDef]()
       coordinator = new Active(

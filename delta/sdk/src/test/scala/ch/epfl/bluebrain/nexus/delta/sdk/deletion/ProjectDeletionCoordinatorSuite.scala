@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -30,6 +29,7 @@ import munit.AnyFixture
 
 import java.time.Instant
 import java.util.UUID
+import cats.effect.Ref
 
 class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContext with ConfigFixtures {
 

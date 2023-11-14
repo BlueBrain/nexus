@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO, Timer}
-import cats.syntax.all._
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
@@ -47,22 +47,19 @@ import izumi.distage.model.definition.Id
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 
   make[DeltaClient].from {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        timer: Timer[IO],
-        cs: ContextShift[IO],
+        runtime: IORuntime,
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, timer, cs)
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as,
-        cs
+        runtime
       )
   }
 
@@ -71,8 +68,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
         as: ActorSystem[Nothing],
-        timer: Timer[IO],
-        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
       BlazegraphClient(
@@ -81,7 +76,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg.blazegraphAccess.credentials,
         cfg.blazegraphAccess.queryTimeout,
         properties.value
-      )(as.classicSystem, timer, cs)
+      )(as.classicSystem)
   }
 
   make[BlazegraphClient].named("blazegraph-composite-query-client").from {
@@ -89,8 +84,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg: CompositeViewsConfig,
         client: HttpClient @Id("http-query-client"),
         as: ActorSystem[Nothing],
-        timer: Timer[IO],
-        cs: ContextShift[IO],
         properties: DefaultProperties
     ) =>
       BlazegraphClient(
@@ -99,7 +92,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg.blazegraphAccess.credentials,
         cfg.blazegraphAccess.queryTimeout,
         properties.value
-      )(as.classicSystem, timer, cs)
+      )(as.classicSystem)
   }
 
   make[ValidateCompositeView].from {
@@ -133,9 +126,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         uuidF: UUIDF,
-        clock: Clock[IO],
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        clock: Clock[IO]
     ) =>
       CompositeViews(
         fetchContext.mapRejection(ProjectContextRejection),
@@ -146,8 +137,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )(
         api,
         clock,
-        timer,
-        cs,
         uuidF
       )
   }
@@ -158,9 +147,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         config: CompositeViewsConfig,
         projectionConfig: ProjectionConfig,
-        clock: Clock[IO],
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        clock: Clock[IO]
     ) =>
       val compositeRestartStore = new CompositeRestartStore(xas)
       val compositeProjections  =
@@ -170,10 +157,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           projectionConfig.query,
           projectionConfig.batch,
           config.restartCheckInterval
-        )(clock, timer, cs)
+        )(clock)
 
       CompositeRestartStore
-        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock, timer)
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
         .as(compositeProjections)
   }
 
@@ -215,11 +202,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         deltaClient: DeltaClient,
         config: CompositeViewsConfig,
-        metadataPredicates: MetadataPredicates,
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        metadataPredicates: MetadataPredicates
     ) =>
-      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)(timer, cs)
+      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)
   }
 
   make[CompositeGraphStream].from { (local: GraphResourceStream, remote: RemoteGraphStream) =>
@@ -235,9 +220,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         graphStream: CompositeGraphStream,
         spaces: CompositeSpaces,
         sinks: CompositeSinks,
-        compositeProjections: CompositeProjections,
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        compositeProjections: CompositeProjections
     ) =>
       CompositeProjectionLifeCycle(
         hooks,
@@ -246,7 +229,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         spaces,
         sinks,
         compositeProjections
-      )(timer, cs)
+      )
   }
 
   private def isCompositeMigrationRunning =
@@ -307,6 +290,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new CompositeViewsRoutes(
@@ -316,7 +300,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         blazegraphQuery,
         elasticSearchQuery,
         schemeDirectives
-      )(baseUri, cr, ordering, fusionConfig)
+      )(baseUri, cr, ordering, runtime, fusionConfig)
   }
 
   make[CompositeViewsIndexingRoutes].from {
@@ -330,9 +314,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         config: CompositeViewsConfig,
-        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        runtime: IORuntime
     ) =>
       new CompositeViewsIndexingRoutes(
         identities,
@@ -343,7 +327,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projections,
         projectionErrors,
         schemeDirectives
-      )(baseUri, config.pagination, c, cr, ordering)
+      )(baseUri, config.pagination, cr, ordering, runtime)
   }
 
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -178,9 +178,7 @@ object ResolversImpl {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
-      uuidF: UUIDF,
-      contextShift: ContextShift[IO],
-      timer: Timer[IO]
+      uuidF: UUIDF
   ): Resolvers = {
     def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[Unit] = {
       sql"SELECT id FROM scoped_states WHERE type = ${Resolvers.entityType} AND org = ${ref.organization} AND project = ${ref.project}  AND id != $self AND (value->'value'->'priority')::int = ${priority.value} "

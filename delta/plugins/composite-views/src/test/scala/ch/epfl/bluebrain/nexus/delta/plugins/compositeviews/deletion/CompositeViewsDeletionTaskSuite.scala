@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 
 import java.util.UUID
+import cats.effect.Ref
 
 class CompositeViewsDeletionTaskSuite extends CatsEffectSuite with CirceLiteral with CompositeViewsFixture {
 

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
@@ -183,14 +183,7 @@ object Archives {
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       xas: Transactors
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF,
-      rcr: RemoteContextResolution,
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): Archives = new Archives(
+  )(implicit api: JsonLdApi, uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[IO]): Archives = new Archives(
     EphemeralLog(
       definition,
       cfg.ephemeral,

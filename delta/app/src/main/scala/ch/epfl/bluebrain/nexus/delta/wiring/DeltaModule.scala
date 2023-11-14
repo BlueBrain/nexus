@@ -8,7 +8,8 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
-import cats.effect.{Clock, ContextShift, IO, Resource, Sync, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -46,7 +47,6 @@ import scala.concurrent.duration.DurationInt
   *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
-  addImplicit[Sync[IO]]
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
@@ -59,8 +59,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
 
-  make[Transactors].fromResource { (cs: ContextShift[IO]) =>
-    Transactors.init(appCfg.database)(classLoader, cs)
+  make[Transactors].fromResource { () =>
+    Transactors.init(appCfg.database)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
@@ -70,11 +70,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[AggregateIndexingAction].from {
     (
         internal: Set[IndexingAction],
-        timer: Timer[IO],
-        contextShift: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(timer, contextShift, cr)
+      AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(cr)
   }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
@@ -101,28 +99,26 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .merge(otherCtxResolutions.toSeq: _*)
   }
 
-  make[JsonLdApi].from { contextShift: ContextShift[IO] =>
-    new JsonLdJavaApi(appCfg.jsonLdApi)(contextShift)
+  make[JsonLdApi].from { () =>
+    new JsonLdJavaApi(appCfg.jsonLdApi)
   }
 
-  make[Clock[IO]].from(Clock.create[IO])
+  make[Clock[IO]].from(implicitly[Clock[IO]])
   make[UUIDF].from(UUIDF.random)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
   )
-  make[ActorSystem[Nothing]].fromResource { (timer: Timer[IO], contextShift: ContextShift[IO]) =>
-    implicit val t: Timer[IO]         = timer
-    implicit val cs: ContextShift[IO] = contextShift
-    val make                          = IO.delay(
+  make[ActorSystem[Nothing]].fromResource { () =>
+    val make    = IO.delay(
       ActorSystem[Nothing](
         Behaviors.empty,
         appCfg.description.fullName,
         BootstrapSetup().withConfig(config).withClassloader(classLoader)
       )
     )
-    val release                       = (as: ActorSystem[Nothing]) => {
+    val release = (as: ActorSystem[Nothing]) => {
       import akka.actor.typed.scaladsl.adapter._
       IO.fromFuture(IO(as.toClassic.terminate()).timeout(15.seconds)).void
     }
@@ -130,12 +126,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
-  make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-    RdfRejectionHandler(cr, ordering)
+  make[RejectionHandler].from {
+    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, runtime: IORuntime) =>
+      RdfRejectionHandler(cr, ordering, runtime)
   }
   make[ExceptionHandler].from {
-    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
-      RdfExceptionHandler(cr, ordering, base)
+    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri, runtime: IORuntime) =>
+      RdfExceptionHandler(cr, ordering, base, runtime)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings

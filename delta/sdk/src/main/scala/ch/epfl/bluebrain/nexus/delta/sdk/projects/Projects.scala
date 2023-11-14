@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, ContextShift, IO}
-import cats.implicits.{catsSyntaxFlatMapOps, catsSyntaxMonadError}
+import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -37,7 +37,7 @@ trait Projects {
   def create(
       ref: ProjectRef,
       fields: ProjectFields
-  )(implicit caller: Subject, contextShift: ContextShift[IO]): IO[ProjectResource]
+  )(implicit caller: Subject): IO[ProjectResource]
 
   /**
     * Update an existing project.

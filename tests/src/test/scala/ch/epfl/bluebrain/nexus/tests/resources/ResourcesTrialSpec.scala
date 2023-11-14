@@ -13,7 +13,7 @@ class ResourcesTrialSpec extends BaseIntegrationSpec {
   private val ref  = s"$org/$proj"
 
   private val schemaId      = "test-schema"
-  private val schemaPayload = SchemaPayload.loadSimple()
+  private val schemaPayload = SchemaPayload.loadSimple().accepted
 
   private val resourceId      = s"http://delta:8080/v1/resources/$ref/_/my-resource"
   private val resourcePayload = SimpleResource.sourcePayload(resourceId, 5)

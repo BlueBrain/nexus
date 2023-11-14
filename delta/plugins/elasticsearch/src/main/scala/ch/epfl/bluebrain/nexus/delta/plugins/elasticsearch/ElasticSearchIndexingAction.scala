@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -32,7 +32,7 @@ final class ElasticSearchIndexingAction(
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
     override val timeout: FiniteDuration
-)(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO])
+)(implicit cr: RemoteContextResolution)
     extends IndexingAction {
 
   private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): IO[Option[CompiledProjection]] = view match {
@@ -61,7 +61,7 @@ object ElasticSearchIndexingAction {
       client: ElasticSearchClient,
       timeout: FiniteDuration,
       syncIndexingRefresh: Refresh
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): ElasticSearchIndexingAction = {
+  )(implicit cr: RemoteContextResolution): ElasticSearchIndexingAction = {
     val batchConfig = BatchConfig.individual
     new ElasticSearchIndexingAction(
       views.currentIndexingViews,

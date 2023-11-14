@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, ExitCase, Fiber, IO, Timer}
-import cats.implicits.catsSyntaxFlatMapOps
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
@@ -29,7 +28,7 @@ final class Projection private[stream] (
     status: Ref[IO, ExecutionStatus],
     progress: Ref[IO, ProjectionProgress],
     signal: SignallingRef[IO, Boolean],
-    fiber: Ref[IO, Fiber[IO, Unit]]
+    fiber: Ref[IO, Fiber[IO, Throwable, Unit]]
 ) {
 
   /**
@@ -59,7 +58,7 @@ final class Projection private[stream] (
     * @return
     */
 
-  def waitForCompletion(timeout: FiniteDuration)(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[ExecutionStatus] =
+  def waitForCompletion(timeout: FiniteDuration): IO[ExecutionStatus] =
     iterateUntilCompletion
       .timeoutTo(timeout, logger.error(s"Timeout waiting for completion on projection $name") >> executionStatus)
 
@@ -72,10 +71,10 @@ final class Projection private[stream] (
     }
   }
 
-  private def iterateUntilCompletion(implicit cs: ContextShift[IO]): IO[ExecutionStatus] = {
+  private def iterateUntilCompletion: IO[ExecutionStatus] = {
     (for {
       status <- executionStatus
-      _      <- cs.shift
+      _      <- Spawn[IO].cede
     } yield status).flatMap { status =>
       if (statusMeansStopped(status)) {
         IO.pure(status)
@@ -106,7 +105,7 @@ object Projection {
       progress: ProjectionProgress,
       saveProgress: ProjectionProgress => IO[Unit],
       saveFailedElems: List[FailedElem] => IO[Unit]
-  )(implicit batch: BatchConfig, timer: Timer[IO], cs: ContextShift[IO]): ElemPipe[A, Unit] =
+  )(implicit batch: BatchConfig): ElemPipe[A, Unit] =
     _.mapAccumulate(progress) {
       case (acc, elem) if elem.offset.value > progress.offset.value => (acc + elem, elem)
       case (acc, elem)                                              => (acc, elem)
@@ -131,7 +130,7 @@ object Projection {
       fetchProgress: IO[Option[ProjectionProgress]],
       saveProgress: ProjectionProgress => IO[Unit],
       saveFailedElems: List[FailedElem] => IO[Unit]
-  )(implicit batch: BatchConfig, timer: Timer[IO], cs: ContextShift[IO]): IO[Projection] =
+  )(implicit batch: BatchConfig): IO[Projection] =
     for {
       status      <- Ref[IO].of[ExecutionStatus](ExecutionStatus.Pending)
       signal      <- SignallingRef[IO, Boolean](false)
@@ -141,9 +140,9 @@ object Projection {
                        .apply(progress.offset)(status)(signal)
                        .interruptWhen(signal)
                        .onFinalizeCaseWeak {
-                         case ExitCase.Error(th) => status.update(_.failed(th))
-                         case ExitCase.Completed => IO.unit // streams stopped through a signal still finish as Completed
-                         case ExitCase.Canceled  => IO.unit // the status is updated by the logic that cancels the stream
+                         case ExitCase.Errored(th) => status.update(_.failed(th))
+                         case ExitCase.Succeeded   => IO.unit // streams stopped through a signal still finish as Completed
+                         case ExitCase.Canceled    => IO.unit // the status is updated by the logic that cancels the stream
                        }
       persisted    =
         stream

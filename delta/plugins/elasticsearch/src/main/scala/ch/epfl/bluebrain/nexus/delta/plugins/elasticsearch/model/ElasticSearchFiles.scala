@@ -33,8 +33,6 @@ final case class MetricsSettings(value: JsonObject)
 
 object ElasticSearchFiles {
 
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-
   private def fetchFile(resourcePath: String) = ClasspathResourceUtils.ioJsonObjectContentOf(resourcePath)
 
   def mk(): IO[ElasticSearchFiles] =

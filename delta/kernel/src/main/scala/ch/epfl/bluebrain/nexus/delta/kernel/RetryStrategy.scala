@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
@@ -36,11 +36,11 @@ object RetryStrategy {
   /**
     * Apply the provided strategy on the given io
     */
-  def use[E: ClassTag, A](io: IO[A], retryStrategy: RetryStrategy[E])(implicit timer: Timer[IO]): IO[A] =
+  def use[E: ClassTag, A](io: IO[A], retryStrategy: RetryStrategy[E]): IO[A] =
     io.retryingOnSomeErrors(
       {
-        case error: E => retryStrategy.retryWhen(error)
-        case _        => false
+        case error: E => IO.pure(retryStrategy.retryWhen(error))
+        case _        => IO.pure(false)
       },
       retryStrategy.policy,
       (error, retryDetails) =>

@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -27,7 +27,7 @@ final class QuotasRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     quotas: Quotas
-)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
+)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime)
     extends AuthDirectives(identities, aclCheck)
     with RdfMarshalling {
 

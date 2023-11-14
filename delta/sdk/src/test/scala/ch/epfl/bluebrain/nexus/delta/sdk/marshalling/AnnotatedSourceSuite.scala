@@ -14,7 +14,6 @@ import java.time.Instant
 
 class AnnotatedSourceSuite extends CatsEffectSuite with CirceLiteral {
 
-  implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
       contexts.metadata -> ContextValue.fromFile("contexts/metadata.json")

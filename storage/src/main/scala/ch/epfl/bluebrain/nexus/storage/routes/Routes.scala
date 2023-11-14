@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.storage.StorageError._
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
@@ -24,7 +24,7 @@ object Routes {
     * @return
     *   an ExceptionHandler that ensures a descriptive message is returned to the caller
     */
-  final val exceptionHandler: ExceptionHandler = {
+  final def exceptionHandler(implicit runtime: IORuntime): ExceptionHandler = {
     def completeGeneric(): Route =
       complete(InternalError("The system experienced an unexpected error, please try again later."): StorageError)
 
@@ -68,7 +68,7 @@ object Routes {
     * @param route
     *   the route to wrap
     */
-  final def wrap(route: Route)(implicit hc: HttpConfig): Route =
+  final def wrap(route: Route)(implicit hc: HttpConfig, runtime: IORuntime): Route =
     handleExceptions(exceptionHandler) {
       handleRejections(rejectionHandler) {
         uriPrefix(hc.publicUri) {
@@ -84,8 +84,8 @@ object Routes {
     *   the storages operations
     */
   def apply(
-      storages: Storages[IO, AkkaSource]
-  )(implicit config: AppConfig, authorizationMethod: AuthorizationMethod): Route =
+      storages: Storages[AkkaSource]
+  )(implicit config: AppConfig, authorizationMethod: AuthorizationMethod, runtime: IORuntime): Route =
     //TODO: Fetch Bearer token and verify identity
     wrap {
       concat(

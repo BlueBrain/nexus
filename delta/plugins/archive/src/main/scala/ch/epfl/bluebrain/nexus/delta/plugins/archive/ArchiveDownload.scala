@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import cats.effect.{ContextShift, IO}
-import cats.syntax.all._
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
@@ -90,7 +91,7 @@ object ArchiveDownload {
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
       rcr: RemoteContextResolution,
-      contextShift: ContextShift[IO]
+      runtime: IORuntime
   ): ArchiveDownload =
     new ArchiveDownload {
 
@@ -216,7 +217,7 @@ object ArchiveDownload {
           val metadata = Zip.metadata(path)
           Option((metadata, IO.pure(Source.single(content))))
         }
-        if (ignoreNotFound) archiveEntry.recover { _: ResourceNotFound => None }
+        if (ignoreNotFound) archiveEntry.recover { case _: ResourceNotFound => None }
         else archiveEntry
       }
 
@@ -270,7 +271,7 @@ object ArchiveDownload {
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
       rcr: RemoteContextResolution,
-      contextShift: ContextShift[IO]
+      runtime: IORuntime
   ): ArchiveDownload =
     ArchiveDownload(
       aclCheck,

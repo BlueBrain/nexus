@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -75,7 +75,7 @@ object GlobalEventStore {
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): GlobalEventStore[Id, E] =
+  ): GlobalEventStore[Id, E] =
     new GlobalEventStore[Id, E] {
 
       import IriInstances._

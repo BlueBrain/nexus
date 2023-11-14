@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
@@ -319,8 +319,9 @@ final class Storages private (
     }
 
   private def logFailureAndContinue[A](io: IO[A]): IO[Unit] = {
-    io.onError { case err: StorageRejection =>
-      logger.warn(err.reason)
+    io.onError {
+      case err: StorageRejection => logger.warn(err.reason)
+      case _                     => IO.unit
     }.attemptNarrow[StorageRejection]
       .void
   }
@@ -531,8 +532,6 @@ object Storages {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr

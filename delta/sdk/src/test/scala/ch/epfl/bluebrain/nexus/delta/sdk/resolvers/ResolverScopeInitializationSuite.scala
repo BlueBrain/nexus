@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -12,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverValu
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import cats.effect.Ref
 
 class ResolverScopeInitializationSuite extends CatsEffectSuite {
 

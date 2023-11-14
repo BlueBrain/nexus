@@ -6,11 +6,12 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import DeltaDirectives.emit
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.ServerSentEventStream
@@ -24,11 +25,9 @@ sealed trait ResponseToSse {
 
 object ResponseToSse {
 
-  private def apply[E: JsonLdEncoder, A](io: IO[Either[Response[E], ServerSentEventStream]])(implicit
-      jo: JsonKeyOrdering,
-      cr: RemoteContextResolution,
-      contextShift: ContextShift[IO]
-  ): ResponseToSse =
+  private def apply[E: JsonLdEncoder, A](
+      io: IO[Either[Response[E], ServerSentEventStream]]
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, runtime: IORuntime): ResponseToSse =
     new ResponseToSse {
 
       override def apply(): Route =
@@ -47,11 +46,11 @@ object ResponseToSse {
 
   implicit def ioStream[E: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, ServerSentEventStream]]
-  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, contextShift: ContextShift[IO]): ResponseToSse =
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, runtime: IORuntime): ResponseToSse =
     ResponseToSse(io.map(_.left.map(Complete(_))))
 
   implicit def streamValue(
       value: ServerSentEventStream
-  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, contextShift: ContextShift[IO]): ResponseToSse =
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution, runtime: IORuntime): ResponseToSse =
     ResponseToSse(IO.pure(Right(value)))
 }

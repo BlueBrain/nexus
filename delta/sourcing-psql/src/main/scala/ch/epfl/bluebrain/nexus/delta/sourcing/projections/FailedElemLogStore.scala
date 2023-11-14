@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import cats.effect.{Clock, IO}
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange

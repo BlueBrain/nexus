@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
@@ -20,12 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
+import cats.effect.unsafe.IORuntime
 
 /**
   * Archive plugin wiring.
   */
 object ArchivePluginModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg) }
 
@@ -38,9 +38,9 @@ object ArchivePluginModule extends ModuleDef {
         sort: JsonKeyOrdering,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        contextShift: ContextShift[IO]
+        runtime: IORuntime
     ) =>
-      ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr, contextShift)
+      ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr, runtime)
   }
 
   make[FileSelf].from { (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
@@ -56,17 +56,13 @@ object ArchivePluginModule extends ModuleDef {
         api: JsonLdApi,
         uuidF: UUIDF,
         rcr: RemoteContextResolution @Id("aggregate"),
-        clock: Clock[IO],
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        clock: Clock[IO]
     ) =>
       Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas)(
         api,
         uuidF,
         rcr,
-        clock,
-        timer,
-        cs
+        clock
       )
   }
 
@@ -78,9 +74,10 @@ object ArchivePluginModule extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        jko: JsonKeyOrdering
+        jko: JsonKeyOrdering,
+        runtime: IORuntime
     ) =>
-      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko)
+      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko, runtime)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

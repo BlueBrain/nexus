@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -99,10 +99,7 @@ trait Projections {
 
 object Projections {
 
-  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO]
-  ): Projections =
+  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration): Projections =
     new Projections {
       private val projectionStore        = ProjectionStore(xas, config)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)

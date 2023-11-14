@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
@@ -53,6 +53,7 @@ final class ResourcesRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
+    runtime: IORuntime,
     fusionConfig: FusionConfig,
     decodingOption: DecodingOption
 ) extends AuthDirectives(identities, aclCheck)
@@ -324,6 +325,7 @@ object ResourcesRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
+      runtime: IORuntime,
       fusionConfig: FusionConfig,
       decodingOption: DecodingOption
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes

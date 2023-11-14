@@ -8,20 +8,20 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject, Printer}
 import org.scalactic.source.Position
-import org.scalatest.{Assertion, Suite}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Assertion, Suite}
 
 import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-trait RouteHelpers extends BaseSpec with ScalatestRouteTest with ScalaFutures {
+trait RouteHelpers extends CatsEffectSpec with ScalatestRouteTest with ScalaFutures {
   self: Suite =>
 
   implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)

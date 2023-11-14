@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.FullRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.{CompositeProgressStore, CompositeRestartStore}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
@@ -21,6 +20,7 @@ import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 

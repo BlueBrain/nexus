@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
-import cats.implicits._
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -88,7 +87,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      res                   <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, schema.some)
+      res                   <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, Some(schema))
                                else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
     } yield res
   }.span("updateResourceSchema")
@@ -224,8 +223,6 @@ object ResourcesImpl {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF = UUIDF.random
   ): Resources =
     new ResourcesImpl(

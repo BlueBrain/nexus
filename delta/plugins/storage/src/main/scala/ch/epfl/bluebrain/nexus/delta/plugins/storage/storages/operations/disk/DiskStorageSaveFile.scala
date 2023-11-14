@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.IOOperationIncompleteException
 import akka.stream.scaladsl.FileIO
-import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxMonadError
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
@@ -22,7 +22,7 @@ import java.nio.file._
 import java.util.UUID
 import scala.concurrent.Future
 
-final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, cs: ContextShift[IO]) extends SaveFile {
+final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extends SaveFile {
 
   import as.dispatcher
 

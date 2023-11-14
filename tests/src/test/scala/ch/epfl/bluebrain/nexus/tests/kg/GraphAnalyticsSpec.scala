@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
+import cats.implicits._
 
 final class GraphAnalyticsSpec extends BaseIntegrationSpec {
   private val org          = genId()
@@ -27,7 +28,7 @@ final class GraphAnalyticsSpec extends BaseIntegrationSpec {
       for {
         _ <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
         _ <- adminDsl.createOrganization(org, org, Bojack)
-        _ <- adminDsl.createProject(org, proj, kgDsl.projectJson(name = proj), Bojack)
+        _ <- adminDsl.createProjectWithName(org, proj, name = proj, Bojack)
       } yield succeed
     }
   }

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
@@ -25,19 +26,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
 
-class DefaultViewSearchSuite
-    extends CatsEffectSuite
-    with ElasticSearchClientSetup.Fixture
-    with TestHelpers
-    with CirceLiteral
-    with Fixtures {
+class DefaultViewSearchSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture with Fixtures {
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
   private lazy val client = esClient()
@@ -277,7 +272,7 @@ object DefaultViewSearchSuite {
 
     def id: Iri = nxv + suffix
 
-    def asResourceF(implicit rcr: RemoteContextResolution): DataResource = {
+    def asResourceF(implicit rcr: RemoteContextResolution, runtime: IORuntime): DataResource = {
       val resource = ResourceGen.resource(id, project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
@@ -290,7 +285,12 @@ object DefaultViewSearchSuite {
         )
     }
 
-    def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] = {
+    def asDocument(implicit
+        baseUri: BaseUri,
+        rcr: RemoteContextResolution,
+        jsonldApi: JsonLdApi,
+        runtime: IORuntime
+    ): IO[Json] = {
       val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
       asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata))
     }

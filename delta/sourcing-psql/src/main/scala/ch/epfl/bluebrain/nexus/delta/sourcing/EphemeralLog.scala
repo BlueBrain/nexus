@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -57,7 +57,7 @@ object EphemeralLog {
       definition: EphemeralDefinition[Id, S, Command, R],
       config: EphemeralLogConfig,
       xas: Transactors
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): EphemeralLog[Id, S, Command, R] = {
+  ): EphemeralLog[Id, S, Command, R] = {
     val stateStore = EphemeralStateStore(definition.tpe, definition.stateSerializer, config.ttl, xas)
     new EphemeralLog[Id, S, Command, R] {
 

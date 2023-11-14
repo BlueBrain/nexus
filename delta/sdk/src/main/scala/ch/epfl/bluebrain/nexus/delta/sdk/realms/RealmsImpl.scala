@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
@@ -90,9 +90,7 @@ object RealmsImpl {
     *   the doobie transactors
     */
   final def apply(config: RealmsConfig, resolveWellKnown: Uri => IO[WellKnown], xas: Transactors)(implicit
-      clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO]
+      clock: Clock[IO]
   ): Realms = new RealmsImpl(
     GlobalEventLog(Realms.definition(resolveWellKnown, OpenIdExists(xas)), config.eventLog, xas)
   )

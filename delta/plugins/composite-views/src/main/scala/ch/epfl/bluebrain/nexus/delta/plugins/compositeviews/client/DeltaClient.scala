@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
-import cats.effect.{ContextShift, IO}
-import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxFlatMapOps}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
@@ -85,7 +85,7 @@ object DeltaClient {
       retryDelay: FiniteDuration
   )(implicit
       as: ActorSystem[Nothing],
-      c: ContextShift[IO]
+      runtime: IORuntime
   ) extends DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics] = {
@@ -182,9 +182,6 @@ object DeltaClient {
       authTokenProvider: AuthTokenProvider,
       credentials: Credentials,
       retryDelay: FiniteDuration
-  )(implicit
-      as: ActorSystem[Nothing],
-      c: ContextShift[IO]
-  ): DeltaClient =
+  )(implicit as: ActorSystem[Nothing], runtime: IORuntime): DeltaClient =
     new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)
 }

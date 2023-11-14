@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -495,8 +495,6 @@ object CompositeViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO

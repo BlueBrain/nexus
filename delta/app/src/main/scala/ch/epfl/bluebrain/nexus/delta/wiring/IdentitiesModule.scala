@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -22,7 +23,6 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 // $COVERAGE-OFF$
 object IdentitiesModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
@@ -48,8 +48,9 @@ object IdentitiesModule extends ModuleDef {
         aclCheck: AclCheck,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
-    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering)
+        ordering: JsonKeyOrdering,
+        runtime: IORuntime
+    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering, runtime)
 
   }
 

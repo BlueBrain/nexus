@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import cats.effect.Ref
+import cats.effect.unsafe.IORuntime
 
 /**
   * In-memory implementation of an [[AclCheck]]
@@ -56,7 +57,7 @@ object AclSimpleCheck {
         }
     }
 
-  def unsafe(input: (Identity, AclAddress, Set[Permission])*) =
+  def unsafe(input: (Identity, AclAddress, Set[Permission])*)(implicit runtime: IORuntime) =
     apply(input: _*).unsafeRunSync()
 
 }

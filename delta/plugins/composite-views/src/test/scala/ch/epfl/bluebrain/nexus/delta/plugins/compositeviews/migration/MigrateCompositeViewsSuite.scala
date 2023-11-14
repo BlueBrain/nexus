@@ -24,7 +24,7 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with ClasspathResourceUtils {
+class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 
@@ -110,7 +110,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
     } yield (project, id, rev)
   }(new IllegalArgumentException("Could not extract project/id/rev from the json payload"))
 
-  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
+  def loadEvent(jsonPath: String)(implicit xas: Transactors) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_events (
@@ -139,7 +139,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
     } yield ()
   }
 
-  def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
+  def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_states (

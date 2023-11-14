@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -37,9 +37,7 @@ import scala.reflect.ClassTag
 class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int, esEmptyResults: EmptyResults)(
     implicit
     credentials: Option[BasicHttpCredentials],
-    as: ActorSystem,
-    timer: Timer[IO],
-    cs: ContextShift[IO]
+    as: ActorSystem
 ) {
   import as.dispatcher
   private val logger                                                = Logger[ElasticSearchClient]

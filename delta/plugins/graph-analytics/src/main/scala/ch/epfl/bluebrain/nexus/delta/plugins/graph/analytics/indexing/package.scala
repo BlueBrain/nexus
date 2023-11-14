@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
@@ -12,7 +12,6 @@ import org.typelevel.log4cats
 
 package object indexing {
 
-  implicit private val classLoader: ClassLoader    = getClass.getClassLoader
   implicit private val logger: log4cats.Logger[IO] = Logger[GraphAnalytics]
 
   val updateRelationshipsScriptId = "updateRelationships"

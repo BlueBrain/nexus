@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -24,16 +24,12 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 // $COVERAGE-OFF$
 object AclsModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Acls].from {
     (
         permissions: Permissions,
         config: AppConfig,
-        xas: Transactors,
-        clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO]
+        xas: Transactors
     ) =>
       acls.AclsImpl(
         permissions.fetchPermissionSet,
@@ -41,7 +37,7 @@ object AclsModule extends ModuleDef {
         permissions.minimum,
         config.acls,
         xas
-      )(clock, contextShift, timer)
+      )
   }
 
   make[AclCheck].from { (acls: Acls) => AclCheck(acls) }
@@ -53,9 +49,10 @@ object AclsModule extends ModuleDef {
         aclCheck: AclCheck,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        runtime: IORuntime
     ) =>
-      new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering)
+      new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering, runtime)
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }
@@ -76,9 +73,10 @@ object AclsModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         baseUri: BaseUri,
-        storagePermissionProvider: StoragePermissionProvider
+        storagePermissionProvider: StoragePermissionProvider,
+        runtime: IORuntime
     ) =>
-      new UserPermissionsRoutes(identities, aclCheck, storagePermissionProvider)(baseUri)
+      new UserPermissionsRoutes(identities, aclCheck, storagePermissionProvider)(baseUri, runtime)
   }
 
   many[PriorityRoute].add { (alcs: AclsRoutes, userPermissions: UserPermissionsRoutes) =>

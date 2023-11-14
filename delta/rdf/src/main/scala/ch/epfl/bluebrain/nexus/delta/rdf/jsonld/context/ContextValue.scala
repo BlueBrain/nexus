@@ -184,7 +184,7 @@ object ContextValue {
   /**
     * Loads a [[ContextValue]] form the passed ''resourcePath''
     */
-  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[ContextValue] =
+  final def fromFile(resourcePath: String): IO[ContextValue] =
     ClasspathResourceUtils.ioJsonContentOf(resourcePath).map(_.topContextValueOrEmpty)
 
   /**

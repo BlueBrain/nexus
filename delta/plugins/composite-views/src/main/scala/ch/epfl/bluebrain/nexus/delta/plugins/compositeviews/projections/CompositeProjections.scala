@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
@@ -94,7 +94,7 @@ object CompositeProjections {
       query: QueryConfig,
       batch: BatchConfig,
       restartCheckInterval: FiniteDuration
-  )(implicit clock: Clock[IO], timer: Timer[IO], cs: ContextShift[IO]): CompositeProjections =
+  )(implicit clock: Clock[IO]): CompositeProjections =
     new CompositeProjections {
       private val failedElemLogStore     = FailedElemLogStore(xas, query)
       private val compositeProgressStore = new CompositeProgressStore(xas)
@@ -112,7 +112,7 @@ object CompositeProjections {
             progress,
             compositeProgressStore.save(view.indexingRef, branch, _),
             failedElemLogStore.save(view.metadata, _)
-          )(batch, timer, cs)
+          )(batch)
         )
 
       override def deleteAll(view: IndexingViewRef): IO[Unit] = compositeProgressStore.deleteAll(view)

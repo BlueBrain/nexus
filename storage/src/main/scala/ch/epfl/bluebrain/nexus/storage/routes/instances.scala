@@ -5,6 +5,7 @@ import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.sortKeys
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.Rejection
@@ -48,7 +49,7 @@ object instances extends LowPriority {
     }
 
   implicit final class EitherFSyntax[A](f: IO[Either[Rejection, A]]) {
-    def runWithStatus(code: StatusCode): Future[Either[Rejection, (StatusCode, A)]] =
+    def runWithStatus(code: StatusCode)(implicit runtime: IORuntime): Future[Either[Rejection, (StatusCode, A)]] =
       f.map(_.map(code -> _)).unsafeToFuture()
   }
 

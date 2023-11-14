@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.{Clock, ContextShift, IO, Resource, Timer}
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionConfig, QueryConfig}
@@ -26,11 +26,6 @@ object SupervisorSetup {
 
   def resource(
       cluster: ClusterConfig
-  )(implicit
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
-      cl: ClassLoader
   ): Resource[IO, SupervisorSetup] = {
     val config: ProjectionConfig = ProjectionConfig(
       cluster,
@@ -47,19 +42,14 @@ object SupervisorSetup {
 
   def resource(
       config: ProjectionConfig
-  )(implicit clock: Clock[IO], timer: Timer[IO], cs: ContextShift[IO], cl: ClassLoader): Resource[IO, SupervisorSetup] =
+  ): Resource[IO, SupervisorSetup] =
     Doobie.resource().flatMap { xas =>
       val projections      = Projections(xas, config.query, config.restartTtl)
       val projectionErrors = ProjectionErrors(xas, config.query)
       Supervisor(projections, projectionErrors, config).map(s => SupervisorSetup(s, projections, projectionErrors))
     }
 
-  def suiteLocalFixture(name: String, cluster: ClusterConfig)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
-      cl: ClassLoader
-  ): IOFixture[SupervisorSetup] =
+  def suiteLocalFixture(name: String, cluster: ClusterConfig): IOFixture[SupervisorSetup] =
     ResourceFixture.suiteLocal(name, resource(cluster))
 
   trait Fixture { self: NexusSuite with CatsRunContext with FixedClock =>

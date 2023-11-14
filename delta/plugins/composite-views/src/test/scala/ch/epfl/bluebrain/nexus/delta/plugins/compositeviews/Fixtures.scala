@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 trait Fixtures {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 

@@ -20,27 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import io.circe.generic.extras.Configuration
 import io.circe.Codec
-import io.circe.syntax.EncoderOps
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
+import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 
-class ElasticSearchViewsDirectivesSpec
-    extends RouteHelpers
-    with CirceMarshalling
-    with Matchers
-    with OptionValues
-    with CirceLiteral
-    with ElasticSearchViewsDirectives
-    with TestMatchers
-    with TestHelpers
-    with Inspectors {
+class ElasticSearchViewsDirectivesSpec extends RouteHelpers with CirceMarshalling with ElasticSearchViewsDirectives {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
@@ -50,7 +37,6 @@ class ElasticSearchViewsDirectivesSpec
   implicit private val pc: ProjectContext = ProjectContext.unsafe(mappings, base, vocab)
 
   implicit val configuration: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
-  import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 
   implicit val timeRangeCodec: Codec[TimeRange] = deriveConfiguredCodec[TimeRange]
 

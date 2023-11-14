@@ -6,8 +6,9 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, MediaRange, MediaType}
 import akka.stream.Materializer
-import cats.effect.{ContextShift, IO}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.optics.JsonPath.root
 import org.scalatest.matchers.should.Matchers
 
@@ -16,10 +17,9 @@ import scala.concurrent.ExecutionContext
 class BlazegraphDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
-    contextShift: ContextShift[IO],
+    runtime: IORuntime,
     ec: ExecutionContext
-) extends TestHelpers
-    with CirceLiteral
+) extends CirceLiteral
     with CirceUnmarshalling
     with Matchers {
 

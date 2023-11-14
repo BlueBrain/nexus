@@ -24,13 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, TestHelpers}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral}
+import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
@@ -38,21 +33,13 @@ import java.util.UUID
 trait BlazegraphViewRoutesFixtures
     extends RouteHelpers
     with DoobieScalaTestFixture
-    with Matchers
-    with CatsIOValues
     with CirceLiteral
     with CirceEq
-    with FixedClock
-    with CatsRunContext
-    with OptionValues
-    with TestMatchers
     with Inspectors
     with CancelAfterFailure
     with ConfigFixtures
     with BeforeAndAfterAll
-    with TestHelpers
-    with Fixtures
-    with EitherValues {
+    with Fixtures {
 
   import akka.actor.typed.scaladsl.adapter._
 

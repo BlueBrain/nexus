@@ -10,12 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class RemoteGraphStreamSuite extends CatsEffectSuite with TestHelpers {
+class RemoteGraphStreamSuite extends CatsEffectSuite {
 
   private val metadataPredicates = MetadataPredicates(
     Set(

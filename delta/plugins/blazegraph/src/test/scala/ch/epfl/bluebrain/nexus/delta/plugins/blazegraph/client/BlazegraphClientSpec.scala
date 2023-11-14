@@ -45,7 +45,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties.accepted)
   private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {

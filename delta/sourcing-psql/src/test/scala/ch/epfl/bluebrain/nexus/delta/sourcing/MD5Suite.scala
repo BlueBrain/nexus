@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import cats.effect.Ref
+import cats.implicits._
 
 class MD5Suite extends CatsEffectSuite {
 

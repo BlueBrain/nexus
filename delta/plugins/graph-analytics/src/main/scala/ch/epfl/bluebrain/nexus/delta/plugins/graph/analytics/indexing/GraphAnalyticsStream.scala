@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.data.NonEmptyList
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
@@ -77,7 +77,7 @@ object GraphAnalyticsStream {
   }
 
   // $COVERAGE-OFF$
-  def apply(qc: QueryConfig, xas: Transactors)(implicit timer: Timer[IO]): GraphAnalyticsStream =
+  def apply(qc: QueryConfig, xas: Transactors): GraphAnalyticsStream =
     (project: ProjectRef, start: Offset) => {
 
       // This seems a reasonable value to batch relationship resolution for resources with a lot

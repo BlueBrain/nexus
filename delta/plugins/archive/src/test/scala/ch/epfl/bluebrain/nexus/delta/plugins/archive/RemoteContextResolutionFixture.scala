@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 
 trait RemoteContextResolutionFixture {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),

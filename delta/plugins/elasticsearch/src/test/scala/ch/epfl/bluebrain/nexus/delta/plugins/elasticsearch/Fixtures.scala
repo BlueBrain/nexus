@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 
 trait Fixtures extends CatsRunContext {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   private lazy val files: ElasticSearchFiles = ElasticSearchFiles.mk().unsafeRunSync()
 

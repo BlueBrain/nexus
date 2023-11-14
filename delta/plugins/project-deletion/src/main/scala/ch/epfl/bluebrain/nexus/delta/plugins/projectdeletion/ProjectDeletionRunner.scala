@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
@@ -76,7 +77,7 @@ object ProjectDeletionRunner {
       config: ProjectDeletionConfig,
       projectStatistics: ProjectsStatistics,
       supervisor: Supervisor
-  )(implicit clock: Clock[IO], timer: Timer[IO]): IO[ProjectDeletionRunner] = {
+  )(implicit clock: Clock[IO]): IO[ProjectDeletionRunner] = {
 
     val runner = new ProjectDeletionRunner(projects, config, projectStatistics)
 

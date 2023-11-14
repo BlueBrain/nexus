@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.implicits._
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -52,6 +52,7 @@ final class SchemasRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
+    runtime: IORuntime,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -191,6 +192,7 @@ object SchemasRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
+      runtime: IORuntime,
       fusionConfig: FusionConfig
   ): Route = new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, index).routes
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -33,9 +34,10 @@ object MultiFetchModule extends ModuleDef {
         multiFetch: MultiFetch,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        jko: JsonKeyOrdering
+        jko: JsonKeyOrdering,
+        runtime: IORuntime
     ) =>
-      new MultiFetchRoutes(identities, aclCheck, multiFetch)(baseUri, rcr, jko)
+      new MultiFetchRoutes(identities, aclCheck, multiFetch)(baseUri, rcr, jko, runtime)
   }
 
   many[PriorityRoute].add { (route: MultiFetchRoutes) =>

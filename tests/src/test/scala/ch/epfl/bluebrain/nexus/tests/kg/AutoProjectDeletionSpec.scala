@@ -35,7 +35,7 @@ class AutoProjectDeletionSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
       // First org and projects
       _ <- adminDsl.createOrganization(org, org, Bojack, ignoreConflict = true)
-      _ <- adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+      _ <- adminDsl.createProjectWithName(org, proj1, proj1, Bojack)
       _ <- deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.OK))
     } yield succeed
 

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -24,11 +24,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GraphAnalyticsSinkSuite
-    extends CatsEffectSuite
-    with ElasticSearchClientSetup.Fixture
-    with CirceLiteral
-    with TestHelpers {
+class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 50.millis)
 
@@ -119,7 +115,7 @@ class GraphAnalyticsSinkSuite
       active2            <- indexActive(resource2, expanded2)
       discarded           = success(resource3, GraphAnalyticsResult.Noop)
       deprecated          = indexDeprecated(deprecatedResource, deprecatedResourceTypes)
-      chunk               = Chunk.seq(List(active1, active2, discarded, deprecated))
+      chunk               = Chunk(active1, active2, discarded, deprecated)
       // We expect no error
       _                  <- sink(chunk).assertEquals(chunk.map(_.void))
       // 3 documents should have been indexed correctly:
@@ -138,19 +134,17 @@ class GraphAnalyticsSinkSuite
   }
 
   test("Push update by query result results") {
-    val chunk = Chunk.seq(
-      List(
-        success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
-        success(resource3, GraphAnalyticsResult.Noop),
-        FailedElem(
-          Resources.entityType,
-          resource3,
-          Some(project),
-          Instant.EPOCH,
-          Offset.start,
-          new IllegalStateException("BOOM"),
-          1
-        )
+    val chunk = Chunk(
+      success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
+      success(resource3, GraphAnalyticsResult.Noop),
+      FailedElem(
+        Resources.entityType,
+        resource3,
+        Some(project),
+        Instant.EPOCH,
+        Offset.start,
+        new IllegalStateException("BOOM"),
+        1
       )
     )
 

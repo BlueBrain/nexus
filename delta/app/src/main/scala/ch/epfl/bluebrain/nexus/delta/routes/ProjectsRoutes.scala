@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.data.OptionT
-import cats.effect.{ContextShift, IO}
+import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -55,7 +54,7 @@ final class ProjectsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig,
-    contextShift: ContextShift[IO]
+    runtime: IORuntime
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -202,8 +201,8 @@ object ProjectsRoutes {
       config: ProjectsConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      fusionConfig: FusionConfig,
-      contextShift: ContextShift[IO]
+      runtime: IORuntime,
+      fusionConfig: FusionConfig
   ): Route =
     new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives).routes
 

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 
 trait RemoteContextResolutionFixture {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 

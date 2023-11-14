@@ -7,8 +7,6 @@ import org.scalatest.BeforeAndAfterAll
 
 class AppConfigSpec extends CatsEffectSpec with BeforeAndAfterAll {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     clearProperties()

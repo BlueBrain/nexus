@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -37,8 +38,6 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 @SuppressWarnings(Array("UnsafeTraversableMethods"))
 object ProjectsModule extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
   final case class ApiMappingsCollection(value: Set[ApiMappings]) {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
   }
@@ -56,8 +55,6 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         baseUri: BaseUri,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       IO.pure(
@@ -72,7 +69,7 @@ object ProjectsModule extends ModuleDef {
           mappings.merge,
           config.projects,
           xas
-        )(baseUri, clock, contextShift, timer, uuidF)
+        )(baseUri, clock, uuidF)
       )
   }
 
@@ -85,10 +82,9 @@ object ProjectsModule extends ModuleDef {
         acls: Acls,
         projects: Projects,
         config: AppConfig,
-        serviceAccount: ServiceAccount,
-        contextShift: ContextShift[IO]
+        serviceAccount: ServiceAccount
     ) =>
-      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)(contextShift)
+      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
   make[FetchContext[ContextRejection]].fromEffect {
@@ -103,9 +99,7 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         serviceAccount: ServiceAccount,
         supervisor: Supervisor,
-        xas: Transactors,
-        clock: Clock[IO],
-        timer: Timer[IO]
+        xas: Transactors
     ) =>
       ProjectDeletionCoordinator(
         projects,
@@ -114,15 +108,16 @@ object ProjectsModule extends ModuleDef {
         serviceAccount,
         supervisor,
         xas
-      )(clock, timer)
+      )
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
     UUIDCache(config.projects.cache, config.organizations.cache, xas)
   }
 
-  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache) =>
-    DeltaSchemeDirectives(fetchContext, uuidCache)
+  make[DeltaSchemeDirectives].from {
+    (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache, runtime: IORuntime) =>
+      DeltaSchemeDirectives(fetchContext, uuidCache)(runtime)
   }
 
   make[ProjectsRoutes].from {
@@ -137,8 +132,8 @@ object ProjectsModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        fusionConfig: FusionConfig,
-        contextShift: ContextShift[IO]
+        runtime: IORuntime,
+        fusionConfig: FusionConfig
     ) =>
       new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
         baseUri,
@@ -146,7 +141,7 @@ object ProjectsModule extends ModuleDef {
         cr,
         ordering,
         fusionConfig,
-        contextShift
+        runtime
       )
   }
 

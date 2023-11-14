@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
@@ -46,8 +47,9 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         config: SearchConfig,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, cr, ordering)
+        ordering: JsonKeyOrdering,
+        runtime: IORuntime
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, cr, ordering, runtime)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>

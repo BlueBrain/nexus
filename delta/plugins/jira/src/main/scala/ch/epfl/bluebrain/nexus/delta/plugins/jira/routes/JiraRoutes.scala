@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.model.{JiraResponse, Verifier}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.{JiraClient, JiraError}
@@ -36,7 +36,7 @@ class JiraRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     jiraClient: JiraClient
-)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
+)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {

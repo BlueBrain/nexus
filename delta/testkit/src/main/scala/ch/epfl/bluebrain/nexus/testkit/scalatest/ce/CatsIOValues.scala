@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import org.scalactic.source
-import org.scalatest.{Assertion, Suite}
+import org.scalatest.{Assertion, Assertions}
 
 import scala.concurrent.duration.DurationInt
 import scala.reflect.ClassTag
 
 trait CatsIOValues {
 
-  self: Suite =>
+  self: Assertions with CatsRunContext =>
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted(implicit pos: source.Position): A = {

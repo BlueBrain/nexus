@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -17,7 +18,6 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 // $COVERAGE-OFF$
 object SupervisionModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[SupervisionRoutes].from {
     (
@@ -26,8 +26,9 @@ object SupervisionModule extends ModuleDef {
         supervisor: Supervisor,
         baseUri: BaseUri,
         rc: RemoteContextResolution @Id("aggregate"),
-        jo: JsonKeyOrdering
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo)
+        jo: JsonKeyOrdering,
+        runtime: IORuntime
+    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo, runtime)
   }
 
   many[RemoteContextResolution].addEffect(

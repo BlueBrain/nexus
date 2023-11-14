@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.Fragment
 import doobie.free.connection
+import cats.implicits._
 
 /**
   * Indicates the actions to take in order to initialize the partition of the scoped event/state tables. The main scoped

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
@@ -411,8 +411,6 @@ object ElasticSearchViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>

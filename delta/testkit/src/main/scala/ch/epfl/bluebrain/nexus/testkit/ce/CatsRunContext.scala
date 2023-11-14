@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.testkit.ce
 
-import cats.effect.{ContextShift, IO, Timer}
-
-import scala.concurrent.ExecutionContext
+import cats.effect.unsafe.IORuntime
 
 trait CatsRunContext {
 
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
+  implicit val runtime: IORuntime = IORuntime.global
 
 }

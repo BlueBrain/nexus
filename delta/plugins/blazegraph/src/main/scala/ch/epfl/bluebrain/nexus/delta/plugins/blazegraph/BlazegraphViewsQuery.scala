@@ -101,7 +101,6 @@ object BlazegraphViewsQuery {
       prefix: String,
       xas: Transactors
   ): IO[BlazegraphViewsQuery] = {
-    implicit val cl: ClassLoader = this.getClass.getClassLoader
     for {
       incomingQuery             <- ioContentOf("blazegraph/incoming.txt")
       outgoingWithExternalQuery <- ioContentOf("blazegraph/outgoing_include_external.txt")

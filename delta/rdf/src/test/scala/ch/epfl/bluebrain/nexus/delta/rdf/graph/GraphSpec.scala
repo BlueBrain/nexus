@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmp
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class GraphSpec extends CatsEffectSpec with GraphHelpers with CatsIOValues {
+class GraphSpec extends CatsEffectSpec with GraphHelpers {
 
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")

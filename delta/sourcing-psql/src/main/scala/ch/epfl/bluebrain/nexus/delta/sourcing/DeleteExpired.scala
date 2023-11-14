@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired.logger
@@ -36,8 +36,7 @@ object DeleteExpired {
     * Creates a [[DeleteExpired]] instance and schedules in the supervisor the deletion of expired ephemeral states
     */
   def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO]
+      clock: Clock[IO]
   ): IO[DeleteExpired] = {
     val deleteExpired = new DeleteExpired(xas)
 

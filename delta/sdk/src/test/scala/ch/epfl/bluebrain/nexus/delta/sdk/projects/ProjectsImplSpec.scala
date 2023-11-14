@@ -18,18 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
-class ProjectsImplSpec
-    extends CatsEffectSpec
-    with CatsRunContext
-    with DoobieScalaTestFixture
-    with CancelAfterFailure
-    with ConfigFixtures {
+class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -100,7 +94,7 @@ class ProjectsImplSpec
     )
 
     "create another project" in {
-      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous, contextShift).accepted
+      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous).accepted
 
       project shouldEqual anotherProjResource
 

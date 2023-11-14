@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import akka.http.scaladsl.server.Directives.{as, concat, entity, get, pathEndOrSingleSlash, pathPrefix, post}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -20,7 +20,7 @@ class SearchRoutes(
     aclCheck: AclCheck,
     search: Search,
     configFields: Json
-)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
+)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling

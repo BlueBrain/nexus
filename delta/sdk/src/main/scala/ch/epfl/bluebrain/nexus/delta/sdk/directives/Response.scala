@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode}
 import akka.http.scaladsl.server.{Rejection, Route}
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -42,7 +43,7 @@ object Response {
     /**
       * Generates a route that completes from the current rejection
       */
-    def forceComplete(implicit cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    def forceComplete(implicit cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime): Route =
       DeltaDirectives.discardEntityAndForceEmit(value)
 
     /**

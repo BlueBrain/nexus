@@ -5,8 +5,8 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
-import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxMonadError
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -19,8 +19,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.Future
 
-class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO])
-    extends LinkFile {
+class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem) extends LinkFile {
 
   import as.dispatcher
 

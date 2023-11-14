@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
@@ -32,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
@@ -43,8 +43,6 @@ class ElasticSearchViewsQuerySuite
     extends CatsEffectSuite
     with Doobie.Fixture
     with ElasticSearchClientSetup.Fixture
-    with CirceLiteral
-    with TestHelpers
     with Fixtures
     with ConfigFixtures {
 
@@ -400,7 +398,7 @@ object ElasticSearchViewsQuerySuite {
       updatedBy: Subject = Anonymous
   ) {
 
-    def asResourceF(view: ViewRef)(implicit rcr: RemoteContextResolution): DataResource = {
+    def asResourceF(view: ViewRef)(implicit rcr: RemoteContextResolution, runtime: IORuntime): DataResource = {
       val resource = ResourceGen.resource(view.viewId / suffix, view.project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
@@ -415,7 +413,7 @@ object ElasticSearchViewsQuerySuite {
 
     def asDocument(
         view: ViewRef
-    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] =
+    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi, runtime: IORuntime): IO[Json] =
       asResourceF(view).toCompactedJsonLd.map(_.json)
 
   }

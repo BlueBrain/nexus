@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -18,13 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Org
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
+import cats.effect.unsafe.IORuntime
 
 /**
   * Organizations module wiring config.
   */
 // $COVERAGE-OFF$
 object OrganizationsModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Organizations].from {
     (
@@ -32,15 +32,13 @@ object OrganizationsModule extends ModuleDef {
         scopeInitializations: Set[ScopeInitialization],
         clock: Clock[IO],
         uuidF: UUIDF,
-        xas: Transactors,
-        contextShift: ContextShift[IO],
-        timer: Timer[IO]
+        xas: Transactors
     ) =>
       OrganizationsImpl(
         scopeInitializations,
         config.organizations,
         xas
-      )(clock, uuidF, contextShift, timer)
+      )(clock, uuidF)
   }
 
   make[OrganizationDeleter].from { (xas: Transactors) =>
@@ -56,13 +54,15 @@ object OrganizationsModule extends ModuleDef {
         aclCheck: AclCheck,
         schemeDirectives: DeltaSchemeDirectives,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        runtime: IORuntime
     ) =>
       new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         cr,
-        ordering
+        ordering,
+        runtime
       )
   }
 

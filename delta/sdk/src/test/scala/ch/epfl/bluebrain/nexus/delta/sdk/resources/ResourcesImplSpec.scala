@@ -26,18 +26,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.{Assertion, CancelAfterFailure}
 
 import java.util.UUID
 
-class ResourcesImplSpec
-    extends CatsEffectSpec
-    with DoobieScalaTestFixture
-    with CancelAfterFailure
-    with CirceLiteral
-    with ConfigFixtures {
+class ResourcesImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
@@ -221,7 +215,10 @@ class ResourcesImplSpec
           source.addContext(contexts.metadata).addContext(myId).addContext(myId2) deepMerge json"""{"@id": "$myId8"}"""
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
-          ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
+          ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(
+            resolverContextResolution(projectRef),
+            runtime
+          )
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, None).accepted
         resource shouldEqual mkResource(expectedData)
       }
@@ -230,7 +227,10 @@ class ResourcesImplSpec
         val sourceMyId9  = source.addContext(contexts.metadata).addContext(myId8) deepMerge json"""{"@id": "$myId9"}"""
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
-          ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
+          ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(
+            resolverContextResolution(projectRef),
+            runtime
+          )
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, None).accepted
         resource shouldEqual mkResource(expectedData)
       }

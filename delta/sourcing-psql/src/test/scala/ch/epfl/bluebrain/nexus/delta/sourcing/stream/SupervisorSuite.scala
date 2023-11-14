@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -20,6 +19,7 @@ import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with Doobie.Assertions {
 

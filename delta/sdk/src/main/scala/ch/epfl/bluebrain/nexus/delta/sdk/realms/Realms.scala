@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
+import cats.implicits._
 
 /**
   * Operations pertaining to managing realms.

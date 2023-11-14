@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -51,8 +52,6 @@ object ResourcesModule extends ModuleDef {
         api: JsonLdApi,
         xas: Transactors,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
@@ -64,8 +63,6 @@ object ResourcesModule extends ModuleDef {
       )(
         api,
         clock,
-        contextShift,
-        timer,
         uuidF
       )
   }
@@ -90,6 +87,7 @@ object ResourcesModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
+        runtime: IORuntime,
         fusionConfig: FusionConfig,
         config: ResourcesConfig
     ) =>
@@ -103,6 +101,7 @@ object ResourcesModule extends ModuleDef {
         baseUri,
         cr,
         ordering,
+        runtime,
         fusionConfig,
         config.decodingOption
       )

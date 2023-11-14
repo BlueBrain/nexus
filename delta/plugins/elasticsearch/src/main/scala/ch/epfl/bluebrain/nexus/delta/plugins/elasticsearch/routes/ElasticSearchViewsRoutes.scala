@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps}
+import cats.effect.unsafe.IORuntime
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -50,7 +50,8 @@ final class ElasticSearchViewsRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    fusionConfig: FusionConfig
+    fusionConfig: FusionConfig,
+    runtime: IORuntime
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with ElasticSearchViewsDirectives
@@ -209,6 +210,7 @@ object ElasticSearchViewsRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
+      runtime: IORuntime,
       fusionConfig: FusionConfig
   ): Route =
     new ElasticSearchViewsRoutes(

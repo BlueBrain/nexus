@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -48,7 +49,7 @@ object SchemaGen {
       project: ProjectRef,
       source: Json,
       tags: Tags = Tags.empty
-  )(implicit resolution: RemoteContextResolution): Schema = {
+  )(implicit resolution: RemoteContextResolution, runtime: IORuntime): Schema = {
     schemaAsync(id, project, source, tags).accepted
   }
 
@@ -88,7 +89,7 @@ object SchemaGen {
     ).toResource
 
   implicit final private class CatsIOValuesOps[A](private val io: IO[A]) {
-    def accepted: A =
+    def accepted(implicit runtime: IORuntime): A =
       io.unsafeRunTimed(45.seconds).getOrElse(throw new RuntimeException("IO timed out during .accepted call"))
   }
 }

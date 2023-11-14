@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1}
 import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
@@ -29,7 +30,8 @@ final class DeltaSchemeDirectives(
     fetchContext: ProjectRef => IO[ProjectContext],
     fetchOrgByUuid: UUID => IO[Option[Label]],
     fetchProjByUuid: UUID => IO[Option[ProjectRef]]
-) extends QueryParamsUnmarshalling {
+)(implicit runtime: IORuntime)
+    extends QueryParamsUnmarshalling {
 
   /**
     * Extracts the organization segment and converts it to UUID. If the conversion is possible, it attempts to fetch the
@@ -135,31 +137,32 @@ final class DeltaSchemeDirectives(
 
 object DeltaSchemeDirectives extends QueryParamsUnmarshalling {
 
-  def empty: DeltaSchemeDirectives = onlyResolveOrgUuid(_ => IO.none)
+  def empty(implicit runtime: IORuntime): DeltaSchemeDirectives = onlyResolveOrgUuid(_ => IO.none)
 
-  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]]) = new DeltaSchemeDirectives(
-    (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
-    fetchOrgByUuid,
-    _ => IO.none
-  )
+  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]])(implicit runtime: IORuntime) =
+    new DeltaSchemeDirectives(
+      (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
+      fetchOrgByUuid,
+      _ => IO.none
+    )
 
-  def onlyResolveProjUuid(fetchProjByUuid: UUID => IO[Option[ProjectRef]]) =
+  def onlyResolveProjUuid(fetchProjByUuid: UUID => IO[Option[ProjectRef]])(implicit runtime: IORuntime) =
     new DeltaSchemeDirectives(
       (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
       _ => IO.none,
       fetchProjByUuid
     )
 
-  def apply(fetchContext: FetchContext[_], uuidCache: UUIDCache): DeltaSchemeDirectives =
+  def apply(fetchContext: FetchContext[_], uuidCache: UUIDCache)(implicit runtime: IORuntime): DeltaSchemeDirectives =
     apply(fetchContext, uuidCache.orgLabel, uuidCache.projectRef)
 
-  def apply(fetchContext: FetchContext[_]): DeltaSchemeDirectives =
+  def apply(fetchContext: FetchContext[_])(implicit runtime: IORuntime): DeltaSchemeDirectives =
     new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), _ => IO.none, _ => IO.none)
 
   def apply(
       fetchContext: FetchContext[_],
       fetchOrgByUuid: UUID => IO[Option[Label]],
       fetchProjByUuid: UUID => IO[Option[ProjectRef]]
-  ): DeltaSchemeDirectives =
+  )(implicit runtime: IORuntime): DeltaSchemeDirectives =
     new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), fetchOrgByUuid, fetchProjByUuid)
 }

@@ -1,21 +1,19 @@
 package ch.epfl.bluebrain.nexus.storage.attributes
 
-import java.nio.file.Path
-import java.time.Clock
-
 import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.http.scaladsl.model.MediaTypes.`application/octet-stream`
 import akka.stream.javadsl.Sink
 import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.stream.{OverflowStrategy, QueueOfferResult}
-import cats.effect.Effect
-import cats.effect.implicits._
+import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage._
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCacheActor.Protocol._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig
 
+import java.nio.file.Path
+import java.time.Clock
 import scala.collection.mutable
 import scala.concurrent.duration._
 
@@ -32,8 +30,9 @@ import scala.concurrent.duration._
   * @tparam S
   *   the source of the storage computation
   */
-class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F, S])(implicit
+class AttributesCacheActor[S](computation: AttributesComputation[S])(implicit
     config: DigestConfig,
+    runtime: IORuntime,
     clock: Clock
 ) extends Actor
     with ActorLogging {
@@ -47,8 +46,10 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
   private val attributesComputation: Flow[Compute, Option[Put], NotUsed] =
     Flow[Compute].mapAsyncUnordered(config.concurrentComputations) { case Compute(filePath) =>
       log.debug("Computing attributes for file '{}'.", filePath)
-      val future = computation(filePath, config.algorithm).toIO.unsafeToFuture()
-      future.map(attributes => Option(Put(filePath, attributes))).recover(logAndSkip(filePath))
+      computation(filePath, config.algorithm)
+        .map(attributes => Option(Put(filePath, attributes)))
+        .recover(logAndSkip(filePath))
+        .unsafeToFuture()
     }
 
   private val sendMessage = Sink.foreach[Put](putMsg => selfRef ! putMsg)
@@ -143,9 +144,9 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
 
 object AttributesCacheActor {
 
-  def props[F[_]: Effect, S](
-      computation: AttributesComputation[F, S]
-  )(implicit config: DigestConfig, clock: Clock): Props =
+  def props[S](
+      computation: AttributesComputation[S]
+  )(implicit config: DigestConfig, runtime: IORuntime, clock: Clock): Props =
     Props(new AttributesCacheActor(computation))
 
   sealed private[attributes] trait Protocol extends Product with Serializable

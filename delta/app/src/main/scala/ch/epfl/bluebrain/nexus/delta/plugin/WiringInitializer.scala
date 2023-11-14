@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
-import cats.effect.{ContextShift, IO, Resource, Timer}
-import cats.syntax.flatMap._
+import cats.effect.unsafe.IORuntime
+import cats.effect.{IO, Resource}
 import cats.syntax.monadError._
 import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -23,10 +23,9 @@ object WiringInitializer {
   def apply(
       serviceModule: ModuleDef,
       pluginsDef: List[PluginDef]
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): Resource[IO, (List[Plugin], Locator)] = {
+  )(implicit runtime: IORuntime): Resource[IO, (List[Plugin], Locator)] = {
     val catsEffectModule  = new ModuleDef {
-      make[ContextShift[IO]].fromValue(contextShift)
-      make[Timer[IO]].fromValue(timer)
+      make[IORuntime].fromValue(runtime)
     }
     val pluginsInfoModule = new ModuleDef { make[List[PluginDef]].from(pluginsDef) }
     val appModules        = (catsEffectModule :: serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module)).merge

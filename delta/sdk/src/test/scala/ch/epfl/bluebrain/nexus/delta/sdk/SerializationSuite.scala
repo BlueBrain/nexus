@@ -5,23 +5,24 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtractValue}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}
-import munit.{Assertions, FunSuite, Location}
+import munit.{Assertions, Location}
 
 import scala.collection.immutable.VectorMap
 
 abstract class SerializationSuite
-    extends FunSuite
+    extends CatsEffectSuite
     with Assertions
     with EitherAssertions
     with CirceLiteral
-    with JsonAssertions
-    with TestHelpers {
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
+    with MUnitExtractValue
+    with ClasspathResources
+    with JsonAssertions {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

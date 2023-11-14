@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.util.UUID
+import cats.effect.Ref
 
 class CompositeViewsCoordinatorSuite extends CatsEffectSuite with CompositeViewsFixture {
 

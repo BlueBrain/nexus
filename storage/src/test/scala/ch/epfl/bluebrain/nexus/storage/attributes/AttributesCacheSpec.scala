@@ -1,31 +1,29 @@
 package ch.epfl.bluebrain.nexus.storage.attributes
 
-import java.nio.file.{Path, Paths}
-import java.time.{Clock, Instant, ZoneId}
-import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/jpeg`}
 import akka.testkit.TestKit
 import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.storage._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
+import ch.epfl.bluebrain.nexus.storage._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig
+import ch.epfl.bluebrain.nexus.storage.utils.Randomness
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.{BeforeAndAfter, Ignore, Inspectors}
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.nio.file.{Path, Paths}
+import java.time.{Clock, Instant, ZoneId}
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
-import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/jpeg`}
-import cats.effect.{ContextShift, IO}
-import ch.epfl.bluebrain.nexus.storage.utils.Randomness
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.{ExecutionContext, Future}
 
 @Ignore
 class AttributesCacheSpec
     extends TestKit(ActorSystem("AttributesCacheSpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with CatsEffectSpec
     with IdiomaticMockito
     with BeforeAndAfter
     with Inspectors
@@ -35,12 +33,11 @@ class AttributesCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.second, 100.milliseconds)
 
-  implicit val config: DigestConfig                           =
+  implicit val config: DigestConfig                       =
     DigestConfig("SHA-256", maxInMemory = 10, concurrentComputations = 3, 20, 5.seconds)
-  implicit val computation: AttributesComputation[IO, String] = mock[AttributesComputation[IO, String]]
-  implicit val timeout: Timeout                               = Timeout(1.minute)
-  implicit val executionContext: ExecutionContext             = ExecutionContext.global
-  implicit val contextShift: ContextShift[IO]                 = IO.contextShift(executionContext)
+  implicit val computation: AttributesComputation[String] = mock[AttributesComputation[String]]
+  implicit val timeout: Timeout                           = Timeout(1.minute)
+  implicit val executionContext: ExecutionContext         = ExecutionContext.global
 
   before {
     Mockito.reset(computation)
@@ -59,7 +56,7 @@ class AttributesCacheSpec
       // For every attribute computation done, it passes one second
       override def instant(): Instant              = Instant.ofEpochSecond(counter.get + 1L)
     }
-    val attributesCache       = AttributesCache[IO, String]
+    val attributesCache       = AttributesCache[String]
     computation(path, config.algorithm) shouldReturn
       IO { counter.incrementAndGet(); attributes }
   }

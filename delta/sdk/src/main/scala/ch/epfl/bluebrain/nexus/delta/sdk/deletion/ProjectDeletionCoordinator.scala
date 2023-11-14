@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
@@ -40,8 +40,7 @@ object ProjectDeletionCoordinator {
       deletionConfig: DeletionConfig,
       serviceAccount: ServiceAccount,
       deletionStore: ProjectDeletionStore
-  )(implicit clock: Clock[IO], timer: Timer[IO])
-      extends ProjectDeletionCoordinator {
+  ) extends ProjectDeletionCoordinator {
 
     implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
@@ -91,7 +90,7 @@ object ProjectDeletionCoordinator {
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
       xas: Transactors
-  )(implicit clock: Clock[IO], timer: Timer[IO]): ProjectDeletionCoordinator =
+  ): ProjectDeletionCoordinator =
     if (deletionConfig.enabled) {
       new Active(
         projects.states,
@@ -114,7 +113,7 @@ object ProjectDeletionCoordinator {
       serviceAccount: ServiceAccount,
       supervisor: Supervisor,
       xas: Transactors
-  )(implicit clock: Clock[IO], timer: Timer[IO]): IO[ProjectDeletionCoordinator] = {
+  ): IO[ProjectDeletionCoordinator] = {
     val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas)
     stream match {
       case Noop           => logger.info("Projection deletion is disabled.").as(Noop)

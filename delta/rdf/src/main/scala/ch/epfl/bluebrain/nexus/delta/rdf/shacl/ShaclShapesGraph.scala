@@ -23,8 +23,6 @@ final case class ShaclShapesGraph(uri: URI, value: ShapesGraph) {
 
 object ShaclShapesGraph {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
   /**
     * Loads the SHACL shapes graph to validate SHACL shapes graphs
     */

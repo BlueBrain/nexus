@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.{IO, Timer}
-import cats.implicits.toFlatMapOps
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -23,7 +22,7 @@ import java.time.Instant
 /**
   * Persistent operations for projections restart
   */
-final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implicit timer: Timer[IO]) {
+final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
 
   def save(restart: ProjectionRestart): IO[Unit] =
     sql"""INSERT INTO public.projection_restarts (name, value, instant, acknowledged)

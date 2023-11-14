@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
-import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
@@ -18,6 +18,7 @@ import izumi.distage.planning.solver.PlanVerifier
 import munit.AnyFixture
 
 import java.nio.file.{Files, Paths}
+import cats.effect.unsafe.IORuntime
 
 /**
   * Test class that allows to check that across core and plugins:
@@ -39,8 +40,7 @@ class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
 
   test("yield a correct plan") {
     val catsEffectModule         = new ModuleDef {
-      make[ContextShift[IO]].fromValue(contextShift)
-      make[Timer[IO]].fromValue(timer)
+      make[IORuntime].fromValue(runtime)
     }
     val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }

@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{BucketAccess, S3Attributes}
-import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxFlatMapOps
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
@@ -24,7 +23,7 @@ class MinioSpec extends Suites with MinioDocker {
 object MinioSpec {
   def createBucket(
       value: S3StorageValue
-  )(implicit config: StorageTypeConfig, system: ActorSystem, cs: ContextShift[IO]): IO[Unit] = {
+  )(implicit config: StorageTypeConfig, system: ActorSystem): IO[Unit] = {
     implicit val attributes = S3Attributes.settings(value.alpakkaSettings(config))
 
     IO.fromFuture(IO.delay(S3.checkIfBucketExists(value.bucket))).flatMap {
@@ -35,7 +34,7 @@ object MinioSpec {
 
   def deleteBucket(
       value: S3StorageValue
-  )(implicit config: StorageTypeConfig, system: ActorSystem, cs: ContextShift[IO]): IO[Unit] = {
+  )(implicit config: StorageTypeConfig, system: ActorSystem): IO[Unit] = {
     implicit val attributes = S3Attributes.settings(value.alpakkaSettings(config))
 
     IO.fromFuture(
