@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.nio.file.Paths
+import io.circe.literal._
 
 class ArchivesDecodingSpec extends CatsEffectSpec with RemoteContextResolutionFixture {
 

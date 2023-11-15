@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest
 
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, Generators}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, Generators}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -13,5 +13,4 @@ trait BaseSpec
     with Inspectors
     with TestMatchers
     with Generators
-    with CirceLiteral
     with CirceEq
