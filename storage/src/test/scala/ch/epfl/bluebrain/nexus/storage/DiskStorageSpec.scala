@@ -175,7 +175,7 @@ class DiskStorageSpec
 
       "fail when source does not exists" in new AbsoluteDirectoryCreated {
         val source = randomString()
-        storage.moveFile(name, Uri.Path(source), Uri.Path(randomString())).rejectedWith[PathNotFound] shouldEqual
+        storage.moveFile(name, Uri.Path(source), Uri.Path(randomString())).accepted.leftValue shouldEqual
           PathNotFound(name, Uri.Path(source))
       }
 
@@ -185,7 +185,7 @@ class DiskStorageSpec
         Files.createDirectories(absoluteFile.getParent)
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path(randomString())).rejectedWith[PathNotFound] shouldEqual
+        storage.moveFile(name, Uri.Path(file), Uri.Path(randomString())).accepted.leftValue shouldEqual
           PathNotFound(name, Uri.Path(file))
       }
 
@@ -199,7 +199,8 @@ class DiskStorageSpec
         Files.write(fileDest, "something".getBytes(StandardCharsets.UTF_8))
         storage
           .moveFile(name, Uri.Path(file), Uri.Path("my !file.txt"))
-          .rejectedWith[PathAlreadyExists] shouldEqual
+          .accepted
+          .leftValue shouldEqual
           PathAlreadyExists(name, Uri.Path("my !file.txt"))
       }
 

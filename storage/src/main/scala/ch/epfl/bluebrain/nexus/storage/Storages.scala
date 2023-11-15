@@ -79,7 +79,7 @@ trait Storages[Source] {
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  )(implicit bucketEv: BucketExists): IO[RejOrAttributes]
+  )(implicit bucketEv: BucketExists): IO[Either[Rejection, FileAttributes]]
 
   /**
     * Retrieves the file as a Source.
@@ -222,7 +222,7 @@ object Storages {
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists): IO[RejOrAttributes] = {
+    )(implicit bucketEv: BucketExists): IO[Either[Rejection, FileAttributes]] = {
 
       val bucketPath          = basePath(name, protectedDir = false)
       val bucketProtectedPath = basePath(name)

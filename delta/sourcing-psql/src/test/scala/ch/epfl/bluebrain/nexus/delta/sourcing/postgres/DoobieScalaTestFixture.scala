@@ -17,8 +17,6 @@ trait DoobieScalaTestFixture
 
   self: Suite with CatsRunContext =>
 
-  implicit val classLoader: ClassLoader = getClass.getClassLoader
-
   var xas: Transactors              = _
   private var xasTeardown: IO[Unit] = _
 
