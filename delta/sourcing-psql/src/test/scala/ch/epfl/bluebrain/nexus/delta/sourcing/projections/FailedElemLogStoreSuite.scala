@@ -32,7 +32,7 @@ class FailedElemLogStoreSuite
 
   implicit private lazy val mutableClock: MutableClock = mutableClockFixture()
 
-  private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop), clock)
+  private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop), mutableClock)
 
   private def createMetadata(project: ProjectRef, id: Iri) =
     ProjectionMetadata("test", s"project|$id", Some(project), Some(id))
@@ -180,7 +180,7 @@ class FailedElemLogStoreSuite
 
   test("Purge failures after predefined ttl") {
     val failedElemTtl     = 14.days
-    val purgeElemFailures = new PurgeElemFailures(xas, failedElemTtl, clock)
+    val purgeElemFailures = new PurgeElemFailures(xas, failedElemTtl, mutableClock)
 
     def timeTravel(duration: FiniteDuration) = mutableClock.set(Instant.EPOCH.plusMillis(duration.toMillis))
 
