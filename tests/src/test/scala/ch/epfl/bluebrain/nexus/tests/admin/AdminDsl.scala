@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics._
@@ -22,9 +22,10 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
     with OptionValues {
 
   private val logger = Logger[this.type]
+  private val loader = ClasspathResourceLoader()
 
   private def orgPayload(description: String): IO[Json] =
-    ioJsonContentOf("/admin/orgs/payload.json", "description" -> description)
+    loader.jsonContentOf("/admin/orgs/payload.json", "description" -> description)
 
   private def createOrgRespJson(
       id: String,
@@ -47,7 +48,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
       "deprecated" -> deprecated.toString,
       "schema"     -> schema
     )
-    ioJsonContentOf("/admin/org-response.json", resp: _*)
+    loader.jsonContentOf("/admin/org-response.json", resp: _*)
   }
 
   def createProjectRespJson(
@@ -74,7 +75,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
       "markedForDeletion" -> markedForDeletion.toString,
       "schema"            -> schema
     )
-    ioJsonContentOf("/admin/project-response.json", resp: _*)
+    loader.jsonContentOf("/admin/project-response.json", resp: _*)
   }
 
   private def queryParams(rev: Int) =
@@ -160,7 +161,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
       base: String = s"${config.deltaUri.toString()}/${genString()}/",
       vocab: String = s"${config.deltaUri.toString()}/${genString()}/"
   ): IO[Json] =
-    ioJsonContentOf(
+    loader.jsonContentOf(
       path,
       "nxv-prefix"    -> nxv,
       "person-prefix" -> person,

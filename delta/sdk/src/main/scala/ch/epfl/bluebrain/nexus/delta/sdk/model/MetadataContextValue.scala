@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 
 /**
@@ -28,6 +29,6 @@ object MetadataContextValue {
   /**
     * Loads a [[MetadataContextValue]] form the passed ''resourcePath''
     */
-  final def fromFile(resourcePath: String): IO[MetadataContextValue] =
+  final def fromFile(resourcePath: String)(implicit loader: ClasspathResourceLoader): IO[MetadataContextValue] =
     ContextValue.fromFile(resourcePath).map(MetadataContextValue.apply)
 }

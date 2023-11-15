@@ -5,7 +5,7 @@ import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -37,6 +37,8 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 @SuppressWarnings(Array("UnsafeTraversableMethods"))
 object ProjectsModule extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   final case class ApiMappingsCollection(value: Set[ApiMappings]) {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)

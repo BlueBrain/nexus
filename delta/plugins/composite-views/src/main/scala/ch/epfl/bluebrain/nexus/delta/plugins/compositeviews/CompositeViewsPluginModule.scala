@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
@@ -46,6 +46,8 @@ import distage.ModuleDef
 import izumi.distage.model.definition.Id
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 

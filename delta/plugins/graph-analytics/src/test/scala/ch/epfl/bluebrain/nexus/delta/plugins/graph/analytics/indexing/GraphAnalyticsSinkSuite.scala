@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -62,9 +61,12 @@ class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSe
   private val file1     = iri"http://localhost/file1"
 
   private def loadExpanded(path: String): ExpandedJsonLd =
-    ioJsonContentOf(path).flatMap { json =>
-      IO.fromEither(ExpandedJsonLd.expanded(json))
-    }.accepted
+    loader
+      .jsonContentOf(path)
+      .flatMap { json =>
+        IO.fromEither(ExpandedJsonLd.expanded(json))
+      }
+      .accepted
 
   private def getTypes(expandedJsonLd: ExpandedJsonLd): IO[Set[Iri]] =
     IO.pure(expandedJsonLd.cursor.getTypes.getOrElse(Set.empty))
@@ -123,9 +125,9 @@ class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSe
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
       _                  <- client.count(index.value).eventually(3L)
-      expected1          <- ioJsonContentOf("result/resource1.json")
-      expected2          <- ioJsonContentOf("result/resource2.json")
-      expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
+      expected1          <- loader.jsonContentOf("result/resource1.json")
+      expected2          <- loader.jsonContentOf("result/resource2.json")
+      expectedDeprecated <- loader.jsonContentOf("result/resource_deprecated.json")
       _                  <- client.getSource[Json](index, resource1.toString).eventually(expected1)
       _                  <- client.getSource[Json](index, resource2.toString).eventually(expected2)
       _                  <- client.getSource[Json](index, deprecatedResource.toString).eventually(expectedDeprecated)
@@ -153,8 +155,8 @@ class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSe
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
       _         <- client.refresh(index)
-      expected1 <- ioJsonContentOf("result/resource1_updated.json")
-      expected2 <- ioJsonContentOf("result/resource2.json")
+      expected1 <- loader.jsonContentOf("result/resource1_updated.json")
+      expected2 <- loader.jsonContentOf("result/resource2.json")
       _         <- client.count(index.value).eventually(3L)
       _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
       _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)

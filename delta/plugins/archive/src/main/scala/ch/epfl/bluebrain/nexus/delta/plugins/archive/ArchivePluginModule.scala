@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
@@ -26,6 +26,8 @@ import cats.effect.unsafe.IORuntime
   * Archive plugin wiring.
   */
 object ArchivePluginModule extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg) }
 

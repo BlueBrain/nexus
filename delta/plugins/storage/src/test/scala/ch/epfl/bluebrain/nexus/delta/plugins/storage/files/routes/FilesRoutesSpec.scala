@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
@@ -676,6 +676,7 @@ class FilesRoutesSpec
 }
 
 object FilesRoutesSpec {
+  private val loader                     = ClasspathResourceLoader()
   def fileMetadata(
       project: ProjectRef,
       id: Iri,
@@ -687,7 +688,7 @@ object FilesRoutesSpec {
       createdBy: Subject,
       updatedBy: Subject
   )(implicit baseUri: BaseUri): IO[Json] =
-    ioJsonContentOf(
+    loader.jsonContentOf(
       "files/file-route-metadata-response.json",
       "project"     -> project,
       "id"          -> id,

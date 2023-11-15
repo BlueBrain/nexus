@@ -4,7 +4,7 @@ import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
@@ -29,8 +29,10 @@ final case class Transactors(
     cache: PartitionsCache
 ) {
 
+  private val loader = ClasspathResourceLoader()
+
   private def execDDL(ddl: String): IO[Unit] =
-    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+    loader.contentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
 
   def execDDLs(ddls: List[String]): IO[Unit] =
     ddls.traverse(execDDL).void

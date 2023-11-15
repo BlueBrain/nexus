@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViewsSuite.{loadEvent, loadState}
@@ -99,7 +99,9 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 }
 
-object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
+object MigrateCompositeViewsSuite {
+
+  private val loader = ClasspathResourceLoader()
 
   def extractIdentifiers(json: JsonObject) = IO.fromOption {
     for {
@@ -133,7 +135,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- loader.jsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()
@@ -166,7 +168,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- loader.jsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()

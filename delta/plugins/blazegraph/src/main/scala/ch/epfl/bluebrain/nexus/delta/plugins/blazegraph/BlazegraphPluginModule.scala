@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.actor.typed.ActorSystem
 import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
@@ -43,10 +43,12 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
+
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
   make[DefaultProperties].fromEffect {
-    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").map(DefaultProperties)
+    loader.propertiesOf("blazegraph/index.properties").map(DefaultProperties)
   }
 
   make[HttpClient].named("http-indexing-client").from {

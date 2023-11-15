@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchFiles}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -11,9 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 
+object Fixtures {
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
+}
+
 trait Fixtures extends CatsRunContext {
 
-  private lazy val files: ElasticSearchFiles = ElasticSearchFiles.mk().unsafeRunSync()
+  import Fixtures._
+
+  private lazy val files: ElasticSearchFiles = ElasticSearchFiles.mk(loader).unsafeRunSync()
 
   protected lazy val defaultMapping  = files.defaultMapping
   protected lazy val defaultSettings = files.defaultSettings

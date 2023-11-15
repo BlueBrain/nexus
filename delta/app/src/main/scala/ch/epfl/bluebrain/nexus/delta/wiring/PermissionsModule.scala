@@ -17,12 +17,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import cats.effect.unsafe.IORuntime
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
   * Permissions module wiring config.
   */
 // $COVERAGE-OFF$
 object PermissionsModule extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO]) =>
     PermissionsImpl(

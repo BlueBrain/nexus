@@ -4,9 +4,8 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import cats.implicits._
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.error
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Anonymous, Permission, User}
@@ -20,6 +19,7 @@ import scala.jdk.CollectionConverters._
 class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshalling with OptionValues with Matchers {
 
   private val logger = Logger[this.type]
+  private val loader = ClasspathResourceLoader()
 
   def fetch(path: String, identity: Identity, self: Boolean = true, ancestors: Boolean = false)(
       assertAcls: AclListing => Assertion
@@ -35,22 +35,26 @@ class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshal
     addPermissions(path, target, Set(permission))
 
   def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): IO[Assertion] = {
-    ioJsonContentOf(
-      "/iam/add.json",
-      "realm" -> target.realm.name,
-      "sub"   -> target.name,
-      "perms" -> permissions.asJava
-    ).flatMap(addPermissions(path, _, target.name))
+    loader
+      .jsonContentOf(
+        "/iam/add.json",
+        "realm" -> target.realm.name,
+        "sub"   -> target.name,
+        "perms" -> permissions.asJava
+      )
+      .flatMap(addPermissions(path, _, target.name))
   }
 
   def addPermissionAnonymous(path: String, permission: Permission): IO[Assertion] =
     addPermissionsAnonymous(path, Set(permission))
 
   def addPermissionsAnonymous(path: String, permissions: Set[Permission]): IO[Assertion] = {
-    ioJsonContentOf(
-      "/iam/add_annon.json",
-      "perms" -> permissions.asJava
-    ).flatMap(addPermissions(path, _, "Anonymous"))
+    loader
+      .jsonContentOf(
+        "/iam/add_annon.json",
+        "perms" -> permissions.asJava
+      )
+      .flatMap(addPermissions(path, _, "Anonymous"))
   }
 
   def addPermissions(path: String, payload: Json, targetName: String): IO[Assertion] = {
@@ -98,7 +102,7 @@ class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshal
       permissions
         .parTraverse { acl =>
           for {
-            payload <- ioJsonContentOf(
+            payload <- loader.jsonContentOf(
                          "/iam/subtract-permissions.json",
                          "realm" -> target.realm.name,
                          "sub"   -> target.name,
@@ -129,7 +133,7 @@ class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshal
       permissions
         .parTraverse { acl =>
           for {
-            payload <- ioJsonContentOf(
+            payload <- loader.jsonContentOf(
                          "/iam/subtract-permissions-anon.json",
                          "perms" -> acl.acl.head.permissions.asJava
                        )
@@ -167,7 +171,7 @@ class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshal
       permissions: Set[Permission]
   ): IO[Assertion] = {
     for {
-      body   <- ioJsonContentOf(
+      body   <- loader.jsonContentOf(
                   "/iam/subtract-permissions.json",
                   "realm" -> target.realm.name,
                   "sub"   -> target.name,

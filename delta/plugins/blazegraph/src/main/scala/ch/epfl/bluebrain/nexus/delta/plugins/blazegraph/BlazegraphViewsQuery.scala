@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -92,6 +92,8 @@ trait BlazegraphViewsQuery {
 
 object BlazegraphViewsQuery {
 
+  private val loader = ClasspathResourceLoader.withContext(getClass)
+
   final def apply(
       aclCheck: AclCheck,
       fetchContext: FetchContext[BlazegraphViewRejection],
@@ -102,9 +104,9 @@ object BlazegraphViewsQuery {
       xas: Transactors
   ): IO[BlazegraphViewsQuery] = {
     for {
-      incomingQuery             <- ioContentOf("blazegraph/incoming.txt")
-      outgoingWithExternalQuery <- ioContentOf("blazegraph/outgoing_include_external.txt")
-      outgoingScopedQuery       <- ioContentOf("blazegraph/outgoing_scoped.txt")
+      incomingQuery             <- loader.contentOf("blazegraph/incoming.txt")
+      outgoingWithExternalQuery <- loader.contentOf("blazegraph/outgoing_include_external.txt")
+      outgoingScopedQuery       <- loader.contentOf("blazegraph/outgoing_scoped.txt")
       viewsStore                 = ViewsStore[BlazegraphViewRejection, BlazegraphViewState](
                                      BlazegraphViewState.serializer,
                                      views.fetchState(_, _),

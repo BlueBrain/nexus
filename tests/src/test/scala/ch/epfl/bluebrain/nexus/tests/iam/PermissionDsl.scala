@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.iam
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.iam.types.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
 import io.circe.Json
@@ -11,6 +11,8 @@ import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
 class PermissionDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshalling with Matchers {
+
+  private val loader = ClasspathResourceLoader()
 
   def permissionsRepl(permissions: Iterable[Permission]) =
     "perms" -> permissions.map { _.value }.mkString("\",\"")
@@ -21,7 +23,7 @@ class PermissionDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUn
 
       if (!list.toSet.subsetOf(permissions.permissions)) {
         (for {
-          body   <- ioJsonContentOf(
+          body   <- loader.jsonContentOf(
                       "/iam/permissions/append.json",
                       permissionsRepl(list)
                     )

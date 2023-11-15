@@ -10,7 +10,7 @@ import akka.stream.Materializer
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.{ClientCredentials, UserCredentials}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import io.circe.Json
@@ -26,6 +26,7 @@ class KeycloakDsl(implicit
     runtime: IORuntime
 ) {
 
+  private val loader = ClasspathResourceLoader()
   private val logger = Logger[this.type]
 
   private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}")
@@ -49,7 +50,7 @@ class KeycloakDsl(implicit
 
     for {
       _          <- logger.info(s"Creating realm $realm in Keycloak...")
-      json       <- ioJsonContentOf(
+      json       <- loader.jsonContentOf(
                       "/iam/keycloak/import.json",
                       "realm"         -> realm.name,
                       "client"        -> clientCredentials.id,

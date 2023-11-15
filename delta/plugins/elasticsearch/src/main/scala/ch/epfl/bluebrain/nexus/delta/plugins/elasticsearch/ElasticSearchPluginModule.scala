@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
@@ -46,9 +46,11 @@ import cats.effect.unsafe.IORuntime
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
+
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
-  make[ElasticSearchFiles].fromEffect { ElasticSearchFiles.mk() }
+  make[ElasticSearchFiles].fromEffect { ElasticSearchFiles.mk(loader) }
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)

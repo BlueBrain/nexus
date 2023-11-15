@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 
@@ -33,15 +33,13 @@ final case class MetricsSettings(value: JsonObject)
 
 object ElasticSearchFiles {
 
-  private def fetchFile(resourcePath: String) = ClasspathResourceUtils.ioJsonObjectContentOf(resourcePath)
-
-  def mk(): IO[ElasticSearchFiles] =
+  def mk(loader: ClasspathResourceLoader): IO[ElasticSearchFiles] = {
     for {
-      dm    <- fetchFile("defaults/default-mapping.json")
-      ds    <- fetchFile("defaults/default-settings.json")
-      empty <- fetchFile("defaults/empty-results.json").map(_.asJson)
-      mm    <- fetchFile("metrics/metrics-mapping.json")
-      ms    <- fetchFile("metrics/metrics-settings.json")
+      dm    <- loader.jsonObjectContentOf("defaults/default-mapping.json")
+      ds    <- loader.jsonObjectContentOf("defaults/default-settings.json")
+      empty <- loader.jsonObjectContentOf("defaults/empty-results.json").map(_.asJson)
+      mm    <- loader.jsonObjectContentOf("metrics/metrics-mapping.json")
+      ms    <- loader.jsonObjectContentOf("metrics/metrics-settings.json")
     } yield new ElasticSearchFiles(
       DefaultMapping(dm),
       DefaultSettings(ds),
@@ -49,4 +47,5 @@ object ElasticSearchFiles {
       MetricsMapping(mm),
       MetricsSettings(ms)
     )
+  }
 }

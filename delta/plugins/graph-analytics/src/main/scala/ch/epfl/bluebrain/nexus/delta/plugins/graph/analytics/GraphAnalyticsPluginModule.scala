@@ -21,11 +21,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 import cats.effect.unsafe.IORuntime
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
   * Graph analytics plugin wiring.
   */
 class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 

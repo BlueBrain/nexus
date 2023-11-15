@@ -270,7 +270,10 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
+        storage
+          .moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt"))
+          .accepted
+          .rightValue shouldEqual
           FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
 
         Files.exists(absoluteFile) shouldEqual false

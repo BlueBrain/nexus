@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -102,7 +101,7 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
     val anotherSchema = nxv + "anotherSchema"
     for {
       schemaSource <-
-        ioJsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata))
+        loader.jsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata))
       schema       <- SchemaGen
                         .schemaAsync(anotherSchema, project.ref, schemaSource.removeKeys(keywords.id))
                         .map(SchemaGen.resourceFor(_))

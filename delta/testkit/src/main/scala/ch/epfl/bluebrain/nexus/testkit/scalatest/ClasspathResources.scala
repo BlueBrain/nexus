@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsIOValues => MUnitCatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsIOValues => ScalaTestCatsIOValues}
@@ -32,7 +32,9 @@ trait MUnitExtractValue extends ExtractValue with MUnitCatsIOValues {
 
 trait ClasspathResources extends ExtractValue {
 
-  final def absolutePath(resourcePath: String): String = ClasspathResourceUtils.absolutePath(resourcePath).extract
+  implicit protected val loader: ClasspathResourceLoader = ClasspathResourceLoader()
+
+  final def absolutePath(resourcePath: String): String = loader.absolutePath(resourcePath).extract
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -47,7 +49,7 @@ trait ClasspathResources extends ExtractValue {
   final def jsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): Json = ClasspathResourceUtils.ioJsonContentOf(resourcePath, attributes: _*).extract
+  ): Json = loader.jsonContentOf(resourcePath, attributes: _*).extract
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -63,7 +65,7 @@ trait ClasspathResources extends ExtractValue {
       resourcePath: String,
       attributes: (String, Any)*
   ): String =
-    ClasspathResourceUtils.ioContentOf(resourcePath, attributes: _*).extract
+    loader.contentOf(resourcePath, attributes: _*).extract
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -76,7 +78,7 @@ trait ClasspathResources extends ExtractValue {
     *   found or is not a Json
     */
   final def jsonObjectContentOf(resourcePath: String, attributes: (String, Any)*): JsonObject = {
-    ClasspathResourceUtils.ioJsonObjectContentOf(resourcePath, attributes: _*).extract
+    loader.jsonObjectContentOf(resourcePath, attributes: _*).extract
   }
 
   /**
@@ -90,6 +92,6 @@ trait ClasspathResources extends ExtractValue {
     *   is not found
     */
   final def propertiesOf(resourcePath: String): Map[String, String] =
-    ClasspathResourceUtils.ioPropertiesOf(resourcePath).extract
+    loader.propertiesOf(resourcePath).extract
 
 }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -8,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 
 trait RemoteContextResolutionFixture {
 
+  import RemoteContextResolutionFixture._
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
@@ -19,4 +21,9 @@ trait RemoteContextResolutionFixture {
     Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
     Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
   )
+}
+
+object RemoteContextResolutionFixture {
+  implicit private val loader: ClasspathResourceLoader =
+    ClasspathResourceLoader.withContext(getClass)
 }

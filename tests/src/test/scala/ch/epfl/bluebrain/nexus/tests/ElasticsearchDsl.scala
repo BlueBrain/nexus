@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
@@ -20,10 +20,11 @@ class ElasticsearchDsl(implicit
     materializer: Materializer,
     ec: ExecutionContext,
     runtime: IORuntime
-) extends ClasspathResourceUtils
-    with CirceLiteral
+) extends CirceLiteral
     with CirceUnmarshalling
     with Matchers {
+
+  private val loader = ClasspathResourceLoader()
 
   private val logger = Logger[this.type]
 
@@ -33,7 +34,7 @@ class ElasticsearchDsl(implicit
 
   def createTemplate(): IO[StatusCode] = {
     for {
-      json   <- ioJsonContentOf("/elasticsearch/template.json")
+      json   <- loader.jsonContentOf("/elasticsearch/template.json")
       _      <- logger.info("Creating template for Elasticsearch indices")
       result <- elasticClient(
                   HttpRequest(
