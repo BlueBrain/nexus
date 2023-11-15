@@ -256,7 +256,7 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted shouldEqual
+        storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
           FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
         Files.exists(absoluteFile) shouldEqual false
         Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
@@ -270,7 +270,7 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt")).accepted shouldEqual
+        storage.moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
           FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
 
         Files.exists(absoluteFile) shouldEqual false
@@ -286,7 +286,7 @@ class DiskStorageSpec
         val content      = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted
+        val result      = storage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted.rightValue
         val resolvedDir = basePath.resolve("some/other")
         result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
         Files.exists(absoluteDir) shouldEqual false
@@ -304,7 +304,7 @@ class DiskStorageSpec
         val content      = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted
+        val result      = storage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted.rightValue
         val resolvedDir = basePath.resolve("some/other")
         result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
         Files.exists(absoluteDir) shouldEqual false
