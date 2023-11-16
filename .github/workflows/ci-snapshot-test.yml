@@ -27,4 +27,5 @@ jobs:
           java-version: '17'
           check-latest: true
       - name: Publish Storage Service to Sonatype
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false storage/Universal/publish
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false storage/packageZipTarball \
+          storage/publishSigned
