@@ -42,6 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
+import org.scalactic.source.Position
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -135,15 +136,17 @@ class ArchiveDownloadSpec
       fileSelf
     )
 
-    def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
+    def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean)(implicit pos: Position) = {
       archiveDownload(value, project.ref, ignoreNotFound).map(sourceToMap).accepted
     }
 
-    def failToDownload[R <: ArchiveRejection: ClassTag](value: ArchiveValue, ignoreNotFound: Boolean) = {
+    def failToDownload[R <: ArchiveRejection: ClassTag](value: ArchiveValue, ignoreNotFound: Boolean)(implicit
+        pos: Position
+    ) = {
       archiveDownload(value, project.ref, ignoreNotFound).rejectedWith[R]
     }
 
-    def rejectedAccess(value: ArchiveValue) = {
+    def rejectedAccess(value: ArchiveValue)(implicit pos: Position) = {
       archiveDownload
         .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
         .rejectedWith[AuthorizationFailed]
