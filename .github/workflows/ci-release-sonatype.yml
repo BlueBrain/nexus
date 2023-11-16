@@ -28,5 +28,6 @@ jobs:
           java-version: '17'
           check-latest: true
       - name: Publish To Sonatype
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release \
-          storage/Universal/publish
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
+      - name: Publish Storage Service to Sonatype
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false storage/Universal/publish
