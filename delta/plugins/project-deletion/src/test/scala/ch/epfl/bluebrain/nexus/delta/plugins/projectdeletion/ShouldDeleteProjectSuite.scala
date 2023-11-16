@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.effect.IO
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -191,6 +191,8 @@ object ShouldDeleteProjectSuite
 
   val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
   val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
+
+  override def clock: Clock[IO] = implicitly[Clock[IO]]
 
   def shouldBeDeleted(
       config: ProjectDeletionConfig,

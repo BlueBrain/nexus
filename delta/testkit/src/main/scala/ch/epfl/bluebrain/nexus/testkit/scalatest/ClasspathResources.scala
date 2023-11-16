@@ -30,9 +30,11 @@ trait MUnitExtractValue extends ExtractValue with MUnitCatsIOValues {
   override def extractValue[A](io: IO[A]): A = io.accepted
 }
 
-trait ClasspathResources extends ExtractValue {
-
+trait ClasspathLoader {
   implicit protected val loader: ClasspathResourceLoader = ClasspathResourceLoader()
+}
+
+trait ClasspathResources extends ClasspathLoader with ExtractValue {
 
   final def absolutePath(resourcePath: String): String = loader.absolutePath(resourcePath).extract
 

@@ -1,15 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathLoader
 
-trait RemoteContextResolutionFixture {
-
-  import RemoteContextResolutionFixture._
+trait RemoteContextResolutionFixture extends ClasspathLoader {
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
@@ -23,6 +21,4 @@ trait RemoteContextResolutionFixture {
   )
 }
 
-object RemoteContextResolutionFixture extends RemoteContextResolutionFixture {
-  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
-}
+object RemoteContextResolutionFixture extends RemoteContextResolutionFixture
