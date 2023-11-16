@@ -1,6 +1,8 @@
 name: Publish Sonatype test
 on:
   pull_request:
+    paths:
+      - '.github/workflows/ci-snapshot-test.yml'
 jobs:
   release:
     if: github.event_name == 'release'
