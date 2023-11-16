@@ -6,11 +6,9 @@ on:
       - '.github/workflows/ci-snapshot-test.yml'
 jobs:
   release:
-    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CI_RELEASE: publishSigned
       RELEASE_TO_SONATYPE: true
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
       PGP_SECRET: ${{ secrets.PGP_SECRET }}
