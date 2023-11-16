@@ -222,10 +222,22 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
+    "fail to deprecate an organization if 'prune' is specified for deletion" in {
+      Delete("/v1/orgs/org2?rev=1&prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "delete an organization" in {
       aclChecker.append(AclAddress.fromOrg(org2.label), caller.subject -> Set(orgsPermissions.delete)).accepted
       Delete("/v1/orgs/org2?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "fail to delete an organization if 'prune' is false but no revision is specified for deprecation" in {
+      Delete("/v1/orgs/org2?prune=false") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 
