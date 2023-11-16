@@ -713,10 +713,13 @@ lazy val delta = project
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
+lazy val universalPublish = Universal / publish
+
 lazy val storage = project
   .in(file("storage"))
   .enablePlugins(UniversalPlugin, UniversalDeployPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(
+    publish := Seq(publish, universalPublish),
     shared,
     compilation,
     assertJavaVersion,
