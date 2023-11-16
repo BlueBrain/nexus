@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
 import cats.effect.unsafe.IORuntime
-import cats.effect.{Clock, IO, Resource}
+import cats.effect.{Clock, IO, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
@@ -48,6 +48,7 @@ import scala.concurrent.duration.DurationInt
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
 
+  addImplicit[Sync[IO]]
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[AppConfig].from(appCfg)

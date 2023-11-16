@@ -35,7 +35,7 @@ class StorageScopeInitialization(
 
   implicit private val caller: Caller = serviceAccount.caller
 
-  private val defaultValue: DiskStorageFields = DiskStorageFields(
+  private lazy val defaultValue: DiskStorageFields = DiskStorageFields(
     name = Some(defaults.name),
     description = Some(defaults.description),
     default = true,

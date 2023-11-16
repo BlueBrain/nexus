@@ -11,7 +11,7 @@ import org.typelevel.log4cats
 package object indexing {
 
   implicit private val logger: log4cats.Logger[IO] = Logger[GraphAnalytics]
-  private val loader                               = ClasspathResourceLoader()
+  private val loader                               = ClasspathResourceLoader.withContext(classOf[GraphAnalyticsPluginModule])
 
   val updateRelationshipsScriptId = "updateRelationships"
 
