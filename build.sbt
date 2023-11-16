@@ -717,7 +717,7 @@ lazy val storage = project
   .in(file("storage"))
   .enablePlugins(UniversalPlugin, UniversalDeployPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(
-    addArtifact((Universal / packagedArtifact).value._1, Universal / packageZipTarball),
+    addArtifact((Universal / packagedArtifact) / artifact, Universal / packageZipTarball),
     shared,
     compilation,
     assertJavaVersion,
