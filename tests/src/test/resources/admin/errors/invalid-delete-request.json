@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "code": "InvalidDeleteRequest",
+  "@type": "InvalidDeleteRequest",
   "reason": "Invalid organization '{{orgId}}' DELETE request. To deprecate, 'rev' must be provided and 'prune' must be 'false' or omitted."
 }
