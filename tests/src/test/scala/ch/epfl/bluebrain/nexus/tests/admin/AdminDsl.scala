@@ -210,48 +210,29 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
       expectedResponse: Option[StatusCode] = None
   ): IO[Assertion] = {
     for {
-      _ <- logger.info(s"Creating/updating project $orgId/$projectId at revision $rev")
+      _        <- logger.info(s"Creating/updating project $orgId/$projectId at revision $rev")
       expected <- createProjectRespJson(
-        projectId,
-        orgId,
-        rev + 1,
-        authenticated = authenticated,
-        schema = "projects"
-      )
-      result <- cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
-        expectedResponse match {
-          case Some(status) =>
-            response.status shouldEqual status
-          case None =>
-            if (rev == 0)
-              response.status shouldEqual StatusCodes.Created
-            else
-              response.status shouldEqual StatusCodes.OK
+                    projectId,
+                    orgId,
+                    rev + 1,
+                    authenticated = authenticated,
+                    schema = "projects"
+                  )
+      result   <-
+        cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
+          expectedResponse match {
+            case Some(status) =>
+              response.status shouldEqual status
+            case None         =>
+              if (rev == 0)
+                response.status shouldEqual StatusCodes.Created
+              else
+                response.status shouldEqual StatusCodes.OK
 
-            filterProjectMetadataKeys(json) shouldEqual expected
+              filterProjectMetadataKeys(json) shouldEqual expected
+          }
         }
-      }
     } yield result
-
-    logger.info(s"Creating/updating project $orgId/$projectId at revision $rev") >>
-      cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
-        expectedResponse match {
-          case Some(status) =>
-            response.status shouldEqual status
-          case None         =>
-            if (rev == 0)
-              response.status shouldEqual StatusCodes.Created
-            else
-              response.status shouldEqual StatusCodes.OK
-            filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
-              projectId,
-              orgId,
-              rev + 1,
-              authenticated = authenticated,
-              schema = "projects"
-            )
-        }
-      }
   }
 
   def getUuids(orgId: String, projectId: String, identity: Identity): IO[(String, String)] =

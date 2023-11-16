@@ -216,14 +216,16 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
       for {
         _ <- deltaClient.delete[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterProjectMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
-                 projId,
-                 orgId,
-                 4,
-                 authenticated = Bojack,
-                 schema = "projects",
-                 deprecated = true
-               )
+               filterProjectMetadataKeys(json) shouldEqual adminDsl
+                 .createProjectRespJson(
+                   projId,
+                   orgId,
+                   4,
+                   authenticated = Bojack,
+                   schema = "projects",
+                   deprecated = true
+                 )
+                 .accepted
              }
         _ <- deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
