@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -109,6 +109,176 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
                 Some(tag)
               )
         }
+      }
+
+      "create a new event from a UpdateResource command when the source is identical but the remote contexts changed" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+
+        val newRemoteContext     = StaticContext(iri"https://bbp.epfl.ch/another-context", ContextValue.empty)
+        val newRemoteContexts    = remoteContexts + (newRemoteContext.iri -> newRemoteContext)
+        val newRemoteContextRefs = remoteContextRefs + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd            = JsonLdResult(
+          myId,
+          compacted,
+          expanded,
+          newRemoteContexts
+        )
+        eval(
+          Some(current),
+          UpdateResource(myId, projectRef, None, source, newJsonLd, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceUpdated(
+            myId,
+            projectRef,
+            Revision(schemas.resources, 1),
+            projectRef,
+            jsonld.types,
+            source,
+            jsonld.compacted,
+            jsonld.expanded,
+            newRemoteContextRefs,
+            2,
+            epoch,
+            subject,
+            Some(tag)
+          )
+      }
+
+      "create a new event from a UpdateResource command when the source is identical but the types have changed" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+
+        val additionalType = iri"https://neuroshapes.org/AnotherType"
+        val newJsonLd      = JsonLdResult(
+          myId,
+          compacted,
+          expanded.addType(additionalType),
+          remoteContexts
+        )
+        eval(
+          Some(current),
+          UpdateResource(myId, projectRef, None, source, newJsonLd, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceUpdated(
+            myId,
+            projectRef,
+            Revision(schemas.resources, 1),
+            projectRef,
+            newJsonLd.types,
+            source,
+            newJsonLd.compacted,
+            newJsonLd.expanded,
+            remoteContextRefs,
+            2,
+            epoch,
+            subject,
+            Some(tag)
+          )
+      }
+
+      "create a schema update event from a UpdateResource command when no changes are detected and a tag is provided" in {
+        val schema    = Latest(schemas.resources)
+        val newSchema = Latest(schema1)
+        val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+        eval(
+          Some(current),
+          UpdateResource(myId, projectRef, Some(newSchema), source, jsonld, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceSchemaUpdated(
+            myId,
+            projectRef,
+            Revision(schema1, 1),
+            projectRef,
+            jsonld.types,
+            2,
+            epoch,
+            subject,
+            Some(tag)
+          )
+      }
+
+      "create a tag event from a UpdateResource command when no changes are detected and a tag is provided" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+        eval(
+          Some(current),
+          UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceTagAdded(
+            myId,
+            projectRef,
+            jsonld.types,
+            1,
+            tag,
+            2,
+            epoch,
+            subject
+          )
+      }
+
+      "create a new event from a RefreshResource command on a new remote context" in {
+        val schema    = Latest(schemas.resources)
+        val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+        val schemaRev = Revision(schemas.resources, 1)
+
+        val newRemoteContext     = StaticContext(iri"https://bbp.epfl.ch/another-context", ContextValue.empty)
+        val newRemoteContexts    = remoteContexts + (newRemoteContext.iri -> newRemoteContext)
+        val newRemoteContextRefs = remoteContextRefs + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd            = JsonLdResult(
+          myId,
+          compacted,
+          expanded,
+          newRemoteContexts
+        )
+        eval(
+          Some(current),
+          RefreshResource(myId, projectRef, None, newJsonLd, 1, caller)
+        ).accepted shouldEqual
+          ResourceRefreshed(
+            myId,
+            projectRef,
+            schemaRev,
+            projectRef,
+            newJsonLd.types,
+            newJsonLd.compacted,
+            newJsonLd.expanded,
+            newRemoteContextRefs,
+            2,
+            epoch,
+            subject
+          )
+      }
+
+      "create a new event from a RefreshResource command on a new type" in {
+        val schema    = Latest(schemas.resources)
+        val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+        val schemaRev = Revision(schemas.resources, 1)
+
+        val additionalType = iri"https://neuroshapes.org/AnotherType"
+        val newJsonLd      = JsonLdResult(
+          myId,
+          compacted,
+          expanded.addType(additionalType),
+          remoteContexts
+        )
+        eval(
+          Some(current),
+          RefreshResource(myId, projectRef, None, newJsonLd, 1, caller)
+        ).accepted shouldEqual
+          ResourceRefreshed(
+            myId,
+            projectRef,
+            schemaRev,
+            projectRef,
+            newJsonLd.types,
+            newJsonLd.compacted,
+            newJsonLd.expanded,
+            newJsonLd.remoteContextRefs,
+            2,
+            epoch,
+            subject
+          )
       }
 
       "create a new event from a TagResource command" in {
@@ -217,6 +387,25 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ResourceNotFound]
         }
+      }
+
+      "reject with 'NoChangeDetected' for a update command not introducing any change" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+        eval(
+          Some(current),
+          UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None)
+        ).rejected shouldEqual NoChangeDetected(current)
+      }
+
+      "reject with 'NoChangeDetected' for a refresh command when there is no change" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
+
+        eval(
+          Some(current),
+          RefreshResource(myId, projectRef, None, jsonld, 1, caller)
+        ).rejected shouldEqual NoChangeDetected(current)
       }
 
       "reject with ResourceIsDeprecated" in {

@@ -104,6 +104,17 @@ object ResourceRejection {
       )
 
   /**
+    * Rejection returned when attempting to update a resource and no change is introduced.
+    *
+    * @param currentState
+    *   the current state of the resource
+    */
+  final case class NoChangeDetected(currentState: ResourceState)
+      extends ResourceFetchRejection(
+        s"No changes were detected when attempting to update resource '${currentState.id}' in project '${currentState.project}'."
+      )
+
+  /**
     * Rejection returned when attempting to create a resource where the passed id does not match the id on the payload.
     *
     * @param id

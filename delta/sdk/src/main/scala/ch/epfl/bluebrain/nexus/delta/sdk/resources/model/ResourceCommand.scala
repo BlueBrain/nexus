@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -71,6 +70,8 @@ object ResourceCommand {
     *   the jsonld representation of the resource
     * @param caller
     *   the subject which created this event
+    * @param tag
+    *   an optional tag to link to the resource at creation
     */
   final case class CreateResource(
       id: Iri,
@@ -104,6 +105,8 @@ object ResourceCommand {
     *   the last known revision of the resource
     * @param caller
     *   the subject which created this event
+    * @param tag
+    *   an optional tag to link to this new revision
     */
   final case class UpdateResource(
       id: Iri,
@@ -156,20 +159,20 @@ object ResourceCommand {
     *   project where the resource belongs
     * @param schemaRef
     *   schema of the resource
-    * @param expanded
-    *   expanded representation of the resource
     * @param rev
     *   last known revision of the resource
     * @param caller
     *   subject which created this event
+    * @param tag
+    *   an optional tag to link to this new revision
     */
   final case class UpdateResourceSchema(
       id: Iri,
       project: ProjectRef,
       schemaRef: ResourceRef,
-      expanded: ExpandedJsonLd,
       rev: Int,
-      caller: Caller
+      caller: Caller,
+      tag: Option[UserTag]
   ) extends ResourceCommand
       with ModifyCommandWithSchema {
     def subject: Subject = caller.subject
