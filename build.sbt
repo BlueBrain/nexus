@@ -722,10 +722,10 @@ lazy val storage = project
     assertJavaVersion,
     kamonSettings,
     storageAssemblySettings,
-    storageFatJar,
     coverage,
     release,
     servicePackaging,
+    addArtifact(Artifact("delta-storage-app", "application"), assembly),
     coverageMinimumStmtTotal := 75
   )
   .dependsOn(kernel, testkit % "test->compile")
@@ -869,18 +869,6 @@ lazy val kamonSettings = Seq(
     "io.kamon"        %% "kamon-system-metrics" % kamonVersion
   ),
   javaAgents           += kanelaAgent
-)
-
-lazy val storageFatJar = Seq(
-  Universal / mappings := {
-    val fatJar           = (Compile / assembly).value
-    val filteredMappings = (Universal / mappings).value filter {
-      case (_, name) if name.contains("kanela-agent") => true
-      case (_, name)                                  => !name.endsWith(".jar")
-    }
-    filteredMappings :+ (fatJar -> ("lib/" + fatJar.getName))
-  },
-  scriptClasspath      := Seq((assembly / assemblyJarName).value)
 )
 
 lazy val storageAssemblySettings = Seq(
