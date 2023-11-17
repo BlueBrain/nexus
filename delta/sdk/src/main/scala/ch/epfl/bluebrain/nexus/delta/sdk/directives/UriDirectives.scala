@@ -10,6 +10,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UnderscoreOrIdSegment.IdSeg
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -129,6 +130,22 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case segment if reservedIdSegments.contains(segment) => reject()
       case segment                                         => provide(IdSegment(segment))
     }
+
+  def idSegmentNoUnderscore: Directive1[IdSegment] = {
+    pathPrefix(Segment).flatMap {
+      case segment if reservedIdSegments.contains(segment) => reject()
+      case segment if segment == "_"                       => reject()
+      case segment                                         => provide(IdSegment(segment))
+    }
+  }
+
+  def idSegmentOrUnderscore: Directive1[UnderscoreOrIdSegment] = {
+    pathPrefix(Segment).flatMap {
+      case segment if reservedIdSegments.contains(segment) => reject()
+      case "_"                                             => provide(UnderscoreOrIdSegment.Underscore)
+      case segment                                         => provide(IdSeg(IdSegment(segment)))
+    }
+  }
 
   def iriSegment: Directive1[Iri] =
     pathPrefix(Segment).flatMap { segment =>
@@ -281,6 +298,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   def uriPrefix(uri: Uri): Directive0 =
     rawPathPrefix(PathMatcher(stripTrailingSlashes(uri.path), ()))
+}
+
+sealed trait UnderscoreOrIdSegment
+object UnderscoreOrIdSegment {
+  case object Underscore               extends UnderscoreOrIdSegment
+  case class IdSeg(segment: IdSegment) extends UnderscoreOrIdSegment
 }
 
 object UriDirectives extends UriDirectives
