@@ -460,10 +460,7 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(r)
         _                          <- raiseWhenDifferentSchema(r, s)
         (schemaRev, schemaProject) <- validate(r.id, expanded, r.schemaOpt.getOrElse(s.schema), s.project, r.caller)
-        // We allow the refresh if remote contexts have changed or if types have changed which may indicate a change of
-        // base at the project level
         noChangeDetected           = s.remoteContexts == remoteContextRefs && s.expanded == expanded
-        _ = println(s"""${r.id}  ${s.remoteContexts == remoteContextRefs} ${s.expanded == expanded}""")
         _                          <- IO.raiseWhen(noChangeDetected)(NoChangeDetected(s))
         time                       <- IOInstant.now
       } yield ResourceRefreshed(r.id, r.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, r.subject)
