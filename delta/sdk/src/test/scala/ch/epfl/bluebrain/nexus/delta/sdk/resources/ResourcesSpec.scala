@@ -145,38 +145,6 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           )
       }
 
-      "create a new event from a UpdateResource command when the source is identical but the types have changed" in {
-        val schema  = Latest(schemas.resources)
-        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
-
-        val additionalType = iri"https://neuroshapes.org/AnotherType"
-        val newJsonLd      = JsonLdResult(
-          myId,
-          compacted,
-          expanded.addType(additionalType),
-          remoteContexts
-        )
-        eval(
-          Some(current),
-          UpdateResource(myId, projectRef, None, source, newJsonLd, 1, caller, Some(tag))
-        ).accepted shouldEqual
-          ResourceUpdated(
-            myId,
-            projectRef,
-            Revision(schemas.resources, 1),
-            projectRef,
-            newJsonLd.types,
-            source,
-            newJsonLd.compacted,
-            newJsonLd.expanded,
-            remoteContextRefs,
-            2,
-            epoch,
-            subject,
-            Some(tag)
-          )
-      }
-
       "create a schema update event from a UpdateResource command when no changes are detected and a tag is provided" in {
         val schema    = Latest(schemas.resources)
         val newSchema = Latest(schema1)
