@@ -39,20 +39,36 @@ class StorageRoutes()(implicit storages: Storages[IO, AkkaSource], hc: HttpConfi
               concat(
                 put {
                   pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
-                    // Upload file
-                    fileUpload("file") { case (_, source) =>
-                      complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
-                    }
+                    concat(
+                      // Link file/dir
+                      (parameter("keepSource".as[Boolean].?) & entity(as[LinkFile])) {
+                        case (maybeKeepSource, LinkFile(source)) =>
+                          val keepSource = maybeKeepSource.getOrElse(false)
+                          validatePath(name, source) {
+                            if (keepSource)
+                              complete(storages.copyFile(name, source, path).runWithStatus(Created))
+                            else complete(storages.moveFile(name, source, path).runWithStatus(OK))
+                          }
+                      },
+                      // Upload file
+                      fileUpload("file") { case (_, source) =>
+                        complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
+                      }
+                    )
                   }
                 },
-                put {
-                  // Link file/dir
-                  entity(as[LinkFile]) { case LinkFile(source) =>
-                    validatePath(name, source) {
-                      complete(storages.moveFile(name, source, path).runWithStatus(OK))
-                    }
-                  }
-                },
+//                put {
+//                  pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
+//                      // Link file/dir
+//                      (parameter("keepSource".as[Boolean].?) & entity(as[LinkFile])) { case (maybeKeepSource, LinkFile(source)) =>
+//                        val keepSource = maybeKeepSource.getOrElse(false)
+//                        validatePath(name, source) {
+//                          if (keepSource) complete(storages.copyFile(name, source, path).runWithStatus(Created))
+//                          else complete(storages.moveFile(name, source, path).runWithStatus(OK))
+//                        }
+//                      }
+//                  }
+//                },
                 // Get file
                 get {
                   pathExists(name, path).apply { implicit pathExistsEvidence =>

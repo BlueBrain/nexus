@@ -218,7 +218,8 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source = "source/dir"
         val dest   = "dest/dir"
-        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
+        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
@@ -232,8 +233,7 @@ class StorageRoutesSpec
               quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
             )
           )
-
-          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) wasCalled once
+          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
         }
       }
 
@@ -241,6 +241,7 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source = "../dir"
         val dest   = "dest/dir"
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -262,8 +263,9 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source     = "source/dir"
         val dest       = "dest/dir"
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
         val attributes = FileAttributes(s"file://some/prefix/$dest", 12L, Digest.empty, `application/octet-stream`)
-        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
+        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
           IO.pure(Right(attributes))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
@@ -281,7 +283,30 @@ class StorageRoutesSpec
             )
           )
 
-          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) wasCalled once
+          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
+        }
+      }
+
+      "pass and retain the source file" in new Ctx {
+        storages.exists(name) shouldReturn BucketExists
+        val source = "source/dir"
+        val dest   = "dest/dir"
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
+        storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(
+          BucketExists,
+          PathDoesNotExist
+        ) shouldReturn
+          IO.pure(Right(()))
+
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+
+        Put(s"/v1/buckets/$name/files/$dest?keepSource=true", json) ~> route ~> check {
+          status shouldEqual Created
+
+          storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(
+            BucketExists,
+            PathDoesNotExist
+          ) wasCalled once
         }
       }
     }
