@@ -56,22 +56,6 @@ object ValidateFile {
         val absSourcePath       = filePath(config, name, sourcePath, protectedDir = false)
         val absDestPath         = filePath(config, name, destPath)
 
-        def checkIfSourceIsFileOrDir: EitherT[F, Rejection, Boolean] =
-          EitherT
-            .right[Rejection](isRegularFile(absSourcePath))
-            .ifM(
-              ifTrue = EitherT.pure(false),
-              ifFalse = checkIfSourceIsValidDirectory
-            )
-
-        def checkIfSourceIsValidDirectory: EitherT[F, Rejection, Boolean] =
-          EitherT
-            .right[Rejection](isDirectory(absSourcePath))
-            .ifM(
-              ifTrue = EitherT(rejectIfDirContainsLink(name, sourcePath, absSourcePath)).as(true),
-              ifFalse = EitherT.leftT(PathNotFound(name, sourcePath))
-            )
-
         def notFound = PathNotFound(name, sourcePath)
 
         (for {
@@ -81,7 +65,7 @@ object ValidateFile {
           _     <- EitherT.right(throwIf(!descendantOf(absDestPath, bucketProtectedPath), PathInvalid(name, destPath)))
           _     <- EitherT(rejectIf(fileExists(absDestPath), PathAlreadyExists(name, destPath)))
           _     <- EitherT(rejectIfFileIsSymbolicLinkOrContainsHardLink(name, sourcePath, absSourcePath))
-          isDir <- checkIfSourceIsFileOrDir
+          isDir <- checkIfSourceIsFileOrDir(name, sourcePath, absSourcePath)
         } yield new ValidatedMoveFile(name, absSourcePath, absDestPath, isDir) {}).value
       }
 
@@ -107,21 +91,45 @@ object ValidateFile {
         } yield new ValidatedCopyFile(name, absSourcePath, absDestPath) {}).value
       }
 
-      private def fileExists(absSourcePath: Path): F[Boolean]     = F.delay(Files.exists(absSourcePath))
-      private def isRegularFile(absSourcePath: Path): F[Boolean]  = F.delay(Files.isRegularFile(absSourcePath))
-      private def isDirectory(absSourcePath: Path): F[Boolean]    = F.delay(Files.isDirectory(absSourcePath))
-      private def isSymbolicLink(absSourcePath: Path): F[Boolean] = F.delay(Files.isSymbolicLink(absSourcePath))
+      def fileExists(absSourcePath: Path): F[Boolean]     = F.delay(Files.exists(absSourcePath))
+      def isRegularFile(absSourcePath: Path): F[Boolean]  = F.delay(Files.isRegularFile(absSourcePath))
+      def isDirectory(absSourcePath: Path): F[Boolean]    = F.delay(Files.isDirectory(absSourcePath))
+      def isSymbolicLink(absSourcePath: Path): F[Boolean] = F.delay(Files.isSymbolicLink(absSourcePath))
 
-      private def allowedPrefix(config: StorageConfig, bucketPath: Path, absSourcePath: Path) =
+      def allowedPrefix(config: StorageConfig, bucketPath: Path, absSourcePath: Path) =
         absSourcePath.startsWith(bucketPath) ||
           config.extraPrefixes.exists(absSourcePath.startsWith)
 
-      private def containsHardLink(absPath: Path): F[Boolean] =
+      def containsHardLink(absPath: Path): F[Boolean] =
         F.delay(Files.isDirectory(absPath)).flatMap {
           case true  => false.pure[F]
           case false =>
             F.delay(Files.getAttribute(absPath, "unix:nlink").asInstanceOf[Int]).map(_ > 1)
         }
+
+      def checkIfSourceIsFileOrDir(
+          name: String,
+          sourcePath: Uri.Path,
+          absSourcePath: Path
+      ): EitherT[F, Rejection, Boolean] =
+        EitherT
+          .right[Rejection](isRegularFile(absSourcePath))
+          .ifM(
+            ifTrue = EitherT.pure(false),
+            ifFalse = checkIfSourceIsValidDirectory(name, sourcePath, absSourcePath)
+          )
+
+      def checkIfSourceIsValidDirectory(
+          name: String,
+          sourcePath: Uri.Path,
+          absSourcePath: Path
+      ): EitherT[F, Rejection, Boolean] =
+        EitherT
+          .right[Rejection](isDirectory(absSourcePath))
+          .ifM(
+            ifTrue = EitherT(rejectIfDirContainsLink(name, sourcePath, absSourcePath)).as(true),
+            ifFalse = EitherT.leftT(PathNotFound(name, sourcePath))
+          )
 
       def rejectIfFileIsSymbolicLinkOrContainsHardLink(
           name: String,
@@ -144,8 +152,8 @@ object ValidateFile {
       def rejectIfDirContainsLink(name: String, sourcePath: Uri.Path, path: Path): F[RejOr[Unit]] =
         rejectIf(dirContainsLink(path), PathContainsLinks(name, sourcePath))
 
-      private def rejectIf(cond: F[Boolean], rej: Rejection): F[RejOr[Unit]] = cond.ifF(Left(rej), Right(()))
+      def rejectIf(cond: F[Boolean], rej: Rejection): F[RejOr[Unit]] = cond.ifF(Left(rej), Right(()))
 
-      private def throwIf(cond: Boolean, e: StorageError): F[Unit] = F.raiseWhen(cond)(e)
+      def throwIf(cond: Boolean, e: StorageError): F[Unit] = F.raiseWhen(cond)(e)
     }
 }
