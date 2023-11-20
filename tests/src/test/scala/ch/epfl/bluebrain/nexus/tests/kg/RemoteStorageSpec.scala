@@ -167,7 +167,7 @@ class RemoteStorageSpec extends StorageSpec {
           (_, response) =>
             println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
             response.status shouldEqual StatusCodes.OK
-            contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+            contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
         }
     } yield {
       succeed
