@@ -8,7 +8,7 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
-import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PathInvalid, PermissionsFixingFailed}
+import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PermissionsFixingFailed}
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence._
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence._
 import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
@@ -21,7 +21,6 @@ import java.nio.file.{Files, Path}
 import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
-import scala.util.Try
 
 trait Storages[F[_], Source] {
 
@@ -61,6 +60,17 @@ trait Storages[F[_], Source] {
       source: Source
   )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes]
 
+  /**
+    * Copies a file between locations inside the nexus folder. Attributes are neither recomputed nor fetched; this
+    * method is called only for its effects.
+    *
+    * @param name
+    *   the storage bucket name
+    * @param sourcePath
+    *   the source path location within the nexus folder. Must be a file, not a directory
+    * @param destPath
+    *   the destination path location within the nexus folder
+    */
   def copyFile(
       name: String,
       sourcePath: Uri.Path,
@@ -143,7 +153,8 @@ object Storages {
       config: StorageConfig,
       contentTypeDetector: ContentTypeDetector,
       digestConfig: DigestConfig,
-      cache: AttributesCache[F]
+      cache: AttributesCache[F],
+      validateFile: ValidateFile[F]
   )(implicit
       ec: ExecutionContext,
       mt: Materializer,
@@ -168,45 +179,40 @@ object Storages {
         name: String,
         path: Uri.Path,
         source: AkkaSource
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] = {
-      val absFilePath = filePath(config, name, path)
-      if (descendantOf(absFilePath, basePath(config, name)))
-        F.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
-          F.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
-            source
-              .alsoToMat(sinkDigest(msgDigest))(Keep.right)
-              .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
-                digFuture.zipWith(ioFuture) {
-                  case (digest, io) if absFilePath.toFile.exists() =>
-                    Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
-                  case _                                           =>
-                    Future.failed(InternalError(s"I/O error writing file to path '$path'"))
-                }
-              }
-              .run()
-              .flatten
-              .to[F]
-          }
-      else
-        F.raiseError(PathInvalid(name, path))
-    }
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] =
+      for {
+        validated  <- validateFile.forCreate(name, path)
+        _          <- F.delay(Files.createDirectories(validated.absDestPath.getParent))
+        msgDigest  <- F.delay(MessageDigest.getInstance(digestConfig.algorithm))
+        attributes <- streamFileContents(source, path, validated.absDestPath, msgDigest)
+      } yield attributes
 
-    def copyFile(
-        name: String,
-        sourcePath: Uri.Path,
-        destPath: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOr[Unit]] =
-      CreateFileFromExisting.forCopyFromProtectedDir(config, name, sourcePath, destPath).flatMap {
-        case Left(value)  => value.asLeft[Unit].pure[F]
-        case Right(value) => doCopy(value.absSourcePath, value.absDestPath).map(Right(_))
-      }
+    private def streamFileContents(
+        source: AkkaSource,
+        path: Uri.Path,
+        absFilePath: Path,
+        msgDigest: MessageDigest
+    ): F[FileAttributes] =
+      source
+        .alsoToMat(sinkDigest(msgDigest))(Keep.right)
+        .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
+          digFuture.zipWith(ioFuture) {
+            case (digest, io) if absFilePath.toFile.exists() =>
+              Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
+            case _                                           =>
+              Future.failed(InternalError(s"I/O error writing file to path '$path'"))
+          }
+        }
+        .run()
+        .flatten
+        .to[F]
 
     def moveFile(
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOrAttributes] =
-      CreateFileFromExisting.forMoveIntoProtectedDir(config, name, sourcePath, destPath).flatMap {
+      validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath).flatMap {
         case Left(value)  => value.asLeft[FileAttributes].pure[F]
         case Right(value) =>
           fixPermissionsAndCopy(value.absSourcePath, value.absDestPath, isDir = value.isDir)
@@ -227,16 +233,6 @@ object Storages {
         } yield ()
       else F.unit
 
-    private def doCopy(
-        absSourcePath: Path,
-        absDestPath: Path
-    ): F[Unit] =
-      for {
-        _ <- F.delay(Files.createDirectories(absDestPath.getParent))
-        _ <- F.delay(Files.copy(absSourcePath, absDestPath, COPY_ATTRIBUTES))
-        _ <- F.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
-      } yield ()
-
     private def computeSizeAndMoveFile(
         absSourcePath: Path,
         absDestPath: Path,
@@ -249,6 +245,29 @@ object Storages {
         _            <- F.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
         mediaType    <- F.delay(contentTypeDetector(absDestPath, isDir))
       } yield Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType))
+
+    private def size(absPath: Path): F[Long] =
+      if (Files.isDirectory(absPath))
+        Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_)).to[F]
+      else if (Files.isRegularFile(absPath))
+        F.delay(Files.size(absPath))
+      else
+        F.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
+
+    def copyFile(
+        name: String,
+        sourcePath: Uri.Path,
+        destPath: Uri.Path
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOr[Unit]] =
+      validateFile.forCopyWithinProtectedDir(name, sourcePath, destPath).flatMap {
+        case Left(v)  => v.asLeft[Unit].pure[F]
+        case Right(v) =>
+          for {
+            _ <- F.delay(Files.createDirectories(v.absDestPath.getParent))
+            _ <- F.delay(Files.copy(v.absSourcePath, v.absDestPath, COPY_ATTRIBUTES))
+            _ <- F.delay(cache.asyncComputePut(v.absDestPath, digestConfig.algorithm))
+          } yield Right(())
+      }
 
     def getFile(
         name: String,
@@ -266,13 +285,6 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes] =
       cache.get(filePath(config, name, path))
 
-    private def size(absPath: Path): F[Long] =
-      if (Files.isDirectory(absPath))
-        Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_)).to[F]
-      else if (Files.isRegularFile(absPath))
-        F.delay(Files.size(absPath))
-      else
-        F.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
   }
 
 }

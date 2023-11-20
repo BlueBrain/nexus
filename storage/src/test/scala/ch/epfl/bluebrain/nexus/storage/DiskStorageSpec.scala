@@ -52,7 +52,8 @@ class DiskStorageSpec
   val dConfig             = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
   val contentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
   val cache               = mock[AttributesCache[IO]]
-  val storage             = new DiskStorage[IO](sConfig, contentTypeDetector, dConfig, cache)
+  val validateFile        = ValidateFile.mk[IO](sConfig)
+  val storage             = new DiskStorage[IO](sConfig, contentTypeDetector, dConfig, cache, validateFile)
 
   override def afterAll(): Unit = {
     Directory(rootPath.toFile).deleteRecursively()
@@ -166,8 +167,8 @@ class DiskStorageSpec
 
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
         val falseBinary                                 = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
-        val badStorage                                  =
-          new DiskStorage[IO](sConfig.copy(fixerCommand = Vector(falseBinary)), contentTypeDetector, dConfig, cache)
+        val newConfig                                   = sConfig.copy(fixerCommand = Vector(falseBinary))
+        val badStorage                                  = new DiskStorage[IO](newConfig, contentTypeDetector, dConfig, cache, validateFile)
         val file                                        = "some/folder/my !file.txt"
         val absoluteFile                                = baseRootPath.resolve(Paths.get(file))
         Files.createDirectories(absoluteFile.getParent)
@@ -265,13 +266,13 @@ class DiskStorageSpec
       }
 
       "pass on file specified using a relative path" in new AbsoluteDirectoryCreated {
-        val file         = "some/folder/my !file.txt"
-        val absoluteFile = baseRootPath.resolve(Paths.get(file.toString))
+        val file                                        = "some/folder/my !file.txt"
+        val absoluteFile                                = baseRootPath.resolve(Paths.get(file.toString))
         Files.createDirectories(absoluteFile.getParent)
-
-        val content                                     = "some content"
-        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
         implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+
+        val content = "some content"
+        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
         storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted shouldEqual
           FileAttributes(
@@ -344,6 +345,86 @@ class DiskStorageSpec
         Files.exists(resolvedDir) shouldEqual true
         Files.exists(basePath.resolve("some/other/my !file.txt")) shouldEqual true
       }
+    }
+
+    "copying" should {
+      implicit val bucketExistsEvidence = BucketExists
+
+      "fail when source does not exists" in new AbsoluteDirectoryCreated {
+        val source                                      = randomString()
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+        storage.copyFile(name, Uri.Path(source), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
+          PathNotFound(name, Uri.Path(source))
+      }
+
+      "fail when source is not inside protected directory" in new AbsoluteDirectoryCreated {
+        val file                                        = "some/folder/my !file.txt"
+        val absoluteFile                                = baseRootPath.resolve(Paths.get(file))
+        Files.createDirectories(absoluteFile.getParent)
+        Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+
+        storage.copyFile(name, Uri.Path(file), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
+          PathNotFound(name, Uri.Path(file))
+      }
+
+      "fail when destination already exists" in new AbsoluteDirectoryCreated {
+        val file         = sConfig.protectedDirectory.toString + "/my !file.txt"
+        val absoluteFile = baseRootPath.resolve(Paths.get(file))
+        Files.createDirectories(absoluteFile.getParent)
+        Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
+
+        val fileDest                                    = basePath.resolve(Paths.get("my !file.txt"))
+        Files.write(fileDest, "something".getBytes(StandardCharsets.UTF_8))
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+
+        storage
+          .copyFile(name, Uri.Path(file), Uri.Path("my !file.txt"))
+          .rejected[PathAlreadyExists] shouldEqual
+          PathAlreadyExists(name, Uri.Path("my !file.txt"))
+      }
+
+      "fail when destination is out of bucket scope" in new AbsoluteDirectoryCreated {
+        val file         = sConfig.protectedDirectory.toString + "/my !file.txt"
+        val dest         = Uri.Path("../some/other path.txt")
+        val absoluteFile = baseRootPath.resolve(Paths.get(file.toString))
+        Files.createDirectories(absoluteFile.getParent)
+
+        val content                                     = "some content"
+        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+
+        storage.copyFile(name, Uri.Path(file), dest).unsafeToFuture().failed.futureValue shouldEqual
+          PathInvalid(name, dest)
+        Files.exists(absoluteFile) shouldEqual true
+      }
+
+      "pass on file specified for absolute/relative path" in {
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+
+        forAll(List(true, false)) { useRelativePath =>
+          new AbsoluteDirectoryCreated {
+            val sourceFile         = sConfig.protectedDirectory.toString + "/my !file.txt"
+            val absoluteSourceFile = baseRootPath.resolve(Paths.get(sourceFile))
+            Files.createDirectories(absoluteSourceFile.getParent)
+
+            val content         = "some content"
+            Files.write(absoluteSourceFile, content.getBytes(StandardCharsets.UTF_8))
+            val destPath        = "some/other path.txt"
+            val sourcePathToUse = if (useRelativePath) sourceFile else absoluteSourceFile.toString
+
+            storage
+              .copyFile(name, Uri.Path(sourcePathToUse), Uri.Path(destPath))
+              .accepted shouldEqual ()
+
+            val absoluteDestFile = basePath.resolve(Paths.get(destPath))
+            Files.exists(absoluteSourceFile) shouldEqual true
+            Files.exists(absoluteDestFile) shouldEqual true
+            Files.readString(absoluteDestFile, StandardCharsets.UTF_8) shouldEqual content
+          }
+        }
+      }
+
     }
 
     "fetching" should {

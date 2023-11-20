@@ -25,7 +25,8 @@ import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
-import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
 
@@ -201,7 +202,10 @@ class StorageRoutesSpec
       "fail when bucket does not exists" in new Ctx {
         storages.exists(name) shouldReturn BucketDoesNotExist
 
-        Put(s"/v1/buckets/$name/files/path/to/myfile.txt", jsonContentOf("/file-link.json")) ~> route ~> check {
+        Put(
+          s"/v1/buckets/$name/files/path/to/myfile.txt",
+          jsonContentOf("/file-create-from-existing.json")
+        ) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
             "/error.json",
@@ -222,7 +226,7 @@ class StorageRoutesSpec
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -243,7 +247,7 @@ class StorageRoutesSpec
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual BadRequest
@@ -268,7 +272,7 @@ class StorageRoutesSpec
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
           IO.pure(Right(attributes))
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual OK
@@ -286,8 +290,75 @@ class StorageRoutesSpec
           storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
         }
       }
+    }
 
-      "pass and retain the source file" in new Ctx {
+    "copying a file" should {
+
+      "fail when bucket does not exists" in new Ctx {
+        storages.exists(name) shouldReturn BucketDoesNotExist
+
+        Post(
+          s"/v1/buckets/$name/files/path/to/myfile.txt",
+          jsonContentOf("/file-create-from-existing.json")
+        ) ~> route ~> check {
+          status shouldEqual NotFound
+          responseAs[Json] shouldEqual jsonContentOf(
+            "/error.json",
+            Map(
+              quote("{type}")   -> "BucketNotFound",
+              quote("{reason}") -> s"The provided bucket '$name' does not exist."
+            )
+          )
+          storages.exists(name) wasCalled once
+        }
+      }
+
+      "fail when copy file returns a exception" in new Ctx {
+        storages.exists(name) shouldReturn BucketExists
+        val source = "source/dir"
+        val dest   = "dest/dir"
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
+        storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
+          IO.raiseError(InternalError("something went wrong"))
+
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+
+        Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
+          status shouldEqual InternalServerError
+          responseAs[Json] shouldEqual jsonContentOf(
+            "/error.json",
+            Map(
+              quote("{type}")   -> "InternalError",
+              quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
+            )
+          )
+          storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
+        }
+      }
+
+      "fail with invalid source path" in new Ctx {
+        storages.exists(name) shouldReturn BucketExists
+        val source = "../dir"
+        val dest   = "dest/dir"
+        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
+
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+
+        Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
+          status shouldEqual BadRequest
+          responseAs[Json] shouldEqual jsonContentOf(
+            "/error.json",
+            Map(
+              quote("{type}") -> "PathInvalid",
+              quote(
+                "{reason}"
+              )               -> s"The provided location inside the bucket '$name' with the path '$source' is invalid."
+            )
+          )
+        }
+      }
+
+      "pass" in new Ctx {
         storages.exists(name) shouldReturn BucketExists
         val source = "source/dir"
         val dest   = "dest/dir"
@@ -298,10 +369,11 @@ class StorageRoutesSpec
         ) shouldReturn
           IO.pure(Right(()))
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
 
-        Put(s"/v1/buckets/$name/files/$dest?keepSource=true", json) ~> route ~> check {
+        Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual Created
+          responseAs[Json] shouldEqual JsonObject.empty.asJson
 
           storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(
             BucketExists,

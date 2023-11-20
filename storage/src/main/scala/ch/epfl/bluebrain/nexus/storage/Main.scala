@@ -60,8 +60,11 @@ object Main {
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
+    val attributesCache: AttributesCache[IO] = AttributesCache[IO, AkkaSource]
+    val validateFile: ValidateFile[IO]       = ValidateFile.mk[IO](appConfig.storage)
+
     val storages: Storages[IO, AkkaSource] =
-      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[IO, AkkaSource])
+      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, attributesCache, validateFile)
 
     val logger: LoggingAdapter = Logging(as, getClass)
 
