@@ -299,14 +299,16 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
         val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
         actualContent shouldEqual expectedContent
 
-        val expectedMetadata = FilesRoutesSpec.fileMetadata(
-          projectRef,
-          fileId,
-          file.value.attributes,
-          storageRef,
-          createdBy = subject,
-          updatedBy = subject
-        ).accepted
+        val expectedMetadata = FilesRoutesSpec
+          .fileMetadata(
+            projectRef,
+            fileId,
+            file.value.attributes,
+            storageRef,
+            createdBy = subject,
+            updatedBy = subject
+          )
+          .accepted
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }
