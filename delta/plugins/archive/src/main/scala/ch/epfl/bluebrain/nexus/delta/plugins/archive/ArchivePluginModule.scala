@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 
 /**
   * Archive plugin wiring.
@@ -39,10 +38,9 @@ object ArchivePluginModule extends ModuleDef {
         fileSelf: FileSelf,
         sort: JsonKeyOrdering,
         baseUri: BaseUri,
-        rcr: RemoteContextResolution @Id("aggregate"),
-        runtime: IORuntime
+        rcr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr, runtime)
+      ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr)
   }
 
   make[FileSelf].from { (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
@@ -75,10 +73,9 @@ object ArchivePluginModule extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        jko: JsonKeyOrdering,
-        runtime: IORuntime
+        jko: JsonKeyOrdering
     ) =>
-      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko, runtime)
+      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

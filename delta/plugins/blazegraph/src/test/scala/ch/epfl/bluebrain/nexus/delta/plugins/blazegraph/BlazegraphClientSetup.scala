@@ -5,7 +5,6 @@ import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 
@@ -36,7 +35,7 @@ object BlazegraphClientSetup extends Fixtures {
   ): IOFixture[BlazegraphClient] =
     ResourceFixture.suiteLocal(name, resource())
 
-  trait Fixture { self: CatsRunContext =>
+  trait Fixture {
     val blazegraphClient: ResourceFixture.IOFixture[BlazegraphClient] =
       BlazegraphClientSetup.suiteLocalFixture("blazegraphClient")
   }

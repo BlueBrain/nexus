@@ -13,7 +13,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import io.circe.Json
@@ -31,7 +31,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     as: ActorSystem,
     materializer: Materializer,
-    runtime: IORuntime,
     ec: ExecutionContext
 ) extends Matchers
     with AppendedClues {
@@ -314,7 +313,6 @@ object HttpClient {
   def apply(baseUrl: Uri)(implicit
       as: ActorSystem,
       materializer: Materializer,
-      runtime: IORuntime,
       ec: ExecutionContext
   ) = new HttpClient(baseUrl, Http())
 }

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.ExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import akka.http.scaladsl.server.Directives._
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -30,8 +30,7 @@ object RdfExceptionHandler {
   def apply(implicit
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      base: BaseUri,
-      runtime: IORuntime
+      base: BaseUri
   ): ExceptionHandler =
     ExceptionHandler {
       case err: IdentityError             => discardEntityAndForceEmit(err)

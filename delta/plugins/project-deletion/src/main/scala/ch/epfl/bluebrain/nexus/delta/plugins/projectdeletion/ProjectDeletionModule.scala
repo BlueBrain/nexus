@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
@@ -27,9 +26,8 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
         config: ProjectDeletionConfig,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
-    ) => new ProjectDeletionRoutes(config)(baseUri, cr, ordering, runtime)
+        ordering: JsonKeyOrdering
+    ) => new ProjectDeletionRoutes(config)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: ProjectDeletionRoutes) =>

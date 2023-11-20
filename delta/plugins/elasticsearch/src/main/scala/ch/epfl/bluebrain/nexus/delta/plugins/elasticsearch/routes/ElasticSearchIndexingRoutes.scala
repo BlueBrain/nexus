@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server._
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
@@ -62,8 +61,7 @@ final class ElasticSearchIndexingRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -179,8 +177,7 @@ object ElasticSearchIndexingRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): Route =
     new ElasticSearchIndexingRoutes(
       identities,

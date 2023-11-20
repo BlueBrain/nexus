@@ -4,8 +4,8 @@ import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
@@ -90,8 +90,7 @@ object ArchiveDownload {
   )(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
-      rcr: RemoteContextResolution,
-      runtime: IORuntime
+      rcr: RemoteContextResolution
   ): ArchiveDownload =
     new ArchiveDownload {
 
@@ -270,8 +269,7 @@ object ArchiveDownload {
   def apply(aclCheck: AclCheck, shifts: ResourceShifts, files: Files, fileSelf: FileSelf)(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
-      rcr: RemoteContextResolution,
-      runtime: IORuntime
+      rcr: RemoteContextResolution
   ): ArchiveDownload =
     ArchiveDownload(
       aclCheck,

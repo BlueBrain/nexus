@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -55,13 +54,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
-        runtime: IORuntime,
         authTokenProvider: AuthTokenProvider
     ) =>
       val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
-        as,
-        runtime
+        as
       )
   }
 
@@ -293,7 +290,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new CompositeViewsRoutes(
@@ -303,7 +299,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         blazegraphQuery,
         elasticSearchQuery,
         schemeDirectives
-      )(baseUri, cr, ordering, runtime, fusionConfig)
+      )(baseUri, cr, ordering, fusionConfig)
   }
 
   make[CompositeViewsIndexingRoutes].from {
@@ -318,8 +314,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         config: CompositeViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
       new CompositeViewsIndexingRoutes(
         identities,
@@ -330,7 +325,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projections,
         projectionErrors,
         schemeDirectives
-      )(baseUri, config.pagination, cr, ordering, runtime)
+      )(baseUri, config.pagination, cr, ordering)
   }
 
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>

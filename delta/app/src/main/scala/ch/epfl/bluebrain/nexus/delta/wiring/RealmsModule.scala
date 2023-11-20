@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -48,10 +47,9 @@ object RealmsModule extends ModuleDef {
         cfg: AppConfig,
         aclCheck: AclCheck,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering, runtime)
+      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing]) =>

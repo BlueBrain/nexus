@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtractValue}
@@ -14,7 +14,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   */
 abstract class CatsEffectSuite
     extends NexusSuite
-    with CatsRunContext
     with MUnitExtractValue
     with ClasspathResources
     with CatsIOValues

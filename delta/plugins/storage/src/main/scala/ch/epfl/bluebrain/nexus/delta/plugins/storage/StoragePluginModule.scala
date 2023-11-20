@@ -45,7 +45,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 
 /**
   * Storages and Files wiring
@@ -123,7 +122,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       {
@@ -138,7 +136,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           baseUri,
           cr,
           ordering,
-          runtime,
           fusionConfig
         )
       }
@@ -164,7 +161,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           clock: Clock[IO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          runtime: IORuntime,
           remoteDiskStorageClient: RemoteDiskStorageClient
       ) =>
         IO
@@ -181,8 +177,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               clock
             )(
               uuidF,
-              as,
-              runtime
+              as
             )
           )
           .flatTap { files =>
@@ -202,7 +197,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
@@ -211,7 +205,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storageConfig,
         cr,
         ordering,
-        runtime,
         fusionConfig
       )
   }

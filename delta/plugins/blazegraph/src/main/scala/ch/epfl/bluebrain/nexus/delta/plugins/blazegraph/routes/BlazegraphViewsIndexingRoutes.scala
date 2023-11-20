@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import cats.implicits._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -43,7 +42,6 @@ class BlazegraphViewsIndexingRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    runtime: IORuntime,
     pc: PaginationConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -155,7 +153,6 @@ object BlazegraphViewsIndexingRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      runtime: IORuntime,
       pc: PaginationConfig
   ): Route = {
     new BlazegraphViewsIndexingRoutes(

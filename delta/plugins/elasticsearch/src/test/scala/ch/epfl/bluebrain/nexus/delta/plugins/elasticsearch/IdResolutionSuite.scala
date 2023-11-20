@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.searchResults
@@ -95,8 +94,7 @@ class IdResolutionSuite extends CatsEffectSuite with Fixtures {
 
 object IdResolutionSuite {
   def asResourceF(resourceRef: ResourceRef, projectRef: ProjectRef)(implicit
-      rcr: RemoteContextResolution,
-      runtime: IORuntime
+      rcr: RemoteContextResolution
   ): DataResource = {
     val resource = ResourceGen.resource(resourceRef.iri, projectRef, Json.obj())
     ResourceGen.resourceFor(resource)

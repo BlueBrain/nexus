@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.dependency.PostgresServiceDependency
@@ -30,14 +29,12 @@ object VersionModule extends ModuleDef {
         plugins: List[PluginDescription],
         dependencies: Set[ServiceDependency],
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
       VersionRoutes(identities, aclCheck, plugins, dependencies.toList, cfg.description)(
         cfg.http.baseUri,
         cr,
-        ordering,
-        runtime
+        ordering
       )
   }
 

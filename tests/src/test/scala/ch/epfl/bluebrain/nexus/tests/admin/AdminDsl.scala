@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.Generators
@@ -15,7 +15,7 @@ import io.circe.Json
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, OptionValues}
 
-class AdminDsl(cl: HttpClient, config: TestsConfig)(implicit runtime: IORuntime)
+class AdminDsl(cl: HttpClient, config: TestsConfig)
     extends Generators
     with CirceUnmarshalling
     with Matchers

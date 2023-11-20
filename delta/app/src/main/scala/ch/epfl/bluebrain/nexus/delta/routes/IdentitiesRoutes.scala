@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -19,8 +18,7 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 class IdentitiesRoutes(identities: Identities, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck) {
 
   import baseUri.prefixSegment
@@ -47,6 +45,6 @@ object IdentitiesRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime): Route =
+  )(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     new IdentitiesRoutes(identities, aclCheck).routes
 }

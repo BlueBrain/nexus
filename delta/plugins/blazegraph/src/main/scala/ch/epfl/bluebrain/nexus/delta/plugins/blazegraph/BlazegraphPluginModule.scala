@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -205,7 +204,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new BlazegraphViewsRoutes(
@@ -219,7 +217,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        runtime,
         cfg.pagination,
         fusionConfig
       )
@@ -236,8 +233,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
       new BlazegraphViewsIndexingRoutes(
         views.fetchIndexingView(_, _),
@@ -250,7 +246,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        runtime,
         cfg.pagination
       )
   }

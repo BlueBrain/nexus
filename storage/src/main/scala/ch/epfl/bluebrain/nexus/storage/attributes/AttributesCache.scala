@@ -4,7 +4,6 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.util.Timeout
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.storage.File.FileAttributes
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, OperationTimedOut}
@@ -45,7 +44,6 @@ object AttributesCache {
 
   def apply[Source](implicit
       system: ActorSystem,
-      runtime: IORuntime,
       clock: Clock,
       tm: Timeout,
       computation: AttributesComputation[Source],

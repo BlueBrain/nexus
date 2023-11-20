@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -87,7 +86,6 @@ object ResourcesModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig,
         config: ResourcesConfig
     ) =>
@@ -101,7 +99,6 @@ object ResourcesModule extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        runtime,
         fusionConfig,
         config.decodingOption
       )

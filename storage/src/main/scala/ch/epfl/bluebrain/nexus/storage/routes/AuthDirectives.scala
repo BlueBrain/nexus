@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directives._
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.storage.StorageError._
@@ -16,7 +16,7 @@ object AuthDirectives {
   /**
     * Extracts the credentials from the HTTP Authorization Header and builds the [[AccessToken]]
     */
-  def validUser(implicit authorizationMethod: AuthorizationMethod, runtime: IORuntime): Directive0 = {
+  def validUser(implicit authorizationMethod: AuthorizationMethod): Directive0 = {
     def validate(token: Option[AuthToken]): Directive0 =
       authorizationMethod.validate(token) match {
         case Left(error) =>

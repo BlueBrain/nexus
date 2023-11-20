@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsIm
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
@@ -42,9 +41,8 @@ object PermissionsModule extends ModuleDef {
         aclCheck: AclCheck,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
-    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, cr, ordering, runtime)
+        ordering: JsonKeyOrdering
+    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, cr, ordering)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => PermissionsEvent.sseEncoder(base) }

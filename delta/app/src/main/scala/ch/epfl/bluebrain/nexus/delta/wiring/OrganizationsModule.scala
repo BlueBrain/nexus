@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Org
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 
 /**
   * Organizations module wiring config.
@@ -57,15 +56,13 @@ object OrganizationsModule extends ModuleDef {
         aclCheck: AclCheck,
         schemeDirectives: DeltaSchemeDirectives,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
       new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         cr,
-        ordering,
-        runtime
+        ordering
       )
   }
 

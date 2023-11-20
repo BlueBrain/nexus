@@ -7,7 +7,6 @@ import io.circe.{Json, JsonObject}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, Assertions, OptionValues}
 import Optics._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings}
 
@@ -17,7 +16,7 @@ trait OpticsValidators
     with CirceEq
     with ClasspathResources
     with ScalaTestExtractValue {
-  self: Assertions with CatsRunContext =>
+  self: Assertions =>
 
   private val defaultMappings = jsonContentOf("admin/projects/default-mappings.json").asArray.get
 

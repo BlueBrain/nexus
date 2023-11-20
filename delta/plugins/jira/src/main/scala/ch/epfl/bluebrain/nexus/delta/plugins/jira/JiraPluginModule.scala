@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.routes.JiraRoutes
@@ -31,8 +30,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
         jiraClient: JiraClient,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
       new JiraRoutes(
         identities,
@@ -41,8 +39,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         cr,
-        ordering,
-        runtime
+        ordering
       )
   }
 

@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, MediaRange, MediaType}
 import akka.stream.Materializer
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.optics.JsonPath.root
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +16,6 @@ import scala.concurrent.ExecutionContext
 class BlazegraphDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
-    runtime: IORuntime,
     ec: ExecutionContext
 ) extends CirceLiteral
     with CirceUnmarshalling

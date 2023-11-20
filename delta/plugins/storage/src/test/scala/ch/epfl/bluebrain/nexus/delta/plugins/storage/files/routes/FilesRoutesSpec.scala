@@ -135,7 +135,7 @@ class FilesRoutesSpec
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
       clock
-    )(uuidF, typedSystem, runtime)
+    )(uuidF, typedSystem)
   private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 

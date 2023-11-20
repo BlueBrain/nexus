@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -44,8 +43,7 @@ import scala.annotation.nowarn
 final class PermissionsRoutes(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -135,8 +133,7 @@ object PermissionsRoutes {
   def apply(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): Route =
     new PermissionsRoutes(identities, permissions, aclCheck: AclCheck).routes
 

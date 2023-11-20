@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.data.NonEmptySet
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -36,8 +35,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -142,8 +140,7 @@ object RealmsRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): Route =
     new RealmsRoutes(identities, realms, aclCheck).routes
 

@@ -58,7 +58,6 @@ object Main extends IOApp {
     implicit val timeout                                  = Timeout(1.minute)
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
-    implicit val runtimeImpl                              = runtime
 
     val storages: Storages[AkkaSource] =
       new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[AkkaSource])

@@ -125,7 +125,7 @@ class DeltaDirectivesSpec
         pathPrefix("resources") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), runtime)
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
             },
             path("redirectFusionLatest") {
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
@@ -137,14 +137,14 @@ class DeltaDirectivesSpec
               emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
             },
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), runtime)
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
             }
           )
         },
         pathPrefix("projects") {
           concat(
             path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false), runtime)
+              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false))
             },
             path("redirectFusion") {
               emitOrFusionRedirect(ref, emit(ioProject))

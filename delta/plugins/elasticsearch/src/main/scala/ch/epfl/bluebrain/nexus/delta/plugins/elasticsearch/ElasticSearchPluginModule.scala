@@ -39,7 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 
 /**
   * ElasticSearch plugin wiring.
@@ -197,7 +196,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new ElasticSearchViewsRoutes(
@@ -211,8 +209,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        fusionConfig,
-        runtime
+        fusionConfig
       )
   }
 
@@ -225,7 +222,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
         esConfig: ElasticSearchViewsConfig,
         fetchContext: FetchContext[ContextRejection]
@@ -242,7 +238,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         esConfig.pagination,
         cr,
         ordering,
-        runtime,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
       )
   }
@@ -256,7 +251,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        runtime: IORuntime,
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
         ordering: JsonKeyOrdering,
@@ -274,8 +268,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         esConfig.pagination,
         cr,
-        ordering,
-        runtime
+        ordering
       )
   }
 
@@ -289,7 +282,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         idResolution: IdResolution,
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig,
         baseUri: BaseUri
@@ -298,7 +290,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         ordering,
         rcr,
-        runtime,
         fusionConfig
       )
   }

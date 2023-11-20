@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCode}
 import akka.stream.Materializer
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -18,8 +17,7 @@ import scala.concurrent.ExecutionContext
 class ElasticsearchDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
-    ec: ExecutionContext,
-    runtime: IORuntime
+    ec: ExecutionContext
 ) extends CirceLiteral
     with CirceUnmarshalling
     with Matchers {

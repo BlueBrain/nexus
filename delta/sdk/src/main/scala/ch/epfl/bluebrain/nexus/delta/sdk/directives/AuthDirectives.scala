@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -20,8 +20,7 @@ import scala.concurrent.Future
 /**
   * Akka HTTP directives for authentication
   */
-abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implicit runtime: IORuntime)
-    extends Directives {
+abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck) extends Directives {
 
   private def authenticator: AsyncAuthenticator[Caller] = {
     case Credentials.Missing         => Future.successful(None)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.{Directive1, Route}
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -40,8 +39,7 @@ class EventsRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
 
   import baseUri.prefixSegment
@@ -147,8 +145,7 @@ object EventsRoutes {
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): Route = new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives).routes
 
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -55,8 +55,7 @@ final class OrganizationsRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -196,8 +195,7 @@ object OrganizationsRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): Route =
     new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives).routes
 

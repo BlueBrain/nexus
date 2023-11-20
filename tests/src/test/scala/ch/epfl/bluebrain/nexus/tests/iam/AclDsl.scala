@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
@@ -16,7 +16,7 @@ import org.scalatest.{Assertion, OptionValues}
 
 import scala.jdk.CollectionConverters._
 
-class AclDsl(cl: HttpClient)(implicit runtime: IORuntime) extends CirceUnmarshalling with OptionValues with Matchers {
+class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with Matchers {
 
   private val logger = Logger[this.type]
   private val loader = ClasspathResourceLoader()

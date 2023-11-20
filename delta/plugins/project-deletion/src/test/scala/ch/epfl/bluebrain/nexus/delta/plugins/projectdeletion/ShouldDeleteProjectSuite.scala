@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.Generators
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
 import munit.{Assertions, Location}
@@ -106,12 +105,7 @@ class ShouldDeleteProjectSuite extends CatsEffectSuite {
   }
 }
 
-object ShouldDeleteProjectSuite
-    extends Assertions
-    with CatsRunContext
-    with CatsEffectAssertions
-    with Generators
-    with FixedClock {
+object ShouldDeleteProjectSuite extends Assertions with CatsEffectAssertions with Generators with FixedClock {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,

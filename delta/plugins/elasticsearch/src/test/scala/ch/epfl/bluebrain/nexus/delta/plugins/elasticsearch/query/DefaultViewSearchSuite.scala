@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
@@ -272,7 +271,7 @@ object DefaultViewSearchSuite {
 
     def id: Iri = nxv + suffix
 
-    def asResourceF(implicit rcr: RemoteContextResolution, runtime: IORuntime): DataResource = {
+    def asResourceF(implicit rcr: RemoteContextResolution): DataResource = {
       val resource = ResourceGen.resource(id, project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
@@ -288,8 +287,7 @@ object DefaultViewSearchSuite {
     def asDocument(implicit
         baseUri: BaseUri,
         rcr: RemoteContextResolution,
-        jsonldApi: JsonLdApi,
-        runtime: IORuntime
+        jsonldApi: JsonLdApi
     ): IO[Json] = {
       val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
       asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata))

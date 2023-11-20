@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{IO, Resource}
 import cats.syntax.monadError._
 import cats.syntax.traverse._
@@ -23,12 +22,9 @@ object WiringInitializer {
   def apply(
       serviceModule: ModuleDef,
       pluginsDef: List[PluginDef]
-  )(implicit runtime: IORuntime): Resource[IO, (List[Plugin], Locator)] = {
-    val catsEffectModule  = new ModuleDef {
-      make[IORuntime].fromValue(runtime)
-    }
+  ): Resource[IO, (List[Plugin], Locator)] = {
     val pluginsInfoModule = new ModuleDef { make[List[PluginDef]].from(pluginsDef) }
-    val appModules        = (catsEffectModule :: serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module)).merge
+    val appModules        = (serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module)).merge
 
     // workaround for: java.lang.NoClassDefFoundError: zio/blocking/package$Blocking$Service
     implicit val defaultModule: DefaultModule[IO] = DefaultModule.empty

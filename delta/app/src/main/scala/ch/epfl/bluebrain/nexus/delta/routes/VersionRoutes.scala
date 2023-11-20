@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Route
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -33,8 +32,7 @@ class VersionRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck) {
 
   def routes: Route =
@@ -91,8 +89,7 @@ object VersionRoutes {
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): VersionRoutes = {
     new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, dependencies, cfg.env)
   }

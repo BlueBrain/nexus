@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -22,8 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 class ProjectDeletionRoutes(config: ProjectDeletionConfig)(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends RdfMarshalling {
 
   def routes: Route =

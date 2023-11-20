@@ -4,7 +4,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
@@ -767,8 +766,7 @@ object Files {
       clock: Clock[IO]
   )(implicit
       uuidF: UUIDF,
-      as: ActorSystem[Nothing],
-      runtime: IORuntime
+      as: ActorSystem[Nothing]
   ): Files = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     new Files(

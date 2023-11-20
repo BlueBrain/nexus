@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.{Directive0, Route}
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -55,7 +54,6 @@ class BlazegraphViewsRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    runtime: IORuntime,
     pc: PaginationConfig,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
@@ -274,7 +272,6 @@ object BlazegraphViewsRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      runtime: IORuntime,
       pc: PaginationConfig,
       fusionConfig: FusionConfig
   ): Route = {

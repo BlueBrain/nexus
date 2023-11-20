@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.Suite
@@ -22,7 +21,7 @@ import java.util.{Base64, UUID}
 
 trait FileFixtures extends EitherValues with CatsIOValues {
 
-  self: Suite with CatsRunContext =>
+  self: Suite =>
 
   val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                    = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")

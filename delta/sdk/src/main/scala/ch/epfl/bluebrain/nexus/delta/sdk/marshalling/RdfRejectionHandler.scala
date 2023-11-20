@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ContentRange, EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server._
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -29,8 +28,7 @@ object RdfRejectionHandler {
     */
   def apply(implicit
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): RejectionHandler =
     RejectionHandler
       .newBuilder()

@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.Materializer
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.{ClientCredentials, UserCredentials}
@@ -22,8 +21,7 @@ class KeycloakDsl(implicit
     as: ActorSystem,
     materializer: Materializer,
     um: FromEntityUnmarshaller[Json],
-    executionContext: ExecutionContext,
-    runtime: IORuntime
+    executionContext: ExecutionContext
 ) {
 
   private val loader = ClasspathResourceLoader()

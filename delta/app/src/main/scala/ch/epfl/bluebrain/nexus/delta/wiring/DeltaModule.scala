@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -129,13 +128,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
-  make[RejectionHandler].from {
-    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, runtime: IORuntime) =>
-      RdfRejectionHandler(cr, ordering, runtime)
+  make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+    RdfRejectionHandler(cr, ordering)
   }
   make[ExceptionHandler].from {
-    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri, runtime: IORuntime) =>
-      RdfExceptionHandler(cr, ordering, base, runtime)
+    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
+      RdfExceptionHandler(cr, ordering, base)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings

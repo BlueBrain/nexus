@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
@@ -66,7 +65,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         viewsQuery: GraphAnalyticsViewsQuery
     ) =>
       new GraphAnalyticsRoutes(
@@ -79,8 +77,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         cr,
-        ordering,
-        runtime
+        ordering
       )
   }
 

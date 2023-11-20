@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -45,7 +44,6 @@ final class ResourcesTrialRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    runtime: IORuntime,
     decodingOption: DecodingOption
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -156,7 +154,6 @@ object ResourcesTrialRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      runtime: IORuntime,
       decodingOption: DecodingOption
   ): ResourcesTrialRoutes =
     new ResourcesTrialRoutes(

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
@@ -24,7 +23,6 @@ class IdResolutionRoutes(
     baseUri: BaseUri,
     jko: JsonKeyOrdering,
     rcr: RemoteContextResolution,
-    runtime: IORuntime,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck) {
 

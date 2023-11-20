@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.Uri.Path._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -43,8 +42,7 @@ import scala.annotation.nowarn
 class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    runtime: IORuntime
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
@@ -247,8 +245,7 @@ object AclsRoutes {
   def apply(identities: Identities, acls: Acls, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      runtime: IORuntime
+      ordering: JsonKeyOrdering
   ): AclsRoutes = new AclsRoutes(identities, acls, aclCheck)
 
 }

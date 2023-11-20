@@ -4,7 +4,6 @@ import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
@@ -42,7 +41,7 @@ object Doobie {
   ): IOFixture[Transactors] =
     ResourceFixture.suiteLocal(name, resource(user, pass))
 
-  trait Fixture { self: NexusSuite with CatsRunContext =>
+  trait Fixture { self: NexusSuite =>
     val doobie: ResourceFixture.IOFixture[Transactors] = Doobie.suiteLocalFixture("doobie")
 
     /**

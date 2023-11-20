@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server._
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
@@ -34,7 +33,6 @@ class ElasticSearchQueryRoutes(
     paginationConfig: PaginationConfig,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    runtime: IORuntime,
     fetchContext: FetchContext[ElasticSearchQueryError]
 ) extends AuthDirectives(identities, aclCheck)
     with ElasticSearchViewsDirectives {

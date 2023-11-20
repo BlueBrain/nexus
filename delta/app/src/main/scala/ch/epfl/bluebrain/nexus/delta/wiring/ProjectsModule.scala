@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
@@ -120,9 +119,8 @@ object ProjectsModule extends ModuleDef {
     UUIDCache(config.projects.cache, config.organizations.cache, xas)
   }
 
-  make[DeltaSchemeDirectives].from {
-    (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache, runtime: IORuntime) =>
-      DeltaSchemeDirectives(fetchContext, uuidCache)(runtime)
+  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache) =>
+    DeltaSchemeDirectives(fetchContext, uuidCache)
   }
 
   make[ProjectsRoutes].from {
@@ -137,7 +135,6 @@ object ProjectsModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        runtime: IORuntime,
         fusionConfig: FusionConfig
     ) =>
       new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
@@ -145,8 +142,7 @@ object ProjectsModule extends ModuleDef {
         config.projects,
         cr,
         ordering,
-        fusionConfig,
-        runtime
+        fusionConfig
       )
   }
 

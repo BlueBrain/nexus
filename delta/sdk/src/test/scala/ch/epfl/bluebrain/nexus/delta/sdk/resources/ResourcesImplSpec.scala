@@ -223,8 +223,7 @@ class ResourcesImplSpec
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(
-            resolverContextResolution(projectRef),
-            runtime
+            resolverContextResolution(projectRef)
           )
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, None).accepted
         resource shouldEqual mkResource(expectedData)
@@ -235,8 +234,7 @@ class ResourcesImplSpec
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(
-            resolverContextResolution(projectRef),
-            runtime
+            resolverContextResolution(projectRef)
           )
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, None).accepted
         resource shouldEqual mkResource(expectedData)

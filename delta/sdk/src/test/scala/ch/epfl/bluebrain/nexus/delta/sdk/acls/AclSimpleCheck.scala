@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import cats.effect.Ref
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 
 /**
   * In-memory implementation of an [[AclCheck]]
@@ -57,7 +57,7 @@ object AclSimpleCheck {
         }
     }
 
-  def unsafe(input: (Identity, AclAddress, Set[Permission])*)(implicit runtime: IORuntime) =
+  def unsafe(input: (Identity, AclAddress, Set[Permission])*) =
     apply(input: _*).unsafeRunSync()
 
 }

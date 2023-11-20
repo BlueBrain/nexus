@@ -18,7 +18,6 @@ import izumi.distage.planning.solver.PlanVerifier
 import munit.AnyFixture
 
 import java.nio.file.{Files, Paths}
-import cats.effect.unsafe.IORuntime
 
 /**
   * Test class that allows to check that across core and plugins:
@@ -39,13 +38,10 @@ class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
   }
 
   test("yield a correct plan") {
-    val catsEffectModule         = new ModuleDef {
-      make[IORuntime].fromValue(runtime)
-    }
     val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
     val modules: Module          =
-      (catsEffectModule :: DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
+      (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
 
     PlanVerifier()
       .verify[IO](

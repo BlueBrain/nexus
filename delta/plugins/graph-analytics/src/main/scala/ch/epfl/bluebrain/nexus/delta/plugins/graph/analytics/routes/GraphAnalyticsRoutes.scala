@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.permissions.query
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, GraphAnalyticsViewsQuery}
@@ -41,7 +40,7 @@ class GraphAnalyticsRoutes(
     fetchStatistics: ProjectRef => IO[ProgressStatistics],
     schemeDirectives: DeltaSchemeDirectives,
     viewsQuery: GraphAnalyticsViewsQuery
-)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering, runtime: IORuntime)
+)(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
@@ -399,7 +399,7 @@ object ElasticSearchViewsQuerySuite {
       updatedBy: Subject = Anonymous
   ) {
 
-    def asResourceF(view: ViewRef)(implicit rcr: RemoteContextResolution, runtime: IORuntime): DataResource = {
+    def asResourceF(view: ViewRef)(implicit rcr: RemoteContextResolution): DataResource = {
       val resource = ResourceGen.resource(view.viewId / suffix, view.project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
@@ -414,7 +414,7 @@ object ElasticSearchViewsQuerySuite {
 
     def asDocument(
         view: ViewRef
-    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi, runtime: IORuntime): IO[Json] =
+    )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): IO[Json] =
       asResourceF(view).toCompactedJsonLd.map(_.json)
 
   }

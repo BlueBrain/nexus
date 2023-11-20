@@ -9,7 +9,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeExcep
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
@@ -65,7 +65,7 @@ object FormDataExtractor {
 
   def apply(
       mediaTypeDetector: MediaTypeDetectorConfig
-  )(implicit uuidF: UUIDF, as: ActorSystem, runtime: IORuntime): FormDataExtractor =
+  )(implicit uuidF: UUIDF, as: ActorSystem): FormDataExtractor =
     new FormDataExtractor {
       implicit val ec: ExecutionContext = as.getDispatcher
 

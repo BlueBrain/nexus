@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -29,9 +28,8 @@ object SupervisionModule extends ModuleDef {
         supervisor: Supervisor,
         baseUri: BaseUri,
         rc: RemoteContextResolution @Id("aggregate"),
-        jo: JsonKeyOrdering,
-        runtime: IORuntime
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo, runtime)
+        jo: JsonKeyOrdering
+    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo)
   }
 
   many[RemoteContextResolution].addEffect(

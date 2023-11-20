@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.MediaTypes.`application/octet-stream`
 import akka.stream.javadsl.Sink
 import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.stream.{OverflowStrategy, QueueOfferResult}
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage._
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCacheActor.Protocol._
@@ -32,7 +32,6 @@ import scala.concurrent.duration._
   */
 class AttributesCacheActor[S](computation: AttributesComputation[S])(implicit
     config: DigestConfig,
-    runtime: IORuntime,
     clock: Clock
 ) extends Actor
     with ActorLogging {
@@ -146,7 +145,7 @@ object AttributesCacheActor {
 
   def props[S](
       computation: AttributesComputation[S]
-  )(implicit config: DigestConfig, runtime: IORuntime, clock: Clock): Props =
+  )(implicit config: DigestConfig, clock: Clock): Props =
     Props(new AttributesCacheActor(computation))
 
   sealed private[attributes] trait Protocol extends Product with Serializable

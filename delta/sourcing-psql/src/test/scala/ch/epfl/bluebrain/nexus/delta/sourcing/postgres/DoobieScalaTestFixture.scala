@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.Generators
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.{BeforeAndAfterAll, Suite}
@@ -15,7 +14,7 @@ trait DoobieScalaTestFixture
     with CatsIOValues
     with FixedClock {
 
-  self: Suite with CatsRunContext =>
+  self: Suite =>
 
   var xas: Transactors              = _
   private var xasTeardown: IO[Unit] = _

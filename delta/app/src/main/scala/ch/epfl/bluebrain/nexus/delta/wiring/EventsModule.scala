@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseElemStream, SseEncoder, SseEven
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import izumi.distage.model.definition.{Id, ModuleDef}
-import cats.effect.unsafe.IORuntime
 
 /**
   * Events wiring
@@ -53,10 +52,9 @@ object EventsModule extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
-      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, cr, ordering, runtime)
+      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: EventsRoutes) =>
@@ -70,11 +68,10 @@ object EventsModule extends ModuleDef {
         sseElemStream: SseElemStream,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        runtime: IORuntime,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, cr, ordering, runtime)
+      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: ElemRoutes) =>

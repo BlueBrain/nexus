@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
 import cats.effect.{Clock, IO}
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
@@ -55,10 +54,9 @@ object AclsModule extends ModuleDef {
         aclCheck: AclCheck,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
+        ordering: JsonKeyOrdering
     ) =>
-      new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering, runtime)
+      new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering)
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }
@@ -79,10 +77,9 @@ object AclsModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         baseUri: BaseUri,
-        storagePermissionProvider: StoragePermissionProvider,
-        runtime: IORuntime
+        storagePermissionProvider: StoragePermissionProvider
     ) =>
-      new UserPermissionsRoutes(identities, aclCheck, storagePermissionProvider)(baseUri, runtime)
+      new UserPermissionsRoutes(identities, aclCheck, storagePermissionProvider)(baseUri)
   }
 
   many[PriorityRoute].add { (alcs: AclsRoutes, userPermissions: UserPermissionsRoutes) =>

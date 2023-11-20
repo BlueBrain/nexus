@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -23,9 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
   *   verify the acls for users
   */
 final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck, storages: StoragePermissionProvider)(
-    implicit
-    baseUri: BaseUri,
-    runtime: IORuntime
+    implicit baseUri: BaseUri
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -61,8 +58,7 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck, st
 
 object UserPermissionsRoutes {
   def apply(identities: Identities, aclCheck: AclCheck, storagePermissionProvider: StoragePermissionProvider)(implicit
-      baseUri: BaseUri,
-      runtime: IORuntime
+      baseUri: BaseUri
   ): Route =
     new UserPermissionsRoutes(identities, aclCheck: AclCheck, storagePermissionProvider).routes
 }

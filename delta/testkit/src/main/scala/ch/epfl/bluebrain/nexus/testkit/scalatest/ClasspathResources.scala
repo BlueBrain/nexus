@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.testkit.scalatest
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsIOValues => MUnitCatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsIOValues => ScalaTestCatsIOValues}
 import io.circe.{Json, JsonObject}
@@ -19,13 +18,13 @@ trait ExtractValue {
 }
 
 trait ScalaTestExtractValue extends ExtractValue with ScalaTestCatsIOValues {
-  self: ScalaTestAssertions with CatsRunContext =>
+  self: ScalaTestAssertions =>
 
   override def extractValue[A](io: IO[A]): A = io.accepted
 }
 
 trait MUnitExtractValue extends ExtractValue with MUnitCatsIOValues {
-  self: MUnitAssertions with CatsRunContext =>
+  self: MUnitAssertions =>
 
   override def extractValue[A](io: IO[A]): A = io.accepted
 }

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
@@ -39,9 +38,8 @@ object QuotasModule extends ModuleDef {
         quotas: Quotas,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
-    ) => new QuotasRoutes(identities, aclCheck, quotas)(baseUri, cr, ordering, runtime)
+        ordering: JsonKeyOrdering
+    ) => new QuotasRoutes(identities, aclCheck, quotas)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: QuotasRoutes) =>

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -51,9 +50,8 @@ object IdentitiesModule extends ModuleDef {
         aclCheck: AclCheck,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        runtime: IORuntime
-    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering, runtime)
+        ordering: JsonKeyOrdering
+    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering)
 
   }
 

@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/j
 import akka.testkit.TestKit
 import akka.util.Timeout
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig

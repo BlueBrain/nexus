@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import cats.effect.unsafe.implicits._
 import org.scalactic.source
 import org.scalatest.{Assertion, Assertions}
 
@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 
 trait CatsIOValues {
 
-  self: Assertions with CatsRunContext =>
+  self: Assertions =>
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted(implicit pos: source.Position): A = {

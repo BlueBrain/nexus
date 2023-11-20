@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveRejection, ArchiveResource, Zip}
@@ -39,7 +38,7 @@ class ArchiveRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     schemeDirectives: DeltaSchemeDirectives
-)(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jko: JsonKeyOrdering, runtime: IORuntime)
+)(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jko: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 

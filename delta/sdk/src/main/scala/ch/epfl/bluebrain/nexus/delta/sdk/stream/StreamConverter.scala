@@ -5,7 +5,7 @@ import akka.stream._
 import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
 import cats.effect._
 import cats.effect.kernel.Resource.ExitCase
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import fs2._
 
 /**
@@ -49,7 +49,7 @@ object StreamConverter {
       }
   }
 
-  def apply[A](stream: Stream[IO, A])(implicit runtime: IORuntime): Graph[SourceShape[A], NotUsed] = {
+  def apply[A](stream: Stream[IO, A]): Graph[SourceShape[A], NotUsed] = {
     val source = AkkaSource.queue[A](0, OverflowStrategy.backpressure)
     // A sink that runs an FS2 publisherStream when consuming the publisher actor (= materialized value) of source
     val sink   = AkkaSink.foreach[SourceQueueWithComplete[A]] { p =>

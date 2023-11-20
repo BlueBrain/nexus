@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -10,8 +10,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
-  implicit val runtime: IORuntime = IORuntime.global
-
   private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   private def accept[A](io: IO[A]): A =

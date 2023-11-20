@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server._
-import cats.effect.unsafe.IORuntime
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
@@ -49,7 +48,6 @@ final class StoragesRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    runtime: IORuntime,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -214,7 +212,6 @@ object StoragesRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      runtime: IORuntime,
       fusionConfig: FusionConfig
   ): Route =
     new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes

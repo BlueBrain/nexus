@@ -8,7 +8,6 @@ import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -120,8 +119,7 @@ trait DeltaDirectives extends UriDirectives {
     * enabled
     */
   def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
-      config: FusionConfig,
-      runtime: IORuntime
+      config: FusionConfig
   ): Route = {
     val resourceBase =
       config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
@@ -140,15 +138,14 @@ trait DeltaDirectives extends UriDirectives {
     * enabled
     */
   def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit
-      config: FusionConfig,
-      runtime: IORuntime
+      config: FusionConfig
   ): Route =
     emitOrFusionRedirect(
       config.base / "admin" / projectRef.organization.value / projectRef.project.value,
       emitDelta
     )
 
-  def emitOrFusionRedirect(fusionUri: Uri, emitDelta: Route)(implicit config: FusionConfig, runtime: IORuntime): Route =
+  def emitOrFusionRedirect(fusionUri: Uri, emitDelta: Route)(implicit config: FusionConfig): Route =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
         emitRedirect(SeeOther, IO.pure(fusionUri))
