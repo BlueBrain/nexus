@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.{IO, Resource}
-import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handleBars
 import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
@@ -17,8 +16,7 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
 
   final def absolutePath(resourcePath: String): IO[String] = {
     IO.blocking(
-      Option(getClass.getResource(resourcePath))
-        .orElse(Option(classLoader.getResource(resourcePath)))
+      Option(classLoader.getResource(resourcePath))
         .toRight(ResourcePathNotFound(resourcePath))
     ).rethrow
       .map(_.getPath)
@@ -34,13 +32,12 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     *   is not found
     */
   def streamOf(resourcePath: String): Resource[IO, InputStream] = {
-    Resource.make[IO, InputStream] {
+    Resource.fromAutoCloseable(
       IO.blocking {
-        Option(getClass.getResourceAsStream(resourcePath))
-          .orElse(Option(classLoader.getResourceAsStream(resourcePath)))
-          .toRight(ResourcePathNotFound(resourcePath))
+        Option(classLoader.getResourceAsStream(resourcePath))
+          .toRight(new IOException(s"Resource '$resourcePath' not found"))
       }.rethrow
-    } { is => IO.blocking(is.close()) }
+    )
   }
 
   /**
@@ -123,10 +120,6 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
       .through(text.utf8.decode)
       .compile
       .string
-      .adaptError {
-        case e: IOException if Option(e.getMessage).exists(_.endsWith("not found")) =>
-          ResourcePathNotFound(resourcePath)
-      }
   }
 }
 

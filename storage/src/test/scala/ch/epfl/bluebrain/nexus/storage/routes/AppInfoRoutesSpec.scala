@@ -26,7 +26,7 @@ class AppInfoRoutesSpec extends CatsEffectSpec with ScalatestRouteTest with Idio
       Get("/") ~> route ~> check {
         status shouldEqual OK
         responseAs[Json] shouldEqual
-          jsonContentOf("/app-info.json", Map(quote("{version}") -> config.description.version))
+          jsonContentOf("app-info.json", Map(quote("{version}") -> config.description.version))
       }
     }
   }

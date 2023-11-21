@@ -93,7 +93,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
   "creating archives" should {
     "succeed" in {
-      val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
+      val payload = jsonContentOf("kg/archives/archive.json", "project2" -> fullId2)
 
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -108,7 +108,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
                     fileSelf = json.hcursor.downField("_self").as[String].toOption.value
                     response.status shouldEqual StatusCodes.OK
                   }
-        payload = jsonContentOf("/kg/archives/archive-with-file-self.json", "value" -> fileSelf)
+        payload = jsonContentOf("kg/archives/archive-with-file-self.json", "value" -> fileSelf)
         _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
                     response.status shouldEqual StatusCodes.Created
                   }
@@ -131,7 +131,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "succeed and redirect" in {
-      val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
+      val payload = jsonContentOf("kg/archives/archive.json", "project2" -> fullId2)
 
       deltaClient.put[String](
         s"/archives/$fullId/test-resource:archiveRedirect",
@@ -150,25 +150,25 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "fail if payload is wrong" in {
-      val payload = jsonContentOf("/kg/archives/archive-wrong.json")
+      val payload = jsonContentOf("kg/archives/archive-wrong.json")
 
       deltaClient.put[Json](s"/archives/$fullId/archive2", payload, Tweety) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        filterKey("report")(json) shouldEqual jsonContentOf("/kg/archives/archive-wrong-response.json")
+        filterKey("report")(json) shouldEqual jsonContentOf("kg/archives/archive-wrong-response.json")
       }
     }
 
     "fail on wrong path" in {
-      val wrong1    = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
-      val expected1 = jsonContentOf("/kg/archives/archive-path-invalid1.json")
+      val wrong1    = jsonContentOf(s"kg/archives/archive-wrong-path1.json")
+      val expected1 = jsonContentOf("kg/archives/archive-path-invalid1.json")
 
       for {
         _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
                       json shouldEqual expected1
                       response.status shouldEqual StatusCodes.BadRequest
                     }
-        wrong2    = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
-        expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
+        wrong2    = jsonContentOf(s"kg/archives/archive-wrong-path2.json")
+        expected2 = jsonContentOf("kg/archives/archive-path-invalid2.json")
         _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
                       json shouldEqual expected2
                       response.status shouldEqual StatusCodes.BadRequest
@@ -177,8 +177,8 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "fail on path collisions" in {
-      val wrong    = jsonContentOf(s"/kg/archives/archive-path-collision.json")
-      val expected = jsonContentOf(s"/kg/archives/archive-path-dup.json")
+      val wrong    = jsonContentOf(s"kg/archives/archive-path-collision.json")
+      val expected = jsonContentOf(s"kg/archives/archive-path-dup.json")
 
       deltaClient.put[Json](s"/archives/$fullId/archive2", wrong, Tweety) { (json, response) =>
         json shouldEqual expected
@@ -192,7 +192,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
       deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
-          "/kg/archives/archive-response.json",
+          "kg/archives/archive-response.json",
           replacements(
             Tweety,
             "project2" -> fullId2,
@@ -238,7 +238,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "succeed getting archive using query param ignoreNotFound" in {
-      val payload = jsonContentOf("/kg/archives/archive-not-found.json")
+      val payload = jsonContentOf("kg/archives/archive-not-found.json")
 
       def assertContent(archive: Map[String, ByteString]) = {
         val actualContent1 = archive.entryAsJson(

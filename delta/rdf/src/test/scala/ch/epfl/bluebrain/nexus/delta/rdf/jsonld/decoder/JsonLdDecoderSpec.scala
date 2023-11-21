@@ -26,9 +26,9 @@ class JsonLdDecoderSpec extends CatsEffectSpec with Fixtures {
 
   "A JsonLdDecoder" should {
 
-    val json                                          = jsonContentOf("/jsonld/decoder/cocktail.json")
+    val json                                          = jsonContentOf("jsonld/decoder/cocktail.json")
     val jsonLd                                        = ExpandedJsonLd(json).accepted
-    val context                                       = jsonContentOf("/jsonld/decoder/context.json")
+    val context                                       = jsonContentOf("jsonld/decoder/context.json")
     val ctx                                           = JsonLdContext(context.topContextValueOrEmpty).accepted
     implicit val config: Configuration                = Configuration.default.copy(context = ctx)
     implicit val volumeDecoder: JsonLdDecoder[Volume] = deriveConfigJsonLdDecoder[Volume]
@@ -63,9 +63,9 @@ class JsonLdDecoderSpec extends CatsEffectSpec with Fixtures {
     }
 
     "fail decoding a relative iri in @id value position" in {
-      val json                                         = jsonContentOf("/jsonld/decoder/relative-iri.json")
+      val json                                         = jsonContentOf("jsonld/decoder/relative-iri.json")
       val jsonLd                                       = ExpandedJsonLd(json).accepted
-      val context                                      = jsonContentOf("/jsonld/decoder/relative-iri-context.json")
+      val context                                      = jsonContentOf("jsonld/decoder/relative-iri-context.json")
       val ctx                                          = JsonLdContext(context.topContextValueOrEmpty).accepted
       implicit val config: Configuration               = Configuration.default.copy(context = ctx)
       implicit val decoder: JsonLdDecoder[AbsoluteIri] = deriveConfigJsonLdDecoder[AbsoluteIri]

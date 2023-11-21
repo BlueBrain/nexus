@@ -98,11 +98,11 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
       val schemaPayload          = SchemaPayload.loadSimple().accepted
       val resolverPayload        =
         jsonContentOf(
-          "/kg/resources/cross-project-resolver.json",
+          "kg/resources/cross-project-resolver.json",
           replacements(Bojack, "project" -> ref2): _*
         )
       val aggregateSparqlPayload =
-        jsonContentOf("/kg/views/agg-sparql-view.json", "project1" -> ref1, "project2" -> ref2)
+        jsonContentOf("kg/views/agg-sparql-view.json", "project1" -> ref1, "project2" -> ref2)
 
       for {
         _ <- deltaClient.put[Json](s"/resources/$ref1/_/resource11", resourcePayload, Bojack)(expectCreated)

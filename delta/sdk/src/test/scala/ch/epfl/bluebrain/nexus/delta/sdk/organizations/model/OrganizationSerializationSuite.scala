@@ -60,7 +60,7 @@ class OrganizationSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/organizations/org-state.json")
+  private val jsonState = jsonContentOf("organizations/org-state.json")
 
   test(s"Correctly serialize an OrganizationState") {
     assertOutput(OrganizationState.serializer, state, jsonState)

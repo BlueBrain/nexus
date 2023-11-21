@@ -17,7 +17,7 @@ class PermissionsRejectionSpec extends CatsEffectSpec with CirceLiteral with Fix
     "be converted to compacted JSON-LD" in {
       val list = List(
         cannotReplace -> json"""{"@type": "CannotReplaceWithEmptyCollection", "reason": "${cannotReplace.reason}"}""",
-        incorrectRev  -> jsonContentOf("/permissions/incorrect-revision-compacted.json")
+        incorrectRev  -> jsonContentOf("permissions/incorrect-revision-compacted.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
@@ -27,7 +27,7 @@ class PermissionsRejectionSpec extends CatsEffectSpec with CirceLiteral with Fix
     "be converted to expanded JSON-LD" in {
       val list = List(
         cannotReplace -> json"""[{"@type": ["${nxv + "CannotReplaceWithEmptyCollection"}"], "${nxv + "reason"}": [{"@value": "${cannotReplace.reason}"} ] } ]""",
-        incorrectRev  -> jsonContentOf("/permissions/incorrect-revision-expanded.json")
+        incorrectRev  -> jsonContentOf("permissions/incorrect-revision-expanded.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toExpandedJsonLd.accepted.json shouldEqual json

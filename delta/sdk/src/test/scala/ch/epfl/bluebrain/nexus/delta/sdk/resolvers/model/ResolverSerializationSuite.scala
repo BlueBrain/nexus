@@ -209,9 +209,9 @@ class ResolverSerializationSuite extends SerializationSuite {
   }
 
   private val statesMapping = Map(
-    inProjectValue     -> jsonContentOf("/resolvers/resolver-in-project-state.json"),
-    crossProjectValue1 -> jsonContentOf("/resolvers/resolver-cross-project-state-1.json"),
-    crossProjectValue2 -> jsonContentOf("/resolvers/resolver-cross-project-state-2.json")
+    inProjectValue     -> jsonContentOf("resolvers/resolver-in-project-state.json"),
+    crossProjectValue1 -> jsonContentOf("resolvers/resolver-cross-project-state-1.json"),
+    crossProjectValue2 -> jsonContentOf("resolvers/resolver-cross-project-state-2.json")
   ).map { case (k, v) =>
     ResolverState(
       myId,

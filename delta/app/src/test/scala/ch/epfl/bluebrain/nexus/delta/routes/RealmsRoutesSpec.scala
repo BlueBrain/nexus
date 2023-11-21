@@ -58,7 +58,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     realmMetadata(gitlab, rev = 2, deprecated = true, createdBy = alice, updatedBy = alice)
 
   private val githubCreated = jsonContentOf(
-    "/realms/realm-resource.json",
+    "realms/realm-resource.json",
     "label"                 -> github.value,
     "name"                  -> githubName.value,
     "openIdConfig"          -> githubOpenId,
@@ -76,7 +76,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     githubUpdatedMeta.removeKeys("@context")
 
   private val gitlabCreated = jsonContentOf(
-    "/realms/realm-resource.json",
+    "realms/realm-resource.json",
     "label"                 -> gitlab.value,
     "name"                  -> gitlabName.value,
     "openIdConfig"          -> gitlabOpenId,
@@ -170,7 +170,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail fetching a realm by id and rev when rev is invalid" in {
       Get("/v1/realms/github?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
+        response.asJson shouldEqual jsonContentOf("errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
       }
     }
 

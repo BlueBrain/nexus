@@ -65,7 +65,7 @@ class MultiFetchSpec extends BaseIntegrationSpec {
 
     "get all resources for a user with all access" in {
       val expected = jsonContentOf(
-        "/kg/multi-fetch/all-success.json",
+        "kg/multi-fetch/all-success.json",
         "project1" -> ref11,
         "project2" -> ref12
       )
@@ -78,7 +78,7 @@ class MultiFetchSpec extends BaseIntegrationSpec {
 
     "get all resources for a user with limited access" in {
       val expected = jsonContentOf(
-        "/kg/multi-fetch/limited-access.json",
+        "kg/multi-fetch/limited-access.json",
         "project1" -> ref11,
         "project2" -> ref12
       )
@@ -99,7 +99,7 @@ class MultiFetchSpec extends BaseIntegrationSpec {
           ]
         }"""
 
-      val expected = jsonContentOf("/kg/multi-fetch/unknown.json", "project1" -> ref11)
+      val expected = jsonContentOf("kg/multi-fetch/unknown.json", "project1" -> ref11)
 
       multiFetchRequest(request, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK

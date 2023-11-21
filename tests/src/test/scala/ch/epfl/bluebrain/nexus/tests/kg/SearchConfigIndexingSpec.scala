@@ -38,30 +38,30 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
   // the resources that should appear in the search index
   private val mainResources  = List(
-    "/kg/search/patched-cell.json",
-    "/kg/search/trace.json",
-    "/kg/search/curated-trace.json",
-    "/kg/search/unassessed-trace.json",
-    "/kg/search/neuron-morphology.json",
-    "/kg/search/neuron-density.json",
-    "/kg/search/synapse.json",
-    "/kg/search/synapse-two-pathways.json",
-    "/kg/search/layer-thickness.json",
-    "/kg/search/bouton-density.json",
-    "/kg/search/detailed-circuit.json",
-    "/kg/search/data/simulations/simulation-campaign-configuration.json",
-    "/kg/search/data/simulations/simulation-campaign-execution.json",
-    "/kg/search/data/simulations/simulation-campaign.json",
-    "/kg/search/data/simulations/simulation.json",
-    "/kg/search/data/simulations/analysis-report-simulation.json"
+    "kg/search/patched-cell.json",
+    "kg/search/trace.json",
+    "kg/search/curated-trace.json",
+    "kg/search/unassessed-trace.json",
+    "kg/search/neuron-morphology.json",
+    "kg/search/neuron-density.json",
+    "kg/search/synapse.json",
+    "kg/search/synapse-two-pathways.json",
+    "kg/search/layer-thickness.json",
+    "kg/search/bouton-density.json",
+    "kg/search/detailed-circuit.json",
+    "kg/search/data/simulations/simulation-campaign-configuration.json",
+    "kg/search/data/simulations/simulation-campaign-execution.json",
+    "kg/search/data/simulations/simulation-campaign.json",
+    "kg/search/data/simulations/simulation.json",
+    "kg/search/data/simulations/analysis-report-simulation.json"
   )
   private val otherResources = List(
-    "/kg/search/article.json",
-    "/kg/search/org.json",
-    "/kg/search/license.json",
-    "/kg/search/activity.json",
-    "/kg/search/protocol.json",
-    "/kg/search/person.json"
+    "kg/search/article.json",
+    "kg/search/org.json",
+    "kg/search/license.json",
+    "kg/search/activity.json",
+    "kg/search/protocol.json",
+    "kg/search/person.json"
   )
   private val allResources   = otherResources ++ mainResources
 
@@ -72,13 +72,13 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       _ <- aclDsl.cleanAcls(Rick)
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId1, path = "/kg/projects/bbp.json", name = id1, authenticated = Rick)
+      _ <- adminDsl.createProjectWith(orgId, projId1, path = "kg/projects/bbp.json", name = id1, authenticated = Rick)
 
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
 
-      _ <- postResource("/kg/search/neuroshapes.json")
-      _ <- postResource("/kg/search/bbp-neuroshapes.json")
+      _ <- postResource("kg/search/neuroshapes.json")
+      _ <- postResource("kg/search/bbp-neuroshapes.json")
       _ <- allResources.traverseTap(postResource)
     } yield ()
 
@@ -846,10 +846,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     * the requested field
     */
   private def queryField(id: String, field: String) =
-    jsonContentOf("/kg/search/id-query-single-field.json", "id" -> id, "field" -> field)
+    jsonContentOf("kg/search/id-query-single-field.json", "id" -> id, "field" -> field)
 
   private def queryDocument(id: String)             =
-    jsonContentOf("/kg/search/id-query.json", "id" -> id)
+    jsonContentOf("kg/search/id-query.json", "id" -> id)
 
   /** Post a resource across all defined projects in the suite */
   private def postResource(resourcePath: String): IO[List[Assertion]] = {

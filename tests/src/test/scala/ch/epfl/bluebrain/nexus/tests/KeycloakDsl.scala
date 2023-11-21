@@ -49,7 +49,7 @@ class KeycloakDsl(implicit
     for {
       _          <- logger.info(s"Creating realm $realm in Keycloak...")
       json       <- loader.jsonContentOf(
-                      "/iam/keycloak/import.json",
+                      "iam/keycloak/import.json",
                       "realm"         -> realm.name,
                       "client"        -> clientCredentials.id,
                       "client_secret" -> clientCredentials.secret,

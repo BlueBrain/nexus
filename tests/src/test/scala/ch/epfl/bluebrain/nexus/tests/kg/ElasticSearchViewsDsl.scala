@@ -21,7 +21,7 @@ final class ElasticSearchViewsDsl(deltaClient: HttpClient) extends CirceUnmarsha
   def aggregate(id: String, projectRef: String, identity: Identity, views: (String, String)*): IO[Assertion] = {
     for {
       payload <- loader.jsonContentOf(
-                   "/kg/views/elasticsearch/aggregate.json",
+                   "kg/views/elasticsearch/aggregate.json",
                    "views" -> views.map { case ((project, view)) =>
                      Map(
                        "project" -> project,

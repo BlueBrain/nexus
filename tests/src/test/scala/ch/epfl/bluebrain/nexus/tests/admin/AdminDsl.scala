@@ -25,7 +25,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
   private val loader = ClasspathResourceLoader()
 
   private def orgPayload(description: String): IO[Json] =
-    loader.jsonContentOf("/admin/orgs/payload.json", "description" -> description)
+    loader.jsonContentOf("admin/orgs/payload.json", "description" -> description)
 
   private def createOrgRespJson(
       id: String,
@@ -48,7 +48,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
       "deprecated" -> deprecated.toString,
       "schema"     -> schema
     )
-    loader.jsonContentOf("/admin/org-response.json", resp: _*)
+    loader.jsonContentOf("admin/org-response.json", resp: _*)
   }
 
   def createProjectRespJson(
@@ -75,7 +75,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
       "markedForDeletion" -> markedForDeletion.toString,
       "schema"            -> schema
     )
-    loader.jsonContentOf("/admin/project-response.json", resp: _*)
+    loader.jsonContentOf("admin/project-response.json", resp: _*)
   }
 
   private def queryParams(rev: Int) =
@@ -159,7 +159,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
   private[tests] def randomProjectPrefix = genString(1, startPool) + genString(10, pool)
 
   def projectPayload(
-      path: String = "/admin/projects/create.json",
+      path: String = "admin/projects/create.json",
       nxv: String = randomProjectPrefix,
       person: String = randomProjectPrefix,
       description: String = genString(),

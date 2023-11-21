@@ -30,7 +30,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers {
     val graphNoId        = Graph(expandedNoId).rightValue
     val bnodeNoId        = bNode(graphNoId)
     val namedGraph       = Graph(
-      ExpandedJsonLd.expanded(jsonContentOf("/graph/expanded-multiple-roots-namedgraph.json")).rightValue
+      ExpandedJsonLd.expanded(jsonContentOf("graph/expanded-multiple-roots-namedgraph.json")).rightValue
     ).rightValue
 
     val name      = predicate(schema.name)
@@ -182,7 +182,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers {
     }
 
     "failed to be converted to compacted JSON-LD from a multiple root" in {
-      val expandedJson = jsonContentOf("/graph/expanded-multiple-roots.json")
+      val expandedJson = jsonContentOf("graph/expanded-multiple-roots.json")
       val expanded     = ExpandedJsonLd(expandedJson).accepted
       Graph(expanded).leftValue shouldEqual UnexpectedJsonLd("Expected named graph, but root @id not found")
     }

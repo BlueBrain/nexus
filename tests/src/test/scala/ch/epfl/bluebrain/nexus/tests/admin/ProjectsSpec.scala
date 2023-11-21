@@ -258,7 +258,7 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
     "return empty list if no acl is set" in {
       deltaClient.get[Json]("/projects", PrincessCarolyn) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        json shouldEqual jsonContentOf("/admin/projects/empty-project-list.json")
+        json shouldEqual jsonContentOf("admin/projects/empty-project-list.json")
       }
     }
 
@@ -273,7 +273,7 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
     "return an empty list if no project is accessible" in {
       deltaClient.get[Json]("/projects", PrincessCarolyn) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        json shouldEqual jsonContentOf("/admin/projects/empty-project-list.json")
+        json shouldEqual jsonContentOf("admin/projects/empty-project-list.json")
       }
     }
 
@@ -299,7 +299,7 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
       Json.arr(
         ids.map { case (orgId, projectId) =>
           jsonContentOf(
-            "/admin/projects/listing-item.json",
+            "admin/projects/listing-item.json",
             replacements(
               target,
               "id"     -> s"$orgId/$projectId",

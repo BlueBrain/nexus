@@ -27,7 +27,7 @@ import java.time.Instant
 
 class ResolverContextResolutionSuite extends CatsEffectSuite {
 
-  private val metadataContext = jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty
+  private val metadataContext = jsonContentOf("contexts/metadata.json").topContextValueOrEmpty
 
   val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.metadata -> metadataContext)

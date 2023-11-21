@@ -18,7 +18,7 @@ class StorageDirectivesSpec extends CatsEffectSpec with ScalatestRouteTest with 
 
     def pathInvalidJson(path: Uri.Path): Json =
       jsonContentOf(
-        "/error.json",
+        "error.json",
         Map(
           quote("{type}") -> "PathInvalid",
           quote(

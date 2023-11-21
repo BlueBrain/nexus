@@ -20,7 +20,7 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
   "InProject" should {
 
     "be successfully decoded" in {
-      val json     = jsonContentOf("/resolvers/expanded/in-project-resolver.json")
+      val json     = jsonContentOf("resolvers/expanded/in-project-resolver.json")
       val expanded = ExpandedJsonLd(json).accepted
 
       expanded.to[ResolverValue].rightValue shouldEqual InProjectValue(
@@ -29,7 +29,7 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
     }
 
     "be successfully decoded when a name and description are defined" in {
-      val json     = jsonContentOf("/resolvers/expanded/in-project-resolver-name-desc.json")
+      val json     = jsonContentOf("resolvers/expanded/in-project-resolver-name-desc.json")
       val expanded = ExpandedJsonLd(json).accepted
 
       expanded.to[ResolverValue].rightValue shouldEqual InProjectValue(
@@ -50,8 +50,8 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
     "be successfully decoded when using provided entities resolution" in {
       forAll(
         List(
-          jsonContentOf("/resolvers/expanded/cross-project-resolver-identities.json"),
-          jsonContentOf("/resolvers/expanded/cross-project-resolver-identities-no-type.json")
+          jsonContentOf("resolvers/expanded/cross-project-resolver-identities.json"),
+          jsonContentOf("resolvers/expanded/cross-project-resolver-identities-no-type.json")
         )
       ) { json =>
         val expanded = ExpandedJsonLd(json).accepted
@@ -65,7 +65,7 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
     }
 
     "be successfully decoded when using current caller resolution" in {
-      val json     = jsonContentOf("/resolvers/expanded/cross-project-resolver-use-caller.json")
+      val json     = jsonContentOf("resolvers/expanded/cross-project-resolver-use-caller.json")
       val expanded = ExpandedJsonLd(json).accepted
       expanded.to[ResolverValue].rightValue shouldEqual CrossProjectValue(
         Priority.unsafe(42),
@@ -76,7 +76,7 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
     }
 
     "be successfully decoded when using current caller resolution with name and description" in {
-      val json     = jsonContentOf("/resolvers/expanded/cross-project-resolver-use-caller-name-desc.json")
+      val json     = jsonContentOf("resolvers/expanded/cross-project-resolver-use-caller-name-desc.json")
       val expanded = ExpandedJsonLd(json).accepted
       expanded.to[ResolverValue].rightValue shouldEqual CrossProjectValue(
         name,
@@ -89,7 +89,7 @@ class ResolverValueSpec extends CatsEffectSpec with Fixtures {
     }
 
     "result in an error when both resolutions are defined" in {
-      val json     = jsonContentOf("/resolvers/expanded/cross-project-resolver-both-error.json")
+      val json     = jsonContentOf("resolvers/expanded/cross-project-resolver-both-error.json")
       val expanded = ExpandedJsonLd(json).accepted
       expanded.to[ResolverValue].leftValue shouldEqual ParsingFailure(
         "Only 'useCurrentCaller' or 'identities' should be defined"

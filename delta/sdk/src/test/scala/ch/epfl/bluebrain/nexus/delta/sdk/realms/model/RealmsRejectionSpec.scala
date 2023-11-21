@@ -18,7 +18,7 @@ class RealmsRejectionSpec extends CatsEffectSpec with CirceLiteral with Fixtures
     "be converted to compacted JSON-LD" in {
       val list = List(
         alreadyExists -> json"""{"@type": "RealmAlreadyExists", "reason": "${alreadyExists.reason}"}""",
-        incorrectRev  -> jsonContentOf("/realms/incorrect-revision-compacted.json")
+        incorrectRev  -> jsonContentOf("realms/incorrect-revision-compacted.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
@@ -28,7 +28,7 @@ class RealmsRejectionSpec extends CatsEffectSpec with CirceLiteral with Fixtures
     "be converted to expanded JSON-LD" in {
       val list = List(
         alreadyExists -> json"""[{"@type": ["${nxv + "RealmAlreadyExists"}"], "${nxv + "reason"}": [{"@value": "${alreadyExists.reason}"} ] } ]""",
-        incorrectRev  -> jsonContentOf("/realms/incorrect-revision-expanded.json")
+        incorrectRev  -> jsonContentOf("realms/incorrect-revision-expanded.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toExpandedJsonLd.accepted.json shouldEqual json

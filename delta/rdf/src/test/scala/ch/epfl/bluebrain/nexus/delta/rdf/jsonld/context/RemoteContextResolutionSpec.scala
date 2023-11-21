@@ -10,7 +10,7 @@ class RemoteContextResolutionSpec extends CatsEffectSpec with Fixtures {
 
   "A remote context resolution" should {
 
-    val input = jsonContentOf("/jsonld/context/input-with-remote-context.json")
+    val input = jsonContentOf("jsonld/context/input-with-remote-context.json")
 
     "resolve" in {
       remoteResolution(input).accepted shouldEqual remoteContexts.map { case (iri, context) =>

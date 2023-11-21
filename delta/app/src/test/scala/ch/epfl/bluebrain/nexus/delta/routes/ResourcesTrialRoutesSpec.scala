@@ -243,7 +243,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
       Get(s"/v1/resources/$projectRef/_/$unknownEncoded/validate") ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/not-found.json",
+          "resources/errors/not-found.json",
           "id"   -> unknownResource.toString,
           "proj" -> projectRef.toString
         )

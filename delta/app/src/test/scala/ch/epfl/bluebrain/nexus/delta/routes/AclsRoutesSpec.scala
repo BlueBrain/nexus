@@ -79,8 +79,8 @@ class AclsRoutesSpec extends BaseRouteSpec {
       val meta = aclMetadata(acl.address, rev, createdBy = user, updatedBy = user).removeKeys(keywords.context)
       aclJson(acl) deepMerge meta
     }
-    jsonContentOf("/acls/acls-route-response.json", "total" -> total) deepMerge
-      Json.obj("_results"                                   -> Json.fromValues(results))
+    jsonContentOf("acls/acls-route-response.json", "total" -> total) deepMerge
+      Json.obj("_results"                                  -> Json.fromValues(results))
   }
 
   private val identities = IdentitiesDummy(caller)

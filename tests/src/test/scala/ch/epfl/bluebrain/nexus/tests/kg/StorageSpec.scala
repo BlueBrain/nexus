@@ -159,7 +159,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     "have the expected metadata" in {
       val id       = s"${attachmentPrefix}attachment.json"
       val expected = jsonContentOf(
-        "/kg/files/attachment-metadata.json",
+        "kg/files/attachment-metadata.json",
         replacements(
           Coyote,
           "id"          -> id,
@@ -260,7 +260,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/storages/$projectRef/nxv:fail/statistics", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.NotFound
         json shouldEqual jsonContentOf(
-          "/kg/storages/not-found.json",
+          "kg/storages/not-found.json",
           "storageId" -> (nxv + "fail"),
           "projId"    -> s"$projectRef"
         )
@@ -278,7 +278,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         "storageId"      -> storageId,
         "storageType"    -> storageType
       )
-      val expected = jsonContentOf("/kg/files/list.json", mapping: _*)
+      val expected = jsonContentOf("kg/files/list.json", mapping: _*)
       filterSearchMetadata
         .andThen(filterResults(Set("_location")))(json) should equalIgnoreArrayOrder(expected)
     }
@@ -338,7 +338,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         "self"      -> fileSelf(projectRef, id),
         "storageId" -> storageId
       )
-      val expected = jsonContentOf("/kg/files/sparql.json", mapping: _*)
+      val expected = jsonContentOf("kg/files/sparql.json", mapping: _*)
       json should equalIgnoreArrayOrder(expected)
     }
   }
@@ -399,7 +399,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     "fetch metadata" in {
       val id       = s"${attachmentPrefix}attachment2"
       val expected = jsonContentOf(
-        "/kg/files/attachment2-metadata.json",
+        "kg/files/attachment2-metadata.json",
         replacements(
           Coyote,
           "id"          -> id,
