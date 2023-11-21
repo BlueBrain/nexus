@@ -23,7 +23,8 @@ class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with Doobie
       Acls.findUnknownRealms(_, Set(saRealm, usersRealm)),
       PermissionsGen.minimum,
       AclsConfig(eventLogConfig),
-      xas
+      xas,
+      clock
     )
 
   private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))

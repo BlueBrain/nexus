@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
-import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -40,7 +38,6 @@ class EventsRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
@@ -147,7 +144,6 @@ object EventsRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives).routes

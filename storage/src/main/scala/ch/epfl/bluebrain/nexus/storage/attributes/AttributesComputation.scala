@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.attributes
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.util.ByteString
-import cats.effect.Effect
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
@@ -14,7 +14,7 @@ import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-trait AttributesComputation[F[_], Source] {
+trait AttributesComputation[Source] {
 
   /**
     * Given a path and an algorithm, generates its FileAttributes
@@ -26,7 +26,7 @@ trait AttributesComputation[F[_], Source] {
     * @return
     *   a computed file attributes, wrapped on the effect type F
     */
-  def apply(path: Path, algorithm: String): F[FileAttributes]
+  def apply(path: Path, algorithm: String): IO[FileAttributes]
 }
 
 object AttributesComputation {
@@ -49,29 +49,31 @@ object AttributesComputation {
     * @return
     *   a AttributesComputation implemented for a source of type AkkaSource
     */
-  implicit def akkaAttributes[F[_]](implicit
+  implicit def akkaAttributes(implicit
       contentTypeDetector: ContentTypeDetector,
       ec: ExecutionContext,
-      mt: Materializer,
-      F: Effect[F]
-  ): AttributesComputation[F, AkkaSource] =
+      mt: Materializer
+  ): AttributesComputation[AkkaSource] =
     (path: Path, algorithm: String) => {
-      if (!Files.exists(path)) F.raiseError(InternalError(s"Path not found '$path'"))
+      if (!Files.exists(path)) IO.raiseError(InternalError(s"Path not found '$path'"))
       else
         Try(MessageDigest.getInstance(algorithm)) match {
           case Success(msgDigest) =>
             val isDir  = Files.isDirectory(path)
             val source = if (isDir) folderSource(path) else fileSource(path)
-            source
-              .alsoToMat(sinkSize)(Keep.right)
-              .toMat(sinkDigest(msgDigest)) { (bytesF, digestF) =>
-                (bytesF, digestF).mapN { case (bytes, digest) =>
-                  FileAttributes(path.toAkkaUri, bytes, digest, contentTypeDetector(path, isDir))
-                }
-              }
-              .run()
-              .to[F]
-          case Failure(_)         => F.raiseError(InternalError(s"Invalid algorithm '$algorithm'."))
+            IO.fromFuture(
+              IO.delay(
+                source
+                  .alsoToMat(sinkSize)(Keep.right)
+                  .toMat(sinkDigest(msgDigest)) { (bytesF, digestF) =>
+                    (bytesF, digestF).mapN { case (bytes, digest) =>
+                      FileAttributes(path.toAkkaUri, bytes, digest, contentTypeDetector(path, isDir))
+                    }
+                  }
+                  .run()
+              )
+            )
+          case Failure(_)         => IO.raiseError(InternalError(s"Invalid algorithm '$algorithm'."))
         }
 
     }

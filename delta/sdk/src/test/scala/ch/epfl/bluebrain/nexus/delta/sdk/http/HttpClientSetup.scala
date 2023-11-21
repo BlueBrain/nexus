@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.actor.ActorSystem
-import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import cats.effect.Temporal
 
 object HttpClientSetup {
 
   def apply(
       compression: Boolean
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Resource[IO, (HttpClient, ActorSystem)] = {
+  )(implicit timer: Temporal[IO]): Resource[IO, (HttpClient, ActorSystem)] = {
     implicit val httpConfig: HttpClientConfig =
       HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)
     Resource

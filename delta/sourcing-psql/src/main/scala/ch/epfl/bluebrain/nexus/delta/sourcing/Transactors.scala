@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{Blocker, ContextShift, IO, Resource}
+import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
@@ -29,10 +29,12 @@ final case class Transactors(
     cache: PartitionsCache
 ) {
 
-  private def execDDL(ddl: String)(implicit cl: ClassLoader): IO[Unit] =
-    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+  private val loader = ClasspathResourceLoader()
 
-  def execDDLs(ddls: List[String])(implicit cl: ClassLoader): IO[Unit] =
+  private def execDDL(ddl: String): IO[Unit] =
+    loader.contentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+
+  def execDDLs(ddls: List[String]): IO[Unit] =
     ddls.traverse(execDDL).void
 
 }
@@ -75,9 +77,7 @@ object Transactors {
     * @param password
     *   the password
     */
-  def test(host: String, port: Int, username: String, password: String)(implicit
-      cs: ContextShift[IO]
-  ): Resource[IO, Transactors] = {
+  def test(host: String, port: Int, username: String, password: String): Resource[IO, Transactors] = {
     val access         = DatabaseAccess(host, port, 10)
     val databaseConfig = DatabaseConfig(
       access,
@@ -89,16 +89,16 @@ object Transactors {
       tablesAutocreate = false,
       CacheConfig(500, 10.minutes)
     )
-    init(databaseConfig)(getClass.getClassLoader, cs)
+    init(databaseConfig)
   }
 
   def init(
       config: DatabaseConfig
-  )(implicit classLoader: ClassLoader, cs: ContextShift[IO]): Resource[IO, Transactors] = {
+  ): Resource[IO, Transactors] = {
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
-        ce        <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
-        blocker   <- Blocker[IO]
+        ec        <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
+        blocker   <- Resource.unit[IO]
         dataSource = {
           val ds = new HikariDataSource
           ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
@@ -111,7 +111,7 @@ object Transactors {
           ds.setReadOnly(readOnly)
           ds
         }
-      } yield HikariTransactor[IO](dataSource, ce, blocker)
+      } yield HikariTransactor[IO](dataSource, ec, None)
     }
 
     val transactors = for {

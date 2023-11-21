@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotDecodePipeConfigErr
 import shapeless.Typeable
+import cats.implicits._
 
 /**
   * Contract for definition for pipes. PipeDefs are used to construct [[Pipe]] instances to be used when materializing

@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits._
+import cats.effect.IO
+
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMatchErr, SourceOutPipeInMatchErr}
 import fs2.Stream
 import shapeless.Typeable
+import cats.implicits._
 
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
@@ -50,7 +51,7 @@ trait Source { self =>
 
   def through(
       operation: Operation
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Either[SourceOutPipeInMatchErr, Source] =
+  ): Either[SourceOutPipeInMatchErr, Source] =
     Either.cond(
       outType.describe == operation.inType.describe,
       new Source {
@@ -73,7 +74,7 @@ trait Source { self =>
       SourceOutPipeInMatchErr(self, operation)
     )
 
-  private[stream] def merge(that: Source)(implicit cs: ContextShift[IO]): Either[SourceOutMatchErr, Source] =
+  private[stream] def merge(that: Source): Either[SourceOutMatchErr, Source] =
     Either.cond(
       self.outType.describe == that.outType.describe,
       new Source {
@@ -97,7 +98,7 @@ trait Source { self =>
 
   def broadcastThrough(
       operations: NonEmptyChain[Operation]
-  )(implicit cs: ContextShift[IO], timer: Timer[IO]): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
+  ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
     operations
       .traverse { operation =>
         Either.cond(

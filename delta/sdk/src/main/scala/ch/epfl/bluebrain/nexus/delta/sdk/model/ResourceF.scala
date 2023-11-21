@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Functor
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}

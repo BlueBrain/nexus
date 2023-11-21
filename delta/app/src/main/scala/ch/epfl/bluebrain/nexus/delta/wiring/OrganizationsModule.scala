@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -24,7 +24,8 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 // $COVERAGE-OFF$
 object OrganizationsModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[Organizations].from {
     (
@@ -32,15 +33,14 @@ object OrganizationsModule extends ModuleDef {
         scopeInitializations: Set[ScopeInitialization],
         clock: Clock[IO],
         uuidF: UUIDF,
-        xas: Transactors,
-        contextShift: ContextShift[IO],
-        timer: Timer[IO]
+        xas: Transactors
     ) =>
       OrganizationsImpl(
         scopeInitializations,
         config.organizations,
-        xas
-      )(clock, uuidF, contextShift, timer)
+        xas,
+        clock
+      )(uuidF)
   }
 
   make[OrganizationDeleter].from { (xas: Transactors) =>

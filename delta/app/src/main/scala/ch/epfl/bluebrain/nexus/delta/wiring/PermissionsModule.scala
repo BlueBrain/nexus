@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -16,20 +16,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsIm
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
   * Permissions module wiring config.
   */
 // $COVERAGE-OFF$
 object PermissionsModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[Permissions].from {
-    (cfg: AppConfig, xas: Transactors, clock: Clock[IO], contextShift: ContextShift[IO], timer: Timer[IO]) =>
-      PermissionsImpl(
-        cfg.permissions,
-        xas
-      )(clock, contextShift, timer)
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
+
+  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO]) =>
+    PermissionsImpl(
+      cfg.permissions,
+      xas,
+      clock
+    )
   }
 
   make[PermissionsRoutes].from {

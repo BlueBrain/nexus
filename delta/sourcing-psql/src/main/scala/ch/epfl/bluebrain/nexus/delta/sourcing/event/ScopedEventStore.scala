@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -79,7 +79,7 @@ object ScopedEventStore {
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): ScopedEventStore[Id, E] =
+  ): ScopedEventStore[Id, E] =
     new ScopedEventStore[Id, E] {
 
       import IriInstances._

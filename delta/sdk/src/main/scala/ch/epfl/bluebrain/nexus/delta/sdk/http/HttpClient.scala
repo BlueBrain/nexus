@@ -9,8 +9,8 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
 import akka.util.ByteString
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits.{catsSyntaxFlatMapOps, catsSyntaxMonadError}
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
@@ -75,19 +75,14 @@ object HttpClient {
   }
 
   private[http] object HttpSingleRequest {
-    def default(implicit as: ActorSystem, cs: ContextShift[IO]): HttpSingleRequest =
+    def default(implicit as: ActorSystem): HttpSingleRequest =
       (request: HttpRequest) => IO.fromFuture(IO.delay(Http().singleRequest(request)))
   }
 
   /**
     * Construct the Http client using an underlying akka http client
     */
-  final def apply()(implicit
-      httpConfig: HttpClientConfig,
-      as: ActorSystem,
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): HttpClient = {
+  final def apply()(implicit httpConfig: HttpClientConfig, as: ActorSystem): HttpClient = {
     apply(HttpSingleRequest.default)
   }
 
@@ -96,19 +91,14 @@ object HttpClient {
     */
   final def noRetry(
       compression: Boolean
-  )(implicit as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO]): HttpClient = {
+  )(implicit as: ActorSystem): HttpClient = {
     implicit val config: HttpClientConfig = HttpClientConfig.noRetry(compression)
     apply()
   }
 
   private[http] def apply(
       client: HttpSingleRequest
-  )(implicit
-      httpConfig: HttpClientConfig,
-      as: ActorSystem,
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): HttpClient =
+  )(implicit httpConfig: HttpClientConfig, as: ActorSystem): HttpClient =
     new HttpClient {
       implicit private val ec: ExecutionContext = as.dispatcher
 

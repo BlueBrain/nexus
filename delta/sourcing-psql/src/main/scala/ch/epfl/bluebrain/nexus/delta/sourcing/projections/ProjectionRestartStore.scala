@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.{IO, Timer}
-import cats.implicits.toFlatMapOps
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
-import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
@@ -23,7 +22,7 @@ import java.time.Instant
 /**
   * Persistent operations for projections restart
   */
-final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implicit timer: Timer[IO]) {
+final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
 
   def save(restart: ProjectionRestart): IO[Unit] =
     sql"""INSERT INTO public.projection_restarts (name, value, instant, acknowledged)
@@ -43,7 +42,7 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implic
     sql"""DELETE FROM public.projection_restarts WHERE instant < $instant""".update.run
       .transact(xas.write)
       .flatTap { deleted =>
-        IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted $deleted projection restarts.")))
+        IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted projection restarts."))
       }
       .void
 
@@ -66,6 +65,6 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implic
 
 object ProjectionRestartStore {
 
-  private val logger: Logger = Logger[ProjectionRestartStore]
+  private val logger = Logger[ProjectionRestartStore]
 
 }

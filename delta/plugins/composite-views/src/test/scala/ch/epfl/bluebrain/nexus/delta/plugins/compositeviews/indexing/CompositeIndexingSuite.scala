@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Semigroup
 import cats.data.NonEmptyList
-import cats.effect.concurrent.Ref
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
@@ -50,7 +49,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
@@ -64,6 +62,7 @@ import munit.AnyFixture
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
+import cats.effect.Ref
 
 class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
 class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
@@ -92,7 +91,7 @@ trait CompositeIndexingFixture extends CatsEffectSuite {
       .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
-          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
+          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds, clock)
         val spaces                = CompositeSpaces(prefix, esClient, bgClient)
         val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
         Setup(esClient, bgClient, projections, spaces, sinks)
@@ -109,7 +108,6 @@ trait CompositeIndexingFixture extends CatsEffectSuite {
 
 abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConstructQuery)
     extends CompositeIndexingFixture
-    with TestHelpers
     with Fixtures
     with JsonAssertions
     with TextAssertions {
@@ -233,7 +231,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[IO])
     }
 
-    override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source = {
+    override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
       val (p, s) = stream(source, project)
       Source(_ => s.onFinalize(increment(rebuildCompleted, p)))
     }
@@ -379,7 +377,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
       _        <- spaces.init(view)
-      _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig, timer, contextShift)
+      _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig)
     } yield compiled
   }
 

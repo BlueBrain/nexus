@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -37,7 +37,7 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 @SuppressWarnings(Array("UnsafeTraversableMethods"))
 object ProjectsModule extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   final case class ApiMappingsCollection(value: Set[ApiMappings]) {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
@@ -56,8 +56,6 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         baseUri: BaseUri,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       IO.pure(
@@ -71,8 +69,9 @@ object ProjectsModule extends ModuleDef {
           scopeInitializations,
           mappings.merge,
           config.projects,
-          xas
-        )(baseUri, clock, contextShift, timer, uuidF)
+          xas,
+          clock
+        )(baseUri, uuidF)
       )
   }
 
@@ -85,10 +84,9 @@ object ProjectsModule extends ModuleDef {
         acls: Acls,
         projects: Projects,
         config: AppConfig,
-        serviceAccount: ServiceAccount,
-        contextShift: ContextShift[IO]
+        serviceAccount: ServiceAccount
     ) =>
-      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)(contextShift)
+      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
   make[FetchContext[ContextRejection]].fromEffect {
@@ -104,8 +102,7 @@ object ProjectsModule extends ModuleDef {
         serviceAccount: ServiceAccount,
         supervisor: Supervisor,
         xas: Transactors,
-        clock: Clock[IO],
-        timer: Timer[IO]
+        clock: Clock[IO]
     ) =>
       ProjectDeletionCoordinator(
         projects,
@@ -113,8 +110,9 @@ object ProjectsModule extends ModuleDef {
         config.projects.deletion,
         serviceAccount,
         supervisor,
-        xas
-      )(clock, timer)
+        xas,
+        clock
+      )
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
@@ -137,16 +135,14 @@ object ProjectsModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        fusionConfig: FusionConfig,
-        contextShift: ContextShift[IO]
+        fusionConfig: FusionConfig
     ) =>
       new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
         baseUri,
         config.projects,
         cr,
         ordering,
-        fusionConfig,
-        contextShift
+        fusionConfig
       )
   }
 

@@ -64,7 +64,8 @@ private class StoragesSpec
       (_, _) => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, config),
-      serviceAccount
+      serviceAccount,
+      clock
     ).accepted
 
     "creating a storage" should {

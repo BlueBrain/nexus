@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.implicits._
+
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import io.circe.Json
 import io.circe.optics.JsonPath._
+import cats.implicits._
 
 class CompositeViewsSpec extends BaseIntegrationSpec {
 

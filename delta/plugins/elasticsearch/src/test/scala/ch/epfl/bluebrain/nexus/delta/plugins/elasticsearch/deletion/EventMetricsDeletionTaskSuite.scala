@@ -5,15 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import munit.AnyFixture
 
 class EventMetricsDeletionTaskSuite
     extends CatsEffectSuite
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
-    with TestHelpers
     with Fixtures {
 
   implicit private val subject: Subject = Anonymous

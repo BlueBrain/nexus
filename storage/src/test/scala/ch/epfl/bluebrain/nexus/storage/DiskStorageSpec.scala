@@ -17,11 +17,11 @@ import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.Randomness
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.mockito.IdiomaticMockito
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
+import org.scalatest.{BeforeAndAfterAll, Inspectors}
 
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -33,16 +33,11 @@ import scala.reflect.io.Directory
 
 class DiskStorageSpec
     extends TestKit(ActorSystem("DiskStorageSpec"))
-    with AnyWordSpecLike
-    with Matchers
+    with CatsEffectSpec
     with Randomness
-    with IOEitherValues
     with BeforeAndAfterAll
-    with OptionValues
     with Inspectors
     with IdiomaticMockito {
-
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
   implicit val ec: ExecutionContext = system.dispatcher
 
@@ -51,8 +46,8 @@ class DiskStorageSpec
   val sConfig             = StorageConfig(rootPath, List(scratchPath), Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"))
   val dConfig             = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
   val contentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
-  val cache               = mock[AttributesCache[IO]]
-  val storage             = new DiskStorage[IO](sConfig, contentTypeDetector, dConfig, cache)
+  val cache               = mock[AttributesCache]
+  val storage             = new DiskStorage(sConfig, contentTypeDetector, dConfig, cache)
 
   override def afterAll(): Unit = {
     Directory(rootPath.toFile).deleteRecursively()
@@ -138,7 +133,7 @@ class DiskStorageSpec
         val source: AkkaSource                          = Source.single(ByteString(content))
         implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
         val relativePath                                = Uri.Path("some/../../path")
-        storage.createFile(name, relativePath, source).unsafeToFuture().failed.futureValue shouldEqual
+        storage.createFile(name, relativePath, source).rejectedWith[StorageError] shouldEqual
           PathInvalid(name, relativePath)
       }
 
@@ -147,7 +142,7 @@ class DiskStorageSpec
         val source: AkkaSource                          = Source.single(ByteString(content))
         val digest                                      = Digest("SHA-256", "290f493c44f5d63d06b374d0a5abd292fae38b92cab2fae5efefe1b0e9347f56")
         implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
-        storage.createFile(name, relativeFilePath, source).ioValue shouldEqual
+        storage.createFile(name, relativeFilePath, source).accepted shouldEqual
           FileAttributes(s"file://${absoluteFilePath.toString}", 12L, digest, `text/plain(UTF-8)`)
       }
 
@@ -156,7 +151,7 @@ class DiskStorageSpec
         val source: AkkaSource                          = Source.single(ByteString(content))
         val digest                                      = Digest("SHA-256", "290f493c44f5d63d06b374d0a5abd292fae38b92cab2fae5efefe1b0e9347f56")
         implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
-        storage.createFile(name, Uri.Path(absoluteFilePath.toString), source).ioValue shouldEqual
+        storage.createFile(name, Uri.Path(absoluteFilePath.toString), source).accepted shouldEqual
           FileAttributes(s"file://${absoluteFilePath.toString}", 12L, digest, `text/plain(UTF-8)`)
       }
     }
@@ -167,7 +162,7 @@ class DiskStorageSpec
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
         val falseBinary  = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
         val badStorage   =
-          new DiskStorage[IO](sConfig.copy(fixerCommand = Vector(falseBinary)), contentTypeDetector, dConfig, cache)
+          new DiskStorage(sConfig.copy(fixerCommand = Vector(falseBinary)), contentTypeDetector, dConfig, cache)
         val file         = "some/folder/my !file.txt"
         val absoluteFile = baseRootPath.resolve(Paths.get(file))
         Files.createDirectories(absoluteFile.getParent)
@@ -175,12 +170,12 @@ class DiskStorageSpec
 
         badStorage
           .moveFile(name, Uri.Path(file), Uri.Path(randomString()))
-          .failed[StorageError] shouldEqual PermissionsFixingFailed(absoluteFile.toString, "")
+          .rejectedWith[StorageError] shouldEqual PermissionsFixingFailed(absoluteFile.toString, "")
       }
 
       "fail when source does not exists" in new AbsoluteDirectoryCreated {
         val source = randomString()
-        storage.moveFile(name, Uri.Path(source), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
+        storage.moveFile(name, Uri.Path(source), Uri.Path(randomString())).accepted.leftValue shouldEqual
           PathNotFound(name, Uri.Path(source))
       }
 
@@ -190,7 +185,7 @@ class DiskStorageSpec
         Files.createDirectories(absoluteFile.getParent)
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
+        storage.moveFile(name, Uri.Path(file), Uri.Path(randomString())).accepted.leftValue shouldEqual
           PathNotFound(name, Uri.Path(file))
       }
 
@@ -204,7 +199,8 @@ class DiskStorageSpec
         Files.write(fileDest, "something".getBytes(StandardCharsets.UTF_8))
         storage
           .moveFile(name, Uri.Path(file), Uri.Path("my !file.txt"))
-          .rejected[PathAlreadyExists] shouldEqual
+          .accepted
+          .leftValue shouldEqual
           PathAlreadyExists(name, Uri.Path("my !file.txt"))
       }
 
@@ -217,7 +213,7 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), dest).unsafeToFuture().failed.futureValue shouldEqual
+        storage.moveFile(name, Uri.Path(file), dest).rejectedWith[StorageError] shouldEqual
           PathInvalid(name, dest)
         Files.exists(absoluteFile) shouldEqual true
       }
@@ -232,9 +228,7 @@ class DiskStorageSpec
 
         storage
           .moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt"))
-          .unsafeToFuture()
-          .failed
-          .futureValue shouldEqual
+          .rejectedWith[StorageError] shouldEqual
           PathInvalid(name, Uri.Path(absoluteFile.toString))
         Files.exists(absoluteFile) shouldEqual true
       }
@@ -250,9 +244,7 @@ class DiskStorageSpec
 
         val result = storage
           .moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other"))
-          .unsafeToFuture()
-          .failed
-          .futureValue
+          .rejectedWith[StorageError]
         result shouldEqual PathInvalid(name, Uri.Path(absoluteDir.toString))
       }
 
@@ -264,7 +256,7 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted shouldEqual
+        storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
           FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
         Files.exists(absoluteFile) shouldEqual false
         Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
@@ -278,7 +270,10 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt")).accepted shouldEqual
+        storage
+          .moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt"))
+          .accepted
+          .rightValue shouldEqual
           FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
 
         Files.exists(absoluteFile) shouldEqual false
@@ -294,7 +289,7 @@ class DiskStorageSpec
         val content      = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted
+        val result      = storage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted.rightValue
         val resolvedDir = basePath.resolve("some/other")
         result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
         Files.exists(absoluteDir) shouldEqual false
@@ -312,7 +307,7 @@ class DiskStorageSpec
         val content      = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted
+        val result      = storage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted.rightValue
         val resolvedDir = basePath.resolve("some/other")
         result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
         Files.exists(absoluteDir) shouldEqual false
@@ -383,8 +378,8 @@ class DiskStorageSpec
           `text/plain(UTF-8)`
         )
         cache.get(absoluteFilePath) shouldReturn IO(expectedAttributes)
-        storage.getAttributes(name, relativeFilePath).ioValue shouldEqual expectedAttributes
-        storage.getAttributes(name, Uri.Path(absoluteFilePath.toString)).ioValue shouldEqual expectedAttributes
+        storage.getAttributes(name, relativeFilePath).accepted shouldEqual expectedAttributes
+        storage.getAttributes(name, Uri.Path(absoluteFilePath.toString)).accepted shouldEqual expectedAttributes
       }
     }
   }

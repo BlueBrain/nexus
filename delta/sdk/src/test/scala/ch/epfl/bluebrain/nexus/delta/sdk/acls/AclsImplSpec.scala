@@ -67,7 +67,8 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
       Acls.findUnknownRealms(_, Set(realm, realm2)),
       minimumPermissions,
       AclsConfig(eventLogConfig),
-      xas
+      xas,
+      clock
     )
 
     "return the full permissions for Anonymous if no permissions are defined" in {

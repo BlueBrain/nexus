@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests
 
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.Generators
 
 sealed trait Identity extends Product with Serializable
 
-object Identity extends TestHelpers {
+object Identity extends Generators {
 
   case object Anonymous extends Identity
 

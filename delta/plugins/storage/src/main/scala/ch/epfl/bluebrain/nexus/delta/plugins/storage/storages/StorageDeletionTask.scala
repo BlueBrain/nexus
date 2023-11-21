@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue

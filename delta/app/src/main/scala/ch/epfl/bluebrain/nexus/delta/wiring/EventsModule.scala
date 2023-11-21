@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -30,8 +29,7 @@ object EventsModule extends ModuleDef {
         projects: Projects,
         sseEncoders: Set[SseEncoder[_]],
         xas: Transactors,
-        jo: JsonKeyOrdering,
-        timer: Timer[IO]
+        jo: JsonKeyOrdering
     ) =>
       SseEventLog(
         sseEncoders,
@@ -39,11 +37,11 @@ object EventsModule extends ModuleDef {
         projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
         config.sse,
         xas
-      )(jo, timer)
+      )(jo)
   }
 
-  make[SseElemStream].from { (qc: QueryConfig, xas: Transactors, timer: Timer[IO]) =>
-    SseElemStream(qc, xas)(timer)
+  make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>
+    SseElemStream(qc, xas)
   }
 
   make[EventsRoutes].from {
@@ -53,11 +51,10 @@ object EventsModule extends ModuleDef {
         sseEventLog: SseEventLog,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, c, cr, ordering)
+      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: EventsRoutes) =>
@@ -71,11 +68,10 @@ object EventsModule extends ModuleDef {
         sseElemStream: SseElemStream,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        contextShift: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, cr, ordering, contextShift)
+      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: ElemRoutes) =>

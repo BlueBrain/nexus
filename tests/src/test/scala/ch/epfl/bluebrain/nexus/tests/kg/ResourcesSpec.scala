@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
@@ -23,6 +23,7 @@ import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.testcontainers.utility.Base58.randomString
 
 import java.net.URLEncoder
+import cats.implicits._
 
 class ResourcesSpec extends BaseIntegrationSpec {
 
@@ -75,7 +76,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   "adding schema" should {
     "create a schema" in {
-      val schemaPayload = SchemaPayload.loadSimple()
+      val schemaPayload = SchemaPayload.loadSimple().accepted
 
       deltaClient.put[Json](s"/schemas/$project1/test-schema", schemaPayload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -115,10 +116,10 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "succeed if the payload is correct" in {
-      val payload = SimpleResource.sourcePayload(resource1Id, 5)
+      val payload = SimpleResource.sourcePayload(resource1Id, 5).accepted
 
       val id2      = URLEncoder.encode("https://dev.nexus.test.com/test-schema-imports", "UTF-8")
-      val payload2 = SimpleResource.sourcePayload("https://dev.nexus.test.com/simplified-resource/a", 5)
+      val payload2 = SimpleResource.sourcePayload("https://dev.nexus.test.com/simplified-resource/a", 5).accepted
 
       for {
         _ <-
@@ -154,8 +155,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch the resource wih metadata" in {
+      val expected = resource1Response(1, 5).accepted
+
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1", Morty) { (json, response) =>
-        val expected = resource1Response(1, 5)
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
         response.headers should contain(varyHeader)
@@ -163,8 +165,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch the original payload" in {
+      val expected = SimpleResource.sourcePayload(resource1Id, 5).accepted
+
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1/source", Morty) { (json, response) =>
-        val expected = SimpleResource.sourcePayload(resource1Id, 5)
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
         response.headers should contain(varyHeader)
@@ -172,25 +175,25 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch the original payload through a resolver" in {
+      val expected = SimpleResource.sourcePayload(resource1Id, 5).accepted
       deltaClient.get[Json](s"/resolvers/$project1/_/test-resource:1/source", Morty) { (json, response) =>
-        val expected = SimpleResource.sourcePayload(resource1Id, 5)
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
     }
 
     "fetch the original payload with metadata" in {
+      val expected = resource1AnnotatedSource(1, 5).accepted
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1/source?annotate=true", Morty) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          val expected = resource1AnnotatedSource(1, 5)
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
           response.headers should contain(varyHeader)
       }
     }
 
     "fetch the original payload with unexpanded id with metadata" in {
-      val payload = SimpleResource.sourcePayload("42", 5)
+      val payload = SimpleResource.sourcePayload("42", 5).accepted
 
       for {
         _ <- deltaClient.post[Json](s"/resources/$project1/_/", payload, Rick) { (_, response) =>
@@ -205,7 +208,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch the original payload with generated id with metadata" in {
-      val payload = SimpleResource.sourcePayload(5)
+      val payload = SimpleResource.sourcePayload(5).accepted
 
       var generatedId: String = ""
 
@@ -235,7 +238,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fail if the schema doesn't exist in the project" in {
-      val payload = SimpleResource.sourcePayload(resource1Id, 3)
+      val payload = SimpleResource.sourcePayload(resource1Id, 3).accepted
 
       deltaClient.put[Json](s"/resources/$project2/test-schema/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
@@ -246,6 +249,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     "fail if the payload contains nexus metadata fields (underscore fields)" in {
       val payload = SimpleResource
         .sourcePayload("1", 3)
+        .accepted
         .deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
 
       deltaClient.put[Json](s"/resources/$project2/_/test-resource:1", payload, Rick) { (_, response) =>
@@ -345,31 +349,31 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "resolve schema from the other project" in {
-      val payload = SimpleResource.sourcePayload(resource1Id, 3)
+      val payload = SimpleResource.sourcePayload(resource1Id, 3).accepted
       deltaClient.put[Json](s"/resources/$project2/test-schema/test-resource:1", payload, Rick) { expectCreated }
     }
   }
 
   "updating a resource" should {
-    val payload = SimpleResource.sourcePayload(resource1Id, 3)
     "send the update" in {
       for {
-        _ <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) {
-               (json, response) =>
-                 response.status shouldEqual StatusCodes.OK
-                 _rev.getOption(json).value shouldEqual 2
-             }
+        payload <- SimpleResource.sourcePayload(resource1Id, 3)
+        _       <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) {
+                     (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       _rev.getOption(json).value shouldEqual 2
+                   }
         // Sending the same update should not create a new revision
-        _ <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=2", payload, Rick) {
-               (json, response) =>
-                 response.status shouldEqual StatusCodes.OK
-                 _rev.getOption(json).value shouldEqual 2
-             }
+        _       <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=2", payload, Rick) {
+                     (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       _rev.getOption(json).value shouldEqual 2
+                   }
       } yield succeed
     }
 
     "fetch the update" in {
-      val expected = resource1Response(2, 3)
+      val expected = resource1Response(2, 3).accepted
 
       List(
         s"/resources/$project1/test-schema/test-resource:1",
@@ -383,7 +387,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch previous revision" in {
-      val expected = resource1Response(1, 5)
+      val expected = resource1Response(1, 5).accepted
 
       List(
         s"/resources/$project1/test-schema/test-resource:1?rev=1",
@@ -397,16 +401,16 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch previous revision original payload with metadata" in {
+      val expected = resource1AnnotatedSource(1, 5).accepted
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1/source?rev=1&annotate=true", Rick) {
         (json, response) =>
-          val expected = resource1AnnotatedSource(1, 5)
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
     }
 
     "allow to change the schema" in {
-      val payload = SimpleResource.sourcePayload(4)
+      val payload = SimpleResource.sourcePayload(4).accepted
 
       def updateResourceAndSchema: (String, String) => ((Json, HttpResponse) => Assertion) => IO[Assertion] =
         (id, schema) =>
@@ -429,7 +433,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "allow updating with a tag" in {
-      val payload = SimpleResource.sourcePayload(4)
+      val payload = SimpleResource.sourcePayload(4).accepted
       val tag     = genString()
 
       givenASchemaIn(project1) { schema =>
@@ -475,9 +479,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "fetch a tagged value" in {
-      val expectedTag1 = resource1Response(2, 3)
-      val expectedTag2 = resource1Response(1, 5)
-      val expectedTag3 = resource1Response(5, 3) deepMerge Json.obj("_deprecated" -> Json.True)
+      val expectedTag1 = resource1Response(2, 3).accepted
+      val expectedTag2 = resource1Response(1, 5).accepted
+      val expectedTag3 = resource1Response(5, 3).accepted deepMerge Json.obj("_deprecated" -> Json.True)
 
       for {
         _ <-
@@ -501,7 +505,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       deltaClient
         .get[Json](s"/resources/$project1/test-schema/test-resource:1/source?tag=v1.0.1&annotate=true", Rick) {
           (json, response) =>
-            val expected = resource1AnnotatedSource(2, 3)
+            val expected = resource1AnnotatedSource(2, 3).accepted
             response.status shouldEqual StatusCodes.OK
             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
         }
@@ -587,7 +591,8 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   "check consistency of responses" in {
     (2 to 100).toList.traverse { resourceId =>
-      val payload = SimpleResource.sourcePayload(s"https://dev.nexus.test.com/simplified-resource/$resourceId", 3)
+      val payload =
+        SimpleResource.sourcePayload(s"https://dev.nexus.test.com/simplified-resource/$resourceId", 3).accepted
       for {
         _ <-
           deltaClient
@@ -691,7 +696,8 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val NewFullResourceType = s"$NewBase$ResourceType"
 
     "create a project" in {
-      adminDsl.createProject(orgId, projId3, kgDsl.projectJsonWithCustomBase(name = project3, base = Base), Rick)
+      val payload = kgDsl.projectJsonWithCustomBase(name = project3, base = Base).accepted
+      adminDsl.createProject(orgId, projId3, payload, Rick)
     }
 
     "create resource using the created project" in {
@@ -708,8 +714,17 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "update a project" in {
-      val newProjectPayload = kgDsl.projectJsonWithCustomBase(name = project3, base = NewBase)
-      adminDsl.updateProject(orgId, projId3, newProjectPayload, Rick, 1)
+      for {
+        project <- kgDsl.projectJsonWithCustomBase(name = project3, base = NewBase)
+        _       <-
+          adminDsl.updateProject(
+            orgId,
+            projId3,
+            project,
+            Rick,
+            1
+          )
+      } yield succeed
     }
 
     "do a refresh" in {
@@ -769,6 +784,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val resourceName  = genString()
     val payload       = SimpleResource
       .sourcePayload(5)
+      .accepted
       .deepMerge(json"""{"@id": "$resourceName"}""")
     val schemaSegment = schema.getOrElse("_")
     val tagParameter  = tag.map(t => s"?tag=$t").getOrElse("")
@@ -803,7 +819,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   private def givenASchemaIn(projectRef: String)(assertion: String => Assertion) = {
     val schemaName    = genString()
-    val schemaPayload = SchemaPayload.loadSimpleNoId()
+    val schemaPayload = SchemaPayload.loadSimpleNoId().accepted
 
     deltaClient
       .put[Json](s"/schemas/$projectRef/$schemaName", schemaPayload, Rick) { (_, response) =>
@@ -813,4 +829,5 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     assertion(schemaName)
   }
+
 }

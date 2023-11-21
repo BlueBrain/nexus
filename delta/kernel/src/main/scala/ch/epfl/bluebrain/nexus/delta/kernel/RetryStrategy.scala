@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
-import cats.effect.{IO, Timer}
-import com.typesafe.scalalogging.{Logger => ScalaLoggingLogger}
+import cats.effect.IO
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
@@ -37,11 +36,11 @@ object RetryStrategy {
   /**
     * Apply the provided strategy on the given io
     */
-  def use[E: ClassTag, A](io: IO[A], retryStrategy: RetryStrategy[E])(implicit timer: Timer[IO]): IO[A] =
+  def use[E: ClassTag, A](io: IO[A], retryStrategy: RetryStrategy[E]): IO[A] =
     io.retryingOnSomeErrors(
       {
-        case error: E => retryStrategy.retryWhen(error)
-        case _        => false
+        case error: E => IO.pure(retryStrategy.retryWhen(error))
+        case _        => IO.pure(false)
       },
       retryStrategy.policy,
       (error, retryDetails) =>
@@ -50,18 +49,6 @@ object RetryStrategy {
           case _        => IO.unit
         }
     )
-
-  /**
-    * Log errors when retrying
-    */
-  def logError[E](logger: ScalaLoggingLogger, action: String): (E, RetryDetails) => IO[Unit] = {
-    case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
-      val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
-      IO.delay(logger.warn(message))
-    case (err, GivingUp(totalRetries, _))                     =>
-      val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
-      IO.delay(logger.error(message))
-  }
 
   /**
     * Log errors when retrying
@@ -104,27 +91,6 @@ object RetryStrategy {
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
       onError
-    )
-
-  /**
-    * Retry strategy which retries on all non fatal errors and just outputs a log when an error occurs
-    *
-    * @param config
-    *   the retry configuration
-    * @param logger
-    *   the logger to use
-    * @param action
-    *   the action that was performed
-    */
-  def retryOnNonFatal(
-      config: RetryStrategyConfig,
-      logger: ScalaLoggingLogger,
-      action: String
-  ): RetryStrategy[Throwable] =
-    RetryStrategy(
-      config,
-      (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d)
     )
 
   def retryOnNonFatal(

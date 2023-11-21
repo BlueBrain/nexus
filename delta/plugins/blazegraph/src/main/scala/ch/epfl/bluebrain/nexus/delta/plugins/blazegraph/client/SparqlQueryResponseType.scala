@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.http.scaladsl.model.{HttpCharsets, MediaType}
 import cats.data.NonEmptyList
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
+import cats.implicits._
 
 /**
   * Enumeration of supported sparql query response types

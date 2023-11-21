@@ -65,7 +65,7 @@ class ProjectsSpec extends CatsEffectSpec {
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs, validateDeletion)(_, _)
+      val eval = evaluate(orgs, validateDeletion, clock)(_, _)
 
       "create a new event" in {
         eval(None, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual

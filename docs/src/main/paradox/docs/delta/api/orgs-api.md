@@ -91,7 +91,9 @@ Response
 
 ## Delete
 
-Delete a organization containing no projects. If there is a project, returns 409 Conflict. 
+Permanently delete an organization containing no projects. If there is a project, returns 409 Conflict.
+
+The caller must have `organizations/delete` permissions.
 
 ```
 DELETE /v1/orgs/{label}?prune=true
@@ -100,11 +102,12 @@ DELETE /v1/orgs/{label}?prune=true
 ... where
 
 - `{label}`: String - is the user friendly name that identifies this organization.
+- `prune`: a flag to make permanent deletion explicit. To avoid mistakes, if `prune=true` then `rev` cannot be present and a 400 Bad Request will be returned.
 
 **Example**
 
 Request
-:   @@snip [delete.sh](assets/organizations/deprecate.sh)
+:   @@snip [delete.sh](assets/organizations/delete.sh)
 
 ## Fetch (current version)
 

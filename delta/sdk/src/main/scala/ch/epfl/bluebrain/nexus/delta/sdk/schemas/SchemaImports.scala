@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -20,9 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 /**
   * Resolves the OWL imports from a Schema
   */
-final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resolve[Resource])(implicit
-    contextShift: ContextShift[IO]
-) { self =>
+final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resolve[Resource]) { self =>
 
   /**
     * Resolve the ''imports'' from the passed ''expanded'' document and recursively from the resolved documents.
@@ -88,7 +87,7 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
 
 object SchemaImports {
 
-  final def alwaysFail(implicit contextShift: ContextShift[IO]) = new SchemaImports(
+  final def alwaysFail = new SchemaImports(
     (_, _, _) => IO.pure(Left(ResourceResolutionReport())),
     (_, _, _) => IO.pure(Left(ResourceResolutionReport()))
   )
@@ -101,7 +100,7 @@ object SchemaImports {
       resolvers: Resolvers,
       schemas: Schemas,
       resources: Resources
-  )(implicit contextShift: ContextShift[IO]): SchemaImports = {
+  ): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
       ResourceResolution
         .schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = true)

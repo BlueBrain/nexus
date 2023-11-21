@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
@@ -28,8 +28,7 @@ object LinkFile {
     * Construct a [[LinkFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem,
-      cs: ContextShift[IO]
+      as: ActorSystem
   ): LinkFile =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)

@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}

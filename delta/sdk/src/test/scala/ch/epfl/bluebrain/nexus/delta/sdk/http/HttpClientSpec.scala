@@ -8,7 +8,6 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.OnceStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpSingleRequest

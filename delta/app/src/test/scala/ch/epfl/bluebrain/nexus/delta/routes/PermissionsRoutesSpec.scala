@@ -33,7 +33,7 @@ class PermissionsRoutesSpec extends BaseRouteSpec with CatsIOValues {
   )
 
   private val aclCheck         = AclSimpleCheck().accepted
-  private lazy val permissions = PermissionsImpl(config, xas)
+  private lazy val permissions = PermissionsImpl(config, xas, clock)
   private lazy val route       = Route.seal(PermissionsRoutes(identities, permissions, aclCheck))
 
   "The permissions routes" should {

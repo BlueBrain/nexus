@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewFactory, CompositeViewsFixture}
@@ -19,6 +18,7 @@ import io.circe.{Json, JsonObject}
 
 import java.util.UUID
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class SearchConfigHookSuite extends CatsEffectSuite with CompositeViewsFixture {
 

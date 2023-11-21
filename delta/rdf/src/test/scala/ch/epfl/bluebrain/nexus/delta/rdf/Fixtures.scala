@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit._
-import org.scalatest.{OptionValues, TestSuite}
+import org.scalatest.{Assertions, OptionValues}
 
 trait Fixtures extends CirceLiteral {
 
@@ -43,7 +43,7 @@ trait Fixtures extends CirceLiteral {
 object Fixtures extends Fixtures
 
 trait GraphHelpers extends OptionValues {
-  self: TestSuite =>
+  self: Assertions =>
 
   def bNode(graph: Graph): BNode =
     BNode.unsafe(

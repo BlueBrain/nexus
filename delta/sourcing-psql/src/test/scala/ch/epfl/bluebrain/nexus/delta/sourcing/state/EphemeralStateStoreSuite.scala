@@ -37,7 +37,7 @@ class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with 
   private val m2       = nxv + "m2"
   private val message2 = MessageState(m2, project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
 
-  private lazy val deleteExpired = new DeleteExpired(xas)(FixedClock.atInstant(Instant.EPOCH.plusSeconds(6L)))
+  private lazy val deleteExpired = new DeleteExpired(xas, FixedClock.atInstant(Instant.EPOCH.plusSeconds(6L)))
 
   test("save the states") {
     for {

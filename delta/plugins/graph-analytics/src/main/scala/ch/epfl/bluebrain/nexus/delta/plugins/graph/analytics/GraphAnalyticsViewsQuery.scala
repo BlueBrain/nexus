@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.implicits.catsSyntaxMonadError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError

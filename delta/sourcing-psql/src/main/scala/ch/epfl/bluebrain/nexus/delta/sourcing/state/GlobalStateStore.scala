@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
@@ -70,7 +70,7 @@ object GlobalStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
+  ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import IriInstances._
     implicit val putId: Put[Id]      = serializer.putId

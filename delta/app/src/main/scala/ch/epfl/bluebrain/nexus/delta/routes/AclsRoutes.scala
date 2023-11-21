@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.effect.IO
 import cats.syntax.all._

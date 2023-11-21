@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig.QuotaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import pureconfig.ConfigReader
@@ -9,6 +8,7 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
 import scala.annotation.nowarn
+import cats.implicits._
 
 /**
   * The configuration for quotas on projects

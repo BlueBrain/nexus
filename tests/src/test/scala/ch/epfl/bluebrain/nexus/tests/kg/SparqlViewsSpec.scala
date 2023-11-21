@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
+import cats.implicits._
 
 class SparqlViewsSpec extends BaseIntegrationSpec {
 
@@ -31,8 +32,8 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     "succeed if payload is correct" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
-        _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = fullId), ScoobyDoo)
-        _ <- adminDsl.createProject(orgId, projId2, kgDsl.projectJson(name = fullId2), ScoobyDoo)
+        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, ScoobyDoo)
+        _ <- adminDsl.createProjectWithName(orgId, projId2, name = fullId2, ScoobyDoo)
       } yield succeed
     }
 

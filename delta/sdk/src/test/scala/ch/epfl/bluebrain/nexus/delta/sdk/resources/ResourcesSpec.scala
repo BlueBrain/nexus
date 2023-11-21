@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxOptionId
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
@@ -41,7 +41,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
     val schema1 = nxv + "myschema"
 
     val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceEvent] =
-      evaluate(alwaysValidate)
+      evaluate(alwaysValidate, clock)
 
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {

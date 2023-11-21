@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -132,20 +133,15 @@ final class OrganizationsRoutes(
                   },
                   // Deprecate or delete organization
                   delete {
-                    concat(
-                      parameter("rev".as[Int]) { rev =>
-                        authorizeFor(id, orgs.write).apply {
-                          emitMetadata(
-                            organizations.deprecate(id, rev)
-                          )
-                        }
-                      },
-                      parameter("prune".requiredValue(true)) { _ =>
+                    parameters("rev".as[Int].?, "prune".as[Boolean].?) {
+                      case (Some(rev), None)        => deprecate(id, rev)
+                      case (Some(rev), Some(false)) => deprecate(id, rev)
+                      case (None, Some(true))       =>
                         authorizeFor(id, orgs.delete).apply {
                           emit(orgDeleter.delete(id).attemptNarrow[OrganizationRejection])
                         }
-                      }
-                    )
+                      case (_, _)                   => emit((InvalidDeleteRequest(id): OrganizationRejection).asLeft[Unit].pure[IO])
+                    }
                   }
                 )
               }
@@ -168,6 +164,11 @@ final class OrganizationsRoutes(
           )
         }
       }
+    }
+
+  private def deprecate(id: Label, rev: Int)(implicit c: Caller) =
+    authorizeFor(id, orgs.write).apply {
+      emitMetadata(organizations.deprecate(id, rev))
     }
 }
 

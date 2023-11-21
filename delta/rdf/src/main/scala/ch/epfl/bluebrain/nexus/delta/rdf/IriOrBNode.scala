@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Order
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils

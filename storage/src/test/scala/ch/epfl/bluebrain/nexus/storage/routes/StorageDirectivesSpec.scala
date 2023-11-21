@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.storage.routes.Routes.exceptionHandler
 import ch.epfl.bluebrain.nexus.storage.routes.StorageDirectives._
 import ch.epfl.bluebrain.nexus.storage.utils.Resources
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 
 import java.util.regex.Pattern.quote
 
-class StorageDirectivesSpec extends BaseSpec with ScalatestRouteTest with Resources {
+class StorageDirectivesSpec extends CatsEffectSpec with ScalatestRouteTest with Resources {
 
   "the storage directives" when {
 

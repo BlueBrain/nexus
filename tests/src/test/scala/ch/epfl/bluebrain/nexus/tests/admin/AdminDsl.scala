@@ -2,33 +2,40 @@ package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
-import cats.syntax.all._
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
+import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, _}
+import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
+import ch.epfl.bluebrain.nexus.tests.kg.KgDsl
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
 import io.circe.Json
-import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Assertion, OptionValues}
 
-class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with CirceUnmarshalling with Matchers {
+class AdminDsl(cl: HttpClient, config: TestsConfig)
+    extends Generators
+    with CirceUnmarshalling
+    with Matchers
+    with OptionValues {
 
   private val logger = Logger[this.type]
+  private val loader = ClasspathResourceLoader()
 
-  def orgPayload(description: String = genString()): Json =
-    jsonContentOf("/admin/orgs/payload.json", "description" -> description)
+  private def orgPayload(description: String): IO[Json] =
+    loader.jsonContentOf("/admin/orgs/payload.json", "description" -> description)
 
-  def createOrgRespJson(
+  private def createOrgRespJson(
       id: String,
       rev: Int,
-      tpe: String = "projects",
-      `@type`: String = "Project",
+      tpe: String,
+      `@type`: String,
       authenticated: Authenticated,
       schema: String,
       deprecated: Boolean = false
-  ): Json = {
+  ): IO[Json] = {
     val resp = Seq(
       "id"         -> id,
       "path"       -> tpe,
@@ -41,7 +48,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       "deprecated" -> deprecated.toString,
       "schema"     -> schema
     )
-    jsonContentOf("/admin/org-response.json", resp: _*)
+    loader.jsonContentOf("/admin/org-response.json", resp: _*)
   }
 
   def createProjectRespJson(
@@ -54,7 +61,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       schema: String,
       deprecated: Boolean = false,
       markedForDeletion: Boolean = false
-  ): Json = {
+  ): IO[Json] = {
     val resp = Seq(
       "projectId"         -> id,
       "path"              -> tpe,
@@ -68,7 +75,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       "markedForDeletion" -> markedForDeletion.toString,
       "schema"            -> schema
     )
-    jsonContentOf("/admin/project-response.json", resp: _*)
+    loader.jsonContentOf("/admin/project-response.json", resp: _*)
   }
 
   private def queryParams(rev: Int) =
@@ -95,48 +102,55 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       expectedStatus: Option[StatusCode] = None,
       ignoreConflict: Boolean = false
   ): IO[Assertion] = {
-    cl.put[Json](s"/orgs/$id${queryParams(rev)}", orgPayload(description), authenticated) { (json, response) =>
-      expectedStatus match {
-        case Some(status) =>
-          response.status shouldEqual status
-        case None         =>
-          if (ignoreConflict && response.status == StatusCodes.Conflict)
-            succeed
-          else {
-            if (rev == 0L)
-              response.status shouldEqual StatusCodes.Created
-            else
-              response.status shouldEqual StatusCodes.OK
+    for {
+      payload  <- orgPayload(description)
+      expected <- createOrgRespJson(
+                    id,
+                    rev + 1,
+                    "orgs",
+                    "Organization",
+                    authenticated,
+                    "organizations"
+                  )
+      result   <- cl.put[Json](s"/orgs/$id${queryParams(rev)}", payload, authenticated) { (json, response) =>
+                    expectedStatus match {
+                      case Some(status) =>
+                        response.status shouldEqual status
+                      case None         =>
+                        if (ignoreConflict && response.status == StatusCodes.Conflict)
+                          succeed
+                        else {
+                          if (rev == 0L)
+                            response.status shouldEqual StatusCodes.Created
+                          else
+                            response.status shouldEqual StatusCodes.OK
 
-            filterMetadataKeys(json) shouldEqual createOrgRespJson(
-              id,
-              rev + 1,
-              "orgs",
-              "Organization",
-              authenticated,
-              "organizations"
-            )
-          }
-      }
-    }
+                          filterMetadataKeys(json) shouldEqual expected
+                        }
+                    }
+                  }
+    } yield result
   }
 
   def deprecateOrganization(id: String, authenticated: Authenticated): IO[Assertion] =
     cl.get[Json](s"/orgs/$id", authenticated) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val rev = admin._rev.getOption(json).value
-      cl.delete[Json](s"/orgs/$id?rev=$rev", authenticated) { (deleteJson, deleteResponse) =>
-        deleteResponse.status shouldEqual StatusCodes.OK
-        filterMetadataKeys(deleteJson) shouldEqual createOrgRespJson(
-          id,
-          rev + 1,
-          "orgs",
-          "Organization",
-          authenticated,
-          "organizations",
-          deprecated = true
-        )
-      }.unsafeRunSync()
+      (for {
+        expected <- createOrgRespJson(
+                      id,
+                      rev + 1,
+                      "orgs",
+                      "Organization",
+                      authenticated,
+                      "organizations",
+                      deprecated = true
+                    )
+        result   <- cl.delete[Json](s"/orgs/$id?rev=$rev", authenticated) { (deleteJson, deleteResponse) =>
+                      deleteResponse.status shouldEqual StatusCodes.OK
+                      filterMetadataKeys(deleteJson) shouldEqual expected
+                    }
+      } yield result).unsafeRunSync()
     }
 
   private[tests] val startPool = Vector.range('a', 'z')
@@ -151,8 +165,8 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       description: String = genString(),
       base: String = s"${config.deltaUri.toString()}/${genString()}/",
       vocab: String = s"${config.deltaUri.toString()}/${genString()}/"
-  ): Json =
-    jsonContentOf(
+  ): IO[Json] =
+    loader.jsonContentOf(
       path,
       "nxv-prefix"    -> nxv,
       "person-prefix" -> person,
@@ -160,6 +174,23 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       "base"          -> base,
       "vocab"         -> vocab
     )
+
+  def createProjectWithName(
+      orgId: String,
+      projectId: String,
+      name: String,
+      authenticated: Authenticated
+  ): IO[Assertion] = {
+    KgDsl
+      .projectJson(name = name, config = config)
+      .flatMap(createProject(orgId, projectId, _, authenticated))
+  }
+
+  def createProjectWith(orgId: String, projectId: String, name: String, path: String, authenticated: Authenticated) = {
+    KgDsl
+      .projectJson(path = path, name = name, config = config)
+      .flatMap(createProject(orgId, projectId, _, authenticated))
+  }
 
   def createProject(
       orgId: String,
@@ -177,27 +208,32 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       authenticated: Authenticated,
       rev: Int,
       expectedResponse: Option[StatusCode] = None
-  ): IO[Assertion] =
-    logger.info(s"Creating/updating project $orgId/$projectId at revision $rev") >>
-      cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
-        expectedResponse match {
-          case Some(status) =>
-            response.status shouldEqual status
-          case None         =>
-            if (rev == 0)
-              response.status shouldEqual StatusCodes.Created
-            else
-              response.status shouldEqual StatusCodes.OK
-            filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
-              projectId,
-              orgId,
-              rev + 1,
-              authenticated = authenticated,
-              schema = "projects"
-            )
-        }
+  ): IO[Assertion] = {
+    for {
+      _        <- logger.info(s"Creating/updating project $orgId/$projectId at revision $rev")
+      expected <- createProjectRespJson(
+                    projectId,
+                    orgId,
+                    rev + 1,
+                    authenticated = authenticated,
+                    schema = "projects"
+                  )
+      result   <-
+        cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
+          expectedResponse match {
+            case Some(status) =>
+              response.status shouldEqual status
+            case None         =>
+              if (rev == 0)
+                response.status shouldEqual StatusCodes.Created
+              else
+                response.status shouldEqual StatusCodes.OK
 
-      }
+              filterProjectMetadataKeys(json) shouldEqual expected
+          }
+        }
+    } yield result
+  }
 
   def getUuids(orgId: String, projectId: String, identity: Identity): IO[(String, String)] =
     for {

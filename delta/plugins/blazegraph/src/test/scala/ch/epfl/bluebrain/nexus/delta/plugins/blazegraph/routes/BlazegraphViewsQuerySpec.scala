@@ -71,7 +71,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties.accepted)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -162,7 +162,8 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       client,
       eventLogConfig,
       "prefix",
-      xas
+      xas,
+      clock
     ).accepted
 
     lazy val viewsQuery = AclSimpleCheck(

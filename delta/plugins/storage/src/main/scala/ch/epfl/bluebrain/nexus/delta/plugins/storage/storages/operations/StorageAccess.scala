@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -32,10 +32,7 @@ object StorageAccess {
       storage: StorageValue,
       client: RemoteDiskStorageClient,
       config: StorageTypeConfig
-  )(implicit
-      as: ActorSystem,
-      cs: ContextShift[IO]
-  ): IO[Unit] =
+  )(implicit as: ActorSystem): IO[Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
       case storage: S3StorageValue         => new S3StorageAccess(config).apply(id, storage)

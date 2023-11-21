@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.ResolverPriorityIntervalError
 import io.circe.{Decoder, Encoder}
+import cats.implicits._
 
 /**
   * A safe representation of a resolver priority

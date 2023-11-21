@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO, Timer}
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -52,14 +51,14 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 class StoragePluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, timer, cs)
+  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing]) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem)
   }
 
   make[Storages]
@@ -74,14 +73,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           serviceAccount: ServiceAccount,
           api: JsonLdApi,
           clock: Clock[IO],
-          timer: Timer[IO],
           uuidF: UUIDF,
-          as: ActorSystem[Nothing],
-          cs: ContextShift[IO]
+          as: ActorSystem[Nothing]
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
-        implicit val contextShift: ContextShift[IO]       = cs
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
@@ -89,12 +85,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
           xas,
           cfg.storages,
-          serviceAccount
+          serviceAccount,
+          clock
         )(
           api,
-          clock,
-          timer,
-          cs,
           uuidF
         )
     }
@@ -167,9 +161,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           clock: Clock[IO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          remoteDiskStorageClient: RemoteDiskStorageClient,
-          timer: Timer[IO],
-          cs: ContextShift[IO]
+          remoteDiskStorageClient: RemoteDiskStorageClient
       ) =>
         IO
           .delay(
@@ -181,12 +173,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               xas,
               storageTypeConfig,
               cfg.files,
-              remoteDiskStorageClient
+              remoteDiskStorageClient,
+              clock
             )(
-              clock,
               uuidF,
-              timer,
-              cs,
               as
             )
           )
@@ -230,15 +220,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
         authTokenProvider: AuthTokenProvider,
-        cfg: StorageTypeConfig,
-        cs: ContextShift[IO],
-        timer: Timer[IO]
+        cfg: StorageTypeConfig
     ) =>
       new RemoteDiskStorageClient(
         client,
         authTokenProvider,
         cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
-      )(as.classicSystem, cs, timer)
+      )(as.classicSystem)
   }
 
   many[ServiceDependency].addSet {

@@ -137,7 +137,9 @@ trait DeltaDirectives extends UriDirectives {
     * If the `Accept` header is set to `text/html`, redirect to the matching project page in fusion if the feature is
     * enabled
     */
-  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit config: FusionConfig): Route =
+  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit
+      config: FusionConfig
+  ): Route =
     emitOrFusionRedirect(
       config.base / "admin" / projectRef.organization.value / projectRef.project.value,
       emitDelta

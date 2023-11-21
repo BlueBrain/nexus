@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
-import cats.implicits._
+import cats.effect.{Clock, IO}
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
+import cats.implicits._
 
 final class ProjectsImpl private (
     log: ProjectsLog,
@@ -34,7 +35,7 @@ final class ProjectsImpl private (
   override def create(
       ref: ProjectRef,
       fields: ProjectFields
-  )(implicit caller: Subject, contextShift: ContextShift[IO]): IO[ProjectResource] =
+  )(implicit caller: Subject): IO[ProjectResource] =
     for {
       resource <- eval(
                     CreateProject(
@@ -131,16 +132,14 @@ object ProjectsImpl {
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       base: BaseUri,
-      clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion), config.eventLog, xas),
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
       scopeInitializations,
       defaultApiMappings
     )

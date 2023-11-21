@@ -91,7 +91,7 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
       case v: IndexingBlazegraphViewValue  => IO.raiseError(PermissionIsNotDefined(v.permission))
     }
 
-    val eval = evaluate(alwaysValidate)(_, _)
+    val eval = evaluate(alwaysValidate, clock)(_, _)
 
     "evaluating the CreateBlazegraphView command" should {
       "emit an BlazegraphViewCreated for an IndexingBlazegraphViewValue" in {
@@ -110,7 +110,7 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = CreateBlazegraphView(id, project, indexingValue, source, subject)
-        evaluate(invalidView)(None, cmd)
+        evaluate(invalidView, clock)(None, cmd)
           .rejectedWith[PermissionIsNotDefined]
       }
     }
@@ -147,12 +147,12 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = UpdateBlazegraphView(id, project, aggregateValue, 1, source, subject)
-        evaluate(invalidView)(Some(current(value = aggregateValue)), cmd).rejectedWith[InvalidViewReferences]
+        evaluate(invalidView, clock)(Some(current(value = aggregateValue)), cmd).rejectedWith[InvalidViewReferences]
       }
 
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateBlazegraphView(id, project, indexingValue, 1, source, subject)
-        evaluate(invalidView)(Some(current()), cmd).rejectedWith[PermissionIsNotDefined]
+        evaluate(invalidView, clock)(Some(current()), cmd).rejectedWith[PermissionIsNotDefined]
       }
     }
 

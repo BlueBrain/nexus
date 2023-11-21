@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViewsSuite.{loadEvent, loadState}
@@ -24,7 +24,7 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with ClasspathResourceUtils {
+class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 
@@ -99,7 +99,9 @@ class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture wit
   }
 }
 
-object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
+object MigrateCompositeViewsSuite {
+
+  private val loader = ClasspathResourceLoader()
 
   def extractIdentifiers(json: JsonObject) = IO.fromOption {
     for {
@@ -110,7 +112,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
     } yield (project, id, rev)
   }(new IllegalArgumentException("Could not extract project/id/rev from the json payload"))
 
-  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
+  def loadEvent(jsonPath: String)(implicit xas: Transactors) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_events (
@@ -133,13 +135,13 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- loader.jsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()
   }
 
-  def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
+  def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_states (
@@ -166,7 +168,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- loader.jsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()

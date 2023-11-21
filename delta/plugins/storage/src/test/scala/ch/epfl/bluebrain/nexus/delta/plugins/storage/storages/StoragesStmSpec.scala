@@ -46,7 +46,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
   private val perms = IO.pure(allowedPerms.toSet)
 
-  private val eval = evaluate(access, perms, config)(_, _)
+  private val eval = evaluate(access, perms, config, clock)(_, _)
 
   "The Storages state machine" when {
 
@@ -256,7 +256,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         remoteDisk  = None
       )
       // format: on
-      val eval                      = evaluate(access, perms, config)(_, _)
+      val eval                      = evaluate(access, perms, config, clock)(_, _)
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejectedWith[InvalidStorageType]
       }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._

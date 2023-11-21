@@ -105,7 +105,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     (_, _) => IO.unit,
     xas,
     cfg,
-    serviceAccount
+    serviceAccount,
+    clock
   ).accepted
   private val schemeDirectives =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._

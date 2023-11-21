@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, 
 import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, WrappedHttpClientError}
@@ -31,7 +31,7 @@ class BlazegraphClient(
     endpoint: Uri,
     queryTimeout: Duration,
     defaultProperties: Map[String, String]
-)(implicit credentials: Option[HttpCredentials], as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO])
+)(implicit credentials: Option[HttpCredentials], as: ActorSystem)
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
   private val serviceVersion = """(buildVersion">)([^<]*)""".r
@@ -163,7 +163,7 @@ object BlazegraphClient {
       credentials: Option[Credentials],
       queryTimeout: Duration,
       defaultProperties: Map[String, String]
-  )(implicit as: ActorSystem, timer: Timer[IO], cs: ContextShift[IO]): BlazegraphClient = {
+  )(implicit as: ActorSystem): BlazegraphClient = {
     implicit val cred: Option[BasicHttpCredentials] =
       credentials.map { cred => BasicHttpCredentials(cred.username, cred.password.value) }
     new BlazegraphClient(client, endpoint, queryTimeout, defaultProperties)

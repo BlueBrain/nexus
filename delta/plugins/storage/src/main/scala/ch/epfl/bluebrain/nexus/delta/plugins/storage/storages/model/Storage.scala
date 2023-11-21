@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
-import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -87,7 +86,7 @@ object Storage {
     def fetchFile: FetchFile =
       DiskStorageFetchFile
 
-    def saveFile(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
+    def saveFile(implicit as: ActorSystem): SaveFile =
       new DiskStorageSaveFile(this)
 
   }
@@ -106,13 +105,13 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem, contextShift: ContextShift[IO]): FetchFile =
+    def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem): FetchFile =
       new S3StorageFetchFile(value, config)
 
-    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
+    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem): SaveFile =
       new S3StorageSaveFile(this, config)
 
-    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): LinkFile =
+    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem): LinkFile =
       new S3StorageLinkFile(this, config)
 
   }

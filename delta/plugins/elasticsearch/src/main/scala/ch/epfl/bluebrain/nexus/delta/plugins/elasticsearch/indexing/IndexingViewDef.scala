@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, DefaultMapping, DefaultSettings, ElasticSearchViewState}
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
 
 /**
@@ -32,7 +32,7 @@ sealed trait IndexingViewDef extends Product with Serializable {
 
 object IndexingViewDef {
 
-  private val logger: Logger = Logger[IndexingViewDef]
+  private val logger = Logger[IndexingViewDef]
 
   private val defaultContext = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
@@ -98,7 +98,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -106,7 +106,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] =
     compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.selectFilter, _), sink)
 
   private def compile(
@@ -114,7 +114,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] = {
 
     val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
@@ -132,7 +132,7 @@ object IndexingViewDef {
     } yield projection
 
     IO.fromEither(compiled).onError { e =>
-      IO.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
+      logger.error(e)(s"View '${v.ref}' could not be compiled.")
     }
   }
 }

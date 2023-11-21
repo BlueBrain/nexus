@@ -86,6 +86,11 @@ object OrganizationRejection {
   final case class OrganizationNonEmpty(label: Label)
       extends OrganizationRejection(s"Organization '$label' cannot be deleted since it contains at least one project.")
 
+  final case class InvalidDeleteRequest(label: Label)
+      extends OrganizationRejection(
+        s"Invalid organization '$label' DELETE request. To deprecate, 'rev' must be provided and 'prune' must be 'false' or omitted."
+      )
+
   /**
     * Rejection returned when the organization initialization could not be performed.
     *

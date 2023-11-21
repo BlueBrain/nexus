@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.RemoteSourceClientConfig
@@ -22,7 +22,7 @@ final class RemoteGraphStream(
     deltaClient: DeltaClient,
     config: RemoteSourceClientConfig,
     metadataPredicates: MetadataPredicates
-)(implicit timer: Timer[IO], cs: ContextShift[IO]) {
+) {
 
   /**
     * Get a continuous stream of element as a [[Source]] for the main branch

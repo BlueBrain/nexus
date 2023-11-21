@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directives._
+import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.storage.StorageError._
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
-import com.typesafe.scalalogging.Logger
 
 object AuthDirectives {
 
@@ -19,8 +20,9 @@ object AuthDirectives {
     def validate(token: Option[AuthToken]): Directive0 =
       authorizationMethod.validate(token) match {
         case Left(error) =>
-          logger.error("The user could not be validated.", error)
-          failWith(AuthenticationFailed)
+          onComplete(logger.error(error)("The user could not be validated.").unsafeToFuture()).flatMap { _ =>
+            failWith(AuthenticationFailed)
+          }
         case Right(_)    => pass
       }
 

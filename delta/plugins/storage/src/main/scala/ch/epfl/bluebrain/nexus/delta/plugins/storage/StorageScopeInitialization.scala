@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.entityType
@@ -35,7 +35,7 @@ class StorageScopeInitialization(
 
   implicit private val caller: Caller = serviceAccount.caller
 
-  private val defaultValue: DiskStorageFields = DiskStorageFields(
+  private lazy val defaultValue: DiskStorageFields = DiskStorageFields(
     name = Some(defaults.name),
     description = Some(defaults.description),
     default = true,

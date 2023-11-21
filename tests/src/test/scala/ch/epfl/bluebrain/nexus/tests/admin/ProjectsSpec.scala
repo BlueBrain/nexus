@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, OpticsValidators}
 import io.circe.Json
 
-class ProjectsSpec extends BaseIntegrationSpec {
+class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
@@ -52,13 +52,15 @@ class ProjectsSpec extends BaseIntegrationSpec {
     val base        = s"${config.deltaUri.toString()}/resources/$id/_/"
     val vocab       = s"${config.deltaUri.toString()}/vocabs/$id/"
 
-    val createJson = adminDsl.projectPayload(
-      nxv = "nxv",
-      person = "person",
-      description = description,
-      base = base,
-      vocab = vocab
-    )
+    val createJson = adminDsl
+      .projectPayload(
+        nxv = "nxv",
+        person = "person",
+        description = description,
+        base = base,
+        vocab = vocab
+      )
+      .accepted
 
     "return not found when fetching a non existing project" in {
       deltaClient.get[Json](s"/projects/$orgId/${genId()}", Bojack) { (_, response) =>
@@ -109,8 +111,8 @@ class ProjectsSpec extends BaseIntegrationSpec {
     "fetch the project" in {
       deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        admin.validateProject(json, createJson)
-        admin.validate(json, "Project", "projects", id, description, 1, projId)
+        validateProject(json, createJson)
+        validate(json, "Project", "projects", id, description, 1, projId)
       }
     }
 
@@ -141,26 +143,30 @@ class ProjectsSpec extends BaseIntegrationSpec {
       val descRev2       = s"$description update 1"
       val baseRev2       = s"${config.deltaUri.toString()}/${genString()}/"
       val vocabRev2      = s"${config.deltaUri.toString()}/${genString()}/"
-      val updateRev2Json = adminDsl.projectPayload(
-        "/admin/projects/update.json",
-        "nxv",
-        "person",
-        description = descRev2,
-        base = baseRev2,
-        vocab = vocabRev2
-      )
+      val updateRev2Json = adminDsl
+        .projectPayload(
+          "/admin/projects/update.json",
+          "nxv",
+          "person",
+          description = descRev2,
+          base = baseRev2,
+          vocab = vocabRev2
+        )
+        .accepted
 
       val descRev3       = s"$description update 2"
       val baseRev3       = s"${config.deltaUri.toString()}/${genString()}/"
       val vocabRev3      = s"${config.deltaUri.toString()}/${genString()}/"
-      val updateRev3Json = adminDsl.projectPayload(
-        "/admin/projects/update.json",
-        "nxv",
-        "person",
-        description = descRev3,
-        base = baseRev3,
-        vocab = vocabRev3
-      )
+      val updateRev3Json = adminDsl
+        .projectPayload(
+          "/admin/projects/update.json",
+          "nxv",
+          "person",
+          description = descRev3,
+          base = baseRev3,
+          vocab = vocabRev3
+        )
+        .accepted
 
       for {
         _ <- adminDsl.updateProject(
@@ -179,23 +185,23 @@ class ProjectsSpec extends BaseIntegrationSpec {
              )
         _ <- deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validateProject(json, updateRev3Json)
-               admin.validate(json, "Project", "projects", id, descRev3, 3, projId)
+               validateProject(json, updateRev3Json)
+               validate(json, "Project", "projects", id, descRev3, 3, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validateProject(json, updateRev3Json)
-               admin.validate(json, "Project", "projects", id, descRev3, 3, projId)
+               validateProject(json, updateRev3Json)
+               validate(json, "Project", "projects", id, descRev3, 3, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=2", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validateProject(json, updateRev2Json)
-               admin.validate(json, "Project", "projects", id, descRev2, 2, projId)
+               validateProject(json, updateRev2Json)
+               validate(json, "Project", "projects", id, descRev2, 2, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=1", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validateProject(json, createJson)
-               admin.validate(json, "Project", "projects", id, description, 1, projId)
+               validateProject(json, createJson)
+               validate(json, "Project", "projects", id, description, 1, projId)
              }
       } yield succeed
     }
@@ -210,22 +216,24 @@ class ProjectsSpec extends BaseIntegrationSpec {
       for {
         _ <- deltaClient.delete[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterProjectMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
-                 projId,
-                 orgId,
-                 4,
-                 authenticated = Bojack,
-                 schema = "projects",
-                 deprecated = true
-               )
+               filterProjectMetadataKeys(json) shouldEqual adminDsl
+                 .createProjectRespJson(
+                   projId,
+                   orgId,
+                   4,
+                   authenticated = Bojack,
+                   schema = "projects",
+                   deprecated = true
+                 )
+                 .accepted
              }
         _ <- deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Project", "projects", id, s"$description update 2", 4, projId, deprecated = true)
+               validate(json, "Project", "projects", id, s"$description update 2", 4, projId, deprecated = true)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=1", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Project", "projects", id, description, 1, projId)
+               validate(json, "Project", "projects", id, description, 1, projId)
              }
       } yield succeed
     }
@@ -311,18 +319,22 @@ class ProjectsSpec extends BaseIntegrationSpec {
                Bojack
              )
         _ <- projectIds.traverse { case (orgId, projId) =>
-               adminDsl.createProject(
-                 orgId,
-                 projId,
-                 adminDsl.projectPayload(
+               adminDsl
+                 .projectPayload(
                    nxv = s"nxv-$projId",
                    person = s"person-$projId",
                    description = projId,
                    base = s"http://example.com/$projId/",
                    vocab = s"http://example.com/$projId/vocab/"
-                 ),
-                 Bojack
-               )
+                 )
+                 .flatMap(payload =>
+                   adminDsl.createProject(
+                     orgId,
+                     projId,
+                     payload,
+                     Bojack
+                   )
+                 )
              }
       } yield succeed
     }

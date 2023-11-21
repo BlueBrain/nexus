@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityType, labelId}
@@ -83,7 +83,11 @@ object PermissionsImpl {
     */
   final def apply(
       config: PermissionsConfig,
-      xas: Transactors
-  )(implicit clock: Clock[IO], contextShift: ContextShift[IO], timer: Timer[IO]): Permissions =
-    new PermissionsImpl(config.minimum, GlobalEventLog(Permissions.definition(config.minimum), config.eventLog, xas))
+      xas: Transactors,
+      clock: Clock[IO]
+  ): Permissions =
+    new PermissionsImpl(
+      config.minimum,
+      GlobalEventLog(Permissions.definition(config.minimum, clock), config.eventLog, xas)
+    )
 }

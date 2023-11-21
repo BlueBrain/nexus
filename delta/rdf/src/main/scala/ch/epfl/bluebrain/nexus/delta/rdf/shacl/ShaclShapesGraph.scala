@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.query.DatasetFactory
@@ -23,13 +23,14 @@ final case class ShaclShapesGraph(uri: URI, value: ShapesGraph) {
 
 object ShaclShapesGraph {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  private val loader = ClasspathResourceLoader()
 
   /**
     * Loads the SHACL shapes graph to validate SHACL shapes graphs
     */
   def shaclShaclShapes: IO[ShaclShapesGraph] =
-    ioStreamOf("shacl-shacl.ttl")
+    loader
+      .streamOf("shacl-shacl.ttl")
       .map { is =>
         val model = ModelFactory
           .createModelForGraph(createDefaultGraph())

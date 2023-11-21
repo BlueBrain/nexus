@@ -6,12 +6,12 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{EmptyResults, ResourcesSearchParams}
@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import com.typesafe.scalalogging.Logger
 import io.circe._
 import io.circe.syntax._
 
@@ -38,12 +37,10 @@ import scala.reflect.ClassTag
 class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int, esEmptyResults: EmptyResults)(
     implicit
     credentials: Option[BasicHttpCredentials],
-    as: ActorSystem,
-    timer: Timer[IO],
-    cs: ContextShift[IO]
+    as: ActorSystem
 ) {
   import as.dispatcher
-  private val logger: Logger                                        = Logger[ElasticSearchClient]
+  private val logger                                                = Logger[ElasticSearchClient]
   private val serviceName                                           = Name.unsafe("elasticsearch")
   private val scriptPath                                            = "_scripts"
   private val docPath                                               = "_doc"

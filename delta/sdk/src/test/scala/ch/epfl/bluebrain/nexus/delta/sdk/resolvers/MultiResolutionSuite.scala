@@ -7,23 +7,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResolverResolutionGen, Reso
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.Fetch
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolverResolution, ProjectContextRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 
-class MultiResolutionSuite extends CatsEffectSuite with TestHelpers with CirceLiteral with IOFromMap with Fixtures {
+class MultiResolutionSuite extends CatsEffectSuite with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(alice, Set(alice))

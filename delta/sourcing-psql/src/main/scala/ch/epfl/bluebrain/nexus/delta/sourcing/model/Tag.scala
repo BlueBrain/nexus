@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -10,6 +9,7 @@ import doobie.Put
 import doobie.implicits._
 import doobie.util.Get
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
+import cats.implicits._
 
 import scala.util.matching.Regex
 

@@ -78,7 +78,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       SchemasRoutes(
         identities,
         aclCheck,
-        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas),
+        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas, clock),
         groupDirectives,
         IndexingAction.noop
       )

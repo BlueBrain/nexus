@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
@@ -34,7 +34,7 @@ import java.util.regex.Pattern.quote
 import scala.concurrent.duration._
 
 class StorageRoutesSpec
-    extends BaseSpec
+    extends CatsEffectSpec
     with ScalatestRouteTest
     with IdiomaticMockito
     with Randomness
@@ -46,7 +46,7 @@ class StorageRoutesSpec
 
   implicit val appConfig: AppConfig                     = Settings(system).appConfig
   implicit val authorizationMethod: AuthorizationMethod = AuthorizationMethod.Anonymous
-  val storages: Storages[IO, AkkaSource]                = mock[Storages[IO, AkkaSource]]
+  val storages: Storages[AkkaSource]                    = mock[Storages[AkkaSource]]
   val route: Route                                      = Routes(storages)
 
   trait Ctx {

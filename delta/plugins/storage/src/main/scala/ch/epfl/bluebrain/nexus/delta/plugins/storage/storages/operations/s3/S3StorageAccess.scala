@@ -4,15 +4,14 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.S3Attributes
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
-final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO])
-    extends StorageAccess {
+final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem) extends StorageAccess {
   override type Storage = S3StorageValue
 
   override def apply(id: Iri, storage: S3StorageValue): IO[Unit] = {

@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
@@ -50,8 +49,8 @@ class IdResolutionSpec extends BaseIntegrationSpec {
     val setup = for {
       _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
       _ <- adminDsl.createOrganization(org1, org1, Bob)
-      _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
-      _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
+      _ <- adminDsl.createProjectWithName(org1, proj11, name = proj11, Bob)
+      _ <- adminDsl.createProjectWithName(org1, proj12, name = proj12, Bob)
     } yield ()
 
     val createResources = for {

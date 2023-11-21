@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -319,8 +319,9 @@ final class Storages private (
     }
 
   private def logFailureAndContinue[A](io: IO[A]): IO[Unit] = {
-    io.onError { case err: StorageRejection =>
-      logger.warn(err.reason)
+    io.onError {
+      case err: StorageRejection => logger.warn(err.reason)
+      case _                     => IO.unit
     }.attemptNarrow[StorageRejection]
       .void
   }
@@ -394,11 +395,12 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       fetchPermissions: IO[Set[Permission]],
-      config: StorageTypeConfig
+      config: StorageTypeConfig,
+      clock: Clock[IO]
   )(
       state: Option[StorageState],
       cmd: StorageCommand
-  )(implicit clock: Clock[IO]): IO[StorageEvent] = {
+  ): IO[StorageEvent] = {
 
     def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
       target == parent || target.value.descendantOf(parent.value)
@@ -446,7 +448,7 @@ object Storages {
       case None    =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOInstant.now
+          instant <- clock.realTimeInstant
         } yield StorageCreated(c.id, c.project, value, c.source, 1, instant, c.subject)
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -461,7 +463,7 @@ object Storages {
       case Some(s)                                =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOInstant.now
+          instant <- clock.realTimeInstant
         } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1, instant, c.subject)
     }
 
@@ -470,14 +472,17 @@ object Storages {
       case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(
+          StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject)
+        )
     }
 
     def deprecate(c: DeprecateStorage) = state match {
       case None                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(StorageIsDeprecated(c.id))
-      case Some(s)                   => IOInstant.now.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -491,13 +496,12 @@ object Storages {
   def definition(
       config: StorageTypeConfig,
       access: StorageAccess,
-      fetchPermissions: IO[Set[Permission]]
-  )(implicit
+      fetchPermissions: IO[Set[Permission]],
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config)(_, _), next),
+      StateMachine(None, evaluate(access, fetchPermissions, config, clock)(_, _), next),
       StorageEvent.serializer,
       StorageState.serializer,
       Tagger[StorageEvent](
@@ -527,12 +531,10 @@ object Storages {
       access: StorageAccess,
       xas: Transactors,
       config: StoragesConfig,
-      serviceAccount: ServiceAccount
+      serviceAccount: ServiceAccount,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
@@ -543,7 +545,7 @@ object Storages {
       }
       .map { sourceDecoder =>
         new Storages(
-          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions), config.eventLog, xas),
+          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions, clock), config.eventLog, xas),
           fetchContext,
           sourceDecoder,
           serviceAccount

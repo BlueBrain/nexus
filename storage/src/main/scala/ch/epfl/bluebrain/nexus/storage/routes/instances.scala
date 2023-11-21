@@ -5,6 +5,7 @@ import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.sortKeys
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.Rejection

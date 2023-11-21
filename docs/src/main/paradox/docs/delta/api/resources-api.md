@@ -58,7 +58,7 @@ synchronously or in the background. This behaviour is controlled using `indexing
 ## Create using POST
 
 ```
-POST /v1/resources/{org_label}/{project_label}/{schema_id}
+POST /v1/resources/{org_label}/{project_label}/{schema_id}?tag={tag}
   {...}
 ```
 
@@ -73,6 +73,8 @@ The `{schema_id}` segment allows to define an existing SHACL schema to validate 
 - If `_` is provided, no SHACL validation will be performed
 - If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated 
 from the provided payload.
+
+The `{tag}` param is an optional tag associated with the first revision of this resource
 
 **Example**
 

@@ -5,8 +5,9 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.Randomness
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
@@ -20,7 +21,6 @@ class TarFlowSpec
     extends TestKit(ActorSystem("TarFlowSpec"))
     with AnyWordSpecLike
     with Matchers
-    with IOEitherValues
     with Randomness
     with OptionValues
     with Inspectors

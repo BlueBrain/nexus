@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import fs2.Stream
 import munit.{Assertions, Location}
 
 import scala.concurrent.duration.DurationInt
 
-trait CatsStreamAssertions { self: CatsRunContext with Assertions =>
+trait CatsStreamAssertions extends Assertions {
 
   implicit class CEStreamAssertionsOps[A](stream: Stream[IO, A])(implicit
       loc: Location

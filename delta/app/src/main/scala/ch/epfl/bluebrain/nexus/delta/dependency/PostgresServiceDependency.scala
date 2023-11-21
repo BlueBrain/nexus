@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.dependency
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name

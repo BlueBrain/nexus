@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 
 /**
   * Definition of a Blazegraph view to build a projection
@@ -26,7 +26,7 @@ sealed trait IndexingViewDef extends Product with Serializable {
 
 object IndexingViewDef {
 
-  private val logger: Logger = Logger[IndexingViewDef]
+  private val logger = Logger[IndexingViewDef]
 
   /**
     * Active view eligible to be run as a projection by the supervisor
@@ -80,7 +80,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  ): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -88,7 +88,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  ): IO[CompiledProjection] =
     compile(
       v,
       compilePipeChain,
@@ -101,7 +101,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+  ): IO[CompiledProjection] = {
 
     val postPipes: Operation = GraphResourceToNTriples
 
@@ -118,7 +118,7 @@ object IndexingViewDef {
     } yield projection
 
     IO.fromEither(compiled).onError { e =>
-      IO.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
+      logger.error(e)(s"View '${v.ref}' could not be compiled.")
     }
   }
 }

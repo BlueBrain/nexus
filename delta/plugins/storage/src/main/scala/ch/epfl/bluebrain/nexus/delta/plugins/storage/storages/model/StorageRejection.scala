@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -200,8 +199,6 @@ object StorageRejection {
   final case class ProjectContextRejection(rejection: ContextRejection)
       extends StorageFetchRejection("Something went wrong while interacting with another module.")
 
-  private val logger: Logger = Logger("StorageRejection")
-
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -213,7 +210,6 @@ object StorageRejection {
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
-      r.loggedDetails.foreach(logger.error(_))
       r match {
         case StorageNotAccessible(_, details)   => obj.add("details", details.asJson)
         case ProjectContextRejection(rejection) => rejection.asJsonObject

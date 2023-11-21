@@ -56,7 +56,7 @@ object StorageDirectives {
     * @return
     *   BucketExists when the storage bucket exists, rejection otherwise
     */
-  def bucketExists[F[_]](name: String)(implicit storages: Storages[F, _]): Directive1[BucketExists] =
+  def bucketExists(name: String)(implicit storages: Storages[_]): Directive1[BucketExists] =
     storages.exists(name) match {
       case exists: BucketExists => provide(exists)
       case _                    => reject(BucketNotFound(name))
@@ -74,8 +74,8 @@ object StorageDirectives {
     * @return
     *   PathExists when the path exists inside the bucket, rejection otherwise
     */
-  def pathExists[F[_]](name: String, path: Uri.Path)(implicit
-      storages: Storages[F, _]
+  def pathExists(name: String, path: Uri.Path)(implicit
+      storages: Storages[_]
   ): Directive1[PathExists] =
     storages.pathExists(name, path) match {
       case exists: PathExists => provide(exists)
@@ -94,8 +94,8 @@ object StorageDirectives {
     * @return
     *   PathDoesNotExist when the path does not exist inside the bucket, rejection otherwise
     */
-  def pathNotExists[F[_]](name: String, path: Uri.Path)(implicit
-      storages: Storages[F, _]
+  def pathNotExists(name: String, path: Uri.Path)(implicit
+      storages: Storages[_]
   ): Directive1[PathDoesNotExist] =
     storages.pathExists(name, path) match {
       case notExists: PathDoesNotExist => provide(notExists)

@@ -61,7 +61,8 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     ResolverContextResolution(rcr),
     alwaysValidate,
     config,
-    xas
+    xas,
+    clock
   ).accepted
 
   private lazy val blazegraphQuery = new BlazegraphQueryDummy(

@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
 import cats.data.NonEmptyList
-import cats.implicits._
 
 import java.io.File
+import cats.implicits._
 
 /**
   * Parent error type for plugin errors.
