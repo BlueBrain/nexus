@@ -145,7 +145,7 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
       val vocabRev2      = s"${config.deltaUri.toString()}/${genString()}/"
       val updateRev2Json = adminDsl
         .projectPayload(
-          "/admin/projects/update.json",
+          "admin/projects/update.json",
           "nxv",
           "person",
           description = descRev2,
@@ -159,7 +159,7 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
       val vocabRev3      = s"${config.deltaUri.toString()}/${genString()}/"
       val updateRev3Json = adminDsl
         .projectPayload(
-          "/admin/projects/update.json",
+          "admin/projects/update.json",
           "nxv",
           "person",
           description = descRev3,

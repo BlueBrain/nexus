@@ -130,7 +130,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     }
 
     "attempt to create a namespace with wrong payload" in {
-      val props = propertiesOf("/sparql/wrong.properties")
+      val props = propertiesOf("sparql/wrong.properties")
       val err   = client.createNamespace("other", props).rejectedWith[WrappedHttpClientError]
       err.http shouldBe a[HttpServerStatusError]
     }
