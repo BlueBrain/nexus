@@ -1051,14 +1051,22 @@ val staticAnalysis =
 
 addCommandAlias("static-analysis", staticAnalysis)
 
-def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
+def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
   ";coverage" +
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
-addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
-addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
-addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
+def runTestsCommandsForModules(modules: List[String]) = {
+    modules.map(module => s";$module/test").mkString
+}
+
+addCommandAlias("core-unit-tests", runTestsCommandsForModules(coreModules))
+addCommandAlias("core-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(coreModules))
+addCommandAlias("app-unit-tests", runTestsCommandsForModules(List("app")))
+addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("app")))
+addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
+addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
+addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))
 
 // This option allows distage 1.0.10 to run on JDK 17+
 val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"
