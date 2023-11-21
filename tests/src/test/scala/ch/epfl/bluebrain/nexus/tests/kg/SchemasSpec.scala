@@ -28,10 +28,12 @@ class SchemasSpec extends BaseIntegrationSpec {
         root.shapes.index(0).minCount.int.getOption(json) shouldEqual Some(value)
 
       for {
-        _ <- deltaClient.post2[Json](s"/schemas/$project", withMinCount(schemaId, minCount = 1), Rick) { expectCreated }
+        _ <- deltaClient.postIO[Json](s"/schemas/$project", withMinCount(schemaId, minCount = 1), Rick) {
+               expectCreated
+             }
         _ <-
           deltaClient
-            .put2[Json](
+            .putIO[Json](
               s"/schemas/$project/${UrlUtils.encode(schemaId)}?rev=1",
               withMinCount(schemaId, minCount = 2),
               Rick
@@ -81,13 +83,13 @@ class SchemasSpec extends BaseIntegrationSpec {
         )
 
       for {
-        _ <- deltaClient.post2[Json](
+        _ <- deltaClient.postIO[Json](
                s"/schemas/$project",
                withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 10000),
                Rick
              ) { expectCreated }
         _ <- deltaClient
-               .post2[Json](
+               .postIO[Json](
                  s"/schemas/$project",
                  withImportOfPowerLevelShape(id = schemaId, importedSchemaId = powerLevelSchemaId),
                  Rick
@@ -99,7 +101,7 @@ class SchemasSpec extends BaseIntegrationSpec {
                  Rick
                ) { expectCreated }
         _ <- deltaClient
-               .put2[Json](
+               .putIO[Json](
                  s"/schemas/$project/${UrlUtils.encode(powerLevelSchemaId)}?rev=1",
                  withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 9000),
                  Rick

@@ -55,7 +55,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
-  def post2[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+  def postIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
     body.flatMap(body => requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse))
@@ -66,7 +66,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
 
-  def put2[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+  def putIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
     body.flatMap(body => requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse))
