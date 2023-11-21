@@ -9,7 +9,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
+class ClasspathResourceLoaderSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
   private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   private def accept[A](io: IO[A]): A =

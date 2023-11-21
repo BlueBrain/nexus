@@ -12,6 +12,7 @@ import org.topbraid.shacl.engine.ShapesGraph
 import org.topbraid.shacl.util.SHACLUtil
 import org.topbraid.shacl.validation.ValidationUtil
 
+import java.io.InputStream
 import java.net.URI
 
 /**
@@ -31,12 +32,16 @@ object ShaclShapesGraph {
   def shaclShaclShapes: IO[ShaclShapesGraph] =
     loader
       .streamOf("shacl-shacl.ttl")
-      .map { is =>
-        val model = ModelFactory
-          .createModelForGraph(createDefaultGraph())
-          .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
-        validateAndRegister(model)
-      }
+      .use(readModel)
+      .map(model => validateAndRegister(model))
+
+  private def readModel(is: InputStream) = {
+    IO.blocking {
+      ModelFactory
+        .createModelForGraph(createDefaultGraph())
+        .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
+    }
+  }
 
   /**
     * Creates a [[ShaclShapesGraph]] initializing and registering the required validation components from the passed

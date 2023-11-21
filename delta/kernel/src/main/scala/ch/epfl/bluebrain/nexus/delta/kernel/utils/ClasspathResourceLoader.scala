@@ -1,23 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handleBars
 import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
+import fs2.text
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject}
 
-import java.io.InputStream
+import java.io.{IOException, InputStream}
 import java.util.Properties
-import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
 class ClasspathResourceLoader private (classLoader: ClassLoader) {
 
-  final def absolutePath(resourcePath: String): IO[String] =
-    IO.fromOption(Option(getClass.getResource(resourcePath)) orElse Option(classLoader.getResource(resourcePath)))(
-      ResourcePathNotFound(resourcePath)
-    ).map(_.getPath)
+  final def absolutePath(resourcePath: String): IO[String] = {
+    IO.blocking(
+      Option(getClass.getResource(resourcePath))
+        .orElse(Option(classLoader.getResource(resourcePath)))
+        .toRight(ResourcePathNotFound(resourcePath))
+    ).rethrow
+      .map(_.getPath)
+  }
 
   /**
     * Loads the content of the argument classpath resource as an [[InputStream]].
@@ -28,12 +33,15 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     *   the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the resource
     *   is not found
     */
-  def streamOf(resourcePath: String): IO[InputStream] =
-    IO.defer {
-      lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
-      val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
-      IO.fromOption(fromClass orElse fromClassLoader)(ResourcePathNotFound(resourcePath))
-    }
+  def streamOf(resourcePath: String): Resource[IO, InputStream] = {
+    Resource.make[IO, InputStream] {
+      IO.blocking {
+        Option(getClass.getResourceAsStream(resourcePath))
+          .orElse(Option(classLoader.getResourceAsStream(resourcePath)))
+          .toRight(ResourcePathNotFound(resourcePath))
+      }.rethrow
+    } { is => IO.blocking(is.close()) }
+  }
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -48,11 +56,12 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
   final def contentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): IO[String] =
+  ): IO[String] = {
     resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
       case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
     }
+  }
 
   /**
     * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map of key
@@ -65,10 +74,12 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     *   is not found
     */
   final def propertiesOf(resourcePath: String): IO[Map[String, String]] =
-    streamOf(resourcePath).map { is =>
-      val props = new Properties()
-      props.load(is)
-      props.asScala.toMap
+    streamOf(resourcePath).use { is =>
+      IO.blocking {
+        val props = new Properties()
+        props.load(is)
+        props.asScala.toMap
+      }
     }
 
   /**
@@ -106,8 +117,17 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
       jsonObj <- IO.fromOption(json.asObject)(InvalidJsonObject(resourcePath))
     } yield jsonObj
 
-  private def resourceAsTextFrom(resourcePath: String): IO[String] =
-    streamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
+  private def resourceAsTextFrom(resourcePath: String): IO[String] = {
+    fs2.io
+      .readClassLoaderResource[IO](resourcePath, classLoader = classLoader)
+      .through(text.utf8.decode)
+      .compile
+      .string
+      .adaptError {
+        case e: IOException if Option(e.getMessage).exists(_.endsWith("not found")) =>
+          ResourcePathNotFound(resourcePath)
+      }
+  }
 }
 
 object ClasspathResourceLoader {
