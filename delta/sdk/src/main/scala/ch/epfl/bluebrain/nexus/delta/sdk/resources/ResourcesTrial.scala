@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
-import cats.implicits.catsSyntaxApplicativeError
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -74,8 +74,9 @@ object ResourcesTrial {
       fetchResource: (IdSegmentRef, ProjectRef) => IO[DataResource],
       validateResource: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
-      contextResolution: ResolverContextResolution
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
+      contextResolution: ResolverContextResolution,
+      clock: Clock[IO]
+  )(implicit api: JsonLdApi, uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
     private val sourceParser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
 
@@ -129,7 +130,7 @@ object ResourcesTrial {
         source: NexusSource,
         validation: ValidationResult
     )(implicit caller: Caller): IO[DataResource] = {
-      IOInstant.now.map { now =>
+      clock.realTimeInstant.map { now =>
         ResourceState(
           id = jsonld.iri,
           project = project,

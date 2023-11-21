@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -34,7 +34,8 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   * Schemas wiring
   */
 object SchemasModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[ValidateSchema].fromEffect { (api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
     ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
@@ -51,8 +52,6 @@ object SchemasModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
@@ -61,8 +60,9 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         validate,
         config.schemas,
-        xas
-      )(api, clock, contextShift, timer, uuidF)
+        xas,
+        clock
+      )(api, uuidF)
   }
 
   make[SchemaImports].from {
@@ -70,10 +70,9 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         resources: Resources,
-        schemas: Schemas,
-        contextShift: ContextShift[IO]
+        schemas: Schemas
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)(contextShift)
+      SchemaImports(aclCheck, resolvers, schemas, resources)
   }
 
   make[SchemasRoutes].from {

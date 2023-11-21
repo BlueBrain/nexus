@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits._
+import cats.effect.IO
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
@@ -58,7 +58,7 @@ object CompositeProjectionLifeCycle {
       spaces: CompositeSpaces,
       sink: CompositeSinks,
       compositeProjections: CompositeProjections
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): CompositeProjectionLifeCycle = {
+  ): CompositeProjectionLifeCycle = {
     def init(view: ActiveViewDef): IO[Unit] = spaces.init(view)
 
     def index(view: ActiveViewDef): IO[CompiledProjection] =

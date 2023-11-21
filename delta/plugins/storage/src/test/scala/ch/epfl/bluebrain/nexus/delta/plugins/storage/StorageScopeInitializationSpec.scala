@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -24,7 +23,8 @@ class StorageScopeInitializationSpec
     extends CatsEffectSpec
     with DoobieScalaTestFixture
     with RemoteContextResolutionFixture
-    with ConfigFixtures {
+    with ConfigFixtures
+    with StorageFixtures {
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
@@ -53,7 +53,8 @@ class StorageScopeInitializationSpec
       (_, _) => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, config),
-      serviceAccount
+      serviceAccount,
+      clock
     ).accepted
 
     val defaults  = Defaults("defaultName", "defaultDescription")

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxMonadError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess

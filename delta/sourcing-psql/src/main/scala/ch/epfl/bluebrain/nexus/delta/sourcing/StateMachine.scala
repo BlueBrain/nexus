@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
 import fs2.Stream
@@ -29,7 +29,7 @@ final class StateMachine[State, Command, Event] private (
       current: Option[State],
       command: Command,
       maxDuration: FiniteDuration
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): IO[(Event, State)] = {
+  ): IO[(Event, State)] = {
     val original = current.orElse(initialState)
     for {
       evaluated <- evaluate(original, command).attempt

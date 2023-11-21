@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart, Uri}
-import cats.effect.IO
-import cats.effect.concurrent.Ref
-import cats.implicits.catsSyntaxApplicativeError
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes

@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
@@ -38,7 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
@@ -121,7 +121,8 @@ class FilesRoutesSpec
     (_, _) => IO.unit,
     xas,
     StoragesConfig(eventLogConfig, pagination, stCfg),
-    ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
+    ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
+    clock
   ).accepted
   lazy val files: Files                                    =
     Files(
@@ -132,8 +133,9 @@ class FilesRoutesSpec
       xas,
       config,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient
-    )(clock, uuidF, timer, contextShift, typedSystem)
+      remoteDiskStorageClient,
+      clock
+    )(uuidF, typedSystem)
   private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
@@ -665,13 +667,16 @@ class FilesRoutesSpec
       createdBy: Subject = callerWriter.subject,
       updatedBy: Subject = callerWriter.subject
   )(implicit baseUri: BaseUri): Json =
-    FilesRoutesSpec.fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
+    FilesRoutesSpec
+      .fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
+      .accepted
 
   private def nxvBase(id: String): String = (nxv + id).toString
 
 }
 
 object FilesRoutesSpec {
+  private val loader                     = ClasspathResourceLoader()
   def fileMetadata(
       project: ProjectRef,
       id: Iri,
@@ -682,8 +687,8 @@ object FilesRoutesSpec {
       deprecated: Boolean = false,
       createdBy: Subject,
       updatedBy: Subject
-  )(implicit baseUri: BaseUri): Json =
-    jsonContentOf(
+  )(implicit baseUri: BaseUri): IO[Json] =
+    loader.jsonContentOf(
       "files/file-route-metadata-response.json",
       "project"     -> project,
       "id"          -> id,

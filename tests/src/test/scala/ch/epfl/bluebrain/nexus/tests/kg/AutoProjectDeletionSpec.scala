@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
@@ -35,7 +36,7 @@ class AutoProjectDeletionSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
       // First org and projects
       _ <- adminDsl.createOrganization(org, org, Bojack, ignoreConflict = true)
-      _ <- adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+      _ <- adminDsl.createProjectWithName(org, proj1, proj1, Bojack)
       _ <- deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.OK))
     } yield succeed
 

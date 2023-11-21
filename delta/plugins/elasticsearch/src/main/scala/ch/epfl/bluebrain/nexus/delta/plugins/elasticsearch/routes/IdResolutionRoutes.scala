@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution

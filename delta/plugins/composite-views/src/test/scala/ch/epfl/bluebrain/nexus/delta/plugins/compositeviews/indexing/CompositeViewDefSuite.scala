@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
@@ -18,6 +17,7 @@ import fs2.Stream
 import shapeless.Typeable
 
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
 

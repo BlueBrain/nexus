@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
@@ -12,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription, Name}

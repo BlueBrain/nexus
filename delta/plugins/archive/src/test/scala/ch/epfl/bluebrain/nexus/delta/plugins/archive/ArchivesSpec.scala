@@ -22,13 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.literal._
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
+import io.circe.literal._
 
 class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with RemoteContextResolutionFixture {
 
@@ -59,7 +59,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       IO.pure(Source.empty)
   }
 
-  private lazy val archives = Archives(fetchContext, download, cfg, xas)
+  private lazy val archives = Archives(fetchContext, download, cfg, xas, clock)
 
   "An Archives module" should {
     "create an archive from source" in {

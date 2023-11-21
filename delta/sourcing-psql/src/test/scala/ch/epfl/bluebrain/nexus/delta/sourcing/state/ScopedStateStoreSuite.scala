@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -144,7 +145,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
     EntityCheck
       .raiseMissingOrDeprecated[Iri, Nothing](
         entityType,
-        Set(project1 -> id2, project2 -> id1),
+        NonEmptySet.of(project1 -> id2, project2 -> id1),
         _ => fail("Should not be called"),
         xas
       )
@@ -154,16 +155,16 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   case class EntityCheckError(value: Set[(ProjectRef, Iri)]) extends ThrowableValue
 
   test("Check that the non existing ids are returned") {
-    val unknowns: Set[(ProjectRef, Iri)] =
-      Set(project1 -> id1, project1 -> (nxv + "xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
+    val unknowns =
+      NonEmptySet.of(project1 -> id1, project1 -> (nxv + "xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
     EntityCheck
       .raiseMissingOrDeprecated[Iri, EntityCheckError](
         entityType,
-        Set(project1 -> id1, project1 -> id2) ++ unknowns,
+        NonEmptySet.of(project1 -> id1, project1 -> id2) ++ unknowns,
         value => EntityCheckError(value),
         xas
       )
-      .assertError[EntityCheckError](_.value == unknowns)
+      .assertError[EntityCheckError](_.value == unknowns.toList.toSet)
   }
 
   test("Get the entity type for id1 in project 1") {

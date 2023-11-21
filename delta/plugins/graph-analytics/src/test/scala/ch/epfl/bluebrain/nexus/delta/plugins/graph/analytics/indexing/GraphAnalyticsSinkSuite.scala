@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -24,11 +23,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GraphAnalyticsSinkSuite
-    extends CatsEffectSuite
-    with ElasticSearchClientSetup.Fixture
-    with CirceLiteral
-    with TestHelpers {
+class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 50.millis)
 
@@ -66,9 +61,12 @@ class GraphAnalyticsSinkSuite
   private val file1     = iri"http://localhost/file1"
 
   private def loadExpanded(path: String): ExpandedJsonLd =
-    ioJsonContentOf(path).flatMap { json =>
-      IO.fromEither(ExpandedJsonLd.expanded(json))
-    }.accepted
+    loader
+      .jsonContentOf(path)
+      .flatMap { json =>
+        IO.fromEither(ExpandedJsonLd.expanded(json))
+      }
+      .accepted
 
   private def getTypes(expandedJsonLd: ExpandedJsonLd): IO[Set[Iri]] =
     IO.pure(expandedJsonLd.cursor.getTypes.getOrElse(Set.empty))
@@ -119,7 +117,7 @@ class GraphAnalyticsSinkSuite
       active2            <- indexActive(resource2, expanded2)
       discarded           = success(resource3, GraphAnalyticsResult.Noop)
       deprecated          = indexDeprecated(deprecatedResource, deprecatedResourceTypes)
-      chunk               = Chunk.seq(List(active1, active2, discarded, deprecated))
+      chunk               = Chunk(active1, active2, discarded, deprecated)
       // We expect no error
       _                  <- sink(chunk).assertEquals(chunk.map(_.void))
       // 3 documents should have been indexed correctly:
@@ -127,9 +125,9 @@ class GraphAnalyticsSinkSuite
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
       _                  <- client.count(index.value).eventually(3L)
-      expected1          <- ioJsonContentOf("result/resource1.json")
-      expected2          <- ioJsonContentOf("result/resource2.json")
-      expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
+      expected1          <- loader.jsonContentOf("result/resource1.json")
+      expected2          <- loader.jsonContentOf("result/resource2.json")
+      expectedDeprecated <- loader.jsonContentOf("result/resource_deprecated.json")
       _                  <- client.getSource[Json](index, resource1.toString).eventually(expected1)
       _                  <- client.getSource[Json](index, resource2.toString).eventually(expected2)
       _                  <- client.getSource[Json](index, deprecatedResource.toString).eventually(expectedDeprecated)
@@ -138,19 +136,17 @@ class GraphAnalyticsSinkSuite
   }
 
   test("Push update by query result results") {
-    val chunk = Chunk.seq(
-      List(
-        success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
-        success(resource3, GraphAnalyticsResult.Noop),
-        FailedElem(
-          Resources.entityType,
-          resource3,
-          Some(project),
-          Instant.EPOCH,
-          Offset.start,
-          new IllegalStateException("BOOM"),
-          1
-        )
+    val chunk = Chunk(
+      success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
+      success(resource3, GraphAnalyticsResult.Noop),
+      FailedElem(
+        Resources.entityType,
+        resource3,
+        Some(project),
+        Instant.EPOCH,
+        Offset.start,
+        new IllegalStateException("BOOM"),
+        1
       )
     )
 
@@ -159,8 +155,8 @@ class GraphAnalyticsSinkSuite
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
       _         <- client.refresh(index)
-      expected1 <- ioJsonContentOf("result/resource1_updated.json")
-      expected2 <- ioJsonContentOf("result/resource2.json")
+      expected1 <- loader.jsonContentOf("result/resource1_updated.json")
+      expected2 <- loader.jsonContentOf("result/resource2.json")
       _         <- client.count(index.value).eventually(3L)
       _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
       _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)

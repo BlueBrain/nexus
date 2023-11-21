@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
@@ -416,9 +416,9 @@ object BlazegraphViews {
   }
 
   private[blazegraph] def evaluate(
-      validate: ValidateBlazegraphView
+      validate: ValidateBlazegraphView,
+      clock: Clock[IO]
   )(state: Option[BlazegraphViewState], cmd: BlazegraphViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViewEvent] = {
 
@@ -426,7 +426,7 @@ object BlazegraphViews {
       case None    =>
         for {
           _ <- validate(c.value)
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
           u <- uuidF()
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -444,7 +444,7 @@ object BlazegraphViews {
       case Some(s)                               =>
         for {
           _ <- validate(c.value)
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
         } yield BlazegraphViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
@@ -456,7 +456,7 @@ object BlazegraphViews {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -469,7 +469,9 @@ object BlazegraphViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(
+          BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject)
+        )
     }
 
     cmd match {
@@ -480,7 +482,7 @@ object BlazegraphViews {
     }
   }
 
-  def definition(validate: ValidateBlazegraphView)(implicit clock: Clock[IO], uuidF: UUIDF): ScopedEntityDefinition[
+  def definition(validate: ValidateBlazegraphView, clock: Clock[IO])(implicit uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     BlazegraphViewState,
     BlazegraphViewCommand,
@@ -491,7 +493,7 @@ object BlazegraphViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _),
+        evaluate(validate, clock),
         next
       ),
       BlazegraphViewEvent.serializer,
@@ -529,12 +531,10 @@ object BlazegraphViews {
       client: BlazegraphClient,
       eventLogConfig: EventLogConfig,
       prefix: String,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     val createNameSpace = (v: ViewResource) =>
@@ -546,7 +546,7 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)
+    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas, clock)
   }
 
   private[blazegraph] def apply(
@@ -556,12 +556,10 @@ object BlazegraphViews {
       createNamespace: ViewResource => IO[Unit],
       eventLogConfig: EventLogConfig,
       prefix: String,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
@@ -577,7 +575,7 @@ object BlazegraphViews {
       .map { sourceDecoder =>
         new BlazegraphViews(
           ScopedEventLog(
-            definition(validate),
+            definition(validate, clock),
             eventLogConfig,
             xas
           ),

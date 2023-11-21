@@ -28,7 +28,7 @@ object ValidateAggregate {
   ): ValidateAggregate[Rejection] = (references: NonEmptySet[ViewRef]) =>
     EntityCheck.raiseMissingOrDeprecated[Iri, Rejection](
       entityType,
-      references.map { v => v.project -> v.viewId }.toSortedSet,
+      references.map { v => v.project -> v.viewId },
       missing => ifUnknown(missing.map { case (p, id) => ViewRef(p, id) }),
       xas
     ) >> references.value.toList

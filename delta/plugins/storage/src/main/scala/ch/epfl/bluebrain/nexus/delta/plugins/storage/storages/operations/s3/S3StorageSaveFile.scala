@@ -6,8 +6,9 @@ import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -20,8 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
 import scala.concurrent.Future
 
 final class S3StorageSaveFile(storage: S3Storage, config: StorageTypeConfig)(implicit
-    as: ActorSystem,
-    cs: ContextShift[IO]
+    as: ActorSystem
 ) extends SaveFile {
   import as.dispatcher
   private val fileAlreadyExistException = new IllegalArgumentException("Collision, file already exist")

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -144,7 +145,9 @@ object ResourceGen {
       subject
     ).toResource
 
-  def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit resolution: RemoteContextResolution) = {
+  def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit
+      resolution: RemoteContextResolution
+  ) = {
     val resourceF = sourceToResourceF(id, project, source)
     JsonLdContent(resourceF, resourceF.value.source, None)
   }

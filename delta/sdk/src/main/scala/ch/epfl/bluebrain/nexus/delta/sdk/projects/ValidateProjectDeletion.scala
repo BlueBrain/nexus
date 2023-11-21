@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectDeletionIsDisabled, ProjectIsReferenced}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef

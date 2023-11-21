@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
@@ -37,7 +37,7 @@ class ElasticSearchScopeInitialization(
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
-  private val defaultValue: IndexingElasticSearchViewValue =
+  private lazy val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       name = Some(defaults.name),
       description = Some(defaults.description),

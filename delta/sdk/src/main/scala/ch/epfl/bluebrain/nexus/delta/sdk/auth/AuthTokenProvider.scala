@@ -4,7 +4,6 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 
 import java.time.{Duration, Instant}
@@ -17,9 +16,9 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(authService: OpenIdAuthService)(implicit clock: Clock[IO]): IO[AuthTokenProvider] = {
+  def apply(authService: OpenIdAuthService, clock: Clock[IO]): IO[AuthTokenProvider] = {
     LocalCache[ClientCredentials, ParsedToken]()
-      .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache))
+      .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache, clock))
   }
   def anonymousForTest: AuthTokenProvider            = new AnonymousAuthTokenProvider
   def fixedForTest(token: String): AuthTokenProvider = new AuthTokenProvider {
@@ -37,8 +36,7 @@ private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   */
 private class CachingOpenIdAuthTokenProvider(
     service: OpenIdAuthService,
-    cache: LocalCache[ClientCredentials, ParsedToken]
-)(implicit
+    cache: LocalCache[ClientCredentials, ParsedToken],
     clock: Clock[IO]
 ) extends AuthTokenProvider {
 
@@ -56,7 +54,7 @@ private class CachingOpenIdAuthTokenProvider(
   private def clientCredentialsFlow(credentials: ClientCredentials): IO[Some[AuthToken]] = {
     for {
       existingValue <- cache.get(credentials)
-      now           <- IOInstant.now
+      now           <- clock.realTimeInstant
       finalValue    <- existingValue match {
                          case None                                 =>
                            logger.info("Fetching auth token, no initial value.") *>

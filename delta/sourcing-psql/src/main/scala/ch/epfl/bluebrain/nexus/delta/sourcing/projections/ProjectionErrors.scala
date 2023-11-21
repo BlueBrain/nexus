@@ -87,10 +87,10 @@ trait ProjectionErrors {
 
 object ProjectionErrors {
 
-  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): ProjectionErrors =
+  def apply(xas: Transactors, config: QueryConfig, clock: Clock[IO]): ProjectionErrors =
     new ProjectionErrors {
 
-      private val store = FailedElemLogStore(xas, config)
+      private val store = FailedElemLogStore(xas, config, clock)
 
       override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit] =
         store.save(metadata, failures)

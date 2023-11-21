@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible

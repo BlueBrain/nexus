@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
-import cats.effect.IO
-import cats.effect.concurrent.Ref
+import cats.effect.{IO, Ref}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -23,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -31,7 +29,7 @@ import munit.AnyFixture
 import java.time.Instant
 import java.util.UUID
 
-class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContext with ConfigFixtures {
+class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
 
@@ -49,7 +47,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
   private val deletionDisabled = deletionConfig.copy(enabled = false)
   private val config           = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionEnabled)
 
-  private val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config)
+  private val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config, clock)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
 
@@ -80,7 +78,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
         ): IO[ProjectDeletionReport.Stage] =
           deleted.update(_ + project).as(taskStage)
       }
-      (deleted, ProjectDeletionCoordinator(projects, Set(deletionTask), config, serviceAccount, xas))
+      (deleted, ProjectDeletionCoordinator(projects, Set(deletionTask), config, serviceAccount, xas, clock))
     }
 
   // Asserting partition number for both events and states

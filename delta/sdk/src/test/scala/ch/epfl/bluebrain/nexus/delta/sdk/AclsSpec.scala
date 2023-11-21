@@ -24,7 +24,7 @@ class AclsSpec extends CatsEffectSpec with AclFixtures {
     val current                                              = AclState(userR_groupX(Root), 1, epoch, Anonymous, epoch, Anonymous)
     val time2                                                = Instant.ofEpochMilli(10L)
     val eval: (Option[AclState], AclCommand) => IO[AclEvent] =
-      evaluate(fetchPermissionsSet, findUnknownRealms)(_, _)
+      evaluate(fetchPermissionsSet, findUnknownRealms, clock)
 
     "evaluating an incoming command" should {
 

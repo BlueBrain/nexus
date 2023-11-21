@@ -6,15 +6,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
-import cats.effect.IO
-import cats.effect.concurrent.Ref
+import cats.effect.{IO, Ref}
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, EitherValues, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
@@ -37,12 +36,14 @@ import scala.concurrent.duration._
 
 trait BaseIntegrationSpec
     extends AsyncWordSpecLike
+    with ScalaTestExtractValue
     with CatsEffectAsyncScalaTestAdapter
+    with ClasspathResources
+    with Generators
     with Matchers
     with EitherValues
     with OptionValues
     with Inspectors
-    with CatsRunContext
     with CatsIOValues
     with FixedClock
     with CirceUnmarshalling
@@ -51,7 +52,6 @@ trait BaseIntegrationSpec
     with BeforeAndAfterAll
     with HandleBarsFixture
     with SelfFixture
-    with TestHelpers
     with ScalatestRouteTest
     with Eventually
     with AppendedClues
@@ -201,7 +201,7 @@ trait BaseIntegrationSpec
       _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
       _ <- projects.toList.traverse { project =>
              val projectRef = s"$org/$project"
-             adminDsl.createProject(org, project, kgDsl.projectJson(name = projectRef), user)
+             kgDsl.projectJson(name = projectRef).flatMap(adminDsl.createProject(org, project, _, user))
            }
     } yield ()
 

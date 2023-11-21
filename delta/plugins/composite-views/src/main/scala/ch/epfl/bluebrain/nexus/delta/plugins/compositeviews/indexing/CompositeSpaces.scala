@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxFlatMapOps
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef

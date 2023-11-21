@@ -1,15 +1,73 @@
 package ch.epfl.bluebrain.nexus.tests
 
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import io.circe.optics.JsonPath.root
 import io.circe.{Json, JsonObject}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Assertion, OptionValues}
+import org.scalatest.{Assertion, Assertions, OptionValues}
+import Optics._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings}
 
-trait Optics extends Matchers with OptionValues with CirceEq with TestHelpers
+trait OpticsValidators
+    extends Matchers
+    with OptionValues
+    with CirceEq
+    with ClasspathResources
+    with ScalaTestExtractValue {
+  self: Assertions =>
 
-object Optics extends Optics {
+  private val defaultMappings = jsonContentOf("admin/projects/default-mappings.json").asArray.get
+
+  def validate(
+      json: Json,
+      tpe: String,
+      idPrefix: String,
+      id: String,
+      desc: String,
+      rev: Int,
+      label: String,
+      deprecated: Boolean = false
+  )(implicit config: TestsConfig): Assertion = {
+    `@id`.getOption(json).value shouldEqual s"${config.deltaUri.toString()}/$idPrefix/$id"
+    `@type`.getOption(json).value shouldEqual tpe
+    _uuid
+      .getOption(json)
+      .value should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
+    admin._label.getOption(json).value shouldEqual label
+    admin.description.getOption(json).value shouldEqual desc
+    admin._rev.getOption(json).value shouldEqual rev
+    admin._deprecated.getOption(json).value shouldEqual deprecated
+  }
+
+  def validateProject(response: Json, payload: Json): Assertion = {
+    admin.base.getOption(response) shouldEqual admin.base.getOption(payload)
+    admin.vocab.getOption(response) shouldEqual admin.vocab.getOption(payload)
+    val expectedMappings          = apiMappings
+      .getOption(payload)
+      .flatMap(_.asArray)
+      .map(_.toSet)
+      .map(Json.fromValues)
+    apiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedMappings.value)
+    val expectedEffectiveMappings = apiMappings
+      .getOption(payload)
+      .flatMap(_.asArray)
+      .map(_.map { entry =>
+        val ns     = entry.hcursor.get[String]("namespace").toOption.value
+        val prefix = entry.hcursor.get[String]("prefix").toOption.value
+        Json.obj(
+          "_namespace" -> Json.fromString(ns),
+          "_prefix"    -> Json.fromString(prefix)
+        )
+      })
+      .map(_.toSet ++ defaultMappings)
+      .map(Json.fromValues)
+    effectiveApiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedEffectiveMappings.value)
+  }
+}
+
+object Optics {
 
   def filterKey(key: String): Json => Json = filterKeys(Set(key))
 
@@ -68,8 +126,6 @@ object Optics extends Optics {
 
   val location = root._location.string
 
-  val defaultMappings = jsonContentOf("admin/projects/default-mappings.json").asArray.get
-
   object admin {
     val `@type` = root.`@type`.string
 
@@ -87,53 +143,6 @@ object Optics extends Optics {
     val vocab                = root.vocab.string
     val apiMappings          = root.apiMappings.json
     val effectiveApiMappings = root._effectiveApiMappings.json
-
-    def validate(
-        json: Json,
-        tpe: String,
-        idPrefix: String,
-        id: String,
-        desc: String,
-        rev: Int,
-        label: String,
-        deprecated: Boolean = false
-    )(implicit config: TestsConfig): Assertion = {
-      `@id`.getOption(json).value shouldEqual s"${config.deltaUri.toString()}/$idPrefix/$id"
-      `@type`.getOption(json).value shouldEqual tpe
-      _uuid
-        .getOption(json)
-        .value should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
-      _label.getOption(json).value shouldEqual label
-      description.getOption(json).value shouldEqual desc
-      _rev.getOption(json).value shouldEqual rev
-      _deprecated.getOption(json).value shouldEqual deprecated
-    }
-
-    def validateProject(response: Json, payload: Json): Assertion = {
-      base.getOption(response) shouldEqual base.getOption(payload)
-      vocab.getOption(response) shouldEqual vocab.getOption(payload)
-      val expectedMappings          = apiMappings
-        .getOption(payload)
-        .flatMap(_.asArray)
-        .map(_.toSet)
-        .map(Json.fromValues)
-      apiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedMappings.value)
-      val expectedEffectiveMappings = apiMappings
-        .getOption(payload)
-        .flatMap(_.asArray)
-        .map(_.map { entry =>
-          val ns     = entry.hcursor.get[String]("namespace").toOption.value
-          val prefix = entry.hcursor.get[String]("prefix").toOption.value
-          Json.obj(
-            "_namespace" -> Json.fromString(ns),
-            "_prefix"    -> Json.fromString(prefix)
-          )
-        })
-        .map(_.toSet ++ defaultMappings)
-        .map(Json.fromValues)
-      effectiveApiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedEffectiveMappings.value)
-    }
-
   }
 
   object keycloak {

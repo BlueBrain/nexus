@@ -41,41 +41,41 @@ final class ListingsSpec extends BaseIntegrationSpec {
         _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
         // First org and projects
         _ <- adminDsl.createOrganization(org1, org1, Bob)
-        _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
-        _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
-        _ <- adminDsl.createProject(org1, proj13, kgDsl.projectJson(name = proj13), Bob)
+        _ <- adminDsl.createProjectWithName(org1, proj11, name = proj11, Bob)
+        _ <- adminDsl.createProjectWithName(org1, proj12, name = proj12, Bob)
+        _ <- adminDsl.createProjectWithName(org1, proj13, name = proj13, Bob)
         // Second org and projects
         _ <- adminDsl.createOrganization(org2, org2, Bob)
-        _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
+        _ <- adminDsl.createProjectWithName(org2, proj21, name = proj21, Bob)
         _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
         _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
       } yield succeed
     }
 
     "add additional resources" in {
-      val resourcePayload = SimpleResource.sourcePayloadWithType(resourceType, 5)
-      val schemaPayload   = SchemaPayload.loadSimple(resourceType)
+      val resourcePayload = SimpleResource.sourcePayloadWithType(resourceType, 5).accepted
       for {
+        schemaPayload <- SchemaPayload.loadSimple(resourceType)
         // Creation
-        _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
-        _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
-        _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
-               expectCreated
-             )
-        _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
-        _ <- deltaClient.put[Json](s"/resources/$ref13/_/resource13", resourcePayload, Bob)(expectCreated)
-        _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
+        _             <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
+        _             <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
+        _             <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
+                           expectCreated
+                         )
+        _             <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
+        _             <- deltaClient.put[Json](s"/resources/$ref13/_/resource13", resourcePayload, Bob)(expectCreated)
+        _             <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
-        _ <-
+        _             <-
           deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
-        _ <-
+        _             <-
           deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
-        _ <-
+        _             <-
           deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=2", tag(tag2, 2), Bob)(expectCreated)
-        _ <-
+        _             <-
           deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag(tag3, 1), Bob)(expectCreated)
         // Deprecate
-        _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
+        _             <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
       } yield succeed
     }
   }

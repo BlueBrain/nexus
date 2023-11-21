@@ -19,10 +19,11 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
   override def beforeAll(): Unit = {
     super.beforeAll()
     val result = for {
-      _ <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
-      _ <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
-      _ <- adminDsl.createProject(org, project, adminDsl.projectPayload(), Identity.ServiceAccount)
-      _ <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
+      _              <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
+      _              <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
+      projectPayload <- adminDsl.projectPayload()
+      _              <- adminDsl.createProject(org, project, projectPayload, Identity.ServiceAccount)
+      _              <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
     } yield succeed
 
     result.accepted

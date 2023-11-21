@@ -13,10 +13,10 @@ class ResourcesTrialSpec extends BaseIntegrationSpec {
   private val ref  = s"$org/$proj"
 
   private val schemaId      = "test-schema"
-  private val schemaPayload = SchemaPayload.loadSimple()
+  private val schemaPayload = SchemaPayload.loadSimple().accepted
 
   private val resourceId      = s"http://delta:8080/v1/resources/$ref/_/my-resource"
-  private val resourcePayload = SimpleResource.sourcePayload(resourceId, 5)
+  private val resourcePayload = SimpleResource.sourcePayload(resourceId, 5).accepted
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -98,7 +98,7 @@ class ResourcesTrialSpec extends BaseIntegrationSpec {
     }
 
     "fail for a resource when shacl validation fails returning the generated " in {
-      val resourcePayload = SimpleResource.sourcePayloadWithType("nxv:UnexpectedType", 99)
+      val resourcePayload = SimpleResource.sourcePayloadWithType("nxv:UnexpectedType", 99).accepted
       val payload         = json"""{ "schema": $newSchemaPayload ,"resource": $resourcePayload }"""
       deltaClient.post[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK

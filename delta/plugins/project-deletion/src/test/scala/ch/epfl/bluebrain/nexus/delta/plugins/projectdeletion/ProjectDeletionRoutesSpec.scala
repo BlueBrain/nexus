@@ -5,18 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, Pr
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.DurationInt
 
-class ProjectDeletionRoutesSpec extends RouteHelpers with CirceMarshalling with Matchers with TestHelpers {
+class ProjectDeletionRoutesSpec extends RouteHelpers {
 
-  implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(

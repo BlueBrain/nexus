@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -74,7 +74,7 @@ object GraphResourceStream {
       qc: QueryConfig,
       xas: Transactors,
       shifts: ResourceShifts
-  )(implicit timer: Timer[IO]): GraphResourceStream = new GraphResourceStream {
+  ): GraphResourceStream = new GraphResourceStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
       StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _))

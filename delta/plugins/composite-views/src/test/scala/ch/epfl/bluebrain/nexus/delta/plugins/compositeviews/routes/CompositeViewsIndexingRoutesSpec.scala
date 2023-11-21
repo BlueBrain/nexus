@@ -61,9 +61,10 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
       xas,
       QueryConfig(5, RefreshStrategy.Stop),
       BatchConfig(5, 100.millis),
-      3.seconds
+      3.seconds,
+      clock
     )
-  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
+  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   private def lastRestart = restartStore.last(ViewRef(project.ref, myId)).map(_.flatMap(_.toOption)).accepted
 

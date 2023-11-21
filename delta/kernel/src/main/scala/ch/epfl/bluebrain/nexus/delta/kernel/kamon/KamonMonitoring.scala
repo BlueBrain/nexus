@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 
-import cats.effect.{ContextShift, ExitCase, IO, Timer}
-import cats.syntax.all._
+import cats.effect.{IO, Outcome}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import com.typesafe.config.Config
 import kamon.tag.TagSet
 import kamon.trace.Span
@@ -31,7 +29,7 @@ object KamonMonitoring {
   /**
     * Terminate Kamon
     */
-  def terminate(implicit contextShift: ContextShift[IO], timer: Timer[IO]): IO[Unit] =
+  def terminate: IO[Unit] =
     IO.whenA(enabled) {
       IO.fromFuture { IO { Kamon.stopModules() } }
         .timeout(15.seconds)
@@ -63,15 +61,15 @@ object KamonMonitoring {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A]                                                                      = {
+  )(io: IO[A]): IO[A] = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
-        case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
-        case (span, ExitCase.Error(cause)) => failSpan(span, cause, takeSamplingDecision)
-        case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
+        case (span, Outcome.Succeeded(_))   => finishSpan(span, takeSamplingDecision)
+        case (span, Outcome.Errored(cause)) => failSpan(span, cause, takeSamplingDecision)
+        case (span, Outcome.Canceled())     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
-  }.onError { case e: Rejection => logger.debug(e)(e.getMessage) }
+  }.onError { e => logger.debug(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
     IO {

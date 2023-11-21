@@ -38,7 +38,7 @@ class SupervisionSpec extends BaseIntegrationSpec {
     "succeed in creating an org and project" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Mickey)
-        _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = fullId), Mickey)
+        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, Mickey)
       } yield succeed
     }
   }

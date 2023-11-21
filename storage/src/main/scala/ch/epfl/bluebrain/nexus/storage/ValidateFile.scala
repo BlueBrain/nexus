@@ -5,29 +5,29 @@ import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.Sink
 import cats.data.EitherT
-import cats.effect.Effect
+import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathContainsLinks, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.PathInvalid
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.StorageConfig
 
 import java.nio.file.{Files, Path}
-import scala.concurrent.ExecutionContext
 
-trait ValidateFile[F[_]] {
-  def forCreate(name: String, destPath: Uri.Path): F[ValidatedCreateFile]
+trait ValidateFile {
+  def forCreate(name: String, destPath: Uri.Path): IO[ValidatedCreateFile]
 
   def forMoveIntoProtectedDir(
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  ): F[RejOr[ValidatedMoveFile]]
+  ): IO[RejOr[ValidatedMoveFile]]
 
   def forCopyWithinProtectedDir(
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  ): F[RejOr[ValidatedCopyFile]]
+  ): IO[RejOr[ValidatedCopyFile]]
 }
 
 sealed abstract case class ValidatedCreateFile(absDestPath: Path)
@@ -36,10 +36,10 @@ sealed abstract case class ValidatedCopyFile(name: String, absSourcePath: Path, 
 
 object ValidateFile {
 
-  def mk[F[_]](config: StorageConfig)(implicit F: Effect[F], ec: ExecutionContext, mt: Materializer): ValidateFile[F] =
-    new ValidateFile[F] {
+  def mk(config: StorageConfig)(implicit mt: Materializer): ValidateFile =
+    new ValidateFile {
 
-      override def forCreate(name: String, destPath: Uri.Path): F[ValidatedCreateFile] = {
+      override def forCreate(name: String, destPath: Uri.Path): IO[ValidatedCreateFile] = {
         val absDestPath = filePath(config, name, destPath)
         throwIf(!descendantOf(absDestPath, basePath(config, name)), PathInvalid(name, destPath))
           .as(new ValidatedCreateFile(absDestPath) {})
@@ -49,7 +49,7 @@ object ValidateFile {
           name: String,
           sourcePath: Uri.Path,
           destPath: Uri.Path
-      ): F[RejOr[ValidatedMoveFile]] = {
+      ): IO[RejOr[ValidatedMoveFile]] = {
 
         val bucketPath          = basePath(config, name, protectedDir = false)
         val bucketProtectedPath = basePath(config, name)
@@ -60,7 +60,7 @@ object ValidateFile {
 
         (for {
           _     <- EitherT(rejectIf(fileExists(absSourcePath).map(!_), notFound))
-          _     <- EitherT(rejectIf(descendantOf(absSourcePath, bucketProtectedPath).pure[F], notFound))
+          _     <- EitherT(rejectIf(descendantOf(absSourcePath, bucketProtectedPath).pure[IO], notFound))
           _     <- EitherT.right(throwIf(!allowedPrefix(config, bucketPath, absSourcePath), PathInvalid(name, sourcePath)))
           _     <- EitherT.right(throwIf(!descendantOf(absDestPath, bucketProtectedPath), PathInvalid(name, destPath)))
           _     <- EitherT(rejectIf(fileExists(absDestPath), PathAlreadyExists(name, destPath)))
@@ -73,7 +73,7 @@ object ValidateFile {
           name: String,
           sourcePath: Uri.Path,
           destPath: Uri.Path
-      ): F[RejOr[ValidatedCopyFile]] = {
+      ): IO[RejOr[ValidatedCopyFile]] = {
 
         val bucketProtectedPath = basePath(config, name)
         val absSourcePath       = filePath(config, name, sourcePath, protectedDir = false)
@@ -83,7 +83,7 @@ object ValidateFile {
 
         (for {
           _      <- EitherT(rejectIf(fileExists(absSourcePath).map(!_), notFound))
-          _      <- EitherT(rejectIf((!descendantOf(absSourcePath, bucketProtectedPath)).pure[F], notFound))
+          _      <- EitherT(rejectIf((!descendantOf(absSourcePath, bucketProtectedPath)).pure[IO], notFound))
           _      <- EitherT.right(throwIf(!descendantOf(absDestPath, bucketProtectedPath), PathInvalid(name, destPath)))
           _      <- EitherT(rejectIf(fileExists(absDestPath), PathAlreadyExists(name, destPath)))
           isFile <- EitherT.right[Rejection](isRegularFile(absSourcePath))
@@ -91,27 +91,27 @@ object ValidateFile {
         } yield new ValidatedCopyFile(name, absSourcePath, absDestPath) {}).value
       }
 
-      def fileExists(absSourcePath: Path): F[Boolean]     = F.delay(Files.exists(absSourcePath))
-      def isRegularFile(absSourcePath: Path): F[Boolean]  = F.delay(Files.isRegularFile(absSourcePath))
-      def isDirectory(absSourcePath: Path): F[Boolean]    = F.delay(Files.isDirectory(absSourcePath))
-      def isSymbolicLink(absSourcePath: Path): F[Boolean] = F.delay(Files.isSymbolicLink(absSourcePath))
+      def fileExists(absSourcePath: Path): IO[Boolean]     = IO.delay(Files.exists(absSourcePath))
+      def isRegularFile(absSourcePath: Path): IO[Boolean]  = IO.delay(Files.isRegularFile(absSourcePath))
+      def isDirectory(absSourcePath: Path): IO[Boolean]    = IO.delay(Files.isDirectory(absSourcePath))
+      def isSymbolicLink(absSourcePath: Path): IO[Boolean] = IO.delay(Files.isSymbolicLink(absSourcePath))
 
       def allowedPrefix(config: StorageConfig, bucketPath: Path, absSourcePath: Path) =
         absSourcePath.startsWith(bucketPath) ||
           config.extraPrefixes.exists(absSourcePath.startsWith)
 
-      def containsHardLink(absPath: Path): F[Boolean] =
-        F.delay(Files.isDirectory(absPath)).flatMap {
-          case true  => false.pure[F]
+      def containsHardLink(absPath: Path): IO[Boolean] =
+        IO.delay(Files.isDirectory(absPath)).flatMap {
+          case true  => false.pure[IO]
           case false =>
-            F.delay(Files.getAttribute(absPath, "unix:nlink").asInstanceOf[Int]).map(_ > 1)
+            IO.delay(Files.getAttribute(absPath, "unix:nlink").asInstanceOf[Int]).map(_ > 1)
         }
 
       def checkIfSourceIsFileOrDir(
           name: String,
           sourcePath: Uri.Path,
           absSourcePath: Path
-      ): EitherT[F, Rejection, Boolean] =
+      ): EitherT[IO, Rejection, Boolean] =
         EitherT
           .right[Rejection](isRegularFile(absSourcePath))
           .ifM(
@@ -123,7 +123,7 @@ object ValidateFile {
           name: String,
           sourcePath: Uri.Path,
           absSourcePath: Path
-      ): EitherT[F, Rejection, Boolean] =
+      ): EitherT[IO, Rejection, Boolean] =
         EitherT
           .right[Rejection](isDirectory(absSourcePath))
           .ifM(
@@ -135,25 +135,28 @@ object ValidateFile {
           name: String,
           sourcePath: Uri.Path,
           absSourcePath: Path
-      ): F[RejOr[Unit]] =
+      ): IO[RejOr[Unit]] =
         rejectIf(
           (isSymbolicLink(absSourcePath), containsHardLink(absSourcePath)).mapN(_ || _),
           PathContainsLinks(name, sourcePath)
         )
 
-      def dirContainsLink(path: Path): F[Boolean] =
-        Directory
-          .walk(path)
-          .mapAsync(1)(p => F.toIO((isSymbolicLink(p), containsHardLink(p)).mapN(_ || _)).unsafeToFuture())
-          .takeWhile(_ == false, inclusive = true)
-          .runWith(Sink.last)
-          .to[F]
+      def dirContainsLink(path: Path): IO[Boolean] =
+        IO.fromFuture {
+          IO.delay {
+            Directory
+              .walk(path)
+              .mapAsync(1)(p => (isSymbolicLink(p), containsHardLink(p)).mapN(_ || _).unsafeToFuture())
+              .takeWhile(_ == false, inclusive = true)
+              .runWith(Sink.last)
+          }
+        }
 
-      def rejectIfDirContainsLink(name: String, sourcePath: Uri.Path, path: Path): F[RejOr[Unit]] =
+      def rejectIfDirContainsLink(name: String, sourcePath: Uri.Path, path: Path): IO[RejOr[Unit]] =
         rejectIf(dirContainsLink(path), PathContainsLinks(name, sourcePath))
 
-      def rejectIf(cond: F[Boolean], rej: Rejection): F[RejOr[Unit]] = cond.ifF(Left(rej), Right(()))
+      def rejectIf(cond: IO[Boolean], rej: Rejection): IO[RejOr[Unit]] = cond.ifF(Left(rej), Right(()))
 
-      def throwIf(cond: Boolean, e: StorageError): F[Unit] = F.raiseWhen(cond)(e)
+      def throwIf(cond: Boolean, e: StorageError): IO[Unit] = IO.raiseWhen(cond)(e)
     }
 }

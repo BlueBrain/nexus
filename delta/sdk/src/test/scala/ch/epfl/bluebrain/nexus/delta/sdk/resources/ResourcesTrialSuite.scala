@@ -17,13 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{Inva
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.Location
 
 import java.util.UUID
 
-class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture with TestHelpers {
+class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -78,7 +77,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
     for {
       expectedData <-
@@ -94,13 +94,14 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
 
     val anotherSchema = nxv + "anotherSchema"
     for {
       schemaSource <-
-        ioJsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata))
+        loader.jsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata))
       schema       <- SchemaGen
                         .schemaAsync(anotherSchema, project.ref, schemaSource.removeKeys(keywords.id))
                         .map(SchemaGen.resourceFor(_))
@@ -118,7 +119,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
       (_, _) => fetchResourceFail,
       alwaysFail(expectedError),
       fetchContext,
-      resolverContextResolution
+      resolverContextResolution,
+      clock
     )
 
     assertError(trial.generate(projectRef, resourceSchema, source))(None, expectedError)
@@ -135,7 +137,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
                     (_, _) => IO.pure(resource),
                     alwaysValidate,
                     fetchContext,
-                    resolverContextResolution
+                    resolverContextResolution,
+                    clock
                   )
       result   <- trial.validate(id, projectRef, Some(anotherSchema))
     } yield {
@@ -152,7 +155,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
                     (_, _) => IO.pure(resource),
                     alwaysValidate,
                     fetchContext,
-                    resolverContextResolution
+                    resolverContextResolution,
+                    clock
                   )
       result   <- trial.validate(id, projectRef, None)
     } yield {
@@ -172,7 +176,8 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
                         (_, _) => IO.pure(resource),
                         alwaysFail(expectedError),
                         fetchContext,
-                        resolverContextResolution
+                        resolverContextResolution,
+                        clock
                       )
       result       <- trial.validate(id, projectRef, Some(anotherSchema)).attempt
     } yield {

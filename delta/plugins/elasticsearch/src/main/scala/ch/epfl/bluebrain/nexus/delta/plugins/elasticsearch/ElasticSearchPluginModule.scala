@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
@@ -45,16 +45,15 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
-  make[ElasticSearchFiles].fromEffect { ElasticSearchFiles.mk() }
+  make[ElasticSearchFiles].fromEffect { ElasticSearchFiles.mk(loader) }
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
-      HttpClient()(httpConfig, as.classicSystem, timer, cs)
+    (as: ActorSystem[Nothing]) => HttpClient()(httpConfig, as.classicSystem)
   }
 
   make[ElasticSearchClient].from {
@@ -62,15 +61,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cfg: ElasticSearchViewsConfig,
         client: HttpClient @Id("elasticsearch-client"),
         as: ActorSystem[Nothing],
-        timer: Timer[IO],
-        cs: ContextShift[IO],
         files: ElasticSearchFiles
     ) =>
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength, files.emptyResults)(
         cfg.credentials,
-        as.classicSystem,
-        timer,
-        cs
+        as.classicSystem
       )
   }
 
@@ -105,8 +100,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ElasticSearchViews(
@@ -117,8 +110,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         xas,
         files.defaultMapping,
-        files.defaultSettings
-      )(api, clock, contextShift, timer, uuidF)
+        files.defaultSettings,
+        clock
+      )(api, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -129,9 +123,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate"),
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchCoordinator(
         views,
@@ -140,7 +132,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor,
         client,
         config
-      )(cr, timer, cs)
+      )(cr)
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -150,9 +142,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        files: ElasticSearchFiles,
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        files: ElasticSearchFiles
     ) =>
       EventMetricsProjection(
         metricEncoders,
@@ -164,7 +154,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         files.metricsMapping,
         files.metricsSettings
-      )(timer, cs)
+      )
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -261,7 +251,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
         ordering: JsonKeyOrdering,
@@ -278,7 +267,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        c,
         cr,
         ordering
       )
@@ -397,14 +385,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate"),
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)(
-        cr,
-        timer,
-        cs
+        cr
       )
   }
 

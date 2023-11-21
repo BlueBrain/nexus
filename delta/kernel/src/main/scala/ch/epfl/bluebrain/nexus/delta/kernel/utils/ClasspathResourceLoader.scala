@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.handleBars
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handleBars
 import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject}
@@ -12,9 +12,9 @@ import java.util.Properties
 import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
-trait ClasspathResourceUtils {
+class ClasspathResourceLoader private (classLoader: ClassLoader) {
 
-  final def absolutePath(resourcePath: String)(implicit classLoader: ClassLoader): IO[String] =
+  final def absolutePath(resourcePath: String): IO[String] =
     IO.fromOption(Option(getClass.getResource(resourcePath)) orElse Option(classLoader.getResource(resourcePath)))(
       ResourcePathNotFound(resourcePath)
     ).map(_.getPath)
@@ -28,7 +28,7 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the resource
     *   is not found
     */
-  def ioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): IO[InputStream] =
+  def streamOf(resourcePath: String): IO[InputStream] =
     IO.defer {
       lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
       val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
@@ -45,10 +45,10 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a string or a [[ClasspathResourceError]] when the resource is not
     *   found
     */
-  final def ioContentOf(
+  final def contentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit classLoader: ClassLoader): IO[String] =
+  ): IO[String] =
     resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
       case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
@@ -64,10 +64,8 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the resource
     *   is not found
     */
-  final def ioPropertiesOf(resourcePath: String)(implicit
-      classLoader: ClassLoader
-  ): IO[Map[String, String]] =
-    ioStreamOf(resourcePath).map { is =>
+  final def propertiesOf(resourcePath: String): IO[Map[String, String]] =
+    streamOf(resourcePath).map { is =>
       val props = new Properties()
       props.load(is)
       props.asScala.toMap
@@ -83,12 +81,12 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a json value or an [[ClasspathResourceError]] when the resource is not
     *   found or is not a Json
     */
-  final def ioJsonContentOf(
+  final def jsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  )(implicit classLoader: ClassLoader): IO[Json] =
+  ): IO[Json] =
     for {
-      text <- ioContentOf(resourcePath, attributes: _*)
+      text <- contentOf(resourcePath, attributes: _*)
       json <- IO.fromEither(parse(text).left.map(InvalidJson(resourcePath, text, _)))
     } yield json
 
@@ -102,22 +100,31 @@ trait ClasspathResourceUtils {
     *   the content of the referenced resource as a json value or an [[ClasspathResourceError]] when the resource is not
     *   found or is not a Json
     */
-  final def ioJsonObjectContentOf(resourcePath: String, attributes: (String, Any)*)(implicit
-      classLoader: ClassLoader
-  ): IO[JsonObject] =
+  final def jsonObjectContentOf(resourcePath: String, attributes: (String, Any)*): IO[JsonObject] =
     for {
-      json    <- ioJsonContentOf(resourcePath, attributes: _*)
+      json    <- jsonContentOf(resourcePath, attributes: _*)
       jsonObj <- IO.fromOption(json.asObject)(InvalidJsonObject(resourcePath))
     } yield jsonObj
 
-  private def resourceAsTextFrom(resourcePath: String)(implicit
-      classLoader: ClassLoader
-  ): IO[String] =
-    ioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
+  private def resourceAsTextFrom(resourcePath: String): IO[String] =
+    streamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
 }
 
-object ClassPathResourceUtilsStatic {
+object ClasspathResourceLoader {
   private[utils] val handleBars = new Handlebars().`with`(EscapingStrategy.NOOP)
-}
 
-object ClasspathResourceUtils extends ClasspathResourceUtils
+  /**
+    * Creates a resource loader using the standard ClassLoader
+    */
+  def apply(): ClasspathResourceLoader = new ClasspathResourceLoader(getClass.getClassLoader)
+
+  /**
+    * Creates a resource loader using the ClassLoader of the argument class.
+    *
+    * This is necessary when files on the classpath are located in modules from a plugin. Otherwise, prefer using the
+    * standard ClasspathResourceLoader.
+    */
+  def withContext(`class`: Class[_]): ClasspathResourceLoader = new ClasspathResourceLoader(
+    `class`.getClassLoader
+  )
+}

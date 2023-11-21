@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits.catsSyntaxMonadErrorRethrow
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -19,10 +18,7 @@ final case class EphemeralDefinition[Id, S <: EphemeralState, Command, +R <: Rej
   /**
     * Fetches the current state and attempt to apply an incoming command on it
     */
-  def evaluate(command: Command, maxDuration: FiniteDuration)(implicit
-      contextShift: ContextShift[IO],
-      timer: Timer[IO]
-  ): IO[S] =
+  def evaluate(command: Command, maxDuration: FiniteDuration): IO[S] =
     evaluate(command).attempt
       .timeoutTo(maxDuration, IO.raiseError(EvaluationTimeout(command, maxDuration)))
       .rethrow

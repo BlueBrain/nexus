@@ -31,15 +31,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
+import org.scalatest.CancelAfterFailure
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -47,17 +43,10 @@ import scala.concurrent.duration._
 
 class SearchSpec
     extends TestKit(ActorSystem("SearchSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with CirceLiteral
-    with TestHelpers
+    with CatsEffectSpec
     with CancelAfterFailure
-    with Inspectors
     with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
-    with CatsIOValues
     with Eventually
     with Fixtures
     with ElasticSearchDocker {

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Transactors}
@@ -80,7 +80,7 @@ object Envelope {
       query: Offset => Query0[Envelope[Json]],
       xas: Transactors,
       cfg: QueryConfig
-  )(implicit md: MultiDecoder[A], timer: Timer[IO]): EnvelopeStream[A] =
+  )(implicit md: MultiDecoder[A]): EnvelopeStream[A] =
     streamFA(start, query, xas, cfg, (tpe, json) => IO.pure(md.decodeJson(tpe, json).toOption))
 
   /**
@@ -106,7 +106,7 @@ object Envelope {
       xas: Transactors,
       cfg: QueryConfig,
       decode: (EntityType, Json) => IO[Option[A]]
-  )(implicit timer: Timer[IO]): EnvelopeStream[A] =
+  ): EnvelopeStream[A] =
     StreamingQuery[Envelope[Json]](start, query, _.offset, cfg, xas)
       // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
       .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))

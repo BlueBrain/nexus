@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
-import cats.effect.{ContextShift, IO}
-import cats.implicits._
+import cats.effect.IO
+
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import cats.implicits._
 
 /**
   * Automatic project provisioning for users.
@@ -65,7 +66,7 @@ object ProjectProvisioning {
       appendAcls: Acl => IO[Unit],
       projects: Projects,
       provisioningConfig: AutomaticProvisioningConfig
-  )(implicit contextShift: ContextShift[IO]): ProjectProvisioning = new ProjectProvisioning {
+  ): ProjectProvisioning = new ProjectProvisioning {
 
     private def provisionOnNotFound(
         projectRef: ProjectRef,
@@ -84,7 +85,7 @@ object ProjectProvisioning {
                .create(
                  projectRef,
                  provisioningConfig.fields
-               )(user, contextShift)
+               )(user)
                .void
                .recoverWith { case _: ProjectAlreadyExists => IO.unit }
                .adaptError { case r: ProjectRejection => UnableToCreateProject(r) }
@@ -122,7 +123,7 @@ object ProjectProvisioning {
       projects: Projects,
       provisioningConfig: AutomaticProvisioningConfig,
       serviceAccount: ServiceAccount
-  )(implicit contextShift: ContextShift[IO]): ProjectProvisioning = {
+  ): ProjectProvisioning = {
     implicit val serviceAccountSubject: Subject = serviceAccount.subject
     apply(acls.append(_, 0).void, projects, provisioningConfig)
   }

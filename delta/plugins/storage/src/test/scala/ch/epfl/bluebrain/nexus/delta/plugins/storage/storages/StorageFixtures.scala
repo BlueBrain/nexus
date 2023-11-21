@@ -11,13 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
 import software.amazon.awssdk.regions.Region
 
 import java.nio.file.{Files, Paths}
 
 @SuppressWarnings(Array("OptionGet"))
-trait StorageFixtures extends TestHelpers with CirceLiteral {
+trait StorageFixtures extends CirceLiteral {
+
+  self: ClasspathResources =>
 
   val dId  = nxv + "disk-storage"
   val s3Id = nxv + "s3-storage"
@@ -59,5 +62,3 @@ trait StorageFixtures extends TestHelpers with CirceLiteral {
   val s3FieldsJson     = s3Json.removeKeys("@id", "@context", "_algorithm")
   val remoteFieldsJson = remoteJson.removeKeys("@id", "@context", "_algorithm")
 }
-
-object StorageFixtures extends StorageFixtures

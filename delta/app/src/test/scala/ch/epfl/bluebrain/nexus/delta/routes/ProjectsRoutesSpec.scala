@@ -95,7 +95,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     case _     => IO.none
   }
 
-  private lazy val projects     = ProjectsImpl(fetchOrg, _ => IO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)
+  private lazy val projects     =
+    ProjectsImpl(fetchOrg, _ => IO.unit, Set.empty, defaultApiMappings, projectsConfig, xas, clock)
   private lazy val provisioning =
     ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
   private lazy val routes       = Route.seal(

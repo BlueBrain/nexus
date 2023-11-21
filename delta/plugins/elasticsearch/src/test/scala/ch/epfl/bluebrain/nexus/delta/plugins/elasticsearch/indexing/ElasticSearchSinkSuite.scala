@@ -44,7 +44,7 @@ class ElasticSearchSinkSuite extends CatsEffectSuite with ElasticSearchClientSet
   val rev = 1
 
   private def asChunk(values: Iterable[(Iri, Json)]) =
-    Chunk.iterable(values).zipWithIndex.map { case ((id, json), index) =>
+    Chunk.from(values).zipWithIndex.map { case ((id, json), index) =>
       SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(index.toLong + 1), json, rev)
     }
 

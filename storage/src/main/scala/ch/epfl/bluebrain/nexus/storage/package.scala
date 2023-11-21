@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus
 
-import java.nio.file.{Path => JavaPath, Paths}
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
-import cats.effect.{IO, LiftIO}
 import ch.epfl.bluebrain.nexus.storage.File.FileAttributes
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.storage.config.Contexts.errorCtxIri
@@ -14,8 +12,8 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 import java.net.URLDecoder
+import java.nio.file.{Path => JavaPath, Paths}
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 package object storage {
@@ -42,13 +40,6 @@ package object storage {
 
   implicit val encUriPath: Encoder[Path] = Encoder.encodeString.contramap(_.toString())
   implicit val decUriPath: Decoder[Path] = Decoder.decodeString.emapTry(s => Try(Path(s)))
-
-  implicit class FutureSyntax[A](private val future: Future[A]) extends AnyVal {
-    def to[F[_]](implicit F: LiftIO[F], ec: ExecutionContext): F[A] = {
-      implicit val contextShift = IO.contextShift(ec)
-      F.liftIO(IO.fromFuture(IO(future)))
-    }
-  }
 
   implicit class PathSyntax(private val path: JavaPath) extends AnyVal {
 

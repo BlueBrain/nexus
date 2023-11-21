@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
@@ -53,7 +53,7 @@ object EventMetricsProjection {
       indexPrefix: String,
       metricMappings: MetricsMapping,
       metricsSettings: MetricsSettings
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
+  ): IO[EventMetricsProjection] = {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
     implicit val multiDecoder: MultiDecoder[ProjectScopedMetric] =
@@ -80,7 +80,7 @@ object EventMetricsProjection {
       supervisor: Supervisor,
       metrics: Offset => EnvelopeStream[ProjectScopedMetric],
       init: IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[EventMetricsProjection] = {
+  ): IO[EventMetricsProjection] = {
 
     val source = Source { (offset: Offset) =>
       metrics(offset).map { e => e.toElem { m => Some(m.project) } }

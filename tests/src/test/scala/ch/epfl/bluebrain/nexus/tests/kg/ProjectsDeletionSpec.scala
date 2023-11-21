@@ -36,8 +36,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
         _ <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
         // First org and projects
         _ <- adminDsl.createOrganization(org, org, Bojack)
-        _ <- adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
-        _ <- adminDsl.createProject(org, proj2, kgDsl.projectJson(name = proj2), Bojack)
+        _ <- adminDsl.createProjectWithName(org, proj1, name = proj1, Bojack)
+        _ <- adminDsl.createProjectWithName(org, proj2, name = proj2, Bojack)
         _ <- aclDsl.addPermission(s"/$ref1", PrincessCarolyn, Resources.Read)
       } yield succeed
     }
@@ -94,8 +94,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     }
 
     "add additional resources" in {
-      val resourcePayload        = SimpleResource.sourcePayload(5)
-      val schemaPayload          = SchemaPayload.loadSimple()
+      val resourcePayload        = SimpleResource.sourcePayload(5).accepted
+      val schemaPayload          = SchemaPayload.loadSimple().accepted
       val resolverPayload        =
         jsonContentOf(
           "/kg/resources/cross-project-resolver.json",
@@ -275,7 +275,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     }
 
     "succeed in creating the project again" in {
-      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+      adminDsl.createProjectWithName(org, proj1, name = proj1, Bojack)
     }
   }
 

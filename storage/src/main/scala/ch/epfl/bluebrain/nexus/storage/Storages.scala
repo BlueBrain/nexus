@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
-import cats.effect.Effect
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
@@ -22,7 +22,7 @@ import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
 
-trait Storages[F[_], Source] {
+trait Storages[Source] {
 
   /**
     * Checks that the provided bucket name exists and it is readable/writable.
@@ -52,13 +52,13 @@ trait Storages[F[_], Source] {
     * @param source
     *   the file content
     * @return
-    *   The file attributes containing the metadata (bytes and location) wrapped in an F effect type
+    *   The file attributes containing the metadata (bytes and location)
     */
   def createFile(
       name: String,
       path: Uri.Path,
       source: Source
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes]
 
   /**
     * Copies a file between locations inside the nexus folder. Attributes are neither recomputed nor fetched; this
@@ -75,7 +75,7 @@ trait Storages[F[_], Source] {
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOr[Unit]]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]]
 
   /**
     * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
@@ -87,14 +87,13 @@ trait Storages[F[_], Source] {
     * @param destPath
     *   the destination path location inside the nexus folder
     * @return
-    *   Left(rejection) or Right(fileAttributes). The file attributes contain the metadata (bytes and location) wrapped
-    *   in an F effect type
+    *   Left(rejection) or Right(fileAttributes). The file attributes contain the metadata (bytes and location)
     */
   def moveFile(
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOrAttributes]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOrAttributes]
 
   /**
     * Retrieves the file as a Source.
@@ -123,7 +122,7 @@ trait Storages[F[_], Source] {
   def getAttributes(
       name: String,
       path: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes]
+  )(implicit bucketEv: BucketExists, pathEv: PathExists): IO[FileAttributes]
 
 }
 
@@ -149,17 +148,16 @@ object Storages {
   /**
     * An Disk implementation of Storage interface.
     */
-  final class DiskStorage[F[_]](
+  final class DiskStorage(
       config: StorageConfig,
       contentTypeDetector: ContentTypeDetector,
       digestConfig: DigestConfig,
-      cache: AttributesCache[F],
-      validateFile: ValidateFile[F]
+      cache: AttributesCache,
+      validateFile: ValidateFile
   )(implicit
       ec: ExecutionContext,
-      mt: Materializer,
-      F: Effect[F]
-  ) extends Storages[F, AkkaSource] {
+      mt: Materializer
+  ) extends Storages[AkkaSource] {
 
     def exists(name: String): BucketExistence = {
       val path = basePath(config, name)
@@ -179,11 +177,11 @@ object Storages {
         name: String,
         path: Uri.Path,
         source: AkkaSource
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] =
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] =
       for {
         validated  <- validateFile.forCreate(name, path)
-        _          <- F.delay(Files.createDirectories(validated.absDestPath.getParent))
-        msgDigest  <- F.delay(MessageDigest.getInstance(digestConfig.algorithm))
+        _          <- IO.delay(Files.createDirectories(validated.absDestPath.getParent))
+        msgDigest  <- IO.delay(MessageDigest.getInstance(digestConfig.algorithm))
         attributes <- streamFileContents(source, path, validated.absDestPath, msgDigest)
       } yield attributes
 
@@ -192,28 +190,32 @@ object Storages {
         path: Uri.Path,
         absFilePath: Path,
         msgDigest: MessageDigest
-    ): F[FileAttributes] =
-      source
-        .alsoToMat(sinkDigest(msgDigest))(Keep.right)
-        .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
-          digFuture.zipWith(ioFuture) {
-            case (digest, io) if absFilePath.toFile.exists() =>
-              Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
-            case _                                           =>
-              Future.failed(InternalError(s"I/O error writing file to path '$path'"))
-          }
+    ): IO[FileAttributes] = {
+      IO.fromFuture {
+        IO.delay {
+          source
+            .alsoToMat(sinkDigest(msgDigest))(Keep.right)
+            .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
+              digFuture.zipWith(ioFuture) {
+                case (digest, io) if absFilePath.toFile.exists() =>
+                  Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
+                case _                                           =>
+                  Future.failed(InternalError(s"I/O error writing file to path '$path'"))
+              }
+            }
+            .run()
+            .flatten
         }
-        .run()
-        .flatten
-        .to[F]
+      }
+    }
 
     def moveFile(
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOrAttributes] =
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOrAttributes] =
       validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath).flatMap {
-        case Left(value)  => value.asLeft[FileAttributes].pure[F]
+        case Left(value)  => value.asLeft[FileAttributes].pure[IO]
         case Right(value) =>
           fixPermissionsAndCopy(value.absSourcePath, value.absDestPath, isDir = value.isDir)
       }
@@ -222,50 +224,50 @@ object Storages {
       fixPermissions(absSourcePath) >>
         computeSizeAndMoveFile(absSourcePath, absDestPath, isDir)
 
-    private def fixPermissions(path: Path): F[Unit] =
+    private def fixPermissions(path: Path): IO[Unit] =
       if (config.fixerEnabled)
         for {
-          absPath  <- F.delay(path.toAbsolutePath.normalize.toString)
+          absPath  <- IO.delay(path.toAbsolutePath.normalize.toString)
           logger    = StringProcessLogger(config.fixerCommand, absPath)
           process   = Process(config.fixerCommand :+ absPath)
-          exitCode <- F.delay(process ! logger)
-          _        <- F.raiseUnless(exitCode == 0)(PermissionsFixingFailed(absPath, logger.toString))
+          exitCode <- IO.delay(process ! logger)
+          _        <- IO.raiseUnless(exitCode == 0)(PermissionsFixingFailed(absPath, logger.toString))
         } yield ()
-      else F.unit
+      else IO.unit
 
     private def computeSizeAndMoveFile(
         absSourcePath: Path,
         absDestPath: Path,
         isDir: Boolean
-    ): F[RejOrAttributes] =
+    ): IO[RejOrAttributes] =
       for {
         computedSize <- size(absSourcePath)
-        _            <- F.delay(Files.createDirectories(absDestPath.getParent))
-        _            <- F.delay(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
-        _            <- F.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
-        mediaType    <- F.delay(contentTypeDetector(absDestPath, isDir))
+        _            <- IO.delay(Files.createDirectories(absDestPath.getParent))
+        _            <- IO.delay(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
+        _            <- IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
+        mediaType    <- IO.delay(contentTypeDetector(absDestPath, isDir))
       } yield Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType))
 
-    private def size(absPath: Path): F[Long] =
-      if (Files.isDirectory(absPath))
-        Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_)).to[F]
-      else if (Files.isRegularFile(absPath))
-        F.delay(Files.size(absPath))
+    private def size(absPath: Path): IO[Long] =
+      if (Files.isDirectory(absPath)) {
+        IO.fromFuture(IO.delay(Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_))))
+      } else if (Files.isRegularFile(absPath))
+        IO.delay(Files.size(absPath))
       else
-        F.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
+        IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
 
     def copyFile(
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[RejOr[Unit]] =
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] =
       validateFile.forCopyWithinProtectedDir(name, sourcePath, destPath).flatMap {
-        case Left(v)  => v.asLeft[Unit].pure[F]
+        case Left(v)  => v.asLeft[Unit].pure[IO]
         case Right(v) =>
           for {
-            _ <- F.delay(Files.createDirectories(v.absDestPath.getParent))
-            _ <- F.delay(Files.copy(v.absSourcePath, v.absDestPath, COPY_ATTRIBUTES))
-            _ <- F.delay(cache.asyncComputePut(v.absDestPath, digestConfig.algorithm))
+            _ <- IO.delay(Files.createDirectories(v.absDestPath.getParent))
+            _ <- IO.delay(Files.copy(v.absSourcePath, v.absDestPath, COPY_ATTRIBUTES))
+            _ <- IO.delay(cache.asyncComputePut(v.absDestPath, digestConfig.algorithm))
           } yield Right(())
       }
 
@@ -282,7 +284,7 @@ object Storages {
     def getAttributes(
         name: String,
         path: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes] =
+    )(implicit bucketEv: BucketExists, pathEv: PathExists): IO[FileAttributes] =
       cache.get(filePath(config, name, path))
 
   }

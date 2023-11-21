@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -8,8 +9,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ClasspathResourceUtils with ScalaFutures {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
+  private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   private def accept[A](io: IO[A]): A =
     io.attempt.unsafeRunSync() match {
@@ -24,10 +25,10 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
   "A ClasspathResourceUtils" should {
-    val resourceIO = ioContentOf("resource.txt", "value" -> "v")
+    val resourceIO = loader.contentOf("resource.txt", "value" -> "v")
 
     "return the path" in {
-      accept(absolutePath("resource.txt")) should endWith("resource.txt")
+      accept(loader.absolutePath("resource.txt")) should endWith("resource.txt")
     }
 
     "return a text" in {
@@ -39,25 +40,25 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
     "return a json" in {
-      accept(ioJsonContentOf("resource.json", "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
+      accept(loader.jsonContentOf("resource.json", "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
     }
 
     "return a json object" in {
-      accept(ioJsonObjectContentOf("resource.json", "value" -> "v")) shouldEqual JsonObject("k" -> "v".asJson)
+      accept(loader.jsonObjectContentOf("resource.json", "value" -> "v")) shouldEqual JsonObject("k" -> "v".asJson)
     }
 
     "fail when resource is not a json" in {
-      reject(ioJsonContentOf("resource.txt")) shouldBe a[InvalidJson]
+      reject(loader.jsonContentOf("resource.txt")) shouldBe a[InvalidJson]
     }
 
     "fail when resource is not a json object" in {
-      reject(ioJsonObjectContentOf("resource-json-array.json")) shouldEqual InvalidJsonObject(
+      reject(loader.jsonObjectContentOf("resource-json-array.json")) shouldEqual InvalidJsonObject(
         "resource-json-array.json"
       )
     }
 
     "fail when resource does not exists" in {
-      reject(ioContentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound(
+      reject(loader.contentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound(
         "resource2.txt"
       )
     }

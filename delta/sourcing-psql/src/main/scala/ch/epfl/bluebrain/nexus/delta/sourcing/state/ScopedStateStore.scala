@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -188,7 +188,7 @@ object ScopedStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+  ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
     import IriInstances._
     implicit val putId: Put[Id]      = serializer.putId

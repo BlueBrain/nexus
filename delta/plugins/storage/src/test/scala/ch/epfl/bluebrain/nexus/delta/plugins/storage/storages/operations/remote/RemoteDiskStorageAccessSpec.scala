@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
@@ -24,7 +23,6 @@ import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
     with CatsEffectSpec
-    with TestHelpers
     with Eventually
     with StorageFixtures
     with BeforeAndAfterAll

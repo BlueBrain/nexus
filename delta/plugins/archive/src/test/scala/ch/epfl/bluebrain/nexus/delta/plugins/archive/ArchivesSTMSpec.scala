@@ -41,7 +41,7 @@ class ArchivesSTMSpec extends CatsEffectSpec {
           createdAt = Instant.EPOCH,
           createdBy = bob
         )
-        Archives.evaluate(command).accepted shouldEqual event
+        Archives.evaluate(clock)(command).accepted shouldEqual event
       }
     }
   }

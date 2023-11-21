@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalNameFormatError
 import io.circe.{Decoder, Encoder}
 
 import scala.util.matching.Regex
+import cats.implicits._
 
 /**
   * A valid name value that can be used to describe resources, like for example the display name of a realm.

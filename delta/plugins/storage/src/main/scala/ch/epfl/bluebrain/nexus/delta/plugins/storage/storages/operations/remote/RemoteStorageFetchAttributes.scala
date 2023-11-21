@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.implicits.catsSyntaxMonadError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchAttributeRejection.WrappedFetchRejection

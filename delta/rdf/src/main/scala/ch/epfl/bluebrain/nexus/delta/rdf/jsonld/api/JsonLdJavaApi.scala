@@ -1,5 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
@@ -20,14 +20,13 @@ import org.apache.jena.riot.system.ErrorHandlerFactory
 import org.apache.jena.riot._
 import org.apache.jena.sparql.core.DatasetGraph
 
-import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
   * Json-LD high level API implementation by Json-LD Java library
   */
-final class JsonLdJavaApi(config: JsonLdApiConfig)(implicit contextShift: ContextShift[IO]) extends JsonLdApi {
+final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
@@ -176,7 +175,7 @@ object JsonLdJavaApi {
   /**
     * Creates an API with a config with strict values
     */
-  def strict(implicit contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)): JsonLdApi =
+  def strict: JsonLdApi =
     new JsonLdJavaApi(
       JsonLdApiConfig(strict = true, extraChecks = true, errorHandling = ErrorHandling.Strict)
     )
@@ -184,7 +183,7 @@ object JsonLdJavaApi {
   /**
     * Creates an API with a config with lenient values
     */
-  def lenient(implicit contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)): JsonLdApi =
+  def lenient: JsonLdApi =
     new JsonLdJavaApi(
       JsonLdApiConfig(strict = false, extraChecks = false, errorHandling = ErrorHandling.NoWarning)
     )

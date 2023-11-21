@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectContext, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectContext, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 
 import scala.reflect.ClassTag

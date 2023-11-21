@@ -39,7 +39,8 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
     ),
-    xas
+    xas,
+    clock
   )
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))

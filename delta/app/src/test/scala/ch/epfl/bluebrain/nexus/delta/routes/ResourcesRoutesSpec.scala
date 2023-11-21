@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, Ra
 import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.implicits.catsSyntaxOptionId
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
@@ -109,7 +109,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       fetchContext,
       resolverContextResolution,
       ResourcesConfig(eventLogConfig, decodingOption),
-      xas
+      xas,
+      clock
     )
     (
       Route.seal(

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalyticsCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Noop
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsResult, GraphAnalyticsStream}

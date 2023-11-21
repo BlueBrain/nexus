@@ -52,7 +52,7 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
         updatedBy
       )
 
-    val eval = evaluate(validView)(_, _)
+    val eval = evaluate(validView, clock)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
@@ -64,7 +64,7 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
         eval(Some(current()), cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(invalidView)(None, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(invalidView, clock)(None, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
     }
 
@@ -81,7 +81,7 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
         eval(None, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(invalidView)(Some(current()), cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(invalidView, clock)(Some(current()), cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise a ViewIsDeprecated rejection" in {
         eval(Some(current(deprecated = true)), cmd).rejectedWith[ViewIsDeprecated]

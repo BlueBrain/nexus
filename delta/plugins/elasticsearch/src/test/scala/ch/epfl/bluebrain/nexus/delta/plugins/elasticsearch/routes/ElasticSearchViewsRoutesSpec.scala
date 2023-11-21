@@ -77,7 +77,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "prefix",
     xas,
     defaultMapping,
-    defaultSettings
+    defaultSettings,
+    clock
   ).accepted
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)

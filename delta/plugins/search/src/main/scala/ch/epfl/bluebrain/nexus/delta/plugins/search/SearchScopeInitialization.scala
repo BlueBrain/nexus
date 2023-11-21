@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import cats.effect.IO
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1}
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
@@ -137,11 +138,12 @@ object DeltaSchemeDirectives extends QueryParamsUnmarshalling {
 
   def empty: DeltaSchemeDirectives = onlyResolveOrgUuid(_ => IO.none)
 
-  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]]) = new DeltaSchemeDirectives(
-    (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
-    fetchOrgByUuid,
-    _ => IO.none
-  )
+  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]]) =
+    new DeltaSchemeDirectives(
+      (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
+      fetchOrgByUuid,
+      _ => IO.none
+    )
 
   def onlyResolveProjUuid(fetchProjByUuid: UUID => IO[Option[ProjectRef]]) =
     new DeltaSchemeDirectives(

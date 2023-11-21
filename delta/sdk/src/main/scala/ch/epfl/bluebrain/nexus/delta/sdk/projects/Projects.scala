@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, ContextShift, IO}
-import cats.implicits.{catsSyntaxFlatMapOps, catsSyntaxMonadError}
+import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
@@ -37,7 +37,7 @@ trait Projects {
   def create(
       ref: ProjectRef,
       fields: ProjectFields
-  )(implicit caller: Subject, contextShift: ContextShift[IO]): IO[ProjectResource]
+  )(implicit caller: Subject): IO[ProjectResource]
 
   /**
     * Update an existing project.
@@ -177,23 +177,23 @@ object Projects {
 
   private[delta] def evaluate(
       orgs: Organizations,
-      validateDeletion: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion,
+      clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
     val f: FetchOrganization = label =>
       orgs
         .fetchActiveOrganization(label)
         .adaptError { case o: OrganizationRejection => WrappedOrganizationRejection(o) }
-    evaluate(f, validateDeletion)(state, command)
+    evaluate(f, validateDeletion, clock)(state, command)
   }
 
   private[sdk] def evaluate(
       fetchAndValidateOrg: FetchOrganization,
-      validateDeletion: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion,
+      clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
 
@@ -202,7 +202,7 @@ object Projects {
         for {
           org  <- fetchAndValidateOrg(c.ref.organization)
           uuid <- uuidF()
-          now  <- IOInstant.now
+          now  <- clock.realTimeInstant
         } yield ProjectCreated(
           c.ref.project,
           uuid,
@@ -232,7 +232,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-              IOInstant.now.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
+              clock.realTimeInstant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
 
@@ -249,7 +249,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-              IOInstant.now.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
+              clock.realTimeInstant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
 
@@ -264,7 +264,7 @@ object Projects {
         case Some(s)                        =>
           // format: off
           validateDeletion(c.ref) >>
-            IOInstant.now.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
+            clock.realTimeInstant.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
         // format: on
       }
 
@@ -279,13 +279,12 @@ object Projects {
   /**
     * Entity definition for [[Projects]]
     */
-  def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion)(implicit
-      clock: Clock[IO],
-      uuidF: UUIDF
+  def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
+      implicit uuidF: UUIDF
   ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion)(_, _), next),
+      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion, clock)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
       onUniqueViolation = (id: ProjectRef, c: ProjectCommand) =>

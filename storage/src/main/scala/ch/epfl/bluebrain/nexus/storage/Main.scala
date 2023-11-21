@@ -1,29 +1,29 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import java.nio.file.Paths
-import java.time.Clock
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import cats.effect.{Effect, IO}
+import cats.effect.{ExitCode, IO, IOApp}
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
-import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
+import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
 
+import java.nio.file.Paths
+import java.time.Clock
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 //noinspection TypeAnnotation
 // $COVERAGE-OFF$
-object Main {
+object Main extends IOApp {
 
   def loadConfig(): Config = {
     val cfg = sys.env.get("STORAGE_CONFIG_FILE") orElse sys.props.get("storage.config.file") map { str =>
@@ -46,7 +46,7 @@ object Main {
   }
 
   @SuppressWarnings(Array("UnusedMethodParameter"))
-  def main(args: Array[String]): Unit = {
+  override def run(args: List[String]): IO[ExitCode] = {
     val config = loadConfig()
     setupMonitoring(config)
 
@@ -54,16 +54,15 @@ object Main {
 
     implicit val as: ActorSystem                          = ActorSystem(appConfig.description.fullName, config)
     implicit val ec: ExecutionContext                     = as.dispatcher
-    implicit val eff: Effect[IO]                          = IO.ioEffect
     implicit val authorizationMethod: AuthorizationMethod = appConfig.authorization
     implicit val timeout                                  = Timeout(1.minute)
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
-    val attributesCache: AttributesCache[IO] = AttributesCache[IO, AkkaSource]
-    val validateFile: ValidateFile[IO]       = ValidateFile.mk[IO](appConfig.storage)
+    val attributesCache: AttributesCache = AttributesCache[AkkaSource]
+    val validateFile: ValidateFile       = ValidateFile.mk(appConfig.storage)
 
-    val storages: Storages[IO, AkkaSource] =
+    val storages: Storages[AkkaSource] =
       new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, attributesCache, validateFile)
 
     val logger: LoggingAdapter = Logging(as, getClass)
@@ -94,6 +93,8 @@ object Main {
     val _ = sys.addShutdownHook {
       Await.result(as.terminate().map(_ => ()), 10.seconds)
     }
+
+    IO.never.as(ExitCode.Success)
   }
 }
 // $COVERAGE-ON$

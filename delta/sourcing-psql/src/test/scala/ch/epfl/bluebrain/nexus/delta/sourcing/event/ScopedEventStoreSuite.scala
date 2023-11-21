@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -20,7 +19,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventStoreSuite extends CatsEffectSuite with CatsRunContext with Doobie.Fixture with Doobie.Assertions {
+class ScopedEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

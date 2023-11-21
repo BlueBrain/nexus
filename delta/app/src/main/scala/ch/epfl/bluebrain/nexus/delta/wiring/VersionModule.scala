@@ -31,7 +31,11 @@ object VersionModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      VersionRoutes(identities, aclCheck, plugins, dependencies.toList, cfg.description)(cfg.http.baseUri, cr, ordering)
+      VersionRoutes(identities, aclCheck, plugins, dependencies.toList, cfg.description)(
+        cfg.http.baseUri,
+        cr,
+        ordering
+      )
   }
 
   many[PriorityRoute].add { (route: VersionRoutes) =>

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
@@ -26,7 +25,7 @@ import io.circe.syntax._
 
 import java.time.Instant
 
-class ResolverContextResolutionSuite extends CatsEffectSuite with TestHelpers {
+class ResolverContextResolutionSuite extends CatsEffectSuite {
 
   private val metadataContext = jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty
 

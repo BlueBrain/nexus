@@ -52,7 +52,8 @@ class BlazegraphScopeInitializationSpec
     _ => IO.unit,
     eventLogConfig,
     prefix,
-    xas
+    xas,
+    clock
   ).accepted
 
   private val defaultViewName        = "defaultName"

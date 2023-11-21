@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
@@ -7,6 +8,7 @@ import doobie._
 import doobie.implicits._
 
 import scala.annotation.nowarn
+import cats.implicits._
 
 object EntityCheck {
 
@@ -34,14 +36,14 @@ object EntityCheck {
     */
   def raiseMissingOrDeprecated[Id, E <: Throwable](
       tpe: EntityType,
-      refs: Set[(ProjectRef, Id)],
+      refs: NonEmptySet[(ProjectRef, Id)],
       onUnknownOrDeprecated: Set[(ProjectRef, Id)] => E,
       xas: Transactors
   )(implicit @nowarn("cat=unused") getId: Get[Id], putId: Put[Id]): IO[Unit] = {
-    val fragments: Seq[Fragment] = refs.map { case (p, id) =>
+    val fragments    = refs.toNonEmptyList.map { case (p, id) =>
       fr"org = ${p.organization} AND project = ${p.project}  AND id = $id AND tag = ${Latest.value} AND deprecated = false"
-    }.toSeq
-    val or: Fragment             = Fragments.or(fragments: _*)
+    }
+    val or: Fragment = Fragments.or(fragments)
 
     sql"""SELECT org, project, id FROM public.scoped_states WHERE type = $tpe and $or"""
       .query[(Label, Label, Id)]
@@ -52,7 +54,7 @@ object EntityCheck {
       .transact(xas.read)
       .flatMap { result =>
         IO.raiseWhen(result.size < refs.size) {
-          onUnknownOrDeprecated(refs.diff(result))
+          onUnknownOrDeprecated(refs.toList.toSet.diff(result))
         }
       }
   }

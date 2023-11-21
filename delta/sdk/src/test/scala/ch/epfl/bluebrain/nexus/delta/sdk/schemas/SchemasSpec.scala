@@ -44,7 +44,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
     val schemaUpdated = SchemaGen.schema(myId, project.value.ref, sourceUpdated)
 
     val eval: (Option[SchemaState], SchemaCommand) => IO[SchemaEvent] =
-      evaluate(ValidateSchema.apply)
+      evaluate(ValidateSchema.apply, clock)
 
     "evaluating an incoming command" should {
 

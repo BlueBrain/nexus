@@ -24,17 +24,17 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
   private val fullId  = s"$orgId/$projId"
   private val fullId2 = s"$orgId/$projId2"
 
-  private val schemaPayload = SchemaPayload.loadSimple()
+  private val schemaPayload = SchemaPayload.loadSimple().accepted
 
   private val resource1Id = "https://dev.nexus.test.com/simplified-resource/1"
-  private val payload1    = SimpleResource.sourcePayload(resource1Id, 5)
+  private val payload1    = SimpleResource.sourcePayload(resource1Id, 5).accepted
 
   private val resource2Id = "https://dev.nexus.test.com/simplified-resource/2"
-  private val payload2    = SimpleResource.sourcePayload(resource2Id, 6)
+  private val payload2    = SimpleResource.sourcePayload(resource2Id, 6).accepted
 
-  private val payloadResponse1 = SimpleResource.fetchResponse(Tweety, fullId, resource1Id, 1, 5)
+  private val payloadResponse1 = SimpleResource.fetchResponse(Tweety, fullId, resource1Id, 1, 5).accepted
 
-  private val payloadResponse2 = SimpleResource.fetchResponse(Tweety, fullId2, resource2Id, 1, 6)
+  private val payloadResponse2 = SimpleResource.fetchResponse(Tweety, fullId2, resource2Id, 1, 6).accepted
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
@@ -48,10 +48,12 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
     "create projects, resources and add necessary acls" in {
       for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
-        _ <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
-        _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = fullId), Tweety)
-        _ <- adminDsl.createProject(orgId, projId2, kgDsl.projectJson(name = fullId2), Tweety)
+        _           <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
+        _           <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
+        fullIdJson  <- kgDsl.projectJson(name = fullId)
+        _           <- adminDsl.createProject(orgId, projId, fullIdJson, Tweety)
+        fullId2Json <- kgDsl.projectJson(name = fullId2)
+        _           <- adminDsl.createProject(orgId, projId2, fullId2Json, Tweety)
       } yield succeed
     }
 

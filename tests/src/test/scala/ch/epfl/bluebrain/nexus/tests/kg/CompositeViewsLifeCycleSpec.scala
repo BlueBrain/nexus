@@ -23,8 +23,8 @@ final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
       _ <- aclDsl.cleanAcls(Jerry)
       _ <- aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read))
       _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-      _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = projId), Jerry)
-      _ <- adminDsl.createProject(orgId, proj2Id, kgDsl.projectJson(name = proj2Id), Jerry)
+      _ <- adminDsl.createProjectWithName(orgId, projId, name = projId, Jerry)
+      _ <- adminDsl.createProjectWithName(orgId, proj2Id, name = proj2Id, Jerry)
     } yield ()
     setup.accepted
   }

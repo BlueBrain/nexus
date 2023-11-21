@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import cats.effect.{ContextShift, IO}
-import cats.syntax.all._
+import cats.effect.IO
+import cats.implicits._
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
@@ -29,10 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import fs2.Stream
 import io.circe.{Json, Printer}
 
 import java.nio.ByteBuffer
@@ -91,8 +90,7 @@ object ArchiveDownload {
   )(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
-      rcr: RemoteContextResolution,
-      contextShift: ContextShift[IO]
+      rcr: RemoteContextResolution
   ): ArchiveDownload =
     new ArchiveDownload {
 
@@ -106,11 +104,11 @@ object ArchiveDownload {
           ignoreNotFound: Boolean
       )(implicit caller: Caller): IO[AkkaSource] = {
         for {
-          references    <- value.resources.toList.traverse(toFullReference)
-          _             <- checkResourcePermissions(references, project)
-          contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound)
+          references  <- value.resources.toList.traverse(toFullReference)
+          _           <- checkResourcePermissions(references, project)
+          contentList <- resolveReferences(references, project, ignoreNotFound)
         } yield {
-          Source.fromGraph(StreamConverter(contentStream)).via(Zip.writeFlow)
+          Source(contentList).via(Zip.writeFlow)
         }
       }
 
@@ -129,28 +127,28 @@ object ArchiveDownload {
         }
       }
 
-      private def resolveReferencesAsStream(
+      private def resolveReferences(
           references: List[FullArchiveReference],
           project: ProjectRef,
           ignoreNotFound: Boolean
-      )(implicit caller: Caller): IO[Stream[IO, (ArchiveMetadata, AkkaSource)]] = {
+      )(implicit caller: Caller) = {
         references
           .traverseFilter {
             case ref: FileReference     => fileEntry(ref, project, ignoreNotFound)
             case ref: ResourceReference => resourceEntry(ref, project, ignoreNotFound)
           }
           .map(sortWith)
-          .map(asStream)
+          .map(asSourceList)
       }
 
       private def sortWith(list: List[(ArchiveMetadata, IO[AkkaSource])]): List[(ArchiveMetadata, IO[AkkaSource])] =
         list.sortBy { case (entry, _) => entry }(Zip.ordering)
 
-      private def asStream(
+      private def asSourceList(
           list: List[(ArchiveMetadata, IO[AkkaSource])]
-      ): Stream[IO, (ArchiveMetadata, AkkaSource)]                                                                 =
-        Stream.iterable(list).evalMap { case (metadata, source) =>
-          source.map(metadata -> _)
+      )                                                                                                            =
+        list.map { case (metadata, source) =>
+          metadata -> Source.lazyFutureSource(() => source.unsafeToFuture())
         }
 
       private def checkResourcePermissions(
@@ -218,7 +216,7 @@ object ArchiveDownload {
           val metadata = Zip.metadata(path)
           Option((metadata, IO.pure(Source.single(content))))
         }
-        if (ignoreNotFound) archiveEntry.recover { _: ResourceNotFound => None }
+        if (ignoreNotFound) archiveEntry.recover { case _: ResourceNotFound => None }
         else archiveEntry
       }
 
@@ -271,8 +269,7 @@ object ArchiveDownload {
   def apply(aclCheck: AclCheck, shifts: ResourceShifts, files: Files, fileSelf: FileSelf)(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
-      rcr: RemoteContextResolution,
-      contextShift: ContextShift[IO]
+      rcr: RemoteContextResolution
   ): ArchiveDownload =
     ArchiveDownload(
       aclCheck,

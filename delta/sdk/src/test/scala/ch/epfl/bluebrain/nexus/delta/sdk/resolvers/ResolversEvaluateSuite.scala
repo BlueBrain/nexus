@@ -20,7 +20,7 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
 
   private val validatePriority: ValidatePriority = (_, _, _) => IO.unit
 
-  private def eval = evaluate(validatePriority)(_, _)
+  private def eval = evaluate(validatePriority, clock)(_, _)
 
   private val createInProject = CreateResolver(
     ipId,
@@ -39,7 +39,7 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   test("Creation fails if the priority already exists") {
     val validatePriority: ValidatePriority =
       (ref, _, priority) => IO.raiseError(PriorityAlreadyExists(ref, nxv + "same-prio", priority))
-    evaluate(validatePriority)(None, createInProject).intercept[PriorityAlreadyExists]
+    evaluate(validatePriority, clock)(None, createInProject).intercept[PriorityAlreadyExists]
   }
 
   test("Creation succeeds for a in-project resolver") {
@@ -151,7 +151,7 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   test("Update fails  if the priority already exists") {
     val validatePriority: ValidatePriority =
       (ref, _, priority) => IO.raiseError(PriorityAlreadyExists(ref, nxv + "same-priority", priority))
-    evaluate(validatePriority)(Some(inProjectCurrent), updateInProject).intercept[PriorityAlreadyExists]
+    evaluate(validatePriority, clock)(Some(inProjectCurrent), updateInProject).intercept[PriorityAlreadyExists]
   }
 
   test("Update succeeds for a in-project resolver") {

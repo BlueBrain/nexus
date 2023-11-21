@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -7,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 trait Fixtures {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  import Fixtures._
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -23,4 +25,8 @@ trait Fixtures {
     Vocabulary.contexts.tags        -> ContextValue.fromFile("contexts/tags.json"),
     Vocabulary.contexts.search      -> ContextValue.fromFile("contexts/search.json")
   )
+}
+
+object Fixtures {
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 }

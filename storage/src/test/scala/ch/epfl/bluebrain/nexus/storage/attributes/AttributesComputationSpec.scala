@@ -1,25 +1,18 @@
 package ch.epfl.bluebrain.nexus.storage.attributes
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.testkit.TestKit
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
-import ch.epfl.bluebrain.nexus.storage.utils.IOValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 import scala.concurrent.ExecutionContextExecutor
 
-class AttributesComputationSpec
-    extends TestKit(ActorSystem("AttributesComputationSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with IOValues {
+class AttributesComputationSpec extends TestKit(ActorSystem("AttributesComputationSpec")) with CatsEffectSpec {
 
   implicit private val ec: ExecutionContextExecutor     = system.dispatcher
   implicit val contentTypeDetector: ContentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
@@ -30,12 +23,12 @@ class AttributesComputationSpec
   }
 
   "Attributes computation computation" should {
-    val computation = AttributesComputation.akkaAttributes[IO]
+    val computation = AttributesComputation.akkaAttributes
     val alg         = "SHA-256"
 
     "succeed" in new Ctx {
       Files.write(path, text.getBytes(StandardCharsets.UTF_8))
-      computation(path, alg).ioValue shouldEqual FileAttributes(
+      computation(path, alg).accepted shouldEqual FileAttributes(
         s"file://$path",
         Files.size(path),
         Digest(alg, digest),
@@ -46,11 +39,11 @@ class AttributesComputationSpec
 
     "fail when algorithm is wrong" in new Ctx {
       Files.write(path, text.getBytes(StandardCharsets.UTF_8))
-      computation(path, "wrong-alg").failed[InternalError]
+      computation(path, "wrong-alg").rejectedWith[InternalError]
     }
 
     "fail when file does not exists" in new Ctx {
-      computation(Paths.get("/tmp/non/existing"), alg).failed[InternalError]
+      computation(Paths.get("/tmp/non/existing"), alg).rejectedWith[InternalError]
     }
   }
 }

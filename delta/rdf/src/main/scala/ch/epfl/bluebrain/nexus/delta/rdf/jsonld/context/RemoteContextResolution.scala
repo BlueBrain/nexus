@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -27,7 +27,7 @@ trait RemoteContextResolution { self =>
     *   a Map where the keys are the IRIs resolved and the values the @context value from the payload of the resolved
     *   wrapped in an IO
     */
-  final def apply(json: Json)(implicit contextShift: ContextShift[IO]): IO[Map[Iri, RemoteContext]] = {
+  final def apply(json: Json): IO[Map[Iri, RemoteContext]] = {
 
     def inner(
         ctx: Set[ContextValue],

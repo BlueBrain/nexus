@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
@@ -186,7 +186,7 @@ object ScopedEventLog {
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  ): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
       definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
@@ -209,7 +209,7 @@ object ScopedEventLog {
       extractDependencies: S => Option[Set[DependsOn]],
       maxDuration: FiniteDuration,
       xas: Transactors
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  ): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
       override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[S] =

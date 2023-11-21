@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -242,10 +240,10 @@ object Schemas {
     }
   }
 
-  private[delta] def evaluate(shaclValidation: ValidateSchema)(
+  private[delta] def evaluate(shaclValidation: ValidateSchema, clock: Clock[IO])(
       state: Option[SchemaState],
       cmd: SchemaCommand
-  )(implicit clock: Clock[IO]): IO[SchemaEvent] = {
+  ): IO[SchemaEvent] = {
     def validate(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[Unit] =
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
@@ -257,7 +255,7 @@ object Schemas {
       state match {
         case None =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, now, c.subject)
             }
         case _    => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -273,7 +271,7 @@ object Schemas {
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, now, c.subject)
             }
       }
@@ -288,7 +286,7 @@ object Schemas {
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
           validate(c.id, c.expanded) >>
-            IOInstant.now.map { now =>
+            clock.realTimeInstant.map { now =>
               SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, now, c.subject)
             }
       }
@@ -302,7 +300,7 @@ object Schemas {
         case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case Some(s)                                            =>
-          IOInstant.now.map(
+          clock.realTimeInstant.map(
             SchemaTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1, _: java.time.Instant, c.subject)
           )
 
@@ -317,7 +315,7 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          IOInstant.now.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
+          clock.realTimeInstant.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
       }
 
     def deleteTag(c: DeleteSchemaTag) =
@@ -328,7 +326,9 @@ object Schemas {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
         case Some(s)                            =>
-          IOInstant.now.map(SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject))
+          clock.realTimeInstant.map(
+            SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _: java.time.Instant, c.subject)
+          )
       }
 
     cmd match {
@@ -344,12 +344,13 @@ object Schemas {
   /**
     * Entity definition for [[Schemas]]
     */
-  def definition(validate: ValidateSchema)(implicit
+  def definition(
+      validate: ValidateSchema,
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _), next),
+      StateMachine(None, evaluate(validate, clock), next),
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](

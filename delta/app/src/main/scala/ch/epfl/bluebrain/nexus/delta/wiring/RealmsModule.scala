@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -25,19 +26,18 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 // $COVERAGE-OFF$
 object RealmsModule extends ModuleDef {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[Realms].from {
     (
         cfg: AppConfig,
         clock: Clock[IO],
-        contextShift: ContextShift[IO],
-        timer: Timer[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>
       val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock, contextShift, timer)
+      RealmsImpl(cfg.realms, wellKnownResolver, xas, clock)
   }
 
   make[RealmsRoutes].from {
@@ -52,8 +52,8 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], timer: Timer[IO], cs: ContextShift[IO]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem, timer, cs)
+  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing]) =>
+    HttpClient.noRetry(compression = false)(as.classicSystem)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }

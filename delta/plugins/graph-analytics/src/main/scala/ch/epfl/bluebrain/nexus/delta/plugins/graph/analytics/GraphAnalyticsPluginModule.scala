@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
@@ -21,13 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
   * Graph analytics plugin wiring.
   */
 class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
@@ -36,8 +36,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
 
-  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors, timer: Timer[IO]) =>
-    GraphAnalyticsStream(qc, xas)(timer)
+  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
+    GraphAnalyticsStream(qc, xas)
   }
 
   make[GraphAnalyticsCoordinator].fromEffect {
@@ -46,11 +46,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         analyticsStream: GraphAnalyticsStream,
         supervisor: Supervisor,
         client: ElasticSearchClient,
-        config: GraphAnalyticsConfig,
-        timer: Timer[IO],
-        cs: ContextShift[IO]
+        config: GraphAnalyticsConfig
     ) =>
-      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)(timer, cs)
+      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
   }
 
   make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>

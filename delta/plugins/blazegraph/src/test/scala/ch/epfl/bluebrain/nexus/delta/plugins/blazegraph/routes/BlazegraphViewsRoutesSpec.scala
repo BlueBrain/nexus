@@ -61,7 +61,8 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     _ => IO.unit,
     eventLogConfig,
     prefix,
-    xas
+    xas,
+    clock
   ).accepted
 
   lazy val viewsQuery = new BlazegraphViewsQueryDummy(

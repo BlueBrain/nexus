@@ -2,16 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.{ElasticSearchContainer, ElasticSearchDocker}
 
 import scala.concurrent.ExecutionContext
 
-trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures { self: CatsRunContext =>
+trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures {
 
   private val template = jobj"""{
                                  "index_patterns" : ["*"],

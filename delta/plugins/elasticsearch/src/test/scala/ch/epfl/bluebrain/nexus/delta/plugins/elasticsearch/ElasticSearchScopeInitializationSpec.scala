@@ -53,7 +53,8 @@ class ElasticSearchScopeInitializationSpec
     "prefix",
     xas,
     defaultMapping,
-    defaultSettings
+    defaultSettings,
+    clock
   ).accepted
 
   private val defaultName        = "defaultName"

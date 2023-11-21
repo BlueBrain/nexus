@@ -94,7 +94,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     fetchContext,
     resolverContextResolution,
     ResolversConfig(eventLogConfig, defaults),
-    xas
+    xas,
+    clock
   )
 
   private val aclCheck = AclSimpleCheck(

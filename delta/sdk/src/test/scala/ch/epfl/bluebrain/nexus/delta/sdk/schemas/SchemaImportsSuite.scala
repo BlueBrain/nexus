@@ -16,12 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 
 import scala.collection.immutable.VectorMap
 
-class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLiteral with Fixtures {
+class SchemaImportsSuite extends CatsEffectSuite with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(alice, Set(alice))
