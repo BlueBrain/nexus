@@ -47,7 +47,7 @@ class SearchSparqlQuerySpec
   )
 
   private lazy val endpoint = hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties)
+  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties.accepted)
 
   private def toNTriples(json: Json): NTriples = {
     for {

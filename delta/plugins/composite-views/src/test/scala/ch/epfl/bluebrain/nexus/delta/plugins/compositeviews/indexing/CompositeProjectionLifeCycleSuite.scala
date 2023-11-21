@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle.Hook
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycleSuite.DestroyResult
@@ -18,6 +17,7 @@ import munit.Location
 
 import java.util.UUID
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class CompositeProjectionLifeCycleSuite extends CatsEffectSuite with CompositeViewsFixture {
 

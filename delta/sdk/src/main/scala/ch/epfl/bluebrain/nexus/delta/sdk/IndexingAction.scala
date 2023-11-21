@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.data.NonEmptyList
-import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits._
+import cats.effect.IO
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
@@ -17,6 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, Projection}
 
 import scala.concurrent.duration._
+import cats.effect.Ref
+import cats.implicits._
 
 trait IndexingAction {
 
@@ -37,10 +38,7 @@ trait IndexingAction {
     */
   def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection]
 
-  def apply(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): IO[List[FailedElem]] = {
+  def apply(project: ProjectRef, elem: Elem[GraphResource]): IO[List[FailedElem]] = {
     for {
       // To collect the errors
       errorsRef <- Ref.of[IO, List[FailedElem]](List.empty)
@@ -58,10 +56,7 @@ trait IndexingAction {
     } yield errors
   }
 
-  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit])(implicit
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ) = {
+  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit]) = {
     for {
       projection <- Projection(compiled, IO.none, _ => IO.unit, saveFailedElems(_))
       _          <- projection.waitForCompletion(timeout)
@@ -86,8 +81,6 @@ object IndexingAction {
     * An instance of [[IndexingAction]] which executes other [[IndexingAction]] s in parallel.
     */
   final class AggregateIndexingAction(private val internal: NonEmptyList[IndexingAction])(implicit
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       cr: RemoteContextResolution
   ) {
 
@@ -111,7 +104,7 @@ object IndexingAction {
   object AggregateIndexingAction {
     def apply(
         internal: NonEmptyList[IndexingAction]
-    )(implicit timer: Timer[IO], contextShift: ContextShift[IO], cr: RemoteContextResolution): AggregateIndexingAction =
+    )(implicit cr: RemoteContextResolution): AggregateIndexingAction =
       new AggregateIndexingAction(internal)
   }
 }

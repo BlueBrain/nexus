@@ -40,8 +40,7 @@ class GraphResourceToDocumentSuite extends CatsEffectSuite with Fixtures with Js
   private val graph         = Graph(expanded).rightValue
   private val metadataGraph = graph
 
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-  private val context                  = ContextValue.fromFile("/contexts/elasticsearch-indexing.json").accepted
+  private val context = ContextValue.fromFile("/contexts/elasticsearch-indexing.json").accepted
 
   private val graphResourceToDocument = new GraphResourceToDocument(context, false)
 

@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
@@ -12,14 +11,14 @@ import fs2.Stream
 
 import scala.concurrent.duration._
 
-final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration)(implicit clock: Clock[IO]) {
+final class PurgeElemFailures private[sourcing] (xas: Transactors, ttl: FiniteDuration, clock: Clock[IO]) {
 
   /**
     * Deletes the projection errors that are older than the given `ttl`.
     */
   def apply(): IO[Unit] =
     for {
-      threshold <- IOInstant.now.map(_.minusMillis(ttl.toMillis))
+      threshold <- clock.realTimeInstant.map(_.minusMillis(ttl.toMillis))
       deleted   <- sql"""
                     | DELETE FROM public.failed_elem_logs
                     | WHERE instant < $threshold
@@ -36,11 +35,13 @@ object PurgeElemFailures {
   /**
     * Creates a [[PurgeElemFailures]] instance and schedules in the supervisor the deletion of old projection errors.
     */
-  def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO]
+  def apply(
+      supervisor: Supervisor,
+      config: ProjectionConfig,
+      xas: Transactors,
+      clock: Clock[IO]
   ): IO[PurgeElemFailures] = {
-    val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl)
+    val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl, clock)
 
     val stream = Stream
       .awakeEvery[IO](config.deleteExpiredEvery)

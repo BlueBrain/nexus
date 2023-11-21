@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import io.circe.Json
 
-class OrgsSpec extends BaseIntegrationSpec {
+class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
@@ -84,7 +84,7 @@ class OrgsSpec extends BaseIntegrationSpec {
     "succeed if organization exists" in {
       deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        admin.validate(json, "Organization", "orgs", id, s"Description $id", 1, id)
+        validate(json, "Organization", "orgs", id, s"Description $id", 1, id)
       }
     }
 
@@ -201,7 +201,7 @@ class OrgsSpec extends BaseIntegrationSpec {
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (lastVersion, response) =>
                runIO {
                  response.status shouldEqual StatusCodes.OK
-                 admin.validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
+                 validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
                  deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (thirdVersion, response) =>
                    response.status shouldEqual StatusCodes.OK
                    thirdVersion shouldEqual lastVersion
@@ -210,11 +210,11 @@ class OrgsSpec extends BaseIntegrationSpec {
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=2", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, updatedName, 2, id)
+               validate(json, "Organization", "orgs", id, updatedName, 2, id)
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, s"$id organization", 1, id)
+               validate(json, "Organization", "orgs", id, s"$id organization", 1, id)
              }
       } yield succeed
     }
@@ -259,11 +259,11 @@ class OrgsSpec extends BaseIntegrationSpec {
         _ <- adminDsl.deprecateOrganization(id, Leela)
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, name, 2, id, deprecated = true)
+               validate(json, "Organization", "orgs", id, name, 2, id, deprecated = true)
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, name, 1, id)
+               validate(json, "Organization", "orgs", id, name, 1, id)
              }
       } yield succeed
     }

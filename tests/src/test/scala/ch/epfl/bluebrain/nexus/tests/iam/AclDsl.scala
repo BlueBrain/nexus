@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.error
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Anonymous, Permission, User}
@@ -15,9 +16,10 @@ import org.scalatest.{Assertion, OptionValues}
 
 import scala.jdk.CollectionConverters._
 
-class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with OptionValues with Matchers {
+class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with Matchers {
 
   private val logger = Logger[this.type]
+  private val loader = ClasspathResourceLoader()
 
   def fetch(path: String, identity: Identity, self: Boolean = true, ancestors: Boolean = false)(
       assertAcls: AclListing => Assertion
@@ -33,26 +35,26 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     addPermissions(path, target, Set(permission))
 
   def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): IO[Assertion] = {
-    val json = jsonContentOf(
-      "/iam/add.json",
-      "realm" -> target.realm.name,
-      "sub"   -> target.name,
-      "perms" -> permissions.asJava
-    )
-
-    addPermissions(path, json, target.name)
+    loader
+      .jsonContentOf(
+        "/iam/add.json",
+        "realm" -> target.realm.name,
+        "sub"   -> target.name,
+        "perms" -> permissions.asJava
+      )
+      .flatMap(addPermissions(path, _, target.name))
   }
 
   def addPermissionAnonymous(path: String, permission: Permission): IO[Assertion] =
     addPermissionsAnonymous(path, Set(permission))
 
   def addPermissionsAnonymous(path: String, permissions: Set[Permission]): IO[Assertion] = {
-    val json = jsonContentOf(
-      "/iam/add_annon.json",
-      "perms" -> permissions.asJava
-    )
-
-    addPermissions(path, json, "Anonymous")
+    loader
+      .jsonContentOf(
+        "/iam/add_annon.json",
+        "perms" -> permissions.asJava
+      )
+      .flatMap(addPermissions(path, _, "Anonymous"))
   }
 
   def addPermissions(path: String, payload: Json, targetName: String): IO[Assertion] = {
@@ -85,7 +87,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       }
   }
 
-  def cleanAcls(target: Authenticated)(implicit contextShift: ContextShift[IO]): IO[Assertion] =
+  def cleanAcls(target: Authenticated): IO[Assertion] =
     fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
@@ -99,21 +101,24 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
 
       permissions
         .parTraverse { acl =>
-          val payload = jsonContentOf(
-            "/iam/subtract-permissions.json",
-            "realm" -> target.realm.name,
-            "sub"   -> target.name,
-            "perms" -> acl.acl.head.permissions.asJava
-          )
-          cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-          }
+          for {
+            payload <- loader.jsonContentOf(
+                         "/iam/subtract-permissions.json",
+                         "realm" -> target.realm.name,
+                         "sub"   -> target.name,
+                         "perms" -> acl.acl.head.permissions.asJava
+                       )
+            result  <-
+              cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
+                response.status shouldEqual StatusCodes.OK
+              }
+          } yield result
         }
         .map(_ => succeed)
         .unsafeRunSync()
     }
 
-  def cleanAclsAnonymous(implicit contextShift: ContextShift[IO]): IO[Assertion] =
+  def cleanAclsAnonymous: IO[Assertion] =
     fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
@@ -127,13 +132,16 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
 
       permissions
         .parTraverse { acl =>
-          val payload = jsonContentOf(
-            "/iam/subtract-permissions-anon.json",
-            "perms" -> acl.acl.head.permissions.asJava
-          )
-          cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-          }
+          for {
+            payload <- loader.jsonContentOf(
+                         "/iam/subtract-permissions-anon.json",
+                         "perms" -> acl.acl.head.permissions.asJava
+                       )
+            result  <-
+              cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
+                response.status shouldEqual StatusCodes.OK
+              }
+          } yield result
         }
         .map(_ => succeed)
         .unsafeRunSync()
@@ -162,15 +170,17 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       rev: Int,
       permissions: Set[Permission]
   ): IO[Assertion] = {
-    val body = jsonContentOf(
-      "/iam/subtract-permissions.json",
-      "realm" -> target.realm.name,
-      "sub"   -> target.name,
-      "perms" -> permissions.asJava
-    )
-    cl.patch[Json](s"/acls$path?rev=$rev", body, Identity.ServiceAccount) { (_, response) =>
-      response.status shouldEqual StatusCodes.OK
-    }
+    for {
+      body   <- loader.jsonContentOf(
+                  "/iam/subtract-permissions.json",
+                  "realm" -> target.realm.name,
+                  "sub"   -> target.name,
+                  "perms" -> permissions.asJava
+                )
+      result <- cl.patch[Json](s"/acls$path?rev=$rev", body, Identity.ServiceAccount) { (_, response) =>
+                  response.status shouldEqual StatusCodes.OK
+                }
+    } yield result
   }
 
   def checkAdminAcls(path: String, authenticated: Authenticated): IO[Assertion] = {

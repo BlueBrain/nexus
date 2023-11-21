@@ -82,7 +82,7 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
         updatedBy
       )
 
-    val eval = evaluate(ValidateElasticSearchView.always)(_, _)
+    val eval = evaluate(ValidateElasticSearchView.always, clock)(_, _)
 
     "evaluating the CreateElasticSearchView command" should {
       "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {
@@ -103,7 +103,7 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
 
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(invalidView)(None, cmd).rejectedWith[InvalidElasticSearchIndexPayload]
+        evaluate(invalidView, clock)(None, cmd).rejectedWith[InvalidElasticSearchIndexPayload]
       }
     }
 
@@ -139,7 +139,7 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
       }
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1, indexingValue, source, subject)
-        evaluate(invalidView)(Some(current()), cmd).rejectedWith[InvalidElasticSearchIndexPayload]
+        evaluate(invalidView, clock)(Some(current()), cmd).rejectedWith[InvalidElasticSearchIndexPayload]
       }
     }
 

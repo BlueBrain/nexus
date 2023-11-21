@@ -37,8 +37,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private lazy val projections      = Projections(xas, queryConfig, 1.hour)
-  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
+  private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
+  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   implicit private val fetchContextRejection: FetchContext[ElasticSearchViewRejection] =
     FetchContextDummy[ElasticSearchViewRejection](
@@ -96,7 +96,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     "prefix",
     xas,
     defaultMapping,
-    defaultSettings
+    defaultSettings,
+    clock
   ).accepted
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)

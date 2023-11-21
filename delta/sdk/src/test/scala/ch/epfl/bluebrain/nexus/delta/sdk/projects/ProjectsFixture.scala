@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -16,34 +16,31 @@ import java.util.UUID
 
 object ProjectsFixture {
 
-  def init(fetchOrgs: FetchOrganization, apiMappings: ApiMappings, config: ProjectsConfig)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
-      cl: ClassLoader
+  def init(
+      fetchOrgs: FetchOrganization,
+      apiMappings: ApiMappings,
+      config: ProjectsConfig,
+      clock: Clock[IO]
   ): IOFixture[(Transactors, Projects)] = {
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
-    init(fetchOrgs, Set.empty, apiMappings, config)
+    init(fetchOrgs, Set.empty, apiMappings, config, clock)
   }
 
   def init(
       fetchOrgs: FetchOrganization,
       scopeInitializations: Set[ScopeInitialization],
       apiMappings: ApiMappings,
-      config: ProjectsConfig
+      config: ProjectsConfig,
+      clock: Clock[IO]
   )(implicit
       base: BaseUri,
-      clock: Clock[IO],
-      cs: ContextShift[IO],
-      timer: Timer[IO],
-      uuidF: UUIDF,
-      cl: ClassLoader
+      uuidF: UUIDF
   ): IOFixture[(Transactors, Projects)] =
     ResourceFixture.suiteLocal(
       "projects",
       Doobie.resource().map { xas =>
-        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, scopeInitializations, apiMappings, config, xas))
+        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, scopeInitializations, apiMappings, config, xas, clock))
       }
     )
 

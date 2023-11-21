@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxMonadError, toFunctorOps}
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
@@ -34,10 +34,7 @@ import scala.concurrent.duration._
   * The client to communicate with the remote storage service
   */
 final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenProvider, credentials: Credentials)(
-    implicit
-    as: ActorSystem,
-    cs: ContextShift[IO],
-    timer: Timer[IO]
+    implicit as: ActorSystem
 ) {
   import as.dispatcher
 

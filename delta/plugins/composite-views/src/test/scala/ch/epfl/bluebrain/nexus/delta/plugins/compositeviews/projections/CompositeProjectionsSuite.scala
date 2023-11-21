@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.FullRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.{CompositeProgressStore, CompositeRestartStore}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
@@ -21,6 +20,7 @@ import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
+import cats.effect.Ref
 
 class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 
@@ -31,9 +31,9 @@ class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   private lazy val compositeRestartStore  = new CompositeRestartStore(xas)
-  private lazy val compositeProgressStore = new CompositeProgressStore(xas)
+  private lazy val compositeProgressStore = new CompositeProgressStore(xas, clock)
   private lazy val projections            =
-    CompositeProjections(compositeRestartStore, xas, queryConfig, BatchConfig(10, 50.millis), 3.seconds)
+    CompositeProjections(compositeRestartStore, xas, queryConfig, BatchConfig(10, 50.millis), 3.seconds, clock)
 
   private val project     = ProjectRef.unsafe("org", "proj")
   private val viewRef     = ViewRef(project, nxv + "id")

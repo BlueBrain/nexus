@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
@@ -131,7 +131,7 @@ object GlobalEventLog {
       definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
+  ): GlobalEventLog[Id, S, Command, E, Rejection] =
     apply(
       GlobalEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       GlobalStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
@@ -148,7 +148,7 @@ object GlobalEventLog {
       onUniqueViolation: (Id, Command) => Rejection,
       maxDuration: FiniteDuration,
       xas: Transactors
-  )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
+  ): GlobalEventLog[Id, S, Command, E, Rejection] =
     new GlobalEventLog[Id, S, Command, E, Rejection] {
 
       override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[S] = stateStore.get(id).flatMap {

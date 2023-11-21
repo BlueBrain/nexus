@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
@@ -32,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
@@ -43,8 +43,6 @@ class ElasticSearchViewsQuerySuite
     extends CatsEffectSuite
     with Doobie.Fixture
     with ElasticSearchClientSetup.Fixture
-    with CirceLiteral
-    with TestHelpers
     with Fixtures
     with ConfigFixtures {
 
@@ -203,7 +201,8 @@ class ElasticSearchViewsQuerySuite
     prefix,
     xas,
     defaultMapping,
-    defaultSettings
+    defaultSettings,
+    clock
   ).unsafeRunSync()
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(

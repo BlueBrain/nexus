@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileCont
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathLoader
 
-trait RemoteContextResolutionFixture {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
+trait RemoteContextResolutionFixture extends ClasspathLoader {
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),

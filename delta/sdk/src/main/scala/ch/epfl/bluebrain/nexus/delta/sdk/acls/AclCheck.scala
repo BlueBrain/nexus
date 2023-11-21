@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.IO
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 
 import scala.collection.immutable.Iterable
+import cats.effect.Ref
 
 /**
   * Check authorizations on acls

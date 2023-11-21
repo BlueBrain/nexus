@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import cats.effect.{ContextShift, IO}
 import cats.implicits._
+import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -41,7 +40,6 @@ class BlazegraphViewsIndexingRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig
@@ -153,7 +151,6 @@ object BlazegraphViewsIndexingRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig

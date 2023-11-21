@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
 
 import java.time.Instant
 
@@ -251,14 +250,15 @@ object Permissions {
     }
   }
 
-  private[delta] def evaluate(minimum: Set[Permission])(state: PermissionsState, cmd: PermissionsCommand)(implicit
+  private[delta] def evaluate(
+      minimum: Set[Permission],
       clock: Clock[IO]
-  ): IO[PermissionsEvent] = {
+  )(state: PermissionsState, cmd: PermissionsCommand): IO[PermissionsEvent] = {
     def replace(c: ReplacePermissions) =
       if (c.rev != state.rev) IO.raiseError(IncorrectRev(c.rev, state.rev))
       else if (c.permissions.isEmpty) IO.raiseError(CannotReplaceWithEmptyCollection)
       else if ((c.permissions -- minimum).isEmpty) IO.raiseError(CannotReplaceWithEmptyCollection)
-      else now.map(PermissionsReplaced(c.rev + 1, c.permissions, _, c.subject))
+      else clock.realTimeInstant.map(PermissionsReplaced(c.rev + 1, c.permissions, _, c.subject))
 
     def append(c: AppendPermissions) =
       state match {
@@ -267,7 +267,7 @@ object Permissions {
         case s                          =>
           val appended = c.permissions -- s.permissions -- minimum
           if (appended.isEmpty) IO.raiseError(CannotAppendEmptyCollection)
-          else now.map(PermissionsAppended(c.rev + 1, appended, _, c.subject))
+          else clock.realTimeInstant.map(PermissionsAppended(c.rev + 1, appended, _, c.subject))
       }
 
     def subtract(c: SubtractPermissions) =
@@ -281,14 +281,14 @@ object Permissions {
           val subtracted    = delta -- minimum
           if (intendedDelta.nonEmpty) IO.raiseError(CannotSubtractUndefinedPermissions(intendedDelta))
           else if (subtracted.isEmpty) IO.raiseError(CannotSubtractFromMinimumCollection(minimum))
-          else now.map(PermissionsSubtracted(c.rev + 1, subtracted, _, c.subject))
+          else clock.realTimeInstant.map(PermissionsSubtracted(c.rev + 1, subtracted, _, c.subject))
       }
 
     def delete(c: DeletePermissions) =
       state match {
         case _ if state.rev != c.rev       => IO.raiseError(IncorrectRev(c.rev, state.rev))
         case s if s.permissions == minimum => IO.raiseError(CannotDeleteMinimumCollection)
-        case _                             => now.map(PermissionsDeleted(c.rev + 1, _, c.subject))
+        case _                             => clock.realTimeInstant.map(PermissionsDeleted(c.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -305,7 +305,8 @@ object Permissions {
     * @param minimum
     *   the minimum set of permissions
     */
-  def definition(minimum: Set[Permission])(implicit
+  def definition(
+      minimum: Set[Permission],
       clock: Clock[IO]
   ): GlobalEntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
     val initial = PermissionsState.initial(minimum)
@@ -313,7 +314,8 @@ object Permissions {
       entityType,
       StateMachine(
         Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd),
+        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
+          evaluate(minimum, clock)(state.getOrElse(initial), cmd),
         (state: Option[PermissionsState], event: PermissionsEvent) =>
           Some(next(minimum)(state.getOrElse(initial), event))
       ),

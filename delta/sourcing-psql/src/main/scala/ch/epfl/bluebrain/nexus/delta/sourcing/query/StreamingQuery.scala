@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
-import cats.effect.{ExitCase, IO, Timer}
-import cats.syntax.all._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
@@ -21,6 +20,7 @@ import io.circe.Json
 
 import java.time.Instant
 import scala.collection.mutable.ListBuffer
+import cats.effect.kernel.Resource
 
 /**
   * Provide utility methods to stream results from the database according to a [[QueryConfig]].
@@ -82,7 +82,7 @@ object StreamingQuery {
       selectFilter: SelectFilter,
       cfg: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): Stream[IO, Elem[Unit]] = {
+  ): Stream[IO, Elem[Unit]] = {
     def query(offset: Offset): Query0[Elem[Unit]] = {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
@@ -137,7 +137,7 @@ object StreamingQuery {
       cfg: QueryConfig,
       xas: Transactors,
       decodeValue: (EntityType, Json) => IO[A]
-  )(implicit timer: Timer[IO]): Stream[IO, Elem[A]] = {
+  ): Stream[IO, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
@@ -193,7 +193,7 @@ object StreamingQuery {
       extractOffset: A => Offset,
       cfg: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): Stream[IO, A] =
+  ): Stream[IO, A] =
     Stream
       .unfoldChunkEval[IO, Offset, A](start) { offset =>
         query(offset).accumulate[Chunk].transact(xas.streaming).flatMap { elems =>
@@ -229,7 +229,7 @@ object StreamingQuery {
       extractId: A => K,
       cfg: QueryConfig,
       xas: Transactors
-  )(implicit timer: Timer[IO]): Stream[IO, A] =
+  ): Stream[IO, A] =
     Stream
       .unfoldChunkEval[IO, Offset, A](start) { offset =>
         query(offset).to[List].transact(xas.streaming).flatMap { elems =>
@@ -240,9 +240,7 @@ object StreamingQuery {
       }
       .onFinalizeCase(logQuery(query(start)))
 
-  private def refreshOrStop[A](cfg: QueryConfig, offset: Offset)(implicit
-      timer: Timer[IO]
-  ): IO[Option[(Chunk[A], Offset)]] =
+  private def refreshOrStop[A](cfg: QueryConfig, offset: Offset): IO[Option[(Chunk[A], Offset)]] =
     cfg.refreshStrategy match {
       case RefreshStrategy.Stop         => IO.none
       case RefreshStrategy.Delay(value) => IO.sleep(value) >> IO.pure(Some((Chunk.empty[A], offset)))
@@ -257,15 +255,15 @@ object StreamingQuery {
       else
         (seen + key, buffer.prepend(x))
     }
-    Chunk.buffer(buffer)
+    Chunk.from(buffer)
   }
 
-  private def logQuery[A, E <: Throwable](query: Query0[A]): ExitCase[E] => IO[Unit] = {
-    case ExitCase.Completed    =>
+  private def logQuery[A](query: Query0[A]): Resource.ExitCase => IO[Unit] = {
+    case Resource.ExitCase.Succeeded      =>
       logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
-    case ExitCase.Error(cause) =>
+    case Resource.ExitCase.Errored(cause) =>
       logger.error(cause)(s"Single evaluation of query '${query.sql}' failed.")
-    case ExitCase.Canceled     =>
+    case Resource.ExitCase.Canceled       =>
       logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
   }
 
@@ -286,7 +284,7 @@ object StreamingQuery {
       Scope(projectRef).asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
-      Some(causeFragment)
+      causeFragment
     )
   }
 

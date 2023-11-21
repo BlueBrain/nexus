@@ -51,7 +51,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       "create a new event from a CreateFile command" in {
         val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, Some(myTag))
 
-        evaluate(None, createCmd).accepted shouldEqual
+        evaluate(clock)(None, createCmd).accepted shouldEqual
           FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, Some(myTag))
       }
 
@@ -60,7 +60,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         val current   =
           FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
 
-        evaluate(Some(current), updateCmd).accepted shouldEqual
+        evaluate(clock)(Some(current), updateCmd).accepted shouldEqual
           FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice, None)
       }
 
@@ -69,38 +69,38 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         val current       =
           FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1, digest = Digest.NotComputedDigest))
 
-        evaluate(Some(current), updateAttrCmd).accepted shouldEqual
+        evaluate(clock)(Some(current), updateAttrCmd).accepted shouldEqual
           FileAttributesUpdated(id, projectRef, remoteStorageRef, DiskStorageType, mediaType, 10, dig, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
+        evaluate(clock)(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
           FileTagAdded(id, projectRef, storageRef, DiskStorageType, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeleteFileTag command" in {
         val current =
           FileGen.state(id, projectRef, storageRef, attributes, rev = 2).copy(tags = Tags(myTag -> 2))
-        evaluate(Some(current), DeleteFileTag(id, projectRef, myTag, 2, alice)).accepted shouldEqual
+        evaluate(clock)(Some(current), DeleteFileTag(id, projectRef, myTag, 2, alice)).accepted shouldEqual
           FileTagDeleted(id, projectRef, storageRef, DiskStorageType, myTag, 3, epoch, alice)
       }
 
       "create a new event from a TagFile command when deprecated" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
-        evaluate(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
+        evaluate(clock)(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
           FileTagAdded(id, projectRef, storageRef, DiskStorageType, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeprecateFile command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(Some(current), DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
+        evaluate(clock)(Some(current), DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
           FileDeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
       }
 
       "create a new event from a UndeprecateFile command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
-        evaluate(Some(current), UndeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
+        evaluate(clock)(Some(current), UndeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
           FileUndeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
       }
 
@@ -114,13 +114,13 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(Some(current), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+          evaluate(clock)(Some(current), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
         }
       }
 
       "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
+        evaluate(clock)(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -133,7 +133,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(None, cmd).rejectedWith[FileNotFound]
+          evaluate(clock)(None, cmd).rejectedWith[FileNotFound]
         }
       }
 
@@ -145,32 +145,32 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(Some(current), cmd).rejectedWith[FileIsDeprecated]
+          evaluate(clock)(Some(current), cmd).rejectedWith[FileIsDeprecated]
         }
       }
 
       "reject with FileIsNotDeprecated" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, deprecated = false)
-        evaluate(Some(current), UndeprecateFile(id, projectRef, 1, alice)).rejectedWith[FileIsNotDeprecated]
+        evaluate(clock)(Some(current), UndeprecateFile(id, projectRef, 1, alice)).rejectedWith[FileIsNotDeprecated]
       }
 
       "reject with RevisionNotFound" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(Some(current), TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
+        evaluate(clock)(Some(current), TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
           RevisionNotFound(provided = 3, current = 1)
       }
 
       "reject with DigestNotComputed" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
         val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
-        evaluate(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
+        evaluate(clock)(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
       "reject with DigestAlreadyComputed" in {
         val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
         val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
 
-        evaluate(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
+        evaluate(clock)(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
       }
 
     }

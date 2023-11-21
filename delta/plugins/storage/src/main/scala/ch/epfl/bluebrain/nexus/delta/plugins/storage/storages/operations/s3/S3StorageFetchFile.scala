@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
@@ -17,8 +17,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
 final class S3StorageFetchFile(value: S3StorageValue, config: StorageTypeConfig)(implicit
-    as: ActorSystem,
-    contextShift: ContextShift[IO]
+    as: ActorSystem
 ) extends FetchFile {
 
   private val s3Attributes = S3Attributes.settings(value.alpakkaSettings(config))

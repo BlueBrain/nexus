@@ -18,7 +18,7 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
 
   private lazy val xas = doobie()
 
-  private lazy val store = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))
+  private lazy val store = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop), clock)
 
   private val name     = "offset"
   private val project  = ProjectRef.unsafe("org", "proj")
@@ -75,7 +75,7 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
 
   test("Reset an offset") {
     val later      = Instant.EPOCH.plusSeconds(1000)
-    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(FixedClock.atInstant(later))
+    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop), FixedClock.atInstant(later))
 
     for {
       _ <- store.save(metadata, progress)

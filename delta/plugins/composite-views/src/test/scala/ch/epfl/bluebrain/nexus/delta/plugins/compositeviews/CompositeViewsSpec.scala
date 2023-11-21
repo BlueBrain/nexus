@@ -54,7 +54,8 @@ class CompositeViewsSpec
       ResolverContextResolution(rcr),
       alwaysValidate,
       config,
-      xas
+      xas,
+      clock
     ).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")

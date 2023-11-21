@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
-import cats.effect.concurrent.Ref
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Stream
@@ -52,7 +51,7 @@ object CompiledProjection {
       executionStrategy: ExecutionStrategy,
       source: Source,
       sink: Sink
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Either[ProjectionErr, CompiledProjection] =
+  ): Either[ProjectionErr, CompiledProjection] =
     source.through(sink).map { p =>
       CompiledProjection(metadata, executionStrategy, offset => _ => _ => p.apply(offset).map(_.void))
     }
@@ -66,7 +65,7 @@ object CompiledProjection {
       source: Source,
       chain: NonEmptyChain[Operation],
       sink: Sink
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Either[ProjectionErr, CompiledProjection] =
+  ): Either[ProjectionErr, CompiledProjection] =
     for {
       operations <- Operation.merge(chain ++ NonEmptyChain.one(sink))
       result     <- source.through(operations)

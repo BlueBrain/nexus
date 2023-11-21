@@ -12,8 +12,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProjectDeletionConfigSpec extends CatsEffectSpec {
 
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-  implicit private val api: JsonLdApi  = JsonLdJavaApi.strict
+  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")

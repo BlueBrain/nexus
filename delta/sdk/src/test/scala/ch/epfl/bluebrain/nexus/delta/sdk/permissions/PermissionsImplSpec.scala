@@ -29,7 +29,7 @@ class PermissionsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
     Set.empty
   )
 
-  private lazy val permissions: Permissions = PermissionsImpl(config, xas)
+  private lazy val permissions: Permissions = PermissionsImpl(config, xas, clock)
 
   "A permissions permissions implementation" should {
     val read: Permission = Permissions.permissions.read

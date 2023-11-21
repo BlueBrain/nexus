@@ -6,13 +6,12 @@ import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 import munit.Suite
 
-object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fixtures {
+object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
 
   private val template = jobj"""{
                                  "index_patterns" : ["*"],

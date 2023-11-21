@@ -13,7 +13,7 @@ class TokenStoreSuite extends CatsEffectSuite with Doobie.Fixture {
 
   private lazy val xas = doobie()
 
-  private lazy val tokenStore: TokenStore = TokenStore(xas)
+  private lazy val tokenStore: TokenStore = TokenStore(xas, clock)
 
   private val user = User("Alice", Label.unsafe("Wonderland"))
 

@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.CursorOp.{DownArray, DownField}
 
-class ExpandedJsonLdCursorSpec extends BaseSpec {
+class ExpandedJsonLdCursorSpec extends CatsEffectSpec {
 
   "An ExpandedJsonLdCursor" should {
     val json   = jsonContentOf("/jsonld/decoder/cocktail.json")

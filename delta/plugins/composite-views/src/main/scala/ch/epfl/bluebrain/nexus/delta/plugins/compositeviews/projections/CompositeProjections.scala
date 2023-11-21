@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
@@ -93,11 +92,12 @@ object CompositeProjections {
       xas: Transactors,
       query: QueryConfig,
       batch: BatchConfig,
-      restartCheckInterval: FiniteDuration
-  )(implicit clock: Clock[IO], timer: Timer[IO], cs: ContextShift[IO]): CompositeProjections =
+      restartCheckInterval: FiniteDuration,
+      clock: Clock[IO]
+  ): CompositeProjections =
     new CompositeProjections {
-      private val failedElemLogStore     = FailedElemLogStore(xas, query)
-      private val compositeProgressStore = new CompositeProgressStore(xas)
+      private val failedElemLogStore     = FailedElemLogStore(xas, query, clock)
+      private val compositeProgressStore = new CompositeProgressStore(xas, clock)
 
       override def progress(view: IndexingViewRef): IO[CompositeProgress] =
         compositeProgressStore.progress(view).map(CompositeProgress(_))
@@ -112,7 +112,7 @@ object CompositeProjections {
             progress,
             compositeProgressStore.save(view.indexingRef, branch, _),
             failedElemLogStore.save(view.metadata, _)
-          )(batch, timer, cs)
+          )(batch)
         )
 
       override def deleteAll(view: IndexingViewRef): IO[Unit] = compositeProgressStore.deleteAll(view)
@@ -128,7 +128,7 @@ object CompositeProjections {
 
       private def scheduleRestart(f: Instant => CompositeRestart) =
         for {
-          now    <- IOInstant.now
+          now    <- clock.realTimeInstant
           restart = f(now)
           _      <- logger.info(s"Scheduling a ${restart.getClass.getSimpleName} from composite view '${restart.view}'")
           _      <- compositeRestartStore.save(restart)

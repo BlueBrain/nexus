@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.{ContextShift, Fiber, IO, Resource, Timer}
-import cats.effect.concurrent.{Ref, Semaphore}
-import cats.implicits._
+import cats.effect.{Fiber, IO, Resource}
+
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
@@ -17,6 +16,9 @@ import fs2.concurrent.SignallingRef
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
+import cats.effect.Ref
+import cats.effect.std.Semaphore
+import cats.implicits._
 
 /**
   * Supervises the execution of projections based on a defined [[ExecutionStrategy]] that describes whether projections
@@ -133,7 +135,7 @@ object Supervisor {
       projections: Projections,
       projectionErrors: ProjectionErrors,
       cfg: ProjectionConfig
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Resource[IO, Supervisor] = {
+  ): Resource[IO, Supervisor] = {
     def init: IO[Supervisor] =
       for {
         _              <- log.info("Starting Delta supervisor")
@@ -141,7 +143,7 @@ object Supervisor {
         mapRef         <- Ref.of[IO, Map[String, Supervised]](Map.empty)
         signal         <- SignallingRef[IO, Boolean](false)
         supervision    <- supervisionTask(semaphore, mapRef, signal, cfg).start
-        supervisionRef <- Ref.of[IO, Fiber[IO, Unit]](supervision)
+        supervisionRef <- Ref.of[IO, Fiber[IO, Throwable, Unit]](supervision)
         supervisor      =
           new Impl(projections, projectionErrors.saveFailedElems, cfg, semaphore, mapRef, signal, supervisionRef)
         _              <- watchRestarts(supervisor, projections)
@@ -164,7 +166,7 @@ object Supervisor {
       mapRef: Ref[IO, Map[String, Supervised]],
       signal: SignallingRef[IO, Boolean],
       cfg: ProjectionConfig
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[Unit] = {
+  ): IO[Unit] = {
     Stream
       .awakeEvery[IO](cfg.supervisionCheckInterval)
       .evalTap(_ => log.debug("Checking projection statuses"))
@@ -183,8 +185,8 @@ object Supervisor {
             val errorMessage  =
               s"The projection '${metadata.name}' from module '${metadata.module}' failed and will be restarted."
             log.error(throwable)(errorMessage) >>
-              semaphore
-                .withPermit { restartProjection(supervised, mapRef) }
+              semaphore.permit
+                .use(_ => restartProjection(supervised, mapRef))
                 .retry(retryStrategy)
         }
       }
@@ -224,9 +226,7 @@ object Supervisor {
     )
   }
 
-  private def purgeRestarts(supervisor: Supervisor, projections: Projections, deleteExpiredEvery: FiniteDuration)(
-      implicit timer: Timer[IO]
-  ) = {
+  private def purgeRestarts(supervisor: Supervisor, projections: Projections, deleteExpiredEvery: FiniteDuration) = {
     val stream = Stream
       .awakeEvery[IO](deleteExpiredEvery)
       .evalTap(_ => projections.deleteExpiredRestarts())
@@ -274,13 +274,12 @@ object Supervisor {
       semaphore: Semaphore[IO],
       mapRef: Ref[IO, Map[String, Supervised]],
       signal: SignallingRef[IO, Boolean],
-      supervisionFiberRef: Ref[IO, Fiber[IO, Unit]]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO])
-      extends Supervisor {
+      supervisionFiberRef: Ref[IO, Fiber[IO, Throwable, Unit]]
+  ) extends Supervisor {
 
     override def run(projection: CompiledProjection, init: IO[Unit]): IO[ExecutionStatus] = {
       val metadata = projection.metadata
-      semaphore.withPermit {
+      semaphore.permit.use { _ =>
         for {
           supervised <- mapRef.get.map(_.get(metadata.name))
           _          <- supervised.traverse { s =>
@@ -326,11 +325,11 @@ object Supervisor {
         case TransientSingleNode | EveryNode =>
           (IO.none, (_: ProjectionProgress) => IO.unit, saveFailedElems(projection.metadata, _))
       }
-      Projection(projection, fetchProgress, saveProgress, saveErrors)(cfg.batch, timer, cs)
+      Projection(projection, fetchProgress, saveProgress, saveErrors)(cfg.batch)
     }
 
     def restart(name: String): IO[Option[ExecutionStatus]] =
-      semaphore.withPermit {
+      semaphore.permit.use { _ =>
         for {
           supervised <- mapRef.get.map(_.get(name))
           status     <- supervised.traverse { s =>
@@ -355,7 +354,7 @@ object Supervisor {
       }
 
     override def destroy(name: String, onDestroy: IO[Unit]): IO[Option[ExecutionStatus]] = {
-      semaphore.withPermit {
+      semaphore.permit.use { _ =>
         for {
           supervised <- mapRef.get.map(_.get(name))
           status     <- supervised.traverse { s =>
@@ -413,7 +412,7 @@ object Supervisor {
         _     <- signal.set(true)
         fiber <- supervisionFiberRef.get
         _     <- fiber.join
-        _     <- semaphore.withPermit {
+        _     <- semaphore.permit.use { _ =>
                    for {
                      supervised <- mapRef.get.map(_.values.toList)
                      _          <- log.info(s"Stopping ${supervised.size} projection(s)...")

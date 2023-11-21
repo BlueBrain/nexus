@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.effect.{Clock, IO, Timer}
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -12,7 +13,7 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 
 class ProjectDeletionModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   many[RemoteContextResolution].addEffect {
     ContextValue.fromFile("contexts/project-deletion.json").map { ctx =>
@@ -39,8 +40,7 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
         config: ProjectDeletionConfig,
         projectStatistics: ProjectsStatistics,
         supervisor: Supervisor,
-        clock: Clock[IO],
-        timer: Timer[IO]
-    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)(clock, timer)
+        clock: Clock[IO]
+    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor, clock)
   }
 }

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
@@ -31,13 +31,9 @@ final class BlazegraphIndexingAction(
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
     override val timeout: FiniteDuration
-)(implicit timer: Timer[IO], cs: ContextShift[IO])
-    extends IndexingAction {
+) extends IndexingAction {
 
-  private def compile(view: IndexingViewDef, elem: Elem[GraphResource])(implicit
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): IO[Option[CompiledProjection]] = view match {
+  private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): IO[Option[CompiledProjection]] = view match {
     // Synchronous indexing only applies to views that index the latest version
     case active: ActiveViewDef if active.selectFilter.tag == Tag.Latest =>
       IndexingViewDef
@@ -63,7 +59,7 @@ object BlazegraphIndexingAction {
       registry: ReferenceRegistry,
       client: BlazegraphClient,
       timeout: FiniteDuration
-  )(implicit baseUri: BaseUri, timer: Timer[IO], cs: ContextShift[IO]): BlazegraphIndexingAction = {
+  )(implicit baseUri: BaseUri): BlazegraphIndexingAction = {
     val batchConfig = BatchConfig.individual
     new BlazegraphIndexingAction(
       views.currentIndexingViews,

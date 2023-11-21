@@ -4,8 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep, Sink}
-import cats.effect.Effect
-import cats.implicits._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathContainsLinks, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PathInvalid, PermissionsFixingFailed}
@@ -25,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
 import scala.util.{Success, Try}
 
-trait Storages[F[_], Source] {
+trait Storages[Source] {
 
   /**
     * Checks that the provided bucket name exists and it is readable/writable.
@@ -61,7 +60,7 @@ trait Storages[F[_], Source] {
       name: String,
       path: Uri.Path,
       source: Source
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes]
 
   /**
     * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
@@ -80,7 +79,7 @@ trait Storages[F[_], Source] {
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  )(implicit bucketEv: BucketExists): F[RejOrAttributes]
+  )(implicit bucketEv: BucketExists): IO[Either[Rejection, FileAttributes]]
 
   /**
     * Retrieves the file as a Source.
@@ -109,7 +108,7 @@ trait Storages[F[_], Source] {
   def getAttributes(
       name: String,
       path: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes]
+  )(implicit bucketEv: BucketExists, pathEv: PathExists): IO[FileAttributes]
 
 }
 
@@ -150,16 +149,15 @@ object Storages {
   /**
     * An Disk implementation of Storage interface.
     */
-  final class DiskStorage[F[_]](
+  final class DiskStorage(
       config: StorageConfig,
       contentTypeDetector: ContentTypeDetector,
       digestConfig: DigestConfig,
-      cache: AttributesCache[F]
+      cache: AttributesCache
   )(implicit
       ec: ExecutionContext,
-      mt: Materializer,
-      F: Effect[F]
-  ) extends Storages[F, AkkaSource] {
+      mt: Materializer
+  ) extends Storages[AkkaSource] {
 
     private def decode(path: Uri.Path): String =
       Try(URLDecoder.decode(path.toString, "UTF-8")).getOrElse(path.toString())
@@ -192,75 +190,86 @@ object Storages {
         name: String,
         path: Uri.Path,
         source: AkkaSource
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] = {
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] = {
       val absFilePath = filePath(name, path)
       if (descendantOf(absFilePath, basePath(name)))
-        F.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
-          F.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
-            source
-              .alsoToMat(sinkDigest(msgDigest))(Keep.right)
-              .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
-                digFuture.zipWith(ioFuture) {
-                  case (digest, io) if absFilePath.toFile.exists() =>
-                    Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
-                  case _                                           =>
-                    Future.failed(InternalError(s"I/O error writing file to path '$path'"))
-                }
-              }
-              .run()
-              .flatten
-              .to[F]
+        IO.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
+          IO.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
+            IO.fromFuture(
+              IO.delay(
+                source
+                  .alsoToMat(sinkDigest(msgDigest))(Keep.right)
+                  .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
+                    digFuture.zipWith(ioFuture) {
+                      case (digest, io) if absFilePath.toFile.exists() =>
+                        Future(
+                          FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath))
+                        )
+                      case _                                           =>
+                        Future.failed(InternalError(s"I/O error writing file to path '$path'"))
+                    }
+                  }
+                  .run()
+                  .flatten
+              )
+            )
           }
       else
-        F.raiseError(PathInvalid(name, path))
+        IO.raiseError(PathInvalid(name, path))
     }
 
     def moveFile(
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists): F[RejOrAttributes] = {
+    )(implicit bucketEv: BucketExists): IO[Either[Rejection, FileAttributes]] = {
 
       val bucketPath          = basePath(name, protectedDir = false)
       val bucketProtectedPath = basePath(name)
       val absSourcePath       = filePath(name, sourcePath, protectedDir = false)
       val absDestPath         = filePath(name, destPath)
 
-      def fixPermissions(path: Path): F[Either[PermissionsFixingFailed, Unit]] =
+      def fixPermissions(path: Path): IO[Either[PermissionsFixingFailed, Unit]] =
         if (config.fixerEnabled) {
           val absPath  = path.toAbsolutePath.normalize.toString
           val process  = Process(config.fixerCommand :+ absPath)
           val logger   = StringProcessLogger(config.fixerCommand, absPath)
           val exitCode = process ! logger
-          if (exitCode == 0) F.pure(Right(()))
-          else F.pure(Left(PermissionsFixingFailed(absPath, logger.toString)))
+          if (exitCode == 0) IO.pure(Right(()))
+          else IO.pure(Left(PermissionsFixingFailed(absPath, logger.toString)))
         } else {
-          F.pure(Right(()))
+          IO.pure(Right(()))
         }
 
-      def failOrComputeSize(fixPermsResult: Either[PermissionsFixingFailed, Unit], isDir: Boolean): F[RejOrAttributes] =
+      def failOrComputeSize(
+          fixPermsResult: Either[PermissionsFixingFailed, Unit],
+          isDir: Boolean
+      ): IO[RejOrAttributes] =
         fixPermsResult match {
-          case Left(err) => F.raiseError(err)
+          case Left(err) => IO.raiseError(err)
           case Right(_)  => computeSizeAndMove(isDir)
         }
 
-      def computeSizeAndMove(isDir: Boolean): F[RejOrAttributes] = {
+      def computeSizeAndMove(isDir: Boolean): IO[RejOrAttributes] = {
         lazy val mediaType = contentTypeDetector(absDestPath, isDir)
         size(absSourcePath).flatMap { computedSize =>
-          F.fromTry(Try(Files.createDirectories(absDestPath.getParent))) >>
-            F.fromTry(Try(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))) >>
-            F.pure(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
-            F.pure(Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)))
+          IO.fromTry(Try(Files.createDirectories(absDestPath.getParent))) >>
+            IO.fromTry(Try(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))) >>
+            IO.pure(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
+            IO.pure(Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)))
         }
       }
 
-      def dirContainsLink(path: Path): F[Boolean] =
-        Directory
-          .walk(path)
-          .map(p => Files.isSymbolicLink(p) || containsHardLink(p))
-          .takeWhile(_ == false, inclusive = true)
-          .runWith(Sink.last)
-          .to[F]
+      def dirContainsLink(path: Path): IO[Boolean] =
+        IO.fromFuture(
+          IO.delay(
+            Directory
+              .walk(path)
+              .map(p => Files.isSymbolicLink(p) || containsHardLink(p))
+              .takeWhile(_ == false, inclusive = true)
+              .runWith(Sink.last)
+          )
+        )
 
       def allowedPrefix(absSourcePath: Path) =
         absSourcePath.startsWith(bucketPath) ||
@@ -268,25 +277,25 @@ object Storages {
 
       fixPermissions(absSourcePath).flatMap { fixPermsResult =>
         if (!Files.exists(absSourcePath))
-          F.pure(Left(PathNotFound(name, sourcePath)))
+          IO.pure(Left(PathNotFound(name, sourcePath)))
         else if (descendantOf(absSourcePath, bucketProtectedPath))
-          F.pure(Left(PathNotFound(name, sourcePath)))
+          IO.pure(Left(PathNotFound(name, sourcePath)))
         else if (!allowedPrefix(absSourcePath))
-          F.raiseError(PathInvalid(name, sourcePath))
+          IO.raiseError(PathInvalid(name, sourcePath))
         else if (!descendantOf(absDestPath, bucketProtectedPath))
-          F.raiseError(PathInvalid(name, destPath))
+          IO.raiseError(PathInvalid(name, destPath))
         else if (Files.exists(absDestPath))
-          F.pure(Left(PathAlreadyExists(name, destPath)))
+          IO.pure(Left(PathAlreadyExists(name, destPath)))
         else if (Files.isSymbolicLink(absSourcePath) || containsHardLink(absSourcePath))
-          F.pure(Left(PathContainsLinks(name, sourcePath)))
+          IO.pure(Left(PathContainsLinks(name, sourcePath)))
         else if (Files.isRegularFile(absSourcePath))
           failOrComputeSize(fixPermsResult, isDir = false)
         else if (Files.isDirectory(absSourcePath))
           dirContainsLink(absSourcePath).flatMap {
-            case true  => F.pure(Left(PathContainsLinks(name, sourcePath)))
+            case true  => IO.pure(Left(PathContainsLinks(name, sourcePath)))
             case false => failOrComputeSize(fixPermsResult, isDir = true)
           }
-        else F.pure(Left(PathNotFound(name, sourcePath)))
+        else IO.pure(Left(PathNotFound(name, sourcePath)))
       }
     }
 
@@ -303,7 +312,7 @@ object Storages {
     def getAttributes(
         name: String,
         path: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes] =
+    )(implicit bucketEv: BucketExists, pathEv: PathExists): IO[FileAttributes] =
       cache.get(filePath(name, path))
 
     private def containsHardLink(absPath: Path): Boolean =
@@ -314,13 +323,17 @@ object Storages {
           case _              => false
         }
 
-    private def size(absPath: Path): F[Long] =
-      if (Files.isDirectory(absPath))
-        Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_)).to[F]
-      else if (Files.isRegularFile(absPath))
-        F.pure(Files.size(absPath))
+    private def size(absPath: Path): IO[Long] =
+      if (Files.isDirectory(absPath)) {
+        IO.fromFuture(
+          IO.delay(
+            Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_))
+          )
+        )
+      } else if (Files.isRegularFile(absPath))
+        IO.pure(Files.size(absPath))
       else
-        F.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
+        IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
   }
 
 }

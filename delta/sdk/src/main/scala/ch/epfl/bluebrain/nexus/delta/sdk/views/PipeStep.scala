@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
@@ -13,6 +12,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
 import scala.annotation.nowarn
+import cats.implicits._
 
 /**
   * Definition of a pipe to include in a view

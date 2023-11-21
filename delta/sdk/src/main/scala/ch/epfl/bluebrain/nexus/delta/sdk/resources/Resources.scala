@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -24,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
+import cats.implicits._
 
 /**
   * Operations pertaining to managing resources.
@@ -352,10 +352,9 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      validateResource: ValidateResource
-  )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
+      validateResource: ValidateResource,
       clock: Clock[IO]
-  ): IO[ResourceEvent] = {
+  )(state: Option[ResourceState], cmd: ResourceCommand): IO[ResourceEvent] = {
 
     def validate(
         id: Iri,
@@ -376,7 +375,7 @@ object Resources {
           // format: off
           for {
             (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
-            t                          <- IOInstant.now
+            t                          <- clock.realTimeInstant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject, c.tag)
           // format: on
 
@@ -427,7 +426,7 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(u)
         schemaRef                   = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
         (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
-        time                       <- IOInstant.now
+        time                       <- clock.realTimeInstant
       } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject, u.tag)
       // format: on
     }
@@ -437,7 +436,7 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(u)
         (schemaRev, schemaProject) <- validate(u.id, u.expanded, u.schemaRef, s.project, u.caller)
         types                       = u.expanded.getTypes.getOrElse(Set.empty)
-        time                       <- IOInstant.now
+        time                       <- clock.realTimeInstant
       } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, s.rev + 1, time, u.subject)
     }
 
@@ -448,7 +447,7 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(c)
         _                          <- raiseWhenDifferentSchema(c, s)
         (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
-        time                       <- IOInstant.now
+        time                       <- clock.realTimeInstant
       } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
       // format: on
     }
@@ -456,7 +455,7 @@ object Resources {
     def tag(c: TagResource) = {
       for {
         s    <- stateWhereRevisionExists(c, c.targetRev)
-        time <- IOInstant.now
+        time <- clock.realTimeInstant
       } yield {
         ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, time, c.subject)
       }
@@ -465,7 +464,7 @@ object Resources {
     def deleteTag(c: DeleteResourceTag) = {
       for {
         s    <- stateWhereTagExistsOnResource(c, c.tag)
-        time <- IOInstant.now
+        time <- clock.realTimeInstant
       } yield ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, time, c.subject)
     }
 
@@ -473,7 +472,7 @@ object Resources {
       for {
         s    <- stateWhereResourceIsEditable(c)
         _    <- raiseWhenDifferentSchema(c, s)
-        time <- IOInstant.now
+        time <- clock.realTimeInstant
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
 
@@ -482,7 +481,7 @@ object Resources {
         s    <- stateWhereResourceExists(c)
         _    <- raiseWhenDifferentSchema(c, s)
         _    <- IO.raiseWhen(!s.deprecated)(ResourceIsNotDeprecated(c.id))
-        time <- IOInstant.now
+        time <- clock.realTimeInstant
       } yield ResourceUndeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
 
     cmd match {
@@ -501,13 +500,12 @@ object Resources {
     * Entity definition for [[Resources]]
     */
   def definition(
-      resourceValidator: ValidateResource
-  )(implicit
+      resourceValidator: ValidateResource,
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(resourceValidator)(_, _), next),
+      StateMachine(None, evaluate(resourceValidator, clock)(_, _), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

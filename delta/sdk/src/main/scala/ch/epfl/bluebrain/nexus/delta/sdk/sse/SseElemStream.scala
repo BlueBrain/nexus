@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -56,7 +56,7 @@ object SseElemStream {
   /**
     * Create a [[SseElemStream]]
     */
-  def apply(qc: QueryConfig, xas: Transactors)(implicit timer: Timer[IO]): SseElemStream = new SseElemStream {
+  def apply(qc: QueryConfig, xas: Transactors): SseElemStream = new SseElemStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       StreamingQuery.elems(project, start, selectFilter, qc, xas).map(toServerSentEvent)

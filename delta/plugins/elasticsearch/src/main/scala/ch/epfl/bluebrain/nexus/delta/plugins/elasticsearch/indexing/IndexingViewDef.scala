@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.data.NonEmptyChain
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -98,7 +98,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -106,7 +106,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] =
     compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.selectFilter, _), sink)
 
   private def compile(
@@ -114,7 +114,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+  )(implicit cr: RemoteContextResolution): IO[CompiledProjection] = {
 
     val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)

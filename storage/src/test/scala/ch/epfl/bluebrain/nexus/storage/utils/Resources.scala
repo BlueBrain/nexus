@@ -66,5 +66,3 @@ trait Resources {
   final def jsonContentOf(resourcePath: String, replacements: Map[String, String]): Json =
     parse(contentOf(resourcePath, replacements)).toTry.get
 }
-
-object Resources extends Resources

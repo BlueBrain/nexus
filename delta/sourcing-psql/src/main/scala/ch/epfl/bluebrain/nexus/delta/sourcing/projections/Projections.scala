@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -99,12 +98,9 @@ trait Projections {
 
 object Projections {
 
-  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration)(implicit
-      clock: Clock[IO],
-      timer: Timer[IO]
-  ): Projections =
+  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration, clock: Clock[IO]): Projections =
     new Projections {
-      private val projectionStore        = ProjectionStore(xas, config)
+      private val projectionStore        = ProjectionStore(xas, config, clock)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
 
       override def progress(name: String): IO[Option[ProjectionProgress]] = projectionStore.offset(name)
@@ -117,7 +113,7 @@ object Projections {
       override def delete(name: String): IO[Unit] = projectionStore.delete(name)
 
       override def scheduleRestart(projectionName: String)(implicit subject: Subject): IO[Unit] = {
-        IOInstant.now.flatMap { now =>
+        clock.realTimeInstant.flatMap { now =>
           projectionRestartStore.save(ProjectionRestart(projectionName, now, subject))
         }
       }
@@ -127,7 +123,7 @@ object Projections {
       override def acknowledgeRestart(id: Offset): IO[Unit] = projectionRestartStore.acknowledge(id)
 
       override def deleteExpiredRestarts(): IO[Unit] =
-        IOInstant.now.flatMap { now =>
+        clock.realTimeInstant.flatMap { now =>
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
         }
 

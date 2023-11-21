@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 
 trait Fixtures {
-  implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -25,8 +26,8 @@ trait Fixtures {
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )
 
-  val defaultProperties: Map[String, String] =
-    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").unsafeRunSync()
+  val defaultProperties: IO[Map[String, String]] =
+    loader.propertiesOf("blazegraph/index.properties")
 
   def alwaysValidate: ValidateBlazegraphView = (_: BlazegraphViewValue) => IO.unit
 }

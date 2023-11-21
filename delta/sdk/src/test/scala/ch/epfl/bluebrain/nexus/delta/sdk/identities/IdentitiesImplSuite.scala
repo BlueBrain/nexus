@@ -3,12 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
-import cats.effect.IO
-import cats.effect.concurrent.Ref
-import cats.implicits._
+import cats.effect.{IO, Ref}
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{GroupsCache, RealmCache}
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.jwt.TokenGenerator
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -29,7 +27,7 @@ import io.circe.{parser, Json}
 import java.time.Instant
 import java.util.Date
 
-class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMap with CirceLiteral {
+class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
 
   /**
     * Generate RSA key

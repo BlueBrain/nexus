@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxApplicativeError
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -61,7 +60,6 @@ final class ElasticSearchIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -178,7 +176,6 @@ object ElasticSearchIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

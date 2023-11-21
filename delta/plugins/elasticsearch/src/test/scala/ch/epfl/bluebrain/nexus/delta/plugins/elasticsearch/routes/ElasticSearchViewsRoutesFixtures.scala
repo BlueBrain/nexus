@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.CancelAfterFailure
 
@@ -33,7 +32,6 @@ class ElasticSearchViewsRoutesFixtures
     with DoobieScalaTestFixture
     with CirceLiteral
     with CirceEq
-    with CatsRunContext
     with CancelAfterFailure
     with ConfigFixtures
     with CirceMarshalling

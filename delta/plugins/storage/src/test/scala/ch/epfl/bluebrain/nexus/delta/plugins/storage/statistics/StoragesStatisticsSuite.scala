@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatE
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
 import munit.AnyFixture
 
@@ -22,7 +21,6 @@ class StoragesStatisticsSuite
     extends CatsEffectSuite
     with ElasticSearchClientSetup.Fixture
     with SupervisorSetup.Fixture
-    with TestHelpers
     with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)

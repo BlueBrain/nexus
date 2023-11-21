@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.{Clock, IO}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -211,8 +210,6 @@ object Resolvers {
     Label.unsafe("resolvers") -> schemas.resolvers
   )
 
-  import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
-
   private[delta] def next(state: Option[ResolverState], event: ResolverEvent): Option[ResolverState] = {
 
     def created(e: ResolverCreated): Option[ResolverState] =
@@ -259,10 +256,9 @@ object Resolvers {
   }
 
   private[delta] def evaluate(
-      validatePriority: ValidatePriority
-  )(state: Option[ResolverState], command: ResolverCommand)(implicit
+      validatePriority: ValidatePriority,
       clock: Clock[IO]
-  ): IO[ResolverEvent] = {
+  )(state: Option[ResolverState], command: ResolverCommand): IO[ResolverEvent] = {
 
     def validateResolverValue(
         project: ProjectRef,
@@ -287,7 +283,7 @@ object Resolvers {
       case None    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- now
+          now <- clock.realTimeInstant
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
@@ -318,7 +314,7 @@ object Resolvers {
         for {
           _   <- IO.raiseWhen(s.value.tpe != c.value.tpe)(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- now
+          now <- clock.realTimeInstant
         } yield ResolverUpdated(
           id = c.id,
           project = c.project,
@@ -341,7 +337,7 @@ object Resolvers {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        now.map { now =>
+        clock.realTimeInstant.map { now =>
           ResolverTagAdded(
             id = c.id,
             project = c.project,
@@ -365,7 +361,7 @@ object Resolvers {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ResolverIsDeprecated(s.id))
       case Some(s)                   =>
-        now.map { now =>
+        clock.realTimeInstant.map { now =>
           ResolverDeprecated(
             id = c.id,
             project = c.project,
@@ -391,10 +387,10 @@ object Resolvers {
   /**
     * Entity definition for [[Resolvers]]
     */
-  def definition(validatePriority: ValidatePriority)(implicit clock: Clock[IO]): ResolverDefinition =
+  def definition(validatePriority: ValidatePriority, clock: Clock[IO]): ResolverDefinition =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validatePriority)(_, _), next),
+      StateMachine(None, evaluate(validatePriority, clock)(_, _), next),
       ResolverEvent.serializer,
       ResolverState.serializer,
       Tagger[ResolverEvent](

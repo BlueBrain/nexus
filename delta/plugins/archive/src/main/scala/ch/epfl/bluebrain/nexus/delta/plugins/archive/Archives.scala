@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expandIri, ArchiveLog}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
@@ -182,17 +182,11 @@ object Archives {
       fetchContext: FetchContext[ArchiveRejection],
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
-      xas: Transactors
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF,
-      rcr: RemoteContextResolution,
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO]
-  ): Archives = new Archives(
+      xas: Transactors,
+      clock: Clock[IO]
+  )(implicit api: JsonLdApi, uuidF: UUIDF, rcr: RemoteContextResolution): Archives = new Archives(
     EphemeralLog(
-      definition,
+      definition(clock),
       cfg.ephemeral,
       xas
     ),
@@ -202,10 +196,10 @@ object Archives {
     cfg.ephemeral
   )
 
-  private def definition(implicit clock: Clock[IO]) =
+  private def definition(clock: Clock[IO]) =
     EphemeralDefinition(
       entityType,
-      evaluate,
+      evaluate(clock),
       ArchiveState.serializer,
       onUniqueViolation = (id: Iri, c: CreateArchive) => ResourceAlreadyExists(id, c.project)
     )
@@ -216,10 +210,10 @@ object Archives {
   ): JsonLdSourceDecoder[ArchiveRejection, ArchiveValue] =
     new JsonLdSourceDecoder[ArchiveRejection, ArchiveValue](contexts.archives, uuidF)
 
-  private[archive] def evaluate(
+  private[archive] def evaluate(clock: Clock[IO])(
       command: CreateArchive
-  )(implicit clock: Clock[IO]): IO[ArchiveState] =
-    IOInstant.now.map { now =>
+  ): IO[ArchiveState] =
+    clock.realTimeInstant.map { now =>
       ArchiveState(command.id, command.project, command.value.resources, now, command.subject)
     }
 

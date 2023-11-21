@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
@@ -53,7 +53,7 @@ object ElasticSearchCoordinator {
       sink: ActiveViewDef => Sink,
       createIndex: ActiveViewDef => IO[Unit],
       deleteIndex: ActiveViewDef => IO[Unit]
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO])
+  )(implicit cr: RemoteContextResolution)
       extends ElasticSearchCoordinator {
 
     def run(offset: Offset): Stream[IO, Elem[Unit]] = {
@@ -140,7 +140,7 @@ object ElasticSearchCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: ElasticSearchViewsConfig
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[ElasticSearchCoordinator] = {
+  )(implicit cr: RemoteContextResolution): IO[ElasticSearchCoordinator] = {
     if (config.indexingEnabled) {
       apply(
         views.indexingViews,
@@ -171,7 +171,7 @@ object ElasticSearchCoordinator {
       sink: ActiveViewDef => Sink,
       createIndex: ActiveViewDef => IO[Unit],
       deleteIndex: ActiveViewDef => IO[Unit]
-  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[ElasticSearchCoordinator] =
+  )(implicit cr: RemoteContextResolution): IO[ElasticSearchCoordinator] =
     for {
       cache      <- LocalCache[ViewRef, ActiveViewDef]()
       coordinator = new Active(

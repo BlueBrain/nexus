@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
@@ -259,15 +258,16 @@ object Acls {
 
   private[delta] def evaluate(
       fetchPermissionSet: IO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[Unit]
-  )(state: Option[AclState], cmd: AclCommand)(implicit clock: Clock[IO]): IO[AclEvent] = {
+      findUnknownRealms: Set[Label] => IO[Unit],
+      clock: Clock[IO]
+  )(state: Option[AclState], cmd: AclCommand): IO[AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
       fetchPermissionSet.flatMap { permissions =>
         IO.raiseWhen(!acl.permissions.subsetOf(permissions))(UnknownPermissions(acl.permissions -- permissions))
       } >>
         findUnknownRealms(acl.value.keySet.collect { case id: IdentityRealm => id.realm }) >>
-        IOInstant.now.map(f)
+        clock.realTimeInstant.map(f)
 
     def replace(c: ReplaceAcl)   =
       state match {
@@ -323,7 +323,7 @@ object Acls {
         case None                      => IO.raiseError(AclNotFound(c.address))
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case Some(s) if s.acl.isEmpty  => IO.raiseError(AclIsEmpty(c.address))
-        case Some(_)                   => IOInstant.now.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
+        case Some(_)                   => clock.realTimeInstant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -339,11 +339,12 @@ object Acls {
     */
   def definition(
       fetchPermissionSet: IO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[Unit]
-  )(implicit clock: Clock[IO]): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
+      findUnknownRealms: Set[Label] => IO[Unit],
+      clock: Clock[IO]
+  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms)(_, _), next),
+      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms, clock)(_, _), next),
       AclEvent.serializer,
       AclState.serializer,
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>

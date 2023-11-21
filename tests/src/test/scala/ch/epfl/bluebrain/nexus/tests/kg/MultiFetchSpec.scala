@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, HttpResponse, StatusCodes}
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 import org.scalatest.Assertion
 
@@ -28,7 +27,7 @@ class MultiFetchSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
     } yield ()
 
-    val resourcePayload = SimpleResource.sourcePayload(5)
+    val resourcePayload = SimpleResource.sourcePayload(5).accepted
 
     val createResources = for {
       // Creation

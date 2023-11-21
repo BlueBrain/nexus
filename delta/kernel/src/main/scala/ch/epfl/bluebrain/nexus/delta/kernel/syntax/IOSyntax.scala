@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 import cats.Functor
-import cats.effect.{IO, Timer}
-import cats.implicits.catsSyntaxApplicativeError
+import cats.effect.IO
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import org.typelevel.log4cats.{Logger => Log4CatsLogger}
@@ -23,7 +22,7 @@ final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
   /**
     * Apply the retry strategy on the provided IO
     */
-  def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E], timer: Timer[IO]): IO[A] =
+  def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E]): IO[A] =
     RetryStrategy.use(io, retryStrategy)
 
 }

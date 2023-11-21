@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.BodyPartEntity
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -34,8 +34,7 @@ object SaveFile {
     * Construct a [[SaveFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem,
-      cs: ContextShift[IO]
+      as: ActorSystem
   ): SaveFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.saveFile

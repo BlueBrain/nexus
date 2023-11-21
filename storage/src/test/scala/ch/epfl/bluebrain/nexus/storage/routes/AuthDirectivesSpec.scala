@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.storage.config.Settings
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
 import ch.epfl.bluebrain.nexus.testkit.jwt.TokenGenerator
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
 import org.scalatest.BeforeAndAfter
@@ -18,7 +18,7 @@ import org.scalatest.BeforeAndAfter
 import java.time.Instant
 
 //noinspection NameBooleanParameters
-class AuthDirectivesSpec extends BaseSpec with BeforeAndAfter with ScalatestRouteTest {
+class AuthDirectivesSpec extends CatsEffectSpec with BeforeAndAfter with ScalatestRouteTest {
 
   implicit private val hc: HttpConfig = Settings(system).appConfig.http
 

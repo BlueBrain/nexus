@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directives._
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.storage.StorageError._

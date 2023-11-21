@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgressStore.{logger, CompositeProgressRow}
@@ -22,14 +21,14 @@ import doobie.postgres.implicits._
 
 import java.time.Instant
 
-final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) {
+final class CompositeProgressStore(xas: Transactors, clock: Clock[IO]) {
 
   /**
     * Saves a projection offset.
     */
   def save(view: IndexingViewRef, branch: CompositeBranch, progress: ProjectionProgress): IO[Unit] = {
     logger.debug(s"Saving progress $progress for branch $branch of view $view") >>
-      IOInstant.now.flatMap { instant =>
+      clock.realTimeInstant.flatMap { instant =>
         sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
            |processed, discarded, failed, created_at, updated_at)
            |VALUES (
@@ -66,7 +65,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) 
     * @param restart
     *   the restart to apply
     */
-  def restart(restart: CompositeRestart): IO[Unit] = IOInstant.now.flatMap { instant =>
+  def restart(restart: CompositeRestart): IO[Unit] = clock.realTimeInstant.flatMap { instant =>
     val project = restart.view.project
     val id      = restart.view.viewId
     val reset   = ProjectionProgress.NoProgress

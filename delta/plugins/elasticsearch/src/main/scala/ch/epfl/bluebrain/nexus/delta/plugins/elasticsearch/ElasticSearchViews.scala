@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
@@ -407,18 +407,16 @@ object ElasticSearchViews {
       prefix: String,
       xas: Transactors,
       defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings
+      defaultSettings: DefaultSettings,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
-      contextShift: ContextShift[IO],
-      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(
-          definition(validate),
+          definition(validate, clock),
           eventLogConfig,
           xas
         ),
@@ -463,16 +461,16 @@ object ElasticSearchViews {
   }
 
   private[elasticsearch] def evaluate(
-      validate: ValidateElasticSearchView
+      validate: ValidateElasticSearchView,
+      clock: Clock[IO]
   )(state: Option[ElasticSearchViewState], cmd: ElasticSearchViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[ElasticSearchViewEvent] = {
 
     def create(c: CreateElasticSearchView) = state match {
       case None    =>
         for {
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
           u <- uuidF()
           _ <- validate(u, IndexingRev.init, c.value)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
@@ -489,7 +487,7 @@ object ElasticSearchViews {
         val newIndexingRev = nextIndexingRev(s.value, c.value, s.indexingRev, c.rev)
         for {
           _ <- validate(s.uuid, newIndexingRev, c.value)
-          t <- IOInstant.now
+          t <- clock.realTimeInstant
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
@@ -498,7 +496,7 @@ object ElasticSearchViews {
       case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -508,7 +506,9 @@ object ElasticSearchViews {
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(
+          ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject)
+        )
     }
 
     cmd match {
@@ -520,8 +520,9 @@ object ElasticSearchViews {
   }
 
   def definition(
-      validate: ValidateElasticSearchView
-  )(implicit clock: Clock[IO], uuidF: UUIDF): ScopedEntityDefinition[
+      validate: ValidateElasticSearchView,
+      clock: Clock[IO]
+  )(implicit uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     ElasticSearchViewState,
     ElasticSearchViewCommand,
@@ -532,7 +533,7 @@ object ElasticSearchViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate)(_, _),
+        evaluate(validate, clock)(_, _),
         next
       ),
       ElasticSearchViewEvent.serializer,

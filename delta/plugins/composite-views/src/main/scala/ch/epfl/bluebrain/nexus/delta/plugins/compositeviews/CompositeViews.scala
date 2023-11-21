@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
@@ -387,16 +387,16 @@ object CompositeViews {
   }
 
   private[compositeviews] def evaluate(
-      validate: ValidateCompositeView
+      validate: ValidateCompositeView,
+      clock: Clock[IO]
   )(state: Option[CompositeViewState], cmd: CompositeViewCommand)(implicit
-      clock: Clock[IO],
       uuidF: UUIDF
   ): IO[CompositeViewEvent] = {
 
     def create(c: CreateCompositeView) = state match {
       case None    =>
         for {
-          t     <- IOInstant.now
+          t     <- clock.realTimeInstant
           u     <- uuidF()
           value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
           _     <- validate(u, value)
@@ -417,7 +417,7 @@ object CompositeViews {
         for {
           value <- CompositeViewFactory.update(c.value, s.value, newIndexingRev)(c.projectBase, uuidF)
           _     <- validate(s.uuid, value)
-          t     <- IOInstant.now
+          t     <- clock.realTimeInstant
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
@@ -429,7 +429,7 @@ object CompositeViews {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOInstant.now.map(
+        clock.realTimeInstant.map(
           CompositeViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -442,7 +442,7 @@ object CompositeViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOInstant.now.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
+        clock.realTimeInstant.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -453,13 +453,12 @@ object CompositeViews {
     }
   }
 
-  def definition(validate: ValidateCompositeView)(implicit
-      clock: Clock[IO],
+  def definition(validate: ValidateCompositeView, clock: Clock[IO])(implicit
       uuidF: UUIDF
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate)(_, _), next),
+      StateMachine(None, evaluate(validate, clock)(_, _), next),
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
       Tagger[CompositeViewEvent](
@@ -491,12 +490,10 @@ object CompositeViews {
       contextResolution: ResolverContextResolution,
       validate: ValidateCompositeView,
       config: CompositeViewsConfig,
-      xas: Transactors
+      xas: Transactors,
+      clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
-      clock: Clock[IO],
-      timer: Timer[IO],
-      cs: ContextShift[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO
@@ -506,7 +503,7 @@ object CompositeViews {
       .map { sourceDecoder =>
         new CompositeViews(
           ScopedEventLog(
-            definition(validate),
+            definition(validate, clock),
             config.eventLog,
             xas
           ),

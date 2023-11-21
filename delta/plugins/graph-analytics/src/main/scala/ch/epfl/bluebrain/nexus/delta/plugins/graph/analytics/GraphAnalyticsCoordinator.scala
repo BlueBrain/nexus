@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -46,8 +46,7 @@ object GraphAnalyticsCoordinator {
       sink: ProjectRef => Sink,
       createIndex: ProjectRef => IO[Unit],
       deleteIndex: ProjectRef => IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO])
-      extends GraphAnalyticsCoordinator {
+  ) extends GraphAnalyticsCoordinator {
 
     def run(offset: Offset): ElemStream[Unit] =
       fetchProjects(offset).evalMap {
@@ -129,7 +128,7 @@ object GraphAnalyticsCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: GraphAnalyticsConfig
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[GraphAnalyticsCoordinator] =
+  ): IO[GraphAnalyticsCoordinator] =
     if (config.indexingEnabled) {
       val coordinator = apply(
         projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
@@ -165,7 +164,7 @@ object GraphAnalyticsCoordinator {
       sink: ProjectRef => Sink,
       createIndex: ProjectRef => IO[Unit],
       deleteIndex: ProjectRef => IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[GraphAnalyticsCoordinator] = {
+  ): IO[GraphAnalyticsCoordinator] = {
     val coordinator =
       new Active(fetchProjects, analyticsStream, supervisor, sink, createIndex, deleteIndex)
     supervisor

@@ -148,7 +148,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
                               case _          => IO.raiseError(InvalidPath(input))
                             }
                         )
-      archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
+      archives        =
+        Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas, clock)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
       r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
     } yield r
@@ -298,14 +299,16 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
         val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
         actualContent shouldEqual expectedContent
 
-        val expectedMetadata = FilesRoutesSpec.fileMetadata(
-          projectRef,
-          fileId,
-          file.value.attributes,
-          storageRef,
-          createdBy = subject,
-          updatedBy = subject
-        )
+        val expectedMetadata = FilesRoutesSpec
+          .fileMetadata(
+            projectRef,
+            fileId,
+            file.value.attributes,
+            storageRef,
+            createdBy = subject,
+            updatedBy = subject
+          )
+          .accepted
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }

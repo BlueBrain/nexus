@@ -9,5 +9,3 @@ trait Randomness {
   final def genInt(max: Int = 100): Int = Random.nextInt(max)
 
 }
-
-object Randomness extends Randomness

@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
 import cats.data.{NonEmptyChain, NonEmptyMap}
-import cats.effect.ExitCase.{Canceled, Completed, Error}
-import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, ExitCase, IO, Timer}
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect.kernel.Resource.ExitCase.{Canceled, Errored, Succeeded}
+import cats.effect.{IO, Ref}
 import cats.kernel.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -184,7 +184,7 @@ object CompositeViewDef {
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+  ): IO[CompiledProjection] = {
     val metadata                             = view.metadata
     val fetchProgress: IO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
@@ -251,23 +251,23 @@ object CompositeViewDef {
       rebuild: ElemPipe[Unit, Unit],
       restarts: ElemPipe[Unit, Unit],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[ElemStream[Unit]] = {
+  ): IO[ElemStream[Unit]] = {
     // We override the default implementation in FS2 (where it appends the two streams)
     implicit val semigroup: Semigroup[ElemStream[Unit]] = (x: ElemStream[Unit], y: ElemStream[Unit]) => x.merge(y)
 
     val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNel.map(_._2))
     val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNel.map(_._2))
 
-    def startLog(sourceId: Iri, branch: String)                                =
+    def startLog(sourceId: Iri, branch: String)                             =
       logger.debug(s"Running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
-    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => IO[Unit] = {
-      case Completed =>
+    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase => IO[Unit] = {
+      case Succeeded  =>
         logger.debug(s"Completed '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
-      case Error(e)  =>
+      case Errored(e) =>
         logger.error(
           s"Error $e raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
         )
-      case Canceled  =>
+      case Canceled   =>
         logger.debug(s"Cancelled '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     }
 
@@ -311,7 +311,7 @@ object CompositeViewDef {
       rebuildStrategy: Option[RebuildStrategy],
       predicate: IO[Boolean],
       resetProgress: IO[Unit]
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Pipe[IO, A, A] = { stream =>
+  ): Pipe[IO, A, A] = { stream =>
     rebuildStrategy match {
       case Some(Interval(fixedRate)) =>
         val rebuildWhen       = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
@@ -412,7 +412,7 @@ object CompositeViewDef {
       targets: NonEmptyChain[(Iri, Operation)],
       fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
+  ): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceMainOffset(sourceId)
       val main         = for {
@@ -451,7 +451,7 @@ object CompositeViewDef {
       targets: NonEmptyChain[(Iri, Operation)],
       fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
+  ): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceRebuildOffset(sourceId)
       val rebuild      = for {

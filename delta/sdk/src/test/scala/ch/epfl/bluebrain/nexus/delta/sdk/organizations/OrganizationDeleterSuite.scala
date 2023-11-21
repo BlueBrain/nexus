@@ -36,7 +36,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
   private val orgConfig           = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
-  private lazy val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config)
+  private lazy val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config, clock)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
 
@@ -44,9 +44,9 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
   private lazy val orgDeleter      = OrganizationDeleter(xas)
   private val projRef              = ProjectRef.unsafe(org1.value, "myproj")
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
-  private lazy val orgs            = OrganizationsImpl(Set(), orgConfig, xas)
+  private lazy val orgs            = OrganizationsImpl(Set(), orgConfig, xas, clock)
   private val permission           = Permissions.resources.read
-  private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas)
+  private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas, clock)
 
   implicit val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
   implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())

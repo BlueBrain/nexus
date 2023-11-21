@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, StatusCode, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
@@ -18,7 +18,7 @@ import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
-class StorageRoutes()(implicit storages: Storages[IO, AkkaSource], hc: HttpConfig) {
+class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
 
   def routes: Route =
     // Consume buckets/{name}/
@@ -104,7 +104,7 @@ object StorageRoutes {
     implicit val linkFileEnc: Encoder[LinkFile] = deriveEncoder[LinkFile]
   }
 
-  final def apply(storages: Storages[IO, AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {
+  final def apply(storages: Storages[AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {
     implicit val s = storages
     new StorageRoutes()
   }

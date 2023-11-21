@@ -60,7 +60,8 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
     Set.empty,
     ApiMappings.empty,
     config,
-    xas
+    xas,
+    clock
   )
 
   private lazy val provisioning = ProjectProvisioning(aclCheck.append(_), projects, provisioningConfig)

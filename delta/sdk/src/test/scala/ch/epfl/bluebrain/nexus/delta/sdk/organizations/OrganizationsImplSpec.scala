@@ -26,7 +26,7 @@ class OrganizationsImplSpec
     with CancelAfterFailure
     with ConfigFixtures {
 
-  private lazy val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -40,7 +40,7 @@ class OrganizationsImplSpec
   val label2       = Label.unsafe("myorg2")
 
   private lazy val (scopeInitLog, orgs) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> OrganizationsImpl(Set(scopeInitLog), config, xas)
+    scopeInitLog -> OrganizationsImpl(Set(scopeInitLog), config, xas, clock)
   }.accepted
 
   "Organizations implementation" should {

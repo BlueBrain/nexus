@@ -1,34 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.concurrent.Ref
-import cats.effect.{Clock, IO}
+import cats.effect.{IO, Ref}
 
-import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{DurationLong, FiniteDuration, MILLISECONDS}
-
-trait IOUtils {
-
-  implicit class IoOps[A](val io: IO[A]) {
-    def timed(implicit clock: Clock[IO]): IO[(FiniteDuration, A)] = {
-      for {
-        start  <- clock.monotonic(MILLISECONDS)
-        result <- io
-        finish <- clock.monotonic(MILLISECONDS)
-      } yield ((finish - start).milliseconds, result)
-    }
-  }
-}
-
-object IOUtils extends IOUtils
-
-trait IOInstant {
-  def now(implicit clock: Clock[IO]): IO[Instant] =
-    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
-}
-
-object IOInstant extends IOInstant
 
 trait UUIDF {
 
