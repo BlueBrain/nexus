@@ -1,6 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 /*
+ * Source: https://github.com/krasserm/streamz/blob/cc78a3a956360756ccc24a29754742e1760a84b8/streamz-converter/src/main/scala/streamz/converter/Converter.scala
+ *
  * Copyright 2014 - 2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,21 +23,17 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow => AkkaFlow, Keep, Sink => AkkaSink, Source => AkkaSource}
 import akka.testkit._
 import cats.effect.IO
-import cats.effect.std.Dispatcher
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import fs2._
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.annotation.nowarn
-
-object ConverterSpec {
+object StreamConverterSpec {
   implicit class AwaitHelper[A](f: Future[A]) {
     def await: A = Await.result(f, 3.seconds)
   }
@@ -44,27 +42,12 @@ object ConverterSpec {
   val error             = new Exception("test")
 }
 
-class ConverterSpec extends TestKit(ActorSystem("test")) with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
-  import ConverterSpec._
-  import cats.effect.unsafe.implicits.global
-
-  private var shutdownDispatcher: IO[Unit] = IO.unit
-
-  @nowarn("cat=deprecation")
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    val (_, s) = Dispatcher[IO].allocated.unsafeRunSync()
-//    _dispatcher = Some(d)
-    shutdownDispatcher = s
-  }
-
-  override def afterAll(): Unit = {
-//    _dispatcher = None
-    shutdownDispatcher.unsafeRunSync()
-    shutdownDispatcher = IO.unit
-    TestKit.shutdownActorSystem(system)
-    super.afterAll()
-  }
+class StreamConverterSpec
+    extends TestKit(ActorSystem("test"))
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
+  import StreamConverterSpec._
 
   private def expectError(run: => Any): Assertion =
     intercept[Exception](run).getMessage should be(error.getMessage)

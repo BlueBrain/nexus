@@ -8,6 +8,8 @@ import cats.effect.kernel.Resource.ExitCase
 import cats.effect.unsafe.implicits._
 import fs2._
 
+import scala.concurrent.Future
+
 /**
   * Converts a fs2 stream to an Akka source Original code from the streamz library from Martin Krasser (published under
   * Apache License 2.0):
@@ -16,26 +18,26 @@ import fs2._
 object StreamConverter {
 
   private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A]): Stream[IO, Unit] = {
-    def publish(a: A): IO[Option[Unit]] = IO
-      .fromFutureCancelable(IO.delay((publisher.offer(a), IO.unit)))
-      .flatMap {
-        case QueueOfferResult.Enqueued       => IO.pure(Some(()))
-        case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
-        case QueueOfferResult.QueueClosed    => IO.none
-        case QueueOfferResult.Dropped        =>
-          IO.raiseError[Option[Unit]](
-            new IllegalStateException("This should never happen because we use OverflowStrategy.backpressure")
-          )
-      }
-      .recover {
-        // This handles a race condition between `interruptWhen` and `publish`.
-        // There's no guarantee that, when the akka sink is terminated, we will observe the
-        // `interruptWhen` termination before calling publish one last time.
-        // Such a call fails with StreamDetachedException
-        case _: StreamDetachedException => None
-      }
+    def publish(a: A): IO[Option[Unit]] =
+      fromFutureLegacy(IO.delay(publisher.offer(a)))
+        .flatMap {
+          case QueueOfferResult.Enqueued       => IO.pure(Some(()))
+          case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
+          case QueueOfferResult.QueueClosed    => IO.none
+          case QueueOfferResult.Dropped        =>
+            IO.raiseError[Option[Unit]](
+              new IllegalStateException("This should never happen because we use OverflowStrategy.backpressure")
+            )
+        }
+        .recover {
+          // This handles a race condition between `interruptWhen` and `publish`.
+          // There's no guarantee that, when the akka sink is terminated, we will observe the
+          // `interruptWhen` termination before calling publish one last time.
+          // Such a call fails with StreamDetachedException
+          case _: StreamDetachedException => None
+        }
 
-    def watchCompletion: IO[Unit]    = IO.fromFutureCancelable { IO.delay((publisher.watchCompletion(), IO.unit)) }.void
+    def watchCompletion: IO[Unit]    = fromFutureLegacy(IO.delay(publisher.watchCompletion())).void
     def fail(e: Throwable): IO[Unit] = IO.delay(publisher.fail(e)) >> watchCompletion
     def complete: IO[Unit]           = IO.delay(publisher.complete()) >> watchCompletion
 
@@ -80,9 +82,16 @@ object StreamConverter {
   private def subscriberStream[A](
       subscriber: SinkQueueWithCancel[A]
   ): Stream[IO, A] = {
-    val pull   = IO.fromFutureCancelable { IO.delay((subscriber.pull(), IO.unit)) }
+    val pull   = fromFutureLegacy(IO.delay(subscriber.pull()))
     val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
   }
+
+  /**
+    * Without using fromFutureCancelable, it results in the stream not terminating. Occurred in the migration from
+    * cats-effect 2 to 3. Seems wrong but it works.
+    */
+  private def fromFutureLegacy[A](future: IO[Future[A]]): IO[A] =
+    IO.fromFutureCancelable(future.map(f => (f, IO.unit)))
 
 }
