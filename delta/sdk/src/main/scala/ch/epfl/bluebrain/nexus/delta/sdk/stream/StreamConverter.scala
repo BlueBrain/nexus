@@ -17,7 +17,7 @@ object StreamConverter {
 
   private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A]): Stream[IO, Unit] = {
     def publish(a: A): IO[Option[Unit]] = IO
-      .fromFuture(IO.delay(publisher.offer(a)))
+      .fromFutureCancelable(IO.delay((publisher.offer(a), IO.unit)))
       .flatMap {
         case QueueOfferResult.Enqueued       => IO.pure(Some(()))
         case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
@@ -35,7 +35,7 @@ object StreamConverter {
         case _: StreamDetachedException => None
       }
 
-    def watchCompletion: IO[Unit]    = IO.fromFuture(IO.delay(publisher.watchCompletion())).void
+    def watchCompletion: IO[Unit]    = IO.fromFutureCancelable { IO.delay((publisher.watchCompletion(), IO.unit)) }.void
     def fail(e: Throwable): IO[Unit] = IO.delay(publisher.fail(e)) >> watchCompletion
     def complete: IO[Unit]           = IO.delay(publisher.complete()) >> watchCompletion
 
@@ -80,7 +80,7 @@ object StreamConverter {
   private def subscriberStream[A](
       subscriber: SinkQueueWithCancel[A]
   ): Stream[IO, A] = {
-    val pull   = IO.fromFuture(IO.delay(subscriber.pull()))
+    val pull   = IO.fromFutureCancelable { IO.delay((subscriber.pull(), IO.unit)) }
     val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
   }
