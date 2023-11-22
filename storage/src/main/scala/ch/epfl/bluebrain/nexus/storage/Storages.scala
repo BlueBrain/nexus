@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File._
@@ -77,6 +78,14 @@ trait Storages[Source] {
       destPath: Uri.Path
   )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]]
 
+  def copyFile2(
+      name: String,
+      files: NonEmptyList[CopyFile]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] = {
+    val head = files.head
+    copyFile(name, head.source, head.destination)
+  }
+
   /**
     * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
     *
@@ -129,7 +138,9 @@ trait Storages[Source] {
 object Storages {
 
   sealed trait BucketExistence
-  sealed trait PathExistence
+  sealed trait PathExistence {
+    def exists: Boolean
+  }
 
   object BucketExistence {
     final case object BucketExists       extends BucketExistence
@@ -139,9 +150,13 @@ object Storages {
   }
 
   object PathExistence {
-    final case object PathExists       extends PathExistence
-    final case object PathDoesNotExist extends PathExistence
-    type PathExists       = PathExists.type
+    final case object PathExists       extends PathExistence {
+      val exists = true
+    }
+    final case object PathDoesNotExist extends PathExistence {
+      val exists = false
+    }
+    type PathExists = PathExists.type
     type PathDoesNotExist = PathDoesNotExist.type
   }
 
