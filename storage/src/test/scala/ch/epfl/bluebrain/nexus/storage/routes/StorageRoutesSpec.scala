@@ -204,7 +204,7 @@ class StorageRoutesSpec
 
         Put(
           s"/v1/buckets/$name/files/path/to/myfile.txt",
-          jsonContentOf("/file-create-from-existing.json")
+          jsonContentOf("/file-link.json")
         ) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
@@ -223,10 +223,10 @@ class StorageRoutesSpec
         val source = "source/dir"
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
-        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
+        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -237,7 +237,7 @@ class StorageRoutesSpec
               quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
             )
           )
-          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
+          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) wasCalled once
         }
       }
 
@@ -247,7 +247,7 @@ class StorageRoutesSpec
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual BadRequest
@@ -269,10 +269,10 @@ class StorageRoutesSpec
         val dest       = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
         val attributes = FileAttributes(s"file://some/prefix/$dest", 12L, Digest.empty, `application/octet-stream`)
-        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
+        storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.pure(Right(attributes))
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual OK
@@ -287,7 +287,7 @@ class StorageRoutesSpec
             )
           )
 
-          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) wasCalled once
+          storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) wasCalled once
         }
       }
     }
@@ -299,7 +299,7 @@ class StorageRoutesSpec
 
         Post(
           s"/v1/buckets/$name/files/path/to/myfile.txt",
-          jsonContentOf("/file-create-from-existing.json")
+          jsonContentOf("/file-link.json")
         ) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
@@ -321,7 +321,7 @@ class StorageRoutesSpec
         storages.copyFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists, PathDoesNotExist) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -342,7 +342,7 @@ class StorageRoutesSpec
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual BadRequest
@@ -369,7 +369,7 @@ class StorageRoutesSpec
         ) shouldReturn
           IO.pure(Right(()))
 
-        val json = jsonContentOf("/file-create-from-existing.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
         Post(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual Created

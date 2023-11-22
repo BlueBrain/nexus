@@ -93,7 +93,7 @@ trait Storages[Source] {
       name: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOrAttributes]
+  )(implicit bucketEv: BucketExists): IO[RejOrAttributes]
 
   /**
     * Retrieves the file as a Source.
@@ -213,7 +213,7 @@ object Storages {
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOrAttributes] =
+    )(implicit bucketEv: BucketExists): IO[RejOrAttributes] =
       validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath).flatMap {
         case Left(value)  => value.asLeft[FileAttributes].pure[IO]
         case Right(value) =>

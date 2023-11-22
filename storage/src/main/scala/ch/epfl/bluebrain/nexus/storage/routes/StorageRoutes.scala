@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.storage.routes.StorageDirectives._
-import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.CreateFileFromExisting
-import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.CreateFileFromExisting._
+import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile
+import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.generic.semiauto._
@@ -39,30 +39,30 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
               concat(
                 put {
                   pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
-                    concat(
-                      // Link file/dir
-                      entity(as[CreateFileFromExisting]) { case CreateFileFromExisting(source) =>
-                        validatePath(name, source) {
-                          complete(storages.moveFile(name, source, path).runWithStatus(OK))
-                        }
-                      },
-                      // Upload file
-                      fileUpload("file") { case (_, source) =>
-                        complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
-                      }
-                    )
-                  }
-                },
-                post {
-                  pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
-                    // Copy file to/from protected directory
-                    entity(as[CreateFileFromExisting]) { case CreateFileFromExisting(source) =>
-                      validatePath(name, source) {
-                        complete(storages.copyFile(name, source, path).runWithStatus(Created))
-                      }
+                    // Upload file
+                    fileUpload("file") { case (_, source) =>
+                      complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
                     }
                   }
                 },
+                put {
+                  // Link file/dir
+                  entity(as[LinkFile]) { case LinkFile(source) =>
+                    validatePath(name, source) {
+                      complete(storages.moveFile(name, source, path).runWithStatus(OK))
+                    }
+                  }
+                },
+//                post {
+//                  pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
+//                    // Copy file to/from protected directory
+//                    entity(as[CreateFileFromExisting]) { case CreateFileFromExisting(source) =>
+//                      validatePath(name, source) {
+//                        complete(storages.copyFile(name, source, path).runWithStatus(Created))
+//                      }
+//                    }
+//                  }
+//                },
                 // Get file
                 get {
                   pathExists(name, path).apply { implicit pathExistsEvidence =>
@@ -106,12 +106,12 @@ object StorageRoutes {
     * @param source
     *   the location of the file/dir
     */
-  final private[routes] case class CreateFileFromExisting(source: Uri.Path)
+  final private[routes] case class LinkFile(source: Uri.Path)
 
-  private[routes] object CreateFileFromExisting {
+  private[routes] object LinkFile {
     import ch.epfl.bluebrain.nexus.storage._
-    implicit val dec: Decoder[CreateFileFromExisting] = deriveDecoder[CreateFileFromExisting]
-    implicit val enc: Encoder[CreateFileFromExisting] = deriveEncoder[CreateFileFromExisting]
+    implicit val dec: Decoder[LinkFile] = deriveDecoder[LinkFile]
+    implicit val enc: Encoder[LinkFile] = deriveEncoder[LinkFile]
   }
 
   final def apply(storages: Storages[AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {

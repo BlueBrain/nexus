@@ -158,8 +158,7 @@ class DiskStorageSpec
     }
 
     "linking" should {
-      implicit val bucketExistsEvidence               = BucketExists
-      implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+      implicit val bucketExistsEvidence = BucketExists
 
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
         val falseBinary  = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
