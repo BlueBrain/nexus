@@ -48,6 +48,7 @@ val logbackVersion          = "1.4.11"
 val magnoliaVersion         = "1.1.6"
 val mockitoVersion          = "1.17.29"
 val munitVersion            = "1.0.0-M10"
+val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.1"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
@@ -111,6 +112,7 @@ lazy val logback            = "ch.qos.logback"                % "logback-classic
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val munitCatsEffect    = "org.typelevel"                %% "munit-cats-effect"        % munitCatsEffectVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
@@ -217,6 +219,7 @@ lazy val kernel = project
       pureconfig,
       pureconfigCats,
       munit     % Test,
+      munitCatsEffect  % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
