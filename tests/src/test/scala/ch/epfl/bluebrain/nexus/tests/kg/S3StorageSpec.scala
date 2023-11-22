@@ -68,7 +68,7 @@ class S3StorageSpec extends StorageSpec {
 
   private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
     jsonContentOf(
-      "/kg/storages/s3-response.json",
+      "kg/storages/s3-response.json",
       replacements(
         Coyote,
         "id"          -> id,
@@ -84,14 +84,14 @@ class S3StorageSpec extends StorageSpec {
 
   override def createStorages: IO[Assertion] = {
     val payload = jsonContentOf(
-      "/kg/storages/s3.json",
+      "kg/storages/s3.json",
       "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",
       "bucket"    -> bucket,
       "endpoint"  -> s3Endpoint
     )
 
     val payload2 = jsonContentOf(
-      "/kg/storages/s3.json",
+      "kg/storages/s3.json",
       "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageId}2",
       "bucket"          -> bucket,
       "endpoint"        -> s3Endpoint
@@ -127,14 +127,14 @@ class S3StorageSpec extends StorageSpec {
   "creating a s3 storage" should {
     "fail creating an S3Storage with an invalid bucket" in {
       val payload = jsonContentOf(
-        "/kg/storages/s3.json",
+        "kg/storages/s3.json",
         "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
         "bucket"    -> "foobar",
         "endpoint"  -> s3Endpoint
       )
 
       deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
-        json shouldEqual jsonContentOf("/kg/storages/s3-error.json")
+        json shouldEqual jsonContentOf("kg/storages/s3-error.json")
         response.status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -153,7 +153,7 @@ class S3StorageSpec extends StorageSpec {
           response.status shouldEqual StatusCodes.Created
           filterMetadataKeys(json) shouldEqual
             jsonContentOf(
-              "/kg/files/linking-metadata.json",
+              "kg/files/linking-metadata.json",
               replacements(
                 Coyote,
                 "projId"         -> projectRef,
@@ -178,7 +178,7 @@ class S3StorageSpec extends StorageSpec {
       (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf(
-          "/kg/files/linking-notfound.json",
+          "kg/files/linking-notfound.json",
           "org"            -> orgId,
           "proj"           -> projId,
           "endpointBucket" -> s3BucketEndpoint

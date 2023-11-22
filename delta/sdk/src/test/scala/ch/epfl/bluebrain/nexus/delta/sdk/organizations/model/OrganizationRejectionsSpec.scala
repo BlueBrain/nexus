@@ -16,8 +16,8 @@ class OrganizationRejectionsSpec extends CatsEffectSpec with Fixtures {
 
     "be converted to compacted JSON-LD" in {
       val list = List(
-        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-compacted.json"),
-        incorrectRev  -> jsonContentOf("/organizations/incorrect-revision-compacted.json")
+        alreadyExists -> jsonContentOf("organizations/organization-already-exists-compacted.json"),
+        incorrectRev  -> jsonContentOf("organizations/incorrect-revision-compacted.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
@@ -26,8 +26,8 @@ class OrganizationRejectionsSpec extends CatsEffectSpec with Fixtures {
 
     "be converted to expanded JSON-LD" in {
       val list = List(
-        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-expanded.json"),
-        incorrectRev  -> jsonContentOf("/organizations/incorrect-revision-expanded.json")
+        alreadyExists -> jsonContentOf("organizations/organization-already-exists-expanded.json"),
+        incorrectRev  -> jsonContentOf("organizations/incorrect-revision-expanded.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toExpandedJsonLd.accepted.json shouldEqual json

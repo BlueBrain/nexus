@@ -45,9 +45,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
-      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json"),
-      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json"),
-      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json"),
+      storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
       Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
       Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
       Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
@@ -151,7 +151,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     "reject the creation of a storage which already exists" in {
       Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/storages/errors/already-exists.json", "id" -> s3Id)
+        response.asJson shouldEqual jsonContentOf("storages/errors/already-exists.json", "id" -> s3Id)
       }
     }
 
@@ -181,7 +181,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
       Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -189,7 +189,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
       Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
+          jsonContentOf("storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
       }
     }
 
@@ -212,14 +212,14 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     "reject the deprecation of a storage without rev" in {
       Delete("/v1/storages/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "reject the deprecation of a already deprecated storage" in {
       Delete(s"/v1/storages/myorg/myproject/s3-storage?rev=5") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/storages/errors/storage-deprecated.json", "id" -> s3Id)
+        response.asJson shouldEqual jsonContentOf("storages/errors/storage-deprecated.json", "id" -> s3Id)
       }
     }
 
@@ -333,14 +333,14 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     "return not found if tag not found" in {
       Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=myother") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+        response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
       Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+        response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
       }
     }
 
@@ -355,7 +355,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
       Get("/v1/storages/myorg/myproject/unknown/statistics") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
-          "/storages/errors/not-found.json",
+          "storages/errors/not-found.json",
           "id"   -> (nxv + "unknown"),
           "proj" -> "myorg/myproject"
         )

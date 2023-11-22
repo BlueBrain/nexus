@@ -161,7 +161,7 @@ trait BaseIntegrationSpec
             case StatusCodes.NotFound                   =>
               val body =
                 jsonContentOf(
-                  "/iam/realms/create.json",
+                  "iam/realms/create.json",
                   "realm" -> s"${config.realmSuffix(realm)}"
                 )
               for {

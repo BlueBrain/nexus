@@ -93,7 +93,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "self"          -> resolverSelf(ref11, defaultResolverId)
       )
 
-      val expected = jsonContentOf("/kg/listings/default-resolver.json", mapping: _*)
+      val expected = jsonContentOf("kg/listings/default-resolver.json", mapping: _*)
 
       eventually {
         deltaClient.get[Json](s"/resolvers/$ref11", Bob) { (json, response) =>
@@ -120,7 +120,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "searchViewSelf"               -> viewSelf(ref11, searchView)
       )
 
-      val expected = jsonContentOf("/kg/listings/default-view.json", mapping: _*)
+      val expected = jsonContentOf("kg/listings/default-view.json", mapping: _*)
       eventually {
         deltaClient.get[Json](s"/views/$ref11", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -140,7 +140,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "self"          -> storageSelf(ref11, defaultStorageId)
       )
 
-      val expected = jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
+      val expected = jsonContentOf("kg/listings/default-storage.json", mapping: _*)
 
       eventually {
         deltaClient.get[Json](s"/storages/$ref11", Bob) { (json, response) =>
@@ -153,7 +153,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
     val resource11WithSchemaId     = s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema"
     val resource11WithSchemaSelf   = resourceSelf(ref11, resource11WithSchemaId)
     val resource11WithSchemaResult = jsonContentOf(
-      "/kg/listings/project/resource11-schema.json",
+      "kg/listings/project/resource11-schema.json",
       replacements(
         Bob,
         "org"          -> org1,
@@ -234,7 +234,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
     val projectType = URLEncoder.encode("https://bluebrain.github.io/nexus/vocabulary/Project", "UTF-8")
     "get resources from both projects in the org for user with appropriate acls" in {
       val expected = jsonContentOf(
-        "/kg/listings/org/filter-project-2.json",
+        "kg/listings/org/filter-project-2.json",
         replacements(
           Bob,
           "org"   -> org1,
@@ -254,7 +254,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
     "get resources from only one project in the org for user with restricted acls" in {
       val expected = jsonContentOf(
-        "/kg/listings/org/filter-project-1.json",
+        "kg/listings/org/filter-project-1.json",
         replacements(
           Bob,
           "org"  -> org1,
@@ -275,7 +275,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
       val resource13Id   = s"${config.deltaUri}/resources/$proj13/_/resource13"
       val resource13Self = resourceSelf(ref13, resource13Id)
       val expected       = jsonContentOf(
-        "/kg/listings/project/resources-tagged.json",
+        "kg/listings/project/resources-tagged.json",
         replacements(
           Bob,
           "org"          -> org1,
@@ -309,7 +309,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
     "get resources from all projects for user with appropriate acls" in {
       val expected = jsonContentOf(
-        "/kg/listings/all/resource-by-type-4.json",
+        "kg/listings/all/resource-by-type-4.json",
         replacements(
           Bob,
           "org1"         -> org1,
@@ -332,7 +332,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
     "get resources from only one project for user with restricted acls" in {
       val expected = jsonContentOf(
-        "/kg/listings/all/resource-by-type-1.json",
+        "kg/listings/all/resource-by-type-1.json",
         replacements(
           Bob,
           "org"          -> org1,
@@ -363,7 +363,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         eventually {
           deltaClient.get[Json](s"$endpoint?from=10&after=%5B%22test%22%5D", Bob) { (json, response) =>
             response.status shouldEqual StatusCodes.BadRequest
-            json shouldEqual jsonContentOf("/kg/listings/from-and-after-error.json")
+            json shouldEqual jsonContentOf("kg/listings/from-and-after-error.json")
           }
         }
       }
@@ -374,7 +374,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         eventually {
           deltaClient.get[Json](s"$endpoint?from=10001", Bob) { (json, response) =>
             response.status shouldEqual StatusCodes.BadRequest
-            json shouldEqual jsonContentOf("/kg/listings/from-over-limit-error.json")
+            json shouldEqual jsonContentOf("kg/listings/from-over-limit-error.json")
           }
         }
       }

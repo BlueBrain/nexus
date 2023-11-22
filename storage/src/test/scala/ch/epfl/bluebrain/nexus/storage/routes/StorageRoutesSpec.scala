@@ -81,7 +81,7 @@ class StorageRoutesSpec
           status shouldEqual NotFound
           storages.exists(name) wasCalled once
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}")   -> "BucketNotFound",
               quote("{reason}") -> s"The provided bucket '$name' does not exist."
@@ -108,7 +108,7 @@ class StorageRoutesSpec
         Put(s"/v1/buckets/$name/files/path/to/file/") ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}")   -> "BucketNotFound",
               quote("{reason}") -> s"The provided bucket '$name' does not exist."
@@ -125,7 +125,7 @@ class StorageRoutesSpec
         Put(s"/v1/buckets/$name/files/path/to/file/$filename", multipartForm) ~> route ~> check {
           status shouldEqual Conflict
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}") -> "PathAlreadyExists",
               quote(
@@ -150,7 +150,7 @@ class StorageRoutesSpec
         Put(s"/v1/buckets/$name/files/path/to/file/$filename", multipartForm) ~> route ~> check {
           status shouldEqual InternalServerError
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}")   -> "InternalError",
               quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
@@ -179,7 +179,7 @@ class StorageRoutesSpec
         Put(s"/v1/buckets/$name/files/path/to/file/$filename", multipartForm) ~> route ~> check {
           status shouldEqual Created
           responseAs[Json] shouldEqual jsonContentOf(
-            "/file-created.json",
+            "file-created.json",
             Map(
               quote("{location}")  -> attributes.location.toString,
               quote("{mediaType}") -> attributes.mediaType.value,
@@ -201,10 +201,10 @@ class StorageRoutesSpec
       "fail when bucket does not exists" in new Ctx {
         storages.exists(name) shouldReturn BucketDoesNotExist
 
-        Put(s"/v1/buckets/$name/files/path/to/myfile.txt", jsonContentOf("/file-link.json")) ~> route ~> check {
+        Put(s"/v1/buckets/$name/files/path/to/myfile.txt", jsonContentOf("file-link.json")) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}")   -> "BucketNotFound",
               quote("{reason}") -> s"The provided bucket '$name' does not exist."
@@ -221,12 +221,12 @@ class StorageRoutesSpec
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual InternalServerError
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}")   -> "InternalError",
               quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
@@ -242,12 +242,12 @@ class StorageRoutesSpec
         val source = "../dir"
         val dest   = "dest/dir"
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual BadRequest
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}") -> "PathInvalid",
               quote(
@@ -266,12 +266,12 @@ class StorageRoutesSpec
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.pure(Right(attributes))
 
-        val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
+        val json = jsonContentOf("file-link.json", Map(quote("{source}") -> source))
 
         Put(s"/v1/buckets/$name/files/$dest", json) ~> route ~> check {
           status shouldEqual OK
           responseAs[Json] shouldEqual jsonContentOf(
-            "/file-created.json",
+            "file-created.json",
             Map(
               quote("{location}")  -> attributes.location.toString,
               quote("{mediaType}") -> attributes.mediaType.value,
@@ -296,7 +296,7 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/files/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}") -> "PathNotFound",
               quote(
@@ -317,7 +317,7 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/files/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}") -> "PathNotFound",
               quote(
@@ -369,7 +369,7 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/attributes/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
-            "/error.json",
+            "error.json",
             Map(
               quote("{type}") -> "PathNotFound",
               quote(

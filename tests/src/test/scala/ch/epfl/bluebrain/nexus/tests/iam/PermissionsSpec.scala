@@ -46,7 +46,7 @@ class PermissionsSpec extends BaseIntegrationSpec {
         runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
-            "/iam/permissions/subtract.json",
+            "iam/permissions/subtract.json",
             permissionDsl.permissionsRepl(permission2 :: Nil)
           )
           deltaClient.patch[Json](s"/permissions?rev=${permissions._rev}", body, Identity.ServiceAccount) {
@@ -70,7 +70,7 @@ class PermissionsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val body =
             jsonContentOf(
-              "/iam/permissions/replace.json",
+              "iam/permissions/replace.json",
               permissionDsl.permissionsRepl(
                 Permission.minimalPermissions + permission1 + permission2
               )
@@ -95,7 +95,7 @@ class PermissionsSpec extends BaseIntegrationSpec {
         runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
-            "/iam/permissions/subtract.json",
+            "iam/permissions/subtract.json",
             permissionDsl.permissionsRepl(
               Permission.minimalPermissions.take(1)
             )
@@ -113,7 +113,7 @@ class PermissionsSpec extends BaseIntegrationSpec {
         runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
-            "/iam/permissions/replace.json",
+            "iam/permissions/replace.json",
             permissionDsl.permissionsRepl(
               Permission.minimalPermissions.subsets(1).next()
             )

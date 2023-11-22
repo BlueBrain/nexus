@@ -27,7 +27,7 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
     RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
       SimpleRejection.contextIri -> SimpleRejection.context,
-      contexts.error             -> jsonContentOf("/contexts/error.json").topContextValueOrEmpty
+      contexts.error             -> jsonContentOf("contexts/error.json").topContextValueOrEmpty
     )
   implicit val jo: JsonKeyOrdering          = JsonKeyOrdering.default()
 
@@ -39,7 +39,7 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
   }
 
   private val expectedBlankIdErrorResponse = jsonContentOf(
-    "/directives/blank-id.json"
+    "directives/blank-id.json"
   )
 
   private val FileContents = "hello"

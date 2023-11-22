@@ -41,7 +41,7 @@ final case class Transactors(
 
 object Transactors {
 
-  private val dropScript      = "/scripts/postgres/drop/drop-tables.ddl"
+  private val dropScript      = "scripts/postgres/drop/drop-tables.ddl"
   private val scriptDirectory = "/scripts/postgres/init/"
 
   /**

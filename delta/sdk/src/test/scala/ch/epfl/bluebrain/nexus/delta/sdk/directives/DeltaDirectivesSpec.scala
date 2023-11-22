@@ -70,7 +70,7 @@ class DeltaDirectivesSpec
     RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
       SimpleRejection.contextIri -> SimpleRejection.context,
-      contexts.error             -> jsonContentOf("/contexts/error.json").topContextValueOrEmpty
+      contexts.error             -> jsonContentOf("contexts/error.json").topContextValueOrEmpty
     )
 
   private val compacted = resource.toCompactedJsonLd.accepted

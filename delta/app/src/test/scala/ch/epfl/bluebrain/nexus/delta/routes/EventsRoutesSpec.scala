@@ -166,14 +166,14 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "get the events stream for all events" in {
       Get("/v1/events") ~> asAlice ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(5).strip shouldEqual contentOf("/events/eventstream-0-5.txt").strip
+        chunksStream.asString(5).strip shouldEqual contentOf("events/eventstream-0-5.txt").strip
       }
     }
 
     "get the acl events" in {
       Get("/v1/acl/events") ~> asAlice ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(2).strip shouldEqual contentOf("/events/acl-events.txt").strip
+        chunksStream.asString(2).strip shouldEqual contentOf("events/acl-events.txt").strip
       }
     }
 
@@ -186,7 +186,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("3") ~> asAlice ~> routes ~> check {
           mediaType shouldBe MediaTypes.`text/event-stream`
-          chunksStream.asString(1).strip shouldEqual contentOf("/events/project-events.txt").strip
+          chunksStream.asString(1).strip shouldEqual contentOf("events/project-events.txt").strip
         }
       }
     }

@@ -20,8 +20,8 @@ trait Fixtures {
     Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json"),
     Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json"),
     Vocabulary.contexts.shacl      -> ContextValue.fromFile("contexts/shacl.json"),
-    Vocabulary.contexts.statistics -> ContextValue.fromFile("/contexts/statistics.json"),
-    Vocabulary.contexts.offset     -> ContextValue.fromFile("/contexts/offset.json"),
+    Vocabulary.contexts.statistics -> ContextValue.fromFile("contexts/statistics.json"),
+    Vocabulary.contexts.offset     -> ContextValue.fromFile("contexts/offset.json"),
     Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json"),
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )

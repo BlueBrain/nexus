@@ -20,7 +20,7 @@ class DiskStorageSpec extends StorageSpec {
 
   private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
     jsonContentOf(
-      "/kg/storages/disk-response.json",
+      "kg/storages/disk-response.json",
       replacements(
         Coyote,
         "id"          -> id,
@@ -33,8 +33,8 @@ class DiskStorageSpec extends StorageSpec {
     )
 
   override def createStorages: IO[Assertion] = {
-    val payload  = jsonContentOf("/kg/storages/disk.json")
-    val payload2 = jsonContentOf("/kg/storages/disk-perms.json")
+    val payload  = jsonContentOf("kg/storages/disk.json")
+    val payload2 = jsonContentOf("kg/storages/disk-perms.json")
 
     for {
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
@@ -64,14 +64,14 @@ class DiskStorageSpec extends StorageSpec {
   "creating a disk storage" should {
     "fail creating a DiskStorage on a wrong volume" in {
       val volume  = "/" + genString()
-      val payload = jsonContentOf("/kg/storages/disk.json") deepMerge
+      val payload = jsonContentOf("kg/storages/disk.json") deepMerge
         Json.obj(
           "@id"    -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/invalid-volume"),
           "volume" -> Json.fromString(volume)
         )
 
       deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
-        json shouldEqual jsonContentOf("/kg/storages/error.json", "volume" -> volume)
+        json shouldEqual jsonContentOf("kg/storages/error.json", "volume" -> volume)
         response.status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -87,7 +87,7 @@ class DiskStorageSpec extends StorageSpec {
 
       deltaClient.put[Json](s"/files/$projectRef/linking.png", payload, Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/files/linking-notsupported.json", "org" -> orgId, "proj" -> projId)
+        json shouldEqual jsonContentOf("kg/files/linking-notsupported.json", "org" -> orgId, "proj" -> projId)
       }
     }
   }

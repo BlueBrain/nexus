@@ -63,9 +63,9 @@ class FilesRoutesSpec
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
-      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json"),
-      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json"),
-      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json"),
+      storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
       Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
       Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
       Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
@@ -255,7 +255,7 @@ class FilesRoutesSpec
         randomEntity(filename = "large-file.txt", 1100)
       ) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
-        response.asJson shouldEqual jsonContentOf("/files/errors/file-too-large.json")
+        response.asJson shouldEqual jsonContentOf("files/errors/file-too-large.json")
       }
     }
 
@@ -263,7 +263,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file2?storage=not-exist", entity()) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+          jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
       }
     }
 
@@ -320,7 +320,7 @@ class FilesRoutesSpec
       Put(s"/v1/files/org/proj/$nonExistentFile?rev=1", entity("other.txt")) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/files/errors/not-found.json", "id" -> (nxv + nonExistentFile), "proj" -> "org/proj")
+          jsonContentOf("files/errors/not-found.json", "id" -> (nxv + nonExistentFile), "proj" -> "org/proj")
       }
     }
 
@@ -329,7 +329,7 @@ class FilesRoutesSpec
         Put(s"/v1/files/org/proj/$id?rev=1&storage=not-exist", entity("other.txt")) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual
-            jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+            jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
         }
       }
     }
@@ -339,7 +339,7 @@ class FilesRoutesSpec
         Put(s"/v1/files/org/proj/$id?rev=10", entity("other.txt")) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
-            jsonContentOf("/files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
+            jsonContentOf("files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
         }
       }
     }
@@ -366,7 +366,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         Delete(s"/v1/files/org/proj/$id") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+          response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
       }
     }
@@ -375,7 +375,7 @@ class FilesRoutesSpec
       givenADeprecatedFile { id =>
         Delete(s"/v1/files/org/proj/$id?rev=2") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> (nxv + id))
+          response.asJson shouldEqual jsonContentOf("files/errors/file-deprecated.json", "id" -> (nxv + id))
         }
       }
     }
@@ -406,7 +406,7 @@ class FilesRoutesSpec
       givenADeprecatedFile { id =>
         Put(s"/v1/files/org/proj/$id/undeprecate") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+          response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
       }
     }
@@ -573,7 +573,7 @@ class FilesRoutesSpec
       givenATaggedFile("mytag") { id =>
         Get(s"/v1/files/org/proj/$id?tag=myother") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
-          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+          response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
         }
       }
     }
@@ -582,7 +582,7 @@ class FilesRoutesSpec
       givenATaggedFile(tag) { id =>
         Get(s"/v1/files/org/proj/$id?tag=$tag&rev=1") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+          response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
         }
       }
     }
@@ -615,7 +615,7 @@ class FilesRoutesSpec
         deleteTag(id, tag, 1)
         Get(s"/v1/files/org/proj/$id?tag=$tag") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
-          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+          response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "mytag")
         }
       }
     }

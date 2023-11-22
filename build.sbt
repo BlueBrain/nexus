@@ -205,6 +205,9 @@ lazy val kernel = project
       caffeine,
       catsCore,
       catsRetry,
+      catsEffect,
+      fs2,
+      fs2io,
       circeCore,
       circeParser,
       handleBars,
@@ -258,8 +261,6 @@ lazy val sourcingPsql = project
       circeParser,
       classgraph,
       distageCore,
-      fs2,
-      fs2io,
       munit          % Test,
       catsEffectLaws % Test,
       logback        % Test
@@ -316,7 +317,6 @@ lazy val sdk = project
       circeLiteral,
       circeGenericExtras,
       distageCore,
-      fs2,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
@@ -792,7 +792,6 @@ lazy val tests = project
       akkaStream,
       circeOptics,
       circeGenericExtras,
-      fs2,
       logback,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
@@ -1052,14 +1051,22 @@ val staticAnalysis =
 
 addCommandAlias("static-analysis", staticAnalysis)
 
-def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
+def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
   ";coverage" +
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
-addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
-addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
-addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
+def runTestsCommandsForModules(modules: List[String]) = {
+    modules.map(module => s";$module/test").mkString
+}
+
+addCommandAlias("core-unit-tests", runTestsCommandsForModules(coreModules))
+addCommandAlias("core-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(coreModules))
+addCommandAlias("app-unit-tests", runTestsCommandsForModules(List("app")))
+addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("app")))
+addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
+addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
+addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))
 
 // This option allows distage 1.0.10 to run on JDK 17+
 val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"

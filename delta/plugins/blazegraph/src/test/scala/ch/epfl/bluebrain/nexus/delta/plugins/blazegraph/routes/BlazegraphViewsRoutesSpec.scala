@@ -196,7 +196,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
       Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> indexingViewId)
+        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> indexingViewId)
       }
     }
 

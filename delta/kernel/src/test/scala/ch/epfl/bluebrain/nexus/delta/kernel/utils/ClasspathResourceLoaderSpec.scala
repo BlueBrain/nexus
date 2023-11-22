@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
+class ClasspathResourceLoaderSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
   private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   private def accept[A](io: IO[A]): A =
@@ -58,9 +58,9 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Scal
     }
 
     "fail when resource does not exists" in {
-      reject(loader.contentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound(
+      reject(loader.contentOf("resource2.txt", "value" -> "v")).getMessage should (include("not found") and include(
         "resource2.txt"
-      )
+      ))
     }
   }
 }

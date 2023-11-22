@@ -37,7 +37,7 @@ class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with M
   def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): IO[Assertion] = {
     loader
       .jsonContentOf(
-        "/iam/add.json",
+        "iam/add.json",
         "realm" -> target.realm.name,
         "sub"   -> target.name,
         "perms" -> permissions.asJava
@@ -51,7 +51,7 @@ class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with M
   def addPermissionsAnonymous(path: String, permissions: Set[Permission]): IO[Assertion] = {
     loader
       .jsonContentOf(
-        "/iam/add_annon.json",
+        "iam/add_annon.json",
         "perms" -> permissions.asJava
       )
       .flatMap(addPermissions(path, _, "Anonymous"))
@@ -103,7 +103,7 @@ class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with M
         .parTraverse { acl =>
           for {
             payload <- loader.jsonContentOf(
-                         "/iam/subtract-permissions.json",
+                         "iam/subtract-permissions.json",
                          "realm" -> target.realm.name,
                          "sub"   -> target.name,
                          "perms" -> acl.acl.head.permissions.asJava
@@ -134,7 +134,7 @@ class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with M
         .parTraverse { acl =>
           for {
             payload <- loader.jsonContentOf(
-                         "/iam/subtract-permissions-anon.json",
+                         "iam/subtract-permissions-anon.json",
                          "perms" -> acl.acl.head.permissions.asJava
                        )
             result  <-
@@ -172,7 +172,7 @@ class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with M
   ): IO[Assertion] = {
     for {
       body   <- loader.jsonContentOf(
-                  "/iam/subtract-permissions.json",
+                  "iam/subtract-permissions.json",
                   "realm" -> target.realm.name,
                   "sub"   -> target.name,
                   "perms" -> permissions.asJava

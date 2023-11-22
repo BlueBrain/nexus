@@ -93,12 +93,12 @@ class SchemaSerializationSuite extends SerializationSuite {
     )
 
   private val schemasMapping = List(
-    (created, jsonContentOf("/schemas/schema-created.json"), Created),
-    (updated, jsonContentOf("/schemas/schema-updated.json"), Updated),
-    (refreshed, jsonContentOf("/schemas/schema-refreshed.json"), Refreshed),
-    (tagged, jsonContentOf("/schemas/schema-tagged.json"), Tagged),
-    (tagDeleted, jsonContentOf("/schemas/schema-tag-deleted.json"), TagDeleted),
-    (deprecated, jsonContentOf("/schemas/schema-deprecated.json"), Deprecated)
+    (created, jsonContentOf("schemas/schema-created.json"), Created),
+    (updated, jsonContentOf("schemas/schema-updated.json"), Updated),
+    (refreshed, jsonContentOf("schemas/schema-refreshed.json"), Refreshed),
+    (tagged, jsonContentOf("schemas/schema-tagged.json"), Tagged),
+    (tagDeleted, jsonContentOf("schemas/schema-tag-deleted.json"), TagDeleted),
+    (deprecated, jsonContentOf("schemas/schema-deprecated.json"), Deprecated)
   )
 
   schemasMapping.foreach { case (event, json, action) =>
@@ -142,7 +142,7 @@ class SchemaSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/schemas/schema-state.json")
+  private val jsonState = jsonContentOf("schemas/schema-state.json")
 
   test(s"Correctly serialize a SchemaState") {
     assertOutput(SchemaState.serializer, state, jsonState)

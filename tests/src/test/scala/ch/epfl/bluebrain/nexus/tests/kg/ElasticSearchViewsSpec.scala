@@ -53,7 +53,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
       projects.parTraverse { project =>
         deltaClient.put[Json](
           s"/resources/$project/resource/test-resource:context",
-          jsonContentOf("/kg/views/context.json"),
+          jsonContentOf("kg/views/context.json"),
           ScoobyDoo
         ) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
@@ -62,7 +62,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "create elasticsearch views with legacy fields and its pipeline equivalent" in {
-      List(fullId -> "/kg/views/elasticsearch/legacy-fields.json", fullId2 -> "/kg/views/elasticsearch/pipeline.json")
+      List(fullId -> "kg/views/elasticsearch/legacy-fields.json", fullId2 -> "kg/views/elasticsearch/pipeline.json")
         .parTraverse { case (project, file) =>
           deltaClient
             .put[Json](s"/views/$project/test-resource:cell-view", jsonContentOf(file, "withTag" -> false), ScoobyDoo) {
@@ -73,7 +73,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "create elasticsearch views filtering on tag with legacy fields and its pipeline equivalent" in {
-      List(fullId -> "/kg/views/elasticsearch/legacy-fields.json", fullId2 -> "/kg/views/elasticsearch/pipeline.json")
+      List(fullId -> "kg/views/elasticsearch/legacy-fields.json", fullId2 -> "kg/views/elasticsearch/pipeline.json")
         .parTraverse { case (project, file) =>
           deltaClient.put[Json](
             s"/views/$project/test-resource:cell-view-tagged",
@@ -103,7 +103,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     "create people view in project 2" in {
       deltaClient.put[Json](
         s"/views/$fullId2/test-resource:people",
-        jsonContentOf("/kg/views/elasticsearch/people-view.json"),
+        jsonContentOf("kg/views/elasticsearch/people-view.json"),
         ScoobyDoo
       ) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -116,7 +116,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         deltaClient.get[Json](s"/views/$project/test-resource:cell-view", ScoobyDoo) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val expected = jsonContentOf(
-            "/kg/views/elasticsearch/indexing-response.json",
+            "kg/views/elasticsearch/indexing-response.json",
             replacements(
               ScoobyDoo,
               "id"             -> id,
@@ -147,7 +147,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
 
         val expected = jsonContentOf(
-          "/kg/views/elasticsearch/aggregate-response.json",
+          "kg/views/elasticsearch/aggregate-response.json",
           replacements(
             ScoobyDoo,
             "id"             -> id,
@@ -164,7 +164,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
     "post instances" in {
       (1 to 8).toList.parTraverse { i =>
-        val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
+        val payload      = jsonContentOf(s"kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         val projectId    = if (i > 5) fullId2 else fullId
@@ -181,7 +181,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "post instance without id" in {
-      val payload = jsonContentOf(s"/kg/views/instances/instance9.json")
+      val payload = jsonContentOf(s"kg/views/instances/instance9.json")
       deltaClient.post[Json](
         s"/resources/$fullId2/resource?indexing=sync",
         payload,
@@ -212,7 +212,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         ScoobyDoo
       ) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/views/elasticsearch/elastic-error.json")
+        json shouldEqual jsonContentOf("kg/views/elasticsearch/elastic-error.json")
       }
     }
 
@@ -226,7 +226,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
           filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/elasticsearch/search-response.json", "index" -> index)
+            jsonContentOf("kg/views/elasticsearch/search-response.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -250,7 +250,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
           filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/elasticsearch/search-response-2.json", "index" -> index)
+            jsonContentOf("kg/views/elasticsearch/search-response-2.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId2/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -287,7 +287,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         val indexes   = hits.each._index.string.getAll(json)
         val toReplace = indexes.zipWithIndex.map { case (value, i) => s"index${i + 1}" -> value }
         filterKey("took")(json) shouldEqual
-          jsonContentOf("/kg/views/elasticsearch/search-response-aggregated.json", toReplace: _*)
+          jsonContentOf("kg/views/elasticsearch/search-response-aggregated.json", toReplace: _*)
       }
     }
 
@@ -297,7 +297,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
           filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/elasticsearch/search-response-2.json", "index" -> index)
+            jsonContentOf("kg/views/elasticsearch/search-response-2.json", "index" -> index)
       }
     }
 
@@ -305,7 +305,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
-          "/kg/views/statistics.json",
+          "kg/views/statistics.json",
           "total"     -> "5",
           "processed" -> "5",
           "evaluated" -> "5",
@@ -322,7 +322,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val expected = filterNestedKeys("delayInSeconds")(
             jsonContentOf(
-              "/kg/views/statistics.json",
+              "kg/views/statistics.json",
               "total"     -> "0",
               "processed" -> "0",
               "evaluated" -> "0",
@@ -336,7 +336,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
     "tag resources" in {
       (1 to 5).toList.parTraverse { i =>
-        val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
+        val payload      = jsonContentOf(s"kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.post[Json](
@@ -363,7 +363,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val expected = jsonContentOf(
-            "/kg/views/statistics.json",
+            "kg/views/statistics.json",
             "total"     -> "5",
             "processed" -> "5",
             "evaluated" -> "5",
@@ -375,7 +375,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "remove @type on a resource" in {
-      val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance1.json"))
+      val payload      = filterKey("@type")(jsonContentOf("kg/views/instances/instance1.json"))
       val id           = `@id`.getOption(payload).value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
 
@@ -394,7 +394,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
           filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/elasticsearch/search-response-no-type.json", "index" -> index)
+            jsonContentOf("kg/views/elasticsearch/search-response-no-type.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -405,7 +405,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "deprecate a resource" in {
-      val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance2.json"))
+      val payload      = filterKey("@type")(jsonContentOf("kg/views/instances/instance2.json"))
       val id           = payload.asObject.value("@id").value.asString.value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
       deltaClient.delete[Json](s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=2", ScoobyDoo) { (_, response) =>
@@ -419,7 +419,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           result.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
           filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/elasticsearch/search-response-no-deprecated.json", "index" -> index)
+            jsonContentOf("kg/views/elasticsearch/search-response-no-deprecated.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -446,7 +446,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/views/$fullId/test-resource:wrong-view/_mapping", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.NotFound
         json shouldEqual jsonContentOf(
-          "/kg/views/elasticsearch/errors/es-view-not-found.json",
+          "kg/views/elasticsearch/errors/es-view-not-found.json",
           replacements(
             ScoobyDoo,
             "viewId"     -> "https://dev.nexus.test.com/simplified-resource/wrong-view",
@@ -461,7 +461,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/views/$fullId2/$view/_mapping", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf(
-          "/kg/views/elasticsearch/errors/es-incorrect-view-type.json",
+          "kg/views/elasticsearch/errors/es-incorrect-view-type.json",
           replacements(
             ScoobyDoo,
             "view"         -> view,

@@ -33,13 +33,13 @@ class RealmsSpec extends BaseIntegrationSpec {
 
     "create realm" in {
       val body = jsonContentOf(
-        "/iam/realms/create.json",
+        "iam/realms/create.json",
         "realm" -> testRealmUri
       )
 
       deltaClient.put[Json](s"/realms/${testRealm.name}", body, Identity.ServiceAccount) { (json, _) =>
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/ref-response.json",
+          "iam/realms/ref-response.json",
           "realm"      -> testRealmUri,
           "deltaUri"   -> config.deltaUri.toString(),
           "label"      -> testRealm.name,
@@ -51,13 +51,13 @@ class RealmsSpec extends BaseIntegrationSpec {
 
     "recreate realm" in {
       val body = jsonContentOf(
-        "/iam/realms/create.json",
+        "iam/realms/create.json",
         "realm" -> testRealmUri
       )
 
       deltaClient.put[Json](s"/realms/${testRealm.name}?rev=$rev", body, Identity.ServiceAccount) { (json, _) =>
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/ref-response.json",
+          "iam/realms/ref-response.json",
           "realm"      -> testRealmUri,
           "deltaUri"   -> config.deltaUri.toString(),
           "label"      -> testRealm.name,
@@ -71,7 +71,7 @@ class RealmsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/fetch-response.json",
+          "iam/realms/fetch-response.json",
           "realm"    -> testRealmUri,
           "deltaUri" -> config.deltaUri.toString(),
           "rev"      -> s"${rev + 1}",
@@ -83,7 +83,7 @@ class RealmsSpec extends BaseIntegrationSpec {
     "update realm" in {
       val body =
         jsonContentOf(
-          "/iam/realms/update.json",
+          "iam/realms/update.json",
           "realm" -> testRealmUri
         )
 
@@ -91,7 +91,7 @@ class RealmsSpec extends BaseIntegrationSpec {
         (json, result) =>
           result.status shouldEqual StatusCodes.OK
           filterRealmKeys(json) shouldEqual jsonContentOf(
-            "/iam/realms/ref-response.json",
+            "iam/realms/ref-response.json",
             "realm"      -> testRealmUri,
             "deltaUri"   -> config.deltaUri.toString(),
             "label"      -> testRealm.name,
@@ -105,7 +105,7 @@ class RealmsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/fetch-updated-response.json",
+          "iam/realms/fetch-updated-response.json",
           "realm"    -> testRealmUri,
           "deltaUri" -> config.deltaUri.toString(),
           "rev"      -> s"${rev + 2}",
@@ -118,7 +118,7 @@ class RealmsSpec extends BaseIntegrationSpec {
       deltaClient.delete[Json](s"/realms/${testRealm.name}?rev=${rev + 2}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/ref-response.json",
+          "iam/realms/ref-response.json",
           "realm"      -> testRealmUri,
           "deltaUri"   -> config.deltaUri.toString(),
           "label"      -> testRealm.name,
@@ -132,7 +132,7 @@ class RealmsSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
-          "/iam/realms/fetch-deprecated-response.json",
+          "iam/realms/fetch-deprecated-response.json",
           "realm"    -> testRealmUri,
           "deltaUri" -> config.deltaUri.toString(),
           "rev"      -> s"${rev + 3}",

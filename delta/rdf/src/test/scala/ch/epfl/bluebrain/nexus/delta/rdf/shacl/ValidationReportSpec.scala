@@ -27,8 +27,8 @@ class ValidationReportSpec extends CatsEffectSpec {
   }
 
   "A ValidationReport" should {
-    val conforms = jsonContentOf("/shacl/conforms.json")
-    val failed   = jsonContentOf("/shacl/failed.json")
+    val conforms = jsonContentOf("shacl/conforms.json")
+    val failed   = jsonContentOf("shacl/failed.json")
 
     "be constructed correctly when conforms" in {
       ValidationReport(resource(conforms)).accepted shouldEqual
