@@ -76,7 +76,7 @@ object HttpClient {
 
   private[http] object HttpSingleRequest {
     def default(implicit as: ActorSystem): HttpSingleRequest =
-      (request: HttpRequest) => IO.fromFuture(IO.blocking(Http().singleRequest(request)))
+      (request: HttpRequest) => IO.fromFuture(IO.delay(Http().singleRequest(request)))
   }
 
   /**
