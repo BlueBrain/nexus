@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeD
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.storage.files.ValidateFile
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon

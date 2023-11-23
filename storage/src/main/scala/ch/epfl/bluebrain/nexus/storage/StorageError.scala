@@ -5,7 +5,9 @@ import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.storage.routes.StatusFrom
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax.KeyOps
 import io.circe.{Encoder, Json}
+import fs2.io.file.{Path => Fs2Path}
 
 import scala.annotation.nowarn
 
@@ -94,6 +96,15 @@ object StorageError {
     *   a descriptive message on the operation that timed out
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
+
+  final case class CopyOperationFailed(name: String, source: Fs2Path, dest: Fs2Path)
+      extends StorageError(
+        s"Copy operation in bucket $name failed from source ${source} to destination ${dest}."
+      )
+
+  object CopyOperationFailed {
+    implicit val enc: Encoder[CopyOperationFailed] = Encoder.instance(x => Json.obj("bucket" := x.name))
+  }
 
   @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")

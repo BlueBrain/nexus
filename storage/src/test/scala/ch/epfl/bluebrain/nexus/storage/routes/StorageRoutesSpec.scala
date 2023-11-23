@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, CopyFile, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}

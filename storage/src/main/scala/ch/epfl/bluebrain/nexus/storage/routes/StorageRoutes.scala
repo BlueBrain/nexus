@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.storage.routes.StorageDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile
 import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, CopyFile, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -71,16 +71,11 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
               }
             },
             post {
-              println(s"DTB did we get here")
               bucketExists(name).apply { implicit bucketExistsEvidence =>
-                println(s"DTB did we get here 2")
                 // Copy file to/from protected directory
                 entity(as[NonEmptyList[CopyFile]]) { files =>
-                  println(s"DTB did we get here 3")
                   pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
-                    println(s"DTB did we get here 4")
                     validatePaths(name, files.map(_.source)) {
-                      println(s"DTB did we get here 5")
                       complete(storages.copyFile2(name, files).runWithStatus(Created))
                     }
                   }

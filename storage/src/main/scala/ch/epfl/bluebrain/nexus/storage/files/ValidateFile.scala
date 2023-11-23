@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.storage
+package ch.epfl.bluebrain.nexus.storage.files
 
 import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
@@ -11,6 +11,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathContainsLinks, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.PathInvalid
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.StorageConfig
+import ch.epfl.bluebrain.nexus.storage.{basePath, descendantOf, filePath, RejOr, Rejection, StorageError}
 
 import java.nio.file.{Files, Path}
 
@@ -76,7 +77,7 @@ object ValidateFile {
       ): IO[RejOr[ValidatedCopyFile]] = {
 
         val bucketProtectedPath = basePath(config, name)
-        val absSourcePath       = filePath(config, name, sourcePath, protectedDir = false)
+        val absSourcePath       = filePath(config, name, sourcePath, protectedDir = true)
         val absDestPath         = filePath(config, name, destPath)
 
         def notFound = PathNotFound(name, sourcePath)

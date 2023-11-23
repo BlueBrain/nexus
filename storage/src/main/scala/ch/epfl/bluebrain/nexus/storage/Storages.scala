@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
-import cats.data.NonEmptyList
+import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File._
@@ -16,6 +16,8 @@ import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
+import ch.epfl.bluebrain.nexus.storage.files.ValidateFile
+import ch.epfl.bluebrain.nexus.storage.routes.CopyFile
 
 import java.nio.file.StandardCopyOption._
 import java.nio.file.{Files, Path}
@@ -81,10 +83,7 @@ trait Storages[Source] {
   def copyFile2(
       name: String,
       files: NonEmptyList[CopyFile]
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] = {
-    val head = files.head
-    copyFile(name, head.source, head.destination)
-  }
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]]
 
   /**
     * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
@@ -285,6 +284,18 @@ object Storages {
             _ <- IO.delay(cache.asyncComputePut(v.absDestPath, digestConfig.algorithm))
           } yield Right(())
       }
+
+    def copyFile2(
+        name: String,
+        files: NonEmptyList[CopyFile]
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] = {
+      files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination))).value.map {
+        case Left(v)  => v.asLeft[Unit].pure[IO]
+        case Right(_) => ???
+      }
+
+      ???
+    }
 
     def getFile(
         name: String,
