@@ -376,7 +376,6 @@ lazy val app = project
         )
       )
     },
-    Test / javaOptions    += cglibFix,
     Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
@@ -972,10 +971,7 @@ lazy val servicePackaging = {
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
     dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
-    dockerEnvVars         := Map(
-      "JAVA_OPTS" -> cglibFix
-    )
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute
   )
 }
 
@@ -1057,7 +1053,7 @@ def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
     modules.map(module => s";$module/coverageReport").mkString
 }
 def runTestsCommandsForModules(modules: List[String]) = {
-    modules.map(module => s";$module/test").mkString
+  modules.map(module => s";$module/test").mkString
 }
 
 addCommandAlias("core-unit-tests", runTestsCommandsForModules(coreModules))
@@ -1067,6 +1063,3 @@ addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForM
 addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
 addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
 addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))
-
-// This option allows distage 1.0.10 to run on JDK 17+
-val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"
