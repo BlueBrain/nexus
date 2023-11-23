@@ -243,6 +243,7 @@ lazy val testkit = project
       catsRetry,
       doobiePostgres,
       munit,
+      munitCatsEffect,
       scalaTest,
       testContainers
     ) ++ doobie,
@@ -265,6 +266,7 @@ lazy val sourcingPsql = project
       classgraph,
       distageCore,
       munit          % Test,
+      munitCatsEffect  % Test,
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
@@ -323,6 +325,7 @@ lazy val sdk = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
+      munitCatsEffect  % Test,
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -768,6 +771,7 @@ lazy val storage = project
       akkaTestKit     % Test,
       mockito         % Test,
       munit           % Test,
+      munitCatsEffect  % Test,
       scalaTest       % Test
     ),
     cleanFiles              ++= Seq(

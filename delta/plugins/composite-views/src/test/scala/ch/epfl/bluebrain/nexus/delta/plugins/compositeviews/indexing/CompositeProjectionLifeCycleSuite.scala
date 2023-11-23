@@ -12,14 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import munit.Location
 
 import java.util.UUID
 import scala.concurrent.duration._
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class CompositeProjectionLifeCycleSuite extends CatsEffectSuite with CompositeViewsFixture {
+class CompositeProjectionLifeCycleSuite extends NexusSuite with CompositeViewsFixture {
 
   implicit private val batch: BatchConfig             = BatchConfig(2, 10.millis)
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
@@ -59,9 +60,9 @@ class CompositeProjectionLifeCycleSuite extends CatsEffectSuite with CompositeVi
                         )
       compiled       <- lifecycle.build(view)
       projection     <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)
-      _              <- projection.executionStatus.eventually(ExecutionStatus.Completed)
+      _              <- projection.executionStatus.assertEquals(ExecutionStatus.Completed).eventually
       // Asserting hooks
-      _              <- triggeredHooks.get.eventually(hooks)
+      _              <- triggeredHooks.get.assertEquals(hooks).eventually
       // If no hook have been provided then we expect to fall back on indexing
       _              <- indexing.get.assertEquals(Option.when(hooks.isEmpty)(view.ref))
     } yield ()

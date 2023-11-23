@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.Cause
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{entityType, SimpleResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -20,7 +20,7 @@ import munit.AnyFixture
 
 import java.time.Instant
 
-class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
+class TombstoneStoreSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -48,8 +48,8 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
   test("Save a tombstone for the given tag") {
     val tag = UserTag.unsafe("v1")
     for {
-      _ <- TombstoneStore.save(entityType, state, tag).transact(xas.write).assertUnit
-      _ <- select(id1, tag).assertSome(Cause.deleted.asJson)
+      _ <- TombstoneStore.save(entityType, state, tag).transact(xas.write).assert
+      _ <- select(id1, tag).assertEquals(Some(Cause.deleted.asJson))
     } yield ()
   }
 
@@ -60,8 +60,8 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
       _ <- TombstoneStore
              .save(entityType, None, newState)
              .transact(xas.write)
-             .assertUnit
-      _ <- select(id2, Tag.latest).assertNone
+             .assert
+      _ <- select(id2, Tag.latest).assertEquals(None)
     } yield ()
   }
 
@@ -72,8 +72,8 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
       _ <- TombstoneStore
              .save(entityType, Some(state), newState)
              .transact(xas.write)
-             .assertUnit
-      _ <- select(id2, Tag.latest).assertNone
+             .assert
+      _ <- select(id2, Tag.latest).assertEquals(None)
     } yield ()
   }
 
@@ -81,9 +81,11 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
     val id3      = nxv + "id3"
     val newState = SimpleResource(id3, Set(nxv + "SimpleResource2"), Latest(nxv + "schema"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
-      _ <- selectAsCause(id3, Tag.latest).assertSome(
-             Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), None)
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert
+      _ <- selectAsCause(id3, Tag.latest).assertEquals(
+             Some(
+               Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), None)
+             )
            )
     } yield ()
   }
@@ -92,8 +94,12 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
     val id4      = nxv + "id4"
     val newState = SimpleResource(id4, state.types, Latest(nxv + "schema2"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
-      _ <- selectAsCause(id4, Tag.latest).assertSome(Cause.diff(Set.empty, Some(state.schema)))
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert
+      _ <- selectAsCause(id4, Tag.latest).assertEquals(
+             Some(
+               Cause.diff(Set.empty[Iri], Some(state.schema))
+             )
+           )
     } yield ()
   }
 
@@ -101,9 +107,11 @@ class TombstoneStoreSuite extends CatsEffectSuite with Doobie.Fixture {
     val id5      = nxv + "id5"
     val newState = SimpleResource(id5, Set(nxv + "SimpleResource2"), Latest(nxv + "schema2"))
     for {
-      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assertUnit
-      _ <- selectAsCause(id5, Tag.latest).assertSome(
-             Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
+      _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert
+      _ <- selectAsCause(id5, Tag.latest).assertEquals(
+             Some(
+               Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
+             )
            )
     } yield ()
   }

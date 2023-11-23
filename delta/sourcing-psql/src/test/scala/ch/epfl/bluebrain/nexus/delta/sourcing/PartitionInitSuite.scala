@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits.toSqlInterpolator
 
-class PartitionInitSuite extends CatsEffectSuite {
+class PartitionInitSuite extends NexusSuite {
 
   test("If the projectRef is not cached, we should obtain PartitionInit.Execute") {
     val projectRef = ProjectRef.unsafe("org", "project")

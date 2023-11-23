@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalyticsCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Noop
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsResult, GraphAnalyticsStream}
@@ -13,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import munit.AnyFixture
@@ -22,7 +22,7 @@ import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fixture {
+class GraphAnalyticsCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -92,7 +92,8 @@ class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetu
            )
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventually(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
+             .eventually
     } yield ()
   }
 
@@ -101,8 +102,9 @@ class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetu
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
-             .eventually(Some(ExecutionStatus.Completed))
-      _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
+             .assertEquals(Some(ExecutionStatus.Completed))
+             .eventually
+      _ <- projections.progress(projectionName).assertEquals(Some(expectedAnalysisProgress))
       _  = assert(createdIndices.contains(project1), s"The index for '$project1' should have been created.")
     } yield ()
   }
@@ -112,8 +114,9 @@ class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetu
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
-             .eventually(Some(ExecutionStatus.Completed))
-      _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
+             .assertEquals(Some(ExecutionStatus.Completed))
+             .eventually
+      _ <- projections.progress(projectionName).assertEquals(Some(expectedAnalysisProgress))
       _  = assert(createdIndices.contains(project2), s"The index for '$project2' should have been created.")
     } yield ()
   }
@@ -123,23 +126,24 @@ class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetu
       _ <- resumeSignal.set(true)
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 0, 0)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 0, 0)))
+             .eventually
     } yield ()
   }
 
   test(s"Projection for '$project1' should not be restarted by the new project state.") {
     val projectionName = s"ga-$project1"
     for {
-      _ <- sv.describe(projectionName).map(_.map(_.restarts)).eventually(Some(0))
-      _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
+      _ <- sv.describe(projectionName).map(_.map(_.restarts)).assertEquals(Some(0)).eventually
+      _ <- projections.progress(projectionName).assertEquals(Some(expectedAnalysisProgress))
     } yield ()
   }
 
   test(s"'$project2' is marked for deletion, the associated projection should be destroyed.") {
     val projectionName = s"ga-$project2"
     for {
-      _ <- sv.describe(projectionName).eventually(None)
-      _ <- projections.progress(projectionName).assertNone
+      _ <- sv.describe(projectionName).assertEquals(None).eventually
+      _ <- projections.progress(projectionName).assertEquals(None)
       _  = assert(deletedIndices.contains(project2), s"The index for '$project2' should have been deleted.")
     } yield ()
   }

@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectDeletionIsDisabled, ProjectIsReferenced}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class ValidateProjectDeletionSuite extends CatsEffectSuite {
+class ValidateProjectDeletionSuite extends NexusSuite {
 
   private val noReferences   = ProjectRef.unsafe("org", "no-refs")
   private val withReferences = ProjectRef.unsafe("org", "has-refs")
@@ -38,13 +38,13 @@ class ValidateProjectDeletionSuite extends CatsEffectSuite {
   test("Fail if a reference is detected") {
     deletionEnabled
       .apply(withReferences)
-      .intercept(ProjectIsReferenced(withReferences, Map(noReferences -> Set(nxv + "ref1", nxv + "ref2"))))
+      .interceptEquals(ProjectIsReferenced(withReferences, Map(noReferences -> Set(nxv + "ref1", nxv + "ref2"))))
   }
 
   test("Fail as project deletion is disabled") {
     deletionDisabled
       .apply(noReferences)
-      .intercept(ProjectDeletionIsDisabled)
+      .interceptEquals(ProjectDeletionIsDisabled)
   }
 
 }

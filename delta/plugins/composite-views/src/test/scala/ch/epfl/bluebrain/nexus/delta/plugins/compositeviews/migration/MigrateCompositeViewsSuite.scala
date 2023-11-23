@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.Get
 import munit.{AnyFixture, Location}
 import doobie.implicits._
@@ -24,7 +24,7 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture {
+class MigrateCompositeViewsSuite extends NexusSuite with Doobie.Fixture {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 

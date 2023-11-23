@@ -13,10 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProj
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
-class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFixture {
+class ResolversEvaluateSuite extends NexusSuite with ResolverStateMachineFixture {
 
   private val validatePriority: ValidatePriority = (_, _, _) => IO.unit
 
@@ -31,7 +31,7 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   )
 
   test("Creation fails if the in-project resolver already exists") {
-    eval(Some(inProjectCurrent), createInProject).intercept(
+    eval(Some(inProjectCurrent), createInProject).interceptEquals(
       ResourceAlreadyExists(createInProject.id, createInProject.project)
     )
   }
@@ -74,7 +74,7 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   )
 
   test("Creation fails if the cross-project resolver already exists") {
-    eval(Some(crossProjectCurrent), createCrossProject).intercept(
+    eval(Some(crossProjectCurrent), createCrossProject).interceptEquals(
       ResourceAlreadyExists(createCrossProject.id, createCrossProject.project)
     )
   }
@@ -82,14 +82,14 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   test("Creation fails if no identities are provided for a cross-project resolver") {
     val invalidValue   = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
     val invalidCommand = createCrossProject.copy(value = invalidValue)
-    eval(None, invalidCommand).intercept(NoIdentities)
+    eval(None, invalidCommand).interceptEquals(NoIdentities)
   }
 
   test("Creation fails if no identities are provided for a cross-project resolver") {
     val invalidValue   =
       crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
     val invalidCommand = createCrossProject.copy(value = invalidValue)
-    eval(None, invalidCommand).intercept(InvalidIdentities(Set(alice.subject)))
+    eval(None, invalidCommand).interceptEquals(InvalidIdentities(Set(alice.subject)))
   }
 
   test("Creation succeeds for a cross-project resolver with provided identities") {
@@ -130,22 +130,22 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   )
 
   test("Update fails if the in-project resolver does not exist") {
-    eval(None, updateInProject).intercept(ResolverNotFound(updateInProject.id, updateInProject.project))
+    eval(None, updateInProject).interceptEquals(ResolverNotFound(updateInProject.id, updateInProject.project))
   }
 
   test("Update fails if the provided revision for the in-project resolver is incorrect") {
     val invalidCommand = updateInProject.copy(rev = 4)
-    eval(Some(inProjectCurrent), invalidCommand).intercept(IncorrectRev(invalidCommand.rev, inProjectCurrent.rev))
+    eval(Some(inProjectCurrent), invalidCommand).interceptEquals(IncorrectRev(invalidCommand.rev, inProjectCurrent.rev))
   }
 
   test("Update fails if the in-project resolver is deprecated") {
     val deprecated = inProjectCurrent.copy(deprecated = true)
-    eval(Some(deprecated), updateInProject).intercept(ResolverIsDeprecated(deprecated.id))
+    eval(Some(deprecated), updateInProject).interceptEquals(ResolverIsDeprecated(deprecated.id))
   }
 
   test("Update fails  if we try to change from in-project to cross-project type") {
     val expectedError = DifferentResolverType(updateCrossProject.id, CrossProject, InProject)
-    eval(Some(inProjectCurrent), updateCrossProject).intercept(expectedError)
+    eval(Some(inProjectCurrent), updateCrossProject).interceptEquals(expectedError)
   }
 
   test("Update fails  if the priority already exists") {
@@ -185,34 +185,36 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
   )
 
   test("Update fails if the cross-project resolver does not exist") {
-    eval(None, updateCrossProject).intercept(ResolverNotFound(updateCrossProject.id, updateCrossProject.project))
+    eval(None, updateCrossProject).interceptEquals(ResolverNotFound(updateCrossProject.id, updateCrossProject.project))
   }
 
   test("Update fails if the provided revision for the cross-project resolver is incorrect") {
     val invalidCommand = updateCrossProject.copy(rev = 1)
-    eval(Some(crossProjectCurrent), invalidCommand).intercept(IncorrectRev(invalidCommand.rev, inProjectCurrent.rev))
+    eval(Some(crossProjectCurrent), invalidCommand).interceptEquals(
+      IncorrectRev(invalidCommand.rev, inProjectCurrent.rev)
+    )
   }
 
   test("Update fails if the cross-project resolver is deprecated") {
     val deprecated = crossProjectCurrent.copy(deprecated = true)
-    eval(Some(deprecated), updateCrossProject).intercept(ResolverIsDeprecated(deprecated.id))
+    eval(Some(deprecated), updateCrossProject).interceptEquals(ResolverIsDeprecated(deprecated.id))
   }
 
   test("Update fails if no identities are provided for a cross-project resolver") {
     val invalidValue   = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
     val invalidCommand = updateCrossProject.copy(value = invalidValue)
-    eval(Some(crossProjectCurrent), invalidCommand).intercept(NoIdentities)
+    eval(Some(crossProjectCurrent), invalidCommand).interceptEquals(NoIdentities)
   }
 
   test("Update fails if some provided identities don't belong to the caller for a cross-project resolver") {
     val invalidValue   = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
     val invalidCommand = updateCrossProject.copy(value = invalidValue)
-    eval(Some(crossProjectCurrent), invalidCommand).intercept(InvalidIdentities(Set(bob.subject)))
+    eval(Some(crossProjectCurrent), invalidCommand).interceptEquals(InvalidIdentities(Set(bob.subject)))
   }
 
   test("Update fails if we try to change from cross-project to in-project type") {
     val expectedError = DifferentResolverType(updateInProject.id, InProject, CrossProject)
-    eval(Some(crossProjectCurrent), updateInProject).intercept(expectedError)
+    eval(Some(crossProjectCurrent), updateInProject).interceptEquals(expectedError)
   }
 
   test("Update succeeds for a cross-project resolver with provided entities") {
@@ -247,14 +249,14 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
 
   test("Tag fails if the resolver does not exist") {
     val expectedError = ResolverNotFound(tagCommand.id, tagCommand.project)
-    eval(None, tagCommand).intercept(expectedError)
+    eval(None, tagCommand).interceptEquals(expectedError)
   }
 
   bothStates.foreach { state =>
     test(s"Tag fails for an ${state.value.tpe} resolver if the provided revision is incorrect") {
       val incorrectRev  = tagCommand.copy(rev = 5)
       val expectedError = IncorrectRev(incorrectRev.rev, state.rev)
-      eval(Some(state), incorrectRev).intercept(expectedError)
+      eval(Some(state), incorrectRev).interceptEquals(expectedError)
     }
   }
 
@@ -293,20 +295,20 @@ class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFi
 
   test("Deprecate fails if resolver does not exist") {
     val expectedError = ResolverNotFound(deprecateCommand.id, deprecateCommand.project)
-    eval(None, deprecateCommand).intercept(expectedError)
+    eval(None, deprecateCommand).interceptEquals(expectedError)
   }
 
   bothStates.foreach { state =>
     test(s"Deprecate fails for an ${state.value.tpe} resolver if the provided revision is incorrect") {
       val incorrectRev  = deprecateCommand.copy(rev = 5)
       val expectedError = IncorrectRev(incorrectRev.rev, state.rev)
-      eval(Some(state), incorrectRev).intercept(expectedError)
+      eval(Some(state), incorrectRev).interceptEquals(expectedError)
     }
 
     test(s"Deprecate fails for an ${state.value.tpe} resolver if it is already deprecated") {
       val deprecated    = state.copy(deprecated = true)
       val expectedError = ResolverIsDeprecated(deprecated.id)
-      eval(Some(deprecated), deprecateCommand).intercept(expectedError)
+      eval(Some(deprecated), deprecateCommand).interceptEquals(expectedError)
     }
 
     test(s"Deprecate succeeds for an ${state.value.tpe} resolver") {

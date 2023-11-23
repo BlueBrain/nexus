@@ -6,14 +6,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem._
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration.DurationInt
 
-class FailedElemPersistenceSuite extends CatsEffectSuite {
+class FailedElemPersistenceSuite extends NexusSuite {
 
   implicit private val batch: BatchConfig             = BatchConfig(2, 10.millis)
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
@@ -58,7 +59,7 @@ class FailedElemPersistenceSuite extends CatsEffectSuite {
     val failedElems = MutableSet.empty[FailedElem]
     for {
       projection <- Projection.apply(cpPersistentNodeFailures, IO.none, _ => IO.unit, saveFailedElems(failedElems))
-      _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
+      _          <- projection.executionStatus.assertEquals(ExecutionStatus.Completed).eventually
       _           = assertEquals(failedElems.size, 10)
     } yield ()
   }
@@ -67,7 +68,7 @@ class FailedElemPersistenceSuite extends CatsEffectSuite {
     val failedElems = MutableSet.empty[FailedElem]
     for {
       projection <- Projection.apply(cpEveryNodeFailures, IO.none, _ => IO.unit, saveFailedElems(failedElems))
-      _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
+      _          <- projection.executionStatus.assertEquals(ExecutionStatus.Completed).eventually
       _           = assertEquals(failedElems.size, 10)
     } yield ()
   }
@@ -76,7 +77,7 @@ class FailedElemPersistenceSuite extends CatsEffectSuite {
     val failedElems = MutableSet.empty[FailedElem]
     for {
       projection <- Projection.apply(cpPersistentNodeSuccesses, IO.none, _ => IO.unit, saveFailedElems(failedElems))
-      _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
+      _          <- projection.executionStatus.assertEquals(ExecutionStatus.Completed).eventually
       _           = failedElems.assertEmpty()
     } yield ()
   }

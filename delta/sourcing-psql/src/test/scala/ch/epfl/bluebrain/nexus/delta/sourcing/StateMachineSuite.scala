@@ -5,12 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
 
 import scala.concurrent.duration._
 
-class StateMachineSuite extends CatsEffectSuite {
+class StateMachineSuite extends NexusSuite {
 
   private val stm = Arithmetic.stateMachine
 
@@ -33,7 +33,7 @@ class StateMachineSuite extends CatsEffectSuite {
     (Some(current), Subtract(5)) -> NegativeTotal(-1)
   ).foreach { case ((original, command), rejection) =>
     test(s"Evaluate and reject state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      stm.evaluate(original, command, maxDuration).intercept(rejection)
+      stm.evaluate(original, command, maxDuration).interceptEquals(rejection)
     }
   }
 
@@ -42,23 +42,23 @@ class StateMachineSuite extends CatsEffectSuite {
   }
 
   test("Evaluate and get a timeout error") {
-    stm.evaluate(None, Never, maxDuration).intercept(EvaluationTimeout(Never, maxDuration))
+    stm.evaluate(None, Never, maxDuration).interceptEquals(EvaluationTimeout(Never, maxDuration))
   }
 
   test("Compute state and get back the initial state from an empty stream of events") {
-    stm.computeState(Stream.empty).assertNone
+    stm.computeState(Stream.empty).assertEquals(None)
   }
 
   test("Compute state from a stream of events") {
     stm
       .computeState(Stream(Plus(1, 2), Plus(2, 8), Minus(3, 6)))
-      .assertSome(Total(3, 4))
+      .assertEquals(Some(Total(3, 4)))
   }
 
   test("Get an error from an invalid stream of events") {
     stm
       .computeState(Stream(Plus(1, 2), Minus(2, 6)))
-      .intercept(InvalidState(Some(Total(1, 2)), Minus(2, 6)))
+      .interceptEquals(InvalidState(Some(Total(1, 2)), Minus(2, 6)))
   }
 
 }

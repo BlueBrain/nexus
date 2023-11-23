@@ -5,7 +5,7 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import munit.CatsEffectSuite
 
-class ClasspathResourceLoaderSpec extends CatsEffectSuite {
+class ClasspathResourceLoaderSuite extends CatsEffectSuite {
   private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
   test("return the path") {
