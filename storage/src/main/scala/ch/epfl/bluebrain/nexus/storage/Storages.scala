@@ -188,7 +188,7 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] =
       for {
         validated  <- validateFile.forCreate(name, path)
-        _          <- IO.delay(Files.createDirectories(validated.absDestPath.getParent))
+        _          <- IO.blocking(Files.createDirectories(validated.absDestPath.getParent))
         msgDigest  <- IO.delay(MessageDigest.getInstance(digestConfig.algorithm))
         attributes <- streamFileContents(source, path, validated.absDestPath, msgDigest)
       } yield attributes
@@ -250,8 +250,8 @@ object Storages {
     ): IO[RejOrAttributes] =
       for {
         computedSize <- size(absSourcePath)
-        _            <- IO.delay(Files.createDirectories(absDestPath.getParent))
-        _            <- IO.delay(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
+        _            <- IO.blocking(Files.createDirectories(absDestPath.getParent))
+        _            <- IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
         _            <- IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
         mediaType    <- IO.delay(contentTypeDetector(absDestPath, isDir))
       } yield Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType))
@@ -260,7 +260,7 @@ object Storages {
       if (Files.isDirectory(absPath)) {
         IO.fromFuture(IO.delay(Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_))))
       } else if (Files.isRegularFile(absPath))
-        IO.delay(Files.size(absPath))
+        IO.blocking(Files.size(absPath))
       else
         IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
 

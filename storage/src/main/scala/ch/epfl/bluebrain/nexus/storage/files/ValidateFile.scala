@@ -92,20 +92,20 @@ object ValidateFile {
         } yield new ValidatedCopyFile(name, absSourcePath, absDestPath) {}).value
       }
 
-      def fileExists(absSourcePath: Path): IO[Boolean]     = IO.delay(Files.exists(absSourcePath))
-      def isRegularFile(absSourcePath: Path): IO[Boolean]  = IO.delay(Files.isRegularFile(absSourcePath))
-      def isDirectory(absSourcePath: Path): IO[Boolean]    = IO.delay(Files.isDirectory(absSourcePath))
-      def isSymbolicLink(absSourcePath: Path): IO[Boolean] = IO.delay(Files.isSymbolicLink(absSourcePath))
+      def fileExists(absSourcePath: Path): IO[Boolean]     = IO.blocking(Files.exists(absSourcePath))
+      def isRegularFile(absSourcePath: Path): IO[Boolean]  = IO.blocking(Files.isRegularFile(absSourcePath))
+      def isDirectory(absSourcePath: Path): IO[Boolean]    = IO.blocking(Files.isDirectory(absSourcePath))
+      def isSymbolicLink(absSourcePath: Path): IO[Boolean] = IO.blocking(Files.isSymbolicLink(absSourcePath))
 
       def allowedPrefix(config: StorageConfig, bucketPath: Path, absSourcePath: Path) =
         absSourcePath.startsWith(bucketPath) ||
           config.extraPrefixes.exists(absSourcePath.startsWith)
 
       def containsHardLink(absPath: Path): IO[Boolean] =
-        IO.delay(Files.isDirectory(absPath)).flatMap {
+        IO.blocking(Files.isDirectory(absPath)).flatMap {
           case true  => false.pure[IO]
           case false =>
-            IO.delay(Files.getAttribute(absPath, "unix:nlink").asInstanceOf[Int]).map(_ > 1)
+            IO.blocking(Files.getAttribute(absPath, "unix:nlink").asInstanceOf[Int]).map(_ > 1)
         }
 
       def checkIfSourceIsFileOrDir(
