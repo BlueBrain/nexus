@@ -22,6 +22,8 @@ object DiskStorageFetchFile extends FetchFile {
     Try(Paths.get(URI.create(s"file://$path"))) match {
       case Failure(err)  => IO.raiseError(UnexpectedLocationFormat(s"file://$path", err.getMessage))
       case Success(path) =>
-        IO.raiseWhen(!path.toFile.exists())(FetchFileRejection.FileNotFound(path.toString)) >> IO.blocking(FileIO.fromPath(path))
+        IO.raiseWhen(!path.toFile.exists())(FetchFileRejection.FileNotFound(path.toString)) >> IO.blocking(
+          FileIO.fromPath(path)
+        )
     }
 }

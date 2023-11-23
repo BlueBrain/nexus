@@ -97,13 +97,13 @@ object AppConfig {
                                    })
       defaultConfig             <- IO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
       pluginConfigs             <- IO.blocking {
-        pluginsConfigPaths.map { string =>
-          ConfigFactory.parseReader(
-            new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
-            parseOptions
-          )
-        }
-      }
+                                     pluginsConfigPaths.map { string =>
+                                       ConfigFactory.parseReader(
+                                         new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
+                                         parseOptions
+                                       )
+                                     }
+                                   }
       (appConfig, mergedConfig) <- merge(externalConfig :: defaultConfig :: pluginConfigs: _*)
     } yield (appConfig, mergedConfig)
   }

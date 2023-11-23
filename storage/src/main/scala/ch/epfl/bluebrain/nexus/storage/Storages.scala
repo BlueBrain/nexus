@@ -231,9 +231,9 @@ object Storages {
 
       def fixPermissions(path: Path): IO[Either[PermissionsFixingFailed, Unit]] =
         if (config.fixerEnabled) {
-          val absPath  = path.toAbsolutePath.normalize.toString
-          val process  = Process(config.fixerCommand :+ absPath)
-          val logger   = StringProcessLogger(config.fixerCommand, absPath)
+          val absPath = path.toAbsolutePath.normalize.toString
+          val process = Process(config.fixerCommand :+ absPath)
+          val logger  = StringProcessLogger(config.fixerCommand, absPath)
           IO.blocking(process ! logger).map {
             case 0 => Right(())
             case _ => Left(PermissionsFixingFailed(absPath, logger.toString))
