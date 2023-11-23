@@ -76,7 +76,7 @@ object HttpClient {
 
   private[http] object HttpSingleRequest {
     def default(implicit as: ActorSystem): HttpSingleRequest =
-      (request: HttpRequest) => IO.fromFuture(IO.delay(Http().singleRequest(request)))
+      (request: HttpRequest) => IO.fromFuture(IO.blocking(Http().singleRequest(request)))
   }
 
   /**
@@ -109,7 +109,7 @@ object HttpClient {
           case HttpEncodings.identity => IO.pure(Coders.NoCoding)
           case encoding               => IO.raiseError(InvalidEncoding(req, encoding))
         }
-        decoder.map(_.decodeMessage(response))
+        decoder.flatMap { d => IO.blocking(d.decodeMessage(response)) }
       }
 
       @SuppressWarnings(Array("IsInstanceOf"))
@@ -141,13 +141,13 @@ object HttpClient {
         apply(req) {
           case resp if resp.status.isSuccess() =>
             IO
-              .fromFuture(IO.delay(um(resp.entity)))
+              .fromFuture(IO.blocking(um(resp.entity)))
               .adaptError(err => HttpSerializationError(req, err.getMessage, A.simpleName))
         }
 
       override def toDataBytes(req: HttpRequest): IO[AkkaSource] =
         apply(req) {
-          case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes)
+          case resp if resp.status.isSuccess() => IO.blocking(resp.entity.dataBytes)
         }
 
       override def discardBytes[A](req: HttpRequest, returnValue: => A): IO[A] =
@@ -158,7 +158,7 @@ object HttpClient {
 
       private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): IO[A] =
         IO.fromFuture(
-          IO.delay(
+          IO.blocking(
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
         ).redeemWith(

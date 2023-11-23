@@ -196,7 +196,7 @@ object Storages {
         IO.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
           IO.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
             IO.fromFuture(
-              IO.delay(
+              IO.blocking(
                 source
                   .alsoToMat(sinkDigest(msgDigest))(Keep.right)
                   .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
@@ -234,9 +234,10 @@ object Storages {
           val absPath  = path.toAbsolutePath.normalize.toString
           val process  = Process(config.fixerCommand :+ absPath)
           val logger   = StringProcessLogger(config.fixerCommand, absPath)
-          val exitCode = process ! logger
-          if (exitCode == 0) IO.pure(Right(()))
-          else IO.pure(Left(PermissionsFixingFailed(absPath, logger.toString)))
+          IO.blocking(process ! logger).map {
+            case 0 => Right(())
+            case _ => Left(PermissionsFixingFailed(absPath, logger.toString))
+          }
         } else {
           IO.pure(Right(()))
         }
@@ -253,16 +254,16 @@ object Storages {
       def computeSizeAndMove(isDir: Boolean): IO[RejOrAttributes] = {
         lazy val mediaType = contentTypeDetector(absDestPath, isDir)
         size(absSourcePath).flatMap { computedSize =>
-          IO.fromTry(Try(Files.createDirectories(absDestPath.getParent))) >>
-            IO.fromTry(Try(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))) >>
-            IO.pure(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
+          IO.blocking(Files.createDirectories(absDestPath.getParent)) >>
+            IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE)) >>
+            IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
             IO.pure(Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)))
         }
       }
 
       def dirContainsLink(path: Path): IO[Boolean] =
         IO.fromFuture(
-          IO.delay(
+          IO.blocking(
             Directory
               .walk(path)
               .map(p => Files.isSymbolicLink(p) || containsHardLink(p))
@@ -326,12 +327,12 @@ object Storages {
     private def size(absPath: Path): IO[Long] =
       if (Files.isDirectory(absPath)) {
         IO.fromFuture(
-          IO.delay(
+          IO.blocking(
             Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_))
           )
         )
       } else if (Files.isRegularFile(absPath))
-        IO.pure(Files.size(absPath))
+        IO.blocking(Files.size(absPath))
       else
         IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
   }

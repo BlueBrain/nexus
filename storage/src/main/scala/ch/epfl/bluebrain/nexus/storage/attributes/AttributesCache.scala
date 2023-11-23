@@ -56,7 +56,7 @@ object AttributesCache {
   )(implicit tm: Timeout): AttributesCache =
     new AttributesCache {
       override def get(filePath: Path): IO[FileAttributes] =
-        IO.fromFuture(IO.delay(underlying ? Get(filePath)))
+        IO.fromFuture(IO.blocking(underlying ? Get(filePath)))
           .flatMap[FileAttributes] {
             case attributes: FileAttributes => IO.pure(attributes)
             case other                      =>

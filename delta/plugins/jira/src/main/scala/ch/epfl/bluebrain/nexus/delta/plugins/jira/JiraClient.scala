@@ -119,7 +119,7 @@ object JiraClient {
 
           override def requestToken()(implicit caller: User): IO[AuthenticationRequest] = {
             for {
-              token <- IO {
+              token <- IO.blocking {
                          val tempToken = new JiraOAuthGetTemporaryToken(jiraConfig.base)
                          tempToken.consumerKey = jiraConfig.consumerKey
                          tempToken.signer = signer
@@ -146,7 +146,7 @@ object JiraClient {
                             case None                      => IO.raiseError(NoTokenError)
                             case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
                             case Some(RequestToken(value)) =>
-                              IO {
+                              IO.blocking {
                                 val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
                                 accessToken.consumerKey = jiraConfig.consumerKey
                                 accessToken.signer = signer

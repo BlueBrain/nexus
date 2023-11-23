@@ -36,7 +36,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
     * managed to load some classes but not all.
     */
   def load: IO[(ClassLoader, List[PluginDef])] = {
-    IO.delay(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
+    IO.blocking(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
       // recursively load the jar files, retrying in case of errors if there's at least one plugin loaded per pass
       // this enables handling of plugin dependencies
       (jarFiles, new PluginsClassLoader(Nil, parentClassLoader), Nil: List[PluginDef]).tailRecM {
@@ -77,8 +77,8 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
 
   private def loadPluginDef(jar: File, parent: ClassLoader): IO[Option[(PluginDef, PluginClassLoader)]] =
     for {
-      pluginClassLoader <- IO.delay(new PluginClassLoader(jar.toURI.toURL, parent))
-      pluginDefClasses  <- IO.delay(loadPluginDefClasses(pluginClassLoader))
+      pluginClassLoader <- IO.blocking(new PluginClassLoader(jar.toURI.toURL, parent))
+      pluginDefClasses  <- IO.blocking(loadPluginDefClasses(pluginClassLoader))
       pluginDef         <- pluginDefClasses match {
                              case pluginDef :: Nil =>
                                IO.delay( // delayed because it can throw

@@ -35,7 +35,7 @@ final class S3StorageSaveFile(storage: S3Storage, config: StorageTypeConfig)(imp
     val key        = path.toString
     def s3Sink     = S3.multipartUpload(storage.value.bucket, key).withAttributes(attributes)
     IO.fromFuture(
-      IO.delay(
+      IO.blocking(
         S3.getObjectMetadata(storage.value.bucket, key)
           .withAttributes(attributes)
           .runWith(Sink.last)

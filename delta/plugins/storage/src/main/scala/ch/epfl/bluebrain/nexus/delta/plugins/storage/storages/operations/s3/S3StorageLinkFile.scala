@@ -29,7 +29,7 @@ class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit 
     val attributes    = S3Attributes.settings(storage.value.alpakkaSettings(config))
     val location: Uri = storage.value.address(storage.value.bucket) / key
     IO.fromFuture(
-      IO.delay(
+      IO.blocking(
         S3.download(storage.value.bucket, URLDecoder.decode(key.toString, UTF_8.toString))
           .withAttributes(attributes)
           .runWith(Sink.head)

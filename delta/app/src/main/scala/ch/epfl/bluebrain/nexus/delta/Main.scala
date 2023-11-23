@@ -132,7 +132,7 @@ object Main extends IOApp {
     implicit val cfg: AppConfig         = locator.get[AppConfig]
 
     val startHttpServer = IO.fromFuture(
-      IO(
+      IO.blocking(
         Http()
           .newServerAt(
             cfg.http.interface,
@@ -156,7 +156,7 @@ object Main extends IOApp {
         .timeout(30.seconds) >> KamonMonitoring.terminate
     }
 
-    val release = IO.fromFuture(IO(as.terminate()))
+    val release = IO.fromFuture(IO.blocking(as.terminate()))
 
     Resource.make(acquire)(_ => release.void)
   }

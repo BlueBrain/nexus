@@ -84,7 +84,7 @@ object FormDataExtractor {
       }
 
       private def unmarshall(entity: HttpEntity, sizeLimit: Long): IO[FormData] =
-        IO.fromFuture(IO.delay(um(entity.withSizeLimit(sizeLimit)))).adaptError(onUnmarshallingError(_))
+        IO.fromFuture(IO.blocking(um(entity.withSizeLimit(sizeLimit)))).adaptError(onUnmarshallingError(_))
 
       private def onUnmarshallingError(th: Throwable): WrappedAkkaRejection = th match {
         case RejectionError(r)                  =>
@@ -107,7 +107,7 @@ object FormDataExtractor {
           storageAvailableSpace: Option[Long]
       ): IO[Option[(FileDescription, BodyPartEntity)]] = IO
         .fromFuture(
-          IO(
+          IO.blocking(
             formData.parts
               .mapAsync(parallelism = 1)(extractFile)
               .collect { case Some(values) => values }
