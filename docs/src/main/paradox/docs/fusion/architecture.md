@@ -15,17 +15,19 @@ Although the application is served by a Node.js server, the client communicates 
 
 ## Pages
 
-Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing technologies and help separating the application main features.
+Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing system and help separating the application main features.
 
 Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: @ref:[Organizations](../fusion/organizations.md), @ref:[Projects](../fusion/projects.md), @ref:[Studios](../fusion/studios.md) and @ref:[My data](../fusion/my-data.md).
 
 The page @ref:[Project](../fusion/project.md), is responsible for handling all aspects of managing a single project.
 
+@@@ note { .tip title="Change of search page" }
+
 The search page has been removed, but every element that was previously available on the search page now has a link on the home page. These links redirect users to the appropriate global search type page.
 
-The pages in Nexus Fusion are part of the source code and reside in the `src/pages` folder.
+@@@
 
-While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming releases.
+The pages in Nexus Fusion are part of the source code and reside in the `src/pages` folder. While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming releases.
 
 ## Plugins
 
