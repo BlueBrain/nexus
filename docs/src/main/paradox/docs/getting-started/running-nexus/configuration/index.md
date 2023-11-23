@@ -10,7 +10,7 @@ There are 3 ways to modify the default configuration:
   environment variables. In order to enable this style of configuration, the JVM property
   `-Dconfig.override_with_env_vars=true` needs to be set. Once set, a configuration flag can be overridden. For example: `CONFIG_FORCE_app_http_interface="127.0.0.1"`.
 
-In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS` environment variable: `-Xms4g -Xmx4g --add-opens=java.base/java.lang=ALL-UNNAMED`. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.
+In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS` environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.
 
 In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified
 
