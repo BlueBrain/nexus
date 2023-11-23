@@ -122,7 +122,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     )
     val release = (as: ActorSystem[Nothing]) => {
       import akka.actor.typed.scaladsl.adapter._
-      IO.fromFuture(IO.blocking(as.toClassic.terminate()).timeout(15.seconds)).void
+      IO.fromFuture(IO(as.toClassic.terminate()).timeout(15.seconds)).void
     }
     Resource.make(make)(release)
   }

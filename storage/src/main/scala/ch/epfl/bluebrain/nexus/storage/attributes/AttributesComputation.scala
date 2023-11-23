@@ -62,7 +62,7 @@ object AttributesComputation {
             val isDir  = Files.isDirectory(path)
             val source = if (isDir) folderSource(path) else fileSource(path)
             IO.fromFuture(
-              IO.blocking(
+              IO.delay(
                 source
                   .alsoToMat(sinkSize)(Keep.right)
                   .toMat(sinkDigest(msgDigest)) { (bytesF, digestF) =>

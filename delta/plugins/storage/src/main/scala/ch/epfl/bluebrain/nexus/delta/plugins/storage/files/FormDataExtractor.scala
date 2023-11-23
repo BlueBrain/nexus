@@ -107,7 +107,7 @@ object FormDataExtractor {
           storageAvailableSpace: Option[Long]
       ): IO[Option[(FileDescription, BodyPartEntity)]] = IO
         .fromFuture(
-          IO.blocking(
+          IO.delay(
             formData.parts
               .mapAsync(parallelism = 1)(extractFile)
               .collect { case Some(values) => values }

@@ -95,7 +95,7 @@ object AppConfig {
       externalConfig            <- IO.blocking(externalConfigPath.fold(ConfigFactory.empty()) { p =>
                                      ConfigFactory.parseFile(new File(p), parseOptions)
                                    })
-      defaultConfig             <- IO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
+      defaultConfig             <- IO.blocking(ConfigFactory.parseResources("default.conf", parseOptions))
       pluginConfigs             <- IO.blocking {
                                      pluginsConfigPaths.map { string =>
                                        ConfigFactory.parseReader(

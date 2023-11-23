@@ -31,7 +31,7 @@ object KamonMonitoring {
     */
   def terminate: IO[Unit] =
     IO.whenA(enabled) {
-      IO.fromFuture { IO.blocking { Kamon.stopModules() } }
+      IO.fromFuture { IO { Kamon.stopModules() } }
         .timeout(15.seconds)
         .onError { e =>
           logger.error(e)("Something went wrong while terminating Kamon")

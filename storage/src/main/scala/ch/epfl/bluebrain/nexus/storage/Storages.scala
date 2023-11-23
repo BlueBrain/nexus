@@ -193,10 +193,10 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] = {
       val absFilePath = filePath(name, path)
       if (descendantOf(absFilePath, basePath(name)))
-        IO.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
-          IO.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
+        IO.blocking(Files.createDirectories(absFilePath.getParent)) >>
+          IO.delay(MessageDigest.getInstance(digestConfig.algorithm)).flatMap { msgDigest =>
             IO.fromFuture(
-              IO.blocking(
+              IO.delay(
                 source
                   .alsoToMat(sinkDigest(msgDigest))(Keep.right)
                   .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
@@ -263,7 +263,7 @@ object Storages {
 
       def dirContainsLink(path: Path): IO[Boolean] =
         IO.fromFuture(
-          IO.blocking(
+          IO.delay(
             Directory
               .walk(path)
               .map(p => Files.isSymbolicLink(p) || containsHardLink(p))
@@ -327,7 +327,7 @@ object Storages {
     private def size(absPath: Path): IO[Long] =
       if (Files.isDirectory(absPath)) {
         IO.fromFuture(
-          IO.blocking(
+          IO.delay(
             Directory.walk(absPath).filter(Files.isRegularFile(_)).runFold(0L)(_ + Files.size(_))
           )
         )

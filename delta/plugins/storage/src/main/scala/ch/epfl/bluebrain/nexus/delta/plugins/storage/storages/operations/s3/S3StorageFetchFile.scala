@@ -27,7 +27,7 @@ final class S3StorageFetchFile(value: S3StorageValue, config: StorageTypeConfig)
 
   override def apply(path: Uri.Path): IO[AkkaSource] =
     IO.fromFuture(
-      IO.blocking(
+      IO.delay(
         S3.download(value.bucket, URLDecoder.decode(path.toString, UTF_8.toString))
           .withAttributes(s3Attributes)
           .runWith(Sink.head)

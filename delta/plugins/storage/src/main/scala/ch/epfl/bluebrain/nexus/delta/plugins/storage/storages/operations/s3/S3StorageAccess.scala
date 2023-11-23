@@ -18,7 +18,7 @@ final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem)
     val attributes = S3Attributes.settings(storage.alpakkaSettings(config))
 
     IO.fromFuture(
-      IO.blocking(
+      IO.delay(
         S3.listBucket(storage.bucket, None)
           .withAttributes(attributes)
           .runWith(Sink.head)

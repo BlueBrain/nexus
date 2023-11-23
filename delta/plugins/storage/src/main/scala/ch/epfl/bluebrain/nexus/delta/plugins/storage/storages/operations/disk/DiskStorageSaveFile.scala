@@ -33,7 +33,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
     initLocation(storage.project, storage.value, description.uuid, description.filename).flatMap {
       case (fullPath, relativePath) =>
         IO.fromFuture(
-          IO.blocking(
+          IO.delay(
             entity.dataBytes.runWith(
               SinkUtils.combineMat(digestSink(storage.value.algorithm), FileIO.toPath(fullPath, openOpts)) {
                 case (digest, ioResult) if fullPath.toFile.exists() =>
