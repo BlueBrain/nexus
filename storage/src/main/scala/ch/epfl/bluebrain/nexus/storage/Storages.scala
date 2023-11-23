@@ -6,7 +6,6 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PermissionsFixingFailed}
@@ -64,14 +63,14 @@ trait Storages[Source] {
   )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes]
 
   /**
-    * Copies a file between locations inside the nexus folder. Attributes are neither recomputed nor fetched; this
-    * method is called only for its effects.
+    * Copy files between locations inside the nexus folder. Attributes are neither recomputed nor fetched; it's assumed
+    * clients already have this information from the source files.
     *
     * @param name
     *   the storage bucket name
     * @param files
     *   a list of source/destination files. The source files should exist under the nexus folder, and the destination
-    *   files will be created there.
+    *   files will be created there. Both must be files, not directories.
     */
   def copyFile(
       name: String,
@@ -221,40 +220,39 @@ object Storages {
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists): IO[RejOrAttributes] =
-      validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath).flatMap {
-        case Left(value)  => value.asLeft[FileAttributes].pure[IO]
-        case Right(value) =>
-          fixPermissionsAndCopy(value.absSourcePath, value.absDestPath, isDir = value.isDir)
-      }
+    )(implicit bucketEv: BucketExists): IO[RejOrAttributes] = (for {
+      value <- EitherT(validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath))
+      attr  <- EitherT.right[Rejection](fixPermissionsAndCopy(value.absSourcePath, value.absDestPath, value.isDir))
+    } yield attr).value
 
     private def fixPermissionsAndCopy(absSourcePath: Path, absDestPath: Path, isDir: Boolean) =
       fixPermissions(absSourcePath) >>
         computeSizeAndMoveFile(absSourcePath, absDestPath, isDir)
 
     private def fixPermissions(path: Path): IO[Unit] =
-      if (config.fixerEnabled)
+      if (config.fixerEnabled) {
+        val absPath = path.toAbsolutePath.normalize.toString
+        val logger  = StringProcessLogger(config.fixerCommand, absPath)
+        val process = Process(config.fixerCommand :+ absPath)
+
         for {
-          absPath  <- IO.delay(path.toAbsolutePath.normalize.toString)
-          logger    = StringProcessLogger(config.fixerCommand, absPath)
-          process   = Process(config.fixerCommand :+ absPath)
           exitCode <- IO.delay(process ! logger)
           _        <- IO.raiseUnless(exitCode == 0)(PermissionsFixingFailed(absPath, logger.toString))
         } yield ()
-      else IO.unit
+      } else IO.unit
 
     private def computeSizeAndMoveFile(
         absSourcePath: Path,
         absDestPath: Path,
         isDir: Boolean
-    ): IO[RejOrAttributes] =
+    ): IO[FileAttributes] =
       for {
         computedSize <- size(absSourcePath)
         _            <- IO.blocking(Files.createDirectories(absDestPath.getParent))
         _            <- IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
         _            <- IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
-        mediaType    <- IO.delay(contentTypeDetector(absDestPath, isDir))
-      } yield Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType))
+        mediaType    <- IO.blocking(contentTypeDetector(absDestPath, isDir))
+      } yield FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)
 
     private def size(absPath: Path): IO[Long] =
       if (Files.isDirectory(absPath)) {
@@ -267,14 +265,13 @@ object Storages {
     def copyFile(
         name: String,
         files: NonEmptyList[CopyFile]
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] = {
-      for {
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] =
+      (for {
         validated <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
         _         <- EitherT.right[Rejection](copyFiles.copyValidated(name, validated))
       } yield files.zip(validated).map { case (raw, valid) =>
         CopyFileOutput(raw.source, raw.destination, valid.absSourcePath, valid.absDestPath)
-      }
-    }.value
+      }).value
 
     def getFile(
         name: String,

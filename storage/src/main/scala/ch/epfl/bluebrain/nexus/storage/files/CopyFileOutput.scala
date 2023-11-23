@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.storage.files
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.storage.encUriPath
+import ch.epfl.bluebrain.nexus.storage.{encJPath, encUriPath}
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
@@ -15,6 +15,5 @@ final case class CopyFileOutput(
 )
 
 object CopyFileOutput {
-  implicit val pathEnc: Encoder[Path]       = Encoder[String].contramap[Path](_.toString)
   implicit val enc: Encoder[CopyFileOutput] = deriveEncoder
 }

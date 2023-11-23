@@ -204,10 +204,7 @@ class StorageRoutesSpec
       "fail when bucket does not exists" in new Ctx {
         storages.exists(name) shouldReturn BucketDoesNotExist
 
-        Put(
-          s"/v1/buckets/$name/files/path/to/myfile.txt",
-          jsonContentOf("/file-link.json")
-        ) ~> route ~> check {
+        Put(s"/v1/buckets/$name/files/path/to/myfile.txt", jsonContentOf("/file-link.json")) ~> route ~> check {
           status shouldEqual NotFound
           responseAs[Json] shouldEqual jsonContentOf(
             "/error.json",
@@ -224,7 +221,6 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source = "source/dir"
         val dest   = "dest/dir"
-        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
@@ -247,7 +243,6 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source = "../dir"
         val dest   = "dest/dir"
-        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -269,7 +264,6 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val source     = "source/dir"
         val dest       = "dest/dir"
-        storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
         val attributes = FileAttributes(s"file://some/prefix/$dest", 12L, Digest.empty, `application/octet-stream`)
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
           IO.pure(Right(attributes))

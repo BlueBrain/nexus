@@ -12,9 +12,10 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 import java.net.URLDecoder
-import java.nio.file.{Path => JavaPath, Paths}
+import java.nio.file.{Path => JPath, Paths}
 import scala.annotation.tailrec
 import scala.util.Try
+import fs2.io.file.{Path => Fs2Path}
 
 package object storage {
 
@@ -31,17 +32,20 @@ package object storage {
   /**
     * Rejection or Path wrapped
     */
-  type RejOrPath = Either[Rejection, JavaPath]
+  type RejOrPath = Either[Rejection, JPath]
 
   /**
     * Rejection or Out attributes
     */
   type RejOr[Out] = Either[Rejection, Out]
 
+  implicit val encFs2Path: Encoder[Fs2Path] = Encoder[String].contramap[Fs2Path](_.toString)
+  implicit val encJPath: Encoder[JPath]     = Encoder[String].contramap[JPath](_.toString)
+
   implicit val encUriPath: Encoder[Path] = Encoder.encodeString.contramap(_.toString())
   implicit val decUriPath: Decoder[Path] = Decoder.decodeString.emapTry(s => Try(Path(s)))
 
-  implicit class PathSyntax(private val path: JavaPath) extends AnyVal {
+  implicit class PathSyntax(private val path: JPath) extends AnyVal {
 
     /**
       * Converts a Java Path to an Akka [[Uri]]
@@ -60,20 +64,20 @@ package object storage {
     typed deepMerge Json.obj("@context" -> Json.fromString(errorCtxIri.toString))
   }
 
-  def folderSource(path: JavaPath): AkkaSource = Directory.walk(path).via(TarFlow.writer(path))
+  def folderSource(path: JPath): AkkaSource = Directory.walk(path).via(TarFlow.writer(path))
 
-  def fileSource(path: JavaPath): AkkaSource = FileIO.fromPath(path)
+  def fileSource(path: JPath): AkkaSource = FileIO.fromPath(path)
 
   /**
     * Checks if the ''target'' path is a descendant of the ''parent'' path. E.g.: path = /some/my/path ; parent = /some
     * will return true E.g.: path = /some/my/path ; parent = /other will return false
     */
-  def descendantOf(target: JavaPath, parent: JavaPath): Boolean =
+  def descendantOf(target: JPath, parent: JPath): Boolean =
     inner(parent, target.getParent)
 
   @tailrec
   @SuppressWarnings(Array("NullParameter"))
-  def inner(parent: JavaPath, child: JavaPath): Boolean = {
+  def inner(parent: JPath, child: JPath): Boolean = {
     if (child == null) false
     else if (parent == child) true
     else inner(parent, child.getParent)
@@ -82,12 +86,12 @@ package object storage {
   private def decode(path: Uri.Path): String =
     Try(URLDecoder.decode(path.toString, "UTF-8")).getOrElse(path.toString())
 
-  def basePath(config: StorageConfig, name: String, protectedDir: Boolean = true): JavaPath = {
+  def basePath(config: StorageConfig, name: String, protectedDir: Boolean = true): JPath = {
     val path = config.rootVolume.resolve(name).normalize()
     if (protectedDir) path.resolve(config.protectedDirectory).normalize() else path
   }
 
-  def filePath(config: StorageConfig, name: String, path: Uri.Path, protectedDir: Boolean = true): JavaPath = {
+  def filePath(config: StorageConfig, name: String, path: Uri.Path, protectedDir: Boolean = true): JPath = {
     val filePath = Paths.get(decode(path))
     if (filePath.isAbsolute) filePath.normalize()
     else basePath(config, name, protectedDir).resolve(filePath).normalize()

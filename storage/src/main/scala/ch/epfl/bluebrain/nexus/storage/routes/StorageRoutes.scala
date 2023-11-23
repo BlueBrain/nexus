@@ -37,18 +37,6 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
         pathPrefix("files") {
           bucketExists(name).apply { implicit bucketExistsEvidence =>
             concat(
-              operationName(s"/${hc.prefix}/buckets/{}/files") {
-                post {
-                  // Copy files within protected directory
-                  entity(as[NonEmptyList[CopyFile]]) { files =>
-                    pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
-                      validatePaths(name, files.map(_.source)) {
-                        complete(storages.copyFile(name, files).runWithStatus(Created))
-                      }
-                    }
-                  }
-                }
-              },
               extractPath(name) { path =>
                 operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
                   concat(
@@ -79,6 +67,18 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
                       }
                     }
                   )
+                }
+              },
+              operationName(s"/${hc.prefix}/buckets/{}/files") {
+                post {
+                  // Copy files within protected directory
+                  entity(as[NonEmptyList[CopyFile]]) { files =>
+                    pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
+                      validatePaths(name, files.map(_.source)) {
+                        complete(storages.copyFile(name, files).runWithStatus(Created))
+                      }
+                    }
+                  }
                 }
               }
             )
