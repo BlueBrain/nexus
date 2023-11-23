@@ -35,10 +35,22 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
         },
         // Consume files
         pathPrefix("files") {
-          concat(
-            extractPath(name) { path =>
-              operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
-                bucketExists(name).apply { implicit bucketExistsEvidence =>
+          bucketExists(name).apply { implicit bucketExistsEvidence =>
+            concat(
+              operationName(s"/${hc.prefix}/buckets/{}/files") {
+                post {
+                  // Copy files within protected directory
+                  entity(as[NonEmptyList[CopyFile]]) { files =>
+                    pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
+                      validatePaths(name, files.map(_.source)) {
+                        complete(storages.copyFile(name, files).runWithStatus(Created))
+                      }
+                    }
+                  }
+                }
+              },
+              extractPath(name) { path =>
+                operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
                   concat(
                     put {
                       pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
@@ -69,20 +81,8 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
                   )
                 }
               }
-            },
-            post {
-              bucketExists(name).apply { implicit bucketExistsEvidence =>
-                // Copy file to/from protected directory
-                entity(as[NonEmptyList[CopyFile]]) { files =>
-                  pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
-                    validatePaths(name, files.map(_.source)) {
-                      complete(storages.copyFile2(name, files).runWithStatus(Created))
-                    }
-                  }
-                }
-              }
-            }
-          )
+            )
+          }
         },
         // Consume attributes
         (pathPrefix("attributes") & extractPath(name)) { path =>
@@ -116,7 +116,7 @@ object StorageRoutes {
   final private[routes] case class LinkFile(source: Uri.Path)
 
   private[routes] object LinkFile {
-    import ch.epfl.bluebrain.nexus.storage._
+    import ch.epfl.bluebrain.nexus.storage.{decUriPath, encUriPath}
     implicit val dec: Decoder[LinkFile] = deriveDecoder[LinkFile]
     implicit val enc: Encoder[LinkFile] = deriveEncoder[LinkFile]
   }

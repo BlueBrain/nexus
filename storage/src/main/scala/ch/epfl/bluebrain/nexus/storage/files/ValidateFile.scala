@@ -77,7 +77,7 @@ object ValidateFile {
       ): IO[RejOr[ValidatedCopyFile]] = {
 
         val bucketProtectedPath = basePath(config, name)
-        val absSourcePath       = filePath(config, name, sourcePath, protectedDir = true)
+        val absSourcePath       = filePath(config, name, sourcePath)
         val absDestPath         = filePath(config, name, destPath)
 
         def notFound = PathNotFound(name, sourcePath)

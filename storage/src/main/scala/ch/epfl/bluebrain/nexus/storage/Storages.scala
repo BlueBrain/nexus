@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.files.ValidateFile
+import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, CopyFiles, ValidateFile}
 import ch.epfl.bluebrain.nexus.storage.routes.CopyFile
 
 import java.nio.file.StandardCopyOption._
@@ -69,21 +69,14 @@ trait Storages[Source] {
     *
     * @param name
     *   the storage bucket name
-    * @param sourcePath
-    *   the source path location within the nexus folder. Must be a file, not a directory
-    * @param destPath
-    *   the destination path location within the nexus folder
+    * @param files
+    *   a list of source/destination files. The source files should exist under the nexus folder, and the destination
+    *   files will be created there.
     */
   def copyFile(
       name: String,
-      sourcePath: Uri.Path,
-      destPath: Uri.Path
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]]
-
-  def copyFile2(
-      name: String,
       files: NonEmptyList[CopyFile]
-  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]]
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]]
 
   /**
     * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
@@ -167,7 +160,8 @@ object Storages {
       contentTypeDetector: ContentTypeDetector,
       digestConfig: DigestConfig,
       cache: AttributesCache,
-      validateFile: ValidateFile
+      validateFile: ValidateFile,
+      copyFiles: CopyFiles
   )(implicit
       ec: ExecutionContext,
       mt: Materializer
@@ -272,30 +266,15 @@ object Storages {
 
     def copyFile(
         name: String,
-        sourcePath: Uri.Path,
-        destPath: Uri.Path
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] =
-      validateFile.forCopyWithinProtectedDir(name, sourcePath, destPath).flatMap {
-        case Left(v)  => v.asLeft[Unit].pure[IO]
-        case Right(v) =>
-          for {
-            _ <- IO.delay(Files.createDirectories(v.absDestPath.getParent))
-            _ <- IO.delay(Files.copy(v.absSourcePath, v.absDestPath, COPY_ATTRIBUTES))
-            _ <- IO.delay(cache.asyncComputePut(v.absDestPath, digestConfig.algorithm))
-          } yield Right(())
-      }
-
-    def copyFile2(
-        name: String,
         files: NonEmptyList[CopyFile]
-    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[Unit]] = {
-      files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination))).value.map {
-        case Left(v)  => v.asLeft[Unit].pure[IO]
-        case Right(_) => ???
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] = {
+      for {
+        validated <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
+        _         <- EitherT.right[Rejection](copyFiles.copyValidated(name, validated))
+      } yield files.zip(validated).map { case (raw, valid) =>
+        CopyFileOutput(raw.source, raw.destination, valid.absSourcePath, valid.absDestPath)
       }
-
-      ???
-    }
+    }.value
 
     def getFile(
         name: String,
