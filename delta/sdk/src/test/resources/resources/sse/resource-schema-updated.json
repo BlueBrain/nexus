@@ -8,7 +8,6 @@
   "_rev": 6,
   "_schemaProject": "http://localhost/v1/projects/myorg/myproj",
   "_subject": "http://localhost/v1/realms/myrealm/users/username",
-  "tag": "mytag",
   "_types": [
     "https://neuroshapes.org/Morphology"
   ]

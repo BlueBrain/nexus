@@ -145,27 +145,6 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           )
       }
 
-      "create a schema update event from a UpdateResource command when no changes are detected and a tag is provided" in {
-        val schema    = Latest(schemas.resources)
-        val newSchema = Latest(schema1)
-        val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
-        eval(
-          Some(current),
-          UpdateResource(myId, projectRef, Some(newSchema), source, jsonld, 1, caller, Some(tag))
-        ).accepted shouldEqual
-          ResourceSchemaUpdated(
-            myId,
-            projectRef,
-            Revision(schema1, 1),
-            projectRef,
-            jsonld.types,
-            2,
-            epoch,
-            subject,
-            Some(tag)
-          )
-      }
-
       "create a tag event from a UpdateResource command when no changes are detected and a tag is provided" in {
         val schema  = Latest(schemas.resources)
         val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
@@ -218,7 +197,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           )
       }
 
-      "create a new event from a RefreshResource command on a new type" in {
+      "create a new event from a RefreshResource command if the expanded form has changed" in {
         val schema    = Latest(schemas.resources)
         val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
         val schemaRev = Revision(schemas.resources, 1)

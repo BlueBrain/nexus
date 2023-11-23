@@ -88,7 +88,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      res                   <- eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.rev, caller, None))
+      res                   <- eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.rev, caller))
     } yield res
   }.span("updateResourceSchema")
 

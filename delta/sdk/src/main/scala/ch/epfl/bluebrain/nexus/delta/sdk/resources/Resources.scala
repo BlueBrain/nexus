@@ -423,19 +423,19 @@ object Resources {
       import u.jsonld._
       // format: off
       stateWhereResourceIsEditable(u).flatMap { s =>
-        val changesDetected = s.remoteContexts != remoteContextRefs || s.source != u.source
-        if(changesDetected) {
+        // A resource may have changed if one of those fields have changed
+        val changeDetected = s.remoteContexts != remoteContextRefs || s.source != u.source || s.expanded != expanded || s.compacted != compacted
+        if(u.schemaOpt.isDefined || changeDetected) {
           val schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
           for {
             (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
             time <- clock.realTimeInstant
           } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject, u.tag)
         } else {
-          // If no changes have been detected on the resource itself, we fallback on other commands or raise an error
-          (u.schemaOpt, u.tag) match {
-            case (Some(schema), tagOpt) => updateResourceSchema(UpdateResourceSchema(u.id, u.project, schema, u.rev, u.caller, tagOpt))
-            case (None, Some(tagValue)) => tag(TagResource(u.id, u.project, u.schemaOpt, s.rev, tagValue, u.rev, u.subject))
-            case (None, None) => IO.raiseError(NoChangeDetected(s))
+          // If there is no changes but a tag is provided, we still apply it
+          u.tag match {
+            case Some(tagValue) => tag(TagResource(u.id, u.project, u.schemaOpt, s.rev, tagValue, u.rev, u.subject))
+            case None => IO.raiseError(NoChangeDetected(s))
           }
         }
       }
@@ -450,7 +450,7 @@ object Resources {
         _                          <- IO.raiseWhen(s.schema.iri == u.schemaRef.iri)(NoChangeDetected(s))
         types                       = s.expanded.getTypes.getOrElse(Set.empty)
         time                       <- clock.realTimeInstant
-      } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, s.rev + 1, time, u.subject, u.tag)
+      } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, s.rev + 1, time, u.subject)
     }
 
     def refresh(r: RefreshResource) = {
@@ -460,8 +460,8 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(r)
         _                          <- raiseWhenDifferentSchema(r, s)
         (schemaRev, schemaProject) <- validate(r.id, expanded, r.schemaOpt.getOrElse(s.schema), s.project, r.caller)
-        noChangeDetected           = s.remoteContexts == remoteContextRefs && s.expanded == expanded
-        _                          <- IO.raiseWhen(noChangeDetected)(NoChangeDetected(s))
+        changesDetected            = s.remoteContexts != remoteContextRefs || s.expanded != expanded || s.compacted != compacted
+        _                          <- IO.raiseUnless(changesDetected)(NoChangeDetected(s))
         time                       <- clock.realTimeInstant
       } yield ResourceRefreshed(r.id, r.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, r.subject)
       // format: on
@@ -527,11 +527,10 @@ object Resources {
       ResourceState.serializer,
       Tagger[ResourceEvent](
         {
-          case r: ResourceCreated       => r.tag.map(t => t -> r.rev)
-          case r: ResourceUpdated       => r.tag.map(t => t -> r.rev)
-          case r: ResourceSchemaUpdated => r.tag.map(t => t -> r.rev)
-          case r: ResourceTagAdded      => Some(r.tag -> r.targetRev)
-          case _                        => None
+          case r: ResourceCreated  => r.tag.map(t => t -> r.rev)
+          case r: ResourceUpdated  => r.tag.map(t => t -> r.rev)
+          case r: ResourceTagAdded => Some(r.tag -> r.targetRev)
+          case _                   => None
         },
         {
           case r: ResourceTagDeleted => Some(r.tag)

@@ -162,16 +162,13 @@ object ResourceCommand {
     *   last known revision of the resource
     * @param caller
     *   subject which created this event
-    * @param tag
-    *   an optional tag to link to this new revision
     */
   final case class UpdateResourceSchema(
       id: Iri,
       project: ProjectRef,
       schemaRef: ResourceRef,
       rev: Int,
-      caller: Caller,
-      tag: Option[UserTag]
+      caller: Caller
   ) extends ResourceCommand
       with ModifyCommandWithSchema {
     def subject: Subject = caller.subject

@@ -34,7 +34,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   private val deprecated     = ResourceDeprecated(myId, projectRef, types, 4, instant, subject)
   private val undeprecated   = ResourceUndeprecated(myId, projectRef, types, 5, instant, subject)
   private val tagDeleted     = ResourceTagDeleted(myId, projectRef, types, tag, 5, instant, subject)
-  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, 6, instant, subject, Some(tag))
+  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, 6, instant, subject)
   // format: on
 
   private val resourcesMapping = List(

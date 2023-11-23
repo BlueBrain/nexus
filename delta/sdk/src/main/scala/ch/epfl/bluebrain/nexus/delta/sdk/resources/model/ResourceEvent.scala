@@ -156,8 +156,7 @@ object ResourceEvent {
       types: Set[Iri],
       rev: Int,
       instant: Instant,
-      subject: Subject,
-      tag: Option[UserTag]
+      subject: Subject
   ) extends ResourceEvent
 
   /**
