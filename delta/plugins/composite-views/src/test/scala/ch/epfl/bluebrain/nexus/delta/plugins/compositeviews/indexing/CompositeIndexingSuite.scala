@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Semigroup
 import cats.data.NonEmptyList
-import cats.effect.{IO, Resource}
+import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
@@ -49,25 +49,26 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig, ResourceFixture}
-import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
+import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, NexusSuite, TextAssertions}
 import fs2.Stream
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import munit.AnyFixture
+import munit.{AnyFixture, CatsEffectSuite}
+import munit.catseffect.IOFixture
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
-import cats.effect.Ref
 
 class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
 class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
 
-trait CompositeIndexingFixture extends CatsEffectSuite {
+trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
 
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
@@ -98,23 +99,21 @@ trait CompositeIndexingFixture extends CatsEffectSuite {
       }
   }
 
-  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
-    ResourceFixture.suiteLocal(name, resource(sinkConfig))
-
-  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
-    suiteLocalFixture("compositeIndexing", sinkConfig)
+  def compositeIndexing(sinkConfig: SinkConfig): IOFixture[Setup] =
+    ResourceSuiteLocalFixture("compositeIndexing", resource(sinkConfig))
 
 }
 
 abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConstructQuery)
-    extends CompositeIndexingFixture
+    extends NexusSuite
+    with CompositeIndexingFixture
     with Fixtures
     with JsonAssertions
     with TextAssertions {
 
-  private val fixture = compositeIndexing(sinkConfig)
+  private val fixture: IOFixture[Setup] = compositeIndexing(sinkConfig)
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
+  override def munitFixtures: Seq[AnyFixture[_]] = Seq(fixture)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
 
@@ -421,16 +420,16 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       compiled <- start(view)
       _         = assertEquals(compiled.metadata, expectedMetadata)
-      _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _        <- mainCompleted.get.map(_.get(project1)).assertEquals(Some(1)).eventually
+      _        <- mainCompleted.get.map(_.get(project2)).assertEquals(Some(1)).eventually
+      _        <- mainCompleted.get.map(_.get(project3)).assertEquals(Some(1)).eventually
       _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
-      _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
+      _        <- projections.progress(view.indexingRef).assertEquals(expectedProgress).eventually
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
                     resultMuse,
                     resultRedHot
-                  ).eventually(())
+                  ).assert.eventually
       _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt"))
     } yield ()
   }
@@ -461,16 +460,16 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project1)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project2)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project3)).assertEquals(Some(1)).eventually
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
              resultMuseMetadata,
              resultRedHotMetadata
-           ).eventually(())
-      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).eventually(())
+           ).assert.eventually
+      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).assert.eventually
     } yield ()
   }
 
@@ -510,32 +509,32 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     def checkIndexingState =
       for {
-        _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
+        _ <- projections.progress(view.indexingRef).assertEquals(expectedProgress).eventually
         _ <- checkElasticSearchDocuments(
                elasticIndex,
                resultMuse,
                resultRedHot
-             ).eventually(())
-        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+             ).assert.eventually
+        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).assert.eventually
       } yield ()
 
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project1)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project2)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project3)).assertEquals(Some(1)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project1)).assertEquals(Some(1)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project2)).assertEquals(Some(1)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project3)).assertEquals(Some(1)).eventually
       _ <- checkIndexingState
       _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(2))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(2))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(2))
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(2))
+      _ <- mainCompleted.get.map(_.get(project1)).assertEquals(Some(2)).eventually
+      _ <- mainCompleted.get.map(_.get(project2)).assertEquals(Some(2)).eventually
+      _ <- mainCompleted.get.map(_.get(project3)).assertEquals(Some(2)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project1)).assertEquals(Some(2)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project2)).assertEquals(Some(2)).eventually
+      _ <- rebuildCompleted.get.map(_.get(project3)).assertEquals(Some(2)).eventually
       _ <- checkIndexingState
     } yield ()
   }
@@ -557,15 +556,15 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project1)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project2)).assertEquals(Some(1)).eventually
+      _ <- mainCompleted.get.map(_.get(project3)).assertEquals(Some(1)).eventually
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
              resultMuse.deepMerge(contextJson.removeKeys(keywords.id)),
              resultRedHot.deepMerge(contextJson.removeKeys(keywords.id))
-           ).eventually(())
+           ).assert.eventually
     } yield ()
   }
 

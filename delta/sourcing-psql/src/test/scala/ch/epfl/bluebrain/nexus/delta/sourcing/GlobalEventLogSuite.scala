@@ -13,12 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import scala.concurrent.duration._
 
-class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
+class GlobalEventLogSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -63,7 +63,7 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   private val id = nxv + "id"
 
   test("Raise an error with a non-existent " + id) {
-    eventLog.stateOr(nxv + "xxx", NotFound).intercept(NotFound)
+    eventLog.stateOr(nxv + "xxx", NotFound).interceptEquals(NotFound)
   }
 
   test("Evaluate successfully a command and store both event and state for an initial state") {
@@ -84,7 +84,7 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   test("Reject a command and persist nothing") {
     for {
-      _ <- eventLog.evaluate(id, Subtract(8)).intercept(NegativeTotal(-3))
+      _ <- eventLog.evaluate(id, Subtract(8)).interceptEquals(NegativeTotal(-3))
       _ <- eventStore.history(id).assert(plus2, plus3)
       _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
@@ -93,7 +93,7 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   test("Raise an error and persist nothing") {
     val boom = Boom("fail")
     for {
-      _ <- eventLog.evaluate(id, boom).intercept(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(id, boom).interceptEquals(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history(id).assert(plus2, plus3)
       _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
@@ -101,7 +101,7 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   test("Get a timeout and persist nothing") {
     for {
-      _ <- eventLog.evaluate(id, Never).intercept(EvaluationTimeout(Never, maxDuration))
+      _ <- eventLog.evaluate(id, Never).interceptEquals(EvaluationTimeout(Never, maxDuration))
       _ <- eventStore.history(id).assert(plus2, plus3)
       _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()
@@ -120,17 +120,17 @@ class GlobalEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent " + id) {
-    eventLog.stateOr(nxv + "xxx", 1, NotFound, RevisionNotFound).intercept(NotFound)
+    eventLog.stateOr(nxv + "xxx", 1, NotFound, RevisionNotFound).interceptEquals(NotFound)
   }
 
   test(s"Raise an error when providing a nonexistent revision") {
-    eventLog.stateOr(id, 10, NotFound, RevisionNotFound).intercept(RevisionNotFound(10, 2))
+    eventLog.stateOr(id, 10, NotFound, RevisionNotFound).interceptEquals(RevisionNotFound(10, 2))
   }
 
   test(s"Delete events and state for $id") {
     for {
       _ <- eventLog.delete(id)
-      _ <- eventLog.stateOr(id, 1, NotFound, RevisionNotFound).intercept(NotFound)
+      _ <- eventLog.stateOr(id, 1, NotFound, RevisionNotFound).interceptEquals(NotFound)
       _ <- eventLog.currentEvents(Offset.start).assertSize(0)
     } yield ()
   }

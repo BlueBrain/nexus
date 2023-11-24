@@ -20,12 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{IdentityResolution, Pr
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
 import java.time.Instant
 
-class ResolverResolutionSuite extends CatsEffectSuite {
+class ResolverResolutionSuite extends NexusSuite {
 
   private val realm = Label.unsafe("wonderland")
   private val alice = User("alice", realm)

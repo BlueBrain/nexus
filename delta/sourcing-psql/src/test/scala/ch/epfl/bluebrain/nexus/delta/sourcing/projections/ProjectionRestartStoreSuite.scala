@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class ProjectionRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class ProjectionRestartStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

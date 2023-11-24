@@ -12,14 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterDeprecated
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import shapeless.Typeable
 
 import scala.concurrent.duration._
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
+class CompositeViewDefSuite extends NexusSuite with CompositeViewsFixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(1.second, 50.millis)
 
@@ -102,8 +103,8 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
     for {
       (start, value, reset) <- rebuild(Some(Interval(50.millis)))
       _                     <- start.set(true)
-      _                     <- value.get.eventually(4)
-      _                     <- reset.get.eventually(4)
+      _                     <- value.get.assertEquals(4).eventually
+      _                     <- reset.get.assertEquals(4).eventually
       // This should stop the stream
       _                     <- start.set(false)
       _                     <- sleep
@@ -112,7 +113,7 @@ class CompositeViewDefSuite extends CatsEffectSuite with CompositeViewsFixture {
       _                     <- value.get.assertEquals(paused)
       // We resume the stream
       _                     <- start.set(true)
-      _                     <- value.get.eventually(paused + 4)
+      _                     <- value.get.assertEquals(paused + 4).eventually
     } yield ()
   }
 

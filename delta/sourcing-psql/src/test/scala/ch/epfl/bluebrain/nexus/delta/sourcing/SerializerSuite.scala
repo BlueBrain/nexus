@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SerializerSuite.{Bar, Foo}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie._
 import doobie.implicits._
 import io.circe.Codec
@@ -13,7 +13,7 @@ import munit.AnyFixture
 
 import scala.annotation.nowarn
 
-class SerializerSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class SerializerSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

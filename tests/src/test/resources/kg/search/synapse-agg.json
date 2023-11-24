@@ -1,0 +1,25 @@
+{
+  "aggs": {
+    "preSynapticBrainRegions": {
+      "nested": {
+        "path": "preSynapticPathway"
+      },
+      "aggs": {
+        "preSynapticBrainRegions": {
+          "filter": {
+            "term": {
+              "preSynapticPathway.about.keyword": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion"
+            }
+          },
+          "aggs": {
+            "label": {
+              "terms": {
+                "field": "preSynapticPathway.label.keyword"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

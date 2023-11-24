@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class BlazegraphDeletionTaskSuite extends CatsEffectSuite {
+class BlazegraphDeletionTaskSuite extends NexusSuite {
 
   implicit private val subject: Subject = Anonymous
 

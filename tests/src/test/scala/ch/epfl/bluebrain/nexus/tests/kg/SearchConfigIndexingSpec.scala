@@ -796,6 +796,11 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
           field(
             "preSynapticPathway",
             json"""[
+               {
+                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
+                "label": "SO_BS"
+          },
               {
                 "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
                 "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
@@ -839,6 +844,33 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json should have(field("postSynapticPathway", singlePathway))
       }
     }
+
+    "aggregate presynaptic brain regions" in {
+      val query    = jsonContentOf("kg/search/synapse-agg.json")
+      val preSynapticBrainRegionAgg =
+        json"""{
+          "preSynapticBrainRegions" : {
+              "doc_count" : 3,
+              "preSynapticBrainRegions" : {
+                "doc_count" : 2,
+                "label" : {
+                  "buckets" : [
+                    {
+                      "doc_count" : 2,
+                      "key" : "Somatosensory areas"
+                    }
+                  ],
+                  "doc_count_error_upper_bound" : 0,
+                  "sum_other_doc_count" : 0
+                }
+              }
+            }
+        }"""
+
+      deltaClient.post[Json]("/search/query", query, Rick) { (json, _) =>
+        aggregationIn(json) should contain(preSynapticBrainRegionAgg)
+      }
+    }
   }
 
   /**
@@ -850,6 +882,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
   private def queryDocument(id: String)             =
     jsonContentOf("kg/search/id-query.json", "id" -> id)
+
+  private def aggregationIn(json: Json): Option[Json] =
+    json.hcursor.downField("aggregations").as[Json].toOption
 
   /** Post a resource across all defined projects in the suite */
   private def postResource(resourcePath: String): IO[List[Assertion]] = {

@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class FileSelfSuite extends CatsEffectSuite {
+class FileSelfSuite extends NexusSuite {
 
   implicit private val baseUri: BaseUri = BaseUri("http://bbp.epfl.ch", Label.unsafe("v1"))
 
@@ -53,26 +53,26 @@ class FileSelfSuite extends CatsEffectSuite {
 
   test("A relative self should not be parsed") {
     val input = iri"/$org/$project/$compactResourceId"
-    fileSelf.parse(input).intercept(NonAbsoluteLink(input))
+    fileSelf.parse(input).interceptEquals(NonAbsoluteLink(input))
   }
 
   test("A self from an external website should not be parsed") {
     val input = iri"http://localhost/v1/files/$org/$project/$compactResourceId"
-    fileSelf.parse(input).intercept(ExternalLink(input))
+    fileSelf.parse(input).interceptEquals(ExternalLink(input))
   }
 
   test("A self with an incorrect path should not be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/$compactResourceId/extra"
-    fileSelf.parse(input).intercept(InvalidPath(input))
+    fileSelf.parse(input).interceptEquals(InvalidPath(input))
   }
 
   test("A self with an incorrect project label should not be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/%illegal/$project/$compactResourceId"
-    fileSelf.parse(input).intercept(InvalidProject(input))
+    fileSelf.parse(input).interceptEquals(InvalidProject(input))
   }
 
   test("A self with an incorrect id should not resolve") {
     val input = iri"""http://bbp.epfl.ch/v1/files/$org/$project/badcurie:$compactResourceId")}"""
-    fileSelf.parse(input).intercept(InvalidFileId(input))
+    fileSelf.parse(input).interceptEquals(InvalidFileId(input))
   }
 }
