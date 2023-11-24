@@ -25,7 +25,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val realm: Label     = Label.unsafe("myrealm")
   val subject: Subject = User("username", realm)
   val tag: UserTag     = UserTag.unsafe("mytag")
-  val jsonld = JsonLdResult(myId, compacted, expanded, remoteContexts)
+  val jsonld           = JsonLdResult(myId, compacted, expanded, remoteContexts)
 
   // format: off
   private val created        = ResourceCreated(myId, projectRef, Revision(schemas.resources, 1), projectRef, source, jsonld, instant, subject, None)

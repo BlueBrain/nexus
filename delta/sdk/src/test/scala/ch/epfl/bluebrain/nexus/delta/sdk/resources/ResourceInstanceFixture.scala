@@ -57,11 +57,13 @@ trait ResourceInstanceFixture extends CirceLiteral {
          "name": "Morphology 001"
        }"""
 
-  val compacted: CompactedJsonLd               =
+  val compacted: CompactedJsonLd            =
     CompactedJsonLd.unsafe(myId, compactedObj.topContextValueOrEmpty, compactedObj.remove(keywords.context))
-  val remoteContexts: Set[RemoteContextRef] = RemoteContextRef(Map(
-    staticContext -> StaticContext(staticContext, ContextValue.empty),
-    nexusContext -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
-  ))
+  val remoteContexts: Set[RemoteContextRef] = RemoteContextRef(
+    Map(
+      staticContext -> StaticContext(staticContext, ContextValue.empty),
+      nexusContext  -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
+    )
+  )
 
 }

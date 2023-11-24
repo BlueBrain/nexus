@@ -377,7 +377,7 @@ object Resources {
             t                          <- clock.realTimeInstant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, c.source, c.jsonld, t, c.subject, c.tag)
           // format: on
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
+        case _    => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
     }
 
@@ -513,8 +513,8 @@ object Resources {
     * Entity definition for [[Resources]]
     */
   def definition(
-                  validateResource: ValidateResource,
-                  clock: Clock[IO]
+      validateResource: ValidateResource,
+      clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,

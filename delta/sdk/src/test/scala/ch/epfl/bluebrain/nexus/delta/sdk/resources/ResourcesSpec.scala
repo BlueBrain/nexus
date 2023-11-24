@@ -69,13 +69,13 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
             val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schemaEvent)
             val schemaRev = Revision(schemaEvent.iri, 1)
 
-            val additionalType       = iri"https://neuroshapes.org/AnotherType"
-            val newTypes             = types + additionalType
-            val newSource            = source.deepMerge(Json.obj("@type" := newTypes))
-            val newCompacted         = compacted.copy(obj = compacted.obj.add("types", newTypes.asJson))
-            val newExpanded          = expanded.addType(additionalType)
-            val newRemoteContexts    = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
-            val newJsonLd            = JsonLdResult(
+            val additionalType    = iri"https://neuroshapes.org/AnotherType"
+            val newTypes          = types + additionalType
+            val newSource         = source.deepMerge(Json.obj("@type" := newTypes))
+            val newCompacted      = compacted.copy(obj = compacted.obj.add("types", newTypes.asJson))
+            val newExpanded       = expanded.addType(additionalType)
+            val newRemoteContexts = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+            val newJsonLd         = JsonLdResult(
               myId,
               newCompacted,
               newExpanded,
@@ -104,8 +104,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         val schema  = Latest(schemas.resources)
         val current = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
 
-        val newRemoteContexts    = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
-        val newJsonLd            = JsonLdResult(
+        val newRemoteContexts = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd         = JsonLdResult(
           myId,
           compacted,
           expanded,
@@ -153,8 +153,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schema)
         val schemaRev = Revision(schemas.resources, 1)
 
-        val newRemoteContexts    = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
-        val newJsonLd            = JsonLdResult(
+        val newRemoteContexts = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd         = JsonLdResult(
           myId,
           compacted,
           expanded,
