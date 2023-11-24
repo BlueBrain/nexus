@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -25,7 +25,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class ProjectsStatisticsSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFixtures {
+class ProjectsStatisticsSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -64,19 +64,19 @@ class ProjectsStatisticsSuite extends CatsEffectSuite with Doobie.Fixture with C
         cheeseStore.unsafeSave(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
         fruitStore.unsafeSave(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
         cheeseStore.unsafeSave(Cheese(proj2, nxv + "morbier", 3, epoch))
-    ).transact(xas.write).assertUnit
+    ).transact(xas.write).assert
   }
 
   test("Return the expected stats for proj1") {
-    stats.get(proj).assertSome(ProjectStatistics(9L, 3L, epoch.plusSeconds(15L)))
+    stats.get(proj).assertEquals(Some(ProjectStatistics(9L, 3L, epoch.plusSeconds(15L))))
   }
 
   test("Return the expected stats for proj2") {
-    stats.get(proj2).assertSome(ProjectStatistics(6L, 2L, epoch))
+    stats.get(proj2).assertEquals(Some(ProjectStatistics(6L, 2L, epoch)))
   }
 
   test("Return none for proj3") {
-    stats.get(proj3).assertNone
+    stats.get(proj3).assertEquals(None)
   }
 }
 

@@ -7,15 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}
 import izumi.distage.model.plan.Roots
 import izumi.distage.planning.solver.PlanVerifier
-import munit.AnyFixture
+import munit.{AnyFixture, CatsEffectSuite}
+import munit.catseffect.IOFixture
 
 import java.nio.file.{Files, Paths}
 
@@ -25,7 +24,7 @@ import java.nio.file.{Files, Paths}
   *   - HOCON configuration files match their classes counterpart
   *   - Distage wiring is valid
   */
-class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
+class MainSuite extends NexusSuite with MainSuite.Fixture {
 
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
   private val pluginLoaderConfig = PluginLoaderConfig(pluginsParentPath.toString)
@@ -127,7 +126,7 @@ object MainSuite {
         _        <- Resource.make(acquire(postgres, elastic))(_ => release)
       } yield ()
 
-    val main: IOFixture[Unit] = ResourceFixture.suiteLocal("main", resource())
+    val main: IOFixture[Unit] = ResourceSuiteLocalFixture("main", resource())
 
   }
 

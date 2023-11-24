@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.testkit.clock
 
 import cats.Applicative
 import cats.effect.{Clock, IO, Ref, Resource}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, ResourceFixture}
+import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -18,14 +18,19 @@ final class MutableClock(value: Ref[IO, Instant]) extends Clock[IO] {
     value.get.map(_.toEpochMilli).map(FiniteDuration(_, TimeUnit.MILLISECONDS))
   def set(instant: Instant): IO[Unit]        = value.set(instant)
 }
-object MutableClock {
-  private def suiteLocalFixture: IOFixture[MutableClock] = {
-    val clock = Ref.of[IO, Instant](Instant.EPOCH).map(new MutableClock(_))
-    ResourceFixture.suiteLocal("clock", Resource.eval(clock))
-  }
 
+object MutableClock {
   trait Fixture {
     self: CatsEffectSuite =>
-    val mutableClockFixture: ResourceFixture.IOFixture[MutableClock] = suiteLocalFixture
+    val mutableClockFixture: IOFixture[MutableClock] = {
+      ResourceSuiteLocalFixture(
+        "clock",
+        Resource.eval(
+          Ref
+            .of[IO, Instant](Instant.EPOCH)
+            .map(new MutableClock(_))
+        )
+      )
+    }
   }
 }

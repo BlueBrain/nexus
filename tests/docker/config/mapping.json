@@ -134,6 +134,8 @@
     },
     "curated": {
       "type": "boolean"
-    }
+    },
+    "preSynapticPathway": { "type": "nested" },
+    "postSynapticPathway": { "type": "nested" }
   }
 }

@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 import java.time.Instant
 
-class AnnotatedSourceSuite extends CatsEffectSuite with CirceLiteral {
+class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixedIO(

@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -23,7 +24,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture {
+class GraphAnalyticsSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 50.millis)
 
@@ -124,13 +125,13 @@ class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSe
       // - `resource1` with the relationship to `resource3` resolved
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
-      _                  <- client.count(index.value).eventually(3L)
+      _                  <- client.count(index.value).assertEquals(3L).eventually
       expected1          <- loader.jsonContentOf("result/resource1.json")
       expected2          <- loader.jsonContentOf("result/resource2.json")
       expectedDeprecated <- loader.jsonContentOf("result/resource_deprecated.json")
-      _                  <- client.getSource[Json](index, resource1.toString).eventually(expected1)
-      _                  <- client.getSource[Json](index, resource2.toString).eventually(expected2)
-      _                  <- client.getSource[Json](index, deprecatedResource.toString).eventually(expectedDeprecated)
+      _                  <- client.getSource[Json](index, resource1.toString).assertEquals(expected1).eventually
+      _                  <- client.getSource[Json](index, resource2.toString).assertEquals(expected2).eventually
+      _                  <- client.getSource[Json](index, deprecatedResource.toString).assertEquals(expectedDeprecated).eventually
     } yield ()
 
   }
@@ -157,9 +158,9 @@ class GraphAnalyticsSinkSuite extends CatsEffectSuite with ElasticSearchClientSe
       _         <- client.refresh(index)
       expected1 <- loader.jsonContentOf("result/resource1_updated.json")
       expected2 <- loader.jsonContentOf("result/resource2.json")
-      _         <- client.count(index.value).eventually(3L)
-      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
-      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
+      _         <- client.count(index.value).assertEquals(3L).eventually
+      _         <- client.getSource[Json](index, resource1.toString).assertEquals(expected1).eventually
+      _         <- client.getSource[Json](index, resource2.toString).assertEquals(expected2).eventually
     } yield ()
   }
 

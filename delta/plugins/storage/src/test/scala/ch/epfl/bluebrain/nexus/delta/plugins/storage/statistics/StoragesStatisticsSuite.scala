@@ -12,13 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatE
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import munit.AnyFixture
 
 import scala.concurrent.duration.DurationInt
 
 class StoragesStatisticsSuite
-    extends CatsEffectSuite
+    extends NexusSuite
     with ElasticSearchClientSetup.Fixture
     with SupervisorSetup.Fixture
     with Fixtures {
@@ -44,15 +45,15 @@ class StoragesStatisticsSuite
   }
 
   test("Correct statistics for storage in project 1") {
-    stats(client).get("storageId", projectRef1).eventually(StorageStatEntry(2L, 30L))
+    stats(client).get("storageId", projectRef1).assertEquals(StorageStatEntry(2L, 30L)).eventually
   }
 
   test("Correct statistics for storage in project 2") {
-    stats(client).get("storageId", projectRef2).eventually(StorageStatEntry(1L, 20L))
+    stats(client).get("storageId", projectRef2).assertEquals(StorageStatEntry(1L, 20L)).eventually
   }
 
   test("Zero stats for non-existing storage") {
-    stats(client).get("none", projectRef1).eventually(StorageStatEntry(0L, 0L))
+    stats(client).get("none", projectRef1).assertEquals(StorageStatEntry(0L, 0L)).eventually
   }
 
 }

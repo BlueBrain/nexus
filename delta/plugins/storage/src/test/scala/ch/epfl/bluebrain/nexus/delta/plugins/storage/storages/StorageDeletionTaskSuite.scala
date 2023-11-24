@@ -6,12 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
 
 import java.nio.file.Files
 
-class StorageDeletionTaskSuite extends CatsEffectSuite with StorageFixtures {
+class StorageDeletionTaskSuite extends NexusSuite with StorageFixtures {
 
   test("Delete content from local storage") {
     implicit val subject: Subject               = Anonymous

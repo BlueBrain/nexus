@@ -10,10 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProject
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class ResolverScopeInitializationSuite extends CatsEffectSuite {
+class ResolverScopeInitializationSuite extends NexusSuite {
 
   private val defaults = Defaults("resolverName", "resolverDescription")
 
@@ -40,7 +40,7 @@ class ResolverScopeInitializationSuite extends CatsEffectSuite {
       (project, _) => IO.raiseError(ResourceAlreadyExists(nxv.defaultResolver, project)),
       defaults
     )
-    scopeInit.onProjectCreation(project, bob).assertUnit
+    scopeInit.onProjectCreation(project, bob).assert
   }
 
   test("Raises a failure otherwise") {

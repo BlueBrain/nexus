@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Decoder
@@ -29,7 +29,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
+class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -117,11 +117,11 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent project") {
-    eventLog.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).intercept(NotFound)
+    eventLog.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).interceptEquals(NotFound)
   }
 
   test("Raise an error with a non-existent id") {
-    eventLog.stateOr(proj, nxv + "xxx", NotFound).intercept(NotFound)
+    eventLog.stateOr(proj, nxv + "xxx", NotFound).interceptEquals(NotFound)
   }
 
   test("Tag and check that the state has also been successfully tagged as well") {
@@ -155,7 +155,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
       .unique
       .transact(xas.read)
     for {
-      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).intercept(TagNotFound)
+      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).interceptEquals(TagNotFound)
       _ <- query.assertEquals((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))
     } yield ()
 
@@ -163,7 +163,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
 
   test("Reject a command and persist nothing") {
     for {
-      _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).intercept(PullRequestAlreadyClosed(id, proj))
+      _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).interceptEquals(PullRequestAlreadyClosed(id, proj))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
@@ -172,7 +172,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   test("Raise an error and persist nothing") {
     val boom = Boom(id, proj, "fail")
     for {
-      _ <- eventLog.evaluate(proj, id, boom).intercept(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(proj, id, boom).interceptEquals(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
@@ -181,7 +181,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   test("Get a timeout and persist nothing") {
     val never = Never(id, proj)
     for {
-      _ <- eventLog.evaluate(proj, id, never).intercept(EvaluationTimeout(never, maxDuration))
+      _ <- eventLog.evaluate(proj, id, never).interceptEquals(EvaluationTimeout(never, maxDuration))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
@@ -192,11 +192,11 @@ class ScopedEventLogSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent id") {
-    eventLog.stateOr(proj, nxv + "xxx", 1, NotFound, RevisionNotFound).intercept(NotFound)
+    eventLog.stateOr(proj, nxv + "xxx", 1, NotFound, RevisionNotFound).interceptEquals(NotFound)
   }
 
   test("Raise an error when providing a nonexistent revision") {
-    eventLog.stateOr(proj, id, 10, NotFound, RevisionNotFound).intercept(RevisionNotFound(10, 3))
+    eventLog.stateOr(proj, id, 10, NotFound, RevisionNotFound).interceptEquals(RevisionNotFound(10, 3))
   }
 
   test("Stream continuously the current states") {

@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class AclCheckSuite extends CatsEffectSuite {
+class AclCheckSuite extends NexusSuite {
 
   private val realm         = Label.unsafe("wonderland")
   private val authenticated = Authenticated(realm)
@@ -48,7 +48,7 @@ class AclCheckSuite extends CatsEffectSuite {
   List(alice, bob).foreach { caller =>
     test(s"Grant access to alice to  $caller to `proj11` with `resources/read`") {
       for {
-        _ <- aclCheck.authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(caller).assertUnit
+        _ <- aclCheck.authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(caller).assert
         _ <- aclCheck.authorizeFor(AclAddress.Project(proj11), resources.read)(caller).assertEquals(true)
       } yield ()
     }
@@ -58,7 +58,7 @@ class AclCheckSuite extends CatsEffectSuite {
     for {
       _ <- aclCheck
              .authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(anonymous)
-             .intercept(unauthorizedError)
+             .interceptEquals(unauthorizedError)
       _ <- aclCheck.authorizeFor(AclAddress.Project(proj11), resources.read)(anonymous).assertEquals(false)
     } yield ()
   }
@@ -67,7 +67,7 @@ class AclCheckSuite extends CatsEffectSuite {
     for {
       _ <- aclCheck
              .authorizeForOr(AclAddress.Project(proj11), resources.read)(unauthorizedError)(anonymous)
-             .intercept(unauthorizedError)
+             .interceptEquals(unauthorizedError)
       _ <- aclCheck.authorizeFor(AclAddress.Project(proj11), resources.read)(anonymous).assertEquals(false)
     } yield ()
   }
@@ -75,13 +75,13 @@ class AclCheckSuite extends CatsEffectSuite {
   test("Grant access to alice to `proj11` with both `resources.read` and `resources/write`") {
     aclCheck
       .authorizeForEveryOr(AclAddress.Project(proj11), Set(resources.read, resources.write))(unauthorizedError)(alice)
-      .assertUnit
+      .assert
   }
 
   test("Prevent bob to access `proj11` with both `resources.read` and `resources/write`") {
     aclCheck
       .authorizeForEveryOr(AclAddress.Project(proj11), Set(resources.read, resources.write))(unauthorizedError)(bob)
-      .intercept(unauthorizedError)
+      .interceptEquals(unauthorizedError)
   }
 
   test("Adding the missing `resources/write` now grants him the access") {
@@ -90,7 +90,7 @@ class AclCheckSuite extends CatsEffectSuite {
       _ <-
         aclCheck
           .authorizeForEveryOr(AclAddress.Project(proj11), Set(resources.read, resources.write))(unauthorizedError)(bob)
-          .assertUnit
+          .assert
       _ <- aclCheck.subtract(AclAddress.Organization(org1), bobUser -> Set(resources.write))
     } yield ()
   }
@@ -131,7 +131,7 @@ class AclCheckSuite extends CatsEffectSuite {
         _.index,
         _ => IO.raiseError(unauthorizedError)
       )(bob)
-      .intercept(unauthorizedError)
+      .interceptEquals(unauthorizedError)
   }
 
   test("Map and filter a list of values for the user Bob") {
@@ -183,7 +183,7 @@ class AclCheckSuite extends CatsEffectSuite {
         _.index,
         _ => IO.raiseError(unauthorizedError)
       )(bob)
-      .intercept(unauthorizedError)
+      .interceptEquals(unauthorizedError)
   }
 
   test("Map and filter a list of values for the user Bob") {
