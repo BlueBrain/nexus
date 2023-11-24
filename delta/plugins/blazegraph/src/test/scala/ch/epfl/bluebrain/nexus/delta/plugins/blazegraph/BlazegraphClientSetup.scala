@@ -5,8 +5,8 @@ import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
+import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
 
 import scala.concurrent.duration._
 
@@ -30,14 +30,9 @@ object BlazegraphClientSetup extends Fixtures {
     }
   }
 
-  def suiteLocalFixture(
-      name: String
-  ): IOFixture[BlazegraphClient] =
-    ResourceFixture.suiteLocal(name, resource())
-
-  trait Fixture {
-    val blazegraphClient: ResourceFixture.IOFixture[BlazegraphClient] =
-      BlazegraphClientSetup.suiteLocalFixture("blazegraphClient")
+  trait Fixture { self: CatsEffectSuite =>
+    val blazegraphClient: IOFixture[BlazegraphClient] =
+      ResourceSuiteLocalFixture("blazegraphClient", resource())
   }
 
 }

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -21,7 +21,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchSinkSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
+class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
@@ -152,7 +152,8 @@ class ElasticSearchSinkSuite extends CatsEffectSuite with ElasticSearchClientSet
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .getSource[Json](index, charlie._1.toString)
-             .assertError[HttpClientError](_.errorCode.contains(StatusCodes.NotFound))
+             .intercept[HttpClientError]
+             .assert(_.errorCode.contains(StatusCodes.NotFound))
     } yield ()
   }
 

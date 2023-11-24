@@ -20,12 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.util.UUID
 
-class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFixtures {
+class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -111,11 +111,11 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
 
   test("Creating a schema fails with different ids on the payload and passed") {
     val otherId = nxv + "other"
-    schemas.create(otherId, projectRef, source).intercept(UnexpectedSchemaId(id = otherId, payloadId = mySchema))
+    schemas.create(otherId, projectRef, source).interceptEquals(UnexpectedSchemaId(id = otherId, payloadId = mySchema))
   }
 
   test("Creating a schema fails if it already exists") {
-    schemas.create(mySchema, projectRef, source).intercept(ResourceAlreadyExists(mySchema, projectRef))
+    schemas.create(mySchema, projectRef, source).interceptEquals(ResourceAlreadyExists(mySchema, projectRef))
   }
 
   test("Creating a schema fails if it does not validate against the SHACL schema") {
@@ -143,7 +143,9 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
   }
 
   test("Updating a schema fails if the revision passed is incorrect") {
-    schemas.update(mySchema, projectRef, 3, json"""{"a": "b"}""").intercept(IncorrectRev(provided = 3, expected = 2))
+    schemas
+      .update(mySchema, projectRef, 3, json"""{"a": "b"}""")
+      .interceptEquals(IncorrectRev(provided = 3, expected = 2))
   }
 
   test("Updating a schema fails if deprecated") {
@@ -215,11 +217,11 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
   }
 
   test("Tagging a schema fails  if the revision passed is incorrect") {
-    schemas.tag(mySchema, projectRef, tag, 1, 3).intercept(IncorrectRev(provided = 3, expected = 2))
+    schemas.tag(mySchema, projectRef, tag, 1, 3).interceptEquals(IncorrectRev(provided = 3, expected = 2))
   }
 
   test("Tagging a schema fails  if the tag revision is not found") {
-    schemas.tag(mySchema, projectRef, tag, 6, 2).intercept(RevisionNotFound(provided = 6, current = 2))
+    schemas.tag(mySchema, projectRef, tag, 6, 2).interceptEquals(RevisionNotFound(provided = 6, current = 2))
   }
 
   test("Tagging a schema fails  if project does not exist") {
@@ -241,7 +243,7 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
   }
 
   test("Deprecating a schema fails if the revision passed is incorrect") {
-    schemas.deprecate(mySchema, projectRef, 5).intercept(IncorrectRev(provided = 5, expected = 3))
+    schemas.deprecate(mySchema, projectRef, 5).interceptEquals(IncorrectRev(provided = 5, expected = 3))
   }
 
   test("Deprecating a schema fails if deprecated") {
@@ -277,11 +279,11 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
 
   test("Fetching a schema fails if tag does not exist") {
     val otherTag = UserTag.unsafe("other")
-    schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).intercept(TagNotFound(otherTag))
+    schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).interceptEquals(TagNotFound(otherTag))
   }
 
   test("Fetching a schema fails if revision does not exist") {
-    schemas.fetch(IdSegmentRef(mySchema, 5), projectRef).intercept(RevisionNotFound(provided = 5, current = 3))
+    schemas.fetch(IdSegmentRef(mySchema, 5), projectRef).interceptEquals(RevisionNotFound(provided = 5, current = 3))
   }
 
   test("Fetching a schema fails if schema does not exist") {
@@ -310,7 +312,7 @@ class SchemasImplSuite extends CatsEffectSuite with Doobie.Fixture with ConfigFi
   }
 
   test("Deleting a schema tag fails if the revision passed is incorrect") {
-    schemas.deleteTag(mySchema2, projectRef, tag, 2).intercept(IncorrectRev(provided = 2, expected = 3))
+    schemas.deleteTag(mySchema2, projectRef, tag, 2).interceptEquals(IncorrectRev(provided = 2, expected = 3))
   }
 
   test("Deleting a schema tag fails if the tag doesn't exist") {

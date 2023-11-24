@@ -9,14 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
+import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
 
 import java.util.UUID
 
-object ProjectsFixture {
+trait ProjectsFixture { self: CatsEffectSuite =>
 
-  def init(
+  protected def createProjectsFixture(
       fetchOrgs: FetchOrganization,
       apiMappings: ApiMappings,
       config: ProjectsConfig,
@@ -24,10 +24,10 @@ object ProjectsFixture {
   ): IOFixture[(Transactors, Projects)] = {
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
-    init(fetchOrgs, Set.empty, apiMappings, config, clock)
+    createProjectsFixture(fetchOrgs, Set.empty, apiMappings, config, clock)
   }
 
-  def init(
+  private def createProjectsFixture(
       fetchOrgs: FetchOrganization,
       scopeInitializations: Set[ScopeInitialization],
       apiMappings: ApiMappings,
@@ -37,7 +37,7 @@ object ProjectsFixture {
       base: BaseUri,
       uuidF: UUIDF
   ): IOFixture[(Transactors, Projects)] =
-    ResourceFixture.suiteLocal(
+    ResourceSuiteLocalFixture(
       "projects",
       Doobie.resource().map { xas =>
         (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, scopeInitializations, apiMappings, config, xas, clock))

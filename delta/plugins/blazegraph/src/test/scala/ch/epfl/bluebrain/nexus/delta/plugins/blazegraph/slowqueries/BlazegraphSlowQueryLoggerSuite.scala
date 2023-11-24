@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
@@ -31,7 +31,7 @@ object BlazegraphSlowQueryLoggerSuite {
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 }
 
-class BlazegraphSlowQueryLoggerSuite extends CatsEffectSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
+class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
 

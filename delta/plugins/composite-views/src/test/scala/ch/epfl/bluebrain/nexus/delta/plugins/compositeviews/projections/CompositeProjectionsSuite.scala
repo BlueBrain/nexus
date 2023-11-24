@@ -14,15 +14,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
+class CompositeProjectionsSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -91,14 +92,14 @@ class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with
       value   <- Ref.of[IO, Int](0)
       inc      = Stream.eval(value.getAndUpdate(_ + 1)) ++ Stream.never[IO]
       _       <- inc.through(projections.handleRestarts(viewRef)).compile.drain.start
-      _       <- value.get.eventually(1)
+      _       <- value.get.assertEquals(1).eventually
       _       <- compositeRestartStore.save(restart)
       expected = CompositeProgress(
                    Map(mainBranch1 -> ProjectionProgress.NoProgress, mainBranch2 -> ProjectionProgress.NoProgress)
                  )
-      _       <- projections.progress(view).eventually(expected)
-      _       <- compositeRestartStore.head(viewRef).assertNone
-      _       <- value.get.eventually(2)
+      _       <- projections.progress(view).assertEquals(expected).eventually
+      _       <- compositeRestartStore.head(viewRef).assertEquals(None)
+      _       <- value.get.assertEquals(2).eventually
       _       <- assertView2
     } yield ()
   }

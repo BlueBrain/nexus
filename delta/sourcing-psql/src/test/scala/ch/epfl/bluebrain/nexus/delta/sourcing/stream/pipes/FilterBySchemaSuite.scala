@@ -13,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 import java.time.Instant
 
-class FilterBySchemaSuite extends CatsEffectSuite {
+class FilterBySchemaSuite extends NexusSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()

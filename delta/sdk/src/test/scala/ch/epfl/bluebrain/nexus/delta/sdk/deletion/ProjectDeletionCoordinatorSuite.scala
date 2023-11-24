@@ -22,14 +22,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import java.util.UUID
 
-class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with ConfigFixtures {
+class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures with ProjectsFixture {
 
   implicit private val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
 
@@ -47,7 +47,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with ConfigFixture
   private val deletionDisabled = deletionConfig.copy(enabled = false)
   private val config           = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionEnabled)
 
-  private val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config, clock)
+  private val projectFixture = createProjectsFixture(fetchOrg, defaultApiMappings, config, clock)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
 
@@ -140,7 +140,7 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with ConfigFixture
       // The project to be deleted should not be exist anymore while the others should remain
       _                 <- projects.fetch(active)
       _                 <- projects.fetch(deprecated)
-      _                 <- projects.fetch(markedAsDeleted).intercept(ProjectNotFound(markedAsDeleted))
+      _                 <- projects.fetch(markedAsDeleted).interceptEquals(ProjectNotFound(markedAsDeleted))
       // Checking that the partitions have been correctly deleted
       _                 <- assertPartitions(2)
       // Checking that the dependencies have been cleared

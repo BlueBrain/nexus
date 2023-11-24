@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import fs2.Chunk
 import io.circe.generic.extras.Configuration
@@ -31,7 +31,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.annotation.nowarn
 
-class StreamingQuerySuite extends CatsEffectSuite with Doobie.Fixture {
+class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -230,29 +230,37 @@ class StreamingQuerySuite extends CatsEffectSuite with Doobie.Fixture {
   test("Get the remaining elems for project 1 on latest from the beginning") {
     StreamingQuery
       .remaining(project1, SelectFilter.latest, Offset.start, xas)
-      .assertSome(
-        RemainingElems(6L, Instant.EPOCH)
+      .assertEquals(
+        Some(
+          RemainingElems(6L, Instant.EPOCH)
+        )
       )
   }
 
   test("Get the remaining elems for project 1 on latest from offset 6") {
     StreamingQuery
       .remaining(project1, SelectFilter.latest, Offset.at(6L), xas)
-      .assertSome(
-        RemainingElems(3L, Instant.EPOCH)
+      .assertEquals(
+        Some(
+          RemainingElems(3L, Instant.EPOCH)
+        )
       )
   }
 
   test(s"Get the remaining elems for project 1 on tag $customTag from the beginning") {
     StreamingQuery
       .remaining(project1, SelectFilter.tag(customTag), Offset.at(6L), xas)
-      .assertSome(
-        RemainingElems(4L, Instant.EPOCH)
+      .assertEquals(
+        Some(
+          RemainingElems(4L, Instant.EPOCH)
+        )
       )
   }
 
   test(s"Get no remaining for an unknown project") {
-    StreamingQuery.remaining(ProjectRef.unsafe("xxx", "xxx"), SelectFilter.latest, Offset.at(6L), xas).assertNone
+    StreamingQuery
+      .remaining(ProjectRef.unsafe("xxx", "xxx"), SelectFilter.latest, Offset.at(6L), xas)
+      .assertEquals(None)
   }
 
   test("Should only keep the last elem when elems with the same id appear several times") {

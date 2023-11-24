@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class ServiceErrorSuite extends CatsEffectSuite with CirceLiteral with Fixtures {
+class ServiceErrorSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

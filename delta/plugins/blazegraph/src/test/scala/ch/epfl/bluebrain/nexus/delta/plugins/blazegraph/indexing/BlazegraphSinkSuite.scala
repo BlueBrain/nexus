@@ -12,14 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fixture {
+class BlazegraphSinkSuite extends NexusSuite with BlazegraphClientSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 
@@ -78,7 +78,7 @@ class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fix
 
     for {
       _ <- sink.apply(asElems(allResources)).assertEquals(input.map(_.void))
-      _ <- query(namespace).assertSome(expected)
+      _ <- query(namespace).assertEquals(Some(expected))
     } yield ()
   }
 
@@ -89,7 +89,7 @@ class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fix
 
     for {
       _ <- sink.apply(input).assertEquals(input.map(_.void))
-      _ <- query(namespace).assertSome(expected)
+      _ <- query(namespace).assertEquals(Some(expected))
     } yield ()
 
   }
@@ -102,7 +102,7 @@ class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fix
 
     for {
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.failed(InvalidIri)))
-      _ <- query(namespace).assertSome(expected)
+      _ <- query(namespace).assertEquals(Some(expected))
     } yield ()
   }
 
@@ -121,7 +121,7 @@ class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fix
     for {
       _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(asElems(input))
-      _ <- query(namespace).assertSome(expected)
+      _ <- query(namespace).assertEquals(Some(expected))
     } yield ()
   }
 
@@ -144,7 +144,7 @@ class BlazegraphSinkSuite extends CatsEffectSuite with BlazegraphClientSetup.Fix
     for {
       _ <- client.createNamespace(namespace).assertEquals(true)
       _ <- sink.apply(chunk)
-      _ <- query(namespace).assertSome(expected)
+      _ <- query(namespace).assertEquals(Some(expected))
     } yield ()
   }
 

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -17,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import munit.AnyFixture
@@ -26,7 +26,7 @@ import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fixture {
+class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -187,7 +187,8 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
            )
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
+             .eventually
     } yield ()
   }
 
@@ -195,8 +196,9 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
     for {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
-             .eventually(Some(ExecutionStatus.Completed))
-      _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
+             .assertEquals(Some(ExecutionStatus.Completed))
+             .eventually
+      _ <- projections.progress(view1.projection).assertEquals(Some(expectedViewProgress))
       _  = assert(
              createdIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been created."
@@ -208,8 +210,9 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
     for {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
-             .eventually(Some(ExecutionStatus.Completed))
-      _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
+             .assertEquals(Some(ExecutionStatus.Completed))
+             .eventually
+      _ <- projections.progress(view2.projection).assertEquals(Some(expectedViewProgress))
       _  = assert(
              createdIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been created."
@@ -219,8 +222,8 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
 
   test("View 3 is invalid so it should not be started") {
     for {
-      _ <- sv.describe(view3.projection).assertNone
-      _ <- projections.progress(view3.projection).assertNone
+      _ <- sv.describe(view3.projection).assertEquals(None)
+      _ <- projections.progress(view3.projection).assertEquals(None)
       _  = assert(
              !createdIndices.contains(view3.namespace),
              s"The index for '${view3.ref.viewId}' should not have been created."
@@ -265,14 +268,15 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
       _ <- resumeSignal.set(true)
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventually(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
+             .eventually
     } yield ()
   }
 
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
-      _ <- sv.describe(view1.projection).eventually(None)
-      _ <- projections.progress(view1.projection).assertNone
+      _ <- sv.describe(view1.projection).assertEquals(None).eventually
+      _ <- projections.progress(view1.projection).assertEquals(None)
       _  = assert(
              deletedIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been deleted."
@@ -284,8 +288,8 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
     "View 2 is updated so the previous projection should be stopped, the previous progress and the index should be deleted."
   ) {
     for {
-      _ <- sv.describe(view2.projection).eventually(None)
-      _ <- projections.progress(view2.projection).assertNone
+      _ <- sv.describe(view2.projection).assertEquals(None).eventually
+      _ <- projections.progress(view2.projection).assertEquals(None)
       _  = assert(
              deletedIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been deleted."
@@ -297,8 +301,9 @@ class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fi
     for {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
-             .eventually(Some(ExecutionStatus.Completed))
-      _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
+             .assertEquals(Some(ExecutionStatus.Completed))
+             .eventually
+      _ <- projections.progress(updatedView2.projection).assertEquals(Some(expectedViewProgress))
       _  = assert(
              createdIndices.contains(updatedView2.namespace),
              s"The new index for '${updatedView2.ref.viewId}' should have been created."
