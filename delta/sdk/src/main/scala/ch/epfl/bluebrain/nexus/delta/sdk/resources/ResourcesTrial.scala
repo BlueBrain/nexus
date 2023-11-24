@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.{JsonLdResult, JsonLdSourceResolvingParser}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -138,7 +137,7 @@ object ResourcesTrial {
           source = source.value,
           compacted = jsonld.compacted,
           expanded = jsonld.expanded,
-          remoteContexts = RemoteContextRef(jsonld.remoteContexts),
+          remoteContexts = jsonld.remoteContexts,
           rev = 1,
           deprecated = false,
           schema = validation.schema,

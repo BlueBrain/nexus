@@ -58,7 +58,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     source,
     compacted,
     expanded,
-    remoteContextRefs,
+    remoteContexts,
     rev = 1,
     deprecated = false,
     Revision(schemaId, 1),

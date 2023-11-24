@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -71,6 +72,8 @@ final case class ResourceState(
     updatedAt: Instant,
     updatedBy: Subject
 ) extends ScopedState {
+
+  def toJsonLdResult: JsonLdResult = JsonLdResult(id, compacted, expanded, remoteContexts)
 
   def toResource: DataResource =
     ResourceF(

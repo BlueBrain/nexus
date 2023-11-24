@@ -5,15 +5,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.{dropNullValues, JsonObjOps}
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.{JsonObjOps, dropNullValues}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseEncoder, resourcesSelector}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -101,6 +102,23 @@ object ResourceEvent {
       tag: Option[UserTag]
   ) extends ResourceEvent
 
+  object ResourceCreated {
+
+    def apply(id: Iri,
+              project: ProjectRef,
+              schema: ResourceRef.Revision,
+              schemaProject: ProjectRef,
+              source: Json,
+              jsonld: JsonLdResult,
+              instant: Instant,
+              subject: Subject,
+              tag: Option[UserTag]): ResourceCreated =
+      ResourceCreated(id, project, schema, schemaProject, jsonld.types, source, jsonld.compacted, jsonld.expanded, jsonld.remoteContexts, 1, instant, subject, tag)
+
+  }
+
+
+
   /**
     * Event representing a resource modification.
     *
@@ -147,6 +165,21 @@ object ResourceEvent {
       subject: Subject,
       tag: Option[UserTag]
   ) extends ResourceEvent
+
+  object ResourceUpdated {
+    def apply(id: Iri,
+              project: ProjectRef,
+              schema: ResourceRef.Revision,
+              schemaProject: ProjectRef,
+              source: Json,
+              jsonld: JsonLdResult,
+              rev: Int,
+              instant: Instant,
+              subject: Subject,
+              tag: Option[UserTag]): ResourceUpdated =
+      ResourceUpdated(id, project, schema, schemaProject, jsonld.types, source, jsonld.compacted, jsonld.expanded, jsonld.remoteContexts, rev, instant, subject, tag)
+
+  }
 
   final case class ResourceSchemaUpdated(
       id: Iri,
@@ -199,6 +232,18 @@ object ResourceEvent {
       instant: Instant,
       subject: Subject
   ) extends ResourceEvent
+
+  object ResourceRefreshed {
+    def apply(id: Iri,
+              project: ProjectRef,
+              schema: ResourceRef.Revision,
+              schemaProject: ProjectRef,
+              jsonld: JsonLdResult,
+              rev: Int,
+              instant: Instant,
+              subject: Subject): ResourceRefreshed =
+      ResourceRefreshed(id, project, schema, schemaProject, jsonld.types, jsonld.compacted, jsonld.expanded, jsonld.remoteContexts, rev, instant, subject)
+  }
 
   /**
     * Event representing a tag addition to a resource.

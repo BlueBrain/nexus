@@ -369,16 +369,14 @@ object Resources {
     }
 
     def create(c: CreateResource) = {
-      import c.jsonld._
       state match {
         case None =>
           // format: off
           for {
-            (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
+            (schemaRev, schemaProject) <- validate(c.id, c.jsonld.expanded, c.schema, c.project, c.caller)
             t                          <- clock.realTimeInstant
-          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject, c.tag)
+          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, c.source, c.jsonld, t, c.subject, c.tag)
           // format: on
-
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
     }
@@ -420,17 +418,16 @@ object Resources {
       )
 
     def update(u: UpdateResource) = {
-      import u.jsonld._
       // format: off
       stateWhereResourceIsEditable(u).flatMap { s =>
         // A resource may have changed if one of those fields have changed
-        val changeDetected = s.remoteContexts != remoteContextRefs || s.source != u.source || s.expanded != expanded || s.compacted != compacted
+        val changeDetected = s.source != u.source || s.toJsonLdResult != u.jsonld
         if(u.schemaOpt.isDefined || changeDetected) {
           val schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
           for {
-            (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
+            (schemaRev, schemaProject) <- validate(u.id, u.jsonld.expanded, schemaRef, s.project, u.caller)
             time <- clock.realTimeInstant
-          } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject, u.tag)
+          } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, u.source, u.jsonld, s.rev + 1, time, u.subject, u.tag)
         } else {
           // If there is no changes but a tag is provided, we still apply it
           u.tag match {
@@ -460,10 +457,9 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(r)
         _                          <- raiseWhenDifferentSchema(r, s)
         (schemaRev, schemaProject) <- validate(r.id, expanded, r.schemaOpt.getOrElse(s.schema), s.project, r.caller)
-        changesDetected            = s.remoteContexts != remoteContextRefs || s.expanded != expanded || s.compacted != compacted
-        _                          <- IO.raiseUnless(changesDetected)(NoChangeDetected(s))
+        _                          <- IO.raiseUnless(s.toJsonLdResult != r.jsonld)(NoChangeDetected(s))
         time                       <- clock.realTimeInstant
-      } yield ResourceRefreshed(r.id, r.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, r.subject)
+      } yield ResourceRefreshed(r.id, r.project, schemaRev, schemaProject, types, compacted, expanded, remoteContexts, s.rev + 1, time, r.subject)
       // format: on
     }
 
@@ -517,12 +513,12 @@ object Resources {
     * Entity definition for [[Resources]]
     */
   def definition(
-      resourceValidator: ValidateResource,
-      clock: Clock[IO]
+                  validateResource: ValidateResource,
+                  clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(resourceValidator, clock)(_, _), next),
+      StateMachine(None, evaluate(validateResource, clock)(_, _), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

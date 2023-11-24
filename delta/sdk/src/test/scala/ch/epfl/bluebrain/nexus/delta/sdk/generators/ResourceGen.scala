@@ -45,7 +45,7 @@ object ResourceGen {
       source,
       jsonld.compacted,
       jsonld.expanded,
-      RemoteContextRef(jsonld.remoteContexts),
+      jsonld.remoteContexts,
       rev,
       deprecated,
       schema,

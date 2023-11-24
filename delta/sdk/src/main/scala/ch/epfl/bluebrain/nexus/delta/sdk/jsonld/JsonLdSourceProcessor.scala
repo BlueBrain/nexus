@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
@@ -70,18 +70,13 @@ object JsonLdSourceProcessor {
       iri: Iri,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      remoteContexts: Map[Iri, RemoteContext]
+      remoteContexts: Set[RemoteContextRef]
   ) {
 
     /**
       * The collection of known types
       */
     def types: Set[Iri] = expanded.getTypes.getOrElse(Set.empty)
-
-    /**
-      * The references for the remote contexts
-      */
-    def remoteContextRefs: Set[RemoteContextRef] = RemoteContextRef(remoteContexts)
   }
 
   /**
@@ -118,7 +113,7 @@ object JsonLdSourceProcessor {
         iri             <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded         = originalExpanded.replaceId(iri)
         compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
-      } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
+      } yield JsonLdResult(iri, compacted, expanded, RemoteContextRef(result.remoteContexts))
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 
     /**
@@ -145,7 +140,7 @@ object JsonLdSourceProcessor {
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
         compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
-      } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
+      } yield JsonLdResult(iri, compacted, expanded, RemoteContextRef(result.remoteContexts))
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 
   }
