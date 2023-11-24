@@ -193,8 +193,8 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] = {
       val absFilePath = filePath(name, path)
       if (descendantOf(absFilePath, basePath(name)))
-        IO.blocking(Files.createDirectories(absFilePath.getParent)) >>
-          IO.delay(MessageDigest.getInstance(digestConfig.algorithm)).flatMap { msgDigest =>
+        IO.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
+          IO.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
             IO.fromFuture(
               IO.delay(
                 source
@@ -231,13 +231,12 @@ object Storages {
 
       def fixPermissions(path: Path): IO[Either[PermissionsFixingFailed, Unit]] =
         if (config.fixerEnabled) {
-          val absPath = path.toAbsolutePath.normalize.toString
-          val process = Process(config.fixerCommand :+ absPath)
-          val logger  = StringProcessLogger(config.fixerCommand, absPath)
-          IO.blocking(process ! logger).map {
-            case 0 => Right(())
-            case _ => Left(PermissionsFixingFailed(absPath, logger.toString))
-          }
+          val absPath  = path.toAbsolutePath.normalize.toString
+          val process  = Process(config.fixerCommand :+ absPath)
+          val logger   = StringProcessLogger(config.fixerCommand, absPath)
+          val exitCode = process ! logger
+          if (exitCode == 0) IO.pure(Right(()))
+          else IO.pure(Left(PermissionsFixingFailed(absPath, logger.toString)))
         } else {
           IO.pure(Right(()))
         }
@@ -254,9 +253,9 @@ object Storages {
       def computeSizeAndMove(isDir: Boolean): IO[RejOrAttributes] = {
         lazy val mediaType = contentTypeDetector(absDestPath, isDir)
         size(absSourcePath).flatMap { computedSize =>
-          IO.blocking(Files.createDirectories(absDestPath.getParent)) >>
-            IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE)) >>
-            IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
+          IO.fromTry(Try(Files.createDirectories(absDestPath.getParent))) >>
+            IO.fromTry(Try(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))) >>
+            IO.pure(cache.asyncComputePut(absDestPath, digestConfig.algorithm)) >>
             IO.pure(Right(FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)))
         }
       }
@@ -332,7 +331,7 @@ object Storages {
           )
         )
       } else if (Files.isRegularFile(absPath))
-        IO.blocking(Files.size(absPath))
+        IO.pure(Files.size(absPath))
       else
         IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
   }
