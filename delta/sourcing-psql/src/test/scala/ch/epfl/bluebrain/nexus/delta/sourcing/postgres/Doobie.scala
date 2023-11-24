@@ -5,12 +5,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import doobie.postgres.sqlstate
-import munit.Location
+import munit.{catseffect, Location}
 import org.postgresql.util.PSQLException
 
 object Doobie {
@@ -18,10 +16,10 @@ object Doobie {
   val PostgresUser     = "postgres"
   val PostgresPassword = "postgres"
 
-  def apply(
+  private def transactors(
       postgres: Resource[IO, PostgresContainer],
-      user: String = PostgresUser,
-      pass: String = PostgresPassword
+      user: String,
+      pass: String
   ): Resource[IO, Transactors] = {
     postgres
       .flatMap(container => Transactors.test(container.getHost, container.getMappedPort(5432), user, pass))
@@ -32,17 +30,11 @@ object Doobie {
       user: String = PostgresUser,
       pass: String = PostgresPassword
   ): Resource[IO, Transactors] =
-    apply(PostgresContainer.resource(user, pass), user, pass)
-
-  def suiteLocalFixture(
-      name: String,
-      user: String = PostgresUser,
-      pass: String = PostgresPassword
-  ): IOFixture[Transactors] =
-    ResourceFixture.suiteLocal(name, resource(user, pass))
+    transactors(PostgresContainer.resource(user, pass), user, pass)
 
   trait Fixture { self: NexusSuite =>
-    val doobie: ResourceFixture.IOFixture[Transactors] = Doobie.suiteLocalFixture("doobie")
+    val doobie: catseffect.IOFixture[Transactors] =
+      ResourceSuiteLocalFixture("doobie", resource(PostgresUser, PostgresPassword))
 
     /**
       * Init the partition in the events and states table for the given projects

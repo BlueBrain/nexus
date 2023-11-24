@@ -15,12 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
 import scala.collection.immutable.VectorMap
 
-class SchemaImportsSuite extends CatsEffectSuite with Fixtures {
+class SchemaImportsSuite extends NexusSuite with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(alice, Set(alice))
@@ -104,7 +104,7 @@ class SchemaImportsSuite extends CatsEffectSuite with Fixtures {
     )
 
     toExpanded(parcellation).flatMap { expanded =>
-      imports.resolve(parcellationlabel, projectRef, expanded).intercept(expectedError)
+      imports.resolve(parcellationlabel, projectRef, expanded).interceptEquals(expectedError)
     }
   }
 
@@ -120,7 +120,7 @@ class SchemaImportsSuite extends CatsEffectSuite with Fixtures {
     )
 
     toExpanded(parcellation).flatMap { expanded =>
-      imports.resolve(parcellationlabel, projectRef, expanded).intercept(expectedError)
+      imports.resolve(parcellationlabel, projectRef, expanded).interceptEquals(expectedError)
     }
   }
 }

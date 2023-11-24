@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, ProjectionProgress, SupervisorSetup}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import munit.AnyFixture
@@ -13,7 +14,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 
-class EventMetricsProjectionSuite extends CatsEffectSuite with SupervisorSetup.Fixture with Fixtures {
+class EventMetricsProjectionSuite extends NexusSuite with SupervisorSetup.Fixture with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -32,7 +33,8 @@ class EventMetricsProjectionSuite extends CatsEffectSuite with SupervisorSetup.F
            )
       _ <- sv.describe(EventMetricsProjection.projectionMetadata.name)
              .map(_.map(_.progress))
-             .eventually(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
+             .eventually
     } yield ()
   }
 

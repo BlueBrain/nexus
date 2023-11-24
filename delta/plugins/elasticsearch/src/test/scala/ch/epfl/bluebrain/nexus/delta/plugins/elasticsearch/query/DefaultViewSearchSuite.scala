@@ -24,14 +24,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
 
-class DefaultViewSearchSuite extends CatsEffectSuite with ElasticSearchClientSetup.Fixture with Fixtures {
+class DefaultViewSearchSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
   private lazy val client = esClient()

@@ -24,7 +24,7 @@ class PermissionDsl(cl: HttpClient) extends CirceUnmarshalling with Matchers {
       if (!list.toSet.subsetOf(permissions.permissions)) {
         (for {
           body   <- loader.jsonContentOf(
-                      "/iam/permissions/append.json",
+                      "iam/permissions/append.json",
                       permissionsRepl(list)
                     )
           result <-

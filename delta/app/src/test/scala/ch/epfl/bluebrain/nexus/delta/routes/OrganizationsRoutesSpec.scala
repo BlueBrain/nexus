@@ -61,7 +61,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid)
 
   private val org1Created = jsonContentOf(
-    "/organizations/org-resource.json",
+    "organizations/org-resource.json",
     "label"       -> org1.label.value,
     "uuid"        -> fixedUuid.toString,
     "description" -> org1.description.value
@@ -74,7 +74,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val org2CreatedMeta = orgMetadata(org2.label, fixedUuid, createdBy = alice, updatedBy = alice)
 
   private val org2Created = jsonContentOf(
-    "/organizations/org-resource.json",
+    "organizations/org-resource.json",
     "label" -> org2.label.value,
     "uuid"  -> fixedUuid.toString
   ).removeKeys("description") deepMerge org2CreatedMeta.removeKeys("@context")
@@ -154,14 +154,14 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/organizations/already-exists.json", "org" -> org1.label.value)
+        response.asJson shouldEqual jsonContentOf("organizations/already-exists.json", "org" -> org1.label.value)
       }
     }
 
     "fail fetching an organization by label and rev when rev is invalid" in {
       Get("/v1/orgs/org1?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
+        response.asJson shouldEqual jsonContentOf("errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
       }
     }
 

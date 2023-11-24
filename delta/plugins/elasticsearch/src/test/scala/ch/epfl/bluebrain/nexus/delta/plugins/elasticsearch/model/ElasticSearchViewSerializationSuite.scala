@@ -113,9 +113,9 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   }
 
   private val statesMapping = Map(
-    (indexingId, indexingValue)        -> jsonContentOf("/elasticsearch/database/indexing-view-state.json"),
-    (indexingId, defaultIndexingValue) -> jsonContentOf("/elasticsearch/database/default-indexing-view-state.json"),
-    (aggregateId, aggregateValue)      -> jsonContentOf("/elasticsearch/database/aggregate-view-state.json")
+    (indexingId, indexingValue)        -> jsonContentOf("elasticsearch/database/indexing-view-state.json"),
+    (indexingId, defaultIndexingValue) -> jsonContentOf("elasticsearch/database/default-indexing-view-state.json"),
+    (aggregateId, aggregateValue)      -> jsonContentOf("elasticsearch/database/aggregate-view-state.json")
   ).map { case ((id, value), json) =>
     ElasticSearchViewState(
       id,

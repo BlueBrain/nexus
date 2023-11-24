@@ -243,14 +243,14 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
     "fail when wrong revision is provided" in {
       deltaClient.delete[Json](s"/orgs/$id?rev=4", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.Conflict
-        json shouldEqual jsonContentOf("/admin/errors/org-incorrect-revision.json")
+        json shouldEqual jsonContentOf("admin/errors/org-incorrect-revision.json")
       }
     }
 
     "fail when revision is not provided" in {
       deltaClient.delete[Json](s"/orgs/$id", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/admin/errors/invalid-delete-request.json", "orgId" -> id)
+        json shouldEqual jsonContentOf("admin/errors/invalid-delete-request.json", "orgId" -> id)
       }
     }
 

@@ -129,7 +129,7 @@ class ProjectSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/projects/project-state.json")
+  private val jsonState = jsonContentOf("projects/project-state.json")
 
   test(s"Correctly serialize a ProjectState") {
     assertOutput(ProjectState.serializer, state, jsonState)

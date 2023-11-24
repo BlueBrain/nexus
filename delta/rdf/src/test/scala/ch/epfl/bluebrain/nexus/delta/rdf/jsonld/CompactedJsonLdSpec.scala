@@ -31,21 +31,21 @@ class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers
     }
 
     "be constructed from a multi-root json" in {
-      val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
+      val input = jsonContentOf("jsonld/compacted/input-multiple-roots.json")
 
       CompactedJsonLd(iri, context, input).accepted.json.removeKeys(keywords.context) shouldEqual
         json"""{"@graph": [{"id": "john-doé", "@type": "Person"}, {"id": "batman", "@type": "schema:Hero"} ] }"""
     }
 
     "be framed from a multi-root json" in {
-      val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
+      val input = jsonContentOf("jsonld/compacted/input-multiple-roots.json")
 
       CompactedJsonLd.frame(iri, context, input).accepted.json.removeKeys(keywords.context) shouldEqual
         json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
     "be constructed successfully from a multi-root json when using framing" in {
-      val input     = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
+      val input     = jsonContentOf("jsonld/compacted/input-multiple-roots.json")
       val compacted = CompactedJsonLd.frame(iri, context, input).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual json"""{"id": "john-doé", "@type": "Person"}"""
     }

@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 import java.time.Instant
 
-class FilterDeprecatedSuite extends CatsEffectSuite {
+class FilterDeprecatedSuite extends NexusSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()

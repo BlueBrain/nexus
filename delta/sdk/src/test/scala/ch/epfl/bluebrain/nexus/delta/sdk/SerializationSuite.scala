@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions, NexusSuite}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtractValue}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}
@@ -17,7 +15,7 @@ import munit.{Assertions, Location}
 import scala.collection.immutable.VectorMap
 
 abstract class SerializationSuite
-    extends CatsEffectSuite
+    extends NexusSuite
     with Assertions
     with EitherAssertions
     with CirceLiteral
@@ -39,7 +37,7 @@ abstract class SerializationSuite
     }
 
   def loadEvents(module: String, fileName: String): (Json, JsonObject) =
-    (jsonContentOf(s"/$module/database/$fileName"), jsonObjectContentOf(s"/$module/sse/$fileName"))
+    (jsonContentOf(s"$module/database/$fileName"), jsonObjectContentOf(s"$module/sse/$fileName"))
 
   private def generateOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value) =
     parse(serializer.printer.print(serializer.codec(obtained)))

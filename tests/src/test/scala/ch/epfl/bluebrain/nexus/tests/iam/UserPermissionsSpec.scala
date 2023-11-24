@@ -85,7 +85,7 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
       pos: Position
   ) = {
     val payload = jsonContentOf(
-      "/kg/storages/disk-perms-parameterised.json",
+      "kg/storages/disk-perms-parameterised.json",
       "id"               -> id,
       "read-permission"  -> readPermission.value,
       "write-permission" -> writePermission.value

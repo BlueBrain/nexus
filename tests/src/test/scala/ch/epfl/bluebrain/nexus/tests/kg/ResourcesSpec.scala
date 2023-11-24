@@ -84,7 +84,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "creating a schema with property shape" in {
-      val schemaPayload = jsonContentOf("/kg/schemas/simple-schema-prop-shape.json")
+      val schemaPayload = jsonContentOf("kg/schemas/simple-schema-prop-shape.json")
 
       deltaClient.post[Json](s"/schemas/$project1", schemaPayload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -92,7 +92,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "creating a schema that imports the property shape schema" in {
-      val schemaPayload = jsonContentOf("/kg/schemas/simple-schema-imports.json")
+      val schemaPayload = jsonContentOf("kg/schemas/simple-schema-imports.json")
 
       eventually {
         deltaClient.post[Json](s"/schemas/$project1", schemaPayload, Rick) { (_, response) =>
@@ -108,7 +108,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       deltaClient.put[Json](s"/resources/$project1/_/test-schema", Json.obj(), Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.Conflict
         json shouldEqual jsonContentOf(
-          "/kg/resources/resource-already-exists-rejection.json",
+          "kg/resources/resource-already-exists-rejection.json",
           "id"      -> "https://dev.nexus.test.com/test-schema",
           "project" -> project1
         )
@@ -262,7 +262,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
   "cross-project resolvers" should {
     val resolverPayload =
       jsonContentOf(
-        "/kg/resources/cross-project-resolver.json",
+        "kg/resources/cross-project-resolver.json",
         replacements(Rick, "project" -> project1): _*
       )
 
@@ -289,7 +289,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     "fetch the update" in {
       val expected = jsonContentOf(
-        "/kg/resources/cross-project-resolver-updated-resp.json",
+        "kg/resources/cross-project-resolver-updated-resp.json",
         replacements(
           Rick,
           "project"        -> project1,
@@ -609,6 +609,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
   }
 
+
   "create a resource with context" in {
     val contextId             = "https://dev.nexus.test.com/simplified-resource/mycontext"
     val contextPayload        = json"""{ "@context": { "@base": "http://example.com/base/" } }"""
@@ -701,8 +702,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "create resource using the created project" in {
-      val payload =
-        jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+      val payload = jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
       deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 

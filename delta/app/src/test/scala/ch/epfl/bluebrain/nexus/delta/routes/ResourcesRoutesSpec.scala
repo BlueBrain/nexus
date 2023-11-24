@@ -223,7 +223,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         Put(s"/v1/resources/myorg/myproject/_/$id", simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
-            jsonContentOf("/resources/errors/already-exists.json", "id" -> (nxv + id), "project" -> "myorg/myproject")
+            jsonContentOf("resources/errors/already-exists.json", "id" -> (nxv + id), "project" -> "myorg/myproject")
         }
       }
     }
@@ -235,7 +235,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         payloadFailingSchemaConstraints.toEntity
       ) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
+        response.asJson shouldEqual jsonContentOf("resources/errors/invalid-resource.json")
       }
     }
 
@@ -245,7 +245,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         payloadWithoutId.toEntity
       ) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
+        response.asJson shouldEqual jsonContentOf("schemas/errors/invalid-schema-2.json")
       }
     }
 
@@ -253,7 +253,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       Post("/v1/resources/myorg/myproject/_/", payloadWithBlankId.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/blank-id.json"
+          "resources/errors/blank-id.json"
         )
       }
     }
@@ -262,7 +262,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/underscore-fields.json"
+          "resources/errors/underscore-fields.json"
         )
       }
     }
@@ -309,7 +309,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       Put("/v1/resources/myorg/myproject/_/doesNotExist?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
+          jsonContentOf("resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -318,7 +318,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         Put(s"/v1/resources/myorg/myproject/_/$id?rev=10", payloadUpdated(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
-            jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
+            jsonContentOf("resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
         }
       }
     }
@@ -354,7 +354,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       Put("/v1/resources/myorg/myproject/_/doesNotExist/refresh", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
+          jsonContentOf("resources/errors/not-found.json", "id" -> (nxv + "doesNotExist"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -421,7 +421,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
-            "/resources/errors/resource-not-deprecated.json",
+            "resources/errors/resource-not-deprecated.json",
             "id" -> (nxv + id)
           )
         }
@@ -441,7 +441,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       givenAResource { id =>
         Delete(s"/v1/resources/myorg/myproject/_/$id") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+          response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
       }
     }
@@ -450,7 +450,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       givenADeprecatedResource { id =>
         Delete(s"/v1/resources/myorg/myproject/_/$id?rev=2") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> (nxv + id))
+          response.asJson shouldEqual jsonContentOf("resources/errors/resource-deprecated.json", "id" -> (nxv + id))
         }
       }
     }
@@ -602,7 +602,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         Get(endpoint) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
-            "/resources/errors/not-found.json",
+            "resources/errors/not-found.json",
             "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
             "proj" -> "myorg/myproject"
           )
@@ -690,7 +690,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       givenAResourceWithTag("myTag") { id =>
         Get(s"/v1/resources/myorg/myproject/myschema/$id?tag=myother") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
-          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+          response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
         }
       }
     }
@@ -699,7 +699,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       givenAResourceWithTag("myTag") { id =>
         Get(s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+          response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
         }
       }
     }
@@ -746,7 +746,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         Delete(s"/v1/resources/myorg/myproject/_/$id/tags/$myTag?rev=1") ~> asWriter ~> routes ~> check {
           Get(s"/v1/resources/myorg/myproject/_/$id?tag=$myTag") ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.NotFound
-            response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> myTag)
+            response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> myTag)
           }
         }
       }

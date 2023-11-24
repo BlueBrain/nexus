@@ -25,6 +25,11 @@
         "about": "BrainRegion",
         "label": "Somatosensory areas",
         "notation": "SS"
+      },
+      {
+        "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
+        "about": "BrainCellType",
+        "label": "SO_BS"
       }
     ]
   }

@@ -6,11 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientS
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 class EventMetricsDeletionTaskSuite
-    extends CatsEffectSuite
+    extends NexusSuite
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with Fixtures {

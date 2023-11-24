@@ -48,6 +48,7 @@ val logbackVersion          = "1.4.11"
 val magnoliaVersion         = "1.1.6"
 val mockitoVersion          = "1.17.29"
 val munitVersion            = "1.0.0-M10"
+val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.1"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
@@ -111,6 +112,7 @@ lazy val logback            = "ch.qos.logback"                % "logback-classic
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val munitCatsEffect    = "org.typelevel"                %% "munit-cats-effect"        % munitCatsEffectVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
@@ -205,6 +207,9 @@ lazy val kernel = project
       caffeine,
       catsCore,
       catsRetry,
+      catsEffect,
+      fs2,
+      fs2io,
       circeCore,
       circeParser,
       handleBars,
@@ -214,6 +219,7 @@ lazy val kernel = project
       pureconfig,
       pureconfigCats,
       munit     % Test,
+      munitCatsEffect  % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -237,6 +243,7 @@ lazy val testkit = project
       catsRetry,
       doobiePostgres,
       munit,
+      munitCatsEffect,
       scalaTest,
       testContainers
     ) ++ doobie,
@@ -258,9 +265,8 @@ lazy val sourcingPsql = project
       circeParser,
       classgraph,
       distageCore,
-      fs2,
-      fs2io,
       munit          % Test,
+      munitCatsEffect  % Test,
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
@@ -316,10 +322,10 @@ lazy val sdk = project
       circeLiteral,
       circeGenericExtras,
       distageCore,
-      fs2,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
+      munitCatsEffect  % Test,
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -376,7 +382,6 @@ lazy val app = project
         )
       )
     },
-    Test / javaOptions    += cglibFix,
     Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
@@ -765,6 +770,7 @@ lazy val storage = project
       akkaTestKit     % Test,
       mockito         % Test,
       munit           % Test,
+      munitCatsEffect  % Test,
       scalaTest       % Test
     ),
     cleanFiles              ++= Seq(
@@ -792,7 +798,6 @@ lazy val tests = project
       akkaStream,
       circeOptics,
       circeGenericExtras,
-      fs2,
       logback,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
@@ -973,10 +978,7 @@ lazy val servicePackaging = {
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
     dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
-    dockerEnvVars         := Map(
-      "JAVA_OPTS" -> cglibFix
-    )
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute
   )
 }
 
@@ -1052,14 +1054,19 @@ val staticAnalysis =
 
 addCommandAlias("static-analysis", staticAnalysis)
 
-def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
+def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
   ";coverage" +
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
-addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
-addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
-addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
+def runTestsCommandsForModules(modules: List[String]) = {
+  modules.map(module => s";$module/test").mkString
+}
 
-// This option allows distage 1.0.10 to run on JDK 17+
-val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"
+addCommandAlias("core-unit-tests", runTestsCommandsForModules(coreModules))
+addCommandAlias("core-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(coreModules))
+addCommandAlias("app-unit-tests", runTestsCommandsForModules(List("app")))
+addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("app")))
+addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
+addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
+addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))

@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import cats.effect.Ref
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class MD5Suite extends CatsEffectSuite {
+class MD5Suite extends NexusSuite {
 
   test("a string should have the correct MD5 hash") {
     val input        = "bbp/atlas"

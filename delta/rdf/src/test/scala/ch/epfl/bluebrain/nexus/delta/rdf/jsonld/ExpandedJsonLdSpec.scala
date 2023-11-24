@@ -40,7 +40,7 @@ class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers 
     }
 
     "be constructed successfully with remote contexts" in {
-      val compacted = jsonContentOf("/jsonld/expanded/input-with-remote-context.json")
+      val compacted = jsonContentOf("jsonld/expanded/input-with-remote-context.json")
       ExpandedJsonLd(compacted).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
@@ -58,7 +58,7 @@ class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers 
     }
 
     "be constructed with multiple root objects" in {
-      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val multiRoot = jsonContentOf("jsonld/expanded/input-multiple-roots.json")
       val batmanIri = iri"$example/batman"
       ExpandedJsonLd(multiRoot).accepted.json shouldEqual
         json"""[{"${keywords.graph}": [

@@ -217,7 +217,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     Get(s"$viewEndpoint/failures/sse") ~> routes ~> check {
       response.status shouldBe StatusCodes.OK
       mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
+      chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
     }
   }
 
@@ -225,7 +225,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     Get(s"$viewEndpoint/failures/sse") ~> `Last-Event-ID`("1") ~> routes ~> check {
       response.status shouldBe StatusCodes.OK
       mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
+      chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
     }
   }
 
@@ -233,7 +233,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
     Get(s"$viewEndpoint/failures") ~> routes ~> check {
       response.status shouldBe StatusCodes.OK
-      response.asJson shouldEqual jsonContentOf("/routes/list-indexing-errors.json")
+      response.asJson shouldEqual jsonContentOf("routes/list-indexing-errors.json")
     }
   }
 

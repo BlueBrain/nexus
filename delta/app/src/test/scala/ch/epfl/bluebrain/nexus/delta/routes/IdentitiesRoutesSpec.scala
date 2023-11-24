@@ -42,14 +42,14 @@ class IdentitiesRoutesSpec extends BaseRouteSpec {
     "return anonymous" in {
       Get("/v1/identities") ~> Accept(`*/*`) ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(jsonContentOf("/identities/anonymous.json"))
+        response.asJson should equalIgnoreArrayOrder(jsonContentOf("identities/anonymous.json"))
       }
     }
 
     "return all identities" in {
       Get("/v1/identities") ~> Accept(`*/*`) ~> addCredentials(OAuth2BearerToken("alice")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(jsonContentOf("/identities/alice.json"))
+        response.asJson should equalIgnoreArrayOrder(jsonContentOf("identities/alice.json"))
       }
     }
   }

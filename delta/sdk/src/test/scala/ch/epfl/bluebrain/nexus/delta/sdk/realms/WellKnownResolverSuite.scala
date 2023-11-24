@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import io.circe.Json
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.KeyOps
 
-class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLiteral {
+class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral {
 
   private val openIdUri = Uri("https://localhost/auth/realms/master/.well-known/openid-configuration")
   private val jwksUri   = Uri("https://localhost/auth/realms/master/protocol/openid-connect/certs")
@@ -120,7 +120,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
 
   test("Fail if the client returns a bad response") {
     val alwaysFail = WellKnownResolver(_ => IO.raiseError(HttpUnexpectedError(HttpRequest(), "Failed")))(openIdUri)
-    alwaysFail.intercept(UnsuccessfulOpenIdConfigResponse(openIdUri))
+    alwaysFail.interceptEquals(UnsuccessfulOpenIdConfigResponse(openIdUri))
   }
 
   test("Fail if the openid contains an invalid issuer") {
@@ -129,7 +129,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
     resolveWellKnown(
       invalidIssuer,
       validJwks
-    ).intercept(IllegalIssuerFormat(openIdUri, ".issuer"))
+    ).interceptEquals(IllegalIssuerFormat(openIdUri, ".issuer"))
   }
 
   test("Fail if the openid contains an issuer with an invalid type") {
@@ -138,7 +138,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
     resolveWellKnown(
       invalidIssuer,
       validJwks
-    ).intercept(IllegalIssuerFormat(openIdUri, ".issuer"))
+    ).interceptEquals(IllegalIssuerFormat(openIdUri, ".issuer"))
   }
 
   test("Fail if the openid contains an issuer with an invalid type") {
@@ -147,7 +147,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
     resolveWellKnown(
       invalidIssuer,
       validJwks
-    ).intercept(IllegalJwksUriFormat(openIdUri, ".jwks_uri"))
+    ).interceptEquals(IllegalJwksUriFormat(openIdUri, ".jwks_uri"))
   }
 
   List(
@@ -162,7 +162,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
       resolveWellKnown(
         invalidEndpoint,
         validJwks
-      ).intercept(IllegalEndpointFormat(openIdUri, s".$key"))
+      ).interceptEquals(IllegalEndpointFormat(openIdUri, s".$key"))
     }
   }
 
@@ -172,7 +172,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
       resolveWellKnown(
         invalidEndpoint,
         validJwks
-      ).intercept(IllegalEndpointFormat(openIdUri, s".$key"))
+      ).interceptEquals(IllegalEndpointFormat(openIdUri, s".$key"))
     }
   }
 
@@ -183,35 +183,35 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
     resolveWellKnown(
       invalidJwks,
       validJwks
-    ).intercept(UnsuccessfulJwksResponse(invalidJwksUri))
+    ).interceptEquals(UnsuccessfulJwksResponse(invalidJwksUri))
   }
 
   test("Fail if the jwks document has an incorrect format") {
     resolveWellKnown(
       defaultConfig,
       Json.obj()
-    ).intercept(IllegalJwkFormat(jwksUri))
+    ).interceptEquals(IllegalJwkFormat(jwksUri))
   }
 
   test("Fail if the jwks document has an incorrect format") {
     resolveWellKnown(
       defaultConfig,
       Json.obj()
-    ).intercept(IllegalJwkFormat(jwksUri))
+    ).interceptEquals(IllegalJwkFormat(jwksUri))
   }
 
   test("Fail if the jwks document has no keys") {
     resolveWellKnown(
       defaultConfig,
       Json.obj("keys" -> Json.arr())
-    ).intercept(NoValidKeysFound(jwksUri))
+    ).interceptEquals(NoValidKeysFound(jwksUri))
   }
 
   test("Fail if the jwks document has no valid keys") {
     resolveWellKnown(
       defaultConfig,
       Json.obj("keys" -> Json.arr(Json.fromString("incorrect")))
-    ).intercept(NoValidKeysFound(jwksUri))
+    ).interceptEquals(NoValidKeysFound(jwksUri))
   }
 
 }

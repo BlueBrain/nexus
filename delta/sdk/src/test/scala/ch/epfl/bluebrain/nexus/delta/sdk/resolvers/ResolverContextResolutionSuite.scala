@@ -19,15 +19,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 import io.circe.syntax._
 
 import java.time.Instant
 
-class ResolverContextResolutionSuite extends CatsEffectSuite {
+class ResolverContextResolutionSuite extends NexusSuite {
 
-  private val metadataContext = jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty
+  private val metadataContext = jsonContentOf("contexts/metadata.json").topContextValueOrEmpty
 
   val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.metadata -> metadataContext)

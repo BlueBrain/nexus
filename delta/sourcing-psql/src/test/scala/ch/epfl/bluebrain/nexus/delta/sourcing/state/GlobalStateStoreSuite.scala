@@ -11,14 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class GlobalStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -59,7 +59,7 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   }
 
   test("get state 1") {
-    store.get(id1).assertSome(state1)
+    store.get(id1).assertEquals(Some(state1))
   }
 
   test("Fetch all current states from the beginning") {
@@ -82,7 +82,7 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
     for {
       _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(2)
-      _ <- store.get(id1).assertSome(updatedState1)
+      _ <- store.get(id1).assertEquals(Some(updatedState1))
     } yield ()
   }
 
@@ -94,7 +94,7 @@ class GlobalStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
     for {
       _ <- store.delete(id2).transact(xas.write)
       _ <- assertCount(1)
-      _ <- store.get(id2).assertNone
+      _ <- store.get(id2).assertEquals(None)
     } yield ()
   }
 

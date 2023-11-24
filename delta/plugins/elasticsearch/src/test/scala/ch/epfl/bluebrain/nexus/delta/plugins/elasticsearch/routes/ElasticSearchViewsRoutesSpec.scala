@@ -139,7 +139,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+          jsonContentOf("routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 
@@ -150,7 +150,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       ) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
+          jsonContentOf("routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 
@@ -180,7 +180,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("routes/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -188,7 +188,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
+          jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -210,14 +210,14 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "reject the deprecation of a view without rev" in {
       Delete("/v1/views/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/routes/errors/missing-query-param.json", "field" -> "rev")
+        response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "reject the deprecation of a already deprecated view" in {
       Delete(s"/v1/views/myorg/myproject/myid?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> myId)
+        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> myId)
       }
     }
 
@@ -225,7 +225,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       val query = json"""{"query": { "match_all": {} } }"""
       Post("/v1/views/myorg/myproject/myid/_search", query) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> myId)
+        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> myId)
       }
     }
 
@@ -332,14 +332,14 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "return not found if tag not found" in {
       Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/routes/errors/tag-not-found.json", "tag" -> "myother")
+        response.asJson shouldEqual jsonContentOf("routes/errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
       Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/routes/errors/tag-and-rev-error.json")
+        response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
     }
 
@@ -370,7 +370,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
-      "/routes/elasticsearch-view-write-response.json",
+      "routes/elasticsearch-view-write-response.json",
       "project"    -> projectRef,
       "id"         -> id,
       "rev"        -> rev,
@@ -390,7 +390,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
-      "/routes/elasticsearch-view-read-response.json",
+      "routes/elasticsearch-view-read-response.json",
       "project"           -> projectRef,
       "id"                -> id,
       "rev"               -> rev,

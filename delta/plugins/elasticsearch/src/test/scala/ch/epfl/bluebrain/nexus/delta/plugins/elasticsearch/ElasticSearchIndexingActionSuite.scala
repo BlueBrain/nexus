@@ -21,14 +21,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import io.circe.Json
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchIndexingActionSuite extends CatsEffectSuite with CirceLiteral with Fixtures {
+class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 

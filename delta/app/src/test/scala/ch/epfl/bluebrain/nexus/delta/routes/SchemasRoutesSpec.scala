@@ -115,7 +115,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       Put("/v1/schemas/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/schemas/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+          jsonContentOf("schemas/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 
@@ -125,7 +125,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         payload.removeKeys(keywords.id).replaceKeyWithValue("nodeKind", 42).toEntity
       ) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema.json")
+        response.asJson shouldEqual jsonContentOf("schemas/errors/invalid-schema.json")
       }
     }
 
@@ -155,7 +155,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       Put("/v1/schemas/myorg/myproject/myid10?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -163,7 +163,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       Put("/v1/schemas/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/schemas/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
+          jsonContentOf("schemas/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -193,7 +193,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       Put("/v1/schemas/myorg/myproject/myid10/refresh", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+          jsonContentOf("schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 
@@ -215,14 +215,14 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
     "reject the deprecation of a schema without rev" in {
       Delete("/v1/schemas/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "reject the deprecation of a already deprecated schema" in {
       Delete(s"/v1/schemas/myorg/myproject/myid?rev=6") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/schema-deprecated.json", "id" -> myId)
+        response.asJson shouldEqual jsonContentOf("schemas/errors/schema-deprecated.json", "id" -> myId)
       }
     }
 
@@ -359,21 +359,21 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
     "fail to fetch resource by the deleted tag" in {
       Get("/v1/schemas/myorg/myproject/myid2?tag=mytag") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+        response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "mytag")
       }
     }
 
     "return not found if tag not found" in {
       Get("/v1/schemas/myorg/myproject/myid2?tag=myother") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+        response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
       Get("/v1/schemas/myorg/myproject/myid2?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+        response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
       }
     }
 

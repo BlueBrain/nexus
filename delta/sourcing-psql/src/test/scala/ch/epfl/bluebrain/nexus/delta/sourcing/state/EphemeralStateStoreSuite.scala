@@ -8,14 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class EphemeralStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
@@ -41,24 +41,24 @@ class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with 
 
   test("save the states") {
     for {
-      _ <- store.save(message1).transact(xas.write).assertUnit
-      _ <- store.save(message2).transact(xas.write).assertUnit
+      _ <- store.save(message1).transact(xas.write).assert
+      _ <- store.save(message2).transact(xas.write).assert
     } yield ()
   }
 
   test("get the states") {
     for {
-      _ <- store.get(project1, m1).assertSome(message1)
-      _ <- store.get(project1, m2).assertSome(message2)
-      _ <- store.get(project1, nxv + "mx").assertNone
+      _ <- store.get(project1, m1).assertEquals(Some(message1))
+      _ <- store.get(project1, m2).assertEquals(Some(message2))
+      _ <- store.get(project1, nxv + "mx").assertEquals(None)
     } yield ()
   }
 
   test("delete expired state " + m1) {
     for {
       _ <- deleteExpired()
-      _ <- store.get(project1, m1).assertNone
-      _ <- store.get(project1, m2).assertSome(message2)
+      _ <- store.get(project1, m1).assertEquals(None)
+      _ <- store.get(project1, m2).assertEquals(Some(message2))
     } yield ()
   }
 }

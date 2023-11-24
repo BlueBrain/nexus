@@ -68,7 +68,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate correctly for a user that has project permissions" in eventually {
       val expected = jsonContentOf(
-        "/kg/aggregations/project-aggregation.json",
+        "kg/aggregations/project-aggregation.json",
         "org"     -> org1,
         "project" -> proj11
       )
@@ -80,7 +80,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate resolvers" in {
       val expected = jsonContentOf(
-        "/kg/aggregations/resolvers-aggregation.json",
+        "kg/aggregations/resolvers-aggregation.json",
         "org"     -> org1,
         "project" -> proj11
       )
@@ -92,7 +92,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate views" in {
       val expected = jsonContentOf(
-        "/kg/aggregations/views-aggregation.json",
+        "kg/aggregations/views-aggregation.json",
         "org"     -> org1,
         "project" -> proj11
       )
@@ -104,7 +104,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate schemas" in {
       val expected = jsonContentOf(
-        "/kg/aggregations/schemas-aggregation.json",
+        "kg/aggregations/schemas-aggregation.json",
         "org"     -> org1,
         "project" -> proj11
       )
@@ -116,7 +116,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate storages" in {
       val expected = jsonContentOf(
-        "/kg/aggregations/storages-aggregation.json",
+        "kg/aggregations/storages-aggregation.json",
         "org"     -> org1,
         "project" -> proj11
       )
@@ -138,7 +138,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate correctly for a user that has " in eventually {
       val expected = jsonContentOf(
-        "/kg/aggregations/org-aggregation.json",
+        "kg/aggregations/org-aggregation.json",
         "org1"   -> org1,
         "proj11" -> proj11,
         "proj12" -> proj12
@@ -161,7 +161,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
     "aggregate correctly for a user that has permissions on at least one project" in eventually {
       val expected = jsonContentOf(
-        "/kg/aggregations/root-aggregation.json",
+        "kg/aggregations/root-aggregation.json",
         "org1"   -> org1,
         "org2"   -> org2,
         "proj11" -> proj11,

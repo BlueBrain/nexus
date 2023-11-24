@@ -7,9 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
-import munit.Suite
+import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
 
 object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
 
@@ -43,12 +42,8 @@ object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
     client.createIndexTemplate("test_template", template)
   }
 
-  def suiteLocalFixture(name: String): IOFixture[ElasticSearchClient] =
-    ResourceFixture.suiteLocal(name, resource())
-
-  trait Fixture { self: Suite =>
-    val esClient: IOFixture[ElasticSearchClient] =
-      ElasticSearchClientSetup.suiteLocalFixture("esclient")
+  trait Fixture {
+    self: CatsEffectSuite =>
+    val esClient: IOFixture[ElasticSearchClient] = ResourceSuiteLocalFixture("esclient", resource())
   }
-
 }

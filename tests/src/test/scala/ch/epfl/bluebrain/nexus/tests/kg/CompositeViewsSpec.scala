@@ -42,7 +42,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     }
 
     "succeed if payload is correct" in {
-      val projectPayload = jsonContentOf("/kg/views/composite/project.json")
+      val projectPayload = jsonContentOf("kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
         _ <- List(
@@ -77,7 +77,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
   "Uploading data" should {
     "upload context" in {
-      val context = jsonContentOf("/kg/views/composite/context.json")
+      val context = jsonContentOf("kg/views/composite/context.json")
       List(songsProject, albumsProject, bandsProject).parTraverse { projectId =>
         deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
@@ -88,7 +88,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "upload songs" in {
       root.each.json
         .getAll(
-          jsonContentOf("/kg/views/composite/songs1.json")
+          jsonContentOf("kg/views/composite/songs1.json")
         )
         .parTraverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
@@ -100,7 +100,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "upload albums" in {
       root.each.json
         .getAll(
-          jsonContentOf("/kg/views/composite/albums.json")
+          jsonContentOf("kg/views/composite/albums.json")
         )
         .parTraverse { album =>
           deltaClient.post[Json](s"/resources/$orgId/$albumsProject", album, Jerry) { (_, response) =>
@@ -112,7 +112,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "upload bands" in {
       root.each.json
         .getAll(
-          jsonContentOf("/kg/views/composite/bands.json")
+          jsonContentOf("kg/views/composite/bands.json")
         )
         .parTraverse { band =>
           deltaClient.post[Json](s"/resources/$orgId/$bandsProject", band, Jerry) { (_, response) =>
@@ -126,7 +126,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
     "create a composite view" in {
       val view = jsonContentOf(
-        "/kg/views/composite/composite-view.json",
+        "kg/views/composite/composite-view.json",
         replacements(
           Jerry,
           "org"            -> orgId,
@@ -151,7 +151,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "reject creating a composite view with remote source endpoint with a wrong suffix" in {
       resetAndWait()
       val view = jsonContentOf(
-        "/kg/views/composite/composite-view.json",
+        "kg/views/composite/composite-view.json",
         replacements(
           Jerry,
           "org"            -> orgId,
@@ -169,7 +169,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
     "reject creating a composite view with remote source endpoint with a wrong hostname" in {
       val view = jsonContentOf(
-        "/kg/views/composite/composite-view.json",
+        "kg/views/composite/composite-view.json",
         replacements(
           Jerry,
           "org"            -> orgId,
@@ -205,7 +205,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             val actual   = Json.fromValues(hitsSource.getAll(json))
-            val expected = jsonContentOf("/kg/views/composite/bands-results1.json")
+            val expected = jsonContentOf("kg/views/composite/bands-results1.json")
             actual should equalIgnoreArrayOrder(expected)
         }
       }
@@ -218,7 +218,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             val actual   = Json.fromValues(hitsSource.getAll(json))
-            val expected = jsonContentOf("/kg/views/composite/albums-results1.json")
+            val expected = jsonContentOf("kg/views/composite/albums-results1.json")
             actual should equalIgnoreArrayOrder(expected)
         }
       }
@@ -229,7 +229,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "upload more songs" in {
       root.each.json
         .getAll(
-          jsonContentOf("/kg/views/composite/songs2.json")
+          jsonContentOf("kg/views/composite/songs2.json")
         )
         .parTraverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
@@ -247,7 +247,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             val actual   = Json.fromValues(hitsSource.getAll(json))
-            val expected = jsonContentOf("/kg/views/composite/bands-results2.json")
+            val expected = jsonContentOf("kg/views/composite/bands-results2.json")
             actual should equalIgnoreArrayOrder(expected)
         }
       }
@@ -260,7 +260,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             val actual   = Json.fromValues(hitsSource.getAll(json))
-            val expected = jsonContentOf("/kg/views/composite/albums-results2.json")
+            val expected = jsonContentOf("kg/views/composite/albums-results2.json")
             actual should equalIgnoreArrayOrder(expected)
         }
       }
@@ -272,7 +272,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
     "create a composite view" in {
       val view = jsonContentOf(
-        "/kg/views/composite/composite-view-include-context.json",
+        "kg/views/composite/composite-view-include-context.json",
         replacements(
           Jerry,
           "org"            -> orgId,
@@ -303,7 +303,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
             (json, response) =>
               response.status shouldEqual StatusCodes.OK
               val actual   = Json.fromValues(hitsSource.getAll(json))
-              val expected = jsonContentOf("/kg/views/composite/bands-results2-include-context.json")
+              val expected = jsonContentOf("kg/views/composite/bands-results2-include-context.json")
               actual should equalIgnoreArrayOrder(expected)
           }
       }

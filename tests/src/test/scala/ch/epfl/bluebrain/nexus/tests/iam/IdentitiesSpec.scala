@@ -12,7 +12,7 @@ class IdentitiesSpec extends BaseIntegrationSpec {
       deltaClient.get[Json]("/identities", Identity.ServiceAccount) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json shouldEqual jsonContentOf(
-          "/iam/identities/response.json",
+          "iam/identities/response.json",
           "deltaUri" -> config.deltaUri.toString()
         )
       }
