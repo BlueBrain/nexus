@@ -13,15 +13,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectAssertions, CatsEffectSuite}
-import munit.{Assertions, Location}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import munit.{Assertions, CatsEffectAssertions, Location}
 
 import java.time.{Duration, Instant}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.matching.Regex
 
-class ShouldDeleteProjectSuite extends CatsEffectSuite {
+class ShouldDeleteProjectSuite extends NexusSuite {
 
   test("delete a deprecated project") {
     assertDeleted(

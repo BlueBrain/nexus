@@ -20,10 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
 
-class IdResolutionSuite extends CatsEffectSuite with Fixtures {
+class IdResolutionSuite extends NexusSuite with Fixtures {
 
   private val realm         = Label.unsafe("myrealm")
   private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

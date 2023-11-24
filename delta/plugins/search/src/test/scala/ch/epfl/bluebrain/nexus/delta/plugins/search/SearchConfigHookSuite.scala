@@ -13,14 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID
 import scala.concurrent.duration._
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class SearchConfigHookSuite extends CatsEffectSuite with CompositeViewsFixture {
+class SearchConfigHookSuite extends NexusSuite with CompositeViewsFixture {
 
   implicit private val projectBase: ProjectBase = ProjectBase.unsafe(nxv.base)
 
@@ -61,14 +61,14 @@ class SearchConfigHookSuite extends CatsEffectSuite with CompositeViewsFixture {
     for {
       v       <- view
       updated <- execSearchHook(v)
-      _       <- updated.assertSome(v.ref)
+      _       <- updated.assertEquals(Some(v.ref))
     } yield ()
 
   private def assertViewNotUpdated(view: IO[ActiveViewDef]) =
     for {
       v       <- view
       updated <- execSearchHook(v)
-      _       <- updated.assertNone
+      _       <- updated.assertEquals(None)
     } yield ()
 
   test("A search view should be updated when the name is updated") {

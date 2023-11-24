@@ -48,6 +48,7 @@ val logbackVersion          = "1.4.11"
 val magnoliaVersion         = "1.1.6"
 val mockitoVersion          = "1.17.29"
 val munitVersion            = "1.0.0-M10"
+val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.1"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
@@ -111,6 +112,7 @@ lazy val logback            = "ch.qos.logback"                % "logback-classic
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val munitCatsEffect    = "org.typelevel"                %% "munit-cats-effect"        % munitCatsEffectVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
@@ -217,6 +219,7 @@ lazy val kernel = project
       pureconfig,
       pureconfigCats,
       munit     % Test,
+      munitCatsEffect  % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -240,6 +243,7 @@ lazy val testkit = project
       catsRetry,
       doobiePostgres,
       munit,
+      munitCatsEffect,
       scalaTest,
       testContainers
     ) ++ doobie,
@@ -262,6 +266,7 @@ lazy val sourcingPsql = project
       classgraph,
       distageCore,
       munit          % Test,
+      munitCatsEffect  % Test,
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
@@ -320,6 +325,7 @@ lazy val sdk = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
+      munitCatsEffect  % Test,
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -376,7 +382,6 @@ lazy val app = project
         )
       )
     },
-    Test / javaOptions    += cglibFix,
     Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
@@ -765,6 +770,7 @@ lazy val storage = project
       akkaTestKit     % Test,
       mockito         % Test,
       munit           % Test,
+      munitCatsEffect  % Test,
       scalaTest       % Test
     ),
     cleanFiles              ++= Seq(
@@ -972,10 +978,7 @@ lazy val servicePackaging = {
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
     dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
-    dockerEnvVars         := Map(
-      "JAVA_OPTS" -> cglibFix
-    )
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute
   )
 }
 
@@ -1057,7 +1060,7 @@ def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
     modules.map(module => s";$module/coverageReport").mkString
 }
 def runTestsCommandsForModules(modules: List[String]) = {
-    modules.map(module => s";$module/test").mkString
+  modules.map(module => s";$module/test").mkString
 }
 
 addCommandAlias("core-unit-tests", runTestsCommandsForModules(coreModules))
@@ -1067,6 +1070,3 @@ addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForM
 addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
 addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
 addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))
-
-// This option allows distage 1.0.10 to run on JDK 17+
-val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"

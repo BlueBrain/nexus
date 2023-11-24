@@ -17,13 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixtu
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.util.UUID
 
-class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
+class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with ProjectsFixture {
 
   private val org1 = Label.unsafe("org1")
   private val org2 = Label.unsafe("org2")
@@ -36,7 +36,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
   private val orgConfig           = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
-  private lazy val projectFixture = ProjectsFixture.init(fetchOrg, defaultApiMappings, config, clock)
+  private lazy val projectFixture = createProjectsFixture(fetchOrg, defaultApiMappings, config, clock)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
 

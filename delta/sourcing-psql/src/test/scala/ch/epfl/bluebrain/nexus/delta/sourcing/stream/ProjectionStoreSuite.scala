@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class ProjectionStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -30,7 +30,7 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
   private val noProgress  = ProjectionProgress.NoProgress
 
   test("Return an empty offset when not found") {
-    store.offset("not found").assertNone
+    store.offset("not found").assertEquals(None)
   }
 
   test("Return no entries") {
@@ -43,7 +43,7 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
   test("Create an offset") {
     for {
       _       <- store.save(metadata, progress)
-      _       <- store.offset(name).assertSome(progress)
+      _       <- store.offset(name).assertEquals(Some(progress))
       entries <- store.entries.compile.toList
       r        = entries.assertOneElem
       _        = assertEquals((r.name, r.project, r.resourceId, r.progress), (name, Some(project), Some(resource), progress))
@@ -54,9 +54,9 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
   test("Update an offset") {
     val newMetadata = ProjectionMetadata("test", name, None, None)
     for {
-      _       <- store.offset(name).assertSome(progress)
+      _       <- store.offset(name).assertEquals(Some(progress))
       _       <- store.save(newMetadata, newProgress)
-      _       <- store.offset(name).assertSome(newProgress)
+      _       <- store.offset(name).assertEquals(Some(newProgress))
       entries <- store.entries.compile.toList
       r        = entries.assertOneElem
       _        = assertEquals((r.name, r.project, r.resourceId, r.progress), (name, None, None, newProgress))
@@ -65,11 +65,11 @@ class ProjectionStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doob
 
   test("Delete an offset") {
     for {
-      _       <- store.offset(name).assertSome(newProgress)
+      _       <- store.offset(name).assertEquals(Some(newProgress))
       _       <- store.delete(name)
       entries <- store.entries.compile.toList
       _        = entries.assertEmpty()
-      _       <- store.offset(name).assertNone
+      _       <- store.offset(name).assertEquals(None)
     } yield ()
   }
 

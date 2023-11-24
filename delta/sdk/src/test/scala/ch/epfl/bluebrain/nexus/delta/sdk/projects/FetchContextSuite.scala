@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.Quota
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class FetchContextSuite extends CatsEffectSuite {
+class FetchContextSuite extends NexusSuite {
 
   implicit private val subject: Subject = Identity.Anonymous
 
@@ -81,7 +81,7 @@ class FetchContextSuite extends CatsEffectSuite {
     fetchContext(quotasResources = true, quotasEvents = true)
       .onRead(deletedProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(ProjectIsMarkedForDeletion(deletedProject))
+      .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
   test("Successfully get a context for an active project on create if quota is not reached") {
@@ -94,21 +94,21 @@ class FetchContextSuite extends CatsEffectSuite {
     fetchContext(quotasResources = true, quotasEvents = false)
       .onCreate(activeProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(QuotaResourcesReached(activeProject, 0))
+      .interceptEquals(QuotaResourcesReached(activeProject, 0))
   }
 
   test("Fail getting a context for a deprecated project on create") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onCreate(deprecatedProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(ProjectIsDeprecated(deprecatedProject))
+      .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on create") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onCreate(deletedProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(ProjectIsMarkedForDeletion(deletedProject))
+      .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
   test("Successfully get a context for an active project on modify if quotas are not reached") {
@@ -127,21 +127,21 @@ class FetchContextSuite extends CatsEffectSuite {
     fetchContext(quotasResources = false, quotasEvents = true)
       .onModify(activeProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(QuotaEventsReached(activeProject, 0))
+      .interceptEquals(QuotaEventsReached(activeProject, 0))
   }
 
   test("Fail getting a context for a deprecated project on modify") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onModify(deprecatedProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(ProjectIsDeprecated(deprecatedProject))
+      .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on modify") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onModify(deletedProject)
       .adaptError { case c: ContextRejection => c.value }
-      .intercept(ProjectIsMarkedForDeletion(deletedProject))
+      .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
 }
