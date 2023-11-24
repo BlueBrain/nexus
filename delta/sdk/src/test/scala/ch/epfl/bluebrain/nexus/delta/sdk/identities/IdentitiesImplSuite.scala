@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
 import cats.effect.{IO, Ref}
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.jwt.TokenGenerator
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -27,7 +26,7 @@ import io.circe.{parser, Json}
 import java.time.Instant
 import java.util.Date
 
-class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
+class IdentitiesImplSuite extends NexusSuite with IOFromMap {
 
   /**
     * Generate RSA key
@@ -213,7 +212,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       groups = Some(Set("group1", "group2"))
     )
     val expectedError = InvalidAccessToken("Robert", githubLabel2.value, "JWT audience rejected: [ca, de]")
-    identities.exchange(token).intercept(expectedError)
+    identities.exchange(token).interceptEquals(expectedError)
   }
 
   test("Fail when the token is invalid") {
@@ -235,7 +234,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       .expirationTime(Date.from(nowPlus1h))
 
     val token = TokenGenerator.toSignedJwt(csb, rsaKey, signer)
-    identities.exchange(token).intercept(AccessTokenDoesNotContainAnIssuer)
+    identities.exchange(token).interceptEquals(AccessTokenDoesNotContainAnIssuer)
   }
 
   test("Fail when the token doesn't contain a subject") {
@@ -244,7 +243,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       .expirationTime(Date.from(nowPlus1h))
 
     val token = TokenGenerator.toSignedJwt(csb, rsaKey, signer)
-    identities.exchange(token).intercept(AccessTokenDoesNotContainSubject)
+    identities.exchange(token).interceptEquals(AccessTokenDoesNotContainSubject)
   }
 
   test("Fail when the token doesn't contain a known issuer") {
@@ -256,7 +255,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       useCommas = true
     )
 
-    identities.exchange(token).intercept(UnknownAccessTokenIssuer)
+    identities.exchange(token).interceptEquals(UnknownAccessTokenIssuer)
   }
 
   test("Fail when the token is expired") {
@@ -270,7 +269,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
     )
 
     val expectedError = InvalidAccessToken("Robert", githubLabel.value, "Expired JWT")
-    identities.exchange(token).intercept(expectedError)
+    identities.exchange(token).interceptEquals(expectedError)
   }
 
   test("Fail when the token is not yet valid") {
@@ -284,7 +283,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
     )
 
     val expectedError = InvalidAccessToken("Robert", githubLabel.value, "JWT before use time")
-    identities.exchange(token).intercept(expectedError)
+    identities.exchange(token).interceptEquals(expectedError)
   }
 
   test("Fail when the signature is invalid") {
@@ -301,7 +300,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       githubLabel.value,
       "Signed JWT rejected: Another algorithm expected, or no matching key(s) found"
     )
-    identities.exchange(token).intercept(expectedError)
+    identities.exchange(token).interceptEquals(expectedError)
   }
 
   test("Fail when getting groups from the oidc provider can't be complete") {
@@ -314,7 +313,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
     )
 
     val expectedError = GetGroupsFromOidcError("Robert", gitlabLabel.value)
-    identities.exchange(token).intercept(expectedError)
+    identities.exchange(token).interceptEquals(expectedError)
   }
 
   test("Cache realm and groups") {
@@ -331,11 +330,11 @@ class IdentitiesImplSuite extends CatsEffectSuite with IOFromMap {
       parsedToken <- IO.fromEither(ParsedToken.fromToken(token))
       realm       <- realmCache
       groups      <- groupsCache
-      _           <- realm.get(parsedToken.rawToken).assertNone
-      _           <- groups.get(parsedToken.rawToken).assertNone
+      _           <- realm.get(parsedToken.rawToken).assertEquals(None)
+      _           <- groups.get(parsedToken.rawToken).assertEquals(None)
       _           <- identitiesFromCaches(realm, groups)(findActiveRealm).exchange(token)
-      _           <- realm.get(parsedToken.issuer).assertSome(github)
-      _           <- groups.get(parsedToken.rawToken).assertSome(Set(group3, group4))
+      _           <- realm.get(parsedToken.issuer).assertEquals(Some(github))
+      _           <- groups.get(parsedToken.rawToken).assertEquals(Some(Set(group3, group4)))
     } yield ()
   }
 

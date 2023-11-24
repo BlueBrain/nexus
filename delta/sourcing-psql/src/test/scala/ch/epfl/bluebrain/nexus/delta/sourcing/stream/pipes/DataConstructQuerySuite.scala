@@ -13,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{pipes, ReferenceRegistry}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 import java.time.Instant
 
-class DataConstructQuerySuite extends CatsEffectSuite {
+class DataConstructQuerySuite extends NexusSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()

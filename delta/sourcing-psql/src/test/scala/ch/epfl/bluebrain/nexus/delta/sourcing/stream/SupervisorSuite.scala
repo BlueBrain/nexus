@@ -13,15 +13,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNod
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with Doobie.Assertions {
+class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobie.Assertions {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(1.second, 50.millis)
   implicit private val subject: Subject               = Anonymous
@@ -51,8 +52,8 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
     for {
       started <- Ref.of[IO, Boolean](false)
       compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
-      _       <- sv.run(compiled).eventually(Running)
-      _       <- started.get.eventually(true)
+      _       <- sv.run(compiled).assertEquals(Running).eventually
+      _       <- started.get.assertEquals(true).eventually
     } yield ()
 
   private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy) = {
@@ -65,16 +66,16 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
           strategy,
           evalStream(started.set(true)).map(_ >> Stream.raiseError[IO](expectedException))
         )
-      _         <- sv.run(projection).eventually(Running)
-      _         <- started.get.eventually(true)
+      _         <- sv.run(projection).assertEquals(Running).eventually
+      _         <- started.get.assertEquals(true).eventually
     } yield ()
   }
 
   private def assertDestroy(metadata: ProjectionMetadata, onDestroy: IO[Unit]) =
     for {
-      _ <- sv.destroy(metadata.name, onDestroy).assertSome(Stopped)
-      _ <- sv.describe(metadata.name).eventually(None)
-      _ <- projections.progress(metadata.name).assertNone
+      _ <- sv.destroy(metadata.name, onDestroy).assertEquals(Some(Stopped))
+      _ <- sv.describe(metadata.name).assertEquals(None).eventually
+      _ <- projections.progress(metadata.name).assertEquals(None)
     } yield ()
 
   private def assertDescribe(
@@ -85,9 +86,10 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
       progress: ProjectionProgress
   ) =
     sv.describe(metadata.name)
-      .eventually(
+      .assertEquals(
         Some(SupervisedDescription(metadata, executionStrategy, restarts, status, progress))
       )
+      .eventually
 
   private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long) = {
     val progress = ProjectionProgress(offset, Instant.EPOCH, processed, discarded, 0)
@@ -112,7 +114,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
       // The projection should still be ignored and should not have made any progress
       _         <- assertDescribe(ignoredByNode1, TransientSingleNode, 0, Ignored, NoProgress)
       // No progress has been saved in database either
-      _         <- projections.progress(ignoredByNode1.name).assertNone
+      _         <- projections.progress(ignoredByNode1.name).assertEquals(None)
       // This means the stream has never been started
       _         <- flag.get.assertEquals(false)
     } yield ()
@@ -145,21 +147,21 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
   }
 
   test("Destroy an ignored projection") {
-    sv.destroy(ignoredByNode1.name).assertSome(Ignored)
+    sv.destroy(ignoredByNode1.name).assertEquals(Some(Ignored))
   }
 
   test("Do nothing when attempting to restart a projection when it is unknown") {
     for {
       _ <- projections.scheduleRestart("xxx")
       _ <- assertWatchRestarts(Offset.at(2L), 2, 2)
-      _ <- sv.describe(ignoredByNode1.name).assertNone
+      _ <- sv.describe(ignoredByNode1.name).assertEquals(None)
       // The restart has not been acknowledged and can be read by another node
       _ <- projections.restarts(Offset.at(1L)).assertSize(1)
     } yield ()
   }
 
   test("Destroy an unknown projection") {
-    sv.destroy("""xxx""").assertNone
+    sv.destroy("""xxx""").assertEquals(None)
   }
 
   test("Run a projection when it is meant to run on every node") {
@@ -168,7 +170,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(random, EveryNode, 0, Completed, expectedProgress)
       // As it runs on every node, it is implicitly transient so no progress has been saved to database
-      _ <- projections.progress(random.name).assertNone
+      _ <- projections.progress(random.name).assertEquals(None)
     } yield ()
   }
 
@@ -182,7 +184,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(runnableByNode1, TransientSingleNode, 0, Completed, expectedProgress)
       // As it is transient, no progress has been saved to database
-      _ <- projections.progress(runnableByNode1.name).assertNone
+      _ <- projections.progress(runnableByNode1.name).assertEquals(None)
     } yield ()
   }
 
@@ -196,7 +198,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(runnableByNode1, PersistentSingleNode, 0, Completed, expectedProgress)
       // As it is persistent, progress has also been saved to database
-      _ <- projections.progress(runnableByNode1.name).assertSome(expectedProgress)
+      _ <- projections.progress(runnableByNode1.name).assertEquals(Some(expectedProgress))
     } yield ()
   }
 
@@ -214,7 +216,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
              expectedProgress
            )
       // As it is persistent, progress has also been saved to database
-      _ <- projections.progress(runnableByNode1.name).assertSome(expectedProgress)
+      _ <- projections.progress(runnableByNode1.name).assertEquals(Some(expectedProgress))
       // The restart has been acknowledged and now longer comes up
       _ <- projections.restarts(Offset.at(2L)).assertEmpty
     } yield ()
@@ -227,7 +229,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
   test("Should restart a failing projection") {
     for {
       _ <- assertCrash(runnableByNode1, TransientSingleNode)
-      _ <- sv.describe(runnableByNode1.name).map(_.exists(_.restarts > 0)).eventually(true)
+      _ <- sv.describe(runnableByNode1.name).map(_.exists(_.restarts > 0)).assertEquals(true).eventually
     } yield ()
   }
 
@@ -241,7 +243,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
     for {
       _ <- startProjection(runnableByNode1, PersistentSingleNode)
       _ <- sv.getRunningProjections()
-             .eventually(
+             .assertEquals(
                List(
                  SupervisedDescription(
                    metadata = Supervisor.watchRestartMetadata,
@@ -259,6 +261,7 @@ class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with 
                  )
                )
              )
+             .eventually
     } yield ()
   }
 

@@ -16,12 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID
 
-class CompositeViewFactorySuite extends CatsEffectSuite {
+class CompositeViewFactorySuite extends NexusSuite {
 
   implicit private val projectBase: ProjectBase = ProjectBase.unsafe(iri"http://localhost/project")
   private val uuid                              = UUID.randomUUID()

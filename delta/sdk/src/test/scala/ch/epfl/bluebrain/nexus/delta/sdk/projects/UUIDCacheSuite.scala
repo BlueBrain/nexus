@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.syntax.all._
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
@@ -12,14 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class UUIDCacheSuite extends CatsEffectSuite with Doobie.Fixture {
+class UUIDCacheSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -47,18 +46,18 @@ class UUIDCacheSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 
   test("Return the label for an org from an uuid") {
-    uuidCache.orgLabel(orgUuid).assertSome(org)
+    uuidCache.orgLabel(orgUuid).assertEquals(Some(org))
   }
 
   test("Return None for an unknown uuid for an org") {
-    uuidCache.orgLabel(UUID.randomUUID()).assertNone
+    uuidCache.orgLabel(UUID.randomUUID()).assertEquals(None)
   }
 
   test("Return the project ref for an project from an uuid") {
-    uuidCache.projectRef(projUuid).assertSome(projectRef)
+    uuidCache.projectRef(projUuid).assertEquals(Some(projectRef))
   }
 
   test("Return None for an unknown uuid for a project") {
-    uuidCache.projectRef(UUID.randomUUID()).assertNone
+    uuidCache.projectRef(UUID.randomUUID()).assertEquals(None)
   }
 }

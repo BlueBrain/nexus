@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
+import munit.catseffect.IOFixture
 
 import scala.concurrent.duration._
 
@@ -50,14 +49,15 @@ object SupervisorSetup {
       Supervisor(projections, projectionErrors, config).map(s => SupervisorSetup(s, projections, projectionErrors))
     }
 
-  def suiteLocalFixture(name: String, cluster: ClusterConfig, clock: Clock[IO]): IOFixture[SupervisorSetup] =
-    ResourceFixture.suiteLocal(name, resource(cluster, clock))
-
   trait Fixture { self: NexusSuite with FixedClock =>
+
+    private def suiteLocalFixture(name: String, cluster: ClusterConfig): IOFixture[SupervisorSetup] =
+      ResourceSuiteLocalFixture(name, resource(cluster, clock))
+
     val supervisor: IOFixture[SupervisorSetup]    =
-      SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0), clock)
+      suiteLocalFixture("supervisor", ClusterConfig(1, 0))
     val supervisor3_1: IOFixture[SupervisorSetup] =
-      SupervisorSetup.suiteLocalFixture("supervisor3", ClusterConfig(3, 1), clock)
+      suiteLocalFixture("supervisor3", ClusterConfig(3, 1))
   }
 
 }

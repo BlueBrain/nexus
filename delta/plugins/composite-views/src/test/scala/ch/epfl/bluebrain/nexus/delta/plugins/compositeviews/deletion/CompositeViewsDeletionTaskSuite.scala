@@ -8,13 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 
 import java.util.UUID
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class CompositeViewsDeletionTaskSuite extends CatsEffectSuite with CirceLiteral with CompositeViewsFixture {
+class CompositeViewsDeletionTaskSuite extends NexusSuite with CirceLiteral with CompositeViewsFixture {
 
   implicit private val anonymous: Subject = Anonymous
 

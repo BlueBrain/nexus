@@ -14,17 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.testkit.clock.MutableClock
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class FailedElemLogStoreSuite
-    extends CatsEffectSuite
-    with MutableClock.Fixture
-    with Doobie.Fixture
-    with Doobie.Assertions {
+class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, mutableClockFixture)
 

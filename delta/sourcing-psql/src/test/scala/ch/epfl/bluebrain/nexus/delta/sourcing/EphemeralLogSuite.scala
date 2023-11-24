@@ -8,13 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class EphemeralLogSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class EphemeralLogSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
@@ -43,17 +43,17 @@ class EphemeralLogSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.
     log.evaluate(proj, id, CreateMessage(id, proj, text, alice))
 
   test("Raise an error with a non-existent project") {
-    log.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).intercept(NotFound)
+    log.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).interceptEquals(NotFound)
   }
 
   test("Raise an error with a non-existent id") {
-    log.stateOr(proj, nxv + "xxx", NotFound).intercept(NotFound)
+    log.stateOr(proj, nxv + "xxx", NotFound).intercept[NotFound]
   }
 
   test("Raise an error if the text message is too long and save nothing") {
     for {
-      _ <- createMessage("Hello, World !").intercept(MessageTooLong(id, proj))
-      _ <- log.stateOr(proj, id, NotFound).intercept(NotFound)
+      _ <- createMessage("Hello, World !").interceptEquals(MessageTooLong(id, proj))
+      _ <- log.stateOr(proj, id, NotFound).interceptEquals(NotFound)
     } yield ()
   }
 
@@ -66,7 +66,7 @@ class EphemeralLogSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.
 
   test("Raise an error if id already exists and save nothing") {
     for {
-      _ <- createMessage("Bye").intercept(AlreadyExists(id, proj))
+      _ <- createMessage("Bye").interceptEquals(AlreadyExists(id, proj))
       _ <- log.stateOr(proj, id, NotFound).assertEquals(message)
     } yield ()
   }

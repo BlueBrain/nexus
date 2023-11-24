@@ -21,14 +21,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindT
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import io.circe.Json
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class IndexingViewDefSuite extends CatsEffectSuite {
+class IndexingViewDefSuite extends NexusSuite {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
@@ -125,7 +126,7 @@ class IndexingViewDefSuite extends CatsEffectSuite {
         GraphResourceStream.empty,
         sink
       )
-      .intercept(expectedError)
+      .interceptEquals(expectedError)
 
     assert(
       sink.successes.isEmpty && sink.dropped.isEmpty && sink.failed.isEmpty,
@@ -165,7 +166,7 @@ class IndexingViewDefSuite extends CatsEffectSuite {
                       ProjectionMetadata(BlazegraphViews.entityType.value, v.projection, Some(projectRef), Some(id))
                     )
       projection <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)
-      _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
+      _          <- projection.executionStatus.assertEquals(ExecutionStatus.Completed).eventually
       _          <- projection.currentProgress.assertEquals(expectedProgress)
     } yield ()
   }

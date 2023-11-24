@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class CompositeRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class CompositeRestartStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -41,27 +41,27 @@ class CompositeRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture wit
 
   test("Save composite restarts") {
     for {
-      _ <- store.save(cr1).assertUnit
-      _ <- store.save(cr2).assertUnit
-      _ <- store.save(cr3).assertUnit
+      _ <- store.save(cr1).assert
+      _ <- store.save(cr2).assert
+      _ <- store.save(cr3).assert
     } yield ()
   }
 
   test("Get first restart") {
-    store.head(viewRef).assertSome(toElem(Offset.at(1L), cr1))
+    store.head(viewRef).assertEquals(Some(toElem(Offset.at(1L), cr1)))
   }
 
   test("Delete older restarts and get first restart again") {
     for {
       _ <- store.deleteExpired(Instant.EPOCH.plusSeconds(2L))
-      _ <- store.head(viewRef).assertSome(toElem(Offset.at(3L), cr3))
+      _ <- store.head(viewRef).assertEquals(Some(toElem(Offset.at(3L), cr3)))
     } yield ()
   }
 
   test("Acknowledge restart 3 and get first restart again") {
     for {
       _ <- store.acknowledge(Offset.at(3L))
-      _ <- store.head(viewRef).assertNone
+      _ <- store.head(viewRef).assertEquals(None)
     } yield ()
   }
 

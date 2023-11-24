@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
@@ -32,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
@@ -40,7 +39,7 @@ import munit.{AnyFixture, Location}
 import java.time.Instant
 
 class ElasticSearchViewsQuerySuite
-    extends CatsEffectSuite
+    extends NexusSuite
     with Doobie.Fixture
     with ElasticSearchClientSetup.Fixture
     with Fixtures
@@ -318,7 +317,7 @@ class ElasticSearchViewsQuerySuite
       _ <- views.deprecate(deprecated.viewId, deprecated.project, 1)
       _ <- viewsQuery
              .query(deprecated, matchAllSorted, noParameters)
-             .intercept(ViewIsDeprecated(deprecated.viewId))
+             .interceptEquals(ViewIsDeprecated(deprecated.viewId))
     } yield ()
   }
 
@@ -362,14 +361,14 @@ class ElasticSearchViewsQuerySuite
     implicit val caller: Caller = alice
     viewsQuery
       .mapping(view1Proj2.viewId, project1.ref)
-      .intercept(ViewNotFound(view1Proj2.viewId, project1.ref))
+      .interceptEquals(ViewNotFound(view1Proj2.viewId, project1.ref))
   }
 
   test("Obtaining the mapping on an aggregate view should fail") {
     implicit val caller: Caller = alice
     viewsQuery
       .mapping(aggregate1.viewId, project1.ref)
-      .intercept(
+      .interceptEquals(
         DifferentElasticSearchViewType(
           aggregate1.viewId.toString,
           ElasticSearchViewType.AggregateElasticSearch,
