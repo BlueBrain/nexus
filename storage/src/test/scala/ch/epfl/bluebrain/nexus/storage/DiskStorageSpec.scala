@@ -337,7 +337,7 @@ class DiskStorageSpec
       "fail when source does not exists" in new AbsoluteDirectoryCreated {
         val source = randomString()
         val files  = NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(randomString())))
-        storage.copyFile(name, files).accepted.leftValue shouldEqual PathNotFound(name, Uri.Path(source))
+        storage.copyFiles(name, files).accepted.leftValue shouldEqual PathNotFound(name, Uri.Path(source))
       }
 
       "fail when source is not inside protected directory" in new AbsoluteDirectoryCreated {
@@ -347,7 +347,7 @@ class DiskStorageSpec
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
         val files        = NonEmptyList.of(CopyFile(Uri.Path(file), Uri.Path(randomString())))
 
-        storage.copyFile(name, files).accepted.leftValue shouldEqual PathNotFound(name, Uri.Path(file))
+        storage.copyFiles(name, files).accepted.leftValue shouldEqual PathNotFound(name, Uri.Path(file))
       }
 
       "fail when destination already exists" in new AbsoluteDirectoryCreated {
@@ -361,7 +361,7 @@ class DiskStorageSpec
         Files.write(resolvedDestFile, "somethingelse".getBytes(StandardCharsets.UTF_8))
         val files            = NonEmptyList.of(CopyFile(Uri.Path(file), Uri.Path(destFile)))
 
-        storage.copyFile(name, files).accepted.leftValue shouldEqual PathAlreadyExists(name, Uri.Path(destFile))
+        storage.copyFiles(name, files).accepted.leftValue shouldEqual PathAlreadyExists(name, Uri.Path(destFile))
       }
 
       "fail when destination is out of bucket scope" in new AbsoluteDirectoryCreated {
@@ -374,7 +374,7 @@ class DiskStorageSpec
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
         val files   = NonEmptyList.of(CopyFile(Uri.Path(file), dest))
 
-        storage.copyFile(name, files).rejectedWith[StorageError] shouldEqual PathInvalid(name, dest)
+        storage.copyFiles(name, files).rejectedWith[StorageError] shouldEqual PathInvalid(name, dest)
 
         Files.exists(absoluteFile) shouldEqual true
       }
@@ -397,7 +397,7 @@ class DiskStorageSpec
             val expectedOutput  =
               CopyFileOutput(Uri.Path(sourcePathToUse), Uri.Path(destPath), absoluteSourceFile, absoluteDestFile)
 
-            storage.copyFile(name, files).accepted.rightValue shouldEqual NonEmptyList.of(expectedOutput)
+            storage.copyFiles(name, files).accepted.rightValue shouldEqual NonEmptyList.of(expectedOutput)
 
             Files.exists(absoluteSourceFile) shouldEqual true
             Files.exists(absoluteDestFile) shouldEqual true

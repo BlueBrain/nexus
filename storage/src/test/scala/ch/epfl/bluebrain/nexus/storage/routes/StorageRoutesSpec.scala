@@ -308,13 +308,22 @@ class StorageRoutesSpec
         }
       }
 
+      "fail if an empty array is passed" in new Ctx {
+        storages.exists(name) shouldReturn BucketExists
+
+        Post(s"/v1/buckets/$name/files", Json.arr()) ~> route ~> check {
+          status shouldEqual BadRequest
+          storages.exists(name) wasCalled once
+        }
+      }
+
       "fail when copy file returns a exception" in new Ctx {
         storages.exists(name) shouldReturn BucketExists
         val source = "source/dir"
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
         val input  = NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest)))
-        storages.copyFile(name, input)(BucketExists, PathDoesNotExist) shouldReturn
+        storages.copyFiles(name, input)(BucketExists, PathDoesNotExist) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
         val json = Json.arr(Json.obj("source" := source, "destination" := dest))
@@ -328,7 +337,7 @@ class StorageRoutesSpec
               quote("{reason}") -> s"The system experienced an unexpected error, please try again later."
             )
           )
-          storages.copyFile(name, input)(BucketExists, PathDoesNotExist) wasCalled once
+          storages.copyFiles(name, input)(BucketExists, PathDoesNotExist) wasCalled once
         }
       }
 
@@ -361,7 +370,7 @@ class StorageRoutesSpec
         val output =
           CopyFileOutput(Uri.Path(source), Uri.Path(dest), Paths.get(s"/rootdir/$source"), Paths.get(s"/rootdir/$dest"))
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
-        storages.copyFile(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
+        storages.copyFiles(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
           BucketExists,
           PathDoesNotExist
         ) shouldReturn
@@ -381,7 +390,7 @@ class StorageRoutesSpec
           status shouldEqual Created
           responseAs[Json] shouldEqual response
 
-          storages.copyFile(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
+          storages.copyFiles(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
             BucketExists,
             PathDoesNotExist
           ) wasCalled once

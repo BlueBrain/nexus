@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
-import ch.epfl.bluebrain.nexus.storage.files.CopyFiles.{parent, CopyBetween}
+import ch.epfl.bluebrain.nexus.storage.files.CopyFiles.parent
 import fs2.io.file.PosixPermission._
 import fs2.io.file._
 import munit.CatsEffectSuite
@@ -59,11 +59,12 @@ class CopyFileSuite extends CatsEffectSuite {
       (source, _)      <- givenAFileExists
       (failingDest, _) <- givenAFileExists
       (dest1, dest3)    = (genFilePath, genFilePath)
-      files             = NonEmptyList.of(CopyBetween(source, dest1), CopyBetween(source, failingDest), CopyBetween(source, dest3))
+      failingCopy       = CopyBetween(source, failingDest)
+      files             = NonEmptyList.of(CopyBetween(source, dest1), failingCopy, CopyBetween(source, dest3))
       error            <- CopyFiles.copyAll(files).intercept[CopyOperationFailed]
       _                <- List(dest1, dest3, parent(dest1), parent(dest3)).traverse(fileShouldNotExist)
       _                <- fileShouldExist(failingDest)
-    } yield assertEquals(error, CopyOperationFailed(source, failingDest))
+    } yield assertEquals(error, CopyOperationFailed(failingCopy))
   }
 
   test("rollback read-only files upon failure") {
@@ -73,11 +74,12 @@ class CopyFileSuite extends CatsEffectSuite {
       (source, _)      <- givenAFileWithPermissions(sourcePermissions)
       (failingDest, _) <- givenAFileExists
       dest2             = genFilePath
-      files             = NonEmptyList.of(CopyBetween(source, dest2), CopyBetween(source, failingDest))
+      failingCopy       = CopyBetween(source, failingDest)
+      files             = NonEmptyList.of(CopyBetween(source, dest2), failingCopy)
       error            <- CopyFiles.copyAll(files).intercept[CopyOperationFailed]
       _                <- List(dest2, parent(dest2)).traverse(fileShouldNotExist)
       _                <- fileShouldExist(failingDest)
-    } yield assertEquals(error, CopyOperationFailed(source, failingDest))
+    } yield assertEquals(error, CopyOperationFailed(failingCopy))
   }
 
   def genFilePath: Path = tempDir / genString / s"$genString.txt"

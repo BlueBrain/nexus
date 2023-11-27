@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.storage
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Path
+import ch.epfl.bluebrain.nexus.storage.files.CopyBetween
 import ch.epfl.bluebrain.nexus.storage.routes.StatusFrom
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
-import fs2.io.file.{Path => Fs2Path}
 
 import scala.annotation.nowarn
 
@@ -96,9 +96,9 @@ object StorageError {
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
 
-  final case class CopyOperationFailed(source: Fs2Path, dest: Fs2Path)
+  final case class CopyOperationFailed(failingCopy: CopyBetween)
       extends StorageError(
-        s"Copy operation failed from source $source to destination $dest."
+        s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}."
       )
 
   @nowarn("cat=unused")

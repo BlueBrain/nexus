@@ -72,7 +72,7 @@ trait Storages[Source] {
     *   a list of source/destination files. The source files should exist under the nexus folder, and the destination
     *   files will be created there. Both must be files, not directories.
     */
-  def copyFile(
+  def copyFiles(
       name: String,
       files: NonEmptyList[CopyFile]
   )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]]
@@ -220,7 +220,7 @@ object Storages {
         name: String,
         sourcePath: Uri.Path,
         destPath: Uri.Path
-    )(implicit bucketEv: BucketExists): IO[RejOrAttributes] = (for {
+    )(implicit bucketEv: BucketExists): IO[Either[Rejection, FileAttributes]] = (for {
       value <- EitherT(validateFile.forMoveIntoProtectedDir(name, sourcePath, destPath))
       attr  <- EitherT.right[Rejection](fixPermissionsAndCopy(value.absSourcePath, value.absDestPath, value.isDir))
     } yield attr).value
@@ -262,7 +262,7 @@ object Storages {
       else
         IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
 
-    def copyFile(
+    def copyFiles(
         name: String,
         files: NonEmptyList[CopyFile]
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] =

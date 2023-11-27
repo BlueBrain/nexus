@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.storage.files
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref}
-import cats.implicits.catsSyntaxParallelTraverse1
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
 import fs2.io.file.{CopyFlag, CopyFlags, Files, Path}
 
@@ -14,16 +14,14 @@ object CopyFiles {
   def mk(): CopyFiles = files =>
     copyAll(files.map(v => CopyBetween(Path.fromNioPath(v.absSourcePath), Path.fromNioPath(v.absDestPath))))
 
-  final private[files] case class CopyBetween(source: Path, dest: Path)
-
   def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
     Ref.of[IO, Option[CopyOperationFailed]](None).flatMap { errorRef =>
       files
-        .parTraverse { case CopyBetween(source, dest) =>
-          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(source, dest))))
+        .parTraverse { case c @ CopyBetween(source, dest) =>
+          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(c))))
         }
         .void
-        .handleErrorWith(_ => rollbackCopiesAndRethrow(errorRef, files.map(_.dest)))
+        .handleErrorWith(_ => rollbackCopiesAndRethrow(errorRef, files.map(_.destination)))
     }
 
   def parent(p: Path): Path = Path.fromNioPath(p.toNioPath.getParent)
@@ -44,7 +42,7 @@ object CopyFiles {
     errorRef.get.flatMap {
       case Some(error) =>
         files
-          .filterNot(_ == error.dest)
+          .filterNot(_ == error.failingCopy.destination)
           .parTraverse(dest => Files[IO].deleteRecursively(parent(dest)).attempt.void) >>
           IO.raiseError(error)
       case None        => IO.unit
