@@ -178,7 +178,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     subject
   )
 
-  private val jsonState = jsonContentOf("/files/database/file-state.json")
+  private val jsonState = jsonContentOf("files/database/file-state.json")
 
   test(s"Correctly serialize a FileState") {
     assertEquals(FileState.serializer.codec(state), jsonState)

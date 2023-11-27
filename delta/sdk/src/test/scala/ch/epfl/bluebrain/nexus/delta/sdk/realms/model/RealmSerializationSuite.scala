@@ -118,7 +118,7 @@ class RealmSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/realms/realm-state.json")
+  private val jsonState = jsonContentOf("realms/realm-state.json")
 
   test(s"Correctly serialize an RealmState") {
     assertOutput(RealmState.serializer, state, jsonState)

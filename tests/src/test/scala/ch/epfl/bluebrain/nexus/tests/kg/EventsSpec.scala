@@ -169,7 +169,7 @@ class EventsSpec extends BaseIntegrationSpec {
                    )
                    val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
                    json shouldEqual jsonContentOf(
-                     "/kg/events/events.json",
+                     "kg/events/events.json",
                      replacements(
                        BugsBunny,
                        "resources"        -> s"${config.deltaUri}/resources/$id",
@@ -199,7 +199,7 @@ class EventsSpec extends BaseIntegrationSpec {
                    )
                    val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
                    json shouldEqual jsonContentOf(
-                     "/kg/events/events.json",
+                     "kg/events/events.json",
                      replacements(
                        BugsBunny,
                        "resources"        -> s"${config.deltaUri}/resources/$id",
@@ -223,7 +223,7 @@ class EventsSpec extends BaseIntegrationSpec {
             projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
             val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
             json shouldEqual jsonContentOf(
-              "/kg/events/events2.json",
+              "kg/events/events2.json",
               replacements(
                 BugsBunny,
                 "resources"        -> s"${config.deltaUri}/resources/$id",
@@ -263,7 +263,7 @@ class EventsSpec extends BaseIntegrationSpec {
                       )
                       val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
                       json shouldEqual jsonContentOf(
-                        "/kg/events/events-multi-project.json",
+                        "kg/events/events-multi-project.json",
                         replacements(
                           BugsBunny,
                           "resources"         -> s"${config.deltaUri}/resources/$id",

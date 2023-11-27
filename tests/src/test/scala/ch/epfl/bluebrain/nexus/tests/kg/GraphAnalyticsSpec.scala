@@ -39,35 +39,35 @@ final class GraphAnalyticsSpec extends BaseIntegrationSpec {
         deltaClient.post[Json](s"/resources/$ref/", jsonContentOf(resourcePath), Bojack)(expectCreated)
 
       for {
-        _ <- postResource("/kg/graph-analytics/context-test.json")
-        _ <- postResource("/kg/graph-analytics/person1.json")
-        _ <- postResource("/kg/graph-analytics/person2.json")
-        _ <- postResource("/kg/graph-analytics/person3.json")
-        _ <- postResource("/kg/graph-analytics/organization.json")
+        _ <- postResource("kg/graph-analytics/context-test.json")
+        _ <- postResource("kg/graph-analytics/person1.json")
+        _ <- postResource("kg/graph-analytics/person2.json")
+        _ <- postResource("kg/graph-analytics/person3.json")
+        _ <- postResource("kg/graph-analytics/organization.json")
       } yield succeed
     }
 
     "fetch relationships" in eventually {
       deltaClient.get[Json](s"/graph-analytics/$ref/relationships", Bojack) { (json, _) =>
-        json shouldEqual jsonContentOf("/kg/graph-analytics/relationships.json")
+        json shouldEqual jsonContentOf("kg/graph-analytics/relationships.json")
       }
     }
 
     "fetch properties" in eventually {
       deltaClient.get[Json](s"/graph-analytics/$ref/properties/http%3A%2F%2Fschema.org%2FPerson", Bojack) { (json, _) =>
-        json shouldEqual jsonContentOf("/kg/graph-analytics/properties-person.json")
+        json shouldEqual jsonContentOf("kg/graph-analytics/properties-person.json")
       }
     }
 
     "update resources" in {
       for {
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person4.json"), Bojack)(
+        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("kg/graph-analytics/person4.json"), Bojack)(
                expectCreated
              )
         _ <-
           deltaClient.put[Json](
             s"/resources/$ref/_/http%3A%2F%2Fexample.com%2Fepfl?rev=1",
-            jsonContentOf("/kg/graph-analytics/organization-updated.json"),
+            jsonContentOf("kg/graph-analytics/organization-updated.json"),
             Bojack
           )(
             expectOk
@@ -76,12 +76,12 @@ final class GraphAnalyticsSpec extends BaseIntegrationSpec {
     }
     "fetch updated relationships" in eventually {
       deltaClient.get[Json](s"/graph-analytics/$ref/relationships", Bojack) { (json, _) =>
-        json shouldEqual jsonContentOf("/kg/graph-analytics/relationships-updated.json")
+        json shouldEqual jsonContentOf("kg/graph-analytics/relationships-updated.json")
       }
     }
     "fetch updated properties" in eventually {
       deltaClient.get[Json](s"/graph-analytics/$ref/properties/http%3A%2F%2Fschema.org%2FPerson", Bojack) { (json, _) =>
-        json shouldEqual jsonContentOf("/kg/graph-analytics/properties-person-updated.json")
+        json shouldEqual jsonContentOf("kg/graph-analytics/properties-person-updated.json")
       }
     }
 
@@ -90,7 +90,7 @@ final class GraphAnalyticsSpec extends BaseIntegrationSpec {
     }
 
     "query for person1" in eventually {
-      val expected = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json", "projectRef" -> ref)
+      val expected = jsonContentOf("kg/graph-analytics/es-hit-source-person1.json", "projectRef" -> ref)
 
       // We ignore fields that are time or project dependent.
       // "relationships" are ignored as its "found" field can sometimes be

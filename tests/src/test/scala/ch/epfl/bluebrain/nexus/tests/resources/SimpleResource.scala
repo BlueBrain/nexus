@@ -19,7 +19,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
       config: TestsConfig
   ): IO[Json] =
     loader.jsonContentOf(
-      "/kg/resources/simple-resource-response.json",
+      "kg/resources/simple-resource-response.json",
       replacements(
         user,
         "priority"   -> priority.toString,
@@ -34,7 +34,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
       config: TestsConfig
   ): IO[Json] =
     loader.jsonContentOf(
-      "/kg/resources/simple-resource-with-metadata.json",
+      "kg/resources/simple-resource-with-metadata.json",
       replacements(
         user,
         "priority"   -> priority.toString,
@@ -47,20 +47,20 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
 
   def sourcePayload(id: String, priority: Int): IO[Json] =
     loader.jsonContentOf(
-      "/kg/resources/simple-resource.json",
+      "kg/resources/simple-resource.json",
       "resourceId" -> id,
       "priority"   -> priority.toString
     )
 
   def sourcePayload(priority: Int): IO[Json] =
     loader.jsonContentOf(
-      "/kg/resources/simple-resource.json",
+      "kg/resources/simple-resource.json",
       "priority" -> priority.toString
     )
 
   def sourcePayloadWithType(resourceType: String, priority: Int): IO[Json] =
     loader.jsonContentOf(
-      "/kg/resources/simple-resource.json",
+      "kg/resources/simple-resource.json",
       "priority"     -> priority.toString,
       "resourceType" -> resourceType
     )

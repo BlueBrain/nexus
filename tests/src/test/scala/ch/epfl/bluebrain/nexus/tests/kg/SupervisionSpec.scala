@@ -49,9 +49,9 @@ class SupervisionSpec extends BaseIntegrationSpec {
     val module                                                        = "elasticsearch"
     val projectionName                                                = s"$module-$fullId-$viewId"
     val createEsViewPayload                                           =
-      jsonContentOf("/kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
+      jsonContentOf("kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
     val updateEsViewPayload                                           =
-      jsonContentOf("/kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
+      jsonContentOf("kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
 
     def elasticsearchProjectionMetadata(revision: Int, restarts: Int) =
       metadataJson(module, projectionName, fullId, viewId, revision, restarts)
@@ -115,9 +115,9 @@ class SupervisionSpec extends BaseIntegrationSpec {
     val module                                                     = "blazegraph"
     val projectionName                                             = s"$module-$fullId-$viewId"
     val createBgViewPayload                                        =
-      jsonContentOf("/kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
+      jsonContentOf("kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
     val updateBgViewPayload                                        =
-      jsonContentOf("/kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
+      jsonContentOf("kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
 
     def blazegraphProjectionMetadata(revision: Int, restarts: Int) =
       metadataJson(module, projectionName, fullId, viewId, revision, restarts)
@@ -181,13 +181,13 @@ class SupervisionSpec extends BaseIntegrationSpec {
     val projectionName             = s"composite-views-$fullId-$viewId"
     val createCompositeViewPayload =
       jsonContentOf(
-        "/kg/supervision/composite-payload.json",
+        "kg/supervision/composite-payload.json",
         "viewName" -> viewName,
         "interval" -> "5 seconds"
       )
     val updateCompositeViewPayload =
       jsonContentOf(
-        "/kg/supervision/composite-payload.json",
+        "kg/supervision/composite-payload.json",
         "viewName" -> viewName,
         "interval" -> "10 seconds"
       )
@@ -253,7 +253,7 @@ class SupervisionSpec extends BaseIntegrationSpec {
       restarts: Int
   ) =
     jsonContentOf(
-      "/kg/supervision/scoped-projection-metadata.json",
+      "kg/supervision/scoped-projection-metadata.json",
       "module"         -> module,
       "projectionName" -> projectionName,
       "project"        -> orgProject,

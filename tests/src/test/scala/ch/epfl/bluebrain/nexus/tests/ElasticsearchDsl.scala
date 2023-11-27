@@ -32,7 +32,7 @@ class ElasticsearchDsl(implicit
 
   def createTemplate(): IO[StatusCode] = {
     for {
-      json   <- loader.jsonContentOf("/elasticsearch/template.json")
+      json   <- loader.jsonContentOf("elasticsearch/template.json")
       _      <- logger.info("Creating template for Elasticsearch indices")
       result <- elasticClient(
                   HttpRequest(

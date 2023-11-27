@@ -113,8 +113,8 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     updatedBy = subject
   )
 
-  private val jsonState                = jsonContentOf("/resources/resource-state.json")
-  private val jsonStateNoRemoteContext = jsonContentOf("/resources/resource-state-no-remote-contexts.json")
+  private val jsonState                = jsonContentOf("resources/resource-state.json")
+  private val jsonStateNoRemoteContext = jsonContentOf("resources/resource-state-no-remote-contexts.json")
 
   test(s"Correctly serialize a ResourceState") {
     assertOutput(ResourceState.serializer, state, jsonState)

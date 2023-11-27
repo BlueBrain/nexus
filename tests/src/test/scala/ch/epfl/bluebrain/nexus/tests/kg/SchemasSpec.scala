@@ -77,7 +77,7 @@ class SchemasSpec extends BaseIntegrationSpec {
 
       def resourceWithPowerLevel(id: String, powerLevel: Int) =
         jsonContentOf(
-          "/kg/resources/resource-with-power-level.json",
+          "kg/resources/resource-with-power-level.json",
           "id"         -> id,
           "powerLevel" -> powerLevel
         )
@@ -124,19 +124,19 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <- deltaClient
                .post[Json](
                  s"/schemas/$project",
-                 jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId, "maxNumberOfGears" -> 13),
+                 jsonContentOf("kg/schemas/bicycle-schema.json", "id" -> schemaId, "maxNumberOfGears" -> 13),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
                  s"/resources/$project/${UrlUtils.encode(schemaId)}",
-                 jsonContentOf("/kg/resources/bicycle.json", "id" -> genId(), "gears" -> 13),
+                 jsonContentOf("kg/resources/bicycle.json", "id" -> genId(), "gears" -> 13),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
                  s"/resources/$project/${UrlUtils.encode(schemaId)}",
-                 jsonContentOf("/kg/resources/bicycle.json", "id" -> genId(), "gears" -> 14),
+                 jsonContentOf("kg/resources/bicycle.json", "id" -> genId(), "gears" -> 14),
                  Rick
                ) { expectBadRequest }
       } yield succeed
@@ -151,19 +151,19 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <- deltaClient
                .post[Json](
                  s"/schemas/$project",
-                 jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId13Gears, "maxNumberOfGears" -> 13),
+                 jsonContentOf("kg/schemas/bicycle-schema.json", "id" -> schemaId13Gears, "maxNumberOfGears" -> 13),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
                  s"/schemas/$project",
-                 jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId12Gears, "maxNumberOfGears" -> 12),
+                 jsonContentOf("kg/schemas/bicycle-schema.json", "id" -> schemaId12Gears, "maxNumberOfGears" -> 12),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
                  s"/resources/$project/$schemaId13Gears",
-                 jsonContentOf("/kg/resources/bicycle.json", "id" -> resourceId, "gears" -> 13),
+                 jsonContentOf("kg/resources/bicycle.json", "id" -> resourceId, "gears" -> 13),
                  Rick
                ) { expectCreated }
         _ <- deltaClient.get[Json](s"/resources/$project/$schemaId13Gears/$resourceId/validate", Rick) {

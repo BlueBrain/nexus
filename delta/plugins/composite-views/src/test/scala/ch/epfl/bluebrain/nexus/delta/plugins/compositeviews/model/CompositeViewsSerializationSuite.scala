@@ -89,7 +89,7 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/composite-views/database/view-state.json")
+  private val jsonState = jsonContentOf("composite-views/database/view-state.json")
 
   private val stateSerializer = CompositeViewState.serializer
 

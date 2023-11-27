@@ -17,14 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -133,7 +133,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
     for {
       _ <- store.delete(project2, id1, customTag).transact(xas.write)
       _ <- assertCount(5)
-      _ <- store.get(project2, id1, customTag).intercept(TagNotFound)
+      _ <- store.get(project2, id1, customTag).interceptEquals(TagNotFound)
     } yield ()
   }
 
@@ -164,7 +164,8 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
         value => EntityCheckError(value),
         xas
       )
-      .assertError[EntityCheckError](_.value == unknowns.toList.toSet)
+      .intercept[EntityCheckError]
+      .assert(_.value == unknowns.toList.toSet)
   }
 
   test("Get the entity type for id1 in project 1") {
@@ -174,7 +175,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
         project1,
         xas
       )
-      .assertSome(PullRequest.entityType)
+      .assertEquals(Some(PullRequest.entityType))
   }
 
   test("Get no entity type for an unknown id") {
@@ -184,7 +185,7 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
         project1,
         xas
       )
-      .assertNone
+      .assertEquals(None)
   }
 
   test("Get no entity type for an unknown project") {
@@ -194,14 +195,14 @@ class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
         ProjectRef.unsafe("org", "xxx"),
         xas
       )
-      .assertNone
+      .assertEquals(None)
   }
 
   test("Delete state 2 successfully") {
     for {
       _ <- store.delete(project1, id2, Latest).transact(xas.write)
       _ <- assertCount(4)
-      _ <- store.get(project1, id2).intercept(UnknownState)
+      _ <- store.get(project1, id2).interceptEquals(UnknownState)
     } yield ()
   }
 

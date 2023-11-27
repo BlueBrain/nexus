@@ -23,7 +23,7 @@ class AppConfigSpec extends CatsEffectSpec with BeforeAndAfterAll {
 
   "AppConfig" should {
 
-    val externalConfigPath = loader.absolutePath("/config/external.conf").accepted
+    val externalConfigPath = loader.absolutePath("config/external.conf").accepted
 
     "load conf" in {
       val (conf, _) = AppConfig.load().accepted

@@ -15,14 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, MultiDecoder, PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import io.circe.Decoder
 import munit.AnyFixture
 
 import java.time.Instant
 
-class EventStreamingSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
+class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixtur
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.util.UUID
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class CompositeViewsCoordinatorSuite extends CatsEffectSuite with CompositeViewsFixture {
+class CompositeViewsCoordinatorSuite extends NexusSuite with CompositeViewsFixture {
 
   private val existingViewRef                    = ViewRef(projectRef, nxv + "my-view")
   private val anotherView                        = ViewRef(projectRef, nxv + "another-view")
@@ -46,18 +46,18 @@ class CompositeViewsCoordinatorSuite extends CatsEffectSuite with CompositeViews
 
   test("Do not trigger clean up if the the view is not running yet") {
     val existingView = activeView(existingViewRef, 1)
-    cleanup(existingView, List.empty).assertNone
+    cleanup(existingView, List.empty).assertEquals(None)
   }
 
   test("Trigger clean up if the view is running") {
     val existingView = activeView(existingViewRef, 1)
-    cleanup(existingView, List(existingView)).assertSome(existingView)
+    cleanup(existingView, List(existingView)).assertEquals(Some(existingView))
   }
 
   test("Do not trigger clean up for a new view") {
     val existingView = activeView(existingViewRef, 1)
     val another      = activeView(anotherView, 3)
-    cleanup(another, List(existingView)).assertNone
+    cleanup(another, List(existingView)).assertEquals(None)
   }
 
 }

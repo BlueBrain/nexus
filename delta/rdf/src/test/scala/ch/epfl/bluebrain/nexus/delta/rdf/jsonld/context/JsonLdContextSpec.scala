@@ -149,9 +149,9 @@ class JsonLdContextSpec extends CatsEffectSpec with Fixtures {
     }
 
     "merge contexts" in {
-      val context1 = jsonContentOf("/jsonld/context/context1.json")
-      val context2 = jsonContentOf("/jsonld/context/context2.json")
-      val expected = jsonContentOf("/jsonld/context/context12-merged.json")
+      val context1 = jsonContentOf("jsonld/context/context1.json")
+      val context2 = jsonContentOf("jsonld/context/context2.json")
+      val expected = jsonContentOf("jsonld/context/context12-merged.json")
       context1.addContext(context2) shouldEqual expected
 
       val json1 = context1 deepMerge json"""{"@id": "$iri", "age": 30}"""
@@ -159,7 +159,7 @@ class JsonLdContextSpec extends CatsEffectSpec with Fixtures {
     }
 
     "merge contexts when one is empty" in {
-      val context1    = jsonContentOf("/jsonld/context/context1.json")
+      val context1    = jsonContentOf("jsonld/context/context1.json")
       val emptyArrCtx = json"""{"@context": []}"""
       val emptyObjCtx = json"""{"@context": {}}"""
       context1.addContext(emptyArrCtx) shouldEqual context1
@@ -175,9 +175,9 @@ class JsonLdContextSpec extends CatsEffectSpec with Fixtures {
     }
 
     "merge contexts with arrays" in {
-      val context1Array = jsonContentOf("/jsonld/context/context1-array.json")
-      val context2      = jsonContentOf("/jsonld/context/context2.json")
-      val expected      = jsonContentOf("/jsonld/context/context12-merged-array.json")
+      val context1Array = jsonContentOf("jsonld/context/context1-array.json")
+      val context2      = jsonContentOf("jsonld/context/context2.json")
+      val expected      = jsonContentOf("jsonld/context/context12-merged-array.json")
       context1Array.addContext(context2) shouldEqual expected
 
       val json1 = context1Array deepMerge json"""{"@id": "$iri", "age": 30}"""

@@ -190,7 +190,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           request ~> asAlice ~> routes ~> check {
             status shouldEqual StatusCodes.Conflict
             response.asJson shouldEqual jsonContentOf(
-              "/resolvers/errors/already-exists.json",
+              "resolvers/errors/already-exists.json",
               "id"      -> id,
               "projRef" -> project.ref
             )
@@ -200,18 +200,18 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
       "fail with a 400 if decoding fails" in {
         forAll(
-          create("resolver-failed", project.ref, jsonContentOf("/resolvers/no-resolver-type-error.json"))
-            ++ create("resolver-failed", project.ref, jsonContentOf("/resolvers/two-resolver-types-error.json"))
-            ++ create("resolver-failed", project.ref, jsonContentOf("/resolvers/unknown-resolver-error.json"))
+          create("resolver-failed", project.ref, jsonContentOf("resolvers/no-resolver-type-error.json"))
+            ++ create("resolver-failed", project.ref, jsonContentOf("resolvers/two-resolver-types-error.json"))
+            ++ create("resolver-failed", project.ref, jsonContentOf("resolvers/unknown-resolver-error.json"))
             ++ create(
               "resolver-failed",
               project.ref,
-              jsonContentOf("/resolvers/cross-project-no-resolution-error.json")
+              jsonContentOf("resolvers/cross-project-no-resolution-error.json")
             )
             ++ create(
               "resolver-failed",
               project.ref,
-              jsonContentOf("/resolvers/cross-project-both-resolution-error.json")
+              jsonContentOf("resolvers/cross-project-both-resolution-error.json")
             )
         ) { case (_, request) =>
           request ~> asAlice ~> routes ~> check {
@@ -288,7 +288,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual jsonContentOf(
-            "/resolvers/errors/incorrect-rev.json",
+            "resolvers/errors/incorrect-rev.json",
             "provided" -> 5,
             "expected" -> 2
           )
@@ -299,7 +299,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(s"/v1/resolvers/${project.ref}/xxxx?rev=1", inProjectPayload.toEntity) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
-            "/resolvers/errors/not-found.json",
+            "resolvers/errors/not-found.json",
             "id"         -> (nxv + "xxxx"),
             "projectRef" -> project.ref
           )
@@ -377,7 +377,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=4") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
-            jsonContentOf("/resolvers/errors/resolver-deprecated.json", "id" -> (nxv + "in-project-put"))
+            jsonContentOf("resolvers/errors/resolver-deprecated.json", "id" -> (nxv + "in-project-put"))
         }
       }
 
@@ -385,7 +385,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Delete(s"/v1/resolvers/${project.ref}/in-project-put") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
-            jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+            jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
       }
 
@@ -396,7 +396,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
-            "/resolvers/errors/resolver-deprecated.json",
+            "resolvers/errors/resolver-deprecated.json",
             "id" -> (nxv + "in-project-put")
           )
         }
@@ -618,7 +618,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Get(s"/v1/resolvers/${project.ref}/xxxx") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
-            "/resolvers/errors/not-found.json",
+            "resolvers/errors/not-found.json",
             "id"         -> (nxv + "xxxx"),
             "projectRef" -> project.ref
           )
@@ -629,7 +629,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=10") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
-            "/errors/revision-not-found.json",
+            "errors/revision-not-found.json",
             "provided" -> 10,
             "current"  -> 5
           )

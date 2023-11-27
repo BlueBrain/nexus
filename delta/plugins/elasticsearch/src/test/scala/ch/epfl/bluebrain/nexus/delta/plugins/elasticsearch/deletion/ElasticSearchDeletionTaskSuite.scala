@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
-class ElasticSearchDeletionTaskSuite extends CatsEffectSuite with CirceLiteral {
+class ElasticSearchDeletionTaskSuite extends NexusSuite with CirceLiteral {
 
   implicit private val subject: Subject = Anonymous
 

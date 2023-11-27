@@ -106,8 +106,8 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   }
 
   private val statesMapping = Map(
-    (indexingId, indexingValue)   -> jsonContentOf("/blazegraph/database/indexing-view-state.json"),
-    (aggregateId, aggregateValue) -> jsonContentOf("/blazegraph/database/aggregate-view-state.json")
+    (indexingId, indexingValue)   -> jsonContentOf("blazegraph/database/indexing-view-state.json"),
+    (aggregateId, aggregateValue) -> jsonContentOf("blazegraph/database/aggregate-view-state.json")
   ).map { case ((id, value), json) =>
     BlazegraphViewState(
       id,

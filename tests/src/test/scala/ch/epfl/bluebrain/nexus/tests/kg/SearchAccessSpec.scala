@@ -26,16 +26,16 @@ class SearchAccessSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
 
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId1, path = "/kg/projects/bbp.json", name = id1, authenticated = Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId2, path = "/kg/projects/bbp.json", name = id2, authenticated = Rick)
+      _ <- adminDsl.createProjectWith(orgId, projId1, path = "kg/projects/bbp.json", name = id1, authenticated = Rick)
+      _ <- adminDsl.createProjectWith(orgId, projId2, path = "kg/projects/bbp.json", name = id2, authenticated = Rick)
 
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId2", Rick, Resources.Read)
 
-      _ <- postResource("/kg/search/neuroshapes.json")
-      _ <- postResource("/kg/search/bbp-neuroshapes.json")
-      _ <- postResource("/kg/search/trace.json")
+      _ <- postResource("kg/search/neuroshapes.json")
+      _ <- postResource("kg/search/bbp-neuroshapes.json")
+      _ <- postResource("kg/search/trace.json")
     } yield ()
 
     setup.accepted
@@ -70,7 +70,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
     "return config" in {
       deltaClient.get[Json]("/search/config", Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
-        body shouldEqual jsonContentOf("/kg/search/config.json")
+        body shouldEqual jsonContentOf("kg/search/config.json")
       }
     }
   }

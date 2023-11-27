@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.temporal.ChronoUnit
@@ -15,7 +15,7 @@ import java.time.{Duration, Instant}
 import scala.concurrent.duration.DurationInt
 
 class BlazegraphSlowQueryStoreSuite
-    extends CatsEffectSuite
+    extends NexusSuite
     with Doobie.Fixture
     with Doobie.Assertions
     with BlazegraphSlowQueryStoreFixture {

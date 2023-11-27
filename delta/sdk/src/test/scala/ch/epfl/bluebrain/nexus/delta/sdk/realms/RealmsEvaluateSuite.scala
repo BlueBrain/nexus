@@ -11,11 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 import java.time.Instant
 
-class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap {
+class RealmsEvaluateSuite extends NexusSuite with IOFromMap {
 
   private val epoch: Instant       = Instant.EPOCH
   private val issuer: String       = "myrealm"
@@ -47,7 +47,7 @@ class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap {
 
   test("Evaluating a create command fails as openId is already used") {
     evaluate(wkResolution, openIdAlreadyExists(wellKnownUri), clock)(None, createCommand)
-      .intercept(RealmOpenIdConfigAlreadyExists(label, wellKnownUri))
+      .interceptEquals(RealmOpenIdConfigAlreadyExists(label, wellKnownUri))
   }
 
   test("Evaluating a create command fails as the realm already exists") {
@@ -75,7 +75,7 @@ class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap {
     evaluate(wkResolution, openIdAlreadyExists(wellKnown2Uri), clock)(
       Some(current),
       updateCommand
-    ).intercept(RealmOpenIdConfigAlreadyExists(label, wellKnown2Uri))
+    ).interceptEquals(RealmOpenIdConfigAlreadyExists(label, wellKnown2Uri))
   }
 
   /**

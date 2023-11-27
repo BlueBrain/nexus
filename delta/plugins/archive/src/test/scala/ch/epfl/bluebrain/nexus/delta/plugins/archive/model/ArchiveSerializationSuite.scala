@@ -49,7 +49,7 @@ class ArchiveSerializationSuite extends SerializationSuite {
     subject
   )
 
-  private val json = jsonContentOf("/archives/database/state.json")
+  private val json = jsonContentOf("archives/database/state.json")
 
   test("Correctly serialize state") {
     ArchiveState.serializer.codec(state).equalsIgnoreArrayOrder(json)

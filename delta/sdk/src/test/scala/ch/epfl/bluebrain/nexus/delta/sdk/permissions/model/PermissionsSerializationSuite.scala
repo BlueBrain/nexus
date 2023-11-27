@@ -50,7 +50,7 @@ class PermissionsSerializationSuite extends SerializationSuite {
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/permissions/permissions-state.json")
+  private val jsonState = jsonContentOf("permissions/permissions-state.json")
 
   test(s"Correctly serialize a PermissionsState") {
     assertOutput(PermissionsState.serializer, state, jsonState)

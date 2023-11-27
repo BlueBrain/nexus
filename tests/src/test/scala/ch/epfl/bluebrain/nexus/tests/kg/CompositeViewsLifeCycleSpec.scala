@@ -41,7 +41,7 @@ final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
     ) ++ includeCrossProjectOpt ++ includeSparqlProjectionOpt
     IO(
       jsonContentOf(
-        "/kg/views/composite/composite-view-lifecycle.json",
+        "kg/views/composite/composite-view-lifecycle.json",
         replacements(
           Jerry,
           values: _*

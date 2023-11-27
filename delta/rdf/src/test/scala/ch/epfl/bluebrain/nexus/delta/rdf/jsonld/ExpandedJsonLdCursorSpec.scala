@@ -9,7 +9,7 @@ import io.circe.CursorOp.{DownArray, DownField}
 class ExpandedJsonLdCursorSpec extends CatsEffectSpec {
 
   "An ExpandedJsonLdCursor" should {
-    val json   = jsonContentOf("/jsonld/decoder/cocktail.json")
+    val json   = jsonContentOf("jsonld/decoder/cocktail.json")
     val cursor = ExpandedJsonLd.expanded(json).rightValue.cursor
 
     val drinks      = schema + "drinks"

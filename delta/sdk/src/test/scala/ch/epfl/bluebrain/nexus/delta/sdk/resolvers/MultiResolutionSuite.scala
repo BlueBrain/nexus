@@ -18,10 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
-class MultiResolutionSuite extends CatsEffectSuite with Fixtures {
+class MultiResolutionSuite extends NexusSuite with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(alice, Set(alice))
@@ -99,7 +99,7 @@ class MultiResolutionSuite extends CatsEffectSuite with Fixtures {
         ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
       )
     )
-    multiResolution(unknownResourceId, projectRef).intercept(expectedError)
+    multiResolution(unknownResourceId, projectRef).interceptEquals(expectedError)
   }
 
   test("Fail with a specific resolver when it can't be resolved neither as a resource or a schema") {
@@ -109,6 +109,6 @@ class MultiResolutionSuite extends CatsEffectSuite with Fixtures {
       projectRef,
       ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
     )
-    multiResolution(unknownResourceId, projectRef, resolverId).intercept(expectedError)
+    multiResolution(unknownResourceId, projectRef, resolverId).interceptEquals(expectedError)
   }
 }

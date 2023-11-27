@@ -114,12 +114,12 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   val base  = "https://localhost/base/"
   val vocab = "https://localhost/voc/"
 
-  val payload = jsonContentOf("/projects/create.json", "description" -> desc, "base" -> base, "vocab" -> vocab)
+  val payload = jsonContentOf("projects/create.json", "description" -> desc, "base" -> base, "vocab" -> vocab)
 
   val payloadUpdated =
-    jsonContentOf("/projects/create.json", "description" -> "New description", "base" -> base, "vocab" -> vocab)
+    jsonContentOf("projects/create.json", "description" -> "New description", "base" -> base, "vocab" -> vocab)
 
-  val anotherPayload = jsonContentOf("/projects/create.json", "description" -> desc)
+  val anotherPayload = jsonContentOf("projects/create.json", "description" -> desc)
 
   "A project route" should {
 
@@ -177,7 +177,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf(
-          "/projects/errors/already-exists.json",
+          "projects/errors/already-exists.json",
           "org"  -> "org1",
           "proj" -> "proj"
         )
@@ -187,7 +187,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "reject the creation of a project on a deprecated organization" in {
       Put("/v1/projects/org2/proj3", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/projects/errors/org-deprecated.json")
+        response.asJson shouldEqual jsonContentOf("projects/errors/org-deprecated.json")
       }
     }
 
@@ -226,7 +226,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Put("/v1/projects/org1/proj?rev=42", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf("/projects/errors/incorrect-rev.json", "provided" -> 42, "expected" -> 2)
+          jsonContentOf("projects/errors/incorrect-rev.json", "provided" -> 42, "expected" -> 2)
         )
       }
     }
@@ -252,7 +252,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "reject the deprecation of a project without rev" in {
       Delete("/v1/projects/org1/proj") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
@@ -260,7 +260,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Delete("/v1/projects/org1/proj?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
-          "/projects/errors/project-deprecated.json",
+          "projects/errors/project-deprecated.json",
           "org"  -> "org1",
           "proj" -> "proj"
         )
@@ -268,7 +268,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     val fetchProjRev2 = jsonContentOf(
-      "/projects/fetch.json",
+      "projects/fetch.json",
       "org"               -> "org1",
       "proj"              -> "proj",
       "orgUuid"           -> orgUuid,
@@ -282,7 +282,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     )
 
     val fetchProjRev3 = jsonContentOf(
-      "/projects/fetch.json",
+      "projects/fetch.json",
       "org"               -> "org1",
       "proj"              -> "proj",
       "orgUuid"           -> orgUuid,
@@ -296,7 +296,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     )
 
     val fetchProj2 = jsonContentOf(
-      "/projects/fetch.json",
+      "projects/fetch.json",
       "org"               -> "org1",
       "proj"              -> "proj2",
       "orgUuid"           -> orgUuid,
@@ -360,7 +360,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Get("/v1/projects/org1/proj?rev=42") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
-          "/errors/revision-not-found.json",
+          "errors/revision-not-found.json",
           "provided" -> 42,
           "current"  -> 3
         )
@@ -371,7 +371,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Get(s"/v1/projects/$orgUuid/$projectUuid?rev=42") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
-          "/errors/revision-not-found.json",
+          "errors/revision-not-found.json",
           "provided" -> 42,
           "current"  -> 3
         )
@@ -388,7 +388,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fetch an unknown project" in {
       Get(s"/v1/projects/org1/unknown") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/projects/errors/project-not-found.json", "proj" -> "org1/unknown")
+        response.asJson shouldEqual jsonContentOf("projects/errors/project-not-found.json", "proj" -> "org1/unknown")
       }
     }
 
@@ -474,7 +474,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/projects/org1/unknown/statistics") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/projects/errors/project-not-found.json", "proj" -> "org1/unknown")
+        response.asJson shouldEqual jsonContentOf("projects/errors/project-not-found.json", "proj" -> "org1/unknown")
       }
     }
 

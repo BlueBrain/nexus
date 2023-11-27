@@ -46,7 +46,7 @@ class RemoteStorageSpec extends StorageSpec {
 
   private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
     jsonContentOf(
-      "/kg/storages/remote-disk-response.json",
+      "kg/storages/remote-disk-response.json",
       replacements(
         Coyote,
         "endpoint"    -> externalEndpoint,
@@ -62,7 +62,7 @@ class RemoteStorageSpec extends StorageSpec {
 
   override def createStorages: IO[Assertion] = {
     val payload = jsonContentOf(
-      "/kg/storages/remote-disk.json",
+      "kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
       "read"     -> "resources/read",
       "write"    -> "files/write",
@@ -71,7 +71,7 @@ class RemoteStorageSpec extends StorageSpec {
     )
 
     val payload2 = jsonContentOf(
-      "/kg/storages/remote-disk.json",
+      "kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
       "read"     -> s"$storageName/read",
       "write"    -> s"$storageName/write",
@@ -93,7 +93,7 @@ class RemoteStorageSpec extends StorageSpec {
       _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId/source", Coyote) { (json, response) =>
                      response.status shouldEqual StatusCodes.OK
                      val expected = jsonContentOf(
-                       "/kg/storages/storage-source.json",
+                       "kg/storages/storage-source.json",
                        "folder"      -> remoteFolder,
                        "storageBase" -> externalEndpoint
                      )
@@ -139,7 +139,7 @@ class RemoteStorageSpec extends StorageSpec {
 
   "succeed many large files are in the archive, going over the time limit" ignore {
     val content = randomString(130000000)
-    val payload = jsonContentOf("/kg/archives/archive-many-large-files.json")
+    val payload = jsonContentOf("kg/archives/archive-many-large-files.json")
     var before  = 0L
     for {
       _ <- putFile("largefile1.txt", content, s"${storageId}2")
@@ -177,7 +177,7 @@ class RemoteStorageSpec extends StorageSpec {
   "Creating a remote storage" should {
     "fail creating a RemoteDiskStorage without folder" in {
       val payload = jsonContentOf(
-        "/kg/storages/remote-disk.json",
+        "kg/storages/remote-disk.json",
         "endpoint" -> externalEndpoint,
         "read"     -> "resources/read",
         "write"    -> "files/write",
@@ -205,7 +205,7 @@ class RemoteStorageSpec extends StorageSpec {
 
   def linkFile(payload: Json)(fileId: String, filename: String, mediaType: Option[String]) = {
     val expected = jsonContentOf(
-      "/kg/files/remote-linked.json",
+      "kg/files/remote-linked.json",
       replacements(
         Coyote,
         "id"          -> fileId,
@@ -227,7 +227,7 @@ class RemoteStorageSpec extends StorageSpec {
 
   def fetchUpdatedLinkedFile(fileId: String, filename: String, mediaType: String) = {
     val expected = jsonContentOf(
-      "/kg/files/remote-updated-linked.json",
+      "kg/files/remote-updated-linked.json",
       replacements(
         Coyote,
         "id"          -> fileId,

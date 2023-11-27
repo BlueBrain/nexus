@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.ResourceFixture.IOFixture
 import doobie.implicits._
 import munit.AfterEach
+import munit.catseffect.IOFixture
 
 trait BlazegraphSlowQueryStoreFixture {
   self: Doobie.Fixture =>

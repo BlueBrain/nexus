@@ -49,8 +49,8 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
 
   private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.resolvers         -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty,
-      contexts.resolversMetadata -> jsonContentOf("/contexts/resolvers-metadata.json").topContextValueOrEmpty
+      contexts.resolvers         -> jsonContentOf("contexts/resolvers.json").topContextValueOrEmpty,
+      contexts.resolversMetadata -> jsonContentOf("contexts/resolvers-metadata.json").topContextValueOrEmpty
     )
 
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)

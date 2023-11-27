@@ -101,7 +101,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .merge(otherCtxResolutions.toSeq: _*)
   }
 
-  make[JsonLdApi].from { () =>
+  make[JsonLdApi].fromValue {
     new JsonLdJavaApi(appCfg.jsonLdApi)
   }
 
