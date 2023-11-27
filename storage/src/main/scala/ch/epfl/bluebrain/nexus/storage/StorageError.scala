@@ -96,9 +96,9 @@ object StorageError {
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
 
-  final case class CopyOperationFailed(name: String, source: Fs2Path, dest: Fs2Path)
+  final case class CopyOperationFailed(source: Fs2Path, dest: Fs2Path)
       extends StorageError(
-        s"Copy operation in bucket $name failed from source $source to destination $dest."
+        s"Copy operation failed from source $source to destination $dest."
       )
 
   @nowarn("cat=unused")

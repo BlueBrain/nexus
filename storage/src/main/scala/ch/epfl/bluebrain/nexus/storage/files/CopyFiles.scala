@@ -7,20 +7,20 @@ import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
 import fs2.io.file.{CopyFlag, CopyFlags, Files, Path}
 
 trait CopyFiles {
-  def copyValidated(name: String, files: NonEmptyList[ValidatedCopyFile]): IO[Unit]
+  def copyValidated(files: NonEmptyList[ValidatedCopyFile]): IO[Unit]
 }
 
 object CopyFiles {
-  def mk(): CopyFiles = (name, files) =>
-    copyAll(name, files.map(v => CopyBetween(Path.fromNioPath(v.absSourcePath), Path.fromNioPath(v.absDestPath))))
+  def mk(): CopyFiles = files =>
+    copyAll(files.map(v => CopyBetween(Path.fromNioPath(v.absSourcePath), Path.fromNioPath(v.absDestPath))))
 
   final private[files] case class CopyBetween(source: Path, dest: Path)
 
-  def copyAll(name: String, files: NonEmptyList[CopyBetween]): IO[Unit] =
+  def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
     Ref.of[IO, Option[CopyOperationFailed]](None).flatMap { errorRef =>
       files
         .parTraverse { case CopyBetween(source, dest) =>
-          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(name, source, dest))))
+          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(source, dest))))
         }
         .void
         .handleErrorWith(_ => rollbackCopiesAndRethrow(errorRef, files.map(_.dest)))
@@ -30,8 +30,11 @@ object CopyFiles {
 
   private def copySingle(source: Path, dest: Path): IO[Unit] =
     for {
-      _ <- Files[IO].createDirectories(parent(dest))
-      _ <- Files[IO].copy(source, dest, CopyFlags(CopyFlag.CopyAttributes))
+      _           <- Files[IO].createDirectories(parent(dest))
+      _           <- Files[IO].copy(source, dest, CopyFlags(CopyFlag.CopyAttributes))
+      // the copy attributes flag won't always preserve permissions due to umask
+      sourcePerms <- Files[IO].getPosixPermissions(source)
+      _           <- Files[IO].setPosixPermissions(dest, sourcePerms)
     } yield ()
 
   private def rollbackCopiesAndRethrow(

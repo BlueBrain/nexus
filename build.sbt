@@ -771,6 +771,7 @@ lazy val storage = project
       munitCatsEffect % Test,
       scalaTest       % Test
     ),
+    addCompilerPlugin(betterMonadicFor),
     cleanFiles              ++= Seq(
       baseDirectory.value / "permissions-fixer" / "target" / "**",
       baseDirectory.value / "nexus-storage.jar"

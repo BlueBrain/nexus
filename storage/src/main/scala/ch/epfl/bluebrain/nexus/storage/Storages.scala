@@ -236,7 +236,7 @@ object Storages {
         val process = Process(config.fixerCommand :+ absPath)
 
         for {
-          exitCode <- IO.delay(process ! logger)
+          exitCode <- IO.blocking(process ! logger)
           _        <- IO.raiseUnless(exitCode == 0)(PermissionsFixingFailed(absPath, logger.toString))
         } yield ()
       } else IO.unit
@@ -268,7 +268,7 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] =
       (for {
         validated <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
-        _         <- EitherT.right[Rejection](copyFiles.copyValidated(name, validated))
+        _         <- EitherT.right[Rejection](copyFiles.copyValidated(validated))
       } yield files.zip(validated).map { case (raw, valid) =>
         CopyFileOutput(raw.source, raw.destination, valid.absSourcePath, valid.absDestPath)
       }).value
