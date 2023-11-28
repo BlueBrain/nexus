@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.implicits._
 import fs2.Stream
 
+/** A way to reset default Elasticsearch views */
 trait ElasticSearchDefaultViewsResetter {
   def resetDefaultViews: IO[Unit]
 }
@@ -28,6 +29,14 @@ object ElasticSearchDefaultViewsResetter {
   def resetTrigger: IO[Boolean] =
     IO.delay(sys.env.getOrElse("RESET_DEFAULT_ES_VIEWS", "false").toBoolean)
 
+  /**
+    * Provides a resetter that for each default elasticsearch view:
+    *
+    *   1. Deletes the associated index in elasticsearch 2. Deletes all associated events, states, and projection
+    *      offsets 3. Creates a new default elasticsearch view using the provided new view value
+    *
+    * Note that it will reset the default view even its project is deprecated.
+    */
   def apply(
       client: ElasticSearchClient,
       views: ElasticSearchViews,
@@ -92,6 +101,7 @@ object ElasticSearchDefaultViewsResetter {
 
       private def createDefaultView(project: ProjectRef): IO[Unit] =
         unsafeCreate(defaultViewId, project, newViewValue)
+          .flatMap(_ => logger.info(s"Created a new defaultElasticSearchView in project '$project'."))
           .handleErrorWith(e => logger.error(s"Could not create view. Message: '${e.getMessage}'"))
           .void
 
