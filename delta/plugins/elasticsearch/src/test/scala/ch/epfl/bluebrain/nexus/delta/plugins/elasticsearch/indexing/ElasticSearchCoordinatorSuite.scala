@@ -187,6 +187,10 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
     failed = 1
   )
 
+  private val reset = new ElasticSearchDefaultViewsResetter {
+    override def resetDefaultViews: IO[Unit] = IO.unit
+  }.resetDefaultViews
+
   test("Start the coordinator") {
     for {
       _ <- ElasticSearchCoordinator(
@@ -196,7 +200,8 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
              sv,
              (_: ActiveViewDef) => new NoopSink[Json],
              (v: ActiveViewDef) => IO.delay(createdIndices.add(v.index)).void,
-             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void,
+             reset
            )
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))

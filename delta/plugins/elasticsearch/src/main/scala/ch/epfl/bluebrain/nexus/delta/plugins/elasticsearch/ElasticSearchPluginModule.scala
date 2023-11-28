@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchDefaultViewsResetter}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -115,6 +115,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(api, uuidF)
   }
 
+  make[ElasticSearchDefaultViewsResetter].from {
+    (
+        client: ElasticSearchClient,
+        views: ElasticSearchViews,
+        projects: Projects,
+        scope: ElasticSearchScopeInitialization,
+        xas: Transactors,
+        serviceAccount: ServiceAccount
+    ) =>
+      ElasticSearchDefaultViewsResetter(client, views, projects, scope.defaultValue, xas)(serviceAccount.subject)
+  }
+
   make[ElasticSearchCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
@@ -123,7 +135,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        resetter: ElasticSearchDefaultViewsResetter
     ) =>
       ElasticSearchCoordinator(
         views,
@@ -131,7 +144,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry,
         supervisor,
         client,
-        config
+        config,
+        resetter
       )(cr)
   }
 
