@@ -27,14 +27,14 @@ object PostgresContainer {
     *   the db password
     */
   def resource(user: String, password: String): Resource[IO, PostgresContainer] = {
-    def createAndStartContainer = {
+    def createAndStartContainer = IO.blocking {
       val container = new PostgresContainer(user, password)
         .withReuse(false)
         .withStartupTimeout(60.seconds.toJava)
       container.start()
       container
     }
-    Resource.make(IO.delay(createAndStartContainer))(container => IO.delay(container.stop()))
+    Resource.make(createAndStartContainer)(container => IO.blocking(container.stop()))
   }
 
 }
