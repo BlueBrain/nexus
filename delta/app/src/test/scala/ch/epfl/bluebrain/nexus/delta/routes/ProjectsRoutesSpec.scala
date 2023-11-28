@@ -247,6 +247,15 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         response.shouldBeForbidden
       }
+      latestRevisionOfProject("org1", "proj") should not(be(deprecated))
+    }
+
+    "reject the deprecation of a project without rev" in {
+      Delete("/v1/projects/org1/proj") ~> as(userWithWritePermission) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
+      }
+      latestRevisionOfProject("org1", "proj") should not(be(deprecated))
     }
 
     "deprecate a project" in {
@@ -266,13 +275,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
             updatedBy = userWithWritePermission
           )
         )
-      }
-    }
-
-    "reject the deprecation of a project without rev" in {
-      Delete("/v1/projects/org1/proj") ~> as(userWithWritePermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
@@ -551,6 +553,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
       Put(s"/v1/projects/$org/$project/undeprecate?rev=2") ~> as(userWithReadPermission) ~> routes ~> check {
         response.shouldBeForbidden
       }
+      latestRevisionOfProject(org, project) should be(deprecated)
     }
 
     "fail to undeprecate a project if it is not deprecated" in {
@@ -573,11 +576,11 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
         response.asJson should not(be(deprecated))
       }
 
-      fetchProject(org, project) should not(be(deprecated))
+      latestRevisionOfProject(org, project) should not(be(deprecated))
     }
   }
 
-  def thereIsAProject = {
+  private def thereIsAProject = {
     val org     = org1.value
     val project = genString()
     Put(s"/v1/projects/$org/$project", payload.toEntity) ~> as(superUser) ~> routes ~> check {
@@ -586,13 +589,13 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
     org -> project
   }
 
-  def thereIsADeprecatedProject(implicit pos: Position) = {
+  private def thereIsADeprecatedProject(implicit pos: Position) = {
     val (org, project) = thereIsAProject
     deprecateProject(org, project, 1)
     (org, project)
   }
 
-  def deprecateProject(org: String, project: String, rev: Int)(implicit pos: Position): Unit = {
+  private def deprecateProject(org: String, project: String, rev: Int)(implicit pos: Position): Unit = {
     Delete(s"/v1/projects/$org/$project?rev=$rev") ~> as(superUser) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson should be(deprecated)
@@ -600,7 +603,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
     ()
   }
 
-  def fetchProject(org: String, project: String): Json = {
+  private def latestRevisionOfProject(org: String, project: String): Json = {
     Get(s"/v1/projects/$org/$project") ~> as(superUser) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson
