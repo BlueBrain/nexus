@@ -26,7 +26,7 @@ object ElasticSearchDefaultViewsResetter {
   private val logger = Logger[ElasticSearchDefaultViewsResetter]
 
   def resetTrigger: IO[Boolean] =
-    IO.delay(sys.env.getOrElse("ES_UPDATE_TRIGGER", "false").toBoolean)
+    IO.delay(sys.env.getOrElse("RESET_DEFAULT_ES_VIEWS", "false").toBoolean)
 
   def apply(
       client: ElasticSearchClient,
