@@ -38,7 +38,7 @@ object ElasticSearchDefaultViewsResetter {
     apply(
       client.deleteIndex,
       views.fetchIndexingView,
-      views.create(_, _, _)(subject).void,
+      views.unsafeCreate(_, _, _)(subject).void,
       projects.currentRefs,
       newViewValue,
       resetTrigger,
