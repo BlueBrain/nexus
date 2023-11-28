@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUndeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -73,10 +73,22 @@ class ProjectSerializationSuite extends SerializationSuite {
       subject = subject
     )
 
+  private val undeprecated =
+    ProjectUndeprecated(
+      label = proj,
+      uuid = projUuid,
+      organizationLabel = org,
+      organizationUuid = orgUuid,
+      rev = rev,
+      instant = instant,
+      subject = subject
+    )
+
   private val projectsMapping = List(
     (created, loadEvents("projects", "project-created.json"), Created),
     (updated, loadEvents("projects", "project-updated.json"), Updated),
-    (deprecated, loadEvents("projects", "project-deprecated.json"), Deprecated)
+    (deprecated, loadEvents("projects", "project-deprecated.json"), Deprecated),
+    (undeprecated, loadEvents("projects", "project-undeprecated.json"), Undeprecated)
   )
 
   projectsMapping.foreach { case (event, (database, sse), action) =>
