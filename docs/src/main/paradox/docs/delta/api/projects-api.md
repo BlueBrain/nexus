@@ -185,7 +185,7 @@ Request
 
 Response
 :   @@snip [deprecated.json](assets/projects/deprecated.json)
-~~~~
+
 ## Undeprecate
 
 Reverses the deprecation of a project.
