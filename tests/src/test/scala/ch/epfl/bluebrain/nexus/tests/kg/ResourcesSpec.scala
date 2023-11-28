@@ -5,25 +5,25 @@ import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
-
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics.admin.{_constrainedBy, _deprecated}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
+import ch.epfl.bluebrain.nexus.tests.matchers.GeneralMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
-import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
+import io.circe.{Json, JsonObject}
 import monocle.Optional
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.testcontainers.utility.Base58.randomString
 
 import java.net.URLEncoder
-import cats.implicits._
 
 class ResourcesSpec extends BaseIntegrationSpec {
 
@@ -522,7 +522,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       givenAResource(project1) { id =>
         val deprecate       = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
         val fetchDeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { (json, _) =>
-          _deprecated.getOption(json) should contain(true)
+          json should be(deprecated)
         }
         (deprecate >> fetchDeprecated).accepted
       }
@@ -559,7 +559,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         val undeprecate       =
           deltaClient.put(s"/resources/$project1/_/$id/undeprecate?rev=2", JsonObject.empty.toJson, Rick) { expectOk }
         val fetchUndeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { case (json, _) =>
-          _deprecated.getOption(json) should contain(false)
+          json should not(be(deprecated))
         }
         (undeprecate >> fetchUndeprecated).accepted
       }
@@ -790,7 +790,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       deltaClient
         .delete[Json](s"/resources/$projectRef/_/$id?rev=1", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          _deprecated.getOption(json) should contain(true)
+          json should be(deprecated)
         }
         .accepted
       assertion(id)

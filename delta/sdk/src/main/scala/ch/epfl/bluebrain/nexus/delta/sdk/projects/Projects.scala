@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UndeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUndeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -68,6 +68,18 @@ trait Projects {
     *   a reference to the subject that initiated the action
     */
   def deprecate(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectResource]
+
+  /**
+    * Un-deprecate an existing project.
+    *
+    * @param ref
+    *   the project reference
+    * @param rev
+    *   the current project revision
+    * @param caller
+    *   a reference to the subject that initiated the action
+    */
+  def undeprecate(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectResource]
 
   /**
     * Deletes an existing project.
@@ -168,6 +180,9 @@ object Projects {
       case (Some(s), ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
         Some(s.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject))
 
+      case (Some(s), ProjectUndeprecated(_, _, _, _, rev, instant, subject)) =>
+        Some(s.copy(rev = rev, deprecated = false, updatedAt = instant, updatedBy = subject))
+
       case (Some(s), ProjectMarkedForDeletion(_, _, _, _, rev, instant, subject))                              =>
         Some(s.copy(rev = rev, markedForDeletion = true, updatedAt = instant, updatedBy = subject))
 
@@ -253,6 +268,23 @@ object Projects {
           // format: on
       }
 
+    def undeprecate(c: UndeprecateProject) =
+      state match {
+        case None                           =>
+          IO.raiseError(ProjectNotFound(c.ref))
+        case Some(s) if c.rev != s.rev      =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if !s.deprecated       =>
+          IO.raiseError(ProjectIsNotDeprecated(c.ref))
+        case Some(s) if s.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
+        case Some(s)                        =>
+          // format: off
+          fetchAndValidateOrg(c.ref.organization) >>
+            clock.realTimeInstant.map(ProjectUndeprecated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, _, c.subject))
+        // format: on
+      }
+
     def delete(c: DeleteProject) =
       state match {
         case None                           =>
@@ -269,10 +301,11 @@ object Projects {
       }
 
     command match {
-      case c: CreateProject    => create(c)
-      case c: UpdateProject    => update(c)
-      case c: DeprecateProject => deprecate(c)
-      case c: DeleteProject    => delete(c)
+      case c: CreateProject      => create(c)
+      case c: UpdateProject      => update(c)
+      case c: DeprecateProject   => deprecate(c)
+      case c: UndeprecateProject => undeprecate(c)
+      case c: DeleteProject      => delete(c)
     }
   }
 
