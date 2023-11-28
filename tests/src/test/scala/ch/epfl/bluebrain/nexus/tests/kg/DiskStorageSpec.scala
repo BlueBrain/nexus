@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 
-class DiskStorageSpec extends StorageSpec {
+class DiskStorageSpec extends StorageSpec with CopyFileSpec {
 
   override def storageName: String = "disk"
 
@@ -32,7 +32,7 @@ class DiskStorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: IO[Assertion] = {
+  override def createStorages(projectRef: String): IO[Assertion] = {
     val payload  = jsonContentOf("kg/storages/disk.json")
     val payload2 = jsonContentOf("kg/storages/disk-perms.json")
 

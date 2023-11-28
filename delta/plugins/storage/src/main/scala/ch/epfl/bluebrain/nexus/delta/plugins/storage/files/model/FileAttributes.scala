@@ -28,7 +28,7 @@ import scala.annotation.nowarn
   * @param mediaType
   *   the optional media type of the file
   * @param bytes
-  *   the size of the file file in bytes
+  *   the size of the file in bytes
   * @param digest
   *   the digest information of the file
   * @param origin

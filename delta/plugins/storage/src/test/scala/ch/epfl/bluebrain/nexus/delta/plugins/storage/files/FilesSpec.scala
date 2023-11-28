@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, FileAttributes, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -62,9 +62,8 @@ class FilesSpec(docker: RemoteStorageDocker)
   private val alice = User("Alice", realm)
 
   "The Files operations bundle" when {
-    implicit val hcc: HttpClientConfig                   = httpClientConfig
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val httpClient: HttpClient                  = HttpClient()
+    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system)
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
     val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
@@ -92,13 +91,14 @@ class FilesSpec(docker: RemoteStorageDocker)
     val storage: IdSegment = nxv + "other-storage"
 
     val fetchContext = FetchContextDummy(
-      Map(project.ref -> project.context),
+      Map(project.ref -> project.context, project2.ref -> project2.context),
       Set(deprecatedProject.ref)
     )
 
     val aclCheck = AclSimpleCheck(
       (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
       (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
+      (bob, AclAddress.Project(projectRefOrg2), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
       (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
     ).accepted
 
@@ -153,10 +153,12 @@ class FilesSpec(docker: RemoteStorageDocker)
       "create storages for files" in {
         val payload = diskFieldsJson deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}"""
         storages.create(diskId, projectRef, payload).accepted
+        storages.create(diskId, projectRefOrg2, payload).accepted
 
         val payload2 =
           json"""{"@type": "RemoteDiskStorage", "endpoint": "${docker.hostConfig.endpoint}", "folder": "${RemoteStorageDocker.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
         storages.create(remoteId, projectRef, payload2).accepted
+        storages.create(remoteId, projectRefOrg2, payload2).accepted
       }
 
       "succeed with the id passed" in {
@@ -435,6 +437,56 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project is deprecated" in {
         files.tag(FileId(rdId, deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectContextRejection]
+      }
+    }
+
+    "copying a file" should {
+
+      "succeed from disk storage based on a tag" in {
+        val newFileId        = genString()
+        val destination      = CopyFileDestination(projectRefOrg2, Some(newFileId), None, None, None)
+        val expectedFilename = "myfile.txt"
+        val expectedAttr     = attributes(filename = expectedFilename, projRef = projectRefOrg2)
+        val expected         = mkResource(nxv + newFileId, projectRefOrg2, diskRev, expectedAttr)
+
+        val actual = files.copyTo(FileId("file1", tag, projectRef), destination).accepted
+        actual shouldEqual expected
+
+        val fetched = files.fetch(FileId(newFileId, projectRefOrg2)).accepted
+        fetched shouldEqual expected
+      }
+
+      "succeed from disk storage based on a rev and should tag the new file" in {
+        val (newFileId, newTag) = (genString(), UserTag.unsafe(genString()))
+        val destination         =
+          CopyFileDestination(projectRefOrg2, Some(newFileId), None, Some(newTag), None)
+        val expectedFilename    = "file.txt"
+        val expectedAttr        = attributes(filename = expectedFilename, projRef = projectRefOrg2)
+        val expected            = mkResource(nxv + newFileId, projectRefOrg2, diskRev, expectedAttr, tags = Tags(newTag -> 1))
+
+        val actual = files.copyTo(FileId("file1", 2, projectRef), destination).accepted
+        actual shouldEqual expected
+
+        val fetchedByTag = files.fetch(FileId(newFileId, newTag, projectRefOrg2)).accepted
+        fetchedByTag shouldEqual expected
+      }
+
+      "reject if the source file doesn't exist" in {
+        val destination = CopyFileDestination(projectRefOrg2, None, None, None, None)
+        files.copyTo(fileIdIri(nxv + "other"), destination).rejectedWith[FileNotFound]
+      }
+
+      "reject if the destination storage doesn't exist" in {
+        val destination = CopyFileDestination(projectRefOrg2, None, Some(storage), None, None)
+        files.copyTo(fileId("file1"), destination).rejected shouldEqual
+          WrappedStorageRejection(StorageNotFound(storageIri, projectRefOrg2))
+      }
+
+      "reject if copying between different storage types" in {
+        val expectedError = DifferentStorageType(remoteIdIri, StorageType.RemoteDiskStorage, StorageType.DiskStorage)
+        val destination   = CopyFileDestination(projectRefOrg2, None, Some(remoteId), None, None)
+        files.copyTo(FileId("file1", projectRef), destination).rejected shouldEqual
+          WrappedStorageRejection(expectedError)
       }
     }
 

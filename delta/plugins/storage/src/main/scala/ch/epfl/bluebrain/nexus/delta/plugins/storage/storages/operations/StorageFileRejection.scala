@@ -66,6 +66,22 @@ object StorageFileRejection {
   }
 
   /**
+    * Rejection returned when a storage cannot fetch a file's attributes
+    */
+  sealed abstract class CopyFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
+
+  object CopyFileRejection {
+
+    /**
+      * Rejection performing this operation because the storage does not support it
+      */
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends FetchAttributeRejection(
+          s"Copying a file attributes is not supported for storages of type '${tpe.iri}'"
+        )
+  }
+
+  /**
     * Rejection returned when a storage cannot save a file
     */
   sealed abstract class SaveFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)

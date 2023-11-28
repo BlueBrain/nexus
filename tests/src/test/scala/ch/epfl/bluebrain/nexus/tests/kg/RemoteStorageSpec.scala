@@ -17,7 +17,7 @@ import org.scalatest.Assertion
 import scala.annotation.nowarn
 import scala.sys.process._
 
-class RemoteStorageSpec extends StorageSpec {
+class RemoteStorageSpec extends StorageSpec with CopyFileSpec {
 
   override def storageName: String = "external"
 
@@ -60,7 +60,7 @@ class RemoteStorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: IO[Assertion] = {
+  override def createStorages(projectRef: String): IO[Assertion] = {
     val payload = jsonContentOf(
       "kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,

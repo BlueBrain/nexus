@@ -39,7 +39,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   def locationPrefix: Option[String]
 
-  def createStorages: IO[Assertion]
+  def createStorages(projectRef: String): IO[Assertion]
 
   protected def fileSelf(project: String, id: String): String = {
     val uri = Uri(s"${config.deltaUri}/files/$project")
@@ -48,6 +48,9 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
 
+  val jsonFileContent        = """{ "initial": ["is", "a", "test", "file"] }"""
+  val updatedJsonFileContent = """{ "updated": ["is", "a", "test", "file"] }"""
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     createProjects(Coyote, orgId, projId).accepted
@@ -55,7 +58,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   "Creating a storage" should {
     s"succeed for a $storageName storage" in {
-      createStorages
+      createStorages(projectRef)
     }
 
     "wait for storages to be indexed" in {
@@ -90,9 +93,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   }
 
   "A json file" should {
-
-    val jsonFileContent        = """{ "initial": ["is", "a", "test", "file"] }"""
-    val updatedJsonFileContent = """{ "updated": ["is", "a", "test", "file"] }"""
 
     "be uploaded" in {
       deltaClient.uploadFile[Json](
@@ -424,7 +424,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     s"=?UTF-8?B?$encodedFilename?="
   }
 
-  private def expectDownload(
+  protected def expectDownload(
       expectedFilename: String,
       expectedContentType: ContentType,
       expectedContent: String,

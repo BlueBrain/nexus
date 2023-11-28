@@ -89,6 +89,62 @@ Request
 Response
 :   @@snip [created-put.json](assets/files/created-put.json)
 
+## Create copy using POST or PUT
+
+Create a file copy based on a source file potentially in a different organization. No `MIME` details are necessary since this is not a file upload. Metadata such as the size and digest of the source file are preserved.
+
+The caller must have the following permissions:
+- `files/read` on the source project.
+- `storages/write` on the storage in the destination project.
+
+Either `POST` or `PUT` can be used to copy a file, as with other creation operations. These REST resources are in the context of the **destination** file; the one being created.
+- `POST` will generate a new UUID for the file:
+    ```
+    POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
+    ```
+- `PUT` accepts a `{file_id}` from the user:
+    ```
+    PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tagName}
+    ```
+  
+... where
+- `{storageId}` optionally selects a specific storage backend for the new file. The `@type` of this storage must be `DiskStorage` or `RemoteDiskStorage`.
+  If omitted, the default storage of the project is used. The request will be rejected if there's not enough space on the storage.
+- `{tagName}` an optional label given to the new file on its first revision.
+
+Both requests accept the following JSON payload:
+```json
+{
+  "destinationFilename": "{destinationFilename}",
+  "sourceProjectRef": "{sourceOrg}/{sourceProj}",
+  "sourceFileId": "{sourceFileId}",
+  "sourceTag": "{sourceTagName}",
+  "sourceRev": "{sourceRev}"
+}
+```
+
+... where
+- `{destinationFilename}` the optional filename for the new file. If omitted, the source filename will be used.
+- `{sourceOrg}` the organization label of the source file.
+- `{sourceProj}` the project label of the source file.
+- `{sourceFileId}` the unique identifier of the source file.
+- `{sourceTagName}` the optional source revision to be fetched.
+- `{sourceRev}` the optional source tag to be fetched.
+
+Notes:
+
+- The storage type of `sourceFileId` must match that of the destination file. For example, if the destination `storageId` is omitted, the source storage must be of type `DiskStorage` (the default storage type).
+- `sourceTagName` and `sourceRev` cannot be simultaneously present. If neither are present, the latest revision of the source file will be used.
+
+**Example**
+
+Request
+:   @@snip [copy-put.sh](assets/files/copy-put.sh)
+
+Response
+:   @@snip [copy-put.json](assets/files/copy-put.json)
+
+
 ## Link using POST
 
 Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `S3Storage` and `RemoteDiskStorage`.
@@ -106,7 +162,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
   When not specified, the default storage of the project is used.
 - `{path}`: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
-- `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detectput
+- `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**

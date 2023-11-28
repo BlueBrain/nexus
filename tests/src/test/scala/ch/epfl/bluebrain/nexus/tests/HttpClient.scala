@@ -66,6 +66,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
 
+  def putAndReturn[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (A, HttpResponse) => (A, Assertion)
+  )(implicit um: FromEntityUnmarshaller[A]): IO[A] =
+    requestAssertAndReturn(PUT, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
+
   def putIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
@@ -151,25 +156,25 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(DELETE, url, None, identity, extraHeaders)(assertResponse)
 
-  def requestAssert[A](
+  def requestAssertAndReturn[A](
       method: HttpMethod,
       url: String,
       body: Option[Json],
       identity: Identity,
       extraHeaders: Seq[HttpHeader] = jsonHeaders
-  )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
+  )(assertResponse: (A, HttpResponse) => (A, Assertion))(implicit um: FromEntityUnmarshaller[A]): IO[(A, Assertion)] = {
     def buildClue(a: A, response: HttpResponse) =
       s"""
-        |Endpoint: ${method.value} $url
-        |Identity: $identity
-        |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
-        |Status code: ${response.status}
-        |Body: ${body.getOrElse("None")}
-        |Response:
-        |$a
-        |""".stripMargin
+         |Endpoint: ${method.value} $url
+         |Identity: $identity
+         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
+         |Status code: ${response.status}
+         |Body: ${body.getOrElse("None")}
+         |Response:
+         |$a
+         |""".stripMargin
 
-    requestJson(
+    requestJson[A, (A, Assertion)](
       method,
       url,
       body,
@@ -178,6 +183,17 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       extraHeaders
     )
   }
+
+  def requestAssert[A](
+      method: HttpMethod,
+      url: String,
+      body: Option[Json],
+      identity: Identity,
+      extraHeaders: Seq[HttpHeader] = jsonHeaders
+  )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
+    requestAssertAndReturn[A](method, url, body, identity, extraHeaders) { (a, resp) =>
+      (a, assertResponse(a, resp))
+    }.map(_._2)
 
   def sparqlQuery[A](url: String, query: String, identity: Identity, extraHeaders: Seq[HttpHeader] = Nil)(
       assertResponse: (A, HttpResponse) => Assertion

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -148,6 +149,12 @@ object FileRejection {
       )
 
   /**
+    * Rejection returned when attempting to fetch a file and including both the target tag and revision.
+    */
+  final case class InvalidFileLookup(id: IdSegment)
+      extends FileRejection(s"Only one of 'tag' and 'rev' can be used to lookup file '$id'.")
+
+  /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
     * contain a ''file'' fieldName
     */
@@ -234,6 +241,19 @@ object FileRejection {
     */
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
       extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to copy a file already in storage
+    */
+  final case class CopyRejection(
+      sourceId: Iri,
+      sourceStorageId: Iri,
+      destStorageId: Iri,
+      rejection: StorageFileRejection
+  ) extends FileRejection(
+        s"File '$sourceId' could not be copied from storage '$sourceStorageId' to storage '$destStorageId'",
+        Some(rejection.loggedDetails)
+      )
 
   /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource

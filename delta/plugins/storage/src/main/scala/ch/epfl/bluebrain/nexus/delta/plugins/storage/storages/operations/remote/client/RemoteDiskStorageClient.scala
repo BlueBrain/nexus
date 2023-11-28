@@ -175,6 +175,40 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     }
   }
 
+  /**
+    * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
+    *
+    * @param bucket
+    *   the storage bucket name
+    * @param sourceRelativePath
+    *   the source relative path location
+    * @param destRelativePath
+    *   the destination relative path location inside the nexus folder
+    */
+  def copyFile(
+      bucket: Label,
+      sourceRelativePath: Path,
+      destRelativePath: Path
+  )(implicit baseUri: BaseUri): IO[Unit] = {
+    getAuthToken(credentials).flatMap { authToken =>
+      val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
+      val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
+      client
+        .discardBytes(Post(endpoint, payload).withCredentials(authToken), ())
+        .adaptError {
+          // TODO update error
+          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
+            MoveFileRejection.FileNotFound(sourceRelativePath.toString)
+          case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
+            MoveFileRejection.PathContainsLinks(destRelativePath.toString)
+          case HttpClientStatusError(_, `Conflict`, _)                                           =>
+            MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
+          case error: HttpClientError                                                            =>
+            UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
+        }
+    }
+  }
+
   private def bucketNotFoundType(error: HttpClientError): Boolean =
     error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
 

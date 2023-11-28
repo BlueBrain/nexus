@@ -82,7 +82,7 @@ class S3StorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: IO[Assertion] = {
+  override def createStorages(projectRef: String): IO[Assertion] = {
     val payload = jsonContentOf(
       "kg/storages/s3.json",
       "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",

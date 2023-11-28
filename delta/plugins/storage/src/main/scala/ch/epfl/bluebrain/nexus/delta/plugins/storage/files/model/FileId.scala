@@ -19,6 +19,7 @@ object FileId {
   def apply(ref: ResourceRef, project: ProjectRef): FileId            = FileId(IdSegmentRef(ref), project)
   def apply(id: IdSegment, tag: UserTag, project: ProjectRef): FileId = FileId(IdSegmentRef(id, tag), project)
   def apply(id: IdSegment, rev: Int, project: ProjectRef): FileId     = FileId(IdSegmentRef(id, rev), project)
+  def apply(id: IdSegment, project: ProjectRef): FileId               = FileId(IdSegmentRef(id), project)
 
   val iriExpander: ExpandIri[InvalidFileId] = new ExpandIri(InvalidFileId.apply)
 }
