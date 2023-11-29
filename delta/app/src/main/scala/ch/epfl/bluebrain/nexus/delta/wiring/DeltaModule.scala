@@ -11,6 +11,7 @@ import cats.data.NonEmptyList
 import cats.effect.{Clock, IO, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.fromFutureLegacy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -122,7 +123,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     )
     val release = (as: ActorSystem[Nothing]) => {
       import akka.actor.typed.scaladsl.adapter._
-      IO.fromFuture(IO(as.toClassic.terminate()).timeout(15.seconds)).void
+      fromFutureLegacy(IO(as.toClassic.terminate()).timeout(15.seconds)).void
     }
     Resource.make(make)(release)
   }

@@ -6,9 +6,8 @@ import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
 import cats.effect._
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.fromFutureLegacy
 import fs2._
-
-import scala.concurrent.Future
 
 /**
   * Converts a fs2 stream to an Akka source Original code from the streamz library from Martin Krasser (published under
@@ -86,12 +85,5 @@ object StreamConverter {
     val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
   }
-
-  /**
-    * Without using fromFutureCancelable, it results in the stream not terminating. Occurred in the migration from
-    * cats-effect 2 to 3. Seems wrong but it works.
-    */
-  private def fromFutureLegacy[A](future: IO[Future[A]]): IO[A] =
-    IO.fromFutureCancelable(future.map(f => (f, IO.unit)))
 
 }
