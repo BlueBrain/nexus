@@ -11,6 +11,8 @@ import akka.stream.StreamTcpException
 import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
@@ -76,7 +78,7 @@ object HttpClient {
 
   private[http] object HttpSingleRequest {
     def default(implicit as: ActorSystem): HttpSingleRequest =
-      (request: HttpRequest) => IO.fromFuture(IO.delay(Http().singleRequest(request)))
+      (request: HttpRequest) => IOFuture.defaultCancelable(IO.delay(Http().singleRequest(request)))
   }
 
   /**
@@ -157,7 +159,7 @@ object HttpClient {
         }
 
       private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): IO[A] =
-        IO.fromFuture(
+        defaultCancelable(
           IO.delay(
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
