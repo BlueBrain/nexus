@@ -7,8 +7,9 @@ import scala.concurrent.Future
 object IOUtils {
 
   /**
-    * Without using fromFutureCancelable, it results in the stream not terminating. Occurred in the migration from
-    * cats-effect 2 to 3. Seems wrong but it works.
+    * Helper to be used when a Future needs to be canceled.
+    *
+    * Refer to: https://github.com/typelevel/cats-effect/releases/tag/v3.5.0
     */
   def fromFutureLegacy[A](future: IO[Future[A]]): IO[A] =
     IO.fromFutureCancelable(future.map(f => (f, IO.unit)))
