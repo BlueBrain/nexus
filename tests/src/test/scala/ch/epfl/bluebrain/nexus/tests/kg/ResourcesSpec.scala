@@ -701,7 +701,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     "create resource using the created project" in {
       val payload =
-        jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+        jsonContentOf("kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
       deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 

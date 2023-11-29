@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -354,7 +353,7 @@ object Resources {
       validateResource: ValidateResource,
       clock: Clock[IO]
   )(state: Option[ResourceState], cmd: ResourceCommand): IO[ResourceEvent] = {
-    implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+
     def validate(
         jsonld: JsonLdAssembly,
         schemaRef: ResourceRef,
