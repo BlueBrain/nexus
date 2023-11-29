@@ -4,13 +4,16 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.matchers.GeneralMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, OpticsValidators}
 import io.circe.Json
+import org.scalactic.source.Position
 
 class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
 
@@ -238,6 +241,15 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
       } yield succeed
     }
 
+    "undeprecate project" in {
+      for {
+        _       <- undeprecateProject(orgId, projId, 4)
+        project <- getProjectLatest(orgId, projId)
+      } yield {
+        project shouldNot be(deprecated)
+      }
+    }
+
     "get a redirect to fusion if a `text/html` header is provided" in
       deltaClient.get[String](
         s"/projects/$id",
@@ -384,4 +396,13 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
     }
   }
 
+  def undeprecateProject(org: String, project: String, revision: Int)(implicit pos: Position) = {
+    deltaClient.put[Json](s"/projects/$org/$project/undeprecate?rev=$revision", Json.obj(), Bojack) { (_, response) =>
+      response.status shouldBe StatusCodes.OK
+    }
+  }
+
+  def getProjectLatest(org: String, project: String): IO[Json] = {
+    deltaClient.getJson[Json](s"/projects/$org/$project", Bojack)
+  }
 }

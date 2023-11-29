@@ -21,7 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.projects.{create => CreateProjects, delete => DeleteProjects, read => ReadProjects, write => WriteProjects}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => ReadResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig, ProjectsStatistics}
@@ -72,7 +73,7 @@ final class ProjectsRoutes(
           createdBy,
           updatedBy,
           label,
-          proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, allAcls)
+          proj => aclCheck.authorizeFor(proj.ref, ReadProjects, allAcls)
         )
       }
     }
@@ -81,6 +82,8 @@ final class ProjectsRoutes(
   private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
     projectProvisioning(caller.subject).unsafeToFuture()
   )
+
+  private def revisionParam: Directive[Tuple1[Int]] = parameter("rev".as[Int])
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -97,7 +100,7 @@ final class ProjectsRoutes(
                 emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
               }
             },
-            resolveProjectRef.apply { ref =>
+            resolveProjectRef.apply { project =>
               concat(
                 operationName(s"$prefixSegment/projects/{org}/{project}") {
                   concat(
@@ -105,20 +108,23 @@ final class ProjectsRoutes(
                       parameter("rev".as[Int].?) {
                         case None      =>
                           // Create project
-                          authorizeFor(ref, projectsPermissions.create).apply {
+                          authorizeFor(project, CreateProjects).apply {
                             entity(as[ProjectFields]) { fields =>
                               emit(
                                 StatusCodes.Created,
-                                projects.create(ref, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                                projects.create(project, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
                               )
                             }
                           }
                         case Some(rev) =>
                           // Update project
-                          authorizeFor(ref, projectsPermissions.write).apply {
+                          authorizeFor(project, WriteProjects).apply {
                             entity(as[ProjectFields]) { fields =>
                               emit(
-                                projects.update(ref, rev, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                                projects
+                                  .update(project, rev, fields)
+                                  .mapValue(_.metadata)
+                                  .attemptNarrow[ProjectRejection]
                               )
                             }
                           }
@@ -127,14 +133,14 @@ final class ProjectsRoutes(
                     (get & pathEndOrSingleSlash) {
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch project at specific revision
-                          authorizeFor(ref, projectsPermissions.read).apply {
-                            emit(projects.fetchAt(ref, rev).attemptNarrow[ProjectRejection])
+                          authorizeFor(project, ReadProjects).apply {
+                            emit(projects.fetchAt(project, rev).attemptNarrow[ProjectRejection])
                           }
                         case None      => // Fetch project
                           emitOrFusionRedirect(
-                            ref,
-                            authorizeFor(ref, projectsPermissions.read).apply {
-                              emit(projects.fetch(ref).attemptNarrow[ProjectRejection])
+                            project,
+                            authorizeFor(project, ReadProjects).apply {
+                              emit(projects.fetch(project).attemptNarrow[ProjectRejection])
                             }
                           )
                       }
@@ -143,24 +149,29 @@ final class ProjectsRoutes(
                     (delete & pathEndOrSingleSlash) {
                       parameters("rev".as[Int], "prune".?(false)) {
                         case (rev, true)  =>
-                          authorizeFor(ref, projectsPermissions.delete).apply {
-                            emit(projects.delete(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
+                          authorizeFor(project, DeleteProjects).apply {
+                            emit(projects.delete(project, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
                           }
                         case (rev, false) =>
-                          authorizeFor(ref, projectsPermissions.write).apply {
-                            emit(projects.deprecate(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
+                          authorizeFor(project, WriteProjects).apply {
+                            emit(projects.deprecate(project, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
                           }
                       }
                     }
                   )
                 },
+                (pathPrefix("undeprecate") & put & revisionParam) { revision =>
+                  authorizeFor(project, WriteProjects).apply {
+                    emit(projects.undeprecate(project, revision).attemptNarrow[ProjectRejection])
+                  }
+                },
                 operationName(s"$prefixSegment/projects/{org}/{project}/statistics") {
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                    authorizeFor(ref, resources.read).apply {
-                      val stats = projectsStatistics.get(ref)
+                    authorizeFor(project, ReadResources).apply {
+                      val stats = projectsStatistics.get(project)
                       emit(
-                        OptionT(stats).toRight[ProjectRejection](ProjectNotFound(ref)).value
+                        OptionT(stats).toRight[ProjectRejection](ProjectNotFound(project)).value
                       )
                     }
                   }

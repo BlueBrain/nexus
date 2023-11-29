@@ -187,6 +187,34 @@ object ProjectEvent {
   ) extends ProjectEvent
 
   /**
+    * Evidence that a project has been undeprecated.
+    *
+    * @param label
+    *   the label (segment) of the project
+    * @param uuid
+    *   the permanent identifier for the project
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param rev
+    *   the revision number that this event generates
+    * @param instant
+    *   the timestamp associated to this event
+    * @param subject
+    *   the identity associated to this event
+    */
+  final case class ProjectUndeprecated(
+      label: Label,
+      uuid: UUID,
+      override val organizationLabel: Label,
+      organizationUuid: UUID,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent
+
+  /**
     * Evidence that a project has been marked for deletion.
     *
     * @param label
@@ -241,6 +269,7 @@ object ProjectEvent {
             case _: ProjectCreated           => Created
             case _: ProjectUpdated           => Updated
             case _: ProjectDeprecated        => Deprecated
+            case _: ProjectUndeprecated      => Undeprecated
             case _: ProjectMarkedForDeletion => TagDeleted
           },
           ResourceUris.project(event.project).accessUri.toIri,
