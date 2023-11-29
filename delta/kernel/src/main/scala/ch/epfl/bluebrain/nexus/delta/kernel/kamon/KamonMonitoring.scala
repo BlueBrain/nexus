@@ -24,7 +24,7 @@ object KamonMonitoring {
     */
   def initialize(config: Config): IO[Unit] =
     IO.whenA(enabled) {
-      logger.info("Initializing Kamon") >> IO.delay(Kamon.init(config))
+      logger.info("Initializing Kamon") >> IO.blocking(Kamon.init(config))
     }
 
   /**
@@ -74,7 +74,7 @@ object KamonMonitoring {
   }.onError { e => logger.debug(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
-    IO {
+    IO.blocking {
       Kamon
         .serverSpanBuilder(name, component)
         .asChildOf(Kamon.currentSpan())
@@ -83,13 +83,13 @@ object KamonMonitoring {
     }
 
   private def finishSpan(span: Span, takeSamplingDecision: Boolean): IO[Unit] =
-    IO {
+    IO.blocking {
       val s = if (takeSamplingDecision) span.takeSamplingDecision() else span
       s.finish()
     }
 
   private def failSpan(span: Span, throwable: Throwable, takeSamplingDecision: Boolean): IO[Unit] =
-    IO.delay {
+    IO.blocking {
       span.tag("error", value = true).fail(throwable)
     } >> finishSpan(span, takeSamplingDecision)
 
