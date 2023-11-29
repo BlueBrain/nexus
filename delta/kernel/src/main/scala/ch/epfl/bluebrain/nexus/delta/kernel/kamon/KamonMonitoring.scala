@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 
 import cats.effect.{IO, Outcome}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.fromFutureLegacy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import com.typesafe.config.Config
 import kamon.tag.TagSet
 import kamon.trace.Span
@@ -32,7 +32,8 @@ object KamonMonitoring {
     */
   def terminate: IO[Unit] =
     IO.whenA(enabled) {
-      fromFutureLegacy { IO { Kamon.stopModules() } }
+      IOFuture
+        .defaultCancelable { IO { Kamon.stopModules() } }
         .timeout(15.seconds)
         .onError { e =>
           logger.error(e)("Something went wrong while terminating Kamon")

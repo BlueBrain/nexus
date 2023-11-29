@@ -6,7 +6,8 @@ import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
 import cats.effect._
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.fromFutureLegacy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import fs2._
 
 /**
@@ -18,7 +19,7 @@ object StreamConverter {
 
   private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A]): Stream[IO, Unit] = {
     def publish(a: A): IO[Option[Unit]] =
-      fromFutureLegacy(IO.delay(publisher.offer(a)))
+      defaultCancelable(IO.delay(publisher.offer(a)))
         .flatMap {
           case QueueOfferResult.Enqueued       => IO.pure(Some(()))
           case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
@@ -36,7 +37,7 @@ object StreamConverter {
           case _: StreamDetachedException => None
         }
 
-    def watchCompletion: IO[Unit]    = fromFutureLegacy(IO.delay(publisher.watchCompletion())).void
+    def watchCompletion: IO[Unit]    = IOFuture.defaultCancelable(IO.delay(publisher.watchCompletion())).void
     def fail(e: Throwable): IO[Unit] = IO.delay(publisher.fail(e)) >> watchCompletion
     def complete: IO[Unit]           = IO.delay(publisher.complete()) >> watchCompletion
 
@@ -81,7 +82,7 @@ object StreamConverter {
   private def subscriberStream[A](
       subscriber: SinkQueueWithCancel[A]
   ): Stream[IO, A] = {
-    val pull   = fromFutureLegacy(IO.delay(subscriber.pull()))
+    val pull   = IOFuture.defaultCancelable(IO.delay(subscriber.pull()))
     val cancel = IO.delay(subscriber.cancel())
     Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
   }

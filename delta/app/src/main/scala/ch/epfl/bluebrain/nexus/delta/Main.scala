@@ -10,7 +10,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.fromFutureLegacy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
@@ -132,7 +132,7 @@ object Main extends IOApp {
     implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
     implicit val cfg: AppConfig         = locator.get[AppConfig]
 
-    val startHttpServer = fromFutureLegacy(
+    val startHttpServer = IOFuture.defaultCancelable(
       IO(
         Http()
           .newServerAt(
