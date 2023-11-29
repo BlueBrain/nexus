@@ -42,7 +42,7 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, Storag
   private def deleteRecursively(project: ProjectRef, disk: DiskStorageValue) = {
     val directory = disk.rootDirectory(project)
     if (directory.exists)
-      IO.delay {
+      IO.blocking {
         if (!directory.deleteRecursively()) {
           s"Local directory '${directory.path}' could not be deleted."
         } else

@@ -14,7 +14,7 @@ final case class JiraResponse(content: Option[Json])
 object JiraResponse {
 
   def apply(request: HttpRequest): IO[JiraResponse] = {
-    IO(request.execute())
+    IO.blocking(request.execute())
       .flatMap { response =>
         val content = response.parseAsString()
         if (content.nonEmpty) {

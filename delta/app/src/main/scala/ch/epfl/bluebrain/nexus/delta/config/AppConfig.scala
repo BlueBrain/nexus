@@ -92,15 +92,17 @@ object AppConfig {
     }
 
     for {
-      externalConfig            <- IO.delay(externalConfigPath.fold(ConfigFactory.empty()) { p =>
+      externalConfig            <- IO.blocking(externalConfigPath.fold(ConfigFactory.empty()) { p =>
                                      ConfigFactory.parseFile(new File(p), parseOptions)
                                    })
-      defaultConfig             <- IO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
-      pluginConfigs              = pluginsConfigPaths.map { string =>
-                                     ConfigFactory.parseReader(
-                                       new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
-                                       parseOptions
-                                     )
+      defaultConfig             <- IO.blocking(ConfigFactory.parseResources("default.conf", parseOptions))
+      pluginConfigs             <- IO.blocking {
+                                     pluginsConfigPaths.map { string =>
+                                       ConfigFactory.parseReader(
+                                         new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
+                                         parseOptions
+                                       )
+                                     }
                                    }
       (appConfig, mergedConfig) <- merge(externalConfig :: defaultConfig :: pluginConfigs: _*)
     } yield (appConfig, mergedConfig)

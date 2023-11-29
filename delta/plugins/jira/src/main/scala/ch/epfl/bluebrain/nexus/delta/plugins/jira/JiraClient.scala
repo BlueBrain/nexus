@@ -118,17 +118,13 @@ object JiraClient {
           private val netHttpTransport = new NetHttpTransport()
 
           override def requestToken()(implicit caller: User): IO[AuthenticationRequest] = {
+            val tempToken = new JiraOAuthGetTemporaryToken(jiraConfig.base)
+            tempToken.consumerKey = jiraConfig.consumerKey
+            tempToken.signer = signer
+            tempToken.transport = netHttpTransport
+            tempToken.callback = "oob"
             for {
-              token <- IO {
-                         val tempToken = new JiraOAuthGetTemporaryToken(jiraConfig.base)
-                         tempToken.consumerKey = jiraConfig.consumerKey
-                         tempToken.signer = signer
-                         tempToken.transport = netHttpTransport
-                         tempToken.callback = "oob"
-                         val response  = tempToken.execute()
-
-                         response.token
-                       }
+              token <- IO.blocking { tempToken.execute() }.map(_.token)
               _     <- logger.debug(s"Request Token value: $token")
               _     <- store.save(caller, RequestToken(token))
             } yield {
@@ -146,13 +142,13 @@ object JiraClient {
                             case None                      => IO.raiseError(NoTokenError)
                             case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
                             case Some(RequestToken(value)) =>
-                              IO {
-                                val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
-                                accessToken.consumerKey = jiraConfig.consumerKey
-                                accessToken.signer = signer
-                                accessToken.transport = netHttpTransport
-                                accessToken.verifier = verifier.value
-                                accessToken.temporaryToken = value
+                              val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
+                              accessToken.consumerKey = jiraConfig.consumerKey
+                              accessToken.signer = signer
+                              accessToken.transport = netHttpTransport
+                              accessToken.verifier = verifier.value
+                              accessToken.temporaryToken = value
+                              IO.blocking {
                                 accessToken.execute().token
                               }
                           }
