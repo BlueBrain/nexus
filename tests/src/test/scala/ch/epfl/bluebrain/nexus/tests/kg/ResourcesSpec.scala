@@ -364,10 +364,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
                        _rev.getOption(json).value shouldEqual 2
                    }
         // Sending the same update should not create a new revision
-        _       <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=2", payload, Rick) {
-                     (json, response) =>
-                       response.status shouldEqual StatusCodes.OK
-                       _rev.getOption(json).value shouldEqual 2
+        _       <- deltaClient.put[Json](s"/resources/$project1/_/test-resource:1?rev=2", payload, Rick) { (json, response) =>
+                     response.status shouldEqual StatusCodes.OK
+                     _rev.getOption(json).value shouldEqual 2
                    }
       } yield succeed
     }
@@ -609,7 +608,6 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
   }
 
-
   "create a resource with context" in {
     val contextId             = "https://dev.nexus.test.com/simplified-resource/mycontext"
     val contextPayload        = json"""{ "@context": { "@base": "http://example.com/base/" } }"""
@@ -702,7 +700,8 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "create resource using the created project" in {
-      val payload = jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+      val payload =
+        jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
       deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 

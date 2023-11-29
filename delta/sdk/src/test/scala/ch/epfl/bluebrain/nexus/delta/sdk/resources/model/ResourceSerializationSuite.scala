@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceInstanceFixture
@@ -25,13 +25,13 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val realm: Label     = Label.unsafe("myrealm")
   val subject: Subject = User("username", realm)
   val tag: UserTag     = UserTag.unsafe("mytag")
-  val jsonld           = JsonLdResult(myId, compacted, expanded, remoteContexts)
+  val jsonld           = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
 
   // format: off
-  private val created        = ResourceCreated(myId, projectRef, Revision(schemas.resources, 1), projectRef, source, jsonld, instant, subject, None)
+  private val created        = ResourceCreated(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, instant, subject, None)
   private val createdWithTag = created.copy(tag = Some(tag))
-  private val updated        = ResourceUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, source, jsonld, 2, instant, subject, Some(tag))
-  private val refreshed      = ResourceRefreshed(myId, projectRef, Revision(schemas.resources, 1), projectRef, jsonld, 2, instant, subject)
+  private val updated        = ResourceUpdated(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, 2, instant, subject, Some(tag))
+  private val refreshed      = ResourceRefreshed(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, 2, instant, subject)
   private val tagged         = ResourceTagAdded(myId, projectRef, types, 1, UserTag.unsafe("mytag"), 3, instant, subject)
   private val deprecated     = ResourceDeprecated(myId, projectRef, types, 4, instant, subject)
   private val undeprecated   = ResourceUndeprecated(myId, projectRef, types, 5, instant, subject)

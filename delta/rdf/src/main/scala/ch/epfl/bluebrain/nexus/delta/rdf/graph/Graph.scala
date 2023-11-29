@@ -24,6 +24,7 @@ import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
+import org.apache.jena.sparql.util.IsoMatcher
 
 import java.util.UUID
 import scala.annotation.tailrec
@@ -66,6 +67,19 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     }
     copy(value = newGraph)
   }
+
+  /**
+    * Compare this graph with another using the method described in <a
+    * href="https://www.w3.org/TR/rdf-concepts/#graph-isomorphism">
+    * https://www.w3.org/TR/rdf-concepts/#graph-isomorphism </a>
+    *
+    * @param g
+    *   The graph to compare to
+    * @return
+    *   boolean True if the two graphs are isomorphic.
+    */
+  def isIsomorphic(other: Graph) =
+    IsoMatcher.isomorphic(value, other.value)
 
   /**
     * Returns a triple matching the predicate if found.

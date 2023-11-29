@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
@@ -65,5 +67,10 @@ trait ResourceInstanceFixture extends CirceLiteral {
       nexusContext  -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
     )
   )
+
+  val graph: Graph = {
+    implicit val jsonldApi: JsonLdApi = JsonLdJavaApi.lenient
+    expanded.toGraph.toTry.get
+  }
 
 }

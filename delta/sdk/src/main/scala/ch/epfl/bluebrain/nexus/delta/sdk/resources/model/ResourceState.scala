@@ -1,9 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.InvalidJsonLdFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -73,7 +76,12 @@ final case class ResourceState(
     updatedBy: Subject
 ) extends ScopedState {
 
-  def toJsonLdResult: JsonLdResult = JsonLdResult(id, compacted, expanded, remoteContexts)
+  def toAssembly(implicit opts: JsonLdOptions, api: JsonLdApi): Either[InvalidJsonLdFormat, JsonLdAssembly] =
+    expanded.toGraph
+      .map { graph =>
+        JsonLdAssembly(id, source, compacted, expanded, graph, remoteContexts)
+      }
+      .leftMap { err => InvalidJsonLdFormat(Some(id), err) }
 
   def toResource: DataResource =
     ResourceF(

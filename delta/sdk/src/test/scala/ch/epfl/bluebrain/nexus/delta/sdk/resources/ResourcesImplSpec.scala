@@ -506,12 +506,6 @@ class ResourcesImplSpec
           .rejectedWith[InvalidSchemaRejection]
       }
 
-      "fetch if the provided schema is the existing resource schema" in {
-        val fetched = resources.updateAttachedSchema(id, projectRef, schema1.id).accepted
-        fetched.rev shouldEqual 1
-        fetched.schema.iri shouldEqual schema1.id
-      }
-
       "reject if the project doesn't exist" in {
         resources
           .updateAttachedSchema(id, nonExistentProject, schema3.id)

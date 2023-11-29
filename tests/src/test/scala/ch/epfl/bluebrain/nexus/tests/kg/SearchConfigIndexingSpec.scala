@@ -846,7 +846,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
 
     "aggregate presynaptic brain regions" in {
-      val query    = jsonContentOf("kg/search/synapse-agg.json")
+      val query                     = jsonContentOf("kg/search/synapse-agg.json")
       val preSynapticBrainRegionAgg =
         json"""{
           "preSynapticBrainRegions" : {
@@ -877,10 +877,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     * Defines an ES query that searches for the document with the provided id and limits the resulting source to just
     * the requested field
     */
-  private def queryField(id: String, field: String) =
+  private def queryField(id: String, field: String)   =
     jsonContentOf("kg/search/id-query-single-field.json", "id" -> id, "field" -> field)
 
-  private def queryDocument(id: String)             =
+  private def queryDocument(id: String)               =
     jsonContentOf("kg/search/id-query.json", "id" -> id)
 
   private def aggregationIn(json: Json): Option[Json] =

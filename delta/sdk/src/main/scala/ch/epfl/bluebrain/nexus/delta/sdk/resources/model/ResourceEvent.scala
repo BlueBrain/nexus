@@ -7,8 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.{dropNullValues, JsonObjOps}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{IriEncoder, JsonLdAssembly}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -20,10 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
+import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -105,23 +104,21 @@ object ResourceEvent {
   object ResourceCreated {
 
     def apply(
-        id: Iri,
         project: ProjectRef,
         schema: ResourceRef.Revision,
         schemaProject: ProjectRef,
-        source: Json,
-        jsonld: JsonLdResult,
+        jsonld: JsonLdAssembly,
         instant: Instant,
         subject: Subject,
         tag: Option[UserTag]
     ): ResourceCreated =
       ResourceCreated(
-        id,
+        jsonld.id,
         project,
         schema,
         schemaProject,
         jsonld.types,
-        source,
+        jsonld.source,
         jsonld.compacted,
         jsonld.expanded,
         jsonld.remoteContexts,
@@ -182,24 +179,22 @@ object ResourceEvent {
 
   object ResourceUpdated {
     def apply(
-        id: Iri,
         project: ProjectRef,
         schema: ResourceRef.Revision,
         schemaProject: ProjectRef,
-        source: Json,
-        jsonld: JsonLdResult,
+        jsonld: JsonLdAssembly,
         rev: Int,
         instant: Instant,
         subject: Subject,
         tag: Option[UserTag]
     ): ResourceUpdated =
       ResourceUpdated(
-        id,
+        jsonld.id,
         project,
         schema,
         schemaProject,
         jsonld.types,
-        source,
+        jsonld.source,
         jsonld.compacted,
         jsonld.expanded,
         jsonld.remoteContexts,
@@ -265,17 +260,16 @@ object ResourceEvent {
 
   object ResourceRefreshed {
     def apply(
-        id: Iri,
         project: ProjectRef,
         schema: ResourceRef.Revision,
         schemaProject: ProjectRef,
-        jsonld: JsonLdResult,
+        jsonld: JsonLdAssembly,
         rev: Int,
         instant: Instant,
         subject: Subject
     ): ResourceRefreshed =
       ResourceRefreshed(
-        id,
+        jsonld.id,
         project,
         schema,
         schemaProject,

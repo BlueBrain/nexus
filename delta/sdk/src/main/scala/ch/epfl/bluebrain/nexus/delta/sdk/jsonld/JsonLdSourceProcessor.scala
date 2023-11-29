@@ -5,16 +5,15 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -66,19 +65,6 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
 
 object JsonLdSourceProcessor {
 
-  final case class JsonLdResult(
-      iri: Iri,
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
-      remoteContexts: Set[RemoteContextRef]
-  ) {
-
-    /**
-      * The collection of known types
-      */
-    def types: Set[Iri] = expanded.getTypes.getOrElse(Set.empty)
-  }
-
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
@@ -105,15 +91,15 @@ object JsonLdSourceProcessor {
     def apply(
         context: ProjectContext,
         source: Json
-    )(implicit rcr: RemoteContextResolution): IO[JsonLdResult] = {
+    )(implicit rcr: RemoteContextResolution): IO[JsonLdAssembly] = {
       for {
         _               <- validateIdNotBlank(source)
         (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
         originalExpanded = result.value
         iri             <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded         = originalExpanded.replaceId(iri)
-        compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
-      } yield JsonLdResult(iri, compacted, expanded, RemoteContextRef(result.remoteContexts))
+        assembly        <- JsonLdAssembly(iri, source, expanded, ctx, result.remoteContexts)
+      } yield assembly
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 
     /**
@@ -133,14 +119,14 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit
         rcr: RemoteContextResolution
-    ): IO[JsonLdResult]                                        = {
+    ): IO[JsonLdAssembly]                                        = {
       for {
         _               <- validateIdNotBlank(source)
         (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
-        compacted       <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
-      } yield JsonLdResult(iri, compacted, expanded, RemoteContextRef(result.remoteContexts))
+        assembly        <- JsonLdAssembly(iri, source, expanded, ctx, result.remoteContexts)
+      } yield assembly
     }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
 
   }
@@ -171,7 +157,7 @@ object JsonLdSourceProcessor {
       * @return
       *   a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
       */
-    def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit caller: Caller): IO[JsonLdResult] = {
+    def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit caller: Caller): IO[JsonLdAssembly] = {
       implicit val rcr: RemoteContextResolution = contextResolution(ref)
       underlying(context, source)
     }
@@ -194,7 +180,7 @@ object JsonLdSourceProcessor {
         context: ProjectContext,
         iri: Iri,
         source: Json
-    )(implicit caller: Caller): IO[JsonLdResult] = {
+    )(implicit caller: Caller): IO[JsonLdAssembly] = {
       implicit val rcr: RemoteContextResolution = contextResolution(ref)
       underlying(context, iri, source)
     }
@@ -217,7 +203,7 @@ object JsonLdSourceProcessor {
       */
     def apply(ref: ProjectRef, context: ProjectContext, iriOpt: Option[Iri], source: Json)(implicit
         caller: Caller
-    ): IO[JsonLdResult] =
+    ): IO[JsonLdAssembly] =
       iriOpt
         .map { iri =>
           apply(ref, context, iri, source)

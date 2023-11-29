@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.{JsonLdResult, JsonLdSourceResolvingParser}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -70,7 +71,7 @@ trait ResourcesTrial {
 
 object ResourcesTrial {
   def apply(
-      fetchResource: (IdSegmentRef, ProjectRef) => IO[DataResource],
+      fetchResource: (IdSegmentRef, ProjectRef) => IO[ResourceState],
       validateResource: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution,
@@ -86,7 +87,7 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project)
         schemaRef      <- IO.fromEither(Resources.expandResourceRef(schema, projectContext))
         jsonld         <- sourceParser(project, projectContext, source.value)
-        validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
+        validation     <- validateResource(jsonld, schemaRef, project, caller)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
     }.attemptNarrow[ResourceRejection].map { attempt =>
@@ -99,7 +100,7 @@ object ResourcesTrial {
       for {
         projectContext <- fetchContext.onRead(project)
         jsonld         <- sourceParser(project, projectContext, source.value)
-        validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
+        validation     <- validateResource(jsonld, schema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
     }.attemptNarrow[ResourceRejection].map { attempt =>
@@ -113,9 +114,9 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project)
         schemaRefOpt   <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
         resource       <- fetchResource(id, project)
+        jsonld         <- IO.fromEither(resource.toAssembly)
         report         <- validateResource(
-                            resource.id,
-                            resource.value.expanded,
+                            jsonld,
                             schemaRefOpt.getOrElse(resource.schema),
                             project,
                             caller
@@ -125,13 +126,13 @@ object ResourcesTrial {
 
     private def toResourceF(
         project: ProjectRef,
-        jsonld: JsonLdResult,
+        jsonld: JsonLdAssembly,
         source: NexusSource,
         validation: ValidationResult
     )(implicit caller: Caller): IO[DataResource] = {
       clock.realTimeInstant.map { now =>
         ResourceState(
-          id = jsonld.iri,
+          id = jsonld.id,
           project = project,
           schemaProject = validation.project,
           source = source.value,
