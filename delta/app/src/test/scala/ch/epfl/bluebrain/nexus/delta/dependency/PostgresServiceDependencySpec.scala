@@ -11,7 +11,7 @@ class PostgresServiceDependencySpec extends CatsEffectSpec with DoobieScalaTestF
 
     "fetch its service name and version" in {
       new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual
-        ServiceDescription(Name.unsafe("postgres"), "15.4")
+        ServiceDescription(Name.unsafe("postgres"), "15.5")
     }
   }
 
