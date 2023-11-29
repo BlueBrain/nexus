@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{BodyPartEntity, ContentType, HttpEntity, Uri}
+import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
@@ -17,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{RemoteDiskStorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, InvalidStorageType, StorageFetchRejection, StorageIsDeprecated}
@@ -195,6 +197,12 @@ final class Files(
     } yield res
   }.span("createLink")
 
+  def copyFiles(
+      source: CopyFileSource,
+      destination: CopyFileDestination
+  )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
+    source.files.traverse(copyTo(_, destination))
+
   /**
     * Create a file from a source file potentially in a different organization
     * @param sourceId
@@ -214,8 +222,8 @@ final class Files(
       _                                 <- IO.raiseUnless(space.exists(_ < file.attributes.bytes))(
                                              FileTooLarge(destStorage.storageValue.maxFileSize, space)
                                            )
-      iri                               <- dest.fileId.fold(generateId(pc))(FileId(_, dest.project).expandIri(fetchContext.onCreate).map(_._1))
-      destinationDesc                   <- FileDescription(dest.filename.getOrElse(file.attributes.filename), file.attributes.mediaType)
+      iri                               <- generateId(pc)
+      destinationDesc                   <- FileDescription(file.attributes.filename, file.attributes.mediaType)
       attributes                        <- CopyFile(destStorage, remoteDiskStorageClient).apply(file.attributes, destinationDesc).adaptError {
                                              case r: CopyFileRejection => CopyRejection(file.id, file.storage.iri, destStorage.id, r)
                                            }

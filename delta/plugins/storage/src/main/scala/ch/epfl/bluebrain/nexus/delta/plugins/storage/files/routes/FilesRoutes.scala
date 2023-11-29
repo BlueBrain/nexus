@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server._
-import cats.data.EitherT
+import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -28,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -69,6 +69,9 @@ final class FilesRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
+  implicit val nelEnc: JsonLdEncoder[NonEmptyList[FileResource]] =
+    JsonLdEncoder.computeFromCirce[NonEmptyList[FileResource]](Files.context)
+
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
@@ -94,11 +97,10 @@ final class FilesRoutes(
                           .attemptNarrow[FileRejection]
                       )
                     },
-                    // Create a file by copying from another project, without id segment
-                    entity(as[CopyFilePayload]) { c: CopyFilePayload =>
-                      val copyTo = CopyFileDestination(projectRef, None, storage, tag, c.destFilename)
-
-                      emit(Created, copyFile(projectRef, mode, c, copyTo))
+                    // Bulk create files by copying from another project
+                    entity(as[CopyFileSource]) { c: CopyFileSource =>
+                      val copyTo = CopyFileDestination(projectRef, storage, tag)
+                      emit(Created, copyFile(mode, c, copyTo))
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
@@ -118,15 +120,6 @@ final class FilesRoutes(
                       concat(
                         (put & pathEndOrSingleSlash) {
                           concat(
-                            // Create a file by copying from another project
-                            parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (destStorage, destTag) =>
-                              entity(as[CopyFilePayload]) { c: CopyFilePayload =>
-                                val copyTo =
-                                  CopyFileDestination(projectRef, Some(id), destStorage, destTag, c.destFilename)
-
-                                emit(Created, copyFile(projectRef, mode, c, copyTo))
-                              }
-                            },
                             parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) {
                               case (rev, storage, tag) =>
                                 concat(
@@ -254,14 +247,13 @@ final class FilesRoutes(
       }
     }
 
-  private def copyFile(projectRef: ProjectRef, mode: IndexingMode, c: CopyFilePayload, copyTo: CopyFileDestination)(
-      implicit caller: Caller
-  ): IO[Either[FileRejection, FileResource]] =
+  private def copyFile(mode: IndexingMode, c: CopyFileSource, copyTo: CopyFileDestination)(implicit
+      caller: Caller
+  ): IO[Either[FileRejection, NonEmptyList[FileResource]]] =
     (for {
-      _            <- EitherT.right(aclCheck.authorizeForOr(c.sourceProj, Read)(AuthorizationFailed(c.sourceProj.project, Read)))
-      sourceFileId <- EitherT.fromEither[IO](c.toSourceFileId)
-      result       <- EitherT(files.copyTo(sourceFileId, copyTo).attemptNarrow[FileRejection])
-      _            <- EitherT.right[FileRejection](index(projectRef, result, mode))
+      _      <- EitherT.right(aclCheck.authorizeForOr(c.project, Read)(AuthorizationFailed(c.project.project, Read)))
+      result <- EitherT(files.copyFiles(c, copyTo).attemptNarrow[FileRejection])
+      _      <- EitherT.right[FileRejection](result.traverse(index(copyTo.project, _, mode)))
     } yield result).value
 
   def fetch(id: FileId)(implicit caller: Caller): Route =
