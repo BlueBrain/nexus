@@ -7,7 +7,6 @@ import cats.effect._
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import fs2._
 
 /**
@@ -19,7 +18,7 @@ object StreamConverter {
 
   private def publisherStream[A](publisher: SourceQueueWithComplete[A], stream: Stream[IO, A]): Stream[IO, Unit] = {
     def publish(a: A): IO[Option[Unit]] =
-      defaultCancelable(IO.delay(publisher.offer(a)))
+      IOFuture.defaultCancelable(IO.delay(publisher.offer(a)))
         .flatMap {
           case QueueOfferResult.Enqueued       => IO.pure(Some(()))
           case QueueOfferResult.Failure(cause) => IO.raiseError[Option[Unit]](cause)
