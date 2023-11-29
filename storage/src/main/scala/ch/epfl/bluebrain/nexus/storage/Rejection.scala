@@ -66,13 +66,6 @@ object Rejection {
         s"The provided location inside the bucket '$name' with the path '$path' contains links. Please remove them in order to proceed with this call."
       )
 
-  /**
-    * Signals a missing.
-    * @param name
-    *   the storage bucket name
-    */
-  final case class EmptyFilename(name: String)
-
   implicit def statusCodeFrom: StatusFrom[Rejection] =
     StatusFrom {
       case _: PathContainsLinks => StatusCodes.BadRequest

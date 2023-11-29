@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeD
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.storage.files.{CopyFiles, ValidateFile}
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
@@ -59,8 +60,19 @@ object Main extends IOApp {
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
+    val attributesCache: AttributesCache = AttributesCache[AkkaSource]
+    val validateFile: ValidateFile       = ValidateFile.mk(appConfig.storage)
+    val copyFiles: CopyFiles             = CopyFiles.mk()
+
     val storages: Storages[AkkaSource] =
-      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[AkkaSource])
+      new DiskStorage(
+        appConfig.storage,
+        contentTypeDetector,
+        appConfig.digest,
+        attributesCache,
+        validateFile,
+        copyFiles
+      )
 
     val logger: LoggingAdapter = Logging(as, getClass)
 

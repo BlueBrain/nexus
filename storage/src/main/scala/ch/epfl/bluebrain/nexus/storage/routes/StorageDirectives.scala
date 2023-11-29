@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path._
 import akka.http.scaladsl.server.Directives.{extractUnmatchedPath, failWith, pass, provide, reject}
 import akka.http.scaladsl.server._
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.storage.Rejection.{BucketNotFound, PathAlreadyExists, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.PathInvalid
 import ch.epfl.bluebrain.nexus.storage.Storages
@@ -24,6 +25,9 @@ object StorageDirectives {
   def extractPath(name: String): Directive1[Path] =
     extractUnmatchedPath.flatMap(p => validatePath(name, p).tmap(_ => relativize(p)))
 
+  private def pathInvalid(path: Path): Boolean =
+    path.toString.contains("//") || containsRelativeChar(path)
+
   /**
     * Validates if the path is correct or malformed
     *
@@ -33,10 +37,15 @@ object StorageDirectives {
     *   the path to validate
     */
   def validatePath(name: String, path: Path): Directive0 =
-    if (path.toString.contains("//") || containsRelativeChar(path))
-      failWith(PathInvalid(name, path))
-    else
-      pass
+    if (pathInvalid(path)) failWith(PathInvalid(name, path)) else pass
+
+  def validatePaths(name: String, paths: NonEmptyList[Path]): Directive0 =
+    paths
+      .collectFirst[Directive0] {
+        case p if pathInvalid(p) =>
+          failWith(PathInvalid(name, p))
+      }
+      .getOrElse(pass)
 
   @tailrec
   private def containsRelativeChar(path: Path): Boolean =
@@ -101,6 +110,16 @@ object StorageDirectives {
       case notExists: PathDoesNotExist => provide(notExists)
       case _                           => reject(PathAlreadyExists(name, path))
     }
+
+  def pathsDoNotExist(name: String, paths: NonEmptyList[Uri.Path])(implicit
+      storages: Storages[_]
+  ): Directive1[PathDoesNotExist] =
+    paths
+      .collectFirst[Directive1[PathDoesNotExist]] {
+        case p if storages.pathExists(name, p).exists =>
+          reject(PathAlreadyExists(name, p))
+      }
+      .getOrElse(provide(PathDoesNotExist))
 
   /**
     * Extracts the relative file path from the unmatched segments
