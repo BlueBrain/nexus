@@ -37,6 +37,7 @@ class ProjectsSpec extends CatsEffectSpec {
       base = base.value,
       vocab = vocab.value
     )
+    val deprecatedState         = state.copy(deprecated = true)
     val label                   = state.label
     val uuid                    = state.uuid
     val orgLabel                = state.organizationLabel
@@ -79,12 +80,16 @@ class ProjectsSpec extends CatsEffectSpec {
 
         eval(Some(state), DeleteProject(ref, 1, subject)).accepted shouldEqual
           ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
+
+        eval(Some(deprecatedState), UndeprecateProject(ref, 1, subject)).accepted shouldEqual
+          ProjectUndeprecated(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
         val list = List(
-          state -> UpdateProject(ref, desc, am, base, vocab, 2, subject),
-          state -> DeprecateProject(ref, 2, subject)
+          state           -> UpdateProject(ref, desc, am, base, vocab, 2, subject),
+          state           -> DeprecateProject(ref, 2, subject),
+          deprecatedState -> UndeprecateProject(ref, 2, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[IncorrectRev]
@@ -93,9 +98,10 @@ class ProjectsSpec extends CatsEffectSpec {
 
       "reject with OrganizationIsDeprecated" in {
         val list = List(
-          None        -> CreateProject(ref2, desc, am, base, vocab, subject),
-          Some(state) -> UpdateProject(ref2, desc, am, base, vocab, 1, subject),
-          Some(state) -> DeprecateProject(ref2, 1, subject)
+          None                  -> CreateProject(ref2, desc, am, base, vocab, subject),
+          Some(state)           -> UpdateProject(ref2, desc, am, base, vocab, 1, subject),
+          Some(state)           -> DeprecateProject(ref2, 1, subject),
+          Some(deprecatedState) -> UndeprecateProject(ref2, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejected shouldEqual
@@ -106,9 +112,10 @@ class ProjectsSpec extends CatsEffectSpec {
       "reject with OrganizationNotFound" in {
         val orgNotFound = ProjectRef(label, Label.unsafe("other"))
         val list        = List(
-          None        -> CreateProject(orgNotFound, desc, am, base, vocab, subject),
-          Some(state) -> UpdateProject(orgNotFound, desc, am, base, vocab, 1, subject),
-          Some(state) -> DeprecateProject(orgNotFound, 1, subject)
+          None                  -> CreateProject(orgNotFound, desc, am, base, vocab, subject),
+          Some(state)           -> UpdateProject(orgNotFound, desc, am, base, vocab, 1, subject),
+          Some(state)           -> DeprecateProject(orgNotFound, 1, subject),
+          Some(deprecatedState) -> UndeprecateProject(orgNotFound, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejected shouldEqual
@@ -117,21 +124,25 @@ class ProjectsSpec extends CatsEffectSpec {
       }
 
       "reject with ProjectIsDeprecated" in {
-        val cur  = state.copy(deprecated = true)
         val list = List(
-          cur -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
-          cur -> DeprecateProject(ref, 1, subject)
+          deprecatedState -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
+          deprecatedState -> DeprecateProject(ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[ProjectIsDeprecated]
         }
       }
 
+      "reject with ProjectIsNotDeprecated" in {
+        eval(Some(state), UndeprecateProject(ref, 1, subject)).rejectedWith[ProjectIsNotDeprecated]
+      }
+
       "reject with ProjectNotFound" in {
         val list = List(
           None -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
           None -> DeprecateProject(ref, 1, subject),
-          None -> DeleteProject(ref, 1, subject)
+          None -> DeleteProject(ref, 1, subject),
+          None -> UndeprecateProject(ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ProjectNotFound]
@@ -144,9 +155,8 @@ class ProjectsSpec extends CatsEffectSpec {
       }
 
       "do not reject with ProjectIsDeprecated" in {
-        val cur = state.copy(deprecated = true)
         val cmd = DeleteProject(ref, 1, subject)
-        eval(Some(cur), cmd).accepted shouldEqual
+        eval(Some(deprecatedState), cmd).accepted shouldEqual
           ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
       }
 
@@ -158,14 +168,13 @@ class ProjectsSpec extends CatsEffectSpec {
 
     "producing next state" should {
       val next = Projects.next _
-      val c    = state.copy(apiMappings = state.apiMappings)
 
       "create a new ProjectCreated state" in {
         next(
           None,
           ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, time2, subject)
         ).value shouldEqual
-          c.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
+          state.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
 
         next(
           Some(state),
@@ -183,7 +192,13 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(state),
           ProjectUpdated(label, uuid, orgLabel, orgUuid, 2, desc2, ApiMappings.empty, base, vocab, time2, subject)
         ).value shouldEqual
-          c.copy(rev = 2, description = desc2, apiMappings = ApiMappings.empty, updatedAt = time2, updatedBy = subject)
+          state.copy(
+            rev = 2,
+            description = desc2,
+            apiMappings = ApiMappings.empty,
+            updatedAt = time2,
+            updatedBy = subject
+          )
       }
 
       "create new ProjectDeprecated state" in {
@@ -196,14 +211,27 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(state),
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2, time2, subject)
         ).value shouldEqual
-          c.copy(rev = 2, deprecated = true, updatedAt = time2, updatedBy = subject)
+          state.copy(rev = 2, deprecated = true, updatedAt = time2, updatedBy = subject)
       }
 
       "create new ProjectMarkedForDeletion state" in {
         next(None, ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, time2, subject)) shouldEqual None
 
         next(Some(state), ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, time2, subject)).value shouldEqual
-          c.copy(rev = 2, markedForDeletion = true, updatedAt = time2, updatedBy = subject)
+          state.copy(rev = 2, markedForDeletion = true, updatedAt = time2, updatedBy = subject)
+      }
+
+      "create new ProjectUndeprecated state" in {
+        next(
+          None,
+          ProjectUndeprecated(label, uuid, orgLabel, orgUuid, 2, time2, subject)
+        ) shouldEqual None
+
+        next(
+          Some(deprecatedState),
+          ProjectUndeprecated(label, uuid, orgLabel, orgUuid, 2, time2, subject)
+        ).value shouldEqual
+          deprecatedState.copy(rev = 2, deprecated = false, updatedAt = time2, updatedBy = subject)
       }
     }
   }

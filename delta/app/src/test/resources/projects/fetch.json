@@ -8,14 +8,18 @@
   "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/projects.json",
   "_createdAt" : "1970-01-01T00:00:00Z",
   "_updatedAt" : "1970-01-01T00:00:00Z",
-  {{#user}}
-  "_createdBy": "http://localhost/v1/realms/{{realm}}/users/{{user}}",
-  "_updatedBy": "http://localhost/v1/realms/{{realm}}/users/{{user}}",
-  {{/user}}
-  {{^user}}
+  {{#createdBy}}
+  "_createdBy": "http://localhost/v1/realms/{{createdBy.realm.value}}/users/{{createdBy.subject}}",
+  {{/createdBy}}
+  {{^createdBy}}
   "_createdBy": "http://localhost/v1/anonymous",
+  {{/createdBy}}
+  {{#updatedBy}}
+  "_updatedBy": "http://localhost/v1/realms/{{updatedBy.realm.value}}/users/{{updatedBy.subject}}",
+  {{/updatedBy}}
+  {{^updatedBy}}
   "_updatedBy": "http://localhost/v1/anonymous",
-  {{/user}}
+  {{/updatedBy}}
   "_deprecated" : {{deprecated}},
   "_markedForDeletion": {{markedForDeletion}},
   "_label" : "{{proj}}",

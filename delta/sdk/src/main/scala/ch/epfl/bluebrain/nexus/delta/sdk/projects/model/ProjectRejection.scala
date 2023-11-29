@@ -77,6 +77,12 @@ object ProjectRejection {
       extends ProjectRejection(s"Project '$projectRef' is deprecated.")
 
   /**
+    * Signals an attempt to undeprecate a project that is not already deprecated.
+    */
+  final case class ProjectIsNotDeprecated(projectRef: ProjectRef)
+      extends ProjectRejection(s"Project '$projectRef' is not deprecated.")
+
+  /**
     * Signals an attempt to update/deprecate/delete a project that is already marked for deletion.
     */
   final case class ProjectIsMarkedForDeletion(projectRef: ProjectRef)
