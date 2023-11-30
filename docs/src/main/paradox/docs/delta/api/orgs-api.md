@@ -89,6 +89,29 @@ Request
 Response
 :   @@snip [deprecated.json](assets/organizations/deprecated.json)
 
+## Undeprecate
+
+Reverses the deprecation of an organisation.
+
+Undeprecating an organization is considered to be an update as well.
+
+```
+PUT /v1/orgs/{label}/undeprecate?rev={previous_rev}
+```
+
+... where
+
+- `{label}`: String - is the user friendly name that identifies this organization.
+- `{previous_rev}`: Number - is the last known revision for the organization.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/organizations/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/organizations/undeprecated.json)
+
 ## Delete
 
 Permanently delete an organization containing no projects. If there is a project, returns 409 Conflict.
