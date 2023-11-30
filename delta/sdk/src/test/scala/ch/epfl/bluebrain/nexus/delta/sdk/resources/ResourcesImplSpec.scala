@@ -372,6 +372,17 @@ class ResourcesImplSpec
         updatedResource.schema shouldEqual newSchema
       }
 
+      "be skipped and return the current resource when the update does not introduce a change" in {
+        val (before, after) = {
+          for {
+            current <- resources.fetch(myId2, projectRef, None)
+            updated <- resources.update(myId2, projectRef, None, current.rev, current.value.source, None)
+          } yield (current, updated)
+        }.accepted
+
+        after shouldEqual before
+      }
+
       "reject if it doesn't exists" in {
         resources
           .update(nxv + "other", projectRef, None, 1, json"""{"a": "b"}""", None)
@@ -410,24 +421,34 @@ class ResourcesImplSpec
     }
 
     "refreshing a resource" should {
+      val schema               = schemas.resources
+      val contextId            = nxv + "context"
+      val contextSource        = json""" { "@context": { "@base": "http://bbp.epfl.ch/base/" } }"""
+      val contextUpdatedSource =
+        json""" { "@context": { "@base": "http://example.com/base/", "prefix": "http://bbp.epfl.ch/prefix" } }"""
+      val idRefresh            = nxv + "refresh"
+
+      val refreshSource = json"""{
+                                    "@context": [
+                                      "$contextId",
+                                      { "@vocab": "https://bluebrain.github.io/nexus/vocabulary/" }
+                                    ],
+                                    "@type": "Person",
+                                    "name": "Alex"
+                                 }"""
 
       "succeed" in {
-        val expectedData =
-          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
-        resources.refresh(myId6, projectRef, Some(schema1.id)).accepted shouldEqual
-          mkResource(expectedData).copy(rev = 2)
-      }
-
-      "succeed without specifying the schema" in {
-        val expectedData =
-          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
-        resources.refresh("nxv:myid6", projectRef, None).accepted shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 3
-          )
+        val io = for {
+          _                      <- resources.create(contextId, projectRef, schema, contextSource, None)
+          createdResult          <- resources.create(idRefresh, projectRef, schema, refreshSource, None)
+          refreshedNoChange      <- resources.refresh(idRefresh, projectRef, None)
+          _                       = refreshedNoChange shouldEqual createdResult
+          updatedContext         <- resources.update(contextId, projectRef, None, 1, contextUpdatedSource, None)
+          _                       = updatedContext.rev shouldEqual 2
+          refreshedContextChange <- resources.refresh(idRefresh, projectRef, None)
+          _                       = refreshedContextChange shouldEqual createdResult.copy(rev = 2)
+        } yield ()
+        io.accepted
       }
 
       "reject if it doesn't exists" in {
@@ -438,27 +459,27 @@ class ResourcesImplSpec
 
       "reject if schemas do not match" in {
         resources
-          .refresh(myId6, projectRef, Some(schemas.resources))
+          .refresh(idRefresh, projectRef, Some(schema1.id))
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.refresh(myId6, projectRef, None).rejectedWith[ProjectContextRejection]
+        resources.refresh(idRefresh, projectRef, None).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
-        resources.refresh(myId6, projectDeprecated.ref, None).rejectedWith[ProjectContextRejection]
+        resources.refresh(idRefresh, projectDeprecated.ref, None).rejectedWith[ProjectContextRejection]
       }
 
       "reject if deprecated" in {
-        resources.deprecate(myId6, projectRef, None, 3).accepted
+        resources.deprecate(idRefresh, projectRef, None, 2).accepted
         resources
-          .refresh(myId6, projectRef, None)
+          .refresh(idRefresh, projectRef, None)
           .rejectedWith[ResourceIsDeprecated]
         resources
-          .refresh("nxv:myid6", projectRef, None)
+          .refresh("nxv:refresh", projectRef, None)
           .rejectedWith[ResourceIsDeprecated]
       }
     }
@@ -483,12 +504,6 @@ class ResourcesImplSpec
         resources
           .updateAttachedSchema(id, projectRef, nonExistentSchemaId)
           .rejectedWith[InvalidSchemaRejection]
-      }
-
-      "fetch if the provided schema is the existing resource schema" in {
-        val fetched = resources.updateAttachedSchema(id, projectRef, schema1.id).accepted
-        fetched.rev shouldEqual 1
-        fetched.schema.iri shouldEqual schema1.id
       }
 
       "reject if the project doesn't exist" in {

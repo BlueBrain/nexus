@@ -3,18 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -23,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.syntax.KeyOps
 
 import java.time.Instant
 
@@ -36,7 +34,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
     val caller  = Caller(subject, Set.empty)
     val tag     = UserTag.unsafe("mytag")
 
-    val jsonld = JsonLdResult(myId, compacted, expanded, remoteContexts)
+    val jsonld = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
 
     val schema1 = nxv + "myschema"
 
@@ -49,19 +47,13 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           val schemaRev = Revision(schemaRef.iri, 1)
           eval(
             None,
-            CreateResource(myId, projectRef, schemaRef, source, jsonld, caller, Some(tag))
+            CreateResource(projectRef, schemaRef, jsonld, caller, Some(tag))
           ).accepted shouldEqual
             ResourceCreated(
-              myId,
               projectRef,
               schemaRev,
               projectRef,
-              types,
-              source,
-              compacted,
-              expanded,
-              remoteContextRefs,
-              1,
+              jsonld,
               epoch,
               subject,
               Some(tag)
@@ -72,43 +64,92 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       "create a new event from a UpdateResource command" in {
         forAll(List(None -> Latest(schemas.resources), Some(Latest(schema1)) -> Latest(schema1))) {
           case (schemaOptCmd, schemaEvent) =>
-            val current   = ResourceGen.currentState(myId, projectRef, source, jsonld, schemaEvent)
+            val current   = ResourceGen.currentState(projectRef, jsonld, schemaEvent)
             val schemaRev = Revision(schemaEvent.iri, 1)
 
-            val additionalType       = iri"https://neuroshapes.org/AnotherType"
-            val newTypes             = types + additionalType
-            val newSource            = source.deepMerge(Json.obj("@type" := newTypes))
-            val newCompacted         = compacted.copy(obj = compacted.obj.add("types", newTypes.asJson))
-            val newExpanded          = expanded.addType(additionalType)
-            val newRemoteContext     = StaticContext(iri"https://bbp.epfl.ch/another-context", ContextValue.empty)
-            val newRemoteContexts    = remoteContexts + (newRemoteContext.iri -> newRemoteContext)
-            val newRemoteContextRefs = remoteContextRefs + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
-            val newJsonLd            = JsonLdResult(
-              myId,
-              newCompacted,
-              newExpanded,
-              newRemoteContexts
-            )
+            val additionalType = iri"https://neuroshapes.org/AnotherType"
+            val newTypes       = types + additionalType
+            val newSource      = source.deepMerge(Json.obj("@type" := newTypes))
+            val newJsonLd      = jsonld.copy(source = newSource)
             eval(
               Some(current),
-              UpdateResource(myId, projectRef, schemaOptCmd, newSource, newJsonLd, 1, caller, Some(tag))
+              UpdateResource(projectRef, schemaOptCmd, newJsonLd, 1, caller, Some(tag))
             ).accepted shouldEqual
               ResourceUpdated(
-                myId,
                 projectRef,
                 schemaRev,
                 projectRef,
-                newTypes,
-                newSource,
-                newCompacted,
-                newExpanded,
-                newRemoteContextRefs,
+                newJsonLd,
                 2,
                 epoch,
                 subject,
                 Some(tag)
               )
         }
+      }
+
+      "create a new event from a UpdateResource command when the source is identical but the remote contexts changed" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(projectRef, jsonld, schema)
+
+        val newRemoteContexts = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd         = jsonld.copy(remoteContexts = newRemoteContexts)
+        eval(
+          Some(current),
+          UpdateResource(projectRef, None, newJsonLd, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceUpdated(
+            projectRef,
+            Revision(schemas.resources, 1),
+            projectRef,
+            newJsonLd,
+            2,
+            epoch,
+            subject,
+            Some(tag)
+          )
+      }
+
+      "create a tag event from a UpdateResource command when no changes are detected and a tag is provided" in {
+        println("Tag from update")
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(projectRef, jsonld, schema)
+        eval(
+          Some(current),
+          UpdateResource(projectRef, None, jsonld, 1, caller, Some(tag))
+        ).accepted shouldEqual
+          ResourceTagAdded(
+            myId,
+            projectRef,
+            jsonld.types,
+            1,
+            tag,
+            2,
+            epoch,
+            subject
+          )
+      }
+
+      "create a new event from a RefreshResource command on a new remote context" in {
+        val schema    = Latest(schemas.resources)
+        val current   = ResourceGen.currentState(projectRef, jsonld, schema)
+        val schemaRev = Revision(schemas.resources, 1)
+
+        val newRemoteContexts = remoteContexts + StaticContextRef(iri"https://bbp.epfl.ch/another-context")
+        val newJsonLd         = jsonld.copy(remoteContexts = newRemoteContexts)
+        eval(
+          Some(current),
+          RefreshResource(projectRef, None, newJsonLd, 1, caller)
+        ).accepted shouldEqual
+          ResourceRefreshed(
+            projectRef,
+            schemaRev,
+            projectRef,
+            newJsonLd,
+            2,
+            epoch,
+            subject
+          )
       }
 
       "create a new event from a TagResource command" in {
@@ -118,8 +159,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           (Some(Latest(schema1)), Latest(schema1), true)
         )
         forAll(list) { case (schemaOptCmd, schemaEvent, deprecated) =>
-          val current =
-            ResourceGen.currentState(myId, projectRef, source, jsonld, schemaEvent, rev = 2, deprecated = deprecated)
+          val current = ResourceGen.currentState(projectRef, jsonld, schemaEvent, rev = 2, deprecated = deprecated)
 
           eval(
             Some(current),
@@ -139,9 +179,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         forAll(list) { case (schemaOptCmd, schemaEvent, deprecated) =>
           val current =
             ResourceGen.currentState(
-              myId,
               projectRef,
-              source,
               jsonld,
               schemaEvent,
               rev = 2,
@@ -165,7 +203,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         )
         forAll(list) { case (schemaOptCmd, schemaEvent) =>
           val current =
-            ResourceGen.currentState(myId, projectRef, source, jsonld, schemaEvent, rev = 2)
+            ResourceGen.currentState(projectRef, jsonld, schemaEvent, rev = 2)
 
           eval(Some(current), DeprecateResource(myId, projectRef, schemaOptCmd, 2, subject)).accepted shouldEqual
             ResourceDeprecated(myId, projectRef, types, 3, epoch, subject)
@@ -173,16 +211,16 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       }
 
       "create a new event from a UndeprecateResource command" in {
-        val deprecatedState = ResourceGen.currentState(myId, projectRef, source, jsonld, deprecated = true)
+        val deprecatedState = ResourceGen.currentState(projectRef, jsonld, deprecated = true)
         val undeprecateCmd  = UndeprecateResource(myId, projectRef, None, 1, subject)
         eval(deprecatedState.some, undeprecateCmd).accepted shouldEqual
           ResourceUndeprecated(myId, projectRef, types, 2, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
-        val current = ResourceGen.currentState(myId, projectRef, source, jsonld)
+        val current = ResourceGen.currentState(projectRef, jsonld)
         val list    = List(
-          current -> UpdateResource(myId, projectRef, None, source, jsonld, 2, caller, None),
+          current -> UpdateResource(projectRef, None, jsonld, 2, caller, None),
           current -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("tag"), 2, subject),
           current -> DeleteResourceTag(myId, projectRef, None, UserTag.unsafe("tag"), 2, subject),
           current -> DeprecateResource(myId, projectRef, None, 2, subject),
@@ -196,7 +234,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       "reject with UnexpectedResourceSchema" in {
         val currentSchema = Latest(schema1)
         val otherSchema   = Latest(schemas.resources).some
-        val current       = ResourceGen.currentState(myId, projectRef, source, jsonld, currentSchema, rev = 2)
+        val current       = ResourceGen.currentState(projectRef, jsonld, currentSchema, rev = 2)
         val commands      = List(
           UndeprecateResource(myId, projectRef, otherSchema, 2, subject),
           DeprecateResource(myId, projectRef, otherSchema, 2, subject)
@@ -209,7 +247,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
 
       "reject with ResourceNotFound" in {
         val list = List(
-          None -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None),
+          None -> UpdateResource(projectRef, None, jsonld, 1, caller, None),
           None -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("myTag"), 1, subject),
           None -> DeprecateResource(myId, projectRef, None, 1, subject),
           None -> UndeprecateResource(myId, projectRef, None, 1, subject)
@@ -219,10 +257,29 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         }
       }
 
+      "reject with 'NoChangeDetected' for a update command not introducing any change" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(projectRef, jsonld, schema)
+        eval(
+          Some(current),
+          UpdateResource(projectRef, None, jsonld, 1, caller, None)
+        ).rejected shouldEqual NoChangeDetected(current)
+      }
+
+      "reject with 'NoChangeDetected' for a refresh command when there is no change" in {
+        val schema  = Latest(schemas.resources)
+        val current = ResourceGen.currentState(projectRef, jsonld, schema)
+
+        eval(
+          Some(current),
+          RefreshResource(projectRef, None, jsonld, 1, caller)
+        ).rejected shouldEqual NoChangeDetected(current)
+      }
+
       "reject with ResourceIsDeprecated" in {
-        val current = ResourceGen.currentState(myId, projectRef, source, jsonld, deprecated = true)
+        val current = ResourceGen.currentState(projectRef, jsonld, deprecated = true)
         val list    = List(
-          current -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None),
+          current -> UpdateResource(projectRef, None, jsonld, 1, caller, None),
           current -> DeprecateResource(myId, projectRef, None, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -231,13 +288,13 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       }
 
       "reject with ResourceIsNotDeprecated" in {
-        val activeState    = ResourceGen.currentState(myId, projectRef, source, jsonld)
+        val activeState    = ResourceGen.currentState(projectRef, jsonld)
         val undeprecateCmd = UndeprecateResource(myId, projectRef, None, 1, subject)
         eval(activeState.some, undeprecateCmd).rejectedWith[ResourceIsNotDeprecated]
       }
 
       "reject with RevisionNotFound" in {
-        val current = ResourceGen.currentState(myId, projectRef, source, jsonld)
+        val current = ResourceGen.currentState(projectRef, jsonld)
         eval(
           Some(current),
           TagResource(myId, projectRef, None, 3, UserTag.unsafe("myTag"), 1, subject)
@@ -250,7 +307,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       val schema         = Latest(schemas.resources)
       val schemaRev      = Revision(schemas.resources, 1)
       val tags           = Tags(UserTag.unsafe("a") -> 1)
-      val current        = ResourceGen.currentState(myId, projectRef, source, jsonld, schema, tags)
+      val current        = ResourceGen.currentState(projectRef, jsonld, schema, tags)
       val compacted      = current.compacted
       val expanded       = current.expanded
       val remoteContexts = current.remoteContexts

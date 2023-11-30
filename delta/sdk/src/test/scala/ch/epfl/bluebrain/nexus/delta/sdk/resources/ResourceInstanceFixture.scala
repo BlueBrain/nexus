@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
@@ -58,12 +59,18 @@ trait ResourceInstanceFixture extends CirceLiteral {
          "name": "Morphology 001"
        }"""
 
-  val compacted: CompactedJsonLd               =
+  val compacted: CompactedJsonLd            =
     CompactedJsonLd.unsafe(myId, compactedObj.topContextValueOrEmpty, compactedObj.remove(keywords.context))
-  val remoteContexts: Map[Iri, RemoteContext]  = Map(
-    staticContext -> StaticContext(staticContext, ContextValue.empty),
-    nexusContext  -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
+  val remoteContexts: Set[RemoteContextRef] = RemoteContextRef(
+    Map(
+      staticContext -> StaticContext(staticContext, ContextValue.empty),
+      nexusContext  -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
+    )
   )
-  val remoteContextRefs: Set[RemoteContextRef] = RemoteContextRef(remoteContexts)
+
+  val graph: Graph = {
+    implicit val jsonldApi: JsonLdApi = JsonLdJavaApi.lenient
+    expanded.toGraph.toTry.get
+  }
 
 }

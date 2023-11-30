@@ -117,6 +117,15 @@ Response
 
 ## Update
 
+@@@ note { .info title="A update operation which does not result in a change of the existing resources is ignored" }
+
+If the submitted update does not result in changes compared to the current revision of the resource, it will be ignored
+and the current revision will be returned to the user.
+
+Nevertheless, if a tag is provided, it will still be applied to the current revision of the resource.
+
+@@@
+
 This operation overrides the payload.
 
 In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
@@ -150,6 +159,20 @@ Response
 
 
 ## Refresh
+
+@@@ note { .info title="A refresh operation which does not result in a change of the existing resources is ignored" }
+
+If the refresh does not result in changes compared to the current revision of the resource, the update will be ignored
+and the current revision will be returned to the user.
+
+@@@
+
+If the submitted update does not result in changes compared to the current revision of the resource, it will be ignored
+and the current revision will be returned to the user.
+
+Nevertheless, if a tag is provided, it will still be applied to the current revision of the resource.
+
+@@@
 
 This operation refreshes the compacted and expanded representations of the resource.
 

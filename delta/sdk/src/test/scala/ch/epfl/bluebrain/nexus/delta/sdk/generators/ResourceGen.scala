@@ -8,8 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{JsonLdAssembly, JsonLdContent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
@@ -28,10 +27,8 @@ object ResourceGen {
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   def currentState(
-      id: Iri,
       project: ProjectRef,
-      source: Json,
-      jsonld: JsonLdResult,
+      jsonld: JsonLdAssembly,
       schema: ResourceRef = Latest(schemas.resources),
       tags: Tags = Tags.empty,
       rev: Int = 1,
@@ -39,13 +36,13 @@ object ResourceGen {
       subject: Subject = Anonymous
   ) =
     ResourceState(
-      id,
+      jsonld.id,
       project,
       project,
-      source,
+      jsonld.source,
       jsonld.compacted,
       jsonld.expanded,
-      RemoteContextRef(jsonld.remoteContexts),
+      jsonld.remoteContexts,
       rev,
       deprecated,
       schema,
@@ -67,21 +64,6 @@ object ResourceGen {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Resource(id, project, tags, schema, source, compacted, expanded)
-  }
-
-  def resourceAsync(
-      id: Iri,
-      project: ProjectRef,
-      source: Json,
-      schema: ResourceRef = Latest(schemas.resources),
-      tags: Tags = Tags.empty
-  )(implicit resolution: RemoteContextResolution): IO[Resource] = {
-    for {
-      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
-      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
-    } yield {
-      Resource(id, project, tags, schema, source, compacted, expanded)
-    }
   }
 
   def sourceToResourceF(

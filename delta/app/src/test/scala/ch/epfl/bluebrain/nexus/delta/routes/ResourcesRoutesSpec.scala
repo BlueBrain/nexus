@@ -133,7 +133,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)._1
 
   private val payloadUpdated             = payload deepMerge json"""{"name": "Alice", "address": null}"""
-  private def payloadUpdated(id: String) = simplePayload(id) deepMerge json"""{"name": "Alice", "address": null}"""
+  private def payloadUpdated(id: String) =
+    simplePayload(id) deepMerge json"""{"name": "Alice", "address": null , "uuid": "${UUID.randomUUID()}"}"""
 
   private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
@@ -334,15 +335,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       val schema = "myschema"
       givenAResourceWithSchema(schema) { id =>
         val endpoints = List(
-          s"/v1/resources/myorg/myproject/_/$id/refresh"                         -> 1,
-          s"/v1/resources/myorg/myproject/_/${encodeWithBase(id)}/refresh"       -> 2,
-          s"/v1/resources/myorg/myproject/$schema/$id/refresh"                   -> 3,
-          s"/v1/resources/myorg/myproject/${encodeWithBase(schema)}/$id/refresh" -> 4
+          s"/v1/resources/myorg/myproject/_/$id/refresh",
+          s"/v1/resources/myorg/myproject/_/${encodeWithBase(id)}/refresh",
+          s"/v1/resources/myorg/myproject/$schema/$id/refresh",
+          s"/v1/resources/myorg/myproject/${encodeWithBase(schema)}/$id/refresh"
         )
-        forAll(endpoints) { case (endpoint, rev) =>
+        forAll(endpoints) { endpoint =>
           Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> asWriter ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual standardWriterMetadata(id, rev = rev + 1, schema = schema1.id)
+            response.asJson shouldEqual standardWriterMetadata(id, rev = 1, schema = schema1.id)
           }
         }
       }
