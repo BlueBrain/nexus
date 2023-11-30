@@ -188,7 +188,8 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
   )
 
   private val reset = new ElasticSearchDefaultViewsResetter {
-    override def resetDefaultViews: IO[Unit] = IO.unit
+    override def resetDefaultViews: IO[Unit]                                       = IO.unit
+    override private[elasticsearch] def resetView(view: IndexingViewDef): IO[Unit] = IO.unit
   }.resetDefaultViews
 
   test("Start the coordinator") {

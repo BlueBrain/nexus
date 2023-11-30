@@ -5,17 +5,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSe
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import fs2.Stream
 import munit.AnyFixture
+
+import java.time.Instant
 
 class ElasticSearchDefaultViewsResetterSuite
     extends NexusSuite
@@ -115,14 +118,26 @@ class ElasticSearchDefaultViewsResetterSuite
       permission = permissions.query
     )
 
-  private val fetchIndexingView: (IdSegmentRef, ProjectRef) => IO[ActiveViewDef] = (_, _) => IO.pure(view)
-  private val projects: Stream[IO, ProjectRef]                                   = Stream.emit(ProjectRef.unsafe("org", "proj"))
+//  private val fetchIndexingView: (IdSegmentRef, ProjectRef) => IO[ActiveViewDef] = (_, _) => IO.pure(view)
+//  private val projects: Stream[IO, ProjectRef]                                   = Stream.emit(ProjectRef.unsafe("org", "proj"))
+
+  val elem = Elem.SuccessElem(
+    tpe = EntityType("elasticsearch"),
+    id = defaultViewId,
+    project = Some(view.ref.project),
+    instant = Instant.EPOCH,
+    offset = Offset.start,
+    value = view,
+    rev = 1
+  )
+
+  val viewStream: ElemStream[IndexingViewDef] =
+    Stream(elem)
 
   private lazy val resetWithNoViewCreation = ElasticSearchDefaultViewsResetter(
+    viewStream,
     _ => IO(true),
-    fetchIndexingView,
     (_, _, _) => IO.unit,
-    projects,
     defaultViewValue,
     IO(true),
     xas
@@ -130,10 +145,9 @@ class ElasticSearchDefaultViewsResetterSuite
 
   private def resetWithViewCreation(created: Ref[IO, String]) =
     ElasticSearchDefaultViewsResetter(
+      viewStream,
       _ => IO(true),
-      fetchIndexingView,
       (id, _, _) => created.set(id.toString) >> IO.unit,
-      projects,
       defaultViewValue,
       IO(true),
       xas
@@ -141,10 +155,9 @@ class ElasticSearchDefaultViewsResetterSuite
 
   private def resetWithIndexDeletion(index: Ref[IO, IndexLabel]) =
     ElasticSearchDefaultViewsResetter(
+      viewStream,
       idx => index.set(idx) >> IO(true),
-      fetchIndexingView,
       (_, _, _) => IO.unit,
-      projects,
       defaultViewValue,
       IO(true),
       xas
