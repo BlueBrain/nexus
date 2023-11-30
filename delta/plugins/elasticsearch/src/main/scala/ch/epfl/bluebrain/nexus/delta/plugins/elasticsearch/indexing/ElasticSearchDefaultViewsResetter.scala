@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.effect.IO
+import cats.effect.std.Env
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -27,7 +28,7 @@ object ElasticSearchDefaultViewsResetter {
   private val logger = Logger[ElasticSearchDefaultViewsResetter]
 
   def resetTrigger: IO[Boolean] =
-    IO.delay(sys.env.getOrElse("RESET_DEFAULT_ES_VIEWS", "false").toBoolean)
+    Env[IO].get("RESET_DEFAULT_ES_VIEWS").map(_.getOrElse("false").toBoolean)
 
   /**
     * Provides a resetter that for each default elasticsearch view:
