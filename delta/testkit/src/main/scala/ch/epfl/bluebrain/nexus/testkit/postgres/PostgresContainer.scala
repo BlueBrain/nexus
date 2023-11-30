@@ -9,7 +9,7 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.DurationConverters.ScalaDurationOps
 
 class PostgresContainer(user: String, password: String)
-    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:15.4")) {
+    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:15.5")) {
   addEnv("POSTGRES_USER", user)
   addEnv("POSTGRES_PASSWORD", password)
   addExposedPort(5432)
@@ -27,14 +27,14 @@ object PostgresContainer {
     *   the db password
     */
   def resource(user: String, password: String): Resource[IO, PostgresContainer] = {
-    def createAndStartContainer = {
+    def createAndStartContainer = IO.blocking {
       val container = new PostgresContainer(user, password)
         .withReuse(false)
         .withStartupTimeout(60.seconds.toJava)
       container.start()
       container
     }
-    Resource.make(IO.delay(createAndStartContainer))(container => IO.delay(container.stop()))
+    Resource.make(createAndStartContainer)(container => IO.blocking(container.stop()))
   }
 
 }

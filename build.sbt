@@ -764,21 +764,24 @@ lazy val storage = project
       catsEffect,
       circeCore,
       circeGenericExtras,
+      fs2io,
       logback,
       pureconfig,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       mockito         % Test,
       munit           % Test,
-      munitCatsEffect  % Test,
+      munitCatsEffect % Test,
       scalaTest       % Test
     ),
+    addCompilerPlugin(betterMonadicFor),
     cleanFiles              ++= Seq(
       baseDirectory.value / "permissions-fixer" / "target" / "**",
       baseDirectory.value / "nexus-storage.jar"
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     Test / parallelExecution := false,
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.ScalaLibrary,
     Universal / mappings     := {
       (Universal / mappings).value :+ cargo.value
     }

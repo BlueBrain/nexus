@@ -125,7 +125,7 @@ final class Batch[SinkFormat](
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
       .flatMap(_.toGraph)
-      .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
+      .map { g => Option.when(!g.isEmpty)(gr.copy(graph = g.replaceRootNode(gr.id))) }
   }
 
   override def apply(elements: Chunk[Elem[GraphResource]]): IO[Chunk[Elem[Unit]]] =
@@ -135,7 +135,7 @@ final class Batch[SinkFormat](
                        case Some(fullGraph) =>
                          elements.traverse { elem =>
                            elem.evalMapFilter { gr =>
-                             replaceGraph(gr, fullGraph).flatMap(transform)
+                             replaceGraph(gr, fullGraph).flatMap(_.traverseFilter(transform))
                            }
                          }
                        case None            =>

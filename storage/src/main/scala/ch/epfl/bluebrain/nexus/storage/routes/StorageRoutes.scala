@@ -5,17 +5,19 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, StatusCode, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import cats.effect.unsafe.implicits._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.storage.routes.StorageDirectives._
-import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile
+import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.{CopyFilePayload, LinkFile}
 import ch.epfl.bluebrain.nexus.storage.routes.StorageRoutes.LinkFile._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, DecodingFailure, Encoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
@@ -33,38 +35,55 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
           }
         },
         // Consume files
-        (pathPrefix("files") & extractPath(name)) { path =>
-          operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
-            bucketExists(name).apply { implicit bucketExistsEvidence =>
-              concat(
-                put {
-                  pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
-                    // Upload file
-                    fileUpload("file") { case (_, source) =>
-                      complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
+        pathPrefix("files") {
+          bucketExists(name).apply { implicit bucketExistsEvidence =>
+            concat(
+              extractPath(name) { path =>
+                operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
+                  concat(
+                    put {
+                      pathNotExists(name, path).apply { implicit pathNotExistEvidence =>
+                        // Upload file
+                        fileUpload("file") { case (_, source) =>
+                          complete(Created -> storages.createFile(name, path, source).unsafeToFuture())
+                        }
+                      }
+                    },
+                    put {
+                      // Link file/dir
+                      entity(as[LinkFile]) { case LinkFile(source) =>
+                        validatePath(name, source) {
+                          complete(storages.moveFile(name, source, path).runWithStatus(OK))
+                        }
+                      }
+                    },
+                    // Get file
+                    get {
+                      pathExists(name, path).apply { implicit pathExistsEvidence =>
+                        storages.getFile(name, path) match {
+                          case Right((source, Some(_))) => complete(HttpEntity(`application/octet-stream`, source))
+                          case Right((source, None))    => complete(HttpEntity(`application/x-tar`, source))
+                          case Left(err)                => complete(err)
+                        }
+                      }
                     }
-                  }
-                },
-                put {
-                  // Link file/dir
-                  entity(as[LinkFile]) { case LinkFile(source) =>
-                    validatePath(name, source) {
-                      complete(storages.moveFile(name, source, path).runWithStatus(OK))
-                    }
-                  }
-                },
-                // Get file
-                get {
-                  pathExists(name, path).apply { implicit pathExistsEvidence =>
-                    storages.getFile(name, path) match {
-                      case Right((source, Some(_))) => complete(HttpEntity(`application/octet-stream`, source))
-                      case Right((source, None))    => complete(HttpEntity(`application/x-tar`, source))
-                      case Left(err)                => complete(err)
+                  )
+                }
+              },
+              operationName(s"/${hc.prefix}/buckets/{}/files") {
+                post {
+                  // Copy files within protected directory
+                  entity(as[CopyFilePayload]) { payload =>
+                    val files = payload.files
+                    pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
+                      validatePaths(name, files.map(_.source)) {
+                        complete(storages.copyFiles(name, files).runWithStatus(Created))
+                      }
                     }
                   }
                 }
-              )
-            }
+              }
+            )
           }
         },
         // Consume attributes
@@ -99,9 +118,21 @@ object StorageRoutes {
   final private[routes] case class LinkFile(source: Uri.Path)
 
   private[routes] object LinkFile {
-    import ch.epfl.bluebrain.nexus.storage._
-    implicit val linkFileDec: Decoder[LinkFile] = deriveDecoder[LinkFile]
-    implicit val linkFileEnc: Encoder[LinkFile] = deriveEncoder[LinkFile]
+    import ch.epfl.bluebrain.nexus.storage.{decUriPath, encUriPath}
+    implicit val dec: Decoder[LinkFile] = deriveDecoder[LinkFile]
+    implicit val enc: Encoder[LinkFile] = deriveEncoder[LinkFile]
+  }
+
+  final private[routes] case class CopyFilePayload(files: NonEmptyList[CopyFile])
+  private[routes] object CopyFilePayload {
+    implicit val dec: Decoder[CopyFilePayload] = Decoder.instance { cur =>
+      cur
+        .as[NonEmptyList[CopyFile]]
+        .bimap(
+          _ => DecodingFailure("No files provided for copy operation", Nil),
+          files => CopyFilePayload(files)
+        )
+    }
   }
 
   final def apply(storages: Storages[AkkaSource])(implicit cfg: AppConfig): StorageRoutes = {
