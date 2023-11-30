@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.GraphHelpers
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.rdfType
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdJavaApi, JsonLdOptions}
@@ -13,9 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmp
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class GraphSpec extends CatsEffectSpec with GraphHelpers {
+class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
 
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")
@@ -274,6 +275,55 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers {
       val expandedJson = jsonContentOf("expanded-invalid-iri.json")
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
       Graph(expanded)(JsonLdJavaApi.lenient, JsonLdOptions.defaults).rightValue
+    }
+
+    "be isomorphic from the same expanded json value" in {
+      val graph2 = expanded.toGraph.rightValue
+      graph.isIsomorphic(graph2) shouldEqual true
+    }
+
+    "not be isomorphic when there is another type" in {
+      val graph2 = expanded.addType(nxv + "ExtraType").toGraph.rightValue
+      graph.isIsomorphic(graph2) shouldEqual false
+    }
+
+    "not be isomorphic when a property is missing" in {
+      val graph2 = expanded.remove(schema + "deprecated").toGraph.rightValue
+      graph.isIsomorphic(graph2) shouldEqual false
+    }
+
+    "not be isomorphic when a literal is different" in {
+      val graph2 = expanded.add(schema + "deprecated", value = true).toGraph.rightValue
+      graph.isIsomorphic(graph2) shouldEqual false
+    }
+
+    def source(value1: Int, value2: Int) =
+      json"""
+        [
+          {
+            "@id": "https://bbp.epfl.ch/array",
+            "@type": [ "http://schema.org/Array" ],
+            "https://bbp.epfl.ch/value": [
+              {
+                "https://bbp.epfl.ch/number": [
+                  {
+                    "@value": $value1
+                  },
+                  {
+                    "@value": $value2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      """
+
+    "be isomorphic when the same values in a array do not appear in the same order" in {
+      val graph1 = ExpandedJsonLd(source(1, 2)).accepted.toGraph.rightValue
+      val graph2 = ExpandedJsonLd(source(2, 1)).accepted.toGraph.rightValue
+
+      graph1.isIsomorphic(graph2) shouldEqual true
     }
   }
 }

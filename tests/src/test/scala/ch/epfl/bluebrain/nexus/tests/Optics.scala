@@ -117,6 +117,7 @@ object Optics {
   val `@id`   = root.`@id`.string
   val `@type` = root.`@type`.string
   val _uuid   = root._uuid.string
+  val _rev    = root._rev.int
 
   val _total = root._total.long
 

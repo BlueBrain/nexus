@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,9 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.{logger, ResourcesLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -43,7 +44,7 @@ final class ResourcesImpl private (
       projectContext <- fetchContext.onCreate(projectRef)
       schemeRef      <- IO.fromEither(expandResourceRef(schema, projectContext))
       jsonld         <- sourceParser(projectRef, projectContext, source)
-      res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
+      res            <- eval(CreateResource(projectRef, schemeRef, jsonld, caller, tag))
     } yield res
   }.span("createResource")
 
@@ -58,7 +59,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onCreate, projectRef, id)
       schemeRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       jsonld                <- sourceParser(projectRef, projectContext, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
+      res                   <- eval(CreateResource(projectRef, schemeRef, jsonld, caller, tag))
     } yield res
   }.span("createResource")
 
@@ -74,7 +75,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       jsonld                <- sourceParser(projectRef, projectContext, iri, source)
-      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller, tag))
+      res                   <- eval(UpdateResource(projectRef, schemeRefOpt, jsonld, rev, caller, tag))
     } yield res
   }.span("updateResource")
 
@@ -87,8 +88,7 @@ final class ResourcesImpl private (
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRef             <- IO.fromEither(expandResourceRef(schema, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      res                   <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, Some(schema))
-                               else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
+      res                   <- eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.rev, caller))
     } yield res
   }.span("updateResourceSchema")
 
@@ -102,7 +102,7 @@ final class ResourcesImpl private (
       schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
       jsonld                <- sourceParser(projectRef, projectContext, iri, resource.source)
-      res                   <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
+      res                   <- eval(RefreshResource(projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
   }.span("refreshResource")
 
@@ -192,10 +192,17 @@ final class ResourcesImpl private (
     fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc))
 
   private def eval(cmd: ResourceCommand): IO[DataResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource).recoverWith { case NoChangeDetected(currentState) =>
+      val message =
+        s"""Command ${cmd.getClass.getSimpleName} from '${cmd.subject}' did not result in any change on resource '${cmd.id}'
+           |in project '${cmd.project}', returning the original value.""".stripMargin
+      logger.info(message).as(currentState.toResource)
+    }
 }
 
 object ResourcesImpl {
+
+  private val logger = Logger[ResourcesImpl]
 
   type ResourcesLog =
     ScopedEventLog[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]

@@ -15,7 +15,7 @@ trait CatsIOValues {
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted(implicit pos: source.Position): A = {
       io.attempt.unsafeRunTimed(45.seconds).getOrElse(fail("IO timed out during .accepted call")) match {
-        case Left(e)      => fail(s"IO failed when it was expected to succeed.", e)
+        case Left(e)      => fail(s"IO failed when it was expected to succeed $e.", e)
         case Right(value) => value
       }
     }

@@ -59,8 +59,8 @@ final class SchemasImpl private (
       pc               <- fetchContext.onCreate(projectRef)
       iri              <- id.traverse(expandIri(_, pc))
       jsonLd           <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved <- resolveImports(jsonLd.iri, projectRef, jsonLd.expanded)
-    } yield CreateSchema(jsonLd.iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
+      expandedResolved <- resolveImports(jsonLd.id, projectRef, jsonLd.expanded)
+    } yield CreateSchema(jsonLd.id, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
 
   override def update(
       id: IdSegment,

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.{dropNullValues, JsonObjOps}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{IriEncoder, JsonLdAssembly}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -19,10 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
+import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -101,6 +101,35 @@ object ResourceEvent {
       tag: Option[UserTag]
   ) extends ResourceEvent
 
+  object ResourceCreated {
+
+    def apply(
+        project: ProjectRef,
+        schema: ResourceRef.Revision,
+        schemaProject: ProjectRef,
+        jsonld: JsonLdAssembly,
+        instant: Instant,
+        subject: Subject,
+        tag: Option[UserTag]
+    ): ResourceCreated =
+      ResourceCreated(
+        jsonld.id,
+        project,
+        schema,
+        schemaProject,
+        jsonld.types,
+        jsonld.source,
+        jsonld.compacted,
+        jsonld.expanded,
+        jsonld.remoteContexts,
+        1,
+        instant,
+        subject,
+        tag
+      )
+
+  }
+
   /**
     * Event representing a resource modification.
     *
@@ -147,6 +176,35 @@ object ResourceEvent {
       subject: Subject,
       tag: Option[UserTag]
   ) extends ResourceEvent
+
+  object ResourceUpdated {
+    def apply(
+        project: ProjectRef,
+        schema: ResourceRef.Revision,
+        schemaProject: ProjectRef,
+        jsonld: JsonLdAssembly,
+        rev: Int,
+        instant: Instant,
+        subject: Subject,
+        tag: Option[UserTag]
+    ): ResourceUpdated =
+      ResourceUpdated(
+        jsonld.id,
+        project,
+        schema,
+        schemaProject,
+        jsonld.types,
+        jsonld.source,
+        jsonld.compacted,
+        jsonld.expanded,
+        jsonld.remoteContexts,
+        rev,
+        instant,
+        subject,
+        tag
+      )
+
+  }
 
   final case class ResourceSchemaUpdated(
       id: Iri,
@@ -199,6 +257,31 @@ object ResourceEvent {
       instant: Instant,
       subject: Subject
   ) extends ResourceEvent
+
+  object ResourceRefreshed {
+    def apply(
+        project: ProjectRef,
+        schema: ResourceRef.Revision,
+        schemaProject: ProjectRef,
+        jsonld: JsonLdAssembly,
+        rev: Int,
+        instant: Instant,
+        subject: Subject
+    ): ResourceRefreshed =
+      ResourceRefreshed(
+        jsonld.id,
+        project,
+        schema,
+        schemaProject,
+        jsonld.types,
+        jsonld.compacted,
+        jsonld.expanded,
+        jsonld.remoteContexts,
+        rev,
+        instant,
+        subject
+      )
+  }
 
   /**
     * Event representing a tag addition to a resource.

@@ -9,12 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, ProjectContextRejection, ReservedResourceId}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -59,9 +60,9 @@ class ResourcesTrialSuite extends NexusSuite with ValidateResourceFixture {
 
   private def assertSuccess(
       result: ResourceGenerationResult
-  )(schema: Option[SchemaResource], expected: Resource)(implicit loc: Location) = {
+  )(schema: Option[SchemaResource])(implicit loc: Location) = {
     assertEquals(result.schema, schema)
-    assertEquals(result.attempt.map(_.value), Right(expected))
+    assertEquals(result.attempt.map(_.value.id), Right(id))
   }
 
   private def assertError(
@@ -80,13 +81,7 @@ class ResourcesTrialSuite extends NexusSuite with ValidateResourceFixture {
       resolverContextResolution,
       clock
     )
-    for {
-      expectedData <-
-        ResourceGen.resourceAsync(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
-      result       <- trial.generate(projectRef, resourceSchema, source)
-    } yield {
-      assertSuccess(result)(None, expectedData)
-    }
+    trial.generate(projectRef, resourceSchema, source).map(assertSuccess(_)(None))
   }
 
   test("Successfully generates a resource with a new schema") {
@@ -105,11 +100,9 @@ class ResourcesTrialSuite extends NexusSuite with ValidateResourceFixture {
       schema       <- SchemaGen
                         .schemaAsync(anotherSchema, project.ref, schemaSource.removeKeys(keywords.id))
                         .map(SchemaGen.resourceFor(_))
-      expectedData <-
-        ResourceGen.resourceAsync(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
       result       <- trial.generate(projectRef, schema, source)
     } yield {
-      assertSuccess(result)(Some(schema), expectedData)
+      assertSuccess(result)(Some(schema))
     }
   }
 
@@ -129,60 +122,49 @@ class ResourcesTrialSuite extends NexusSuite with ValidateResourceFixture {
   test("Validate a resource against a new schema reference") {
     val anotherSchema = nxv + "anotherSchema"
     val expected      = Validated(projectRef, Revision(anotherSchema, defaultSchemaRevision), defaultReport)
-    for {
-      resource <- ResourceGen
-                    .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
-                    .map(ResourceGen.resourceFor(_))
-      trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
-                    alwaysValidate,
-                    fetchContext,
-                    resolverContextResolution,
-                    clock
-                  )
-      result   <- trial.validate(id, projectRef, Some(anotherSchema))
-    } yield {
-      assertEquals(result, expected)
-    }
+    val resource      = ResourceGen.currentState(projectRef, JsonLdAssembly.empty(id), Revision(resourceSchema, 1))
+
+    val trial = ResourcesTrial(
+      (_, _) => IO.pure(resource),
+      alwaysValidate,
+      fetchContext,
+      resolverContextResolution,
+      clock
+    )
+
+    trial.validate(id, projectRef, Some(anotherSchema)).assertEquals(expected)
   }
 
   test("Validate a resource against its own schema") {
-    for {
-      resource <- ResourceGen
-                    .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
-                    .map(ResourceGen.resourceFor(_))
-      trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
-                    alwaysValidate,
-                    fetchContext,
-                    resolverContextResolution,
-                    clock
-                  )
-      result   <- trial.validate(id, projectRef, None)
-    } yield {
-      assertEquals(result, Validated(projectRef, Revision(resourceSchema, defaultSchemaRevision), defaultReport))
-    }
+    val resource = ResourceGen.currentState(projectRef, JsonLdAssembly.empty(id), Revision(resourceSchema, 1))
+
+    val expected = Validated(projectRef, Revision(resourceSchema, defaultSchemaRevision), defaultReport)
+
+    val trial = ResourcesTrial(
+      (_, _) => IO.pure(resource),
+      alwaysValidate,
+      fetchContext,
+      resolverContextResolution,
+      clock
+    )
+    trial.validate(id, projectRef, None).assertEquals(expected)
   }
 
   test("Fail to validate a resource against the specified schema") {
+    val resource      = ResourceGen.currentState(projectRef, JsonLdAssembly.empty(id), Revision(resourceSchema, 1))
     val anotherSchema = nxv + "anotherSchema"
-    for {
-      resource     <- ResourceGen
-                        .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
-                        .map(ResourceGen.resourceFor(_))
-      expectedError =
-        InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
-      trial         = ResourcesTrial(
-                        (_, _) => IO.pure(resource),
-                        alwaysFail(expectedError),
-                        fetchContext,
-                        resolverContextResolution,
-                        clock
-                      )
-      result       <- trial.validate(id, projectRef, Some(anotherSchema)).attempt
-    } yield {
-      assertEquals(result, Left(expectedError))
-    }
+    val expectedError =
+      InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.expanded)
+
+    val trial = ResourcesTrial(
+      (_, _) => IO.pure(resource),
+      alwaysFail(expectedError),
+      fetchContext,
+      resolverContextResolution,
+      clock
+    )
+
+    trial.validate(id, projectRef, Some(anotherSchema)).interceptEquals(expectedError)
   }
 
 }
