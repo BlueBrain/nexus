@@ -78,6 +78,15 @@ object OrganizationRejection {
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
   /**
+    * Signals an attempt to update/deprecate an organization that is already deprecated.
+    *
+    * @param label
+    *   the label of the organization
+    */
+  final case class OrganizationIsNotDeprecated(label: Label)
+      extends OrganizationRejection(s"Organization '$label' is not deprecated.")
+
+  /**
     * Signals an attempt to delete an organization that contains at least one project.
     *
     * @param label

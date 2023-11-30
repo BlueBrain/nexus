@@ -64,6 +64,7 @@ final class OrganizationsRoutes(
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
+      println(allAcls)
       (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
         OrganizationSearchParams(
           deprecated,
@@ -104,47 +105,58 @@ final class OrganizationsRoutes(
                   )
                 }
             },
-            (resolveOrg & pathEndOrSingleSlash) { id =>
-              operationName(s"$prefixSegment/orgs/{label}") {
-                concat(
-                  put {
-                    parameter("rev".as[Int]) { rev =>
-                      authorizeFor(id, orgs.write).apply {
-                        // Update organization
-                        entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                          emitMetadata(
-                            organizations
-                              .update(id, description, rev)
-                          )
+            resolveOrg { org =>
+              concat(
+                pathEndOrSingleSlash {
+                  operationName(s"$prefixSegment/orgs/{label}") {
+                    concat(
+                      put {
+                        parameter("rev".as[Int]) { rev =>
+                          authorizeFor(org, orgs.write).apply {
+                            // Update organization
+                            entity(as[OrganizationInput]) { case OrganizationInput(description) =>
+                              emitMetadata(
+                                organizations
+                                  .update(org, description, rev)
+                              )
+                            }
+                          }
                         }
-                      }
-                    }
-                  },
-                  get {
-                    authorizeFor(id, orgs.read).apply {
-                      parameter("rev".as[Int].?) {
-                        case Some(rev) => // Fetch organization at specific revision
-                          emit(organizations.fetchAt(id, rev).attemptNarrow[OrganizationRejection])
-                        case None      => // Fetch organization
-                          emit(organizations.fetch(id).attemptNarrow[OrganizationRejection])
+                      },
+                      get {
+                        authorizeFor(org, orgs.read).apply {
+                          parameter("rev".as[Int].?) {
+                            case Some(rev) => // Fetch organization at specific revision
+                              emit(organizations.fetchAt(org, rev).attemptNarrow[OrganizationRejection])
+                            case None      => // Fetch organization
+                              emit(organizations.fetch(org).attemptNarrow[OrganizationRejection])
 
-                      }
-                    }
-                  },
-                  // Deprecate or delete organization
-                  delete {
-                    parameters("rev".as[Int].?, "prune".as[Boolean].?) {
-                      case (Some(rev), None)        => deprecate(id, rev)
-                      case (Some(rev), Some(false)) => deprecate(id, rev)
-                      case (None, Some(true))       =>
-                        authorizeFor(id, orgs.delete).apply {
-                          emit(orgDeleter.delete(id).attemptNarrow[OrganizationRejection])
+                          }
                         }
-                      case (_, _)                   => emit((InvalidDeleteRequest(id): OrganizationRejection).asLeft[Unit].pure[IO])
+                      },
+                      // Deprecate or delete organization
+                      delete {
+                        parameters("rev".as[Int].?, "prune".as[Boolean].?) {
+                          case (Some(rev), None)        => deprecate(org, rev)
+                          case (Some(rev), Some(false)) => deprecate(org, rev)
+                          case (None, Some(true))       =>
+                            authorizeFor(org, orgs.delete).apply {
+                              emit(orgDeleter.delete(org).attemptNarrow[OrganizationRejection])
+                            }
+                          case (_, _)                   => emit((InvalidDeleteRequest(org): OrganizationRejection).asLeft[Unit].pure[IO])
+                        }
+                      }
+                    )
+                  }
+                },
+                (put & pathPrefix("undeprecate") & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
+                  operationName(s"$prefixSegment/orgs/{label}/undeprecate") {
+                    authorizeFor(org, orgs.write).apply {
+                      emitMetadata(organizations.undeprecate(org, rev))
                     }
                   }
-                )
-              }
+                }
+              )
             },
             (label & pathEndOrSingleSlash) { label =>
               operationName(s"$prefixSegment/orgs/{label}") {

@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.{MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.matchers.GeneralMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, OpticsValidators}
 import io.circe.Json
 import org.scalactic.source.Position

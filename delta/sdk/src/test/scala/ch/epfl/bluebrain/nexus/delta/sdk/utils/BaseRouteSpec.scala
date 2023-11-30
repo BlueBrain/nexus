@@ -21,4 +21,5 @@ trait BaseRouteSpec
     with TestMatchers
     with Inspectors
     with ConfigFixtures
-    with RouteFixtures {}
+    with RouteFixtures
+    with RouteFixtureBuilders {}

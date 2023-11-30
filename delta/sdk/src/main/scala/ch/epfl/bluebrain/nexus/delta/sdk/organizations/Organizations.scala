@@ -71,6 +71,18 @@ trait Organizations {
   )(implicit caller: Subject): IO[OrganizationResource]
 
   /**
+    * Undeprecate an organization.
+    *
+    * @param org
+    *   label of the organization to deprecate
+    * @param rev
+    *   latest known revision
+    * @param caller
+    *   a reference to the subject that initiated the action
+    */
+  def undeprecate(org: Label, rev: Int)(implicit caller: Subject): IO[OrganizationResource]
+
+  /**
     * Fetch an organization at the current revision by label.
     *
     * @param label
@@ -147,7 +159,11 @@ object Organizations {
       case (Some(c), OrganizationDeprecated(_, _, rev, instant, subject)) =>
         Some(c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject))
 
-      case (_, _) => None
+      case (Some(c), OrganizationUndeprecated(_, _, rev, instant, subject)) =>
+        Some(c.copy(rev = rev, deprecated = false, updatedAt = instant, updatedBy = subject))
+
+      case (Some(_), OrganizationCreated(_, _, _, _, _, _)) => None
+      case (None, _)                                        => None
     }
 
   private[delta] def evaluate(clock: Clock[IO])(state: Option[OrganizationState], command: OrganizationCommand)(implicit
@@ -182,10 +198,19 @@ object Organizations {
         case Some(s)                   => clock.realTimeInstant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
       }
 
+    def undeprecate(c: UndeprecateOrganization) =
+      state match {
+        case None                      => IO.raiseError(OrganizationNotFound(c.label))
+        case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if !s.deprecated  => IO.raiseError(OrganizationIsNotDeprecated(s.label))
+        case Some(s)                   => clock.realTimeInstant.map(OrganizationUndeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
+      }
+
     command match {
-      case c: CreateOrganization    => create(c)
-      case u: UpdateOrganization    => update(u)
-      case d: DeprecateOrganization => deprecate(d)
+      case c: CreateOrganization      => create(c)
+      case u: UpdateOrganization      => update(u)
+      case d: DeprecateOrganization   => deprecate(d)
+      case d: UndeprecateOrganization => undeprecate(d)
     }
   }
 
@@ -206,9 +231,10 @@ object Organizations {
       OrganizationState.serializer,
       onUniqueViolation = (id: Label, c: OrganizationCommand) =>
         c match {
-          case _: CreateOrganization    => OrganizationAlreadyExists(id)
-          case u: UpdateOrganization    => IncorrectRev(u.rev, u.rev + 1)
-          case d: DeprecateOrganization => IncorrectRev(d.rev, d.rev + 1)
+          case _: CreateOrganization      => OrganizationAlreadyExists(id)
+          case u: UpdateOrganization      => IncorrectRev(u.rev, u.rev + 1)
+          case d: DeprecateOrganization   => IncorrectRev(d.rev, d.rev + 1)
+          case u: UndeprecateOrganization => IncorrectRev(u.rev, u.rev + 1)
         }
     )
 }
