@@ -64,7 +64,6 @@ final class OrganizationsRoutes(
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
-      println(allAcls)
       (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
         OrganizationSearchParams(
           deprecated,

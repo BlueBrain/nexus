@@ -73,11 +73,7 @@ trait AclCheck {
       permission: Permission,
       acls: Map[AclAddress, Acl]
   )(implicit caller: Caller): IO[Boolean] = {
-    def fetch = (address: AclAddress) => {
-      val maybeAcl = acls.get(address)
-      println(s"caller ${caller.subject} address $address acl $maybeAcl")
-      IO.fromOption(maybeAcl)(AclNotFound(address))
-    }
+    def fetch = (address: AclAddress) => IO.fromOption(acls.get(address))(AclNotFound(address))
     authorizeFor(path, permission, caller.identities, fetch)
   }
 
