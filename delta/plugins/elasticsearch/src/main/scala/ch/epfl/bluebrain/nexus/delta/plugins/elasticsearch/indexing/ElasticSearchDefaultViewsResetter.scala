@@ -48,7 +48,7 @@ object ElasticSearchDefaultViewsResetter {
     apply(
       client.deleteIndex,
       views.fetchIndexingView,
-      views.unsafeCreate(_, _, _)(subject).void,
+      views.internalCreate(_, _, _)(subject).void,
       projects.currentRefs,
       newViewValue,
       resetTrigger,
@@ -58,7 +58,7 @@ object ElasticSearchDefaultViewsResetter {
   def apply(
       deleteIndex: IndexLabel => IO[Boolean],
       fetchIndexingView: (IdSegmentRef, ProjectRef) => IO[ActiveViewDef],
-      unsafeCreate: (Iri, ProjectRef, ElasticSearchViewValue) => IO[Unit],
+      createView: (Iri, ProjectRef, ElasticSearchViewValue) => IO[Unit],
       projects: Stream[IO, ProjectRef],
       newViewValue: ElasticSearchViewValue,
       resetTrigger: IO[Boolean],
@@ -101,7 +101,7 @@ object ElasticSearchDefaultViewsResetter {
         """.stripMargin.update.run.void
 
       private def createDefaultView(project: ProjectRef): IO[Unit] =
-        unsafeCreate(defaultViewId, project, newViewValue)
+        createView(defaultViewId, project, newViewValue)
           .flatMap(_ => logger.info(s"Created a new defaultElasticSearchView in project '$project'."))
           .handleErrorWith(e => logger.error(s"Could not create view. Message: '${e.getMessage}'"))
           .void

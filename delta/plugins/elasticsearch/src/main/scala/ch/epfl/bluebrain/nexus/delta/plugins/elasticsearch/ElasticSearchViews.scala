@@ -146,7 +146,7 @@ final class ElasticSearchViews private (
     * @param value
     *   configuration of the view to be created
     */
-  def unsafeCreate(
+  private[elasticsearch] def internalCreate(
       iri: Iri,
       project: ProjectRef,
       value: ElasticSearchViewValue
