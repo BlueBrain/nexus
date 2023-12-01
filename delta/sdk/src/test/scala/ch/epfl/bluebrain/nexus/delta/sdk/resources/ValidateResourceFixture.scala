@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
@@ -20,8 +19,7 @@ trait ValidateResourceFixture {
 
   def alwaysValidate: ValidateResource = new ValidateResource {
     override def apply(
-        resourceId: Iri,
-        expanded: ExpandedJsonLd,
+        jsonld: JsonLdAssembly,
         schemaRef: ResourceRef,
         projectRef: ProjectRef,
         caller: Caller
@@ -35,8 +33,7 @@ trait ValidateResourceFixture {
       )
 
     override def apply(
-        resourceId: Iri,
-        expanded: ExpandedJsonLd,
+        jsonld: JsonLdAssembly,
         schema: ResourceF[Schema]
     ): IO[ValidationResult] =
       IO.pure(
@@ -50,16 +47,14 @@ trait ValidateResourceFixture {
 
   def alwaysFail(expected: ResourceRejection): ValidateResource = new ValidateResource {
     override def apply(
-        resourceId: Iri,
-        expanded: ExpandedJsonLd,
+        jsonld: JsonLdAssembly,
         schemaRef: ResourceRef,
         projectRef: ProjectRef,
         caller: Caller
     ): IO[ValidationResult] = IO.raiseError(expected)
 
     override def apply(
-        resourceId: Iri,
-        expanded: ExpandedJsonLd,
+        jsonld: JsonLdAssembly,
         schema: ResourceF[Schema]
     ): IO[ValidationResult] = IO.raiseError(expected)
   }

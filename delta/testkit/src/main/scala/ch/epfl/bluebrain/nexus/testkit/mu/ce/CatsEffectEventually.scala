@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectEventually.logger
 import munit.{Assertions, CatsEffectAssertions, Location}
 
 trait CatsEffectEventually { self: Assertions with CatsEffectAssertions =>
@@ -16,7 +17,12 @@ trait CatsEffectEventually { self: Assertions with CatsEffectAssertions =>
           case _: AssertionError => true
           case _                 => false
         },
-        onError = (_, _) => IO.unit
+        onError = (err, details) =>
+          IO.whenA(details.givingUp) {
+            logger.error(err)(
+              s"Giving up on ${err.getClass.getSimpleName}, ${details.retriesSoFar} retries after ${details.cumulativeDelay}."
+            )
+          }
       )
       io
         .retry(strategy)
@@ -25,4 +31,8 @@ trait CatsEffectEventually { self: Assertions with CatsEffectAssertions =>
         }
     }
   }
+}
+
+object CatsEffectEventually {
+  private val logger = Logger[CatsEffectEventually]
 }

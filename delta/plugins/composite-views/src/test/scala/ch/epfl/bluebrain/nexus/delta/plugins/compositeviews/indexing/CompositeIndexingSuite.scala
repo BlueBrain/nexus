@@ -92,7 +92,7 @@ trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
       .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
-          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds, clock)
+          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 1.second, clock)
         val spaces                = CompositeSpaces(prefix, esClient, bgClient)
         val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
         Setup(esClient, bgClient, projections, spaces, sinks)
@@ -651,7 +651,6 @@ object CompositeIndexingSuite {
   object Metadata {
     implicit private val encoderMetadata: Encoder.AsObject[Metadata] = deriveEncoder
     implicit val jsonLdEncoderMetadata: JsonLdEncoder[Metadata]      = JsonLdEncoder.computeFromCirce(ctxIri)
-
   }
 
 }
@@ -661,21 +660,21 @@ object Queries {
     """
       |prefix music: <http://music.com/>
       |CONSTRUCT {
-      |	?alias          music:name       ?bandName ;
-      |					music:genre      ?bandGenre ;
-      |					music:start      ?bandStartYear ;
-      |					music:album      ?albumId .
-      |	?albumId        music:title   	 ?albumTitle .
+      |	?alias       music:name       ?bandName ;
+      |					     music:genre      ?bandGenre ;
+      |					     music:start      ?bandStartYear ;
+      |					     music:album      ?albumId .
+      |	?albumId     music:title   	  ?albumTitle .
       |} WHERE {
       | VALUES ?id { {resource_id} } .
       | BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
       |
-      |	?id             music:name       ?bandName ;
-      |					music:start      ?bandStartYear;
-      |					music:genre      ?bandGenre .
+      |	?id          music:name       ?bandName ;
+      |					     music:start      ?bandStartYear;
+      |					     music:genre      ?bandGenre .
       |	OPTIONAL {
-      |		?id         	^music:by 		?albumId .
-      |		?albumId        music:title   	?albumTitle .
+      |		?id        ^music:by 		    ?albumId .
+      |		?albumId   music:title   	  ?albumTitle .
       |	}
       |}
       |""".stripMargin
@@ -686,19 +685,19 @@ object Queries {
       |prefix music: <http://music.com/>
       |CONSTRUCT {
       |	?id             music:name       ?bandName ;
-      |					music:genre      ?bandGenre ;
-      |					music:start      ?bandStartYear ;
-      |					music:album      ?albumId .
+      |					        music:genre      ?bandGenre ;
+      |					        music:start      ?bandStartYear ;
+      |					        music:album      ?albumId .
       |	?albumId        music:title   	 ?albumTitle .
       |} WHERE {
       | BIND( {resource_id} AS ?id ) .
       |
       |	?id             music:name       ?bandName ;
-      |					music:start      ?bandStartYear;
-      |					music:genre      ?bandGenre .
+      |					        music:start      ?bandStartYear;
+      |					        music:genre      ?bandGenre .
       |	OPTIONAL {
-      |		?id         	^music:by 		?albumId .
-      |		?albumId        music:title   	?albumTitle .
+      |		?id         	^music:by 		   ?albumId .
+      |		?albumId      music:title   	 ?albumTitle .
       |	}
       |}
       |""".stripMargin

@@ -5,25 +5,25 @@ import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
-
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics.admin.{_constrainedBy, _deprecated}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
+import ch.epfl.bluebrain.nexus.tests.Optics.{_rev, filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
-import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
+import io.circe.{Json, JsonObject}
 import monocle.Optional
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.testcontainers.utility.Base58.randomString
 
 import java.net.URLEncoder
-import cats.implicits._
 
 class ResourcesSpec extends BaseIntegrationSpec {
 
@@ -69,12 +69,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val setup =
-      for {
-        _ <- createProjects(Rick, orgId, projId1, projId2)
-        _ <- aclDsl.addPermission(s"/$project1", Morty, Resources.Read)
-      } yield ()
-    setup.accepted
+    (createProjects(Rick, orgId, projId1, projId2) >>
+      aclDsl.addPermission(s"/$project1", Morty, Resources.Read)).accepted
+    ()
   }
 
   "adding schema" should {
@@ -359,8 +356,19 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   "updating a resource" should {
     "send the update" in {
-      val payload = SimpleResource.sourcePayload(resource1Id, 3).accepted
-      deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) { expectOk }
+      for {
+        payload <- SimpleResource.sourcePayload(resource1Id, 3)
+        _       <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) {
+                     (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       _rev.getOption(json).value shouldEqual 2
+                   }
+        // Sending the same update should not create a new revision
+        _       <- deltaClient.put[Json](s"/resources/$project1/_/test-resource:1?rev=2", payload, Rick) { (json, response) =>
+                     response.status shouldEqual StatusCodes.OK
+                     _rev.getOption(json).value shouldEqual 2
+                   }
+      } yield succeed
     }
 
     "fetch the update" in {
@@ -522,7 +530,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       givenAResource(project1) { id =>
         val deprecate       = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
         val fetchDeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { (json, _) =>
-          _deprecated.getOption(json) should contain(true)
+          json should be(deprecated)
         }
         (deprecate >> fetchDeprecated).accepted
       }
@@ -559,7 +567,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         val undeprecate       =
           deltaClient.put(s"/resources/$project1/_/$id/undeprecate?rev=2", JsonObject.empty.toJson, Rick) { expectOk }
         val fetchUndeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { case (json, _) =>
-          _deprecated.getOption(json) should contain(false)
+          json should not(be(deprecated))
         }
         (undeprecate >> fetchUndeprecated).accepted
       }
@@ -600,20 +608,37 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
   }
 
-  "create context" in {
-    val payload = jsonContentOf("kg/resources/simple-context.json")
+  "create a resource with context" in {
+    val contextId             = "https://dev.nexus.test.com/simplified-resource/mycontext"
+    val contextPayload        = json"""{ "@context": { "@base": "http://example.com/base/" } }"""
+    val contextPayloadUpdated =
+      json"""{ "@context": { "@base": "http://example.com/base/", "prefix": "https://bbp.epfl.ch/prefix" } }"""
 
-    deltaClient.put[Json](s"/resources/$project1/_/test-resource:mycontext", payload, Rick) { (_, response) =>
-      response.status shouldEqual StatusCodes.Created
-    }
-  }
+    val resourcePayload = json"""{"@context": "$contextId",
+                                   "@id": "myid",
+                                   "@type": "http://example.com/type"
+                                  }"""
 
-  "create resource using the created context" in {
-    val payload = jsonContentOf("kg/resources/simple-resource-context.json")
-
-    deltaClient.post[Json](s"/resources/$project1/", payload, Rick) { (_, response) =>
-      response.status shouldEqual StatusCodes.Created
-    }
+    for {
+      _ <- deltaClient.put[Json](s"/resources/$project1/_/test-resource:mycontext", contextPayload, Rick) {
+             expectCreated
+           }
+      _ <- deltaClient.post[Json](s"/resources/$project1/", resourcePayload, Rick) { expectCreated }
+      // No refresh should be performed as nothing changed
+      _ <- deltaClient.put[Json](s"/resources/$project1/_/myid/refresh", Json.Null, Rick) { (json, response) =>
+             response.status shouldEqual StatusCodes.OK
+             _rev.getOption(json).value shouldEqual 1
+           }
+      _ <- deltaClient.put[Json](s"/resources/$project1/_/test-resource:mycontext?rev=1", contextPayloadUpdated, Rick) {
+             (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               _rev.getOption(json).value shouldEqual 2
+           }
+      _ <- deltaClient.put[Json](s"/resources/$project1/_/myid/refresh", Json.Null, Rick) { (json, response) =>
+             response.status shouldEqual StatusCodes.OK
+             _rev.getOption(json).value shouldEqual 2
+           }
+    } yield succeed
   }
 
   "fetch remote contexts for the created resource" in {
@@ -630,7 +655,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
               "resource": {
                 "id": "https://dev.nexus.test.com/simplified-resource/mycontext",
                 "project": "$project1",
-                "rev": 1
+                "rev": 2
               }
             }
           ]
@@ -663,6 +688,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     val ResourceId     = "resource-with-type"
     val FullResourceId = s"$Base/$ResourceId"
+    val idEncoded      = UrlUtils.encode(FullResourceId)
 
     val ResourceType        = "my-type"
     val FullResourceType    = s"$Base$ResourceType"
@@ -676,23 +702,20 @@ class ResourcesSpec extends BaseIntegrationSpec {
     "create resource using the created project" in {
       val payload =
         jsonContentOf("kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
-
-      deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
+      deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 
     "type should be expanded" in {
-      deltaClient.get[Json](s"/resources/$project3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should have(`@type`(FullResourceType))
       }
     }
 
     "update a project" in {
-      val project = kgDsl.projectJsonWithCustomBase(name = project3, base = NewBase).accepted
       for {
-        _ <-
+        project <- kgDsl.projectJsonWithCustomBase(name = project3, base = NewBase)
+        _       <-
           adminDsl.updateProject(
             orgId,
             projId3,
@@ -705,14 +728,11 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     "do a refresh" in {
       deltaClient
-        .put[Json](s"/resources/$project3/_/${UrlUtils.encode(FullResourceId)}/refresh?rev=1", Json.Null, Rick) {
-          (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-        }
+        .put[Json](s"/resources/$project3/_/$idEncoded/refresh?rev=1", Json.Null, Rick) { expectOk }
     }
 
     "type should be updated" in {
-      deltaClient.get[Json](s"/resources/$project3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should have(`@type`(NewFullResourceType))
       }
@@ -790,7 +810,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       deltaClient
         .delete[Json](s"/resources/$projectRef/_/$id?rev=1", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          _deprecated.getOption(json) should contain(true)
+          json should be(deprecated)
         }
         .accepted
       assertion(id)
@@ -808,4 +828,5 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     assertion(schemaName)
   }
+
 }

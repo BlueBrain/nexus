@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import org.apache.jena.query.{Dataset, DatasetFactory}
 import org.apache.jena.rdf.model._
@@ -60,7 +59,7 @@ object ShaclEngine {
   def apply(
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi, shaclShapesGraph: ShaclShapesGraph, rcr: RemoteContextResolution): IO[ValidationReport] =
+  )(implicit shaclShapesGraph: ShaclShapesGraph, rcr: RemoteContextResolution): IO[ValidationReport] =
     apply(shapesGraph, shaclShapesGraph, validateShapes = true, reportDetails = reportDetails)
 
   /**
@@ -79,7 +78,7 @@ object ShaclEngine {
       dataGraph: Graph,
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] =
+  )(implicit rcr: RemoteContextResolution): IO[ValidationReport] =
     apply(dataGraph, ShaclShapesGraph(shapesGraph), validateShapes = false, reportDetails)
 
   /**
@@ -101,7 +100,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] =
+  )(implicit rcr: RemoteContextResolution): IO[ValidationReport] =
     apply(DatasetFactory.wrap(graph.value), shapesGraph, validateShapes, reportDetails)
 
   private def apply(
@@ -109,7 +108,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] = {
+  )(implicit rcr: RemoteContextResolution): IO[ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
     dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)

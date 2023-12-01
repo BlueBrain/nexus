@@ -186,6 +186,29 @@ Request
 Response
 :   @@snip [deprecated.json](assets/projects/deprecated.json)
 
+## Undeprecate
+
+Reverses the deprecation of a project.
+
+Undeprecating a project is considered to be an update as well.
+
+```
+PUT /v1/projects/{org_label}/{label}/undeprecate?rev={previous_rev}
+```
+
+... where
+
+- `{previous_rev}`: Number - the last known revision for the organization.
+- `{label}`: String - the user friendly name that identifies this project.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/projects/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/projects/undeprecated.json)
+
 ## Delete
 
 Deletes the target project and all its resources. 

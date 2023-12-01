@@ -53,6 +53,10 @@ final class OrganizationsImpl private (
   )(implicit caller: Subject): IO[OrganizationResource] =
     eval(DeprecateOrganization(label, rev, caller)).span("deprecateOrganization")
 
+  override def undeprecate(org: Label, rev: Int)(implicit caller: Subject): IO[OrganizationResource] = {
+    eval(UndeprecateOrganization(org, rev, caller)).span("undeprecateOrganization")
+  }
+
   override def fetch(label: Label): IO[OrganizationResource] =
     log.stateOr(label, OrganizationNotFound(label)).map(_.toResource).span("fetchOrganization")
 
