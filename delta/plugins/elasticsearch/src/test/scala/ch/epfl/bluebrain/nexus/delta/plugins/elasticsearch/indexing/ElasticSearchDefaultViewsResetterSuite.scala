@@ -48,9 +48,13 @@ class ElasticSearchDefaultViewsResetterSuite
   private val customViewId = "https://other.id"
   private val customView   = defaultView.copy(ref = ViewRef(project, iri"$customViewId"))
 
+  // TODO: Find how to move this to beforeAll
+  test("Setup: partitions should be created") {
+    initPartitions(xas, project, project2)
+  }
+
   test("The resetter should delete scoped events for the default view") {
-    initPartitions(xas, project, project2) >>
-      insertViewEvent(defaultEsViewId, project).transact(xas.write) >>
+    insertViewEvent(defaultEsViewId, project).transact(xas.write) >>
       assertIO(eventsCount, 1) >>
       resetWithNoViewCreation.resetView(defaultView) >>
       assertIO(eventsCount, 0)
