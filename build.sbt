@@ -1047,8 +1047,8 @@ val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
 
 val staticAnalysis =
   s"""
-    |project delta ;
     |scalafmtSbtCheck ;
+    |project delta ;
     |scalafmtCheck ;
     |Test/scalafmtCheck ;
     |scapegoat ;
