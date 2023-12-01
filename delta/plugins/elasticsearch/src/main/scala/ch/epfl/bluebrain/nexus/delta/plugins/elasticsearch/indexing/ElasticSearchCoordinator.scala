@@ -139,7 +139,8 @@ object ElasticSearchCoordinator {
       registry: ReferenceRegistry,
       supervisor: Supervisor,
       client: ElasticSearchClient,
-      config: ElasticSearchViewsConfig
+      config: ElasticSearchViewsConfig,
+      resetter: ElasticSearchDefaultViewsResetter
   )(implicit cr: RemoteContextResolution): IO[ElasticSearchCoordinator] = {
     if (config.indexingEnabled) {
       apply(
@@ -156,7 +157,8 @@ object ElasticSearchCoordinator {
               logger.error(e)(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,
-        (v: ActiveViewDef) => client.deleteIndex(v.index).void
+        (v: ActiveViewDef) => client.deleteIndex(v.index).void,
+        resetter.resetDefaultViews
       )
     } else {
       Noop.log.as(Noop)
@@ -170,7 +172,8 @@ object ElasticSearchCoordinator {
       supervisor: Supervisor,
       sink: ActiveViewDef => Sink,
       createIndex: ActiveViewDef => IO[Unit],
-      deleteIndex: ActiveViewDef => IO[Unit]
+      deleteIndex: ActiveViewDef => IO[Unit],
+      resetDefaultViews: IO[Unit]
   )(implicit cr: RemoteContextResolution): IO[ElasticSearchCoordinator] =
     for {
       cache      <- LocalCache[ViewRef, ActiveViewDef]()
@@ -188,7 +191,7 @@ object ElasticSearchCoordinator {
                       CompiledProjection.fromStream(
                         metadata,
                         ExecutionStrategy.EveryNode,
-                        coordinator.run
+                        offset => Stream.eval(resetDefaultViews) >> coordinator.run(offset)
                       )
                     )
     } yield coordinator

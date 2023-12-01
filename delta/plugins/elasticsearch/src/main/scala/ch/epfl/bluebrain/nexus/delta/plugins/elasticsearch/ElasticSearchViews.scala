@@ -137,6 +137,23 @@ final class ElasticSearchViews private (
   }.span("createElasticSearchView")
 
   /**
+    * Creates a new ElasticSearchView without checking whether the provided project is deprecated or not.
+    *
+    * @param iri
+    *   id of the view to be created
+    * @param project
+    *   project in which the view has to be created
+    * @param value
+    *   configuration of the view to be created
+    */
+  private[elasticsearch] def internalCreate(
+      iri: Iri,
+      project: ProjectRef,
+      value: ElasticSearchViewValue
+  )(implicit subject: Subject): IO[ViewResource] =
+    eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject))
+
+  /**
     * Updates an existing ElasticSearchView.
     *
     * @param id
