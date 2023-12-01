@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import io.circe.optics.JsonPath.root
 import io.circe.{Json, JsonObject}
@@ -9,6 +10,7 @@ import org.scalatest.{Assertion, Assertions, OptionValues}
 import Optics._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings}
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 trait OpticsValidators
     extends Matchers
@@ -17,8 +19,6 @@ trait OpticsValidators
     with ClasspathResources
     with ScalaTestExtractValue {
   self: Assertions =>
-
-  private val defaultMappings = jsonContentOf("admin/projects/default-mappings.json").asArray.get
 
   def validate(
       json: Json,
@@ -41,29 +41,14 @@ trait OpticsValidators
     admin._deprecated.getOption(json).value shouldEqual deprecated
   }
 
-  def validateProject(response: Json, payload: Json): Assertion = {
-    admin.base.getOption(response) shouldEqual admin.base.getOption(payload)
-    admin.vocab.getOption(response) shouldEqual admin.vocab.getOption(payload)
-    val expectedMappings          = apiMappings
-      .getOption(payload)
-      .flatMap(_.asArray)
-      .map(_.toSet)
-      .map(Json.fromValues)
-    apiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedMappings.value)
-    val expectedEffectiveMappings = apiMappings
-      .getOption(payload)
-      .flatMap(_.asArray)
-      .map(_.map { entry =>
-        val ns     = entry.hcursor.get[String]("namespace").toOption.value
-        val prefix = entry.hcursor.get[String]("prefix").toOption.value
-        Json.obj(
-          "_namespace" -> Json.fromString(ns),
-          "_prefix"    -> Json.fromString(prefix)
-        )
-      })
-      .map(_.toSet ++ defaultMappings)
-      .map(Json.fromValues)
-    effectiveApiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedEffectiveMappings.value)
+  def validateProject(response: Json, payload: ProjectPayload): Assertion = {
+    admin.base.getOption(response).value shouldEqual payload.base
+    admin.vocab.getOption(response) shouldEqual payload.vocab
+
+    apiMappings.fold(response) shouldEqual payload.apiMappings
+
+    val expectedEffectiveMappings = payload.apiMappings ++ DefaultApiMappings.value
+    effectiveApiMappings.fold(response) shouldEqual expectedEffectiveMappings
   }
 }
 
@@ -142,8 +127,22 @@ object Optics {
 
     val base                 = root.base.string
     val vocab                = root.vocab.string
-    val apiMappings          = root.apiMappings.json
-    val effectiveApiMappings = root._effectiveApiMappings.json
+    val apiMappings          = root.apiMappings.arr.to {
+      extractApiMappings("prefix", "namespace")
+    }
+    val effectiveApiMappings = root._effectiveApiMappings.arr.to {
+      extractApiMappings("_prefix", "_namespace")
+    }
+
+    private def extractApiMappings(prefixKey: String, namespaceKey: String)(raw: Vector[Json]) =
+      raw.mapFilter { entryJson =>
+        for {
+          entry     <- entryJson.asObject
+          prefix    <- entry(prefixKey).flatMap(_.asString)
+          namespace <- entry(namespaceKey).flatMap(_.asString)
+        } yield prefix -> namespace
+      }.toMap
+
   }
 
   object keycloak {

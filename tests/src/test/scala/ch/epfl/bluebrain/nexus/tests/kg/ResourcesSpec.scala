@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{_rev, filterKey, filterMetadataKeys}
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
@@ -695,7 +696,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val NewFullResourceType = s"$NewBase$ResourceType"
 
     "create a project" in {
-      val payload = kgDsl.projectJsonWithCustomBase(name = project3, base = Base).accepted
+      val payload = ProjectPayload.generateWithCustomBase(project3, Base)
       adminDsl.createProject(orgId, projId3, payload, Rick)
     }
 
@@ -713,17 +714,8 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "update a project" in {
-      for {
-        project <- kgDsl.projectJsonWithCustomBase(name = project3, base = NewBase)
-        _       <-
-          adminDsl.updateProject(
-            orgId,
-            projId3,
-            project,
-            Rick,
-            1
-          )
-      } yield succeed
+      val payload = ProjectPayload.generateWithCustomBase(project3, NewBase)
+      adminDsl.updateProject(orgId, projId3, payload, Rick, 1)
     }
 
     "do a refresh" in {

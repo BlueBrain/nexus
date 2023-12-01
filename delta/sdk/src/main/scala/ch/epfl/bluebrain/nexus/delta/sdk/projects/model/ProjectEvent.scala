@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -65,15 +64,6 @@ sealed trait ProjectEvent extends ScopedEvent {
     */
   def organizationUuid: UUID
 
-  /**
-    * @return
-    *   true if the event is [[ProjectCreated]], false otherwise
-    */
-  def isCreated: Boolean = this match {
-    case _: ProjectCreated => true
-    case _                 => false
-  }
-
 }
 
 object ProjectEvent {
@@ -99,6 +89,8 @@ object ProjectEvent {
     *   the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab
     *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param enforceSchema
+    *   a flag to ban unconstrained resources in this project
     * @param instant
     *   the timestamp associated to this event
     * @param subject
@@ -114,9 +106,36 @@ object ProjectEvent {
       apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
+      // TODO: Remove default after 1.10 migration
+      enforceSchema: Boolean = false,
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent
+
+  object ProjectCreated {
+    def apply(
+        projectRef: ProjectRef,
+        uuid: UUID,
+        orgUUID: UUID,
+        fields: ProjectFields,
+        instant: Instant,
+        subject: Subject
+    )(implicit base: BaseUri): ProjectCreated =
+      ProjectCreated(
+        projectRef.project,
+        uuid,
+        projectRef.organization,
+        orgUUID,
+        1,
+        fields.description,
+        fields.apiMappings,
+        fields.baseOrGenerated(projectRef),
+        fields.vocabOrGenerated(projectRef),
+        fields.enforceSchema,
+        instant,
+        subject
+      )
+  }
 
   /**
     * Evidence that a project has been updated.
@@ -137,6 +156,8 @@ object ProjectEvent {
     *   the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab
     *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param enforceSchema
+    *   a flag to ban unconstrained resources in this project
     * @param rev
     *   the revision number that this event generates
     * @param instant
@@ -154,9 +175,37 @@ object ProjectEvent {
       apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
+      // TODO: Remove default after 1.10 migration
+      enforceSchema: Boolean = false,
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent
+
+  object ProjectUpdated {
+    def apply(
+        projectRef: ProjectRef,
+        uuid: UUID,
+        orgUUID: UUID,
+        rev: Int,
+        fields: ProjectFields,
+        instant: Instant,
+        subject: Subject
+    )(implicit base: BaseUri): ProjectUpdated =
+      ProjectUpdated(
+        projectRef.project,
+        uuid,
+        projectRef.organization,
+        orgUUID,
+        rev,
+        fields.description,
+        fields.apiMappings,
+        fields.baseOrGenerated(projectRef),
+        fields.vocabOrGenerated(projectRef),
+        fields.enforceSchema,
+        instant,
+        subject
+      )
+  }
 
   /**
     * Evidence that a project has been deprecated.
@@ -245,7 +294,9 @@ object ProjectEvent {
   @nowarn("cat=unused")
   val serializer: Serializer[ProjectRef, ProjectEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration = Serializer.circeConfiguration
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
 
     implicit val apiMappingsDecoder: Decoder[ApiMappings]          =
       Decoder.decodeMap[String, Iri].map(ApiMappings(_))

@@ -34,7 +34,8 @@ class CompositeViewDecodingSpec extends CatsEffectSpec with CirceLiteral with Fi
   private val pc  = ProjectContext.unsafe(
     ApiMappings.empty,
     nxv.base,
-    nxv.base
+    nxv.base,
+    enforceSchema = false
   )
 
   val uuid                          = UUID.randomUUID()

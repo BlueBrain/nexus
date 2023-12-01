@@ -23,11 +23,7 @@ class ArchivesDecodingSpec extends CatsEffectSpec with RemoteContextResolutionFi
   implicit private val uuidF: UUIDF   = UUIDF.random
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
-  private val context = ProjectContext.unsafe(
-    ApiMappings.empty,
-    nxv.base,
-    nxv.base
-  )
+  private val context = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)
 
   private val ref = ProjectRef.unsafe(genString(), genString())
 

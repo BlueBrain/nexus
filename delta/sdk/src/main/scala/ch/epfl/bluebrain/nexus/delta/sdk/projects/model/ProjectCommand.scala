@@ -34,23 +34,14 @@ object ProjectCommand {
     *
     * @param ref
     *   the project ref
-    * @param description
-    *   an optional project description
-    * @param apiMappings
-    *   the API mappings
-    * @param base
-    *   the base Iri for generated resource IDs ending with ''/'' or ''#''
-    * @param vocab
-    *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param fields
+    *   the payload submitted by the user
     * @param subject
     *   the identity associated to this command
     */
   final case class CreateProject(
       ref: ProjectRef,
-      description: Option[String],
-      apiMappings: ApiMappings,
-      base: PrefixIri,
-      vocab: PrefixIri,
+      fields: ProjectFields,
       subject: Subject
   ) extends ProjectCommand {
     override def rev: Int = 0
@@ -61,14 +52,8 @@ object ProjectCommand {
     *
     * @param ref
     *   the project ref
-    * @param description
-    *   an optional project description
-    * @param apiMappings
-    *   the API mappings
-    * @param base
-    *   the base Iri for generated resource IDs ending with ''/'' or ''#''
-    * @param vocab
-    *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param fields
+    *   the payload submitted by the user
     * @param rev
     *   the last known revision of the project
     * @param subject
@@ -76,10 +61,7 @@ object ProjectCommand {
     */
   final case class UpdateProject(
       ref: ProjectRef,
-      description: Option[String],
-      apiMappings: ApiMappings,
-      base: PrefixIri,
-      vocab: PrefixIri,
+      fields: ProjectFields,
       rev: Int,
       subject: Subject
   ) extends ProjectCommand

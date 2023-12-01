@@ -6,8 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
-import cats.effect.{IO, Ref}
 import cats.effect.unsafe.implicits._
+import cats.effect.{IO, Ref}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
@@ -17,13 +17,13 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, EitherValu
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
-import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
+import ch.epfl.bluebrain.nexus.tests.admin.{AdminDsl, ProjectPayload}
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
-import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
+import ch.epfl.bluebrain.nexus.tests.kg.ElasticSearchViewsDsl
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import org.scalactic.source.Position
@@ -72,7 +72,6 @@ trait BaseIntegrationSpec
   val aclDsl                = new AclDsl(deltaClient)
   val permissionDsl         = new PermissionDsl(deltaClient)
   val adminDsl              = new AdminDsl(deltaClient, config)
-  val kgDsl                 = new KgDsl(config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
@@ -200,8 +199,8 @@ trait BaseIntegrationSpec
       _ <- aclDsl.addPermission("/", user, Organizations.Create)
       _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
       _ <- projects.toList.traverse { project =>
-             val projectRef = s"$org/$project"
-             kgDsl.projectJson(name = projectRef).flatMap(adminDsl.createProject(org, project, _, user))
+             val payload = ProjectPayload.generate(s"$org/$project", config)
+             adminDsl.createProject(org, project, payload, user)
            }
     } yield ()
 

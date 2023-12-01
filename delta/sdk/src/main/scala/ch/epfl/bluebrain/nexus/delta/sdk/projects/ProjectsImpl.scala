@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -11,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{logger, ProjectsLog}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UndeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -20,52 +21,32 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
-import cats.implicits._
 
 final class ProjectsImpl private (
     log: ProjectsLog,
     scopeInitializations: Set[ScopeInitialization],
     override val defaultApiMappings: ApiMappings
-)(implicit base: BaseUri)
-    extends Projects {
+) extends Projects {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   override def create(
       ref: ProjectRef,
       fields: ProjectFields
-  )(implicit caller: Subject): IO[ProjectResource] =
+  )(implicit caller: Subject): IO[ProjectResource] = {
     for {
-      resource <- eval(
-                    CreateProject(
-                      ref,
-                      fields.description,
-                      fields.apiMappings,
-                      fields.baseOrGenerated(ref),
-                      fields.vocabOrGenerated(ref),
-                      caller
-                    )
-                  ).span("createProject")
+      resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
       _        <- scopeInitializations
                     .parUnorderedTraverse(_.onProjectCreation(resource.value, caller))
                     .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }
                     .span("initializeProject")
     } yield resource
+  }
 
   override def update(ref: ProjectRef, rev: Int, fields: ProjectFields)(implicit
       caller: Subject
   ): IO[ProjectResource] =
-    eval(
-      UpdateProject(
-        ref,
-        fields.description,
-        fields.apiMappings,
-        fields.baseOrGenerated(ref),
-        fields.vocabOrGenerated(ref),
-        rev,
-        caller
-      )
-    ).span("updateProject")
+    eval(UpdateProject(ref, fields, rev, caller)).span("updateProject")
 
   override def deprecate(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectResource] =
     eval(DeprecateProject(ref, rev, caller)).span("deprecateProject") <*

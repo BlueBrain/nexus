@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuer
 import io.circe.Json
 import io.circe.optics.JsonPath._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 class CompositeViewsSpec extends BaseIntegrationSpec {
 
@@ -42,7 +42,20 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     }
 
     "succeed if payload is correct" in {
-      val projectPayload = jsonContentOf("kg/views/composite/project.json")
+      val projectPayload = ProjectPayload(
+        "Description",
+        "https://music.example.com/",
+        Some("https://music.example.com/"),
+        Map(
+          "local"        -> "https://music.example.com/sources/local",
+          "remote_songs" -> "https://music.example.com/sources/songs",
+          "cross_albums" -> "https://music.example.com/sources/albums",
+          "bands"        -> "https://music.example.com/bands",
+          "albums"       -> "https://music.example.com/albums"
+        ),
+        enforceSchema = false
+      )
+
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
         _ <- List(

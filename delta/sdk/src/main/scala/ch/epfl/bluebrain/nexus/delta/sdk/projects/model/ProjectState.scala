@@ -43,6 +43,8 @@ import scala.annotation.nowarn
   *   the base Iri for generated resource IDs
   * @param vocab
   *   an optional vocabulary for resources with no context
+  * @param enforceSchema
+  *   a flag to ban unconstrained resources in this project
   * @param createdAt
   *   the instant when the resource was created
   * @param createdBy
@@ -64,6 +66,7 @@ final case class ProjectState(
     apiMappings: ApiMappings,
     base: ProjectBase,
     vocab: Iri,
+    enforceSchema: Boolean = false,
     createdAt: Instant,
     createdBy: Subject,
     updatedAt: Instant,
@@ -116,6 +119,7 @@ final case class ProjectState(
         defaultApiMappings,
         base,
         vocab,
+        enforceSchema,
         markedForDeletion
       )
     )
@@ -126,7 +130,9 @@ object ProjectState {
   @nowarn("cat=unused")
   implicit val serializer: Serializer[ProjectRef, ProjectState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration = Serializer.circeConfiguration
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
 
     implicit val apiMappingsDecoder: Decoder[ApiMappings]          =
       Decoder.decodeMap[String, Iri].map(ApiMappings(_))

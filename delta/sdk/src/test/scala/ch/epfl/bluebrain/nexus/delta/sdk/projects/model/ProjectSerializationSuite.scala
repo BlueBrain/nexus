@@ -45,6 +45,7 @@ class ProjectSerializationSuite extends SerializationSuite {
       apiMappings = apiMappings,
       base = base,
       vocab = vocab,
+      enforceSchema = true,
       instant = instant,
       subject = subject
     )
@@ -59,6 +60,7 @@ class ProjectSerializationSuite extends SerializationSuite {
       apiMappings = apiMappings,
       base = base,
       vocab = vocab,
+      enforceSchema = true,
       instant = instant,
       subject = subject
     )
@@ -135,6 +137,7 @@ class ProjectSerializationSuite extends SerializationSuite {
     apiMappings = apiMappings,
     base = ProjectBase.unsafe(base.value),
     vocab = vocab.value,
+    enforceSchema = true,
     createdAt = instant,
     createdBy = subject,
     updatedAt = instant,

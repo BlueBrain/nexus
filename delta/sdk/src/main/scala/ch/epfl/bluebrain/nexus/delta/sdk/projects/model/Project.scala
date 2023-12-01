@@ -38,6 +38,8 @@ import scala.annotation.nowarn
   *   the base Iri for generated resource IDs
   * @param vocab
   *   an optional vocabulary for resources with no context
+  * @param enforceSchema
+  *   a flag to ban unconstrained resources in this project
   * @param markedForDeletion
   *   the project marked for deletion status
   */
@@ -51,10 +53,11 @@ final case class Project(
     defaultApiMappings: ApiMappings,
     base: ProjectBase,
     vocab: Iri,
+    enforceSchema: Boolean,
     markedForDeletion: Boolean
 ) {
 
-  val context: ProjectContext = ProjectContext(defaultApiMappings + apiMappings, base, vocab)
+  val context: ProjectContext = ProjectContext(defaultApiMappings + apiMappings, base, vocab, enforceSchema)
 
   /**
     * @return

@@ -35,6 +35,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
   "description": "{description}",
   "base": "{base}",
   "vocab": "{vocab}",
+  "enforceSchema": "{enforceSchema}",
   "apiMappings": [
    {
       "prefix": "{prefix}",
@@ -58,6 +59,7 @@ where...
   a field a resource is created and a field `name` is present in the payload, it will be expanded to 
   `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default 
   to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
+- `{enforceSchema}`: Boolean - Allows to ban the creation of unconstrained resources in this project
 - `{apiMappings}`: Json object - provides a convenient way to compact/expand URIs when performing operations on a 
   sub-resource. This field is optional.
 

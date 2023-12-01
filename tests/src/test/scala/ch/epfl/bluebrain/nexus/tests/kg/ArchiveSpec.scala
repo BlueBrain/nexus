@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, SchemaPayload}
@@ -48,12 +49,10 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
     "create projects, resources and add necessary acls" in {
       for {
-        _           <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
-        _           <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
-        fullIdJson  <- kgDsl.projectJson(name = fullId)
-        _           <- adminDsl.createProject(orgId, projId, fullIdJson, Tweety)
-        fullId2Json <- kgDsl.projectJson(name = fullId2)
-        _           <- adminDsl.createProject(orgId, projId2, fullId2Json, Tweety)
+        _ <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
+        _ <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
+        _ <- adminDsl.createProject(orgId, projId, ProjectPayload.generate(fullId, config), Tweety)
+        _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generate(fullId2, config), Tweety)
       } yield succeed
     }
 
