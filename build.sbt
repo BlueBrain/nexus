@@ -20,7 +20,7 @@ val akkaHttpCirceVersion    = "1.39.2"
 val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
-val apacheCompressVersion   = "1.24.0"
+val apacheCompressVersion   = "1.25.0"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
 val betterMonadicForVersion = "0.3.1"
@@ -31,26 +31,26 @@ val catsVersion             = "2.10.0"
 val circeVersion            = "0.14.6"
 val circeOpticsVersion      = "0.15.0"
 val circeExtrasVersions     = "0.14.3"
-val classgraphVersion       = "4.8.164"
-val distageVersion          = "1.2.0"
-val doobieVersion           = "1.0.0-RC4"
+val classgraphVersion       = "4.8.165"
+val distageVersion          = "1.2.3"
+val doobieVersion           = "1.0.0-RC5"
 val fs2Version              = "3.9.3"
 val googleAuthClientVersion = "1.34.1"
 val handleBarsVersion       = "4.3.1"
 val hikariVersion           = "5.1.0"
 val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.6"
-val kamonVersion            = "2.6.5"
+val kamonVersion            = "2.6.6"
 val kanelaAgentVersion      = "1.0.18"
 val kindProjectorVersion    = "0.13.2"
 val log4catsVersion         = "2.6.0"
-val logbackVersion          = "1.4.11"
+val logbackVersion          = "1.4.14"
 val magnoliaVersion         = "1.1.6"
-val mockitoVersion          = "1.17.29"
+val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M10"
 val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.1"
-val postgresJdbcVersion     = "42.6.0"
+val postgresJdbcVersion     = "42.7.0"
 val pureconfigVersion       = "0.17.4"
 val scalaTestVersion        = "3.2.17"
 val scalaXmlVersion         = "2.2.0"
@@ -133,7 +133,7 @@ lazy val copyPlugins = taskKey[Unit]("Assembles and copies the plugin files plug
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin)
+  .enablePlugins(ParadoxMaterialThemePlugin, SitePreviewPlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion, noPublish)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
@@ -218,9 +218,9 @@ lazy val kernel = project
       log4cats,
       pureconfig,
       pureconfigCats,
-      munit     % Test,
-      munitCatsEffect  % Test,
-      scalaTest % Test
+      munit           % Test,
+      munitCatsEffect % Test,
+      scalaTest       % Test
     ),
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum := false
@@ -265,10 +265,10 @@ lazy val sourcingPsql = project
       circeParser,
       classgraph,
       distageCore,
-      munit          % Test,
-      munitCatsEffect  % Test,
-      catsEffectLaws % Test,
-      logback        % Test
+      munit           % Test,
+      munitCatsEffect % Test,
+      catsEffectLaws  % Test,
+      logback         % Test
     ) ++ doobie,
     Test / fork          := true,
     addCompilerPlugin(kindProjector)
@@ -748,12 +748,12 @@ lazy val storage = project
     }
   })
   .settings(
-    name                     := "storage",
-    moduleName               := "storage",
-    buildInfoKeys            := Seq[BuildInfoKey](version),
-    buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
-    Docker / packageName     := "nexus-storage",
-    libraryDependencies     ++= Seq(
+    name                               := "storage",
+    moduleName                         := "storage",
+    buildInfoKeys                      := Seq[BuildInfoKey](version),
+    buildInfoPackage                   := "ch.epfl.bluebrain.nexus.storage.config",
+    Docker / packageName               := "nexus-storage",
+    libraryDependencies               ++= Seq(
       apacheCompress,
       akkaHttp,
       akkaHttpCirce,
@@ -775,14 +775,14 @@ lazy val storage = project
       scalaTest       % Test
     ),
     addCompilerPlugin(betterMonadicFor),
-    cleanFiles              ++= Seq(
+    cleanFiles                        ++= Seq(
       baseDirectory.value / "permissions-fixer" / "target" / "**",
       baseDirectory.value / "nexus-storage.jar"
     ),
-    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
-    Test / parallelExecution := false,
+    Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    Test / parallelExecution           := false,
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.ScalaLibrary,
-    Universal / mappings     := {
+    Universal / mappings               := {
       (Universal / mappings).value :+ cargo.value
     }
   )
