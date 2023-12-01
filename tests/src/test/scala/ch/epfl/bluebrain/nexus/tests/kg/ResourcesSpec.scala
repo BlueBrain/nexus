@@ -7,13 +7,13 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{_rev, filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
-import ch.epfl.bluebrain.nexus.tests.matchers.GeneralMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
 import io.circe.optics.JsonPath.root
