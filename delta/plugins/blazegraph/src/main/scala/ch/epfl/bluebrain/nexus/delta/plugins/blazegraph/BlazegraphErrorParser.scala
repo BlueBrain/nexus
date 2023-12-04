@@ -19,7 +19,7 @@ object BlazegraphErrorParser {
     val errors = List(parseMalformedQueryException(rawError)).flatten
     errors match {
       case ::(head, Nil) => head
-      case Nil           => rawError
+      case _             => rawError
     }
   }
 
