@@ -10,6 +10,7 @@ import akka.util.ByteString
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CopyFiles
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.{PathInvalid, PermissionsFixingFailed}
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, CopyFiles, ValidateFile}
+import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, ValidateFile}
 import ch.epfl.bluebrain.nexus.storage.routes.CopyFile
 import ch.epfl.bluebrain.nexus.storage.utils.Randomness
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec

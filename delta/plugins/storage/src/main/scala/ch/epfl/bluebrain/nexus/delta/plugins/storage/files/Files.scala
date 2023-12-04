@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fil
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{RemoteDiskStorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, InvalidStorageType, StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{CopyFileRejection, FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
@@ -199,37 +199,83 @@ final class Files(
 
   def copyFiles(
       source: CopyFileSource,
-      destination: CopyFileDestination
-  )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
-    source.files.traverse(copyTo(_, destination))
-
-  /**
-    * Create a file from a source file potentially in a different organization
-    * @param sourceId
-    *   File lookup id for the source file
-    * @param dest
-    *   Project, storage and file details for the file we're creating
-    */
-  def copyTo(
-      sourceId: FileId,
       dest: CopyFileDestination
-  )(implicit c: Caller): IO[FileResource] = {
+  )(implicit c: Caller): IO[NonEmptyList[FileResource]] = {
     for {
-      file                              <- fetchSourceFile(sourceId)
       (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
-      _                                 <- validateStorageTypeForCopy(file.storageType, destStorage)
-      space                             <- fetchStorageAvailableSpace(destStorage)
-      _                                 <- IO.raiseUnless(space.exists(_ < file.attributes.bytes))(
-                                             FileTooLarge(destStorage.storageValue.maxFileSize, space)
-                                           )
-      iri                               <- generateId(pc)
-      destinationDesc                   <- FileDescription(file.attributes.filename, file.attributes.mediaType)
-      attributes                        <- CopyFile(destStorage, remoteDiskStorageClient).apply(file.attributes, destinationDesc).adaptError {
-                                             case r: CopyFileRejection => CopyRejection(file.id, file.storage.iri, destStorage.id, r)
-                                           }
-      res                               <- eval(CreateFile(iri, dest.project, destStorageRef, destStorage.tpe, attributes, c.subject, dest.tag))
-    } yield res
-  }.span("copyFile")
+      copyDetails                       <- source.files.traverse(fetchCopyDetails(destStorage, _))
+      _                                 <- validateSpaceOnStorage(destStorage, copyDetails)
+      destFilesAttributes               <- CopyFile(destStorage, remoteDiskStorageClient).apply(copyDetails)
+      fileResources                     <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
+    } yield fileResources
+  }
+
+  private def evalCreateCommands(
+      pc: ProjectContext,
+      dest: CopyFileDestination,
+      destStorageRef: ResourceRef.Revision,
+      destStorageTpe: StorageType,
+      destFilesAttributes: NonEmptyList[FileAttributes]
+  )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
+    destFilesAttributes.traverse { destFileAttributes =>
+      for {
+        iri      <- generateId(pc)
+        command   = CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, c.subject, dest.tag)
+        resource <- eval(command).onError { e =>
+                      logger.error(e)(
+                        s"Failed to save event during file copy, saved file must be manually deleted: $command"
+                      )
+                    }
+      } yield resource
+    }
+
+  private def validateSpaceOnStorage(destStorage: Storage, copyDetails: NonEmptyList[CopyFileDetails]): IO[Unit] = for {
+    space    <- fetchStorageAvailableSpace(destStorage)
+    allSizes  = copyDetails.map(_.sourceAttributes.bytes)
+    maxSize   = destStorage.storageValue.maxFileSize
+    _        <- IO.raiseWhen(allSizes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
+    totalSize = allSizes.toList.sum
+    _        <- IO.raiseWhen(space.exists(_ < totalSize))(FileTooLarge(maxSize, space))
+  } yield ()
+
+  private def fetchCopyDetails(destStorage: Storage, fileId: FileId)(implicit c: Caller): IO[CopyFileDetails] =
+    for {
+      file            <- fetchSourceFile(fileId)
+      _               <- validateStorageTypeForCopy(file.storageType, destStorage)
+      destinationDesc <- FileDescription(file.attributes.filename, file.attributes.mediaType)
+    } yield CopyFileDetails(destinationDesc, file.attributes)
+
+//  /**
+//    * Create a file from a source file potentially in a different organization
+//   *
+//   * @param sourceId
+//    *   File lookup id for the source file
+//    * @param dest
+//    *   Project, storage and file details for the file we're creating
+//    */
+//  def copyTo(
+//      sourceId: FileId,
+//      dest: CopyFileDestination
+//  )(implicit c: Caller): IO[FileResource] = {
+//    for {
+//      file                              <- fetchSourceFile(sourceId)
+//      (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
+//      _                                 <- validateStorageTypeForCopy(file.storageType, destStorage)
+//      space                             <- fetchStorageAvailableSpace(destStorage)
+//      _                                 <- IO.raiseUnless(space.exists(_ < file.attributes.bytes))(
+//                                             FileTooLarge(destStorage.storageValue.maxFileSize, space)
+//                                           )
+//      iri                               <- generateId(pc)
+//      destinationDesc                   <- FileDescription(file.attributes.filename, file.attributes.mediaType)
+//      attributes                        <- CopyFile(destStorage, remoteDiskStorageClient).apply(file.attributes, destinationDesc).adaptError {
+//                                             case r: CopyFileRejection => CopyRejection(file.id, file.storage.iri, destStorage.id, r)
+//                                           }
+//      res                               <- eval(CreateFile(iri, dest.project, destStorageRef, destStorage.tpe, attributes, c.subject, dest.tag))
+//    } yield res
+//  }.span("copyFile")
+
+//  private def doCopy(files: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]] =
+//
 
   private def fetchSourceFile(id: FileId)(implicit c: Caller) =
     for {
@@ -238,7 +284,9 @@ final class Files(
       _             <- validateAuth(id.project, sourceStorage.value.storageValue.readPermission)
     } yield file.value
 
-  private def fetchDestinationStorage(dest: CopyFileDestination)(implicit c: Caller) =
+  private def fetchDestinationStorage(
+      dest: CopyFileDestination
+  )(implicit c: Caller): IO[(ProjectContext, ResourceRef.Revision, Storage)] =
     for {
       pc                            <- fetchContext.onCreate(dest.project)
       (destStorageRef, destStorage) <- fetchActiveStorage(dest.storage, dest.project, pc)

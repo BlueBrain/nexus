@@ -223,6 +223,7 @@ lazy val kernel = project
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor),
     coverageFailOnMinimum := false
   )
 

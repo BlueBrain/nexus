@@ -1,18 +1,24 @@
-package ch.epfl.bluebrain.nexus.storage.files
+package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import fs2.io.file.{CopyFlag, CopyFlags, Files, Path}
 
 trait CopyFiles {
-  def copyValidated(files: NonEmptyList[ValidatedCopyFile]): IO[Unit]
+  def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit]
+}
+
+final case class CopyBetween(source: Path, destination: Path)
+
+final case class CopyOperationFailed(failingCopy: CopyBetween) extends Rejection {
+  override def reason: String =
+    s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}."
 }
 
 object CopyFiles {
-  def mk(): CopyFiles = files =>
-    copyAll(files.map(v => CopyBetween(Path.fromNioPath(v.absSourcePath), Path.fromNioPath(v.absDestPath))))
+  def mk(): CopyFiles = files => copyAll(files)
 
   def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
     Ref.of[IO, Option[CopyOperationFailed]](None).flatMap { errorRef =>

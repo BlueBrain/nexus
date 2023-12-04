@@ -25,6 +25,8 @@ trait FileFixtures extends EitherValues {
 
   val uuid                  = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                 = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
+  val uuid3                 = UUID.randomUUID()
+  val uuid4                 = UUID.randomUUID()
   val uuidOrg2              = UUID.fromString("66666666-7cc6-4de5-93a1-802c04200dcc")
   val ref                   = Ref.of[IO, UUID](uuid).unsafeRunSync()
   implicit val uuidF: UUIDF = UUIDF.fromRef(ref)

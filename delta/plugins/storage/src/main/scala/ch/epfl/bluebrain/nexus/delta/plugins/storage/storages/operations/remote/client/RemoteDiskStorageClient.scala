@@ -2,17 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding._
-import akka.http.scaladsl.model.BodyPartEntity
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.uriDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
@@ -187,25 +189,30 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     */
   def copyFile(
       bucket: Label,
-      sourceRelativePath: Path,
-      destRelativePath: Path
-  )(implicit baseUri: BaseUri): IO[Unit] = {
+      files: NonEmptyList[(Uri, Path)]
+  )(implicit baseUri: BaseUri): IO[NonEmptyList[Uri]] = {
     getAuthToken(credentials).flatMap { authToken =>
-      val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
-      val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
+      val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files"
+      val payload  = files.map { case (source, dest) =>
+        Json.obj("source" := source.toString(), "destination" := dest.toString())
+      }.asJson
+
+      implicit val dec: Decoder[NonEmptyList[Uri]] = Decoder[NonEmptyList[Json]].emap { nel =>
+        nel.traverse(_.hcursor.get[Uri]("absoluteDestinationLocation").leftMap(_.toString()))
+      }
       client
-        .discardBytes(Post(endpoint, payload).withCredentials(authToken), ())
-        .adaptError {
-          // TODO update error
-          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
-            MoveFileRejection.FileNotFound(sourceRelativePath.toString)
-          case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
-            MoveFileRejection.PathContainsLinks(destRelativePath.toString)
-          case HttpClientStatusError(_, `Conflict`, _)                                           =>
-            MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
-          case error: HttpClientError                                                            =>
-            UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
-        }
+        .fromJsonTo[NonEmptyList[Uri]](Post(endpoint, payload).withCredentials(authToken))
+    // TODO update error
+//        .adaptError {
+//          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
+//            MoveFileRejection.FileNotFound(sourceRelativePath.toString)
+//          case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
+//            MoveFileRejection.PathContainsLinks(destRelativePath.toString)
+//          case HttpClientStatusError(_, `Conflict`, _)                                           =>
+//            MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
+//          case error: HttpClientError                                                            =>
+//            UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
+//        }
     }
   }
 

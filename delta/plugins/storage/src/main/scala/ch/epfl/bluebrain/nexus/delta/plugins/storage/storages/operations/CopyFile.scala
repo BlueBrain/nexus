@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
+import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDetails, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 
 trait CopyFile {
-  def apply(source: FileAttributes, dest: FileDescription): IO[FileAttributes]
+  def apply(copyDetails: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]]
 }
 
 object CopyFile {
@@ -20,6 +21,6 @@ object CopyFile {
     }
 
   private def unsupported(storageType: StorageType): CopyFile =
-    (_, _) => IO.raiseError(CopyFileRejection.UnsupportedOperation(storageType))
+    _ => IO.raiseError(CopyFileRejection.UnsupportedOperation(storageType))
 
 }

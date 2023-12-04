@@ -6,6 +6,7 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, CopyFiles}
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PermissionsFixingFailed}
@@ -15,11 +16,12 @@ import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, CopyFiles, ValidateFile}
+import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, ValidateFile}
 import ch.epfl.bluebrain.nexus.storage.routes.CopyFile
 
 import java.nio.file.StandardCopyOption._
 import java.nio.file.{Files, Path}
+import fs2.io.file.{Path => Fs2Path}
 import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
@@ -267,8 +269,10 @@ object Storages {
         files: NonEmptyList[CopyFile]
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] =
       (for {
-        validated <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
-        _         <- EitherT.right[Rejection](copyFiles.copyValidated(validated))
+        validated  <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
+        copyBetween =
+          validated.map(v => CopyBetween(Fs2Path.fromNioPath(v.absSourcePath), Fs2Path.fromNioPath(v.absDestPath)))
+        _          <- EitherT.right[Rejection](copyFiles.copyAll(copyBetween))
       } yield files.zip(validated).map { case (raw, valid) =>
         CopyFileOutput(raw.source, raw.destination, valid.absSourcePath, valid.absDestPath)
       }).value

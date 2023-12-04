@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.storage.files
+package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
-import ch.epfl.bluebrain.nexus.storage.files.CopyFiles.parent
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CopyFiles.parent
 import fs2.io.file.PosixPermission._
 import fs2.io.file._
 import munit.CatsEffectSuite
@@ -12,7 +11,7 @@ import munit.catseffect.IOFixture
 
 import java.util.UUID
 
-class CopyFileSuite extends CatsEffectSuite {
+class CopyFilesSuite extends CatsEffectSuite {
 
   val myFixture: IOFixture[Path]                    = ResourceSuiteLocalFixture("create-temp-dir-fixture", Files[IO].tempDirectory)
   override def munitFixtures: List[IOFixture[Path]] = List(myFixture)

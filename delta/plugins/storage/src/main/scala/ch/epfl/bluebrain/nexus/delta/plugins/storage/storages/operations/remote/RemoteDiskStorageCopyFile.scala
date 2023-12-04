@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDetails, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.CopyFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
@@ -13,21 +14,28 @@ class RemoteDiskStorageCopyFile(
     client: RemoteDiskStorageClient
 ) extends CopyFile {
 
-  def apply(source: FileAttributes, description: FileDescription): IO[FileAttributes] = {
-    val destinationPath = Uri.Path(intermediateFolders(storage.project, description.uuid, description.filename))
-    client.copyFile(storage.value.folder, source.location.path, destinationPath)(storage.value.endpoint).as {
-      FileAttributes(
-        uuid = description.uuid,
-        location = source.location, // TODO what's the destination absolute path?
-        path = destinationPath,
-        filename = description.filename,
-        mediaType = description.mediaType,
-        bytes = source.bytes,
-        digest = source.digest,
-        origin = source.origin
-      )
+  override def apply(copyDetails: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]] = {
+    val thing = copyDetails.map { cd =>
+      val destinationPath =
+        Uri.Path(intermediateFolders(storage.project, cd.destinationDesc.uuid, cd.destinationDesc.filename))
+      val sourcePath      = cd.sourceAttributes.location
+      (sourcePath, destinationPath)
+    }
+
+    client.copyFile(storage.value.folder, thing)(storage.value.endpoint).map { destPaths =>
+      copyDetails.zip(destPaths).map { case (cd, destinationPath) =>
+        FileAttributes(
+          uuid = cd.destinationDesc.uuid,
+          location = destinationPath,
+          path = destinationPath.path,
+          filename = cd.destinationDesc.filename,
+          mediaType = cd.destinationDesc.mediaType,
+          bytes = cd.sourceAttributes.bytes,
+          digest = cd.sourceAttributes.digest,
+          origin = cd.sourceAttributes.origin
+        )
+      }
     }
 
   }
-
 }
