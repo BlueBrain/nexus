@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import doobie.implicits._
-import fs2.Stream
 
 /** A way to reset default Elasticsearch views */
 trait ElasticSearchDefaultViewsResetter {
@@ -67,9 +66,10 @@ object ElasticSearchDefaultViewsResetter {
           IO.whenA(triggered) {
             views
               .filter(_.id == defaultEsViewId)
-              .flatTap { view => Stream.eval(view.evalMap(resetView)) }
               .compile
-              .drain
+              .toList
+              .flatMap { _.traverse { view => view.evalMap(resetView) } }
+              .flatMap { _ => logger.info("Completed resetting default elasticsearch views.") }
           }
         }
 
