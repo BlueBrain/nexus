@@ -140,7 +140,7 @@ final class StoragesRoutes(
                     }
                   },
                   // Undeprecate a storage
-                  (put & pathPrefix("undeprecate") & parameter("rev".as[Int])) { rev =>
+                  (put & pathPrefix("undeprecate") & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
                     authorizeFor(ref, Write).apply {
                       emit(
                         storages
