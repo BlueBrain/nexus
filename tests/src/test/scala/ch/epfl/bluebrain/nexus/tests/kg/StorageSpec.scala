@@ -419,6 +419,23 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
   }
 
+  "Undeprecating a storage" should {
+
+    "allow uploading a file again" in {
+      deltaClient.put[Json](s"/storages/$projectRef/nxv:$storageId?rev=2", Json.obj(), Coyote) { expectOk }
+      deltaClient.uploadFile[Json](
+        s"/files/$projectRef/${genString()}?storage=nxv:$storageId",
+        "",
+        ContentTypes.NoContentType,
+        "attachment3",
+        Coyote
+      ) {
+        expectCreated
+      }
+    }
+
+  }
+
   private def attachmentString(filename: String): String = {
     val encodedFilename = new String(Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8)))
     s"=?UTF-8?B?$encodedFilename?="
