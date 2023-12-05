@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchDefaultViewsResetter}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
@@ -115,6 +115,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(api, uuidF)
   }
 
+  make[ElasticSearchDefaultViewsResetter].from {
+    (
+        client: ElasticSearchClient,
+        views: ElasticSearchViews,
+        scope: ElasticSearchScopeInitialization,
+        xas: Transactors,
+        serviceAccount: ServiceAccount
+    ) =>
+      ElasticSearchDefaultViewsResetter(client, views, scope.defaultValue, xas)(serviceAccount.subject)
+  }
+
   make[ElasticSearchCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
@@ -123,7 +134,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        resetter: ElasticSearchDefaultViewsResetter
     ) =>
       ElasticSearchCoordinator(
         views,
@@ -131,7 +143,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry,
         supervisor,
         client,
-        config
+        config,
+        resetter
       )(cr)
   }
 

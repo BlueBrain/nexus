@@ -37,7 +37,7 @@ class ElasticSearchScopeInitialization(
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
-  private lazy val defaultValue: IndexingElasticSearchViewValue =
+  lazy val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       name = Some(defaults.name),
       description = Some(defaults.description),

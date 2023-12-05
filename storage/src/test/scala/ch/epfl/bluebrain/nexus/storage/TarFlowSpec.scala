@@ -64,7 +64,7 @@ class TarFlowSpec
           tar: TarArchiveInputStream,
           entries: List[PathAndContent] = Nil
       ): List[PathAndContent] = {
-        val entry = tar.getNextTarEntry
+        val entry = tar.getNextEntry
         if (entry == null) entries
         else {
           val data = Array.ofDim[Byte](entry.getSize.toInt)
