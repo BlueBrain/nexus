@@ -261,6 +261,51 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
       }
     }
 
+    "undeprecate a deprecated storage" in {
+      givenADeprecatedStorage { storage =>
+        Put(
+          s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=2",
+          Json.obj().toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            storageMetadata(
+              projectRef,
+              nxv + storage,
+              StorageType.DiskStorage,
+              rev = 3,
+              deprecated = false,
+              updatedBy = writer,
+              createdBy = writer
+            )
+        }
+      }
+    }
+
+    "reject the undeprecation of a storage without rev" in {
+      givenADeprecatedStorage { storage =>
+        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate", Json.obj().toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject the undeprecation of a storage that is not deprecated" in {
+      givenAStorage { storage =>
+        Put(
+          s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=1",
+          Json.obj().toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf(
+            "storages/errors/storage-not-deprecated.json",
+            "id" -> (nxv + storage)
+          )
+        }
+      }
+    }
+
     "tag a storage" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       // the revision is 2 because this storage has been updated to default = false
