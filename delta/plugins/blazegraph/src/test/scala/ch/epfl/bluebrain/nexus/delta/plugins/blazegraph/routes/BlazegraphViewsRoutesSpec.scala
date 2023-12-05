@@ -373,6 +373,18 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         )
       }
     }
+
+    "reject if deprecating the default view" in {
+      Delete("/v1/views/org/proj/nxv:defaultSparqlIndex?rev=1") ~> asBob ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual
+          json"""{
+          "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+          "@type": "ViewIsDefaultView",
+          "reason": "Cannot perform write operations on the default Blazegraph view."
+        }"""
+      }
+    }
   }
 
   private def givenAView(test: String => Assertion): Assertion = {

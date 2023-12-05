@@ -211,9 +211,14 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
+      _   <- validateNotDefaultView(iri)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
+
+  private def validateNotDefaultView(iri: Iri): IO[Unit] = {
+    IO.raiseWhen(iri == defaultViewId)(ViewIsDefaultView)
+  }
 
   /**
     * Undeprecate a view.
