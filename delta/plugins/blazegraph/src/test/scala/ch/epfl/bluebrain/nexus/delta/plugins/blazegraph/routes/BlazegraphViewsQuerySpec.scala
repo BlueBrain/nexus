@@ -309,6 +309,16 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
         "org.openrdf.query.MalformedQueryException: Lexical error at line 1, column 6.  Encountered: <EOF> after : \"SELEC\""
       )
     }
+
+    "have a correct details when the query is malformed and the error provides expected tokens" in {
+      val proj                 = view1Proj1.project
+      val sparqlQueryWithError = SparqlQuery("SELECT {")
+      val result               = viewsQuery.query(view1Proj1.viewId, proj, sparqlQueryWithError, SparqlNTriples)
+
+      rejectionDetailsOf(result) should contain(
+        "org.openrdf.query.MalformedQueryException: Encountered \" \"{\" \"{ \"\" at line 1, column 8. Was expecting one of: \"(\", \"*\", \"distinct\", \"reduced\", <VAR1>, <VAR2>."
+      )
+    }
   }
 
   private def rejectionDetailsOf(io: IO[SparqlQueryResponse]) =

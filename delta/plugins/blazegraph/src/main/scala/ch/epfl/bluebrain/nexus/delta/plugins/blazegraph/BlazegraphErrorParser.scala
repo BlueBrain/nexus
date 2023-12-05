@@ -16,19 +16,35 @@ object BlazegraphErrorParser {
     rawError.linesIterator
       .find(_.contains(malformedSegmentMatcher))
       .map(str => str.replace(javaExecutionExceptionMatcher, ""))
+      .map(str => parseExpectedTokens(rawError).map(s => s"$str $s").getOrElse(str))
   }
 
   /**
-    * Attempts to parse the raw error message. If it cannot be parsed, or if there are multiple errors, the raw error is
-    * returned.
+    * Attempts to extract the expected tokens from the raw exception
     */
-  private def parse(rawError: String): String = {
-    val errors = List(parseMalformedQueryException(rawError)).flatten
-    errors match {
-      case ::(head, Nil) => head
-      case _             => rawError
-    }
+  private def parseExpectedTokens(rawError: String): Option[String] = {
+    val wasExpectingOneOfMatcher = "Was expecting one of:"
+    val errorLines               = rawError.linesIterator.toList
+    val index                    = errorLines.indexWhere(_.startsWith(wasExpectingOneOfMatcher))
+
+    Option
+      .when(index != -1) {
+        errorLines
+          .drop(index + 1)
+          .takeWhile(_.trim.nonEmpty)
+          .map(_.replace("...", "").trim)
+          .mkString(", ")
+      }
+      .map { expectedTokens =>
+        s"$wasExpectingOneOfMatcher $expectedTokens."
+      }
   }
+
+  /**
+    * Attempts to parse the raw error message. If it cannot be parsed the raw error is returned.
+    */
+  private def parse(rawError: String): String =
+    parseMalformedQueryException(rawError).getOrElse(rawError)
 
   /**
     * Extract the details from the error
