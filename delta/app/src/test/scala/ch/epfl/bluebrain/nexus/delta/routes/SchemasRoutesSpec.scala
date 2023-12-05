@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
+import org.scalatest.Assertion
 
 import java.util.UUID
 
@@ -227,6 +228,41 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       }
     }
 
+    "fail to undeprecate a schema without schemas/write permission" in {
+      givenADeprecatedSchema { schema =>
+        Put(s"/v1/schemas/myorg/myproject/$schema/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "undeprecate a deprecated schema" in {
+      givenADeprecatedSchema { schema =>
+        Put(s"/v1/schemas/myorg/myproject/$schema/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual schemaMetadata(projectRef, nxv + schema, rev = 3)
+        }
+      }
+    }
+
+    "reject the undeprecation of a schema without rev" in {
+      givenADeprecatedSchema { schema =>
+        Put(s"/v1/schemas/myorg/myproject/$schema/undeprecate") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject the undeprecation of a schema that is not deprecated" in {
+      givenASchema { schema =>
+        Put(s"/v1/schemas/myorg/myproject/$schema/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("schemas/errors/schema-not-deprecated.json", "id" -> (nxv + schema))
+        }
+      }
+    }
+
     "tag a schema" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
@@ -383,6 +419,24 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         response.header[Location].value.uri shouldEqual Uri(
           "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid2"
         ).withQuery(Uri.Query("rev" -> "5"))
+      }
+    }
+
+    def givenASchema(test: String => Assertion): Assertion = {
+      val id      = genString()
+      val payload = jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "${nxv + id}"}"""
+      Put(s"/v1/schemas/myorg/myproject/$id", payload.toEntity) ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      test(id)
+    }
+
+    def givenADeprecatedSchema(test: String => Assertion): Assertion = {
+      givenASchema { schema =>
+        Delete(s"/v1/schemas/myorg/myproject/$schema?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+        }
+        test(schema)
       }
     }
   }
