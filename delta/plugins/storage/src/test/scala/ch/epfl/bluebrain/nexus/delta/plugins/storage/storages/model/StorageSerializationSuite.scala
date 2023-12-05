@@ -26,14 +26,14 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   private val s3ValUpdate     = s3Val.copy(bucket = "mybucket2", maxFileSize = 41)
   private val remoteValUpdate = remoteVal.copy(folder = Label.unsafe("myfolder2"), maxFileSize = 42)
 
-  private val diskCreated    = StorageCreated(dId, projectRef, diskVal, diskFieldsJson, 1, instant, subject)
-  private val s3Created      = StorageCreated(s3Id, projectRef, s3Val, s3FieldsJson, 1, instant, subject)
-  private val remoteCreated  = StorageCreated(rdId, projectRef, remoteVal, remoteFieldsJson, 1, instant, subject)
-  private val diskUpdated    = StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)
-  private val s3Updated      = StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)
-  private val remoteUpdated  = StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)
-  private val diskTagged     = StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)
-  private val diskDeprecated = StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)
+  private val diskCreated      = StorageCreated(dId, projectRef, diskVal, diskFieldsJson, 1, instant, subject)
+  private val s3Created        = StorageCreated(s3Id, projectRef, s3Val, s3FieldsJson, 1, instant, subject)
+  private val remoteCreated    = StorageCreated(rdId, projectRef, remoteVal, remoteFieldsJson, 1, instant, subject)
+  private val diskUpdated      = StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)
+  private val s3Updated        = StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)
+  private val remoteUpdated    = StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)
+  private val diskTagged       = StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)
+  private val diskDeprecated   = StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)
   private val diskUndeprecated = StorageUndeprecated(dId, projectRef, DiskStorageType, 5, instant, subject)
 
   private val storagesMapping = List(
