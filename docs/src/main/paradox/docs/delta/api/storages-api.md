@@ -3,7 +3,8 @@
 Storages are rooted in the `/v1/storages/{org_label}/{project_label}` collection and are used to describe where
 @ref:[files](files-api.md) are physically stored.
 
-Each storage belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the label `{org_label}`.
+Each storage belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the
+label `{org_label}`.
 
 @@@ note { .tip title="Authorization notes" }
 
@@ -24,7 +25,8 @@ This is the most basic storage type. It is backed by the local file-system (i.e.
 running) and rooted in an arbitrary path.
 
 Upon project creation, a default disk storage is initialized automatically, so that users can start uploading
-resource attachments right away. This resource can be accessed using the @ref:[api mapping](projects-api.md#api-mappings) alias `defaultStorage`.
+resource attachments right away. This resource can be accessed using the
+@ref:[api mapping](projects-api.md#api-mappings) alias `defaultStorage`.
 
 While typically not necessary, you can manage and create additional disk storages, provided you are aware of the
 local file-system structure and that Nexus has read and write access to the target folder.
@@ -37,23 +39,34 @@ local file-system structure and that Nexus has read and write access to the targ
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
   "capacity": "{capacity}",
-  "maxFileSize": {max_file_size}
+  "maxFileSize": {
+    max_file_size
+  }
 }
 ```
 
 ...where
 
-- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{volume}`: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-volume` (`/tmp`).
-- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-read-permission` (`resources/read`).
-- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-write-permission` (`files/write`).
-- `{capacity}`: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-capacity` (None).
-- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-max-file-size` (10G).
+- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target
+  project or not.
+- `{volume}`: String - the path to the local file-system volume where files using this storage will be stored. This
+  field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-volume` (`/tmp`).
+- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field
+  is optional, defaulting to the configuration
+  flag `plugins.storage.storages.disk.default-read-permission` (`resources/read`).
+- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This
+  field is optional, defaulting to the configuration
+  flag `plugins.storage.storages.disk.default-write-permission` (`files/write`).
+- `{capacity}`: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is
+  optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-capacity` (None).
+- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is
+  optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-max-file-size` (10G).
 
 ### Remote disk storage
 
 @@@ warning
-The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.
+The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming
+release.
 @@@
 
 This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system.
@@ -63,9 +76,9 @@ Gluster, GPFS, Lustre, ...) that you don't want to mount directly on the system 
 While there's no formal specification for this service, you can check out or deploy our own implementation:
 @link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/$git.branch$/storage){ open=new }.
 
-In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be set to `true`.
+In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be
+set to `true`.
 @ref:[More information about configuration](../../getting-started/running-nexus/configuration/index.md#remote-storage-configuration)
-
 
 ```json
 {
@@ -75,24 +88,34 @@ In order to be able to use this storage, the configuration flag `plugins.storage
   "folder": "{folder}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
-  "maxFileSize": {max_file_size}
+  "maxFileSize": {
+    max_file_size
+  }
 }
 ```
 
 ...where
 
-- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{endpoint}`: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-endpoint`.
+- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target
+  project or not.
+- `{endpoint}`: Uri - the endpoint where the storage service is listening to requests. This field is optional,
+  defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-endpoint`.
 - `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
-- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
-- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).
-- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-max-file-size` (10G).
+- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field
+  is optional, defaulting to the configuration
+  flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
+- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This
+  field is optional, defaulting to the configuration
+  flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).
+- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is
+  optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-max-file-size` (10G).
 
 ### Amazon S3 compatible storage
 
 This storage type allows the use of an internal or external blob-store that is compatible with the Amazon S3 API.
 
-In order to be able to use this storage, the configuration flag `plugins.storage.storages.amazon.enabled` should be set to `true`.
+In order to be able to use this storage, the configuration flag `plugins.storage.storages.amazon.enabled` should be set
+to `true`.
 
 ```json
 {
@@ -102,23 +125,35 @@ In order to be able to use this storage, the configuration flag `plugins.storage
   "region": "{region}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
-  "maxFileSize": {max_file_size}
+  "maxFileSize": {
+    max_file_size
+  }
 }
 ```
 
 ...where
 
-- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{endpoint}`: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-endpoint`.
-- `{region}`: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.
-- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
-- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
-- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-max-file-size` (10G).
+- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target
+  project or not.
+- `{endpoint}`: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration
+  flag `plugins.storage.storages.amazon.default-endpoint`.
+- `{region}`: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region
+  configuration.
+- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field
+  is optional, defaulting to the configuration
+  flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
+- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This
+  field is optional, defaulting to the configuration
+  flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
+- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is
+  optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-max-file-size` (10G).
 
 ## Indexing
 
-All the API calls modifying a storage (creation, update, tagging, deprecation) can specify whether the storage should be indexed
-synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+All the API calls modifying a storage (creation, update, tagging, deprecation) can specify whether the storage should be
+indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two
+values:
 
 - `async` - (default value) the storage will be indexed asynchronously
 - `sync` - the storage will be indexed synchronously and the API call won't return until the indexing is finished
@@ -146,7 +181,6 @@ Payload
 
 Response
 :   @@snip [created-post.json](assets/storages/created-post.json)
-
 
 ## Create using PUT
 
@@ -248,11 +282,33 @@ Request
 Response
 :   @@snip [deprecated.json](assets/storages/deprecated.json)
 
+## Undeprecate
+
+Unlocks the storage, so further operations can be performed. It will again be taken into account by the default storage
+selection mechanism.
+
+Undeprecating a storage is considered to be an update as well.
+
+```
+PUR /v1/storages/{org_label}/{project_label}/{storage_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the storage.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/storages/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/storages/undeprecated.json)
+
 ## Fetch
 
 ```
 GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}&tag={tag}
 ```
+
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
@@ -268,8 +324,11 @@ Request
 Response
 :   @@snip [fetched.json](assets/storages/fetched.json)
 
-If the @ref:[redirect to Fusion feature](../../getting-started/running-nexus/configuration/index.md#fusion-configuration) is enabled and
-if the `Accept` header is set to `text/html`, a redirection to the fusion representation of the resource will be returned.
+If the
+@ref:[redirect to Fusion feature](../../getting-started/running-nexus/configuration/index.md#fusion-configuration) is
+enabled and
+if the `Accept` header is set to `text/html`, a redirection to the fusion representation of the resource will be
+returned.
 
 ## Fetch original payload
 
@@ -302,7 +361,8 @@ GET /v1/storages/{org_label}/{project_label}/{storage_id}/tags?rev={rev}&tag={ta
 
 where ...
 
-- `{rev}`: Number - the targeted revision of the tags to be fetched. This field is optional and defaults to the latest revision.
+- `{rev}`: Number - the targeted revision of the tags to be fetched. This field is optional and defaults to the latest
+  revision.
 - `{tag}`: String - the targeted tag of the tags to be fetched. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
@@ -314,7 +374,6 @@ Request
 
 Response
 :   @@snip [fetched-tags.json](assets/tags.json)
-
 
 ## List
 
@@ -337,7 +396,8 @@ GET /v1/storages/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
-This operation returns only storages from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+This operation returns only storages from projects defined in the organisation `{org_label}` and where the caller has
+the `resources/read` permission.
 
 ```
 GET /v1/storages/{org_label}?from={from}
@@ -383,8 +443,8 @@ GET /v1/storages?from={from}
   (containing) the provided string
 - `{sort}`: String - can be used to sort storages based on a payloads' field. This parameter can appear multiple times
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
-- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
-
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project`
+  fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
 
 **Example**
 
@@ -393,7 +453,6 @@ Request
 
 Response
 :   @@snip [listed.json](assets/storages/listed.json)
-
 
 ## Server Sent Events
 
@@ -415,7 +474,8 @@ The caller must have respectively the `events/read` permission on `/`, `{org_lab
 
 @@@ note { .warning }
 
-The event type for storages SSEs have been changed so that it is easier to distinguish them from other types of resources.
+The event type for storages SSEs have been changed so that it is easier to distinguish them from other types of
+resources.
 
 @@@
 
@@ -438,6 +498,7 @@ This endpoint is experimental and the response structure might change in the fut
 ```
 GET /v1/storages/{org_label}/{project_label}/{storage_id}/statistics
 ```
+
 It returns:
 
 - the number of physical files stored on the storage  (`files`).
