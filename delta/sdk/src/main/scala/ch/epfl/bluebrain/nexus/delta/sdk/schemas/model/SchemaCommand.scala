@@ -186,4 +186,23 @@ object SchemaCommand {
       rev: Int,
       subject: Subject
   ) extends SchemaCommand
+
+  /**
+    * Command that signals the intent to undeprecate a schema.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param rev
+    *   the last known revision of the schema
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class UndeprecateSchema(
+      id: Iri,
+      project: ProjectRef,
+      rev: Int,
+      subject: Subject
+  ) extends SchemaCommand
 }
