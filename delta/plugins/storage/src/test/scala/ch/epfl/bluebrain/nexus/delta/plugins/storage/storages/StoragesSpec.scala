@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.CancelAfterFailure
+import org.scalatest.{Assertion, CancelAfterFailure}
 
 import java.util.UUID
 
@@ -221,6 +221,53 @@ private class StoragesSpec
 
     }
 
+    "undeprecating a storage" should {
+
+      "succeed" in {
+        givenADeprecatedStorage { storage =>
+          val payload = diskFieldsJson deepMerge json"""{"@id": "${nxv + storage}", "default": false}"""
+          storages.undeprecate(nxv + storage, projectRef, 2).accepted shouldEqual
+            resourceFor(
+              nxv + storage,
+              projectRef,
+              diskVal.copy(default = false),
+              payload,
+              rev = 3,
+              deprecated = false,
+              createdBy = bob,
+              updatedBy = bob
+            )
+        }
+      }
+
+      "reject if it doesn't exists" in {
+        storages.undeprecate(nxv + "other", projectRef, 1).rejectedWith[StorageNotFound]
+      }
+
+      "reject if the revision passed is incorrect" in {
+        givenADeprecatedStorage { storage =>
+          storages.undeprecate(nxv + storage, projectRef, 3).rejected shouldEqual
+            IncorrectRev(provided = 3, expected = 2)
+        }
+      }
+
+      "reject if the storage is not deprecated" in {
+        givenAStorage { storage =>
+          storages.undeprecate(nxv + storage, projectRef, 1).assertRejectedWith[StorageIsNotDeprecated]
+        }
+      }
+
+      "reject if project does not exist" in {
+        val nonExistingProject = ProjectRef(org, Label.unsafe("other"))
+        storages.undeprecate(nxv + "id", nonExistingProject, 1).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        storages.undeprecate(nxv + "id", deprecatedProject.ref, 1).rejectedWith[ProjectContextRejection]
+      }
+
+    }
+
     "fetching a storage" should {
       val resourceRev1 = resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
       val resourceRev2 = resourceFor(
@@ -267,6 +314,23 @@ private class StoragesSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
         storages.fetch(rdId, projectRef).rejectedWith[ProjectContextRejection]
+      }
+    }
+
+    def givenAStorage(assertion: String => Assertion): Assertion = {
+      val storageName = genString()
+      val storageId   = nxv + storageName
+      val payload     = diskFieldsJson deepMerge Json.obj(keywords.id -> storageId.asJson, "default" -> false.asJson)
+      storages.create(projectRef, payload).accepted
+      storages.fetch(storageId, projectRef).accepted
+      assertion(storageName)
+    }
+
+    def givenADeprecatedStorage(assertion: String => Assertion): Assertion = {
+      givenAStorage { storageName =>
+        storages.deprecate(nxv + storageName, projectRef, 1).accepted
+        storages.fetch(nxv + storageName, projectRef).accepted.deprecated shouldEqual true
+        assertion(storageName)
       }
     }
   }

@@ -182,6 +182,14 @@ object StorageRejection {
   final case class StorageIsDeprecated(id: Iri) extends StorageRejection(s"Storage '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a storage that is not deprecated.
+    *
+    * @param id
+    *   the storage identifier
+    */
+  final case class StorageIsNotDeprecated(id: Iri) extends StorageRejection(s"Storage '$id' is not deprecated.")
+
+  /**
     * Signals a rejection caused by an attempt to create or update a storage with permissions that are not defined in
     * the permission set singleton.
     *
