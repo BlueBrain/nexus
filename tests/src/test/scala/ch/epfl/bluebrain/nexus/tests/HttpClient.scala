@@ -67,7 +67,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
 
   /** Put with no body */
-  def put[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+  def putEmptyBody[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, None, identity, extraHeaders)(assertResponse)

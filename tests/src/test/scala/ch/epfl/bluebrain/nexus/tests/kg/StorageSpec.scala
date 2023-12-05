@@ -423,7 +423,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "allow uploading a file again" in {
       val undeprecateStorage = deltaClient
-        .put[Json](s"/storages/$projectRef/nxv:$storageId/undeprecate?rev=2", Coyote) { expectOk }
+        .putEmptyBody[Json](s"/storages/$projectRef/nxv:$storageId/undeprecate?rev=2", Coyote) { expectOk }
       val uploadFile         = deltaClient.uploadFile[Json](
         s"/files/$projectRef/${genString()}?storage=nxv:$storageId",
         "",
