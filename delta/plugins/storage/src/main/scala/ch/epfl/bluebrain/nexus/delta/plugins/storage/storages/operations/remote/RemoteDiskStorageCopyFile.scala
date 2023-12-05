@@ -15,14 +15,14 @@ class RemoteDiskStorageCopyFile(
 ) extends CopyFile {
 
   override def apply(copyDetails: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]] = {
-    val thing = copyDetails.map { cd =>
+    val paths = copyDetails.map { cd =>
       val destinationPath =
         Uri.Path(intermediateFolders(storage.project, cd.destinationDesc.uuid, cd.destinationDesc.filename))
       val sourcePath      = cd.sourceAttributes.location
       (sourcePath, destinationPath)
     }
 
-    client.copyFile(storage.value.folder, thing)(storage.value.endpoint).map { destPaths =>
+    client.copyFile(storage.value.folder, paths)(storage.value.endpoint).map { destPaths =>
       copyDetails.zip(destPaths).map { case (cd, destinationPath) =>
         FileAttributes(
           uuid = cd.destinationDesc.uuid,

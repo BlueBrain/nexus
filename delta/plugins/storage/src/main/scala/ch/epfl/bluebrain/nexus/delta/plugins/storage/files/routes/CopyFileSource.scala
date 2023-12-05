@@ -25,6 +25,8 @@ object CopyFileSource {
                         case (None, Some(rev))  => Right(FileId(sourceFile, rev, proj))
                         case (None, None)       => Right(FileId(sourceFile, proj))
                         case (Some(_), Some(_)) =>
+                          // TODO any decoding failures will return a 415 which isn't accurate most of the time. It should
+                          // probably be a bad request instead.
                           Left(
                             DecodingFailure("Tag and revision cannot be simultaneously present for source file lookup", Nil)
                           )

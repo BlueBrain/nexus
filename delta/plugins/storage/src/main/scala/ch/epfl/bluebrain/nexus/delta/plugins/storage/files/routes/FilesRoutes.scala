@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, File, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.BulkOperationResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -99,7 +100,9 @@ final class FilesRoutes(
                     },
                     // Bulk create files by copying from another project
                     entity(as[CopyFileSource]) { c: CopyFileSource =>
-                      val copyTo = CopyFileDestination(projectRef, storage, tag)
+                      val copyTo                                                                      = CopyFileDestination(projectRef, storage, tag)
+                      implicit val bulkOpJsonLdEnc: JsonLdEncoder[BulkOperationResults[FileResource]] =
+                        BulkOperationResults.searchResultsJsonLdEncoder(ContextValue(contexts.files))
                       emit(Created, copyFile(mode, c, copyTo))
                     },
                     // Create a file without id segment
@@ -249,12 +252,13 @@ final class FilesRoutes(
 
   private def copyFile(mode: IndexingMode, c: CopyFileSource, copyTo: CopyFileDestination)(implicit
       caller: Caller
-  ): IO[Either[FileRejection, NonEmptyList[FileResource]]] =
+  ): IO[Either[FileRejection, BulkOperationResults[FileResource]]] =
     (for {
-      _      <- EitherT.right(aclCheck.authorizeForOr(c.project, Read)(AuthorizationFailed(c.project.project, Read)))
-      result <- EitherT(files.copyFiles(c, copyTo).attemptNarrow[FileRejection])
-      _      <- EitherT.right[FileRejection](result.traverse(index(copyTo.project, _, mode)))
-    } yield result).value
+      _          <- EitherT.right(aclCheck.authorizeForOr(c.project, Read)(AuthorizationFailed(c.project.project, Read)))
+      result     <- EitherT(files.copyFiles(c, copyTo).attemptNarrow[FileRejection])
+      bulkResults = BulkOperationResults(result.toList)
+      _          <- EitherT.right[FileRejection](result.traverse(index(copyTo.project, _, mode)))
+    } yield bulkResults).value
 
   def fetch(id: FileId)(implicit caller: Caller): Route =
     (headerValueByType(Accept) & varyAcceptHeaders) {

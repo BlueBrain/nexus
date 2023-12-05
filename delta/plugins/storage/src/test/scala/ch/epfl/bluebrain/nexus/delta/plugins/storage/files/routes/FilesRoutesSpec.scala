@@ -43,7 +43,7 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import io.circe.syntax.KeyOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import org.scalatest._
 
 import java.util.UUID
@@ -66,13 +66,14 @@ class FilesRoutesSpec
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
-      storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
-      storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json"),
-      fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
-      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
-      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
-      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
-      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
+      storageContexts.storages          -> ContextValue.fromFile("contexts/storages.json"),
+      storageContexts.storagesMetadata  -> ContextValue.fromFile("contexts/storages-metadata.json"),
+      fileContexts.files                -> ContextValue.fromFile("contexts/files.json"),
+      Vocabulary.contexts.metadata      -> ContextValue.fromFile("contexts/metadata.json"),
+      Vocabulary.contexts.error         -> ContextValue.fromFile("contexts/error.json"),
+      Vocabulary.contexts.tags          -> ContextValue.fromFile("contexts/tags.json"),
+      Vocabulary.contexts.search        -> ContextValue.fromFile("contexts/search.json"),
+      Vocabulary.contexts.bulkOperation -> ContextValue.fromFile("contexts/bulk-operation.json")
     )
 
   private val reader   = User("reader", realm)
@@ -366,29 +367,19 @@ class FilesRoutesSpec
 
     "copy a file" in {
       givenAFileInProject(projectRef.toString) { oldFileId =>
-        val newFileId = genString()
-        val json      = Json.obj("sourceProjectRef" := projectRef, "sourceFileId" := oldFileId)
+        val newFileUUId = UUID.randomUUID()
+        withUUIDF(newFileUUId) {
+          val newFileId = newFileUUId.toString
+          val json      =
+            Json.obj("sourceProjectRef" := projectRef, "files" := Json.arr(Json.obj("sourceFileId" := oldFileId)))
 
-        Put(s"/v1/files/${projectRefOrg2.toString}/$newFileId", json.toEntity) ~> asWriter ~> routes ~> check {
-          status shouldEqual StatusCodes.Created
-          val expectedId = project2.base.iri / newFileId
-          val attr       = attributes(filename = oldFileId)
-          response.asJson shouldEqual fileMetadata(projectRefOrg2, expectedId, attr, diskIdRev)
-        }
-      }
-    }
-
-    "copy a file with generated new Id" in {
-      val fileCopyUUId = UUID.randomUUID()
-      withUUIDF(fileCopyUUId) {
-        givenAFileInProject(projectRef.toString) { oldFileId =>
-          val json = Json.obj("sourceProjectRef" := projectRef, "sourceFileId" := oldFileId)
-
-          Post(s"/v1/files/${projectRefOrg2.toString}/", json.toEntity) ~> asWriter ~> routes ~> check {
+          Post(s"/v1/files/${projectRefOrg2.toString}", json.toEntity) ~> asWriter ~> routes ~> check {
             status shouldEqual StatusCodes.Created
-            val expectedId = project2.base.iri / fileCopyUUId.toString
-            val attr       = attributes(filename = oldFileId, id = fileCopyUUId)
-            response.asJson shouldEqual fileMetadata(projectRefOrg2, expectedId, attr, diskIdRev)
+            val expectedId   = project2.base.iri / newFileId
+            val expectedAttr = attributes(filename = oldFileId, id = newFileUUId)
+            val expectedFile = fileMetadata(projectRefOrg2, expectedId, expectedAttr, diskIdRev)
+            val expected     = bulkOperationResponse(1, List(expectedFile))
+            response.asJson shouldEqual expected
           }
         }
       }
@@ -397,23 +388,18 @@ class FilesRoutesSpec
     "reject file copy request if tag and rev are present simultaneously" in {
       givenAFileInProject(projectRef.toString) { oldFileId =>
         val json = Json.obj(
-          "sourceProjectRef" := projectRef,
-          "sourceFileId"     := oldFileId,
-          "sourceTag"        := "mytag",
-          "sourceRev"        := 3
+          "sourceProjectRef" := projectRef.toString,
+          "files"            := Json.arr(
+            Json.obj(
+              "sourceFileId" := oldFileId,
+              "sourceTag"    := "mytag",
+              "sourceRev"    := 3
+            )
+          )
         )
 
-        val requests = List(
-          Put(s"/v1/files/${projectRefOrg2.toString}/${genString()}", json.toEntity),
-          Post(s"/v1/files/${projectRefOrg2.toString}/", json.toEntity)
-        )
-
-        forAll(requests) { req =>
-          req ~> asWriter ~> routes ~> check {
-            status shouldEqual StatusCodes.BadRequest
-            response.asJson shouldEqual
-              jsonContentOf("/errors/tag-and-rev-copy-error.json", "fileId" -> oldFileId)
-          }
+        Post(s"/v1/files/${projectRefOrg2.toString}", json.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.UnsupportedMediaType
         }
       }
     }
@@ -724,6 +710,9 @@ class FilesRoutesSpec
       test(id)
     }
 
+  def bulkOperationResponse(total: Int, results: List[Json]): Json =
+    FilesRoutesSpec.bulkOperationResponse(total, results.map(_.removeKeys("@context"))).accepted
+
   def fileMetadata(
       project: ProjectRef,
       id: Iri,
@@ -777,4 +766,7 @@ object FilesRoutesSpec {
       "type"        -> storageType,
       "self"        -> ResourceUris("files", project, id).accessUri
     )
+
+  def bulkOperationResponse(total: Int, results: List[Json]): IO[Json] =
+    loader.jsonContentOf("files/file-bulk-copy-response.json", "total" -> total, "results" -> results.asJson)
 }

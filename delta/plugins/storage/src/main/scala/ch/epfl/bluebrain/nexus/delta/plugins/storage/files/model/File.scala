@@ -48,15 +48,16 @@ object File {
 
   final case class Metadata(tags: List[UserTag])
 
-  implicit def fileEncoder(implicit config: StorageTypeConfig): Encoder[File] = { file =>
-    implicit val storageType: StorageType = file.storageType
-    val storageJson                       = Json.obj(
-      keywords.id  -> file.storage.iri.asJson,
-      keywords.tpe -> storageType.iri.asJson,
-      "_rev"       -> file.storage.rev.asJson
-    )
-    file.attributes.asJson.mapObject(_.add("_storage", storageJson))
-  }
+  implicit def fileEncoder(implicit config: StorageTypeConfig): Encoder.AsObject[File] =
+    Encoder.encodeJsonObject.contramapObject { file =>
+      implicit val storageType: StorageType = file.storageType
+      val storageJson                       = Json.obj(
+        keywords.id  -> file.storage.iri.asJson,
+        keywords.tpe -> storageType.iri.asJson,
+        "_rev"       -> file.storage.rev.asJson
+      )
+      file.attributes.asJsonObject.add("_storage", storageJson)
+    }
 
   implicit def fileJsonLdEncoder(implicit config: StorageTypeConfig): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)

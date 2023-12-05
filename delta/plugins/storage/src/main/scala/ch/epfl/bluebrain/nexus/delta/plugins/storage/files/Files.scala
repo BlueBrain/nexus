@@ -245,38 +245,6 @@ final class Files(
       destinationDesc <- FileDescription(file.attributes.filename, file.attributes.mediaType)
     } yield CopyFileDetails(destinationDesc, file.attributes)
 
-//  /**
-//    * Create a file from a source file potentially in a different organization
-//   *
-//   * @param sourceId
-//    *   File lookup id for the source file
-//    * @param dest
-//    *   Project, storage and file details for the file we're creating
-//    */
-//  def copyTo(
-//      sourceId: FileId,
-//      dest: CopyFileDestination
-//  )(implicit c: Caller): IO[FileResource] = {
-//    for {
-//      file                              <- fetchSourceFile(sourceId)
-//      (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
-//      _                                 <- validateStorageTypeForCopy(file.storageType, destStorage)
-//      space                             <- fetchStorageAvailableSpace(destStorage)
-//      _                                 <- IO.raiseUnless(space.exists(_ < file.attributes.bytes))(
-//                                             FileTooLarge(destStorage.storageValue.maxFileSize, space)
-//                                           )
-//      iri                               <- generateId(pc)
-//      destinationDesc                   <- FileDescription(file.attributes.filename, file.attributes.mediaType)
-//      attributes                        <- CopyFile(destStorage, remoteDiskStorageClient).apply(file.attributes, destinationDesc).adaptError {
-//                                             case r: CopyFileRejection => CopyRejection(file.id, file.storage.iri, destStorage.id, r)
-//                                           }
-//      res                               <- eval(CreateFile(iri, dest.project, destStorageRef, destStorage.tpe, attributes, c.subject, dest.tag))
-//    } yield res
-//  }.span("copyFile")
-
-//  private def doCopy(files: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]] =
-//
-
   private def fetchSourceFile(id: FileId)(implicit c: Caller) =
     for {
       file          <- fetch(id)
