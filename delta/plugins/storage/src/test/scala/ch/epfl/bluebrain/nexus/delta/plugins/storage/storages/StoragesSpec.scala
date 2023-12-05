@@ -237,6 +237,7 @@ private class StoragesSpec
               createdBy = bob,
               updatedBy = bob
             )
+          storages.fetch(nxv + storage, projectRef).accepted.deprecated shouldEqual false
         }
       }
 
@@ -248,12 +249,14 @@ private class StoragesSpec
         givenADeprecatedStorage { storage =>
           storages.undeprecate(nxv + storage, projectRef, 3).rejected shouldEqual
             IncorrectRev(provided = 3, expected = 2)
+          storages.fetch(nxv + storage, projectRef).accepted.deprecated shouldEqual true
         }
       }
 
       "reject if the storage is not deprecated" in {
         givenAStorage { storage =>
           storages.undeprecate(nxv + storage, projectRef, 1).assertRejectedWith[StorageIsNotDeprecated]
+          storages.fetch(nxv + storage, projectRef).accepted.deprecated shouldEqual false
         }
       }
 
