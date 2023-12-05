@@ -139,6 +139,19 @@ final class StoragesRoutes(
                       )
                     }
                   },
+                  // Undeprecate a storage
+                  (put & pathPrefix("undeprecate") & parameter("rev".as[Int])) { rev =>
+                    authorizeFor(ref, Write).apply {
+                      emit(
+                        storages
+                          .undeprecate(id, ref, rev)
+                          .flatTap(index(ref, _, mode))
+                          .mapValue(_.metadata)
+                          .attemptNarrow[StorageRejection]
+                          .rejectOn[StorageNotFound]
+                      )
+                    }
+                  },
                   // Fetch a storage original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                     operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
