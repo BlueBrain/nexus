@@ -87,6 +87,15 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a view that is not deprecated.
+    *
+    * @param id
+    *   the view id
+    */
+  final case class ViewIsNotDeprecated(id: Iri)
+      extends ElasticSearchViewRejection(s"ElasticSearch view '$id' is not deprecated.")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
