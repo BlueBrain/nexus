@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -26,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import io.circe.Json
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
@@ -101,7 +103,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "create an indexing view" in {
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual indexingViewMetadata(1, 1, deprecated = false)
+        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 1, 1, deprecated = false)
       }
     }
 
@@ -155,7 +157,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "update a view" in {
       Put("/v1/views/org/proj/indexing-view?rev=1", updatedIndexingSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingViewMetadata(2, 2, deprecated = false)
+        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 2, 2, deprecated = false)
       }
     }
     "reject update of a view at a non-existent revision" in {
@@ -170,7 +172,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/views/org/proj/indexing-view/tags?rev=2", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual indexingViewMetadata(3, 2, deprecated = false)
+        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 3, 2, deprecated = false)
       }
     }
 
@@ -190,7 +192,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "deprecate a view" in {
       Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingViewMetadata(4, 2, deprecated = true)
+        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 4, 2, deprecated = true)
       }
     }
 
@@ -199,6 +201,42 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> indexingViewId)
+      }
+    }
+
+    "fail to undeprecate a view without permission" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/org/proj/$view/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "reject an undeprecation of a view without rev" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/org/proj/$view/undeprecate") ~> asWriter ~> routes ~> check {
+          println(response.asJson)
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject undeprecation of a view if the view is not deprecated" in {
+      givenAView { view =>
+        Put(s"/v1/views/org/proj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+        }
+      }
+    }
+
+    "undeprecate a view" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/org/proj/$view/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual indexingViewMetadata(nxv + view, 3, 1, deprecated = false)
+        }
       }
     }
 
@@ -332,14 +370,32 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
   }
 
-  private def indexingViewMetadata(rev: Int, indexingRev: Int, deprecated: Boolean) =
+  private def givenAView(test: String => Assertion): Assertion = {
+    val viewName       = genString()
+    val viewDefPayload = indexingSource deepMerge json"""{"@id": "$viewName"}"""
+    Post("/v1/views/org/proj", viewDefPayload.toEntity) ~> asWriter ~> routes ~> check {
+      response.status shouldEqual StatusCodes.Created
+    }
+    test(viewName)
+  }
+
+  private def givenADeprecatedView(test: String => Assertion): Assertion =
+    givenAView { view =>
+      Delete(s"/v1/views/org/proj/$view?rev=1") ~> asWriter ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+      }
+      test(view)
+    }
+
+  private def indexingViewMetadata(id: Iri, rev: Int, indexingRev: Int, deprecated: Boolean) =
     jsonContentOf(
       "routes/responses/indexing-view-metadata.json",
       "uuid"        -> uuid,
+      "id"          -> id,
       "deprecated"  -> deprecated,
       "rev"         -> rev,
       "indexingRev" -> indexingRev,
-      "self"        -> ResourceUris("views", projectRef, indexingViewId).accessUri
+      "self"        -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def indexingView(rev: Int, indexingRev: Int, deprecated: Boolean) =
