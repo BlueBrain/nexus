@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
 import cats.effect.unsafe.implicits._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.{ACursor, Json}
-import cats.implicits._
 
 class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
@@ -484,6 +483,17 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         assert(hasOnlyOneKey(firstKey))
         assert(downFirstKey(firstKey).key.contains("mappings"))
       }
+    }
+
+    "undeprecate a deprecated view" in {
+      val viewId          = genId()
+      val viewPayload     = jsonContentOf("kg/views/elasticsearch/legacy-fields.json", "withTag" -> false)
+      val createView      = deltaClient.put[Json](s"/views/$fullId/$viewId", viewPayload, ScoobyDoo) { expectCreated }
+      val deprecateView   = deltaClient.delete[Json](s"/views/$fullId/$viewId?rev=1", ScoobyDoo) { expectOk }
+      val undeprecateView = deltaClient
+        .putEmptyBody[Json](s"/views/$fullId/$viewId/undeprecate?rev=2", ScoobyDoo) { expectOk }
+
+      createView >> deprecateView >> undeprecateView
     }
 
   }
