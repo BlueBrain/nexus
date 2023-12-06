@@ -243,8 +243,8 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#default-elasticsearch-views" class="header">Default Elasticsearch views</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#remote-authentication" class="header">Remote authentication</a></li>
-    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#java-options" class="header">Java options</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,8 +270,8 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#default-elasticsearch-views" class="header">Default Elasticsearch views</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#remote-authentication" class="header">Remote authentication</a></li>
-    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#java-options" class="header">Java options</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -314,12 +314,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 2023-08-24 07:38:34 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - Composite views migration is now complete with (500,62) events/states updated
 </code></pre>
 <p>After this completes, the environment variable can be removed and Delta restarted.</p>
+<h2><a href="#default-elasticsearch-views" name="default-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Default Elasticsearch views</h2>
+<p>As the mapping and setting of default Elasticsearch views have changed, it is necessary to update the views. For this purpose, set the following environment variable when launching Nexus Delta 1.9.0 for the first time</p>
+<ul>
+  <li><code>RESET_DEFAULT_ES_VIEWS</code>: true</li>
+</ul>
+<p>The following logs should appear in Delta for each of your project:</p>
+<pre><code>2023-11-28 16:30:14 INFO  c.e.b.n.d.p.e.i.ElasticSearchDefaultViewsResetter - Created a new defaultElasticSearchView in project &#39;myorg/myproject&#39;.
+</code></pre>
 <h2><a href="#remote-authentication" name="remote-authentication" class="anchor"><span class="anchor-link"></span></a>Remote authentication</h2>
 <p>Currently, both remote storages and composite views with remote sources can hold auth tokens for communications with these remote endpoints. In v1.9, we now expect authentication to be dealt with in the Delta configuration</p>
 <p>A remote storage might currently have a token stored in the storage definition. In 1.9, this should be moved to <code>plugins.storage.storages.remote-disk.credentials</code>, as shown <a href="../getting-started/running-nexus/configuration/index.html#remote-storage-configuration">here</a></p>
 <p>A composite view might currently have a token stored in the view definition. In 1.9, this should be moved to <code>plugins.composite-views.remote-source-credentials</code>, as shown <a href="../getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration">here</a></p>
-<h2><a href="#java-options" name="java-options" class="anchor"><span class="anchor-link"></span></a>Java options</h2>
-<p>As the official Nexus Delta image moves to JRE 17, one dependency now requires the addition of <code>--add-opens=java.base/java.lang=ALL-UNNAMED</code> in <code>JAVA_OPTS</code>. This option is present by default in the image. However, if you are setting a custom value for <code>JAVA_OPTS</code> in your deployment, it is required to append <code>--add-opens=java.base/java.lang=ALL-UNNAMED</code> to it. This is because the custom value will override the one from the image.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.8-to-v1.9-migration.md" title="Edit this page" class="md-source-file md-edit">
