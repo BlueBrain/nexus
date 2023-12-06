@@ -3,14 +3,14 @@
     "https://bluebrain.github.io/nexus/contexts/sparql-metadata.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "@id": "{{id}}",
   "@type": [
     "SparqlView",
     "View"
   ],
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
+  "_createdBy": "http://localhost/v1/realms/myrealm/users/writer",
   "_uuid": "{{uuid}}",
   "_deprecated": {{deprecated}},
   "_incoming": "{{self}}/incoming",
@@ -20,5 +20,5 @@
   "_indexingRev": {{indexingRev}},
   "_self": "{{self}}",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob"
+  "_updatedBy": "http://localhost/v1/realms/myrealm/users/writer"
 }

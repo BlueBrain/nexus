@@ -145,6 +145,18 @@ class BlazegraphViewsRoutes(
                       }
                     )
                   },
+                  // Undeprecate a blazegraph view
+                  (put & pathPrefix("undeprecate") & parameter("rev".as[Int]) &
+                    authorizeFor(ref, Write) & pathEndOrSingleSlash) { rev =>
+                    emit(
+                      views
+                        .undeprecate(id, ref, rev)
+                        .flatTap(index(ref, _, mode))
+                        .mapValue(_.metadata)
+                        .attemptNarrow[BlazegraphViewRejection]
+                        .rejectOn[ViewNotFound]
+                    )
+                  },
                   // Query a blazegraph view
                   (pathPrefix("sparql") & pathEndOrSingleSlash) {
                     concat(

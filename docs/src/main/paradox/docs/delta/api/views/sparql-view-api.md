@@ -203,6 +203,27 @@ Response
 :   @@snip [deprecated.json](../assets/views/blazegraph/sparql/deprecated.json)
 
 
+## Undeprecate
+
+Unlocks the view, so further operations can be performed. It also restarts the indexing process.
+
+Undeprecating a view is considered to be an update as well.
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the view.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](../assets/views/blazegraph/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](../assets/views/blazegraph/sparql/undeprecated.json)
+
+
 ## Fetch
 
 ```
