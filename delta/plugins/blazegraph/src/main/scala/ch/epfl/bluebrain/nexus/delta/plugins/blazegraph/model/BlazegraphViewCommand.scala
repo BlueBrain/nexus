@@ -103,6 +103,21 @@ object BlazegraphViewCommand {
       extends BlazegraphViewCommand
 
   /**
+    * Command for the undeprecation of a BlazegraphView.
+    *
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param rev
+    *   the last known revision of the view
+    * @param subject
+    *   the identity associated with this command
+    */
+  final case class UndeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
+      extends BlazegraphViewCommand
+
+  /**
     * Command for adding a tag to a Blazegraph view.
     *
     * @param id
