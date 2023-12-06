@@ -146,7 +146,8 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
         description = descRev3,
         base = baseRev3,
         vocab = vocabRev3,
-        apiMappings = payload.apiMappings + newApiMapping
+        apiMappings = payload.apiMappings + newApiMapping,
+        enforceSchema = true
       )
 
       for {

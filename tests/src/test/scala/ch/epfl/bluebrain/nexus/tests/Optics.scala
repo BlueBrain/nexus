@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, Assertions, OptionValues}
 import Optics._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
-import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings, enforceSchema}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 trait OpticsValidators
@@ -49,6 +49,8 @@ trait OpticsValidators
 
     val expectedEffectiveMappings = payload.apiMappings ++ DefaultApiMappings.value
     effectiveApiMappings.fold(response) shouldEqual expectedEffectiveMappings
+
+    enforceSchema.getOption(response).value shouldEqual payload.enforceSchema
   }
 }
 
@@ -133,6 +135,7 @@ object Optics {
     val effectiveApiMappings = root._effectiveApiMappings.arr.to {
       extractApiMappings("_prefix", "_namespace")
     }
+    val enforceSchema        = root.enforceSchema.boolean
 
     private def extractApiMappings(prefixKey: String, namespaceKey: String)(raw: Vector[Json]) =
       raw.mapFilter { entryJson =>

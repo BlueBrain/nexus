@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -58,8 +59,12 @@ object ResourceCommand {
     *
     * @param project
     *   the project where the resource belongs
+    * @param projectContext
+    *   the current context of the project
     * @param schema
     *   the schema used to constrain the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param jsonld
     *   the jsonld representation of the resource
     * @param caller
@@ -69,6 +74,7 @@ object ResourceCommand {
     */
   final case class CreateResource(
       project: ProjectRef,
+      projectContext: ProjectContext,
       schema: ResourceRef,
       jsonld: JsonLdAssembly,
       caller: Caller,
@@ -87,6 +93,8 @@ object ResourceCommand {
     *
     * @param project
     *   the project where the resource belongs
+    * @param projectContext
+    *   the current context of the project
     * @param schemaOpt
     *   the optional schema of the resource. A None value ignores the schema from this command
     * @param jsonld
@@ -100,6 +108,7 @@ object ResourceCommand {
     */
   final case class UpdateResource(
       project: ProjectRef,
+      projectContext: ProjectContext,
       schemaOpt: Option[ResourceRef],
       jsonld: JsonLdAssembly,
       rev: Int,
@@ -129,6 +138,7 @@ object ResourceCommand {
     */
   final case class RefreshResource(
       project: ProjectRef,
+      projectContext: ProjectContext,
       schemaOpt: Option[ResourceRef],
       jsonld: JsonLdAssembly,
       rev: Int,
@@ -147,6 +157,8 @@ object ResourceCommand {
     *   resource identifier
     * @param project
     *   project where the resource belongs
+    * @param projectContext
+    *   the current context of the project
     * @param schemaRef
     *   schema of the resource
     * @param rev
@@ -157,6 +169,7 @@ object ResourceCommand {
   final case class UpdateResourceSchema(
       id: Iri,
       project: ProjectRef,
+      projectContext: ProjectContext,
       schemaRef: ResourceRef,
       rev: Int,
       caller: Caller

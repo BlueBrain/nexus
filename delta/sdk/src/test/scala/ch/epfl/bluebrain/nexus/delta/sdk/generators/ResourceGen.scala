@@ -53,7 +53,6 @@ object ResourceGen {
       Instant.EPOCH,
       subject
     )
-
   def resource(
       id: Iri,
       project: ProjectRef,

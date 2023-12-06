@@ -191,13 +191,18 @@ trait BaseIntegrationSpec
     } yield ()
   }
 
+  def createOrg(user: Authenticated, org: String): IO[Unit] =
+    for {
+      _ <- aclDsl.addPermission("/", user, Organizations.Create)
+      _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
+    } yield ()
+
   /**
     * Create projects and the parent organization for the provided user
     */
   def createProjects(user: Authenticated, org: String, projects: String*): IO[Unit] =
     for {
-      _ <- aclDsl.addPermission("/", user, Organizations.Create)
-      _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
+      _ <- createOrg(user, org)
       _ <- projects.toList.traverse { project =>
              val payload = ProjectPayload.generate(s"$org/$project", config)
              adminDsl.createProject(org, project, payload, user)
