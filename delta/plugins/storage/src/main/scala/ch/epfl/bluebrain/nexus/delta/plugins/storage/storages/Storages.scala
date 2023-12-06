@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUndeprecated, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -234,6 +234,28 @@ final class Storages private (
   }.span("deprecateStorage")
 
   /**
+    * Undeprecate a storage
+    *
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage belongs
+    * @param rev
+    *   the current revision of the storage
+    */
+  def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Int
+  )(implicit subject: Subject): IO[StorageResource] = {
+    for {
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(UndeprecateStorage(iri, projectRef, rev, subject))
+    } yield res
+  }.span("undeprecateStorage")
+
+  /**
     * Fetch the storage using the ''resourceRef''
     *
     * @param resourceRef
@@ -384,11 +406,16 @@ object Storages {
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: StorageUndeprecated): Option[StorageState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
-      case e: StorageCreated    => created(e)
-      case e: StorageUpdated    => updated(e)
-      case e: StorageTagAdded   => tagAdded(e)
-      case e: StorageDeprecated => deprecated(e)
+      case e: StorageCreated      => created(e)
+      case e: StorageUpdated      => updated(e)
+      case e: StorageTagAdded     => tagAdded(e)
+      case e: StorageDeprecated   => deprecated(e)
+      case e: StorageUndeprecated => undeprecated(e)
     }
   }
 
@@ -485,11 +512,20 @@ object Storages {
         clock.realTimeInstant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
     }
 
+    def undeprecate(c: UndeprecateStorage) = state match {
+      case None                      => IO.raiseError(StorageNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if !s.deprecated  => IO.raiseError(StorageIsNotDeprecated(c.id))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(StorageUndeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
+    }
+
     cmd match {
-      case c: CreateStorage    => create(c)
-      case c: UpdateStorage    => update(c)
-      case c: TagStorage       => tag(c)
-      case c: DeprecateStorage => deprecate(c)
+      case c: CreateStorage      => create(c)
+      case c: UpdateStorage      => update(c)
+      case c: TagStorage         => tag(c)
+      case c: DeprecateStorage   => deprecate(c)
+      case c: UndeprecateStorage => undeprecate(c)
     }
   }
 
