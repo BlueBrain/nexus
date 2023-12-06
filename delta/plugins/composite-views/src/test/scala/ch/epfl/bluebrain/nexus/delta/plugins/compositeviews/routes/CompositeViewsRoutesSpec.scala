@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
@@ -265,6 +266,41 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       }
     }
 
+    "fail to undeprecate a view without permission" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "reject an undeprecation of a view without rev" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject an undeprecation of a view that is not deprecated" in {
+      givenAView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+        }
+      }
+    }
+
+    "undeprecate a view" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual viewMetadataWithId(nxv + view, 3, deprecated = false)
+        }
+      }
+    }
+
     "reject querying blazegraph common namespace and projection(s) for a deprecated view" in {
       val encodedId = UrlUtils.encode(blazeId.toString)
       val mediaType = RdfMediaTypes.`application/n-triples`
@@ -321,13 +357,34 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
   }
 
+  private def givenAView(test: String => Assertion): Assertion = {
+    val viewId = genString()
+    Put(s"/v1/views/myorg/myproj/$viewId", viewSource.toEntity) ~> asWriter ~> routes ~> check {
+      response.status shouldEqual StatusCodes.Created
+    }
+    test(viewId)
+  }
+
+  private def givenADeprecatedView(test: String => Assertion): Assertion = {
+    givenAView { view =>
+      Delete(s"/v1/views/myorg/myproj/$view?rev=1") ~> asWriter ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+      }
+      test(view)
+    }
+  }
+
   private def viewMetadata(rev: Int, deprecated: Boolean) =
+    viewMetadataWithId(nxv + uuid.toString, rev, deprecated)
+
+  private def viewMetadataWithId(id: Iri, rev: Int, deprecated: Boolean) =
     jsonContentOf(
       "routes/responses/view-metadata.json",
+      "id"         -> id,
       "uuid"       -> uuid,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "self"       -> ResourceUris("views", projectRef, viewId).accessUri
+      "self"       -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def view(rev: Int, deprecated: Boolean, rebuildInterval: String) =

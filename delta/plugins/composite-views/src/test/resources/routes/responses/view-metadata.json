@@ -3,7 +3,7 @@
     "https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{uuid}}",
+  "@id": "{{id}}",
   "@type": [
     "View",
     "CompositeView"
