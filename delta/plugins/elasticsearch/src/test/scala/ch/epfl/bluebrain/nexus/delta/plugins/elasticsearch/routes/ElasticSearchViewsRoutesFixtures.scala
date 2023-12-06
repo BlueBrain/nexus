@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -56,13 +56,18 @@ class ElasticSearchViewsRoutesFixtures
   val aclCheck: AclSimpleCheck = AclSimpleCheck().accepted
 
   val realm: Label = Label.unsafe("wonderland")
-  val alice: User  = User("alice", realm)
 
-  val caller: Caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  val reader = User("reader", realm)
+  val writer = User("writer", realm)
 
-  val identities: Identities = IdentitiesDummy(caller)
+  implicit private val callerReader: Caller =
+    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerWriter: Caller =
+    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
+  val identities                            = IdentitiesDummy(callerReader, callerWriter)
 
-  val asAlice = addCredentials(OAuth2BearerToken("alice"))
+  val asReader = addCredentials(OAuth2BearerToken("reader"))
+  val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
   val project: ProjectResource = ProjectGen.resourceFor(
     ProjectGen.project(

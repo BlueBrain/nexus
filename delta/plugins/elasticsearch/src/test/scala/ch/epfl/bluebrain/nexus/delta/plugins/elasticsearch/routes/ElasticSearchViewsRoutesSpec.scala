@@ -98,29 +98,31 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       )
     )
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    aclCheck.append(AclAddress.Root, reader -> Set(esPermissions.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(esPermissions.write)).accepted
+  }
+
   "Elasticsearch views routes" should {
 
     "fail to create a view without views/write permission" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
+      Post("/v1/views/myorg/myproject", payload.toEntity) ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "create a view" in {
-      aclCheck
-        .append(AclAddress.Root, Anonymous -> Set(esPermissions.write), caller.subject -> Set(esPermissions.write))
-        .accepted
-      Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
+      Post("/v1/views/myorg/myproject", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual elasticSearchViewMetadata(myId)
       }
     }
 
     "create a view with an authenticated user and provided id" in {
-      Put("/v1/views/myorg/myproject/myid2", payloadNoId.toEntity) ~> asAlice ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid2", payloadNoId.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual elasticSearchViewMetadata(myId2, createdBy = alice, updatedBy = alice)
+        response.asJson shouldEqual elasticSearchViewMetadata(myId2)
       }
     }
 
@@ -128,15 +130,15 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       Put(
         "/v1/views/myorg/myproject/myid3",
         payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "filterDeprecated" } ]}""").toEntity
-      ) ~> asAlice ~> routes ~> check {
+      ) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
-          elasticSearchViewMetadata(myId3, createdBy = alice, updatedBy = alice)
+          elasticSearchViewMetadata(myId3)
       }
     }
 
     "reject the creation of a view which already exists" in {
-      Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
@@ -147,7 +149,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       Put(
         "/v1/views/myorg/myproject/unknown-pipe",
         payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "xxx" } ]}""").toEntity
-      ) ~> routes ~> check {
+      ) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           jsonContentOf("routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
@@ -155,20 +157,18 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "fail to update a view without views/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-      Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "update a view" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       val endpoints = List(
         "/v1/views/myorg/myproject/myid",
         s"/v1/views/myorg/myproject/$myIdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
-        Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2)
         }
@@ -177,7 +177,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "reject the update of a non-existent view" in {
       val payload = payloadUpdated.removeKeys(keywords.id)
-      Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("routes/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
@@ -185,7 +185,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "reject the update of a view at a non-existent revision" in {
-      Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
@@ -193,29 +193,27 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "fail to deprecate a view without views/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "deprecate a view" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4, deprecated = true)
       }
     }
 
     "reject the deprecation of a view without rev" in {
-      Delete("/v1/views/myorg/myproject/myid") ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "reject the deprecation of a already deprecated view" in {
-      Delete(s"/v1/views/myorg/myproject/myid?rev=4") ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproject/myid?rev=4") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> myId)
       }
@@ -231,9 +229,9 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "tag a view" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/views/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
+      Post("/v1/views/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual elasticSearchViewMetadata(myId2, rev = 2, createdBy = alice)
+        response.asJson shouldEqual elasticSearchViewMetadata(myId2, rev = 2)
       }
     }
 
@@ -253,7 +251,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "fetch a view" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
-      Get("/v1/views/myorg/myproject/myid") ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchView(
           myId,
@@ -277,9 +275,9 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> routes ~> check {
+          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual elasticSearchView(myId2, createdBy = alice, updatedBy = alice)
+            response.asJson shouldEqual elasticSearchView(myId2)
           }
         }
       }
@@ -296,7 +294,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
         s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payloadNoId
         }
@@ -310,7 +308,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> routes ~> check {
+          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual payloadNoId
           }
@@ -319,25 +317,25 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "fetch the view tags" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
-      Get("/v1/views/myorg/myproject/myid2/tags") ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid2/tags") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }
     }
 
     "return not found if tag not found" in {
-      Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
@@ -366,8 +364,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       id: Iri,
       rev: Int = 1,
       deprecated: Boolean = false,
-      createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      createdBy: Subject = writer,
+      updatedBy: Subject = writer
   ): Json =
     jsonContentOf(
       "routes/elasticsearch-view-write-response.json",
@@ -386,8 +384,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       includeDeprecated: Boolean = false,
       rev: Int = 1,
       deprecated: Boolean = false,
-      createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      createdBy: Subject = writer,
+      updatedBy: Subject = writer
   ): Json =
     jsonContentOf(
       "routes/elasticsearch-view-read-response.json",
