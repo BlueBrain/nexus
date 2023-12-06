@@ -47,9 +47,9 @@ Customize the Nexus codebase appearance by setting environment variables. Defaul
 #### Landing Page Customization
 
 - `LOGO_IMG`: HTTPS URL for the application logo. Recommended: SVG format with transparent background. Ideal size: ~35 px height, max 250 px width. @link:[Click here for an example SVG](https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/EPFL_BBP_logo.svg){ open=new }.
-- `LOGO_LINK`: HTTPS URL redirecting from the logo. Example: <https://www.epfl.ch>
+- `LOGO_LINK`: HTTPS URL redirecting from the logo. Example: <https://www.epfl.ch/en/>
 - `LANDING_VIDEO`: HTTPS URL for a landing page video. Requirements: MP4 format, H.264 codec, ~10MB, 1920×1080 resolution. @link:[Click here for an example video](https://github.com/BlueBrain/nexus-web/tree/main/src/videos/BrainRegionsNexusPage.mp4){ open=new }. Ensure that the video's main color is not too bright, as the text on top of it will be white.
-- `LANDING_POSTER_IMG`: HTTPS URL for a loading image on the landing page, displayed while the video loads. @link:[Click here for an example poster image](https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/BrainRegionsNexusPage.jpg){ open=new }. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.
+- `LANDING_POSTER_IMG`: HTTPS URL for a loading image on the landing page, displayed while the video loads. @link:[Click here for an example poster image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/BrainRegionsNexusPage.jpg){ open=new }. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.
 - `MAIN_COLOR`: Main background color in hex code. Example color: #062d68
 
 #### Page Specific Customization
