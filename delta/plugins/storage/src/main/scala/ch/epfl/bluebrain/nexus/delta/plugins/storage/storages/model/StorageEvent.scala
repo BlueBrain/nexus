@@ -161,6 +161,31 @@ object StorageEvent {
       subject: Subject
   ) extends StorageEvent
 
+  /**
+    * Event for the undeprecation of a storage
+    *
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param tpe
+    *   the storage type
+    * @param rev
+    *   the last known revision of the storage
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
+    */
+  final case class StorageUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      tpe: StorageType,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends StorageEvent
+
   @nowarn("cat=unused")
   def serializer: Serializer[Iri, StorageEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -181,10 +206,11 @@ object StorageEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: StorageCreated    => Created
-            case _: StorageUpdated    => Updated
-            case _: StorageTagAdded   => Tagged
-            case _: StorageDeprecated => Deprecated
+            case _: StorageCreated      => Created
+            case _: StorageUpdated      => Updated
+            case _: StorageTagAdded     => Tagged
+            case _: StorageDeprecated   => Deprecated
+            case _: StorageUndeprecated => Undeprecated
           },
           event.id,
           event.tpe.types,
