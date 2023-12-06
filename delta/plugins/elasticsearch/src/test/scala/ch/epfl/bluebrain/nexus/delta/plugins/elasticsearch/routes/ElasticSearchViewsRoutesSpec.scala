@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
+import org.scalatest.Assertion
 
 class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
@@ -227,6 +228,50 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       }
     }
 
+    "fail to undeprecate a view without views/write permission" in {
+      givenADeprecatedView { view =>
+        Put(
+          s"/v1/views/myorg/myproject/$view/undeprecate?rev=2",
+          payloadUpdated.toEntity
+        ) ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "undeprecate a view" in {
+      givenADeprecatedView { view =>
+        Put(
+          s"/v1/views/myorg/myproject/$view/undeprecate?rev=2",
+          payloadUpdated.toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual elasticSearchViewMetadata(nxv + view, rev = 3)
+        }
+      }
+    }
+
+    "reject the undeprecation of a view without rev" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproject/$view/undeprecate", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject the undeprecation of a view that is not deprecated" in {
+      givenAView { view =>
+        Put(
+          s"/v1/views/myorg/myproject/$view/undeprecate?rev=1",
+          payloadUpdated.toEntity
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+        }
+      }
+    }
+
     "tag a view" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/views/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
@@ -357,6 +402,24 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
           "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid"
         )
       }
+    }
+  }
+
+  private def givenAView(test: String => Assertion): Assertion = {
+    val viewId         = genString()
+    val viewDefPayload = payload deepMerge json"""{"@id": "$viewId"}"""
+    Post("/v1/views/myorg/myproject", viewDefPayload.toEntity) ~> asWriter ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+    test(viewId)
+  }
+
+  private def givenADeprecatedView(test: String => Assertion): Assertion = {
+    givenAView { view =>
+      Delete(s"/v1/views/myorg/myproject/$view?rev=1") ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      test(view)
     }
   }
 
