@@ -21,30 +21,24 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
   val projects = List(fullId, fullId2)
 
-  "creating projects" should {
-    "add necessary permissions for user" in {
-      for {
-        _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
-        _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
-      } yield succeed
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val setup = for {
+      _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
+      _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
+      _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId2, name = fullId2, ScoobyDoo)
+    } yield succeed
 
-    "succeed if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId2, name = fullId2, ScoobyDoo)
-      } yield succeed
-    }
-
-    "wait until in project resolver is created" in {
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1L
-        }
+    setup.accepted
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1L
       }
     }
+    ()
   }
 
   "creating the view" should {
@@ -486,14 +480,18 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "undeprecate a deprecated view" in {
-      val viewId          = genId()
-      val viewPayload     = jsonContentOf("kg/views/elasticsearch/legacy-fields.json", "withTag" -> false)
-      val createView      = deltaClient.put[Json](s"/views/$fullId/$viewId", viewPayload, ScoobyDoo) { expectCreated }
-      val deprecateView   = deltaClient.delete[Json](s"/views/$fullId/$viewId?rev=1", ScoobyDoo) { expectOk }
-      val undeprecateView = deltaClient
+      val viewId             = genId()
+      val viewPayload        = jsonContentOf("kg/views/elasticsearch/legacy-fields.json", "withTag" -> false)
+      val createView         = deltaClient.put[Json](s"/views/$fullId/$viewId", viewPayload, ScoobyDoo) { expectCreated }
+      val deprecateView      = deltaClient.delete[Json](s"/views/$fullId/$viewId?rev=1", ScoobyDoo) { expectOk }
+      val undeprecateView    = deltaClient
         .putEmptyBody[Json](s"/views/$fullId/$viewId/undeprecate?rev=2", ScoobyDoo) { expectOk }
+      val assertUndeprecated = deltaClient.get[Json](s"/views/$fullId/$viewId", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json.hcursor.get[Boolean]("_deprecated").toOption should contain(false)
+      }
 
-      createView >> deprecateView >> undeprecateView
+      createView >> deprecateView >> undeprecateView >> assertUndeprecated
     }
 
   }
