@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphErrorParser
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -223,7 +224,9 @@ object BlazegraphViewRejection {
       r match {
         case ProjectContextRejection(rejection)                  => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)             =>
-          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
+          obj
+            .add(keywords.tpe, "SparqlClientError".asJson)
+            .add("details", BlazegraphErrorParser.details(rejection).asJson)
         case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidViewReferences(views)                        => obj.add("views", views.asJson)
         case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)

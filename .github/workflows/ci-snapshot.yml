@@ -19,11 +19,11 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -34,7 +34,7 @@ jobs:
           echo https_proxy=${https_proxy} >> $GITHUB_ENV
           echo no_proxy=${no_proxy} >> $GITHUB_ENV
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             env.http_proxy=${{ env.http_proxy }}
