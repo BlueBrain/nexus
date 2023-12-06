@@ -22,10 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import io.circe.Json
 import io.circe.syntax._
 
@@ -88,25 +86,27 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       )
     )
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    aclCheck.append(AclAddress.Root, reader -> Set(permissions.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(permissions.write)).accepted
+  }
+
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Post("/v1/views/org/proj", indexingSource.toEntity) ~> routes ~> check {
+      Post("/v1/views/org/proj", indexingSource.toEntity) ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
     "create an indexing view" in {
-      aclCheck
-        .append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read))
-        .accepted
-      Post("/v1/views/org/proj", indexingSource.toEntity) ~> asBob ~> routes ~> check {
+      Post("/v1/views/org/proj", indexingSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual indexingViewMetadata(1, 1, false)
+        response.asJson shouldEqual indexingViewMetadata(1, 1, deprecated = false)
       }
     }
 
     "create an aggregate view" in {
-      Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asBob ~> routes ~> check {
+      Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/aggregate-view-metadata.json",
@@ -131,7 +131,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(Accept(mediaType))
         val getRequest  = Get(s"/v1/views/org/proj/indexing-view/sparql?query=$encodedQ").withHeaders(Accept(mediaType))
         forAll(List(postRequest, getRequest)) { req =>
-          req ~> asBob ~> routes ~> check {
+          req ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.header[`Content-Type`].value.value shouldEqual mediaType.value
             response.asString shouldEqual expected
@@ -141,25 +141,25 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
 
     "reject creation of a view which already exits" in {
-      Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asBob ~> routes ~> check {
+      Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/view-already-exists.json")
       }
 
     }
     "fail to update a view without permission" in {
-      Put("/v1/views/org/proj/aggregate-view?rev=1", aggregateSource.toEntity) ~> routes ~> check {
+      Put("/v1/views/org/proj/aggregate-view?rev=1", aggregateSource.toEntity) ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
     "update a view" in {
-      Put("/v1/views/org/proj/indexing-view?rev=1", updatedIndexingSource.toEntity) ~> asBob ~> routes ~> check {
+      Put("/v1/views/org/proj/indexing-view?rev=1", updatedIndexingSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingViewMetadata(2, 2, false)
+        response.asJson shouldEqual indexingViewMetadata(2, 2, deprecated = false)
       }
     }
     "reject update of a view at a non-existent revision" in {
-      Put("/v1/views/org/proj/indexing-view?rev=3", updatedIndexingSource.toEntity) ~> asBob ~> routes ~> check {
+      Put("/v1/views/org/proj/indexing-view?rev=3", updatedIndexingSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 3, "expected" -> 2)
 
@@ -168,33 +168,35 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
     "tag a view" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/views/org/proj/indexing-view/tags?rev=2", payload.toEntity) ~> asBob ~> routes ~> check {
+      Post("/v1/views/org/proj/indexing-view/tags?rev=2", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual indexingViewMetadata(3, 2, false)
+        response.asJson shouldEqual indexingViewMetadata(3, 2, deprecated = false)
       }
     }
 
     "fail to deprecate a view without permission" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
+
     "reject a deprecation of a view without rev" in {
-      Delete("/v1/views/org/proj/indexing-view") ~> asBob ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
+
     "deprecate a view" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asBob ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingViewMetadata(4, 2, true)
+        response.asJson shouldEqual indexingViewMetadata(4, 2, deprecated = true)
       }
     }
 
     "reject querying a deprecated view" in {
       val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
-      Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> asBob ~> routes ~> check {
+      Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> indexingViewId)
       }
@@ -205,10 +207,11 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         response.shouldBeForbidden
       }
     }
+
     "fetch a view" in {
-      Get("/v1/views/org/proj/indexing-view") ~> asBob ~> routes ~> check {
+      Get("/v1/views/org/proj/indexing-view") ~> asReader ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingView(4, 2, true)
+        response.asJson shouldEqual indexingView(4, 2, deprecated = true)
       }
     }
     "fetch a view by rev or tag" in {
@@ -221,9 +224,9 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         "/v1/resources/org/proj/view/indexing-view?rev=1"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual indexingView(1, 1, false).mapObject(_.remove("resourceTag"))
+          response.asJson shouldEqual indexingView(1, 1, deprecated = false).mapObject(_.remove("resourceTag"))
         }
       }
 
@@ -235,7 +238,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         "/v1/resources/org/proj/view/indexing-view/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual updatedIndexingSource
         }
@@ -248,7 +251,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         "/v1/resources/org/proj/view/indexing-view/tags"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
@@ -258,7 +261,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       }
     }
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asBob ~> routes ~> check {
+      Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
@@ -274,7 +277,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
           Get("/v1/storages/org/proj/resource-incoming-outgoing/incoming")
         )
       ) { req =>
-        req ~> asBob ~> routes ~> check {
+        req ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/responses/incoming-outgoing.json")
         }
@@ -291,7 +294,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
           Get("/v1/storages/org/proj/resource-incoming-outgoing/outgoing")
         )
       ) { req =>
-        req ~> asBob ~> routes ~> check {
+        req ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/responses/incoming-outgoing.json")
         }
