@@ -232,6 +232,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
       (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      _        <- validateNotDefaultView(iri)
       res      <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagElasticSearchView")
