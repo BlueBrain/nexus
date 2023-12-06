@@ -185,6 +185,34 @@ object ElasticSearchViewEvent {
       subject: Subject
   ) extends ElasticSearchViewEvent
 
+  /**
+    * Evidence of a view undeprecation.
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tpe
+    *   the view type
+    * @param uuid
+    *   the view unique identifier
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that undeprecated the view
+    */
+  final case class ElasticSearchViewUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      tpe: ElasticSearchViewType,
+      uuid: UUID,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ElasticSearchViewEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, ElasticSearchViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -204,10 +232,11 @@ object ElasticSearchViewEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: ElasticSearchViewCreated    => Created
-            case _: ElasticSearchViewUpdated    => Updated
-            case _: ElasticSearchViewTagAdded   => Tagged
-            case _: ElasticSearchViewDeprecated => Deprecated
+            case _: ElasticSearchViewCreated      => Created
+            case _: ElasticSearchViewUpdated      => Updated
+            case _: ElasticSearchViewTagAdded     => Tagged
+            case _: ElasticSearchViewDeprecated   => Deprecated
+            case _: ElasticSearchViewUndeprecated => Undeprecated
           },
           event.id,
           event.tpe.types,
