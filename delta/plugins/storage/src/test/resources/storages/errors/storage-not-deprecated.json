@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "StorageIsNotDeprecated",
+  "reason": "Storage '{{id}}' is not deprecated."
+}

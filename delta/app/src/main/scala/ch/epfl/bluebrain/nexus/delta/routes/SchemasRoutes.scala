@@ -128,6 +128,11 @@ final class SchemasRoutes(
                       }
                     )
                   },
+                  (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
+                    authorizeFor(ref, Write).apply {
+                      emitMetadataOrReject(schemas.undeprecate(id, ref, rev).flatTap(index))
+                    }
+                  },
                   (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
                     authorizeFor(ref, Write).apply {
                       emitMetadata(schemas.refresh(id, ref).flatTap(index))
