@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsGen
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, permissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.Main
@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
@@ -100,12 +99,15 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val error = new Exception("boom")
-    val rev   = 1
-    val fail1 = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-    val fail2 = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
-    val save  = projectionErrors.saveFailedElems(indexingView.metadata, List(fail1, fail2))
-    save.accepted
+    val error           = new Exception("boom")
+    val rev             = 1
+    val fail1           = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail2           = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
+    val saveFailedElems = projectionErrors.saveFailedElems(indexingView.metadata, List(fail1, fail2))
+
+    saveFailedElems.accepted
+    aclCheck.append(AclAddress.Root, reader -> Set(permissions.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(permissions.write)).accepted
   }
 
   private val bgProjectionEncodedId = UrlUtils.encode(blazegraphProjection.id.toString)
@@ -132,7 +134,6 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch offsets" in {
-      aclCheck.append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)).accepted
       val viewOffsets       = jsonContentOf("routes/responses/view-offsets.json")
       val projectionOffsets = jsonContentOf("routes/responses/view-offsets-projection.json")
       val endpoints         = List(
@@ -141,7 +142,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         s"$viewEndpoint/projections/$bgProjectionEncodedId/offset" -> projectionOffsets
       )
       forAll(endpoints) { case (endpoint, expected) =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expected
         }
@@ -174,7 +175,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         s"$viewEndpoint/sources/$encodedSource/statistics"             -> sourceStats
       )
       forAll(endpoints) { case (endpoint, expected) =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expected
         }
@@ -188,7 +189,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch indexing description" in {
-      Get(s"$viewEndpoint/description") ~> asBob ~> routes ~> check {
+      Get(s"$viewEndpoint/description") ~> asReader ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/view-indexing-description.json",
@@ -209,26 +210,26 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           Offset.start.asJson
         )
 
-      Delete(s"$viewEndpoint/offset") ~> asBob ~> routes ~> check {
+      Delete(s"$viewEndpoint/offset") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewOffsets
-        lastRestart.value shouldEqual FullRestart(indexingView.ref, Instant.EPOCH, bob)
+        lastRestart.value shouldEqual FullRestart(indexingView.ref, Instant.EPOCH, writer)
       }
 
       val endpoints = List(
         (
           s"$viewEndpoint/projections/_/offset",
           viewOffsets,
-          FullRebuild(indexingView.ref, Instant.EPOCH, bob)
+          FullRebuild(indexingView.ref, Instant.EPOCH, writer)
         ),
         (
           s"$viewEndpoint/projections/$bgProjectionEncodedId/offset",
           projectionOffsets,
-          PartialRebuild(indexingView.ref, blazegraphProjection.id, Instant.EPOCH, bob)
+          PartialRebuild(indexingView.ref, blazegraphProjection.id, Instant.EPOCH, writer)
         )
       )
       forAll(endpoints) { case (endpoint, expectedResult, restart) =>
-        Delete(endpoint) ~> asBob ~> routes ~> check {
+        Delete(endpoint) ~> asWriter ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResult
           lastRestart.value shouldEqual restart
@@ -242,15 +243,14 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         s"$viewEndpoint/failures/sse"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
     }
 
     "return all failures as SSE when no LastEventID is provided" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      Get(s"$viewEndpoint/failures/sse") ~> routes ~> check {
+      Get(s"$viewEndpoint/failures/sse") ~> asWriter ~> routes ~> check {
         response.status shouldBe StatusCodes.OK
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
@@ -258,7 +258,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "return failures as SSE only from the given LastEventID" in {
-      Get(s"$viewEndpoint/failures/sse") ~> `Last-Event-ID`("1") ~> routes ~> check {
+      Get(s"$viewEndpoint/failures/sse") ~> asWriter ~> `Last-Event-ID`("1") ~> routes ~> check {
         response.status shouldBe StatusCodes.OK
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
@@ -266,8 +266,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "return failures as a listing" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      Get(s"$viewEndpoint/failures") ~> routes ~> check {
+      Get(s"$viewEndpoint/failures") ~> asWriter ~> routes ~> check {
         response.status shouldBe StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("routes/list-indexing-errors.json")
       }
