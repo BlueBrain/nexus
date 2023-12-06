@@ -332,9 +332,14 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "undeprecate a deprecated SPARQL view" in {
-      deltaClient.put[Json](s"/views/$project1/test-resource:cell-view?rev=2", dummyJson, ScoobyDoo) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
+      val viewId          = "hello"
+      val payload         = jsonContentOf("kg/views/sparql-view.json") deepMerge json"""{"@id": "$viewId"}"""
+      val createView      = deltaClient.put[Json](s"/views/$project1/$viewId", payload, ScoobyDoo) { expectCreated }
+      val deprecateView   = deltaClient.delete[Json](s"/views/$project1/$viewId?rev=1", ScoobyDoo) { expectOk }
+      val undeprecateView = deltaClient.put[Json](s"/views/$project1/$viewId/undeprecate?rev=2", payload, ScoobyDoo) {
+        expectOk
       }
+      createView >> deprecateView >> undeprecateView
     }
 
     "create a another SPARQL view" in {
