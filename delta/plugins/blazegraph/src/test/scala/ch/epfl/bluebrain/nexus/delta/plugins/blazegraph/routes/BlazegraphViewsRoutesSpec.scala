@@ -375,7 +375,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
 
     "reject if deprecating the default view" in {
-      Delete("/v1/views/org/proj/nxv:defaultSparqlIndex?rev=1") ~> asBob ~> routes ~> check {
+      Delete("/v1/views/org/proj/nxv:defaultSparqlIndex?rev=1") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual
           json"""{

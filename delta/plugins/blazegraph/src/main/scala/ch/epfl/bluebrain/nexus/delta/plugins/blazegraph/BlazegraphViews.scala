@@ -189,6 +189,7 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
+      _   <- validateNotDefaultView(iri)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res

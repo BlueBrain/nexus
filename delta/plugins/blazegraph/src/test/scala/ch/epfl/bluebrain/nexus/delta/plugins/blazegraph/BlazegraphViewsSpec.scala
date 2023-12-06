@@ -404,6 +404,10 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
       "updating" in {
         views.update(defaultViewId, projectRef, 1, indexingSource).rejected shouldEqual ViewIsDefaultView
       }
+
+      "tagging" in {
+        views.tag(defaultViewId, projectRef, tag, tagRev = 1, 1).rejected shouldEqual ViewIsDefaultView
+      }
     }
 
     def givenAView(test: String => Assertion): Assertion = {
