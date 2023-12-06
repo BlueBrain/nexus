@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
 import io.circe.Json
 import io.circe.optics.JsonPath.root
@@ -179,6 +180,20 @@ class SchemasSpec extends BaseIntegrationSpec {
                    "sh:ValidationReport"
                  )
              }
+      } yield succeed
+    }
+
+    "have the ability to be undeprecated" in {
+      val id = genId()
+      for {
+        payload <- SchemaPayloads.simple(id)
+        _       <- deltaClient.post[Json](s"/schemas/$project", payload, Rick) { expectCreated }
+        _       <- deltaClient.delete[Json](s"/schemas/$project/$id?rev=1", Rick) { expectOk }
+        _       <- deltaClient.put[Json](s"/schemas/$project/$id/undeprecate?rev=2", Json.Null, Rick) { expectOk }
+        _       <- deltaClient.get[Json](s"/schemas/$project/$id", Rick) { (json, response) =>
+                     response.status shouldEqual StatusCodes.OK
+                     json.hcursor.downField("_deprecated").as[Boolean].toOption shouldEqual Some(false)
+                   }
       } yield succeed
     }
   }

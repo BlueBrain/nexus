@@ -32,7 +32,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       .addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$myId"}"""
   )
 
-  private val created    =
+  private val created      =
     SchemaCreated(
       myId,
       projectRef,
@@ -43,7 +43,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
-  private val updated    =
+  private val updated      =
     SchemaUpdated(
       myId,
       projectRef,
@@ -54,7 +54,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
-  private val refreshed  =
+  private val refreshed    =
     SchemaRefreshed(
       myId,
       projectRef,
@@ -64,7 +64,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
-  private val tagged     =
+  private val tagged       =
     SchemaTagAdded(
       myId,
       projectRef,
@@ -74,7 +74,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
-  private val tagDeleted =
+  private val tagDeleted   =
     SchemaTagDeleted(
       myId,
       projectRef,
@@ -83,11 +83,19 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
-  private val deprecated =
+  private val deprecated   =
     SchemaDeprecated(
       myId,
       projectRef,
       4,
+      instant,
+      subject
+    )
+  private val undeprecated =
+    SchemaUndeprecated(
+      myId,
+      projectRef,
+      5,
       instant,
       subject
     )
@@ -98,19 +106,20 @@ class SchemaSerializationSuite extends SerializationSuite {
     (refreshed, jsonContentOf("schemas/schema-refreshed.json"), Refreshed),
     (tagged, jsonContentOf("schemas/schema-tagged.json"), Tagged),
     (tagDeleted, jsonContentOf("schemas/schema-tag-deleted.json"), TagDeleted),
-    (deprecated, jsonContentOf("schemas/schema-deprecated.json"), Deprecated)
+    (deprecated, jsonContentOf("schemas/schema-deprecated.json"), Deprecated),
+    (undeprecated, jsonContentOf("schemas/schema-undeprecated.json"), Undeprecated)
   )
 
   schemasMapping.foreach { case (event, json, action) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(SchemaEvent.serializer, event, json)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName}") {
       assertEquals(SchemaEvent.serializer.codec.decodeJson(json), Right(event))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
       SchemaEvent.schemaEventMetricEncoder.toMetric.decodeJson(json).assertRight {
         ProjectScopedMetric(
           instant,
