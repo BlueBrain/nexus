@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -13,13 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 import java.time.Instant
 
@@ -155,7 +156,7 @@ class CompositeViewsSpec
       result.copy(value = result.value.copy(source = Json.obj())) shouldEqual expected
 
       // We check the source separately as the values in the array in the source don't matter
-      val expectedSource = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token")
+      val expectedSource = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson))
       resultSource should equalIgnoreArrayOrder(expectedSource)
     }
 
@@ -165,6 +166,40 @@ class CompositeViewsSpec
       }
       "incorrect revision is provided" in {
         compositeViews.deprecate(otherViewId, projectRef, 2).rejectedWith[IncorrectRev]
+      }
+    }
+
+    "undeprecate a view" in {
+      givenADeprecatedView { view =>
+        val undeprecatedView         = compositeViews.undeprecate(view, projectRef, 2).accepted
+        val undeprecatedViewNoSource = undeprecatedView.copy(value = undeprecatedView.value.copy(source = Json.obj()))
+        undeprecatedViewNoSource shouldEqual resourceFor(
+          nxv + view,
+          viewValue,
+          source = Json.obj(),
+          rev = 3,
+          deprecated = false
+        )
+        undeprecatedView.value.source.removeKeys("@id") should equalIgnoreArrayOrder(viewSource)
+      }
+    }
+
+    "reject undeprecating a view" when {
+      "view is not deprecated" in {
+        givenAView { view =>
+          compositeViews.undeprecate(view, projectRef, 1).assertRejectedWith[ViewIsNotDeprecated]
+        }
+      }
+      "incorrect revision is provided" in {
+        givenADeprecatedView { view =>
+          compositeViews.undeprecate(view, projectRef, 1).assertRejectedWith[IncorrectRev]
+        }
+      }
+      "project does not exist" in {
+        val nonexistentProject = ProjectRef.unsafe("org", genString())
+        givenADeprecatedView { view =>
+          compositeViews.undeprecate(view, nonexistentProject, 1).assertRejectedWith[ProjectContextRejection]
+        }
       }
     }
 
@@ -229,6 +264,19 @@ class CompositeViewsSpec
       "tag doesn't exist" in {
         val tag = UserTag.unsafe("wrongtag")
         compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
+      }
+    }
+
+    def givenAView(test: String => Assertion): Assertion = {
+      val viewId = genString()
+      compositeViews.create(viewId, projectRef, viewFields).accepted
+      test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => Assertion): Assertion = {
+      givenAView { view =>
+        compositeViews.deprecate(view, projectRef, 1).accepted
+        test(view)
       }
     }
   }
