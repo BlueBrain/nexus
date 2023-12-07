@@ -1,0 +1,306 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@id": "https://bbp.epfl.ch/data/morphology-annotation",
+    "@type": [
+      "Annotation",
+      "NeuronMorphologyFeatureAnnotation"
+    ],
+    "brainLocation": {
+      "@type": "BrainLocation",
+      "atlasSpatialReferenceSystem": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+        "@type": [
+          "AtlasSpatialReferenceSystem"
+        ]
+      },
+      "brainRegion": {
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/353",
+        "label": "Primary somatosensory area, nose"
+      },
+      "coordinatesInBrainAtlas": {
+        "valueX": {
+          "@type": "xsd:float",
+          "@value": 5620
+        },
+        "valueY": {
+          "@type": "xsd:float",
+          "@value": 23074
+        },
+        "valueZ": {
+          "@type": "xsd:float",
+          "@value": 5031
+        }
+      }
+    },
+    "compartment": "NeuronMorphology",
+    "contribution": {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/cgonzale",
+        "@type": [
+          "Agent",
+          "Person"
+        ],
+        "email": "cristina.gonzalezespinoza@epfl.ch",
+        "familyName": "Espinoza",
+        "givenName": "Cristina Elizabeth Gonzalez",
+        "name": "Cristina Elizabeth Gonzalez Espinoza"
+      }
+    },
+    "hasBody": [
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Morphology Max Radial Distance"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 104.7873306274414
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Number Of Sections Per Neurite"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "dimensionless",
+              "value": 3
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "dimensionless",
+              "value": 185
+            },
+            {
+              "statistic": "median",
+              "unitCode": "dimensionless",
+              "value": 5
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "dimensionless",
+              "value": 33.5
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "dimensionless",
+              "value": 59.42852850273175
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Length Per Neurite"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm",
+              "value": 6.851330757141113
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm",
+              "value": 959.579600431025
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm",
+              "value": 10.883385419845581
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 141.4953934289515
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm",
+              "value": 310.84448603399426
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Area Per Neurite"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm²",
+              "value": 43.04818072561067
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm²",
+              "value": 6029.2163844923625
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm²",
+              "value": 68.38232782083058
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm²",
+              "value": 889.0417681437592
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm²",
+              "value": 1953.0934873180888
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Volume Per Neurite"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm³",
+              "value": 21.52409043246504
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm³",
+              "value": 3014.608192401647
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm³",
+              "value": 34.19116389183334
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm³",
+              "value": 444.52088410843663
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm³",
+              "value": 976.5467436975923
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Length"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 1131.963147431612
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Width"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "mean",
+              "unitCode": "dimensionless",
+              "value": 70.90299987792969
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Depth"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "mean",
+              "unitCode": "dimensionless",
+              "value": 93.2039794921875
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Number Of Neurites"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "dimensionless",
+              "value": 8
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "dimensionless",
+              "value": 8
+            },
+            {
+              "statistic": "median",
+              "unitCode": "dimensionless",
+              "value": 8
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "dimensionless",
+              "value": 8
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "dimensionless",
+              "value": 0
+            }
+          ]
+        }
+      }
+    ],
+    "hasTarget": {
+      "@type": "AnnotationTarget",
+      "hasSource": {
+        "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+        "@type": [
+          "NeuronMorphology",
+          "ReconstructedCell",
+          "ReconstructedWholeBrainCell",
+          "ReconstructedNeuronMorphology"
+        ],
+        "_rev": 1
+      }
+    },
+    "name": "Neuron Morphology Feature Annotation"
+  }

@@ -23,18 +23,23 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val id1      = s"$orgId/$projId1"
   private val projects = List(id1)
 
-  private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
-  private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
-  private val traceId              = "https://bbp.epfl.ch/data/trace"
-  private val curatedTraceId       = "https://bbp.epfl.ch/data/curated-trace"
-  private val unassessedTraceId    = "https://bbp.epfl.ch/data/unassessed-trace"
-  private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
-  private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
-  private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
-  private val simulationId         = "https://bbp.epfl.ch/data/simulation"
-  private val synapseId            = "https://bbp.epfl.ch/data/synapse"
-  private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
-  private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
+  private val neuronMorphologyId          = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val neuronDensityId             = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId                     = "https://bbp.epfl.ch/data/trace"
+  private val curatedTraceId              = "https://bbp.epfl.ch/data/curated-trace"
+  private val unassessedTraceId           = "https://bbp.epfl.ch/data/unassessed-trace"
+  private val layerThicknessId            = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId             = "https://bbp.epfl.ch/data/bouton-density"
+  private val simulationCampaignId        = "https://bbp.epfl.ch/data/simulation-campaign"
+  private val simulationId                = "https://bbp.epfl.ch/data/simulation"
+  private val synapseId                   = "https://bbp.epfl.ch/data/synapse"
+  private val synapseTwoPathwaysId        = "https://bbp.epfl.ch/data/synapse-two-pathways"
+  private val detailedCircuitId           = "https://bbp.epfl.ch/data/detailed-circuit"
+  private val axonAnnotationId            = "https://bbp.epfl.ch/data/axon-annotation"
+  private val apicalDendriteAnnotationId  = "https://bbp.epfl.ch/data/apical-dendrite-annotation"
+  private val basalDendriteAnnotationId   = "https://bbp.epfl.ch/data/basal-dendrite-annotation"
+  private val morphologyAnnotationId      = "https://bbp.epfl.ch/data/morphology-annotation"
+  private val somaAnnotationId            = "https://bbp.epfl.ch/data/soma-annotation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -54,6 +59,11 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "kg/search/data/simulations/simulation-campaign.json",
     "kg/search/data/simulations/simulation.json",
     "kg/search/data/simulations/analysis-report-simulation.json"
+    "kg/search/data/features/axon-annotation.json"
+    "kg/search/data/features/apical-dendrite-annotation.json"
+    "kg/search/data/features/basal-dendrite-annotation.json"
+    "kg/search/data/features/morphology-annotation.json"
+    "kg/search/data/features/soma-annotation.json"
   )
   private val otherResources = List(
     "kg/search/article.json",
@@ -869,6 +879,180 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
       deltaClient.post[Json]("/search/query", query, Rick) { (json, _) =>
         aggregationIn(json) should contain(preSynapticBrainRegionAgg)
+      }
+    }
+
+    "have the correct morphology extent (bbox)" in {
+      val query    = queryField(neuronMorphologyId, "morphologyExtend")
+      val expected =
+        json"""{
+               "morphologyExtent": {
+                 "label" : "Morphology XYZ Spatial Extent",
+                 "unit" : "μm",
+                 "xValue" : 1131.963147431612,
+                 "yValue" : 70.90299987792969,
+                 "zValue" : 93.2039794921875
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct soma radius" in {
+      val query    = queryField(neuronMorphologyId, "somaRadius")
+      val expected =
+        json"""{
+               "somaRadius": {
+                 "label" : "Soma Radius",
+                 "unit" : "μm",
+                 "value" : 5.975075244861534
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+   
+
+    "have the correct axon length" in {
+      val query    = queryField(neuronMorphologyId, "axonLength")
+      val expected =
+        json"""{
+               "axonLength": {
+                 "label" : "Total Length",
+                 "unit" : "μm",
+                 "value" : 52.48914,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct axon Strahler orders" in {
+      val query    = queryField(neuronMorphologyId, "axonMaxStrahlerOrder")
+      val expected =
+        json"""{
+               "axonMaxStrahlerOrder": {
+                 "label" : "Section Strahler Orders",
+                 "unit" : "dimensionless",
+                 "value" : 0,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct apical dendrite length" in {
+      val query    = queryField(neuronMorphologyId, "apicalDendriteLength")
+      val expected =
+        json"""{
+               "apicalDendriteLength": {
+                 "label" : "Total Length",
+                 "unit" : "μm",
+                 "value" : 103.02,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct apical dendrite Strahler orders" in {
+      val query    = queryField(neuronMorphologyId, "apicalDendriteMaxStrahlerOrder")
+      val expected =
+        json"""{
+               "apicalDendriteMaxStrahlerOrder": {
+                 "label" : "Section Strahler Orders",
+                 "unit" : "dimensionless",
+                 "value" : 2.3,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+   "have the correct apical partition asymmetry index" in {
+      val query    = queryField(neuronMorphologyId, "apicalDendritePartitionAsymmetry")
+      val expected =
+        json"""{
+               "apicalDendritePartitionAsymmetry": {
+                 "label" : "Partition Asymmetry",
+                 "unit" : "dimensionless",
+                 "value" : 0
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct basal dendrite length" in {
+      val query    = queryField(neuronMorphologyId, "basalDendriteLength")
+      val expected =
+        json"""{
+               "basalDendriteLength": {
+                 "label" : "Total Length",
+                 "unit" : "μm",
+                 "value" : 64.86965469270945,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct basal dendrite Strahler orders" in {
+      val query    = queryField(neuronMorphologyId, "basalDendriteMaxStrahlerOrder")
+      val expected =
+        json"""{
+               "basalDendriteMaxStrahlerOrder": {
+                 "label" : "Section Strahler Orders",
+                 "unit" : "dimensionless",
+                 "value" : 1.4,
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+   "have the correct basal partition asymmetry index" in {
+      val query    = queryField(neuronMorphologyId, "basalDendritePartitionAsymmetry")
+      val expected =
+        json"""{
+               "basalDendritePartitionAsymmetry": {
+                 "label" : "Partition Asymmetry",
+                 "unit" : "dimensionless",
+                 "value" : 0
+                 }
+               }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
       }
     }
   }

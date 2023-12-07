@@ -1,0 +1,784 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/apical-dendrite-annotation",
+  "@type": [
+    "Annotation",
+    "NeuronMorphologyFeatureAnnotation"
+  ],
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "atlasSpatialReferenceSystem": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+      "@type": [
+        "AtlasSpatialReferenceSystem"
+      ]
+    },
+    "brainRegion": {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/262",
+      "label": "Reticular nucleus of the thalamus"
+    },
+    "coordinatesInBrainAtlas": {
+      "valueX": {
+        "@type": "xsd:float",
+        "@value": 15124
+      },
+      "valueY": {
+        "@type": "xsd:float",
+        "@value": 15767
+      },
+      "valueZ": {
+        "@type": "xsd:float",
+        "@value": 4523
+      }
+    }
+  },
+  "compartment": "ApicalDendrite",
+  "contribution": {
+    "@type": "Contribution",
+    "agent": {
+      "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/cgonzale",
+      "@type": [
+        "Agent",
+        "Person"
+      ],
+      "email": "cristina.gonzalezespinoza@epfl.ch",
+      "familyName": "Espinoza",
+      "givenName": "Cristina Elizabeth Gonzalez",
+      "name": "Cristina Elizabeth Gonzalez Espinoza"
+    }
+  },
+  "hasBody": [
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Neurite Max Radial Distance"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Number Of Sections"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Number Of Bifurcations"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Number Of Leaves"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Total Length"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm",
+            "value": 103.02
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Total Area"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm²",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm²",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm²",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm²",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm²",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Total Volume"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm³",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm³",
+            "value": 0
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm³",
+            "value": 0
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm³",
+            "value": 0
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm³",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Lengths"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Term Lengths"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Bif Lengths"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Branch Orders"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Bif Branch Orders"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Term Branch Orders"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Path Distances"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Taper Rates"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Local Bifurcation Angles"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "radian",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Remote Bifurcation Angles"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "radian"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "radian",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Partition Asymmetry"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Partition Asymmetry Length"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Sibling Ratios"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Diameter Power Relations"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Radial Distances"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Bif Radial Distances"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Terminal Path Lengths"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "mean",
+            "unitCode": "μm"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Volumes"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "μm³"
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "μm³"
+          },
+          {
+            "statistic": "median",
+            "unitCode": "μm³"
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "μm³"
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "μm³",
+            "value": 0
+          }
+        ]
+      }
+    },
+    {
+      "@type": "AnnotationBody",
+      "isMeasurementOf": {
+        "label": "Section Strahler Orders"
+      },
+      "value": {
+        "series": [
+          {
+            "statistic": "minimum",
+            "unitCode": "dimensionless",
+            "value": 0
+          },
+          {
+            "statistic": "maximum",
+            "unitCode": "dimensionless",
+            "value": 4
+          },
+          {
+            "statistic": "mean",
+            "unitCode": "dimensionless",
+            "value": 2.3
+          },
+          {
+            "statistic": "standard deviation",
+            "unitCode": "dimensionless",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ],
+  "hasTarget": {
+    "@type": "AnnotationTarget",
+    "hasSource": {
+      "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+      "@type": [
+        "NeuronMorphology",
+        "ReconstructedCell",
+        "ReconstructedWholeBrainCell",
+        "ReconstructedNeuronMorphology"
+      ],
+      "_rev": 1
+    }
+  },
+  "name": "Neuron Morphology Feature Annotation"
+}

@@ -186,15 +186,68 @@ CONSTRUCT {
 
   ## Synapses
   ?alias  :postSynapticPathway  ?postSynaptic   .
-                            ?postSynaptic   :about      ?postSynapticAbout      ;
+                                ?postSynaptic :about      ?postSynapticAbout      ;
                                               :label      ?postSynapticLabel      ;
                                               :notation   ?postSynapticNotation   .
 
   ?alias  :preSynapticPathway  ?preSynaptic .
-                            ?preSynaptic       :about      ?preSynapticAbout       ;
+                               ?preSynaptic   :about      ?preSynapticAbout       ;
                                               :label      ?preSynapticLabel       ;
                                               :notation   ?preSynapticNotation    .
 
+  ## Morphology features
+  ?alias  :somaRadius                  ?somaRadius                .
+                                       ?somaRadius      :value       ?somaRadiusValue   ;
+                                                        :unit        ?somaRadiusUnit    ;
+                                                        :label       ?somaRadiusLabel   .
+
+  ?alias  :axonLength                  ?axonLength                .
+                                       ?axonLength      :value       ?axonLengthValue   ;
+                                                        :unit        ?axonLengthUnit    ;
+                                                        :label       ?axonLengthLabel   .
+
+  ?alias  :apicalDendriticLength        ?apicalDendriticLength           .
+                                       ?apicalDendriticLength     :value       ?apicalDendriticLengthValue   ;
+                                                                  :unit        ?apicalDendriticLengthUnit    ;
+                                                                  :label       ?apicalDendriticLengthLabel   .
+
+  ?alias  :basalDendriticLength        ?basalDendriticLength           .
+                                       ?basalDendriticLength     :value       ?basalDendriticLengthValue   ;
+                                                                 :unit        ?basalDendriticLengthUnit    ;
+                                                                 :label       ?basalDendriticLengthLabel   .
+
+  ?alias  :axonMaxStrahlerOrder   ?axonMaxStrahlerOrder             .
+                                  ?axonMaxStrahlerOrder   :value    ?axonMaxStrahlerOrderValue   ;
+                                                          :unit     ?axonMaxStrahlerOrderUnit    ;
+                                                          :label    ?axonMaxStrahlerOrderLabel   .
+
+  ?alias  :apicalDendriteMaxStrahlerOrder   ?apicalDendriteMaxStrahlerOrder             .
+                                            ?apicalDendriteMaxStrahlerOrder  :value    ?apicalDendriteMaxStrahlerOrderValue   ;
+                                                                             :unit     ?apicalDendriteMaxStrahlerOrderUnit    ;
+                                                                             :label    ?apicalDendriteMaxStrahlerOrderLabel   .
+
+  ?alias  :apicalDendritePartitionAsymmetry    ?apicalDendritePartitionAsymmetry        .
+                            ?apicalDendritePartitionAsymmetry  :value     ?apicalDendritePartitionAsymmetryValue   ;
+                                                               :unit      ?apicalDendritePartitionAsymmetryUnit    ;
+                                                               :label     ?apicalDendritePartitionAsymmetryLabel   .
+
+  ?alias  :basalDendriteMaxStrahlerOrder   ?basalDendriteMaxStrahlerOrder             .
+                                           ?basalDendriteMaxStrahlerOrder   :value    ?basalDendriteMaxStrahlerOrderValue   ;
+                                                                            :unit     ?basalDendriteMaxStrahlerOrderUnit    ;
+                                                                            :label    ?basalDendriteMaxStrahlerOrderLabel   .
+
+  ?alias  :basalDendritePartitionAsymmetry    ?basalDendritePartitionAsymmetry        .
+                                ?basalDendritePartitionAsymmetry  :value     ?basalDendritePartitionAsymmetryValue   ;
+                                                                  :unit      ?basalDendritePartitionAsymmetryUnit    ;
+                                                                  :label     ?basalDendritePartitionAsymmetryLabel   .
+
+  ?alias  :morphologyExtent             ?morphologyExtent        ;
+                                        ?morphologyExtent        :unit          ?morphologyExtentUnit    ;
+                                                                 :label         ?morphologyExtentLabel   ;
+                                                                 :xValue        ?morphologyExtentXValue  ;
+                                                                 :yValue        ?morphologyExtentYValue  ;
+                                                                 :yValue        ?morphologyExtentZValue  .
+                                                          
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -656,5 +709,116 @@ CONSTRUCT {
                                                                   rdfs:label       ?preSynapticLabel       .
                                                   OPTIONAL { ?preSynaptic     skos:notation   ?preSynapticNotation    . } .
 
+    } .
+
+  # Morphology features
+  OPTIONAL {
+    ?id ^nsg:hasSource / ^nsg:hasTarget ?morphologyFeatureAnnotation    .
+    ?morphologyFeatureAnnotation         bmo:compartment "NeuronMorphology" ;
+                                         nsg:hasBody      ?morphologyWidthBody    .
+                 ?morphologyWidthBody    nsg:isMeasurementOf / rdfs:label "Total Width" ;
+                                         nsg:series   ?mwidthSeries  .
+                                                      ?mwidthSeries  nsg:statistic   "mean"  ;
+                                                                     schema:value    ?morphologyExtentXValue ;
+                                                                     schema:unitCode ?morphologyExtentUnit  .
+                 ?morphologyHeightBody   nsg:isMeasurementOf / rdfs:label "Total Height" ;
+                                         nsg:series   ?mheightSeries  .
+                                                      ?mheightSeries   nsg:statistic   "mean"  ;
+                                                                       schema:value    ?morphologyExtentYValue .
+                 ?morphologyDepthBody   nsg:isMeasurementOf / rdfs:label "Total Depth" ;
+                                         nsg:series   ?mdepthSeries  .
+                                                      ?mdepthSeries   nsg:statistic   "mean"  ;
+                                                                      schema:value    ?morphologyExtentZValue .
+      BIND( "Morphology XYZ Spatial Extent" AS ?morphologyExtentLabel ) .
+    } .
+
+  OPTIONAL {
+    ?id ^nsg:hasSource / ^nsg:hasTarget ?somaFeatureAnnotation          .
+    ?somaFeatureAnnotation    bmo:compartment "Soma" ;
+                              nsg:hasBody      ?somaRadiusBody    .
+           ?somaRadiusBody    nsg:isMeasurementOf / rdfs:label "Soma Radius" ;
+                              nsg:series  ?somaSeries  .
+                                          ?somaSeries  nsg:statistic   "mean"  ;
+                                                       schema:value    ?somaRadiusValue ;
+                                                       schema:unitCode ?somaRadiusUnit  .
+    } .
+
+  OPTIONAL {
+    ?id ^nsg:hasSource / ^nsg:hasTarget ?axonFeatureAnnotation          .
+        ?axonFeatureAnnotation    bmo:compartment "Axon"    .
+        OPTIONAL {
+         ?axonFeatureAnnotation   nsg:hasBody      ?axonLengthBody    .
+           ?axonLengthBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                  nsg:series  ?axonLengthSeries  .
+                    ?axonLengthSeries  nsg:statistic   "mean"  ;
+                                       schema:value    ?axonLengthValue ;
+                                       schema:unitCode ?axonLengthtUnit  .
+        }.
+        OPTIONAL {
+         ?axonFeatureAnnotation   nsg:hasBody      ?axonStrahlerOrderBody    .
+           ?axonStrahlerOrderBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                         nsg:series  ?axonStrahlerOrderSeries  .
+                    ?axonStrahlerOrderSeries  nsg:statistic   "max"  ;
+                                              schema:value    ?axonMaxStrahlerOrderValue ;
+                                              schema:unitCode ?axonMaxStrahlerOrdertUnit  .
+        }.
+    } .
+
+  OPTIONAL {
+    ?id ^nsg:hasSource / ^nsg:hasTarget ?basalDendriteFeatureAnnotation       .
+    ?basalDendriteFeatureAnnotation    bmo:compartment "BasalDendrite"        .
+      OPTIONAL {
+        ?basalDendriteFeatureAnnotation nsg:hasBody      ?basalDendriteLengthBody    .
+        ?basalDendriteLengthBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                        nsg:series  ?basalDendriteLengthSeries  .
+                            ?basalDendriteLengthSeries  nsg:statistic   "mean"  ;
+                                                        schema:value    ?basalDendriteLengthValue ;
+                                                        schema:unitCode ?basalDendriteLengthUnit  .
+      }.
+      OPTIONAL {
+        ?basalDendriteFeatureAnnotation    nsg:hasBody      ?basalDendriteStrahlerOrderBody    .
+        ?basalDendriteOrderBody      nsg:isMeasurementOf / rdfs:label "Section Strahler Orders" ;
+                                     nsg:series  ?basalDendriteStrahlerOrderSeries  .
+                           ?basalDendriteStrahlerOrderSeries  nsg:statistic   "max"  ;
+                                                              schema:value    ?basalMaxStrahlerOrderValue ;
+                                                              schema:unitCode ?basalMaxStrahlerOrderUnit  .
+      }.
+      OPTIONAL {
+        ?basalDendriteFeatureAnnotation nsg:hasBody      ?basalDendriteAsymmetryBody    .
+        ?basalDendriteAsymmetryBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                           nsg:series  ?basalDendriteAsymmetrySeries  .
+                        ?basalDendriteAsymmetrySeries  nsg:statistic   "mean"  ;
+                                                       schema:value    ?basalDendritePartitionAsymmetryValue ;
+                                                       schema:unitCode ?basalDendritePartitionAsymmetryUnit  .
+      }.
+    } .
+
+    OPTIONAL {
+    ?id ^nsg:hasSource / ^nsg:hasTarget ?apicalDendriteFeatureAnnotation       .
+    ?apicalDendriteFeatureAnnotation    bmo:compartment "ApicalDendrite"        .
+      OPTIONAL {
+        ?apicalDendriteFeatureAnnotation nsg:hasBody      ?apicalDendriteLengthBody    .
+        ?apicalDendriteLengthBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                         nsg:series  ?apicalDendriteLengthSeries  .
+                            ?apicalDendriteLengthSeries  nsg:statistic   "mean"  ;
+                                                        schema:value    ?apicalDendriteLengthValue ;
+                                                        schema:unitCode ?apicalDendriteLengthUnit  .
+      }.
+      OPTIONAL {
+        ?apicalDendriteFeatureAnnotation   nsg:hasBody      ?apicalDendriteStrahlerOrderBody    .
+        ?apicalDendriteOrderBody           nsg:isMeasurementOf / rdfs:label "Section Strahler Orders" ;
+                                           nsg:series  ?apicalDendriteStrahlerOrderSeries  .
+                           ?apicalDendriteStrahlerOrderSeries  nsg:statistic   "max"  ;
+                                                              schema:value    ?apicalMaxStrahlerOrderValue ;
+                                                              schema:unitCode ?apicalMaxStrahlerOrderUnit  .
+      }.
+      OPTIONAL {
+        ?apicalDendriteFeatureAnnotation nsg:hasBody      ?apicalDendriteAsymmetryBody    .
+        ?apicalDendriteAsymmetryBody        nsg:isMeasurementOf / rdfs:label "Total Length" ;
+                                            nsg:series  ?apicalDendriteAsymmetrySeries  .
+                            ?apicalDendriteAsymmetrySeries  nsg:statistic   "mean"  ;
+                                                            schema:value    ?apicalDendritePartitionAsymmetryValue ;
+                                                            schema:unitCode ?apicalDendritePartitionAsymmetryUnit  .
+      }.
     } .
 }
