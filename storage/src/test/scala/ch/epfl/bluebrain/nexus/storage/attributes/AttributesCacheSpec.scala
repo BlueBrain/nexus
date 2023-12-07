@@ -13,15 +13,14 @@ import ch.epfl.bluebrain.nexus.storage.utils.Randomness
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfter, Ignore, Inspectors}
+import org.scalatest.{BeforeAndAfter, Inspectors}
 
 import java.nio.file.{Path, Paths}
 import java.time.{Clock, Instant, ZoneId}
 import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 
-@Ignore
 class AttributesCacheSpec
     extends TestKit(ActorSystem("AttributesCacheSpec"))
     with CatsEffectSpec
@@ -59,7 +58,7 @@ class AttributesCacheSpec
     }
     val attributesCache       = AttributesCache[String]
     computation(path, config.algorithm) shouldReturn
-      IO { counter.incrementAndGet(); attributes }
+      IO { counter.getAndIncrement(); attributes }
   }
 
   "An AttributesCache" should {
@@ -80,8 +79,7 @@ class AttributesCacheSpec
       computation(path, config.algorithm) wasCalled once
     }
 
-    //FIXME Flaky test
-    "verify 2 concurrent computations" ignore new Ctx {
+    "verify 2 concurrent computations" in new Ctx {
       val list = List.tabulate(10) { i =>
         val path   = Paths.get(i.toString)
         val digest = Digest(config.algorithm, i.toString)
@@ -91,11 +89,7 @@ class AttributesCacheSpec
 
       forAll(list) { case (path, attr) =>
         computation(path, config.algorithm) shouldReturn
-          IO.fromFuture(IO.pure(Future {
-            Thread.sleep(1000)
-            counter.incrementAndGet()
-            attr
-          }))
+          IO.sleep(1000.millis) >> IO.delay(counter.getAndIncrement()) >> IO.pure(attr)
         attributesCache.get(path).unsafeToFuture().futureValue shouldEqual attributesEmpty(path)
       }
 
@@ -114,8 +108,7 @@ class AttributesCacheSpec
       }
     }
 
-    //FIXME Flaky test
-    "verify remove oldest" ignore new Ctx {
+    "verify remove oldest" in new Ctx {
       val list = List.tabulate(20) { i =>
         val path   = Paths.get(i.toString)
         val digest = Digest(config.algorithm, i.toString)
@@ -123,8 +116,7 @@ class AttributesCacheSpec
       }
 
       forAll(list) { case (path, attr) =>
-        computation(path, config.algorithm) shouldReturn
-          IO { counter.incrementAndGet(); attr }
+        computation(path, config.algorithm) shouldReturn IO { counter.getAndIncrement(); attr }
         attributesCache.get(path).unsafeToFuture().futureValue shouldEqual attributesEmpty(path)
       }
 
