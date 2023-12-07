@@ -14,10 +14,7 @@ object BulkOperationResults {
 
   implicit def encoder[A: Encoder.AsObject]: Encoder.AsObject[BulkOperationResults[A]] =
     Encoder.AsObject.instance { r =>
-      JsonObject(
-        nxv.total.prefix   -> Json.fromInt(r.results.size),
-        nxv.results.prefix -> Json.fromValues(r.results.map(_.asJson))
-      )
+      JsonObject(nxv.results.prefix -> Json.fromValues(r.results.map(_.asJson)))
     }
 
   def searchResultsJsonLdEncoder[A: Encoder.AsObject](

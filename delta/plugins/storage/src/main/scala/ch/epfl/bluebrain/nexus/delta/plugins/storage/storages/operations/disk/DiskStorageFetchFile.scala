@@ -18,7 +18,9 @@ object DiskStorageFetchFile extends FetchFile {
     absoluteDiskPath(path).redeemWith(
       e => IO.raiseError(UnexpectedLocationFormat(s"file://$path", e.getMessage)),
       path =>
-        IO.raiseWhen(!path.toFile.exists())(FetchFileRejection.FileNotFound(path.toString))
-          .map(_ => FileIO.fromPath(path))
+        IO(path.toFile.exists()).flatMap { exists =>
+          if (exists) IO(FileIO.fromPath(path))
+          else IO.raiseError(FetchFileRejection.FileNotFound(path.toString))
+        }
     )
 }

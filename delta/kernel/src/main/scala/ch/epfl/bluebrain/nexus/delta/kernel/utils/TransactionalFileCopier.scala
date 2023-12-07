@@ -32,8 +32,9 @@ object TransactionalFileCopier {
         }
         .void
         .handleErrorWith { e =>
-          logger.error(e)("Transactional files copy failed, deleting created files") >>
-            rollbackCopiesAndRethrow(errorRef, files.map(_.destination))
+          val destinations = files.map(_.destination)
+          logger.error(e)(s"Transactional files copy failed, deleting created files: ${destinations}") >>
+            rollbackCopiesAndRethrow(errorRef, destinations)
         }
     }
 

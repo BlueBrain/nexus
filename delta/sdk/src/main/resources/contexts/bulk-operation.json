@@ -1,6 +1,5 @@
 {
   "@context": {
-    "_total": "https://bluebrain.github.io/nexus/vocabulary/total",
     "_results": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/results",
       "@container": "@list"
