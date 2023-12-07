@@ -214,7 +214,6 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     val sort             = json"""{ "sort": [{ "name.raw": { "order": "asc" } }] }"""
     val sortedMatchCells = json"""{ "query": { "term": { "@type": "Cell" } } }""" deepMerge sort
     val matchAll         = json"""{ "query": { "match_all": {} } }""" deepMerge sort
-//    val matchId: String => Json = id => json"""{ "query": { "term": { "@id.keyword": "$id" } } }"""
 
     "search instances on project 1 in cell-view" in eventually {
       deltaClient.post[Json](s"/views/$project1/test-resource:cell-view/_search", sortedMatchCells, ScoobyDoo) {
