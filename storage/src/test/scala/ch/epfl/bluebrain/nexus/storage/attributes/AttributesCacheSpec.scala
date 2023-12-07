@@ -5,11 +5,13 @@ import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/j
 import akka.testkit.TestKit
 import akka.util.Timeout
 import cats.effect.{IO, Ref}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.DigestConfig
 import ch.epfl.bluebrain.nexus.storage.utils.Randomness
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.scalactic.source.Position
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, Inspectors}
 
@@ -28,20 +30,27 @@ class AttributesCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.second, 100.milliseconds)
 
-  implicit val config: DigestConfig                       =
+  implicit val config: DigestConfig =
     DigestConfig("SHA-256", maxInMemory = 10, concurrentComputations = 3, 20, 5.seconds)
 
-  implicit val timeout: Timeout                           = Timeout(1.minute)
-  implicit val executionContext: ExecutionContext         = ExecutionContext.global
+  implicit val timeout: Timeout                   = Timeout(1.minute)
+  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   trait Ctx {
     val path: Path                      = Paths.get(randomString())
     val digest                          = Digest(config.algorithm, randomString())
     val attributes                      = FileAttributes(s"file://$path", genInt().toLong, digest, `image/jpeg`)
     def attributesEmpty(p: Path = path) = FileAttributes(p.toAkkaUri, 0L, Digest.empty, `application/octet-stream`)
-    val computedPaths                         = Ref.unsafe[IO, Set[Path]](Set.empty[Path])
+    val computedPaths                   = Ref.unsafe[IO, Map[Path, Int]](Map.empty[Path, Int])
 
-    def computedPathsSize = computedPaths.get.map(_.size)
+    def computedPathsSize: IO[Int] = computedPaths.get.map(_.size)
+
+    def wasCalledOnce(path: Path)(implicit pos: Position) = computedPaths.get
+      .map {
+        _.get(path)
+      }
+      .accepted
+      .value shouldEqual 1
 
     implicit val clock: Clock = new Clock {
       override def getZone: ZoneId                 = ZoneId.systemDefault()
@@ -51,14 +60,9 @@ class AttributesCacheSpec
     }
 
     val defaultComputation: AttributesComputation[String] = (path: Path, _: String) =>
-      computedPaths.update { seen =>
-        if(seen.contains(path))
-          fail(s"'$path' should have been computed no to be seen again.")
-        else
-          seen + path
-      }.as(attributes)
+      computedPaths.update(_.updatedWith(path)(_.fold(1)(_ + 1).some)).as(attributes)
 
-    def computedAttributes(path: Path, algorithm: String) = {
+    def computedAttributes(path: Path, algorithm: String): FileAttributes = {
       val digest = Digest(algorithm, "COMPUTED")
       FileAttributes(path.toAkkaUri, 42L, digest, `image/jpeg`)
     }
@@ -69,34 +73,39 @@ class AttributesCacheSpec
 
     "trigger a computation and fetch file after" in new Ctx {
       implicit val computation: AttributesComputation[String] = defaultComputation
-      val attributesCache = AttributesCache[String]
-
+      val attributesCache                                     = AttributesCache[String]
       attributesCache.asyncComputePut(path, config.algorithm)
       eventually { computedPathsSize.accepted shouldEqual 1 }
+      wasCalledOnce(path)
       attributesCache.get(path).accepted shouldEqual attributes
+      wasCalledOnce(path)
     }
 
     "get file that triggers attributes computation" in new Ctx {
       implicit val computation: AttributesComputation[String] = defaultComputation
-      val attributesCache = AttributesCache[String]
+      val attributesCache                                     = AttributesCache[String]
       attributesCache.get(path).accepted shouldEqual attributesEmpty()
       eventually(computedPathsSize.accepted shouldEqual 1)
+      wasCalledOnce(path)
       attributesCache.get(path).accepted shouldEqual attributes
+      wasCalledOnce(path)
     }
 
     "verify 2 concurrent computations" in new Ctx {
-      val list = List.tabulate(10) { i =>Paths.get(i.toString) }
+      val list = List.tabulate(10) { i => Paths.get(i.toString) }
       val time = System.currentTimeMillis()
 
-      implicit  val delayedComputation: AttributesComputation[String] = (path: Path, algorithm: String) =>
+      implicit val delayedComputation: AttributesComputation[String] = (path: Path, algorithm: String) =>
         IO.sleep(1000.millis) >> defaultComputation(path, algorithm) >> IO.pure(computedAttributes(path, algorithm))
-      val attributesCache = AttributesCache[String]
+      val attributesCache                                            = AttributesCache[String]
 
       forAll(list) { path =>
         attributesCache.get(path).accepted shouldEqual attributesEmpty(path)
       }
 
       eventually(computedPathsSize.accepted shouldEqual 10)
+
+      forAll(list) { path => wasCalledOnce(path) }
 
       val diff = System.currentTimeMillis() - time
       diff should be > 4000L
@@ -112,7 +121,7 @@ class AttributesCacheSpec
 
       implicit val computation: AttributesComputation[String] = (path: Path, algorithm: String) =>
         defaultComputation(path, algorithm) >> IO.pure(computedAttributes(path, algorithm))
-      val attributesCache = AttributesCache[String]
+      val attributesCache                                     = AttributesCache[String]
 
       forAll(list) { path =>
         attributesCache.get(path).accepted shouldEqual attributesEmpty(path)
@@ -138,7 +147,7 @@ class AttributesCacheSpec
         else
           defaultComputation(path, algorithm) >> IO.pure(computedAttributes(path, algorithm))
       }
-      val attributesCache = AttributesCache[String]
+      val attributesCache                                     = AttributesCache[String]
 
       forAll(list) { path => attributesCache.get(path).accepted shouldEqual attributesEmpty(path) }
 
