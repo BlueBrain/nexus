@@ -1,19 +1,21 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
 import akka.util.ByteString
 import cats.effect.IO
+import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics
-import io.circe.Json
 import io.circe.syntax.KeyOps
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import org.scalatest.Assertion
+
+import scala.concurrent.duration.DurationInt
 
 trait CopyFileSpec { self: StorageSpec =>
 
-  "Copying a json file to a different organization" should {
+  "Copying multiple files to a different organization" should {
 
     def givenAProjectWithStorage(test: String => IO[Assertion]): IO[Assertion] = {
       val (proj, org) = (genId(), genId())
@@ -23,29 +25,45 @@ trait CopyFileSpec { self: StorageSpec =>
         test(projRef)
     }
 
+    final case class Response(ids: List[String])
+    implicit val dec: Decoder[Response] = Decoder.instance { cur =>
+      cur
+        .get[List[JsonObject]]("_results")
+        .flatMap(_.traverse(_.apply("@id").flatMap(_.asString).toRight(DecodingFailure("Missing id", Nil))))
+        .map(Response)
+    }
+
     "succeed" in {
       givenAProjectWithStorage { destProjRef =>
-        val sourceFileId = "attachment.json"
-        val destFileId   = "attachment2.json"
-        val destFilename = genId()
+        val sourceFiles    = List(emptyTextFile, updatedJsonFileWithContentType, textFileWithContentType)
+        val sourcePayloads = sourceFiles.map(f => Json.obj("sourceFileId" := f.fileId))
 
         val payload = Json.obj(
-          "destinationFilename" := destFilename,
-          "sourceProjectRef"    := self.projectRef,
-          "sourceFileId"        := sourceFileId
+          "sourceProjectRef" := self.projectRef,
+          "files"            := sourcePayloads
         )
-        val uri     = s"/files/$destProjRef/$destFileId?storage=nxv:$storageId"
+        val uri     = s"/files/$destProjRef?storage=nxv:$storageId"
 
         for {
-          json      <- deltaClient.putAndReturn[Json](uri, payload, Coyote) { (json, response) =>
-                         (json, expectCreated(json, response))
-                       }
-          returnedId = Optics.`@id`.getOption(json).getOrElse(fail("could not find @id of created resource"))
-          assertion <-
-            deltaClient.get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(returnedId)}", Coyote, acceptAll) {
-              expectDownload(destFilename, ContentTypes.`application/json`, updatedJsonFileContent)
+          response   <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
+                          (json, expectCreated(json, response))
+                        }
+          _          <- IO.sleep(5.seconds)
+          _          <- response.ids.traverse { id =>
+                          deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
+                            println(s"Received json for id $id: $json")
+                            response.status shouldEqual StatusCodes.OK
+                          }
+                        }
+          assertions <-
+            response.ids.zip(sourceFiles).traverse { case (destId, Input(_, filename, contentType, contents)) =>
+              println(s"Fetching file $destId")
+              deltaClient
+                .get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(destId)}", Coyote, acceptAll) {
+                  expectDownload(filename, contentType, contents)
+                }
             }
-        } yield assertion
+        } yield assertions.head
       }
     }
   }

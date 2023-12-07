@@ -66,10 +66,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
 
-  def putAndReturn[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+  def postAndReturn[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => (A, Assertion)
   )(implicit um: FromEntityUnmarshaller[A]): IO[A] =
-    requestAssertAndReturn(PUT, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
+    requestAssertAndReturn(POST, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
 
   def putIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion

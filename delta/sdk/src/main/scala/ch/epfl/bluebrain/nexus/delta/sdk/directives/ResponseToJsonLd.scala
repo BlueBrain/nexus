@@ -10,12 +10,13 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RouteOutcome, UseLeft, UseRight}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
@@ -114,31 +115,38 @@ object ResponseToJsonLd extends FileBytesInstances {
         val encodedFilename = Base64.getEncoder.encodeToString(filename.getBytes(StandardCharsets.UTF_8))
         s"=?UTF-8?B?$encodedFilename?="
       }
-
+      private val logger = Logger[ResponseToJsonLd]
       override def apply(statusOverride: Option[StatusCode]): Route = {
         val flattened = io.flatMap {
           _.traverse { fr =>
-            fr.content.map {
-              _.map { s =>
-                fr.metadata -> s
+            logger.info(s"DTBDTB in file response JSON LD encoding for ${fr.metadata.filename}") >>
+              fr.content.map {
+                _.map { s =>
+                  fr.metadata -> s
+                }
               }
-            }
           }
         }
 
         onSuccess(flattened.unsafeToFuture()) {
-          case Left(complete: Complete[E])       => emit(complete)
-          case Left(reject: Reject[E])           => emit(reject)
-          case Right(Left(c))                    => emit(c)
-          case Right(Right((metadata, content))) =>
-            headerValueByType(Accept) { accept =>
-              if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {
-                val encodedFilename = attachmentString(metadata.filename)
-                respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
-                  complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
+          thing: Either[Response[E], Either[Complete[JsonLdValue], (FileResponse.Metadata, AkkaSource)]] =>
+            logger.info(s"DTBDTB result of encoding was $thing").unsafeRunSync()
+            thing match {
+              case Left(complete: Complete[E])       => emit(complete)
+              case Left(reject: Reject[E])           => emit(reject)
+              case Right(Left(c))                    => emit(c)
+              case Right(Right((metadata, content))) =>
+                headerValueByType(Accept) { accept =>
+                  if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {
+                    val encodedFilename = attachmentString(metadata.filename)
+                    respondWithHeaders(
+                      RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")
+                    ) {
+                      complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
+                    }
+                  } else
+                    reject(unacceptedMediaTypeRejection(Seq(metadata.contentType.mediaType)))
                 }
-              } else
-                reject(unacceptedMediaTypeRejection(Seq(metadata.contentType.mediaType)))
             }
         }
       }

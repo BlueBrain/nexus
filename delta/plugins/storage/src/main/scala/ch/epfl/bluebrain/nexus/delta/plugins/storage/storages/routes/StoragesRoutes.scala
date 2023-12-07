@@ -60,7 +60,7 @@ final class StoragesRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
       pathPrefix("storages") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { implicit ref =>
+          resolveProjectRef.apply { ref =>
             concat(
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
                 // Create a storage without id segment

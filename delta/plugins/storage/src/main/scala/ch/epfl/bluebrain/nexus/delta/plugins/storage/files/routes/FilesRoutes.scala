@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, File, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
@@ -66,6 +67,8 @@ final class FilesRoutes(
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling { self =>
+
+  private val logger = Logger[FilesRoutes]
 
   import baseUri.prefixSegment
   import schemeDirectives._
@@ -257,7 +260,9 @@ final class FilesRoutes(
       _          <- EitherT.right(aclCheck.authorizeForOr(c.project, Read)(AuthorizationFailed(c.project.project, Read)))
       result     <- EitherT(files.copyFiles(c, copyTo).attemptNarrow[FileRejection])
       bulkResults = BulkOperationResults(result.toList)
+      _          <- EitherT.right[FileRejection](logger.info(s"Indexing and returning bulk results $bulkResults"))
       _          <- EitherT.right[FileRejection](result.traverse(index(copyTo.project, _, mode)))
+      _          <- EitherT.right[FileRejection](logger.info(s"Finished indexing"))
     } yield bulkResults).value
 
   def fetch(id: FileId)(implicit caller: Caller): Route =

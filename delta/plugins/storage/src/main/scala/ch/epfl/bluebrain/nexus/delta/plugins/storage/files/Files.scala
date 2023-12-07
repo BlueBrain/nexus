@@ -202,11 +202,17 @@ final class Files(
       dest: CopyFileDestination
   )(implicit c: Caller): IO[NonEmptyList[FileResource]] = {
     for {
+      _                                 <- logger.info(s"DTBDTB entered copyFiles with $source and $dest")
       (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
+      _                                 <- logger.info(s"DTBDTB fetched dest storage")
       copyDetails                       <- source.files.traverse(fetchCopyDetails(destStorage, _))
-      _                                 <- validateSpaceOnStorage(destStorage, copyDetails)
+      _                                 <- logger.info(s"DTBDTB fetched file attributes")
+      _                                 <- validateSpaceOnStorage(destStorage, copyDetails.map(_.sourceAttributes.bytes))
+      _                                 <- logger.info(s"DTBDTB validated space")
       destFilesAttributes               <- CopyFile(destStorage, remoteDiskStorageClient).apply(copyDetails)
+      _                                 <- logger.info(s"DTBDTB did actual file copy")
       fileResources                     <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
+      _                                 <- logger.info(s"DTBDTB create commands")
     } yield fileResources
   }
 
@@ -229,28 +235,27 @@ final class Files(
       } yield resource
     }
 
-  private def validateSpaceOnStorage(destStorage: Storage, copyDetails: NonEmptyList[CopyFileDetails]): IO[Unit] = for {
+  private def validateSpaceOnStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = for {
     space    <- fetchStorageAvailableSpace(destStorage)
-    allSizes  = copyDetails.map(_.sourceAttributes.bytes)
     maxSize   = destStorage.storageValue.maxFileSize
-    _        <- IO.raiseWhen(allSizes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
-    totalSize = allSizes.toList.sum
+    _        <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
+    totalSize = sourcesBytes.toList.sum
     _        <- IO.raiseWhen(space.exists(_ < totalSize))(FileTooLarge(maxSize, space))
   } yield ()
 
-  private def fetchCopyDetails(destStorage: Storage, fileId: FileId)(implicit c: Caller): IO[CopyFileDetails] =
+  private def fetchCopyDetails(destStorage: Storage, fileId: FileId)(implicit c: Caller) =
     for {
-      file            <- fetchSourceFile(fileId)
-      _               <- validateStorageTypeForCopy(file.storageType, destStorage)
-      destinationDesc <- FileDescription(file.attributes.filename, file.attributes.mediaType)
-    } yield CopyFileDetails(destinationDesc, file.attributes)
+      (file, sourceStorage) <- fetchSourceFile(fileId)
+      _                     <- validateStorageTypeForCopy(file.storageType, destStorage)
+      destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
+    } yield CopyFileDetails(destinationDesc, file.attributes, sourceStorage)
 
   private def fetchSourceFile(id: FileId)(implicit c: Caller) =
     for {
       file          <- fetch(id)
       sourceStorage <- storages.fetch(file.value.storage, id.project)
       _             <- validateAuth(id.project, sourceStorage.value.storageValue.readPermission)
-    } yield file.value
+    } yield (file.value, sourceStorage.value)
 
   private def fetchDestinationStorage(
       dest: CopyFileDestination
@@ -438,9 +443,12 @@ final class Files(
   def fetchContent(id: FileId)(implicit caller: Caller): IO[FileResponse] = {
     for {
       file      <- fetch(id)
+      _         <- logger.info(s"DTBDTB fetching file content for file $file")
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, id.project)
+      _         <- logger.info(s"DTBDTB fetched storage $storage")
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
+      _         <- logger.info(s"DTBDTB validated auth")
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
     } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.attemptNarrow[FileRejection])
@@ -449,6 +457,9 @@ final class Files(
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
     FetchFile(storage, remoteDiskStorageClient, config)
       .apply(attr)
+      .onError { e =>
+        logger.error(e)(s"DTBDTB received error during file contents fetch for $fileId")
+      }
       .adaptError { case e: FetchFileRejection =>
         FetchRejection(fileId, storage.id, e)
       }

@@ -130,15 +130,21 @@ trait Storages[Source] {
 
 object Storages {
 
-  sealed trait BucketExistence
-  sealed trait PathExistence {
+  sealed trait BucketExistence {
+    def exists: Boolean
+  }
+  sealed trait PathExistence   {
     def exists: Boolean
   }
 
   object BucketExistence {
-    final case object BucketExists       extends BucketExistence
-    final case object BucketDoesNotExist extends BucketExistence
-    type BucketExists       = BucketExists.type
+    final case object BucketExists       extends BucketExistence {
+      val exists = true
+    }
+    final case object BucketDoesNotExist extends BucketExistence {
+      val exists = false
+    }
+    type BucketExists = BucketExists.type
     type BucketDoesNotExist = BucketDoesNotExist.type
   }
 
@@ -265,11 +271,14 @@ object Storages {
         IO.raiseError(InternalError(s"Path '$absPath' is not a file nor a directory"))
 
     def copyFiles(
-        name: String,
+        destBucket: String,
         files: NonEmptyList[CopyFile]
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[RejOr[NonEmptyList[CopyFileOutput]]] =
       (for {
-        validated  <- files.traverse(f => EitherT(validateFile.forCopyWithinProtectedDir(name, f.source, f.destination)))
+        validated  <-
+          files.traverse(f =>
+            EitherT(validateFile.forCopyWithinProtectedDir(f.sourceBucket, destBucket, f.source, f.destination))
+          )
         copyBetween =
           validated.map(v => CopyBetween(Fs2Path.fromNioPath(v.absSourcePath), Fs2Path.fromNioPath(v.absDestPath)))
         _          <- EitherT.right[Rejection](copyFiles.copyAll(copyBetween))

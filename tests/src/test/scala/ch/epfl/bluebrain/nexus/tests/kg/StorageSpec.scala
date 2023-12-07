@@ -19,6 +19,7 @@ import org.scalatest.Assertion
 
 import java.util.Base64
 
+final case class Input(fileId: String, filename: String, ct: ContentType, contents: String)
 abstract class StorageSpec extends BaseIntegrationSpec {
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
@@ -48,8 +49,17 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
 
+  val emptyFileContent       = ""
   val jsonFileContent        = """{ "initial": ["is", "a", "test", "file"] }"""
   val updatedJsonFileContent = """{ "updated": ["is", "a", "test", "file"] }"""
+
+  val emptyTextFile                  = Input("empty", "empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
+  val jsonFileNoContentType          = Input("attachment.json", "attachment.json", ContentTypes.NoContentType, jsonFileContent)
+  val updatedJsonFileWithContentType =
+    jsonFileNoContentType.copy(contents = updatedJsonFileContent, ct = ContentTypes.`application/json`)
+  val textFileNoContentType          = Input("attachment2", "attachment2", ContentTypes.NoContentType, "text file")
+  val textFileWithContentType        =
+    Input("attachment3", "attachment2", ContentTypes.`application/octet-stream`, "text file")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -73,16 +83,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   "An empty file" should {
 
-    val emptyFileContent = ""
-
     "be successfully uploaded" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/empty?storage=nxv:$storageId",
-        emptyFileContent,
-        ContentTypes.`text/plain(UTF-8)`,
-        "empty",
-        Coyote
-      ) { expectCreated }
+      uploadFile(emptyTextFile, None)(expectCreated)
     }
 
     "be downloaded" in {
@@ -95,15 +97,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A json file" should {
 
     "be uploaded" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/attachment.json?storage=nxv:$storageId",
-        jsonFileContent,
-        ContentTypes.NoContentType,
-        "attachment.json",
-        Coyote
-      ) {
-        expectCreated
-      }
+      uploadFile(jsonFileNoContentType, None)(expectCreated)
     }
 
     "be downloaded" in {
@@ -119,15 +113,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
 
     "be updated" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/attachment.json?storage=nxv:$storageId&rev=1",
-        updatedJsonFileContent,
-        ContentTypes.`application/json`,
-        "attachment.json",
-        Coyote
-      ) {
-        expectOk
-      }
+      uploadFile(updatedJsonFileWithContentType, Some(1))(expectOk)
     }
 
     "download the updated file" in {
@@ -184,23 +170,17 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   "A file without extension" should {
 
-    val textFileContent = "text file"
-
     "be uploaded" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/attachment2?storage=nxv:$storageId",
-        textFileContent,
-        ContentTypes.NoContentType,
-        "attachment2",
-        Coyote
-      ) {
-        expectCreated
-      }
+      uploadFile(textFileNoContentType, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment2", Coyote, acceptAll) {
-        expectDownload("attachment2", ContentTypes.`application/octet-stream`, textFileContent)
+        expectDownload(
+          textFileNoContentType.filename,
+          ContentTypes.`application/octet-stream`,
+          textFileNoContentType.contents
+        )
       }
     }
   }
@@ -417,6 +397,17 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
     }
+  }
+
+  private def uploadFile(fileInput: Input, rev: Option[Int]): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
+    val revString = rev.map(r => s"&rev=$r").getOrElse("")
+    deltaClient.uploadFile[Json](
+      s"/files/$projectRef/${fileInput.fileId}?storage=nxv:$storageId$revString",
+      fileInput.contents,
+      fileInput.ct,
+      fileInput.filename,
+      Coyote
+    )
   }
 
   private def attachmentString(filename: String): String = {

@@ -63,7 +63,7 @@ class CopyFilesSuite extends CatsEffectSuite {
       error            <- CopyFiles.copyAll(files).intercept[CopyOperationFailed]
       _                <- List(dest1, dest3, parent(dest1), parent(dest3)).traverse(fileShouldNotExist)
       _                <- fileShouldExist(failingDest)
-    } yield assertEquals(error, CopyOperationFailed(failingCopy))
+    } yield assertEquals(error.failingCopy, failingCopy)
   }
 
   test("rollback read-only files upon failure") {
@@ -78,7 +78,7 @@ class CopyFilesSuite extends CatsEffectSuite {
       error            <- CopyFiles.copyAll(files).intercept[CopyOperationFailed]
       _                <- List(dest2, parent(dest2)).traverse(fileShouldNotExist)
       _                <- fileShouldExist(failingDest)
-    } yield assertEquals(error, CopyOperationFailed(failingCopy))
+    } yield assertEquals(error.failingCopy, failingCopy)
   }
 
   def genFilePath: Path = tempDir / genString / s"$genString.txt"

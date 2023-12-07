@@ -12,19 +12,20 @@ trait CopyFiles {
 
 final case class CopyBetween(source: Path, destination: Path)
 
-final case class CopyOperationFailed(failingCopy: CopyBetween) extends Rejection {
+final case class CopyOperationFailed(failingCopy: CopyBetween, e: Throwable) extends Rejection {
   override def reason: String =
-    s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}."
+    s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}. Underlying error: $e"
 }
 
 object CopyFiles {
+
   def mk(): CopyFiles = files => copyAll(files)
 
   def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
     Ref.of[IO, Option[CopyOperationFailed]](None).flatMap { errorRef =>
       files
         .parTraverse { case c @ CopyBetween(source, dest) =>
-          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(c))))
+          copySingle(source, dest).onError(e => errorRef.set(Some(CopyOperationFailed(c, e))))
         }
         .void
         .handleErrorWith(_ => rollbackCopiesAndRethrow(errorRef, files.map(_.destination)))

@@ -180,7 +180,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
   /**
     * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
     *
-    * @param bucket
+    * @param destBucket
     *   the storage bucket name
     * @param sourceRelativePath
     *   the source relative path location
@@ -188,13 +188,13 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     *   the destination relative path location inside the nexus folder
     */
   def copyFile(
-      bucket: Label,
-      files: NonEmptyList[(Uri, Path)]
+      destBucket: Label,
+      files: NonEmptyList[(Label, Path, Path)]
   )(implicit baseUri: BaseUri): IO[NonEmptyList[Uri]] = {
     getAuthToken(credentials).flatMap { authToken =>
-      val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files"
-      val payload  = files.map { case (source, dest) =>
-        Json.obj("source" := source.toString(), "destination" := dest.toString())
+      val endpoint = baseUri.endpoint / "buckets" / destBucket.value / "files"
+      val payload  = files.map { case (sourceBucket, source, dest) =>
+        Json.obj("sourceBucket" := sourceBucket, "source" := source.toString(), "destination" := dest.toString())
       }.asJson
 
       implicit val dec: Decoder[NonEmptyList[Uri]] = Decoder[NonEmptyList[Json]].emap { nel =>
