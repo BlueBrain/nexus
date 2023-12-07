@@ -64,16 +64,18 @@ class ValidateResourceSuite extends NexusSuite {
   private val schemaResolution: ResourceResolution[Schema]                    =
     ResourceResolutionGen.singleInProject(project, fetchSchema)
 
-  private def sourceWithId(id: Iri)               =
+  private def sourceWithId(id: Iri)                                   =
     loader.jsonContentOf("resources/resource.json", "id" -> id)
 
-  private def jsonLdWithId(id: Iri, source: Json) =
+  private def jsonLdWithId(id: Iri, source: Json): IO[JsonLdAssembly] =
     for {
       expanded <- ExpandedJsonLd(source)
       graph    <- IO.fromEither(expanded.toGraph)
     } yield JsonLdAssembly(id, source, CompactedJsonLd.empty, expanded, graph, Set.empty)
 
-  private def jsonLdWithId(id: Iri) = sourceWithId(id).flatMap { source => jsonLdWithId(id, source) }
+  private def jsonLdWithId(id: Iri): IO[JsonLdAssembly] = sourceWithId(id).flatMap { source =>
+    jsonLdWithId(id, source)
+  }
 
   private val validateResource = ValidateResource(schemaResolution)
 
