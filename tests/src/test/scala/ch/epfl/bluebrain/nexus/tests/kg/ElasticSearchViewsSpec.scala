@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
@@ -9,15 +10,16 @@ import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.{ACursor, Json}
+import org.scalatest.Assertion
 
 class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
   private val orgId  = genId()
   private val projId = genId()
-  val project1         = s"$orgId/$projId"
+  val project1       = s"$orgId/$projId"
 
   private val projId2 = genId()
-  val project2         = s"$orgId/$projId2"
+  val project2        = s"$orgId/$projId2"
 
   val projects = List(project1, project2)
 
@@ -129,7 +131,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         "test-resource:agg-cell-view",
         project2,
         ScoobyDoo,
-        project1  -> "https://dev.nexus.test.com/simplified-resource/cell-view",
+        project1 -> "https://dev.nexus.test.com/simplified-resource/cell-view",
         project2 -> "https://dev.nexus.test.com/simplified-resource/cell-view"
       )
     }
@@ -212,6 +214,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     val sort             = json"""{ "sort": [{ "name.raw": { "order": "asc" } }] }"""
     val sortedMatchCells = json"""{ "query": { "term": { "@type": "Cell" } } }""" deepMerge sort
     val matchAll         = json"""{ "query": { "match_all": {} } }""" deepMerge sort
+//    val matchId: String => Json = id => json"""{ "query": { "term": { "@id.keyword": "$id" } } }"""
 
     "search instances on project 1 in cell-view" in eventually {
       deltaClient.post[Json](s"/views/$project1/test-resource:cell-view/_search", sortedMatchCells, ScoobyDoo) {
@@ -254,11 +257,12 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "the person resource created with no id in payload should have the default id in _source" in eventually {
-      deltaClient.post[Json](s"/views/$project2/test-resource:people/_search", matchAll, ScoobyDoo) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        val id       = hits(0)._id.string.getOption(json)
-        val sourceId = hits(0)._source.`@id`.string.getOption(json)
-        sourceId shouldEqual id
+      deltaClient.post[Json](s"/views/$project2/test-resource:people/_search", matchAll, ScoobyDoo) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          val id       = hits(0)._id.string.getOption(json)
+          val sourceId = hits(0)._source.`@id`.string.getOption(json)
+          sourceId shouldEqual id
       }
     }
 
@@ -480,19 +484,58 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "undeprecate a deprecated view" in {
-      val viewId             = genId()
-      val viewPayload        = jsonContentOf("kg/views/elasticsearch/legacy-fields.json", "withTag" -> false)
-      val createView         = deltaClient.put[Json](s"/views/$project1/$viewId", viewPayload, ScoobyDoo) { expectCreated }
-      val deprecateView      = deltaClient.delete[Json](s"/views/$project1/$viewId?rev=1", ScoobyDoo) { expectOk }
-      val undeprecateView    = deltaClient
-        .putEmptyBody[Json](s"/views/$project1/$viewId/undeprecate?rev=2", ScoobyDoo) { expectOk }
-      val assertUndeprecated = deltaClient.get[Json](s"/views/$project1/$viewId", ScoobyDoo) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        json.hcursor.get[Boolean]("_deprecated").toOption should contain(false)
+      givenADeprecatedView { view =>
+        val assertUndeprecated = deltaClient.get[Json](s"/views/$project1/$view", ScoobyDoo) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json.hcursor.get[Boolean]("_deprecated").toOption should contain(false)
+        }
+        undeprecate(view) >> assertUndeprecated
+      }
+    }
+
+    "reindex a resource after a view is undeprecated" in {
+      givenADeprecatedView { view =>
+        givenAPersonResource { _ =>
+          undeprecate(view) >> assertOneHitIn(view).eventually
+        }
+      }
+    }
+
+    def givenAView(test: String => IO[Assertion]): IO[Assertion] = {
+      val viewId      = genId()
+      val viewPayload = jsonContentOf("kg/views/elasticsearch/people-view.json", "withTag" -> false)
+      val createView  = deltaClient.put[Json](s"/views/$project1/$viewId", viewPayload, ScoobyDoo) { expectCreated }
+
+      createView >> test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => IO[Assertion]): IO[Assertion] =
+      givenAView { view =>
+        val deprecateView = deltaClient.delete[Json](s"/views/$project1/$view?rev=1", ScoobyDoo) { expectOk }
+        deprecateView >> test(view)
       }
 
-      createView >> deprecateView >> undeprecateView >> assertUndeprecated
+    def givenAPersonResource(test: String => IO[Assertion]): IO[Assertion] = {
+      val id = genId()
+      deltaClient.put[Json](
+        s"/resources/$project1/_/$id?indexing=sync",
+        jsonContentOf("kg/resources/person.json"),
+        ScoobyDoo
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      } >> test(id)
     }
+
+    def undeprecate(view: String, rev: Int = 2) =
+      deltaClient.putEmptyBody[Json](s"/views/$project1/$view/undeprecate?rev=$rev", ScoobyDoo) { expectOk }
+
+    def assertOneHitIn(view: String): IO[Assertion] =
+      deltaClient.post[Json](s"/views/$project1/$view/_search", json"""{ "query": { "match_all": {} } }""", ScoobyDoo) {
+        (json, response) =>
+          println("here")
+          response.status shouldEqual StatusCodes.OK
+          totalHits.getOption(json).value shouldEqual 1
+      }
 
   }
 }
