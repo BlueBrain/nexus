@@ -215,7 +215,6 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "reject an undeprecation of a view without rev" in {
       givenADeprecatedView { view =>
         Put(s"/v1/views/org/proj/$view/undeprecate") ~> asWriter ~> routes ~> check {
-          println(response.asJson)
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
         }
