@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidSchema, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaIsDeprecated, SchemaNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidSchema, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaIsDeprecated, SchemaIsNotDeprecated, SchemaNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
@@ -82,11 +82,16 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
       }
 
       "create a new event from a DeprecateSchema command" in {
-
         val current = SchemaGen.currentState(schema, rev = 2)
 
         eval(Some(current), DeprecateSchema(myId, project.value.ref, 2, subject)).accepted shouldEqual
           SchemaDeprecated(myId, project.value.ref, 3, epoch, subject)
+      }
+
+      "create a new event from an UndeprecateSchema command" in {
+        val current = SchemaGen.currentState(schema, rev = 2, deprecated = true)
+        eval(Some(current), UndeprecateSchema(myId, project.value.ref, 2, subject)).accepted shouldEqual
+          SchemaUndeprecated(myId, project.value.ref, 3, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
@@ -95,7 +100,8 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
           current -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 2, subject),
           current -> TagSchema(myId, project.value.ref, 1, UserTag.unsafe("tag"), 2, subject),
           current -> DeleteSchemaTag(myId, project.value.ref, UserTag.unsafe("tag"), 2, subject),
-          current -> DeprecateSchema(myId, project.value.ref, 2, subject)
+          current -> DeprecateSchema(myId, project.value.ref, 2, subject),
+          current -> UndeprecateSchema(myId, project.value.ref, 2, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
@@ -144,6 +150,11 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[SchemaIsDeprecated]
         }
+      }
+
+      "reject with SchemaIsNotDeprecated" in {
+        val current = SchemaGen.currentState(schema, deprecated = false)
+        eval(Some(current), UndeprecateSchema(myId, project.value.ref, 1, subject)).rejectedWith[SchemaIsNotDeprecated]
       }
 
       "reject with RevisionNotFound" in {
@@ -216,6 +227,14 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
 
         next(Some(current), SchemaDeprecated(myId, project.value.ref, 2, time2, subject)).value shouldEqual
           current.copy(rev = 2, deprecated = true, updatedAt = time2, updatedBy = subject)
+      }
+
+      "create new SchemaUndeprecated state" in {
+        next(None, SchemaUndeprecated(myId, project.value.ref, 1, time2, subject)) shouldEqual None
+
+        val deprecatedState = current.copy(rev = 2, deprecated = true)
+        next(Some(deprecatedState), SchemaUndeprecated(myId, project.value.ref, 2, time2, subject)).value shouldEqual
+          current.copy(rev = 2, deprecated = false, updatedAt = time2, updatedBy = subject)
       }
     }
   }

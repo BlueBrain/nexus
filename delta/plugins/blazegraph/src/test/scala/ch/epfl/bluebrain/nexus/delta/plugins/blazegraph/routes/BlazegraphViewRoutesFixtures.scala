@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral}
@@ -63,8 +63,17 @@ trait BlazegraphViewRoutesFixtures
   val bob                     = User("Bob", realm)
   implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
 
-  val identities = IdentitiesDummy(caller)
-  val asBob      = addCredentials(OAuth2BearerToken("Bob"))
+  val reader = User("reader", realm)
+  val writer = User("writer", realm)
+
+  implicit private val callerReader: Caller =
+    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerWriter: Caller =
+    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
+  val identities                            = IdentitiesDummy(callerReader, callerWriter)
+
+  val asReader = addCredentials(OAuth2BearerToken("reader"))
+  val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
   val org           = Label.unsafe("org")
   val orgDeprecated = Label.unsafe("org-deprecated")

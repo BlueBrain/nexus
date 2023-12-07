@@ -11,7 +11,7 @@
   "@type": "Schema",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/anonymous",
+  "_createdBy": "http://localhost/v1/realms/wonderland/users/writer",
   "_deprecated": true,
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
@@ -19,7 +19,7 @@
   "_rev": 6,
   "_self": "{{self}}",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/anonymous",
+  "_updatedBy": "http://localhost/v1/realms/wonderland/users/writer",
   "shapes": [
     {
       "@id": "nxv:MyShape",

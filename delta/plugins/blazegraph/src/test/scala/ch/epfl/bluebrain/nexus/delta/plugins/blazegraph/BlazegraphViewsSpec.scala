@@ -22,9 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral.circeLiteralSyntax
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 import java.util.UUID
 
@@ -325,6 +327,42 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
       }
     }
 
+    "undeprecating a view" should {
+      "undeprecate the view" in {
+        givenADeprecatedView { view =>
+          views.undeprecate(view, projectRef, 2).accepted shouldEqual resourceFor(
+            nxv + view,
+            projectRef,
+            indexingValue,
+            uuid,
+            indexingSource deepMerge json"""{"@id": "${nxv + view}"}""",
+            3,
+            deprecated = false,
+            createdBy = bob,
+            updatedBy = bob
+          )
+          views.fetch(view, projectRef).accepted.deprecated shouldEqual false
+        }
+      }
+
+      "reject when view doesn't exits" in {
+        val doesntExist = nxv + "doesntexist"
+        views.undeprecate(doesntExist, projectRef, 1).rejected shouldEqual ViewNotFound(doesntExist, projectRef)
+      }
+
+      "reject when incorrect revision is provided" in {
+        givenADeprecatedView { view =>
+          views.undeprecate(view, projectRef, 42).rejected shouldEqual IncorrectRev(42, 2)
+        }
+      }
+
+      "reject when view is not deprecated" in {
+        givenAView { view =>
+          views.undeprecate(view, projectRef, 1).rejected shouldEqual ViewIsNotDeprecated(nxv + view)
+        }
+      }
+    }
+
     "fetching a view" should {
       "fetch a view" in {
         views.fetch(indexingViewId, projectRef).accepted shouldEqual resourceFor(
@@ -377,6 +415,19 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
       "reject when the view is not found" in {
         views.fetch(doesntExistId, projectRef).rejected shouldEqual ViewNotFound(doesntExistId, projectRef)
+      }
+    }
+
+    def givenAView(test: String => Assertion): Assertion = {
+      val viewId = genString()
+      views.create(viewId, projectRef, indexingValue).accepted
+      test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => Assertion): Assertion = {
+      givenAView { view =>
+        views.deprecate(view, projectRef, 1).accepted
+        test(view)
       }
     }
   }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -260,6 +262,46 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
     schemas.deprecate(mySchema, projectDeprecated.ref, 1).intercept[ProjectContextRejection]
   }
 
+  test("Undeprecating a deprecated schema succeeds") {
+    givenADeprecatedSchema { schema =>
+      val expected = SchemaGen.resourceFor(schema, rev = 3, subject = subject)
+      schemas.undeprecate(schema.id, schema.project, 2).assertEquals(expected) >>
+        schemas.fetch(schema.id, schema.project).map(_.deprecated).assertEquals(false)
+    }
+  }
+
+  test("Undeprecating a schema fails if it doesn't exists") {
+    val nonExistentSchema = nxv + "other"
+    schemas.undeprecate(nonExistentSchema, projectRef, 1).intercept[SchemaNotFound]
+  }
+
+  test("Undeprecating a schema fails if the revision passed is incorrect") {
+    givenADeprecatedSchema { schema =>
+      schemas.undeprecate(schema.id, schema.project, 3).interceptEquals(IncorrectRev(provided = 3, expected = 2)) >>
+        schemas.fetch(schema.id, schema.project).map(_.deprecated).assertEquals(true)
+    }
+  }
+
+  test("Undeprecating a schema fails if not deprecated") {
+    givenASchema { schema =>
+      schemas.undeprecate(schema.id, schema.project, 1).intercept[SchemaIsNotDeprecated] >>
+        schemas.fetch(schema.id, schema.project).map(_.deprecated).assertEquals(false)
+    }
+  }
+
+  test("Undeprecating a schema fails if project does not exist") {
+    givenADeprecatedSchema { schema =>
+      val nonExistentProject = ProjectRef(org, Label.unsafe("other"))
+      schemas.undeprecate(schema.id, nonExistentProject, 1).intercept[ProjectContextRejection].void
+    }
+  }
+
+  test("Undeprecating a schema fails if project is deprecated") {
+    givenADeprecatedSchema { schema =>
+      schemas.undeprecate(schema.id, projectDeprecated.ref, 1).intercept[ProjectContextRejection].void
+    }
+  }
+
   private val schema2 = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2))
 
   test("Fetching a schema succeeds") {
@@ -317,6 +359,22 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Deleting a schema tag fails if the tag doesn't exist") {
     schemas.deleteTag(mySchema2, projectRef, tag, 3).intercept[TagNotFound]
+  }
+
+  def givenASchema(test: Schema => IO[Unit]): IO[Unit] = {
+    val schemaName = genString()
+    val schema     = SchemaGen.schema(nxv + schemaName, project.ref, sourceNoId)
+    schemas.create(schema.id, schema.project, sourceNoId) >>
+      schemas.fetch(schema.id, schema.project) >>
+      test(schema)
+  }
+
+  def givenADeprecatedSchema(test: Schema => IO[Unit]): IO[Unit] = {
+    givenASchema { schema =>
+      schemas.deprecate(schema.id, schema.project, 1) >>
+        assertIO(schemas.fetch(schema.id, schema.project).map(_.deprecated), true) >>
+        test(schema)
+    }
   }
 
 }

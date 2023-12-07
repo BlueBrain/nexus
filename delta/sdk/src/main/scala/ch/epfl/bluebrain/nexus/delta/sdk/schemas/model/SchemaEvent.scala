@@ -212,6 +212,28 @@ object SchemaEvent {
       subject: Subject
   ) extends SchemaEvent
 
+  /**
+    * Event representing a schema undeprecation.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class SchemaUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends SchemaEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, SchemaEvent] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
@@ -233,12 +255,13 @@ object SchemaEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: SchemaCreated    => Created
-            case _: SchemaUpdated    => Updated
-            case _: SchemaRefreshed  => Refreshed
-            case _: SchemaTagAdded   => Tagged
-            case _: SchemaTagDeleted => TagDeleted
-            case _: SchemaDeprecated => Deprecated
+            case _: SchemaCreated      => Created
+            case _: SchemaUpdated      => Updated
+            case _: SchemaRefreshed    => Refreshed
+            case _: SchemaTagAdded     => Tagged
+            case _: SchemaTagDeleted   => TagDeleted
+            case _: SchemaDeprecated   => Deprecated
+            case _: SchemaUndeprecated => Undeprecated
           },
           event.id,
           Set(nxv.Schema),

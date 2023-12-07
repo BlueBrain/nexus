@@ -4,9 +4,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, RevisionNotFound, StorageIsDeprecated, StorageNotAccessible, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UndeprecateStorage, UpdateStorage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUndeprecated, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, RevisionNotFound, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
@@ -96,12 +96,19 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
           StorageDeprecated(dId, project, DiskStorageType, 4, epoch, alice)
       }
 
+      "create a new event from an UndeprecateStorage command" in {
+        val state = storageState(dId, project, diskVal, rev = 3, deprecated = true)
+        eval(Some(state), UndeprecateStorage(dId, project, 3, alice)).accepted shouldEqual
+          StorageUndeprecated(dId, project, DiskStorageType, 4, epoch, alice)
+      }
+
       "reject with IncorrectRev" in {
         val state    = storageState(dId, project, diskVal)
         val commands = List(
           UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
           TagStorage(dId, project, 1, UserTag.unsafe("tag"), 2, alice),
-          DeprecateStorage(dId, project, 2, alice)
+          DeprecateStorage(dId, project, 2, alice),
+          UndeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
           eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
@@ -198,6 +205,16 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         )
         forAll(commands) { cmd =>
           eval(Some(state), cmd).rejectedWith[StorageIsDeprecated]
+        }
+      }
+
+      "reject with StorageIsNotDeprecated" in {
+        val state    = storageState(dId, project, diskVal, rev = 2, deprecated = false)
+        val commands = List(
+          UndeprecateStorage(dId, project, 2, alice)
+        )
+        forAll(commands) { cmd =>
+          eval(Some(state), cmd).rejectedWith[StorageIsNotDeprecated]
         }
       }
 
@@ -304,6 +321,20 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         next(Some(current), event).value shouldEqual current.copy(
           rev = 2,
           deprecated = true,
+          updatedAt = time2,
+          updatedBy = alice
+        )
+      }
+
+      "from a new StorageUndeprecated event" in {
+        val event   = StorageUndeprecated(dId, project, DiskStorageType, 2, time2, alice)
+        val current = storageState(dId, project, diskVal, deprecated = true)
+
+        next(None, event) shouldEqual None
+
+        next(Some(current), event).value shouldEqual current.copy(
+          rev = 2,
+          deprecated = false,
           updatedAt = time2,
           updatedBy = alice
         )

@@ -16,4 +16,8 @@ object SchemaPayloads {
   def withMinCount(id: String, minCount: Int): IO[Json] = {
     loader.jsonContentOf("kg/schemas/schema.json", "id" -> id, "minCount" -> minCount)
   }
+
+  def simple(id: String): IO[Json] = {
+    loader.jsonContentOf("kg/schemas/schema.json", "id" -> id, "minCount" -> 1)
+  }
 }

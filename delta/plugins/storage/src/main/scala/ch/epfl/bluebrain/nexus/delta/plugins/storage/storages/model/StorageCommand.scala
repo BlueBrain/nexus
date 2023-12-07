@@ -120,4 +120,18 @@ object StorageCommand {
     */
   final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends StorageCommand
 
+  /**
+    * Command to undeprecate a storage
+    *
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param rev
+    *   the last known revision of the storage
+    * @param subject
+    *   the identity associated to this command
+    */
+  final case class UndeprecateStorage(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends StorageCommand
+
 }
