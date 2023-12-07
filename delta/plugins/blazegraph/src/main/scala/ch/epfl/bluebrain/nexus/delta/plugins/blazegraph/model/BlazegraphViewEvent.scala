@@ -203,6 +203,34 @@ object BlazegraphViewEvent {
       subject: Subject
   ) extends BlazegraphViewEvent
 
+  /**
+    * Evidence of a view undeprecation.
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tpe
+    *   the view type
+    * @param uuid
+    *   the view unique identifier
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that undeprecated the view
+    */
+  final case class BlazegraphViewUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      tpe: BlazegraphViewType,
+      uuid: UUID,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends BlazegraphViewEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, BlazegraphViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -222,10 +250,11 @@ object BlazegraphViewEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: BlazegraphViewCreated    => Created
-            case _: BlazegraphViewUpdated    => Updated
-            case _: BlazegraphViewTagAdded   => Tagged
-            case _: BlazegraphViewDeprecated => Deprecated
+            case _: BlazegraphViewCreated      => Created
+            case _: BlazegraphViewUpdated      => Updated
+            case _: BlazegraphViewTagAdded     => Tagged
+            case _: BlazegraphViewDeprecated   => Deprecated
+            case _: BlazegraphViewUndeprecated => Undeprecated
           },
           event.id,
           event.tpe.types,

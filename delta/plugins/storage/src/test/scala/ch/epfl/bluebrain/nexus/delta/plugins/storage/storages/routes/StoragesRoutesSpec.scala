@@ -70,7 +70,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
   private val identities                    = IdentitiesDummy(callerReader, callerWriter)
 
   private val asReader = addCredentials(OAuth2BearerToken("reader"))
-  println(asReader)
   private val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
   private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
