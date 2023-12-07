@@ -495,7 +495,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     "reindex a resource after a view is undeprecated" in {
       givenADeprecatedView { view =>
         givenAPersonResource { _ =>
-          undeprecate(view) >> assertOneHitIn(view).eventually
+          undeprecate(view) >> eventually { assertOneHitIn(view) }
         }
       }
     }
@@ -531,7 +531,6 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     def assertOneHitIn(view: String): IO[Assertion] =
       deltaClient.post[Json](s"/views/$project1/$view/_search", json"""{ "query": { "match_all": {} } }""", ScoobyDoo) {
         (json, response) =>
-          println("here")
           response.status shouldEqual StatusCodes.OK
           totalHits.getOption(json).value shouldEqual 1
       }

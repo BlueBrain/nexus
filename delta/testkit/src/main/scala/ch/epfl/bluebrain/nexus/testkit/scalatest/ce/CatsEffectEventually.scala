@@ -8,14 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectEventually.logger
 import org.scalactic.source.Position
 import org.scalatest.Assertions
-import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.enablers.Retrying
 import org.scalatest.exceptions.TestFailedException
+import org.scalatest.time.Span
 
-trait CatsEffectEventually { self: Assertions with PatienceConfiguration =>
-  implicit class CatsEffectEventuallyOps[A](io: IO[A]) {
-    def eventually(implicit pos: Position, patience: PatienceConfig): IO[A] = {
+trait CatsEffectEventually { self: Assertions =>
+  implicit def ioRetrying[T]: Retrying[IO[T]] = new Retrying[IO[T]] {
+    override def retry(timeout: Span, interval: Span, pos: Position)(fun: => IO[T]): IO[T] = {
       val strategy = RetryStrategy[Throwable](
-        MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
+        MaximumCumulativeDelayConfig(timeout, interval),
         {
           case _: TestFailedException => true
           case _                      => false
@@ -27,7 +28,7 @@ trait CatsEffectEventually { self: Assertions with PatienceConfiguration =>
             )
           }
       )
-      io
+      fun
         .retry(strategy)
         .adaptError { case e: AssertionError =>
           fail(s"assertion failed after retrying with eventually: ${e.getMessage}", e)
