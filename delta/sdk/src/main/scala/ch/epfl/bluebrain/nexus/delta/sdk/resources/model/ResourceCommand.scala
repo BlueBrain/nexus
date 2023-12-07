@@ -65,8 +65,6 @@ object ResourceCommand {
     *   the schema used to constrain the resource
     * @param jsonld
     *   the jsonld representation of the resource
-    * @param jsonld
-    *   the jsonld representation of the resource
     * @param caller
     *   the subject which created this event
     * @param tag
