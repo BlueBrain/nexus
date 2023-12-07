@@ -60,23 +60,23 @@ class RemoteStorageSpec extends StorageSpec with CopyFileSpec {
       ): _*
     )
 
-  override def createStorages(projectRef: String): IO[Assertion] = {
+  override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
     val payload = jsonContentOf(
       "kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
       "read"     -> "resources/read",
       "write"    -> "files/write",
       "folder"   -> remoteFolder,
-      "id"       -> storageId
+      "id"       -> storId
     )
 
     val payload2 = jsonContentOf(
       "kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
-      "read"     -> s"$storageName/read",
-      "write"    -> s"$storageName/write",
+      "read"     -> s"$storName/read",
+      "write"    -> s"$storName/write",
       "folder"   -> remoteFolder,
-      "id"       -> s"${storageId}2"
+      "id"       -> s"${storId}2"
     )
 
     for {
@@ -85,12 +85,12 @@ class RemoteStorageSpec extends StorageSpec with CopyFileSpec {
                        fail(s"Unexpected status '${response.status}', response:\n${json.spaces2}")
                      } else succeed
                    }
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId/source", Coyote) { (json, response) =>
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId/source", Coyote) { (json, response) =>
                      response.status shouldEqual StatusCodes.OK
                      val expected = jsonContentOf(
                        "kg/storages/storage-source.json",
@@ -107,7 +107,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFileSpec {
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      storageId2 = s"${storageId}2"
+      storageId2 = s"${storId}2"
       _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
                      val expected = storageResponse(projectRef, storageId2, s"$storageName/read", s"$storageName/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)

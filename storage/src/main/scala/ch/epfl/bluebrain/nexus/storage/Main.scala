@@ -6,7 +6,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import cats.effect.{ExitCode, IO, IOApp}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CopyFiles
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.TransactionalFileCopier
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
@@ -61,9 +61,9 @@ object Main extends IOApp {
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
-    val attributesCache: AttributesCache = AttributesCache[AkkaSource]
-    val validateFile: ValidateFile       = ValidateFile.mk(appConfig.storage)
-    val copyFiles: CopyFiles             = CopyFiles.mk()
+    val attributesCache: AttributesCache   = AttributesCache[AkkaSource]
+    val validateFile: ValidateFile         = ValidateFile.mk(appConfig.storage)
+    val copyFiles: TransactionalFileCopier = TransactionalFileCopier.mk()
 
     val storages: Storages[AkkaSource] =
       new DiskStorage(

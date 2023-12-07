@@ -32,7 +32,7 @@ class DiskStorageSpec extends StorageSpec with CopyFileSpec {
       ): _*
     )
 
-  override def createStorages(projectRef: String): IO[Assertion] = {
+  override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
     val payload  = jsonContentOf("kg/storages/disk.json")
     val payload2 = jsonContentOf("kg/storages/disk-perms.json")
 
@@ -40,21 +40,21 @@ class DiskStorageSpec extends StorageSpec with CopyFileSpec {
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
       _         <- permissionDsl.addPermissions(
-                     Permission(storageName, "read"),
-                     Permission(storageName, "write")
+                     Permission(storName, "read"),
+                     Permission(storName, "write")
                    )
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      storageId2 = s"${storageId}2"
+      storageId2 = s"${storId}2"
       _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storageId2, s"$storageName/read", s"$storageName/write")
+                     val expected = storageResponse(projectRef, storageId2, s"$storName/read", s"$storName/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 import akka.actor
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -174,7 +174,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               storageTypeConfig,
               cfg.files,
               remoteDiskStorageClient,
-              clock
+              clock,
+              TransactionalFileCopier.mk()
             )(
               uuidF,
               as

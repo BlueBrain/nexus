@@ -40,7 +40,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   def locationPrefix: Option[String]
 
-  def createStorages(projectRef: String): IO[Assertion]
+  def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion]
 
   protected def fileSelf(project: String, id: String): String = {
     val uri = Uri(s"${config.deltaUri}/files/$project")
@@ -68,7 +68,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   "Creating a storage" should {
     s"succeed for a $storageName storage" in {
-      createStorages(projectRef)
+      createStorages(projectRef, storageId, storageName)
     }
 
     "wait for storages to be indexed" in {
@@ -399,10 +399,18 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
   }
 
-  private def uploadFile(fileInput: Input, rev: Option[Int]): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
+  def uploadFile(fileInput: Input, rev: Option[Int]): ((Json, HttpResponse) => Assertion) => IO[Assertion] =
+    uploadFileToProjectStorage(fileInput, projectRef, storageId, rev)
+
+  def uploadFileToProjectStorage(
+      fileInput: Input,
+      projRef: String,
+      storage: String,
+      rev: Option[Int]
+  ): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
     val revString = rev.map(r => s"&rev=$r").getOrElse("")
     deltaClient.uploadFile[Json](
-      s"/files/$projectRef/${fileInput.fileId}?storage=nxv:$storageId$revString",
+      s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
       fileInput.contents,
       fileInput.ct,
       fileInput.filename,

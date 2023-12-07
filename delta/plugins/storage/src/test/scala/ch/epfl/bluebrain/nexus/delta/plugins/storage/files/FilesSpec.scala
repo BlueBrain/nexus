@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.TransactionalFileCopier
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
@@ -138,7 +139,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       cfg,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
-      clock
+      clock,
+      TransactionalFileCopier.mk()
     )
 
     def fileId(file: String): FileId = FileId(file, projectRef)
@@ -452,7 +454,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed from disk storage based on a tag" in {
         // TODO: adding uuids whenever we want a new independent test is not sustainable. If we truly want to test this every
-        // time we should generate a new "Files" with a new UUIDF.
+        // time we should generate a new "Files" with a new UUIDF (and other dependencies we want to control).
         // Alternatively we could normalise the expected values to not care about any generated Ids
         val newFileUuid = UUID.randomUUID()
         withUUIDF(newFileUuid) {
@@ -489,25 +491,6 @@ class FilesSpec(docker: RemoteStorageDocker)
 
           val fetchedByTag = files.fetch(FileId(newFileUuid.toString, newTag, projectRefOrg2)).accepted
           fetchedByTag shouldEqual expected
-        }
-      }
-
-      "succeed from remote storage based on latest" in {
-        val newFileUuid = UUID.randomUUID()
-        withUUIDF(newFileUuid) {
-          val source      = CopyFileSource(projectRef, NonEmptyList.of(FileId("file1", tag, projectRef)))
-          val destination = CopyFileDestination(projectRefOrg2, Some(remoteId), None)
-
-          val expectedDestId   = project2.base.iri / newFileUuid.toString
-          val expectedFilename = "myfile.txt"
-          val expectedAttr     = attributes(filename = expectedFilename, projRef = projectRefOrg2, id = newFileUuid)
-          val expected         = mkResource(expectedDestId, projectRefOrg2, diskRev, expectedAttr)
-
-          val actual = files.copyFiles(source, destination).unsafeRunSync()
-          actual shouldEqual NonEmptyList.of(expected)
-
-          val fetched = files.fetch(FileId(newFileUuid.toString, projectRefOrg2)).accepted
-          fetched shouldEqual expected
         }
       }
 

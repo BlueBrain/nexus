@@ -10,7 +10,7 @@ import akka.util.ByteString
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CopyFiles
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.TransactionalFileCopier
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.{PathInvalid, PermissionsFixingFailed}
@@ -52,7 +52,7 @@ class DiskStorageSpec
   val contentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
   val cache               = mock[AttributesCache]
   val validateFile        = ValidateFile.mk(sConfig)
-  val copyFiles           = CopyFiles.mk()
+  val copyFiles           = TransactionalFileCopier.mk()
   val storage             = new DiskStorage(sConfig, contentTypeDetector, dConfig, cache, validateFile, copyFiles)
 
   override def afterAll(): Unit = {

@@ -6,7 +6,7 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, CopyFiles}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, TransactionalFileCopier}
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PermissionsFixingFailed}
@@ -168,7 +168,7 @@ object Storages {
       digestConfig: DigestConfig,
       cache: AttributesCache,
       validateFile: ValidateFile,
-      copyFiles: CopyFiles
+      copyFiles: TransactionalFileCopier
   )(implicit
       ec: ExecutionContext,
       mt: Materializer

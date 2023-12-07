@@ -7,16 +7,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDetails, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.CopyFile
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.CopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 
-class RemoteDiskStorageCopyFile(
+class RemoteDiskStorageCopyFiles(
     destStorage: RemoteDiskStorage,
     client: RemoteDiskStorageClient
-) extends CopyFile {
+) extends CopyFiles {
 
-  private val logger = Logger[RemoteDiskStorageCopyFile]
+  private val logger = Logger[RemoteDiskStorageCopyFiles]
 
   override def apply(copyDetails: NonEmptyList[CopyFileDetails]): IO[NonEmptyList[FileAttributes]] = {
     val maybePaths = copyDetails.traverse { cd =>

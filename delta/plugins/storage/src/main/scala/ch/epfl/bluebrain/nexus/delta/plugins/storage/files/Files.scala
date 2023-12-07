@@ -9,7 +9,7 @@ import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -63,7 +63,8 @@ final class Files(
     storages: Storages,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
-    config: StorageTypeConfig
+    config: StorageTypeConfig,
+    copier: TransactionalFileCopier
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
@@ -202,17 +203,11 @@ final class Files(
       dest: CopyFileDestination
   )(implicit c: Caller): IO[NonEmptyList[FileResource]] = {
     for {
-      _                                 <- logger.info(s"DTBDTB entered copyFiles with $source and $dest")
       (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
-      _                                 <- logger.info(s"DTBDTB fetched dest storage")
       copyDetails                       <- source.files.traverse(fetchCopyDetails(destStorage, _))
-      _                                 <- logger.info(s"DTBDTB fetched file attributes")
       _                                 <- validateSpaceOnStorage(destStorage, copyDetails.map(_.sourceAttributes.bytes))
-      _                                 <- logger.info(s"DTBDTB validated space")
-      destFilesAttributes               <- CopyFile(destStorage, remoteDiskStorageClient).apply(copyDetails)
-      _                                 <- logger.info(s"DTBDTB did actual file copy")
+      destFilesAttributes               <- CopyFiles(destStorage, remoteDiskStorageClient, copier).apply(copyDetails)
       fileResources                     <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
-      _                                 <- logger.info(s"DTBDTB create commands")
     } yield fileResources
   }
 
@@ -236,7 +231,7 @@ final class Files(
     }
 
   private def validateSpaceOnStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = for {
-    space    <- fetchStorageAvailableSpace(destStorage)
+    space    <- storagesStatistics.getStorageAvailableSpace(destStorage)
     maxSize   = destStorage.storageValue.maxFileSize
     _        <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
     totalSize = sourcesBytes.toList.sum
@@ -443,12 +438,9 @@ final class Files(
   def fetchContent(id: FileId)(implicit caller: Caller): IO[FileResponse] = {
     for {
       file      <- fetch(id)
-      _         <- logger.info(s"DTBDTB fetching file content for file $file")
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, id.project)
-      _         <- logger.info(s"DTBDTB fetched storage $storage")
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
-      _         <- logger.info(s"DTBDTB validated auth")
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
     } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.attemptNarrow[FileRejection])
@@ -457,9 +449,6 @@ final class Files(
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
     FetchFile(storage, remoteDiskStorageClient, config)
       .apply(attr)
-      .onError { e =>
-        logger.error(e)(s"DTBDTB received error during file contents fetch for $fileId")
-      }
       .adaptError { case e: FetchFileRejection =>
         FetchRejection(fileId, storage.id, e)
       }
@@ -472,21 +461,7 @@ final class Files(
     * @param project
     *   the project where the storage belongs
     */
-  def fetch(id: FileId): IO[FileResource] = {
-    for {
-      (iri, _) <- id.expandIri(fetchContext.onRead)
-      state    <- fetchState(id, iri)
-    } yield state.toResource
-  }.span("fetchFile")
-
-  private def fetchState(id: FileId, iri: Iri): IO[FileState] = {
-    val notFound = FileNotFound(iri, id.project)
-    id.id match {
-      case Latest(_)        => log.stateOr(id.project, iri, notFound)
-      case Revision(_, rev) => log.stateOr(id.project, iri, rev, notFound, RevisionNotFound)
-      case Tag(_, tag)      => log.stateOr(id.project, iri, tag, notFound, TagNotFound(tag))
-    }
-  }
+  def fetch(id: FileId): IO[FileResource] = Files.fetch(fetchContext, log)(id).span("fetchFile")
 
   private def createLink(
       iri: Iri,
@@ -548,7 +523,7 @@ final class Files(
 
   private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[(FileDescription, BodyPartEntity)] =
     for {
-      storageAvailableSpace <- fetchStorageAvailableSpace(storage)
+      storageAvailableSpace <- storagesStatistics.getStorageAvailableSpace(storage)
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
     } yield (description, source)
 
@@ -557,17 +532,7 @@ final class Files(
       .apply(description, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
-  private def fetchStorageAvailableSpace(storage: Storage): IO[Option[Long]]                             =
-    storage.storageValue.capacity.fold(IO.none[Long]) { capacity =>
-      storagesStatistics
-        .get(storage.id, storage.project)
-        .redeem(
-          _ => Some(capacity),
-          stat => Some(capacity - stat.spaceUsed)
-        )
-    }
-
-  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
+  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri]                          =
     Storages.expandIri(segment, pc).adaptError { case s: StorageRejection =>
       WrappedStorageRejection(s)
     }
@@ -860,7 +825,8 @@ object Files {
       storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient,
-      clock: Clock[IO]
+      clock: Clock[IO],
+      copier: TransactionalFileCopier
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing]
@@ -874,7 +840,8 @@ object Files {
       storages,
       storagesStatistics,
       remoteDiskStorageClient,
-      storageTypeConfig
+      storageTypeConfig,
+      copier
     )
   }
 
@@ -892,5 +859,28 @@ object Files {
         )
         .void
     }
+
+  /**
+    * Fetch the last version of a file
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
+    */
+  def fetch(fetchContext: FetchContext[FileRejection], log: FilesLog)(id: FileId): IO[FileResource] =
+    for {
+      (iri, _) <- id.expandIri(fetchContext.onRead)
+      state    <- fetchState(log)(id, iri)
+    } yield state.toResource
+
+  private def fetchState(log: FilesLog)(id: FileId, iri: Iri): IO[FileState] = {
+    val notFound = FileNotFound(iri, id.project)
+    id.id match {
+      case Latest(_)        => log.stateOr(id.project, iri, notFound)
+      case Revision(_, rev) => log.stateOr(id.project, iri, rev, notFound, RevisionNotFound)
+      case Tag(_, tag)      => log.stateOr(id.project, iri, tag, notFound, TagNotFound(tag))
+    }
+  }
 
 }
