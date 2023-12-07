@@ -22,7 +22,7 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
     val result = for {
       _ <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
       _ <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
-      _ <- adminDsl.createProject(org, project, ProjectPayload.generate(project, config), Identity.ServiceAccount)
+      _ <- adminDsl.createProject(org, project, ProjectPayload.generate(project), Identity.ServiceAccount)
       _ <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
     } yield succeed
 

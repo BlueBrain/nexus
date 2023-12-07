@@ -69,9 +69,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
     super.beforeAll()
     val setup = for {
       _                    <- createOrg(Rick, orgId)
-      forcedSchemaPayload   = ProjectPayload.generate(projectForcedSchema, config, enforceSchema = true)
+      forcedSchemaPayload   = ProjectPayload.generate(projectForcedSchema, enforceSchema = true)
       _                    <- adminDsl.createProject(orgId, projForcedSchemaId, forcedSchemaPayload, Rick)
-      optionalSchemaPayload = ProjectPayload.generate(projectOptionalSchema, config, enforceSchema = false)
+      optionalSchemaPayload = ProjectPayload.generate(projectOptionalSchema, enforceSchema = false)
       _                    <- adminDsl.createProject(orgId, projOptionalSchemaId, optionalSchemaPayload, Rick)
       _                    <- aclDsl.addPermission(s"/$projectForcedSchema", Morty, Resources.Read)
     } yield ()

@@ -15,9 +15,4 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
   * @param caller
   *   the caller to pass for schema resolution
   */
-final case class SchemaClaim(project: ProjectRef, schemaRef: ResourceRef, caller: Caller) {
-
-  def isUnconstrained: Boolean =
-    schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1)
-
-}
+final case class SchemaClaim(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)

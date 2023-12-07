@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated, SchemaIsMandatory}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 
 /**
   * Allows to validate the resource:
@@ -58,8 +59,8 @@ object ValidateResource {
           schemaClaim: SchemaClaim,
           enforceSchema: Boolean
       ): IO[ValidationResult] =
-        if (schemaClaim.isUnconstrained)
-          assertMandatorySchema(schemaClaim.project, enforceSchema) >>
+        if (isUnconstrained(schemaClaim))
+          IO.raiseWhen(enforceSchema)(SchemaIsMandatory(schemaClaim.project)) >>
             assertNotReservedId(jsonld.id) >>
             IO.pure(NoValidation(schemaClaim.project))
         else
@@ -90,8 +91,11 @@ object ValidateResource {
           ResourceShaclEngineRejection(jsonld.id, schemaRef, e.getMessage)
         }
 
-      private def assertMandatorySchema(project: ProjectRef, enforceSchema: Boolean) =
-        IO.raiseWhen(enforceSchema)(SchemaIsMandatory(project))
+      private def isUnconstrained(schemaClaim: SchemaClaim): Boolean =
+        schemaClaim.schemaRef == Latest(schemas.resources) || schemaClaim.schemaRef == ResourceRef.Revision(
+          schemas.resources,
+          1
+        )
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {
         IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))

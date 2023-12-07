@@ -15,7 +15,7 @@ final case class ProjectPayload(
 
 object ProjectPayload extends Generators {
 
-  def generate(name: String, config: TestsConfig, enforceSchema: Boolean = false): ProjectPayload = {
+  def generate(name: String, enforceSchema: Boolean = false)(implicit config: TestsConfig): ProjectPayload = {
     val base = s"${config.deltaUri.toString()}/resources/$name/_/"
     generateWithCustomBase(name, base, enforceSchema)
   }

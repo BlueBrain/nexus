@@ -51,8 +51,8 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
         _ <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
-        _ <- adminDsl.createProject(orgId, projId, ProjectPayload.generate(fullId, config), Tweety)
-        _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generate(fullId2, config), Tweety)
+        _ <- adminDsl.createProject(orgId, projId, ProjectPayload.generate(fullId), Tweety)
+        _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generate(fullId2), Tweety)
       } yield succeed
     }
 

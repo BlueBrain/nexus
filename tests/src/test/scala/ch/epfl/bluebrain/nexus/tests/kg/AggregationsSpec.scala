@@ -28,11 +28,11 @@ final class AggregationsSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission("/", Charlie, Organizations.Create)
       // First org and projects
       _ <- adminDsl.createOrganization(org1, org1, Charlie)
-      _ <- adminDsl.createProject(org1, proj11, ProjectPayload.generate(proj11, config), Charlie)
-      _ <- adminDsl.createProject(org1, proj12, ProjectPayload.generate(proj12, config), Charlie)
+      _ <- adminDsl.createProject(org1, proj11, ProjectPayload.generate(proj11), Charlie)
+      _ <- adminDsl.createProject(org1, proj12, ProjectPayload.generate(proj12), Charlie)
       // Second org and projects
       _ <- adminDsl.createOrganization(org2, org2, Charlie)
-      _ <- adminDsl.createProject(org2, proj21, ProjectPayload.generate(proj21, config), Charlie)
+      _ <- adminDsl.createProject(org2, proj21, ProjectPayload.generate(proj21), Charlie)
       _ <- aclDsl.addPermission(s"/$ref12", Rose, Resources.Read)
       _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()

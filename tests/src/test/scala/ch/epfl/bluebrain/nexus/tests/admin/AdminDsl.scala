@@ -163,8 +163,8 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
       projectId: String,
       name: String,
       authenticated: Authenticated
-  ): IO[Assertion] =
-    createProject(orgId, projectId, ProjectPayload.generate(name, config), authenticated)
+  )(implicit config: TestsConfig): IO[Assertion] =
+    createProject(orgId, projectId, ProjectPayload.generate(name), authenticated)
 
   def createProject(
       orgId: String,

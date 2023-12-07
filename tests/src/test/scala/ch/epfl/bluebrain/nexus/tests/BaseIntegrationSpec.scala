@@ -204,7 +204,7 @@ trait BaseIntegrationSpec
     for {
       _ <- createOrg(user, org)
       _ <- projects.toList.traverse { project =>
-             val payload = ProjectPayload.generate(s"$org/$project", config)
+             val payload = ProjectPayload.generate(s"$org/$project")
              adminDsl.createProject(org, project, payload, user)
            }
     } yield ()
