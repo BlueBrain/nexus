@@ -461,7 +461,20 @@ final class Files(
     * @param project
     *   the project where the storage belongs
     */
-  def fetch(id: FileId): IO[FileResource] = Files.fetch(fetchContext, log)(id).span("fetchFile")
+  def fetch(id: FileId): IO[FileResource] =
+    (for {
+      (iri, _) <- id.expandIri(fetchContext.onRead)
+      state    <- fetchState(id, iri)
+    } yield state.toResource).span("fetchFile")
+
+  private def fetchState(id: FileId, iri: Iri): IO[FileState] = {
+    val notFound = FileNotFound(iri, id.project)
+    id.id match {
+      case Latest(_)        => log.stateOr(id.project, iri, notFound)
+      case Revision(_, rev) => log.stateOr(id.project, iri, rev, notFound, RevisionNotFound)
+      case Tag(_, tag)      => log.stateOr(id.project, iri, tag, notFound, TagNotFound(tag))
+    }
+  }
 
   private def createLink(
       iri: Iri,
@@ -487,12 +500,12 @@ final class Files(
       .apply(path, desc)
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
-  private def eval(cmd: FileCommand): IO[FileResource]                                                           =
+  def eval(cmd: FileCommand): IO[FileResource]                                                                   =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
-  private def fetchActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
+  def fetchActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
       caller: Caller
   ): IO[(ResourceRef.Revision, Storage)] =
     storageIdOpt match {
@@ -512,7 +525,7 @@ final class Files(
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
-  private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
+  def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileAttributes] =
@@ -537,7 +550,7 @@ final class Files(
       WrappedStorageRejection(s)
     }
 
-  private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
+  def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   /**
@@ -859,28 +872,4 @@ object Files {
         )
         .void
     }
-
-  /**
-    * Fetch the last version of a file
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
-    */
-  def fetch(fetchContext: FetchContext[FileRejection], log: FilesLog)(id: FileId): IO[FileResource] =
-    for {
-      (iri, _) <- id.expandIri(fetchContext.onRead)
-      state    <- fetchState(log)(id, iri)
-    } yield state.toResource
-
-  private def fetchState(log: FilesLog)(id: FileId, iri: Iri): IO[FileState] = {
-    val notFound = FileNotFound(iri, id.project)
-    id.id match {
-      case Latest(_)        => log.stateOr(id.project, iri, notFound)
-      case Revision(_, rev) => log.stateOr(id.project, iri, rev, notFound, RevisionNotFound)
-      case Tag(_, tag)      => log.stateOr(id.project, iri, tag, notFound, TagNotFound(tag))
-    }
-  }
-
 }

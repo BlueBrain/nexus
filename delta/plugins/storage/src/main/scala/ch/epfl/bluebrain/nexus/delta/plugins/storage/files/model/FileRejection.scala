@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -147,12 +146,6 @@ object FileRejection {
       extends FileRejection(
         s"Linking a file '$id' cannot be performed without a 'filename' or a 'path' that does not end with a filename."
       )
-
-  /**
-    * Rejection returned when attempting to fetch a file and including both the target tag and revision.
-    */
-  final case class InvalidFileLookup(id: IdSegment)
-      extends FileRejection(s"Only one of 'tag' and 'rev' can be used to lookup file '$id'.")
 
   /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
