@@ -35,11 +35,6 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val synapseId                   = "https://bbp.epfl.ch/data/synapse"
   private val synapseTwoPathwaysId        = "https://bbp.epfl.ch/data/synapse-two-pathways"
   private val detailedCircuitId           = "https://bbp.epfl.ch/data/detailed-circuit"
-  private val axonAnnotationId            = "https://bbp.epfl.ch/data/axon-annotation"
-  private val apicalDendriteAnnotationId  = "https://bbp.epfl.ch/data/apical-dendrite-annotation"
-  private val basalDendriteAnnotationId   = "https://bbp.epfl.ch/data/basal-dendrite-annotation"
-  private val morphologyAnnotationId      = "https://bbp.epfl.ch/data/morphology-annotation"
-  private val somaAnnotationId            = "https://bbp.epfl.ch/data/soma-annotation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -58,12 +53,12 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "kg/search/data/simulations/simulation-campaign-execution.json",
     "kg/search/data/simulations/simulation-campaign.json",
     "kg/search/data/simulations/simulation.json",
-    "kg/search/data/simulations/analysis-report-simulation.json"
-    "kg/search/data/features/axon-annotation.json"
-    "kg/search/data/features/apical-dendrite-annotation.json"
-    "kg/search/data/features/basal-dendrite-annotation.json"
-    "kg/search/data/features/morphology-annotation.json"
-    "kg/search/data/features/soma-annotation.json"
+    "kg/search/data/simulations/analysis-report-simulation.json",
+    "kg/search/features/axon-annotation.json",
+    "kg/search/features/apical-dendrite-annotation.json",
+    "kg/search/features/basal-dendrite-annotation.json",
+    "kg/search/features/morphology-annotation.json",
+    "kg/search/features/soma-annotation.json"
   )
   private val otherResources = List(
     "kg/search/article.json",
@@ -1055,7 +1050,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "unit" : "dimensionless",
                  "value" : 0
                  "statistic": "mean",
-                 "compartment": "Axon"
+                 "compartment": "BasalDendrite"
                  }
                }
            }"""
