@@ -28,10 +28,10 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     implicit val encoder: Encoder.AsObject[Stats] = deriveEncoder[Stats]
   }
 
-  private val orgId          = genId()
-  private val bandsProject   = "bands"
-  private val albumsProject  = "albums"
-  private val songsProject   = "songs"
+  private val orgId            = genId()
+  private val bandsProject     = "bands"
+  private val albumsProject    = "albums"
+  private val songsProject     = "songs"
   private val albumsProjectRef = s"$orgId/$albumsProject"
 
   override def beforeAll(): Unit = {

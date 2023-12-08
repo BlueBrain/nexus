@@ -25,10 +25,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors
 import io.circe.syntax._
 import org.scalatest.Assertion
 
-class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
+class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures with CompositeViewErrors {
 
   implicit private val f: FusionConfig = fusionConfig
 
@@ -287,7 +288,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       givenAView { view =>
         Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+          response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
         }
       }
     }
@@ -319,10 +320,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         forAll(List(postRequest, getRequest)) { req =>
           req ~> routes ~> check {
             response.status shouldEqual StatusCodes.BadRequest
-            response.asJson shouldEqual jsonContentOf(
-              "routes/errors/view-deprecated.json",
-              "id" -> viewId
-            )
+            response.asJson shouldEqual viewIsDeprecatedError(viewId)
           }
         }
       }
@@ -339,10 +337,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       forAll(endpoints) { endpoint =>
         Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf(
-            "routes/errors/view-deprecated.json",
-            "id" -> viewId
-          )
+          response.asJson shouldEqual viewIsDeprecatedError(viewId)
         }
       }
     }
