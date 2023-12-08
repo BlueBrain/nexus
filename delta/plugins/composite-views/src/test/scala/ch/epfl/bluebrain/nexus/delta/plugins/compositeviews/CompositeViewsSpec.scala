@@ -13,13 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import io.circe.syntax._
 import org.scalatest.Assertion
 
 import java.time.Instant
@@ -100,15 +99,10 @@ class CompositeViewsSpec
       }
 
       "using CompositeViewFields" in {
-        val result       = compositeViews.create(otherViewId, projectRef, viewFields).accepted
-        val resultSource = result.value.source
+        val result   = compositeViews.create(otherViewId, projectRef, viewFields).accepted
+        val expected = resourceFor(otherViewId, viewValue, source = viewSource)
 
-        val expected = resourceFor(otherViewId, viewValue, source = Json.obj())
-        result.copy(value = result.value.copy(source = Json.obj())) shouldEqual expected
-
-        // We check the source separately as the values in the array in the source don't matter
-        val expectedSource = viewSource.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token")
-        resultSource should equalIgnoreArrayOrder(expectedSource)
+        assertEqualViews(result, expected)
       }
 
     }
@@ -130,15 +124,10 @@ class CompositeViewsSpec
       }
 
       "using CompositeViewFields" in {
-        val result       = compositeViews.update(otherViewId, projectRef, 1, updatedFields).accepted
-        val resultSource = result.value.source
+        val result   = compositeViews.update(otherViewId, projectRef, 1, updatedFields).accepted
+        val expected = resourceFor(otherViewId, updatedValue, source = viewSourceUpdated, rev = 2)
 
-        val expected = resourceFor(otherViewId, updatedValue, source = Json.obj(), rev = 2)
-        result.copy(value = result.value.copy(source = Json.obj())) shouldEqual expected
-
-        // We check the source separately as the values in the array in the source don't matter
-        val expectedSource = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token")
-        resultSource should equalIgnoreArrayOrder(expectedSource)
+        assertEqualViews(result, expected)
       }
     }
 
@@ -149,15 +138,11 @@ class CompositeViewsSpec
     }
 
     "deprecate a view" in {
-      val result       = compositeViews.deprecate(otherViewId, projectRef, 2).accepted
-      val resultSource = result.value.source
+      val deprecated = compositeViews.deprecate(otherViewId, projectRef, 2).accepted
+      val expected   = resourceFor(otherViewId, updatedValue, source = viewSourceUpdated, rev = 3, deprecated = true)
 
-      val expected = resourceFor(otherViewId, updatedValue, source = Json.obj(), rev = 3, deprecated = true)
-      result.copy(value = result.value.copy(source = Json.obj())) shouldEqual expected
-
-      // We check the source separately as the values in the array in the source don't matter
-      val expectedSource = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson))
-      resultSource should equalIgnoreArrayOrder(expectedSource)
+      assertEqualViews(deprecated, expected)
+      compositeViews.fetch(otherViewId, projectRef).accepted.deprecated shouldEqual true
     }
 
     "reject deprecating a view" when {
@@ -171,16 +156,11 @@ class CompositeViewsSpec
 
     "undeprecate a view" in {
       givenADeprecatedView { view =>
-        val undeprecatedView         = compositeViews.undeprecate(view, projectRef, 2).accepted
-        val undeprecatedViewNoSource = undeprecatedView.copy(value = undeprecatedView.value.copy(source = Json.obj()))
-        undeprecatedViewNoSource shouldEqual resourceFor(
-          nxv + view,
-          viewValue,
-          source = Json.obj(),
-          rev = 3,
-          deprecated = false
-        )
-        undeprecatedView.value.source.removeKeys("@id") should equalIgnoreArrayOrder(viewSource)
+        val undeprecatedView = compositeViews.undeprecate(view, projectRef, 2).accepted
+        val expected         = resourceFor(nxv + view, viewValue, source = viewSource, rev = 3, deprecated = false)
+
+        assertEqualViews(undeprecatedView, expected)
+        compositeViews.fetch(view, projectRef).accepted.deprecated shouldEqual false
       }
     }
 
@@ -278,6 +258,12 @@ class CompositeViewsSpec
         compositeViews.deprecate(view, projectRef, 1).accepted
         test(view)
       }
+    }
+
+    def assertEqualViews(cv1: ViewResource, cv2: ViewResource): Assertion = {
+      val cvNoSource: ViewResource => ViewResource = cv => cv.copy(value = cv.value.copy(source = Json.obj()))
+      cvNoSource(cv1) shouldEqual cvNoSource(cv2)
+      cv1.value.source.removeKeys("@id") should equalIgnoreArrayOrder(cv2.value.source.removeKeys("@id"))
     }
   }
 }
