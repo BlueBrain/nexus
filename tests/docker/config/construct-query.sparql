@@ -670,7 +670,7 @@ CONSTRUCT {
   OPTIONAL {
     ?id a nsg:NeuronMorphology  ;
           ^nsg:hasSource / ^nsg:hasTarget ?featureAnnotation    .
-
+    ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
 
     OPTIONAL {
         ?featureAnnotation    bmo:compartment       ?featureCompartment ;
