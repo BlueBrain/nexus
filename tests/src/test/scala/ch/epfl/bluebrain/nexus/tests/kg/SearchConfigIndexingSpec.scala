@@ -23,18 +23,18 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val id1      = s"$orgId/$projId1"
   private val projects = List(id1)
 
-  private val neuronMorphologyId    = "https://bbp.epfl.ch/data/neuron-morphology"
-  private val neuronDensityId       = "https://bbp.epfl.ch/data/neuron-density"
-  private val traceId               = "https://bbp.epfl.ch/data/trace"
-  private val curatedTraceId        = "https://bbp.epfl.ch/data/curated-trace"
-  private val unassessedTraceId     = "https://bbp.epfl.ch/data/unassessed-trace"
-  private val layerThicknessId      = "https://bbp.epfl.ch/data/layer-thickness"
-  private val boutonDensityId       = "https://bbp.epfl.ch/data/bouton-density"
-  private val simulationCampaignId  = "https://bbp.epfl.ch/data/simulation-campaign"
-  private val simulationId          = "https://bbp.epfl.ch/data/simulation"
-  private val synapseId             = "https://bbp.epfl.ch/data/synapse"
-  private val synapseTwoPathwaysId  = "https://bbp.epfl.ch/data/synapse-two-pathways"
-  private val detailedCircuitId     = "https://bbp.epfl.ch/data/detailed-circuit"
+  private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId              = "https://bbp.epfl.ch/data/trace"
+  private val curatedTraceId       = "https://bbp.epfl.ch/data/curated-trace"
+  private val unassessedTraceId    = "https://bbp.epfl.ch/data/unassessed-trace"
+  private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
+  private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
+  private val simulationId         = "https://bbp.epfl.ch/data/simulation"
+  private val synapseId            = "https://bbp.epfl.ch/data/synapse"
+  private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
+  private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
