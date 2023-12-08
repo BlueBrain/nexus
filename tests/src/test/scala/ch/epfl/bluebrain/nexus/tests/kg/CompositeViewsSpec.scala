@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
+import cats.effect.IO
 import cats.effect.unsafe.implicits._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import io.circe.Json
 import io.circe.optics.JsonPath._
-import cats.implicits._
+import org.scalatest.Assertion
 
 class CompositeViewsSpec extends BaseIntegrationSpec {
 
@@ -27,52 +28,48 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     implicit val encoder: Encoder.AsObject[Stats] = deriveEncoder[Stats]
   }
 
-  private val orgId         = genId()
-  private val bandsProject  = "bands"
-  private val albumsProject = "albums"
-  private val songsProject  = "songs"
+  private val orgId          = genId()
+  private val bandsProject   = "bands"
+  private val albumsProject  = "albums"
+  private val songsProject   = "songs"
+  private val albumsProjectRef = s"$orgId/$albumsProject"
 
-  "Creating projects" should {
-    "add necessary permissions for user" in {
-      aclDsl.addPermissions(
-        "/",
-        Jerry,
-        Set(Organizations.Create, Views.Query, Events.Read)
-      )
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read)).accepted
 
-    "succeed if payload is correct" in {
-      val projectPayload = jsonContentOf("kg/views/composite/project.json")
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- List(
-               adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
-               adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
-               adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
-             ).sequence
-      } yield succeed
-    }
+    val projectPayload = jsonContentOf("kg/views/composite/project.json")
+    val createProjects = for {
+      _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
+      _ <- List(
+             adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
+             adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
+             adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+           ).sequence
+    } yield succeed
+    createProjects.accepted
 
-    "wait until in project resolver is created" in {
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$orgId/$bandsProject", Jerry) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1
-        }
-      }
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$orgId/$albumsProject", Jerry) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1
-        }
-      }
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$orgId/$songsProject", Jerry) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1
-        }
+    // wait until in project resolver is created
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$orgId/$bandsProject", Jerry) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1
       }
     }
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$orgId/$albumsProject", Jerry) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1
+      }
+    }
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$orgId/$songsProject", Jerry) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1
+      }
+    }
+
+    ()
   }
 
   "Uploading data" should {
@@ -345,6 +342,66 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
       }
     }
   }
+
+  "Undeprecating a composite view" should {
+    "reindex a document" in {
+      givenADeprecatedView { view =>
+        postAlbum { album =>
+          undeprecate(view) >> eventually { assertMatchId(view, album) }
+        }
+      }
+    }
+  }
+
+  def givenAView(test: String => IO[Assertion]): IO[Assertion] = {
+    val viewId      = genId()
+    val viewPayload =
+      jsonContentOf(
+        "kg/views/composite/composite-view.json",
+        replacements(
+          Jerry,
+          "org"            -> orgId,
+          "org2"           -> orgId,
+          "remoteEndpoint" -> "http://delta:8080/v1",
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
+        ): _*
+      )
+    val createView  = deltaClient.put[Json](s"/views/$albumsProjectRef/$viewId", viewPayload, Jerry) { expectCreated }
+
+    createView >> test(viewId)
+  }
+
+  def givenADeprecatedView(test: String => IO[Assertion]): IO[Assertion] =
+    givenAView { view =>
+      val deprecateView = deltaClient.delete[Json](s"/views/$albumsProjectRef/$view?rev=1", Jerry) { expectOk }
+      deprecateView >> test(view)
+    }
+
+  def undeprecate(view: String, rev: Int = 2): IO[Assertion] =
+    deltaClient.putEmptyBody[Json](s"/views/$albumsProjectRef/$view/undeprecate?rev=$rev", Jerry) { expectOk }
+
+  def postAlbum(test: String => IO[Assertion]): IO[Assertion] = {
+    val resourceId = genString()
+    deltaClient.put[Json](
+      s"/resources/$albumsProjectRef/_/$resourceId",
+      jsonContentOf("kg/views/composite/simpleAlbum.json"),
+      Jerry
+    ) {
+      expectCreated
+    } >> test(resourceId)
+  }
+
+  def assertMatchId(view: String, id: String): IO[Assertion] =
+    deltaClient
+      .post[Json](
+        s"/views/$albumsProjectRef/$view/projections/_/_search",
+        json"""{ "query": { "match": { "@id": "$id" } } }""",
+        Jerry
+      ) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        totalHits.getOption(json).value shouldEqual 1
+      }
 
 }
 
