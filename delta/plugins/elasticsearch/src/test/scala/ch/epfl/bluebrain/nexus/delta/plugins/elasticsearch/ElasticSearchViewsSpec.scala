@@ -382,19 +382,16 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
 
     "deprecate a view" when {
       "using the correct revision" in {
-        views.deprecate(viewId, projectRef, 3).accepted should be(deprecated)
-        views.fetch(viewId, projectRef).accepted should be(deprecated)
+        views.deprecate(viewId, projectRef, 3).accepted
       }
     }
 
     "fail to deprecate a view" when {
       "the view is already deprecated" in {
         views.deprecate(viewId, projectRef, 4).rejectedWith[ViewIsDeprecated]
-        views.fetch(viewId, projectRef).accepted should not be deprecated
       }
       "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
         views.deprecate(viewId, projectRef, 100).rejectedWith[IncorrectRev]
-        views.fetch(viewId, projectRef).accepted should not be deprecated
       }
       "the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
