@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors.resourceAlreadyExistsError
-import ch.epfl.bluebrain.nexus.delta.sdk.views.BlazegraphViewErrors
 import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
 import io.circe.Json
 import io.circe.syntax._
