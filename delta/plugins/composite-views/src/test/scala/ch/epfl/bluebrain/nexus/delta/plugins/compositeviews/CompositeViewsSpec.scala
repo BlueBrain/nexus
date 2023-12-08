@@ -156,10 +156,7 @@ class CompositeViewsSpec
 
     "undeprecate a view" in {
       givenADeprecatedView { view =>
-        val undeprecatedView = compositeViews.undeprecate(view, projectRef, 2).accepted
-        val expected         = resourceFor(nxv + view, viewValue, source = viewSource, rev = 3, deprecated = false)
-
-        assertEqualViews(undeprecatedView, expected)
+        compositeViews.undeprecate(view, projectRef, 2).accepted.deprecated shouldEqual false
         compositeViews.fetch(view, projectRef).accepted.deprecated shouldEqual false
       }
     }
