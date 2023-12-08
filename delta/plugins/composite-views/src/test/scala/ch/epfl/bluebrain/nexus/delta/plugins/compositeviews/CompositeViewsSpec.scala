@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.scalatest.Assertion
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import java.time.Instant
 
@@ -142,7 +143,7 @@ class CompositeViewsSpec
       val expected   = resourceFor(otherViewId, updatedValue, source = viewSourceUpdated, rev = 3, deprecated = true)
 
       assertEqualViews(deprecated, expected)
-      compositeViews.fetch(otherViewId, projectRef).accepted.deprecated shouldEqual true
+      compositeViews.fetch(otherViewId, projectRef).accepted should be(deprecated)
     }
 
     "reject deprecating a view" when {
@@ -156,8 +157,8 @@ class CompositeViewsSpec
 
     "undeprecate a view" in {
       givenADeprecatedView { view =>
-        compositeViews.undeprecate(view, projectRef, 2).accepted.deprecated shouldEqual false
-        compositeViews.fetch(view, projectRef).accepted.deprecated shouldEqual false
+        compositeViews.undeprecate(view, projectRef, 2).accepted should not be deprecated
+        compositeViews.fetch(view, projectRef).accepted should not be deprecated
       }
     }
 
@@ -261,6 +262,14 @@ class CompositeViewsSpec
       val cvNoSource: ViewResource => ViewResource = cv => cv.copy(value = cv.value.copy(source = Json.obj()))
       cvNoSource(cv1) shouldEqual cvNoSource(cv2)
       cv1.value.source.removeKeys("@id") should equalIgnoreArrayOrder(cv2.value.source.removeKeys("@id"))
+    }
+
+    def deprecated: BeMatcher[ViewResource] = BeMatcher { view =>
+      MatchResult(
+        view.deprecated,
+        s"view was not deprecated",
+        s"$view was deprecated"
+      )
     }
   }
 }
