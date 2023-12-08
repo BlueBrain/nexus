@@ -26,10 +26,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors
+import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
 import io.circe.syntax._
 import org.scalatest.Assertion
 
-class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures with CompositeViewErrors {
+class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
   implicit private val f: FusionConfig = fusionConfig
 

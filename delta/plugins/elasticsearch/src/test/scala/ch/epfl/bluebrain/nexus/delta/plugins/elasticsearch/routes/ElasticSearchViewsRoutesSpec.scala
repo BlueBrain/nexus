@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError, viewNotFoundError}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ElasticSearchViewErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
@@ -28,10 +29,7 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 import org.scalatest.Assertion
 
-class ElasticSearchViewsRoutesSpec
-    extends ElasticSearchViewsRoutesFixtures
-    with IOFromMap
-    with ElasticSearchViewErrors {
+class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 

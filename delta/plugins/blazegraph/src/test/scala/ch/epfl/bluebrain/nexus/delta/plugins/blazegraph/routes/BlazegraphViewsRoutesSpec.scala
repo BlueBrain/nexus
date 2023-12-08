@@ -27,11 +27,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors.resourceAlreadyExistsError
 import ch.epfl.bluebrain.nexus.delta.sdk.views.BlazegraphViewErrors
+import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.Assertion
 
-class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures with BlazegraphViewErrors {
+class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
   private val prefix = "prefix"
 

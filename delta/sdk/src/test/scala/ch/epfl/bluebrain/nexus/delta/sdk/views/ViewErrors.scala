@@ -38,14 +38,14 @@ trait ViewErrors {
 
 }
 
-trait ElasticSearchViewErrors extends ViewErrors {
+object ElasticSearchViewErrors extends ViewErrors {
   override def viewType: String = "ElasticSearch"
 }
 
-trait BlazegraphViewErrors extends ViewErrors {
+object BlazegraphViewErrors extends ViewErrors {
   override def viewType: String = "Blazegraph"
 }
 
-trait CompositeViewErrors extends ViewErrors {
+object CompositeViewErrors extends ViewErrors {
   override def viewType: String = "Composite"
 }
