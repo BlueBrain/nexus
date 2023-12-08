@@ -903,7 +903,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "value" : 5.975075244861534,
                  "unit" : "μm",
                  "label" : "Soma Radius",
-                 "statistic" : "mean"
+                 "statistic" : "mean",
                  "compartment" : "Soma"
                  }
                ]"""
@@ -992,7 +992,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expected =
         json"""[
                 {
-                 "value" : 0
+                 "value" : 0,
                  "unit" : "dimensionless",
                  "label" : "Partition Asymmetry",
                  "statistic": "mean",
@@ -1044,16 +1044,15 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
    "have the correct basal partition asymmetry index" in {
       val query    = queryField(neuronMorphologyId, "basalDendritePartitionAsymmetry")
       val expected =
-        json"""{
-               "basalDendritePartitionAsymmetry": {
-                 "label" : "Partition Asymmetry",
+        json"""[
+               {
+                 "value" : 0,
                  "unit" : "dimensionless",
-                 "value" : 0
+                 "label" : "Partition Asymmetry",
                  "statistic": "mean",
                  "compartment": "BasalDendrite"
-                 }
                }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
         json should be(arrayThatContains(expected))
