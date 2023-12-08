@@ -135,6 +135,19 @@ final class ElasticSearchViewsRoutes(
                     }
                   )
                 },
+                // Undeprecate an elasticsearch view
+                (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
+                  authorizeFor(ref, Write).apply {
+                    emit(
+                      views
+                        .undeprecate(id, ref, rev)
+                        .flatTap(index(ref, _, mode))
+                        .mapValue(_.metadata)
+                        .attemptNarrow[ElasticSearchViewRejection]
+                        .rejectWhen(decodingFailedOrViewNotFound)
+                    )
+                  }
+                },
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>

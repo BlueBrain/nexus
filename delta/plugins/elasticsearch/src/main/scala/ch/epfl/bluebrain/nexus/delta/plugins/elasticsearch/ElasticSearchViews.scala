@@ -260,6 +260,30 @@ final class ElasticSearchViews private (
   }.span("deprecateElasticSearchView")
 
   /**
+    * Undeprecates an existing ElasticSearchView. View undeprecation implies unblocking any query capabilities and in
+    * case of an IndexingElasticSearchView the corresponding index is created.
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  def undeprecate(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Int
+  )(implicit subject: Subject): IO[ViewResource] = {
+    for {
+      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      res      <- eval(UndeprecateElasticSearchView(iri, project, rev, subject))
+    } yield res
+  }.span("undeprecateElasticSearchView")
+
+  /**
     * Deprecates an existing ElasticSearchView without applying preliminary checks on the project status
     *
     * @param id
@@ -469,11 +493,16 @@ object ElasticSearchViews {
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: ElasticSearchViewUndeprecated): Option[ElasticSearchViewState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
-      case e: ElasticSearchViewCreated    => created(e)
-      case e: ElasticSearchViewUpdated    => updated(e)
-      case e: ElasticSearchViewTagAdded   => tagAdded(e)
-      case e: ElasticSearchViewDeprecated => deprecated(e)
+      case e: ElasticSearchViewCreated      => created(e)
+      case e: ElasticSearchViewUpdated      => updated(e)
+      case e: ElasticSearchViewTagAdded     => tagAdded(e)
+      case e: ElasticSearchViewDeprecated   => deprecated(e)
+      case e: ElasticSearchViewUndeprecated => undeprecated(e)
     }
   }
 
@@ -528,11 +557,22 @@ object ElasticSearchViews {
         )
     }
 
+    def undeprecate(c: UndeprecateElasticSearchView) = state match {
+      case None                      => IO.raiseError(ViewNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if !s.deprecated  => IO.raiseError(ViewIsNotDeprecated(c.id))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(
+          ElasticSearchViewUndeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject)
+        )
+    }
+
     cmd match {
-      case c: CreateElasticSearchView    => create(c)
-      case c: UpdateElasticSearchView    => update(c)
-      case c: TagElasticSearchView       => tag(c)
-      case c: DeprecateElasticSearchView => deprecate(c)
+      case c: CreateElasticSearchView      => create(c)
+      case c: UpdateElasticSearchView      => update(c)
+      case c: TagElasticSearchView         => tag(c)
+      case c: DeprecateElasticSearchView   => deprecate(c)
+      case c: UndeprecateElasticSearchView => undeprecate(c)
     }
   }
 
