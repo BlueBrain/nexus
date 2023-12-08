@@ -254,6 +254,7 @@ class CompositeViewsSpec
     def givenADeprecatedView(test: String => Assertion): Assertion = {
       givenAView { view =>
         compositeViews.deprecate(view, projectRef, 1).accepted
+        compositeViews.fetch(view, projectRef).accepted should be(deprecated)
         test(view)
       }
     }
