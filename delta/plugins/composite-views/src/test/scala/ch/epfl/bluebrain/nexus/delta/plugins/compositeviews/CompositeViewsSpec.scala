@@ -268,7 +268,7 @@ class CompositeViewsSpec
       MatchResult(
         view.deprecated,
         s"view was not deprecated",
-        s"$view was deprecated"
+        s"view was deprecated"
       )
     }
   }
