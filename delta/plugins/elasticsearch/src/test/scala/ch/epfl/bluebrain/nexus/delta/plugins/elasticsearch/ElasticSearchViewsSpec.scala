@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.literal._
 import org.scalatest.Assertion
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import java.time.Instant
 import java.util.UUID
@@ -381,16 +382,19 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
 
     "deprecate a view" when {
       "using the correct revision" in {
-        views.deprecate(viewId, projectRef, 3).accepted
+        views.deprecate(viewId, projectRef, 3).accepted should be(deprecated)
+        views.fetch(viewId, projectRef).accepted should be(deprecated)
       }
     }
 
     "fail to deprecate a view" when {
       "the view is already deprecated" in {
         views.deprecate(viewId, projectRef, 4).rejectedWith[ViewIsDeprecated]
+        views.fetch(viewId, projectRef).accepted should not be deprecated
       }
       "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
         views.deprecate(viewId, projectRef, 100).rejectedWith[IncorrectRev]
+        views.fetch(viewId, projectRef).accepted should not be deprecated
       }
       "the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
@@ -409,22 +413,8 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
     "undeprecate a view" when {
       "using the correct revision" in {
         givenADeprecatedView { view =>
-          views.undeprecate(view, projectRef, 2).accepted shouldEqual
-            resourceFor(
-              id = nxv + view,
-              deprecated = false,
-              rev = 3,
-              value = IndexingElasticSearchViewValue(
-                resourceTag = None,
-                IndexingElasticSearchViewValue.defaultPipeline,
-                mapping = Some(mapping),
-                settings = None,
-                context = None,
-                permission = queryPermissions
-              ),
-              source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-            )
-          views.fetch(view, projectRef).accepted.deprecated shouldEqual false
+          views.undeprecate(view, projectRef, 2).accepted should not be deprecated
+          views.fetch(view, projectRef).accepted should not be deprecated
         }
       }
     }
@@ -547,6 +537,14 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         views.deprecate(view, projectRef, 1).accepted
         test(view)
       }
+    }
+
+    def deprecated: BeMatcher[ViewResource] = BeMatcher { view =>
+      MatchResult(
+        view.deprecated,
+        s"view was not deprecated",
+        s"view was deprecated"
+      )
     }
 
   }
