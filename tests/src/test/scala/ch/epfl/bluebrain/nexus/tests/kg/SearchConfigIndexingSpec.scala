@@ -882,160 +882,167 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       }
     }
 
-    "have the correct morphology extent (bbox)" in {
-      val query    = queryField(neuronMorphologyId, "morphologyExtend")
+    "have the correct morphology mean length" in {
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "morphologyExtent": {
-                 "label" : "Morphology XYZ Spatial Extent",
+        json"""[
+                {
+                 "value" : 1131.963147431612,
                  "unit" : "μm",
-                 "xValue" : 1131.963147431612,
-                 "yValue" : 70.90299987792969,
-                 "zValue" : 93.2039794921875
+                 "label" : "Total Length",
+                 "statistic" : "mean",
+                 "compartment" : "NeuronMorphology",
                  }
-               }
-           }"""
+               ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct soma radius" in {
-      val query    = queryField(neuronMorphologyId, "somaRadius")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "somaRadius": {
-                 "label" : "Soma Radius",
+        json"""[
+                {
+                 "value" : 5.975075244861534,
                  "unit" : "μm",
-                 "value" : 5.975075244861534
+                 "label" : "Soma Radius",
+                 "statistic" : "mean"
+                 "compartment" : "Soma"
                  }
-               }
-           }"""
+               ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
    
 
     "have the correct axon length" in {
-      val query    = queryField(neuronMorphologyId, "axonLength")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "axonLength": {
-                 "label" : "Total Length",
-                 "unit" : "μm",
+        json"""[
+                {
                  "value" : 52.48914,
+                 "unit" : "μm",
+                 "label" : "Total Length",
+                 "statistic" : "mean",
+                 "compartment": "Axon"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct axon Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "axonMaxStrahlerOrder")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "axonMaxStrahlerOrder": {
-                 "label" : "Section Strahler Orders",
-                 "unit" : "dimensionless",
+        json"""[
+                {
                  "value" : 0,
+                 "unit" : "dimensionless",
+                 "label" : "Section Strahler Orders",
+                 "statistic": "max",
+                 "compartment": "Axon"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct apical dendrite length" in {
-      val query    = queryField(neuronMorphologyId, "apicalDendriteLength")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "apicalDendriteLength": {
-                 "label" : "Total Length",
-                 "unit" : "μm",
+        json"""[
+                {
                  "value" : 103.02,
+                 "unit" : "μm",
+                 "label" : "Total Length",
+                 "statistic": "mean",
+                 "compartment": "ApicalDendrite"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct apical dendrite Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "apicalDendriteMaxStrahlerOrder")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "apicalDendriteMaxStrahlerOrder": {
-                 "label" : "Section Strahler Orders",
-                 "unit" : "dimensionless",
+        json"""[
+                {
                  "value" : 2.3,
+                 "unit" : "dimensionless",
+                 "label" : "Section Strahler Orders",
+                 "statistic": "max",
+                 "compartment": "ApicalDendrite"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
    "have the correct apical partition asymmetry index" in {
-      val query    = queryField(neuronMorphologyId, "apicalDendritePartitionAsymmetry")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "apicalDendritePartitionAsymmetry": {
-                 "label" : "Partition Asymmetry",
-                 "unit" : "dimensionless",
+        json"""[
+                {
                  "value" : 0
+                 "unit" : "dimensionless",
+                 "label" : "Partition Asymmetry",
+                 "statistic": "mean",
+                 "compartment": "ApicalDendrite"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct basal dendrite length" in {
-      val query    = queryField(neuronMorphologyId, "basalDendriteLength")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "basalDendriteLength": {
-                 "label" : "Total Length",
-                 "unit" : "μm",
+        json"""[
+                {
                  "value" : 64.86965469270945,
+                 "unit" : "μm",
+                 "label" : "Total Length",
+                 "statistic": "mean",
+                 "compartment": "BasalDendrite"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
     "have the correct basal dendrite Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "basalDendriteMaxStrahlerOrder")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
-        json"""{
-               "basalDendriteMaxStrahlerOrder": {
-                 "label" : "Section Strahler Orders",
-                 "unit" : "dimensionless",
+        json"""[
+                {
                  "value" : 1.4,
+                 "unit" : "dimensionless",
+                 "label" : "Section Strahler Orders",
+                 "statistic": "max",
+                 "compartment": "BasalDendrite"
                  }
-               }
-           }"""
+           ]"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
 
@@ -1047,12 +1054,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "label" : "Partition Asymmetry",
                  "unit" : "dimensionless",
                  "value" : 0
+                 "statistic": "mean",
+                 "compartment": "Axon"
                  }
                }
            }"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json should be(arrayThatContains(expected))
       }
     }
   }

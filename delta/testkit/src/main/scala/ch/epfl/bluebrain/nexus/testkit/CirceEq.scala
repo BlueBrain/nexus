@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.testkit
 import ch.epfl.bluebrain.nexus.testkit.CirceEq.IgnoredArrayOrder
 import io.circe._
 import io.circe.syntax._
-import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher, MatchResult, Matcher}
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher, MatchResult, Matcher, BeMatcher}
 
 trait CirceEq {
   def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)
@@ -17,6 +17,15 @@ trait CirceEq {
       actualValue
     )
   })
+
+  def arrayThatContains(expectedValue: Json): BeMatcher[Json] = new BeMatcher[Json] {
+    override def apply(left: Json): MatchResult =
+      MatchResult(
+        left.asArray.exists(_.contains(expectedValue)),
+        s"Json $left was not an array containing $expectedValue",
+        s"Json $left was an array containing $expectedValue"
+      )
+  }
 }
 
 object CirceEq {
