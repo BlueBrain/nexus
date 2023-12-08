@@ -8,36 +8,38 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Remo
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 
-class RemoteDiskCopy(
-    destStorage: RemoteDiskStorage,
-    client: RemoteDiskStorageClient
-) {
+trait RemoteDiskCopy {
+  def copyFiles(destStorage: RemoteDiskStorage, copyDetails: NonEmptyList[RemoteDiskCopyDetails]): IO[NonEmptyList[FileAttributes]]
+}
 
-  def copyFiles(copyDetails: NonEmptyList[RemoteDiskCopyDetails]): IO[NonEmptyList[FileAttributes]] = {
-    val paths = copyDetails.map { cd =>
-      val destDesc        = cd.destinationDesc
-      val destinationPath =
-        Uri.Path(intermediateFolders(destStorage.project, destDesc.uuid, destDesc.filename))
-      val sourcePath      = cd.sourceAttributes.path
-      (cd.sourceBucket, sourcePath, destinationPath)
-    }
+object RemoteDiskCopy {
 
-    client.copyFile(destStorage.value.folder, paths)(destStorage.value.endpoint).map { destPaths =>
-      copyDetails.zip(paths).zip(destPaths).map { case ((cd, x), destinationPath) =>
-        val destDesc   = cd.destinationDesc
-        val sourceAttr = cd.sourceAttributes
-        FileAttributes(
-          uuid = destDesc.uuid,
-          location = destinationPath,
-          path = x._3,
-          filename = destDesc.filename,
-          mediaType = destDesc.mediaType,
-          bytes = sourceAttr.bytes,
-          digest = sourceAttr.digest,
-          origin = sourceAttr.origin
-        )
+  def mk(client: RemoteDiskStorageClient): RemoteDiskCopy = new RemoteDiskCopy {
+    def copyFiles(destStorage: RemoteDiskStorage, copyDetails: NonEmptyList[RemoteDiskCopyDetails]): IO[NonEmptyList[FileAttributes]] = {
+      val paths = copyDetails.map { cd =>
+        val destDesc = cd.destinationDesc
+        val destinationPath =
+          Uri.Path(intermediateFolders(destStorage.project, destDesc.uuid, destDesc.filename))
+        val sourcePath = cd.sourceAttributes.path
+        (cd.sourceBucket, sourcePath, destinationPath)
+      }
+
+      client.copyFile(destStorage.value.folder, paths)(destStorage.value.endpoint).map { destPaths =>
+        copyDetails.zip(paths).zip(destPaths).map { case ((cd, x), destinationPath) =>
+          val destDesc = cd.destinationDesc
+          val sourceAttr = cd.sourceAttributes
+          FileAttributes(
+            uuid = destDesc.uuid,
+            location = destinationPath,
+            path = x._3,
+            filename = destDesc.filename,
+            mediaType = destDesc.mediaType,
+            bytes = sourceAttr.bytes,
+            digest = sourceAttr.digest,
+            origin = sourceAttr.origin
+          )
+        }
       }
     }
   }
-
 }

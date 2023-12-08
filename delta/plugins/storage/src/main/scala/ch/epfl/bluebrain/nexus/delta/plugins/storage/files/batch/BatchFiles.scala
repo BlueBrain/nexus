@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
@@ -25,9 +24,7 @@ trait BatchFiles {
 }
 
 object BatchFiles {
-  def mk(files: Files, fetchContext: FetchContext[FileRejection], batchCopy: BatchCopy)(implicit
-      uuidF: UUIDF
-  ): BatchFiles = new BatchFiles {
+  def mk(files: Files, fetchContext: FetchContext[FileRejection], batchCopy: BatchCopy): BatchFiles = new BatchFiles {
 
     private val logger = Logger[BatchFiles]
 
@@ -38,7 +35,7 @@ object BatchFiles {
     ): IO[NonEmptyList[FileResource]] = {
       for {
         pc                            <- fetchContext.onCreate(dest.project)
-        (destStorageRef, destStorage) <- files.fetchActiveStorage(dest.storage, dest.project, pc)
+        (destStorageRef, destStorage) <- files.fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
         destFilesAttributes           <- batchCopy.copyFiles(source, destStorage)
         fileResources                 <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
       } yield fileResources

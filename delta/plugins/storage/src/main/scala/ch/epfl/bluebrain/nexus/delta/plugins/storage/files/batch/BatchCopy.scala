@@ -43,18 +43,18 @@ object BatchCopy {
         case s3: Storage.S3Storage             => unsupported(s3.tpe)
       }
 
-    private def copyToRemoteStorage(source: CopyFileSource, remote: RemoteDiskStorage)(implicit c: Caller) =
+    private def copyToRemoteStorage(source: CopyFileSource, dest: RemoteDiskStorage)(implicit c: Caller) =
       for {
-        remoteCopyDetails <- source.files.traverse(fetchRemoteCopyDetails(remote, _))
-        _                 <- validateSpaceOnStorage(remote, remoteCopyDetails.map(_.sourceAttributes.bytes))
-        attributes        <- remoteDiskCopy.copyFiles(remoteCopyDetails)
+        remoteCopyDetails <- source.files.traverse(fetchRemoteCopyDetails(dest, _))
+        _                 <- validateSpaceOnStorage(dest, remoteCopyDetails.map(_.sourceAttributes.bytes))
+        attributes        <- remoteDiskCopy.copyFiles(dest, remoteCopyDetails)
       } yield attributes
 
-    private def copyToDiskStorage(source: CopyFileSource, disk: DiskStorage)(implicit c: Caller) =
+    private def copyToDiskStorage(source: CopyFileSource, dest: DiskStorage)(implicit c: Caller) =
       for {
-        diskCopyDetails <- source.files.traverse(fetchDiskCopyDetails(disk, _))
-        _               <- validateSpaceOnStorage(disk, diskCopyDetails.map(_.sourceAttributes.bytes))
-        attributes      <- diskCopy.copyFiles(diskCopyDetails)
+        diskCopyDetails <- source.files.traverse(fetchDiskCopyDetails(dest, _))
+        _               <- validateSpaceOnStorage(dest, diskCopyDetails.map(_.sourceAttributes.bytes))
+        attributes      <- diskCopy.copyFiles(dest, diskCopyDetails)
       } yield attributes
 
     private def validateSpaceOnStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = for {
@@ -67,7 +67,7 @@ object BatchCopy {
 
     private def fetchDiskCopyDetails(destStorage: DiskStorage, fileId: FileId)(implicit c: Caller) =
       for {
-        (file, sourceStorage) <- fetchSourceFileAndStorage(fileId)
+        (file, sourceStorage) <- fetchFileAndValidateStorage(fileId)
         destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
         _                     <- validateDiskStorage(destStorage, sourceStorage)
       } yield DiskCopyDetails(destStorage, destinationDesc, file.attributes)
@@ -80,7 +80,7 @@ object BatchCopy {
 
     private def fetchRemoteCopyDetails(destStorage: RemoteDiskStorage, fileId: FileId)(implicit c: Caller) =
       for {
-        (file, sourceStorage) <- fetchSourceFileAndStorage(fileId)
+        (file, sourceStorage) <- fetchFileAndValidateStorage(fileId)
         destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
         sourceBucket          <- validateRemoteStorage(destStorage, sourceStorage)
       } yield RemoteDiskCopyDetails(destStorage, destinationDesc, sourceBucket, file.attributes)
@@ -96,7 +96,7 @@ object BatchCopy {
 
     private def unsupported(tpe: StorageType) = IO.raiseError(CopyFileRejection.UnsupportedOperation(tpe))
 
-    private def fetchSourceFileAndStorage(id: FileId)(implicit c: Caller) =
+    private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller) =
       for {
         file          <- files.fetch(id)
         sourceStorage <- storages.fetch(file.value.storage, id.project)

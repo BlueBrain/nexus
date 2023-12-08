@@ -100,7 +100,7 @@ final class Files(
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
@@ -129,7 +129,7 @@ final class Files(
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, id.project, pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
@@ -257,7 +257,7 @@ final class Files(
   )(implicit c: Caller): IO[(ProjectContext, ResourceRef.Revision, Storage)] =
     for {
       pc                            <- fetchContext.onCreate(dest.project)
-      (destStorageRef, destStorage) <- fetchActiveStorage(dest.storage, dest.project, pc)
+      (destStorageRef, destStorage) <- fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
     } yield (pc, destStorageRef, destStorage)
 
   private def validateStorageTypeForCopy(source: StorageType, destination: Storage): IO[Unit] =
@@ -294,7 +294,7 @@ final class Files(
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, id.project, pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
@@ -330,7 +330,7 @@ final class Files(
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, id.project, pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- linkFile(storage, path, description, iri)
@@ -488,7 +488,7 @@ final class Files(
   )(implicit caller: Caller): IO[FileResource] =
     for {
       _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- linkFile(storage, path, description, iri)
@@ -505,8 +505,8 @@ final class Files(
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
-  def fetchActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
-      caller: Caller
+  def fetchAndValidateActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
+                                                                                                          caller: Caller
   ): IO[(ResourceRef.Revision, Storage)] =
     storageIdOpt match {
       case Some(storageId) =>
@@ -550,7 +550,7 @@ final class Files(
       WrappedStorageRejection(s)
     }
 
-  def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): IO[Iri] =
+  def generateId(pc: ProjectContext): IO[Iri] =
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   /**

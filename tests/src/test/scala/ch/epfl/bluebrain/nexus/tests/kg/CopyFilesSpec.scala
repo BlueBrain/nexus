@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics
-import ch.epfl.bluebrain.nexus.tests.kg.CopyFileSpec.{Response, StorageDetails}
+import ch.epfl.bluebrain.nexus.tests.kg.CopyFilesSpec.{Response, StorageDetails}
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import org.scalatest.Assertion
 
-trait CopyFileSpec { self: StorageSpec =>
+trait CopyFilesSpec { self: StorageSpec =>
 
   "Copying multiple files" should {
 
@@ -68,7 +68,7 @@ trait CopyFileSpec { self: StorageSpec =>
   ): IO[Assertion] = {
     val destProjRef = destStorage.projRef
     val payload     = mkPayload(sourceProjRef, sourceFiles)
-    val uri         = s"/files/$destProjRef?storage=nxv:${destStorage.storageId}"
+    val uri         = s"/bulk/files/$destProjRef?storage=nxv:${destStorage.storageId}"
 
     for {
       response   <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
@@ -112,7 +112,7 @@ trait CopyFileSpec { self: StorageSpec =>
     givenANewProjectAndStorageInExistingOrg(genId())(test)
 }
 
-object CopyFileSpec {
+object CopyFilesSpec {
   final case class StorageDetails(projRef: String, storageId: String)
 
   final case class Response(ids: List[String])

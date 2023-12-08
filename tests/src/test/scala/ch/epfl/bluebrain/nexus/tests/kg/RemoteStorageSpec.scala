@@ -17,7 +17,7 @@ import org.scalatest.Assertion
 import scala.annotation.nowarn
 import scala.sys.process._
 
-class RemoteStorageSpec extends StorageSpec with CopyFileSpec {
+class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
 
   override def storageName: String = "external"
 

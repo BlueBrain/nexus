@@ -7,14 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, Tran
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, FilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskCopy
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskCopy
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -186,6 +189,38 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           }
     }
 
+  make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
+
+  make[DiskCopy].from { copier: TransactionalFileCopier => DiskCopy.mk(copier)}
+
+  make[RemoteDiskCopy].from { client: RemoteDiskStorageClient => RemoteDiskCopy.mk(client)}
+
+  make[BatchCopy].from {
+    (
+      files: Files,
+      storages: Storages,
+      storagesStatistics: StoragesStatistics,
+      diskCopy: DiskCopy,
+      remoteDiskCopy: RemoteDiskCopy,
+        uuidF: UUIDF
+    ) =>
+      BatchCopy.mk(files, storages, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
+
+  }
+
+  make[BatchFiles].from {
+      (
+        fetchContext: FetchContext[ContextRejection],
+          files: Files,
+          batchCopy: BatchCopy,
+      ) =>
+            BatchFiles.mk(
+              files,
+              fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+              batchCopy
+            )
+    }
+
   make[FilesRoutes].from {
     (
         cfg: StoragePluginConfig,
@@ -207,6 +242,28 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cr,
         ordering,
         fusionConfig
+      )
+  }
+
+  make[BatchFilesRoutes].from {
+    (
+      cfg: StoragePluginConfig,
+      identities: Identities,
+      aclCheck: AclCheck,
+      batchFiles: BatchFiles,
+      schemeDirectives: DeltaSchemeDirectives,
+      indexingAction: AggregateIndexingAction,
+      shift: File.Shift,
+      baseUri: BaseUri,
+      cr: RemoteContextResolution@Id("aggregate"),
+      ordering: JsonKeyOrdering
+    ) =>
+      val storageConfig = cfg.storages.storageTypeConfig
+      new BatchFilesRoutes(identities, aclCheck, batchFiles, schemeDirectives, indexingAction(_, _, _)(shift))(
+        baseUri,
+        storageConfig,
+        cr,
+        ordering
       )
   }
 
@@ -283,5 +340,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
   many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
     PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
+  }
+
+  many[PriorityRoute].add { (batchFileRoutes: BatchFilesRoutes) =>
+    PriorityRoute(priority, batchFileRoutes.routes, requiresStrictEntity = false)
   }
 }

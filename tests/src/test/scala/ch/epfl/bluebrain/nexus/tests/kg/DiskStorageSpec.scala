@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 
-class DiskStorageSpec extends StorageSpec with CopyFileSpec {
+class DiskStorageSpec extends StorageSpec with CopyFilesSpec {
 
   override def storageName: String = "disk"
 
