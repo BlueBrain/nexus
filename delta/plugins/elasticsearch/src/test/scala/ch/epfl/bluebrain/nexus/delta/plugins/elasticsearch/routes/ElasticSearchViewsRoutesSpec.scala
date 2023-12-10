@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ElasticSearchViewErrors._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
@@ -139,10 +141,11 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "reject the creation of a view which already exists" in {
-      Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual
-          jsonContentOf("routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+      givenAView { view =>
+        Put(s"/v1/views/$projectRef/$view", payloadNoId.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual resourceAlreadyExistsError(nxv + view, projectRef)
+        }
       }
     }
 
@@ -180,8 +183,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       val payload = payloadUpdated.removeKeys(keywords.id)
       Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual
-          jsonContentOf("routes/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+        response.asJson shouldEqual viewNotFoundError(nxv + "myid10", projectRef)
       }
     }
 
@@ -214,17 +216,20 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "reject the deprecation of a already deprecated view" in {
-      Delete(s"/v1/views/myorg/myproject/myid?rev=4") ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> myId)
+      givenADeprecatedView { view =>
+        Delete(s"/v1/views/myorg/myproject/$view?rev=2") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual viewIsDeprecatedError(nxv + view)
+        }
       }
     }
 
     "reject querying a deprecated view" in {
-      val query = json"""{"query": { "match_all": {} } }"""
-      Post("/v1/views/myorg/myproject/myid/_search", query) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> myId)
+      givenADeprecatedView { view =>
+        Post(s"/v1/views/myorg/myproject/$view/_search", esMatchAllQuery) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual viewIsDeprecatedError(nxv + view)
+        }
       }
     }
 
@@ -262,12 +267,9 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "reject the undeprecation of a view that is not deprecated" in {
       givenAView { view =>
-        Put(
-          s"/v1/views/myorg/myproject/$view/undeprecate?rev=1",
-          payloadUpdated.toEntity
-        ) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproject/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+          response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
         }
       }
     }
@@ -404,6 +406,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       }
     }
   }
+
+  private val esMatchAllQuery = json"""{"query": { "match_all": {} } }"""
 
   private def givenAView(test: String => Assertion): Assertion = {
     val viewId         = genString()

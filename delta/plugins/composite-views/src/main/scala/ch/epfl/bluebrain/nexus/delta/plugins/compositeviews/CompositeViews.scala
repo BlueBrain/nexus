@@ -216,6 +216,30 @@ final class CompositeViews private (
   }.span("deprecateCompositeView")
 
   /**
+    * Undeprecates an existing composite view.
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  def undeprecate(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Int
+  )(implicit subject: Subject): IO[ViewResource] = {
+    for {
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(UndeprecateCompositeView(iri, project, rev, subject))
+    } yield res
+  }.span("undeprecateCompositeView")
+
+  /**
     * Deprecates an existing composite view without applying preliminary checks on the project status
     *
     * @param id
@@ -378,11 +402,16 @@ object CompositeViews {
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecate(e: CompositeViewUndeprecated): Option[CompositeViewState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
-      case e: CompositeViewCreated    => created(e)
-      case e: CompositeViewUpdated    => updated(e)
-      case e: CompositeViewTagAdded   => tagAdded(e)
-      case e: CompositeViewDeprecated => deprecated(e)
+      case e: CompositeViewCreated      => created(e)
+      case e: CompositeViewUpdated      => updated(e)
+      case e: CompositeViewTagAdded     => tagAdded(e)
+      case e: CompositeViewDeprecated   => deprecated(e)
+      case e: CompositeViewUndeprecated => undeprecate(e)
     }
   }
 
@@ -445,11 +474,23 @@ object CompositeViews {
         clock.realTimeInstant.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
     }
 
+    def undeprecate(c: UndeprecateCompositeView) = state match {
+      case None                      =>
+        IO.raiseError(ViewNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev =>
+        IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if !s.deprecated  =>
+        IO.raiseError(ViewIsNotDeprecated(c.id))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(CompositeViewUndeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
+    }
+
     cmd match {
-      case c: CreateCompositeView    => create(c)
-      case c: UpdateCompositeView    => update(c)
-      case c: TagCompositeView       => tag(c)
-      case c: DeprecateCompositeView => deprecate(c)
+      case c: CreateCompositeView      => create(c)
+      case c: UpdateCompositeView      => update(c)
+      case c: TagCompositeView         => tag(c)
+      case c: DeprecateCompositeView   => deprecate(c)
+      case c: UndeprecateCompositeView => undeprecate(c)
     }
   }
 

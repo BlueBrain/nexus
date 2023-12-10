@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
@@ -49,12 +49,19 @@ trait CompositeViewsRoutesFixtures
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
-  val realm                   = Label.unsafe("myrealm")
-  val bob                     = User("Bob", realm)
-  val asBob                   = addCredentials(OAuth2BearerToken("Bob"))
-  implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  val realm  = Label.unsafe("myrealm")
+  val reader = User("reader", realm)
+  val writer = User("writer", realm)
 
-  val identities = IdentitiesDummy(caller)
-  val aclCheck   = AclSimpleCheck().accepted
+  implicit private val callerReader: Caller =
+    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerWriter: Caller =
+    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
+  val identities                            = IdentitiesDummy(callerReader, callerWriter)
+
+  val asReader = addCredentials(OAuth2BearerToken("reader"))
+  val asWriter = addCredentials(OAuth2BearerToken("writer"))
+
+  val aclCheck = AclSimpleCheck().accepted
 
 }

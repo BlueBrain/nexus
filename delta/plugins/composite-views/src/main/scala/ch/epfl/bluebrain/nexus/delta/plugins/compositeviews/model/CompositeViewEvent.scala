@@ -168,6 +168,31 @@ object CompositeViewEvent {
       subject: Subject
   ) extends CompositeViewEvent
 
+  /**
+    * Evidence of a view undeprecation.
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param uuid
+    *   the view unique identifier
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that undeprecated the view
+    */
+  final case class CompositeViewUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      uuid: UUID,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends CompositeViewEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, CompositeViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -187,10 +212,11 @@ object CompositeViewEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: CompositeViewCreated    => Created
-            case _: CompositeViewUpdated    => Updated
-            case _: CompositeViewTagAdded   => Tagged
-            case _: CompositeViewDeprecated => Deprecated
+            case _: CompositeViewCreated      => Created
+            case _: CompositeViewUpdated      => Updated
+            case _: CompositeViewTagAdded     => Tagged
+            case _: CompositeViewDeprecated   => Deprecated
+            case _: CompositeViewUndeprecated => Undeprecated
           },
           event.id,
           Set(nxv.View, compositeViewType),

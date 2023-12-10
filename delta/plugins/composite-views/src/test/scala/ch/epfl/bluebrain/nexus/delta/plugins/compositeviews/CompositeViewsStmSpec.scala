@@ -127,6 +127,25 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
       }
     }
 
+    "evaluating the UndeprecateCompositeView command" should {
+      val undeprecateCmd = UndeprecateCompositeView(id, project.ref, 1, subject)
+      "emit an CompositeViewUndeprecated" in {
+        val deprecatedState   = Some(current(deprecated = true))
+        val undeprecatedEvent = CompositeViewUndeprecated(id, project.ref, uuid, 2, epoch, subject)
+        eval(deprecatedState, undeprecateCmd).accepted shouldEqual undeprecatedEvent
+      }
+      "raise a ViewNotFound rejection" in {
+        eval(None, undeprecateCmd).rejectedWith[ViewNotFound]
+      }
+      "raise a IncorrectRev rejection" in {
+        val deprecatedState = Some(current(deprecated = true))
+        eval(deprecatedState, undeprecateCmd.copy(rev = 2)).rejectedWith[IncorrectRev]
+      }
+      "raise a ViewIsNotDeprecated rejection" in {
+        eval(Some(current()), undeprecateCmd).rejectedWith[ViewIsNotDeprecated]
+      }
+    }
+
     "applying an CompositeViewCreated event" should {
       "discard the event for a Current state" in {
         next(
@@ -193,6 +212,19 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
           Some(current()),
           CompositeViewDeprecated(id, project.ref, uuid, 2, epoch, subject)
         ).value shouldEqual current(deprecated = true, rev = 2, updatedBy = subject)
+      }
+    }
+
+    "applying an CompositeViewUndeprecated event" should {
+      "discard the event for an None state" in {
+        val undeprecatedEvent = CompositeViewUndeprecated(id, project.ref, uuid, 2, epoch, subject)
+        next(None, undeprecatedEvent) shouldEqual None
+      }
+      "change the state" in {
+        val deprecatedState   = Some(current(deprecated = true))
+        val undeprecatedEvent = CompositeViewUndeprecated(id, project.ref, uuid, 2, epoch, subject)
+        next(deprecatedState, undeprecatedEvent).value shouldEqual
+          current(deprecated = false, rev = 2, updatedBy = subject)
       }
     }
   }
