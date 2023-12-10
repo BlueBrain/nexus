@@ -33,7 +33,7 @@ class RemoteDiskStorageCopyFiles(
 
     maybePaths.flatMap { paths =>
       logger.info(s"DTBDTB REMOTE doing copy with ${destStorage.value.folder} and $paths") >>
-        client.copyFile(destStorage.value.folder, paths)(destStorage.value.endpoint).flatMap { destPaths =>
+        client.copyFiles(destStorage.value.folder, paths)(destStorage.value.endpoint).flatMap { destPaths =>
           logger.info(s"DTBDTB REMOTE received destPaths ${destPaths}").as {
             copyDetails.zip(paths).zip(destPaths).map { case ((cd, x), destinationPath) =>
               FileAttributes(

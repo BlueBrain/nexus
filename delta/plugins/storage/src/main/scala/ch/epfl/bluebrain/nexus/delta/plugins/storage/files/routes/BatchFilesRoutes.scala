@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -58,7 +58,7 @@ final class BatchFilesRoutes(
   private val logger = Logger[BatchFilesRoutes]
 
   import baseUri.prefixSegment
-  import schemeDirectives._
+  import schemeDirectives.resolveProjectRef
 
   implicit val bulkOpJsonLdEnc: JsonLdEncoder[BulkOperationResults[FileResource]] =
     BulkOperationResults.searchResultsJsonLdEncoder(ContextValue(contexts.files))

@@ -23,18 +23,18 @@ object DiskCopy {
         .traverse(mkCopyDetailsAndDestAttributes(destStorage, _))
         .flatMap { copyDetailsAndDestAttributes =>
           val copyDetails = copyDetailsAndDestAttributes.map(_._1)
-          val destAttrs = copyDetailsAndDestAttributes.map(_._2)
+          val destAttrs   = copyDetailsAndDestAttributes.map(_._2)
           copier.copyAll(copyDetails).as(destAttrs)
         }
 
     private def mkCopyDetailsAndDestAttributes(destStorage: DiskStorage, copyFile: DiskCopyDetails) =
       for {
-        sourcePath <- absoluteDiskPathFromAttributes(copyFile.sourceAttributes)
+        sourcePath                   <- absoluteDiskPathFromAttributes(copyFile.sourceAttributes)
         (destPath, destRelativePath) <- computeDestLocation(destStorage, copyFile)
-        destAttr = mkDestAttributes(copyFile, destPath, destRelativePath)
-        copyDetails <- absoluteDiskPathFromAttributes(destAttr).map { dest =>
-          CopyBetween(Path.fromNioPath(sourcePath), Path.fromNioPath(dest))
-        }
+        destAttr                      = mkDestAttributes(copyFile, destPath, destRelativePath)
+        copyDetails                  <- absoluteDiskPathFromAttributes(destAttr).map { dest =>
+                                          CopyBetween(Path.fromNioPath(sourcePath), Path.fromNioPath(dest))
+                                        }
       } yield (copyDetails, destAttr)
 
     private def computeDestLocation(destStorage: DiskStorage, cd: DiskCopyDetails): IO[(file.Path, file.Path)] =

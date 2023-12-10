@@ -506,7 +506,7 @@ final class Files(
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
   def fetchAndValidateActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
-                                                                                                          caller: Caller
+      caller: Caller
   ): IO[(ResourceRef.Revision, Storage)] =
     storageIdOpt match {
       case Some(storageId) =>

@@ -195,7 +195,7 @@ final class FilesRoutes(
                       )
                     }
                   },
-                  (pathPrefix("tags")) {
+                  pathPrefix("tags") {
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
                       concat(
                         // Fetch a file tags

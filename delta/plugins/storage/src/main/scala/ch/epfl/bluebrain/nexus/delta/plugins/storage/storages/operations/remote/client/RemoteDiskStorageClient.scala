@@ -13,7 +13,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskCopyPaths, RemoteDiskStorageFileAttributes}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits.uriDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -187,13 +187,13 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     * @param destRelativePath
     *   the destination relative path location inside the nexus folder
     */
-  def copyFile(
+  def copyFiles(
       destBucket: Label,
-      files: NonEmptyList[(Label, Path, Path)]
+      files: NonEmptyList[RemoteDiskCopyPaths]
   )(implicit baseUri: BaseUri): IO[NonEmptyList[Uri]] = {
     getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / destBucket.value / "files"
-      val payload  = files.map { case (sourceBucket, source, dest) =>
+      val payload  = files.map { case RemoteDiskCopyPaths(sourceBucket, source, dest) =>
         Json.obj("sourceBucket" := sourceBucket, "source" := source.toString(), "destination" := dest.toString())
       }.asJson
 

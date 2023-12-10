@@ -191,17 +191,17 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
 
-  make[DiskCopy].from { copier: TransactionalFileCopier => DiskCopy.mk(copier)}
+  make[DiskCopy].from { copier: TransactionalFileCopier => DiskCopy.mk(copier) }
 
-  make[RemoteDiskCopy].from { client: RemoteDiskStorageClient => RemoteDiskCopy.mk(client)}
+  make[RemoteDiskCopy].from { client: RemoteDiskStorageClient => RemoteDiskCopy.mk(client) }
 
   make[BatchCopy].from {
     (
-      files: Files,
-      storages: Storages,
-      storagesStatistics: StoragesStatistics,
-      diskCopy: DiskCopy,
-      remoteDiskCopy: RemoteDiskCopy,
+        files: Files,
+        storages: Storages,
+        storagesStatistics: StoragesStatistics,
+        diskCopy: DiskCopy,
+        remoteDiskCopy: RemoteDiskCopy,
         uuidF: UUIDF
     ) =>
       BatchCopy.mk(files, storages, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
@@ -209,17 +209,17 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BatchFiles].from {
-      (
+    (
         fetchContext: FetchContext[ContextRejection],
-          files: Files,
-          batchCopy: BatchCopy,
-      ) =>
-            BatchFiles.mk(
-              files,
-              fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-              batchCopy
-            )
-    }
+        files: Files,
+        batchCopy: BatchCopy
+    ) =>
+      BatchFiles.mk(
+        files,
+        fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+        batchCopy
+      )
+  }
 
   make[FilesRoutes].from {
     (
@@ -247,16 +247,16 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[BatchFilesRoutes].from {
     (
-      cfg: StoragePluginConfig,
-      identities: Identities,
-      aclCheck: AclCheck,
-      batchFiles: BatchFiles,
-      schemeDirectives: DeltaSchemeDirectives,
-      indexingAction: AggregateIndexingAction,
-      shift: File.Shift,
-      baseUri: BaseUri,
-      cr: RemoteContextResolution@Id("aggregate"),
-      ordering: JsonKeyOrdering
+        cfg: StoragePluginConfig,
+        identities: Identities,
+        aclCheck: AclCheck,
+        batchFiles: BatchFiles,
+        schemeDirectives: DeltaSchemeDirectives,
+        indexingAction: AggregateIndexingAction,
+        shift: File.Shift,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
       new BatchFilesRoutes(identities, aclCheck, batchFiles, schemeDirectives, indexingAction(_, _, _)(shift))(
