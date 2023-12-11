@@ -545,7 +545,8 @@
         "series": [
           {
             "statistic": "mean",
-            "unitCode": "dimensionless"
+            "unitCode": "dimensionless",
+            "value": 0
           },
           {
             "statistic": "standard deviation",

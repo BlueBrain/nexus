@@ -1040,7 +1040,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
 
     "have the correct basal dendrite partition asymmetry index" in {
-      val query    = queryField(neuronMorphologyId, "basalDendritePartitionAsymmetry")
+      val query    = queryField(neuronMorphologyId, "morphologyFeature")
       val expected =
         json"""
                {
