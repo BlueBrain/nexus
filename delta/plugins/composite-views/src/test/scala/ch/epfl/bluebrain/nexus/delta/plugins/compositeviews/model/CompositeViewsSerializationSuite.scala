@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.{CompositeViewCreated, CompositeViewDeprecated, CompositeViewTagAdded, CompositeViewUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.{CompositeViewCreated, CompositeViewDeprecated, CompositeViewTagAdded, CompositeViewUndeprecated, CompositeViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -29,7 +29,8 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
     CompositeViewUpdated(viewId, project.ref, uuid, viewValue, viewSource, 2, epoch, subject)      -> "view-updated.json",
     CompositeViewUpdated(viewId, project.ref, uuid, viewValueNamed, viewSource, 2, epoch, subject) -> "named-view-updated.json",
     CompositeViewTagAdded(viewId, projectRef, uuid, targetRev = 1, tag, 3, epoch, subject)         -> "view-tag-added.json",
-    CompositeViewDeprecated(viewId, projectRef, uuid, 4, epoch, subject)                           -> "view-deprecated.json"
+    CompositeViewDeprecated(viewId, projectRef, uuid, 4, epoch, subject)                           -> "view-deprecated.json",
+    CompositeViewUndeprecated(viewId, projectRef, uuid, 5, epoch, subject)                         -> "view-undeprecated.json"
     // format: on
   )
 
@@ -38,31 +39,32 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
   private val metricEncoder   = CompositeViewEvent.compositeViewMetricEncoder
 
   eventsMapping.foreach { case (event, (database, sse)) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       eventSerializer.codec(event).equalsIgnoreArrayOrder(database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName}") {
       assertEquals(eventSerializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} as an SSE") {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
       metricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           Instant.EPOCH,
           subject,
           event.rev,
           event match {
-            case _: CompositeViewCreated    => Created
-            case _: CompositeViewUpdated    => Updated
-            case _: CompositeViewTagAdded   => Tagged
-            case _: CompositeViewDeprecated => Deprecated
+            case _: CompositeViewCreated      => Created
+            case _: CompositeViewUpdated      => Updated
+            case _: CompositeViewTagAdded     => Tagged
+            case _: CompositeViewDeprecated   => Deprecated
+            case _: CompositeViewUndeprecated => Undeprecated
           },
           projectRef,
           Label.unsafe("myorg"),

@@ -118,6 +118,12 @@ class CompositeViewsRoutes(
                     }
                   )
                 },
+                // Undeprecate a view
+                (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
+                  authorizeFor(project, Write).apply {
+                    emitMetadata(views.undeprecate(viewId, project, rev))
+                  }
+                },
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
                   concat(
                     // Fetch tags for a view

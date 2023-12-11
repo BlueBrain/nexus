@@ -134,6 +134,7 @@ final class BlazegraphViews(
     for {
       pc        <- fetchContext.onModify(project)
       iri       <- expandIri(id, pc)
+      _         <- validateNotDefaultView(iri)
       viewValue <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
@@ -188,6 +189,7 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
+      _   <- validateNotDefaultView(iri)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res
@@ -211,9 +213,14 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
+      _   <- validateNotDefaultView(iri)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
+
+  private def validateNotDefaultView(iri: Iri): IO[Unit] = {
+    IO.raiseWhen(iri == defaultViewId)(ViewIsDefaultView)
+  }
 
   /**
     * Undeprecate a view.

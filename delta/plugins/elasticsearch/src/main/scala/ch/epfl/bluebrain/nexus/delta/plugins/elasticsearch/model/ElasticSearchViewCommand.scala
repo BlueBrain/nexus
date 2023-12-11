@@ -107,6 +107,25 @@ object ElasticSearchViewCommand {
   ) extends ElasticSearchViewCommand
 
   /**
+    * Command for the undeprecation of an ElasticSearch view.
+    *
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param rev
+    *   the last known revision of the view
+    * @param subject
+    *   the identity associated with this command
+    */
+  final case class UndeprecateElasticSearchView(
+      id: Iri,
+      project: ProjectRef,
+      rev: Int,
+      subject: Subject
+  ) extends ElasticSearchViewCommand
+
+  /**
     * Command for adding a tag to an ElasticSearch view.
     *
     * @param id

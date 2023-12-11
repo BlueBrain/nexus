@@ -193,6 +193,29 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
       }
     }
 
+    "evaluating the UndeprecateElasticSearchView command" should {
+      "emit an ElasticSearchViewUndeprecated" in {
+        val deprecatedState   = Some(current(deprecated = true))
+        val undeprecateCmd    = UndeprecateElasticSearchView(id, project, 1, subject)
+        val undeprecatedEvent = ElasticSearchViewUndeprecated(id, project, ElasticSearchType, uuid, 2, epoch, subject)
+        eval(deprecatedState, undeprecateCmd).accepted shouldEqual undeprecatedEvent
+      }
+      "raise a ViewNotFound rejection" in {
+        val undeprecateCmd = UndeprecateElasticSearchView(id, project, 1, subject)
+        eval(None, undeprecateCmd).rejectedWith[ViewNotFound]
+      }
+      "raise a IncorrectRev rejection" in {
+        val deprecatedState = Some(current(deprecated = true))
+        val undeprecateCmd  = UndeprecateElasticSearchView(id, project, 2, subject)
+        eval(deprecatedState, undeprecateCmd).rejectedWith[IncorrectRev]
+      }
+      "raise a ViewIsNotDeprecated rejection" in {
+        val activeView     = Some(current())
+        val undeprecateCmd = UndeprecateElasticSearchView(id, project, 1, subject)
+        eval(activeView, undeprecateCmd).rejectedWith[ViewIsNotDeprecated]
+      }
+    }
+
     "applying an ElasticSearchViewCreated event" should {
       "discard the event for a Current state" in {
         next(
@@ -282,6 +305,19 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
           Some(current()),
           ElasticSearchViewDeprecated(id, project, ElasticSearchType, uuid, 2, epoch, subject)
         ).value shouldEqual current(deprecated = true, rev = 2, updatedBy = subject)
+      }
+    }
+
+    "applying an ElasticSearchViewUndeprecated event" should {
+      "discard the event for an Initial state" in {
+        val undeprecatedEvent = ElasticSearchViewUndeprecated(id, project, ElasticSearchType, uuid, 2, epoch, subject)
+        next(None, undeprecatedEvent) shouldEqual None
+      }
+      "change the state" in {
+        val deprecatedState   = Some(current(deprecated = true))
+        val undeprecatedEvent = ElasticSearchViewUndeprecated(id, project, ElasticSearchType, uuid, 2, epoch, subject)
+        next(deprecatedState, undeprecatedEvent).value shouldEqual
+          current(deprecated = false, rev = 2, updatedBy = subject)
       }
     }
 
