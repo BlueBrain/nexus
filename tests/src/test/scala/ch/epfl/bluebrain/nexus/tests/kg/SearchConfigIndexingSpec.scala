@@ -1029,7 +1029,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "value" : 1.4333333333333333,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
-                 "statistic": "max",
+                 "statistic": "maximum",
                  "compartment": "BasalDendrite"
                  }
            """
