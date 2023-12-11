@@ -196,12 +196,12 @@ CONSTRUCT {
                                               :notation   ?preSynapticNotation    .
 
   ## Morphology features
-  ?alias  :morphologyFeature      ?morphologyFeature        .
-                                  ?morphologyFeature   :value       ?featureValue         ;
-                                                       :unit        ?featureUnit          ;
-                                                       :label       ?featureLabel         ;
-                                                       :statistic   ?featureStat          ;
-                                                       :compartment ?featureCompartment   .
+  ?alias :morphologyFeature    ?featureSeries    .
+                               ?featureSeries    :value       ?featureValue         ;
+                                                 :unit        ?featureUnit          ;
+                                                 :label       ?featureLabel         ;
+                                                 :statistic   ?featureStat          ;
+                                                 :compartment ?featureCompartment   .
                                                           
 } WHERE {
   VALUES ?id { {resource_id} } .
@@ -673,17 +673,16 @@ CONSTRUCT {
     ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
 
     OPTIONAL {
-      GRAPH ?g {
-        ?featureAnnotation    bmo:compartment       ?featureCompartment ;
-                              nsg:hasBody           ?featureBody        .
-        ?featureBody          nsg:isMeasurementOf / rdfs:label ?featureLabel ;
-                              nsg:series            ?featureSeries .
-        ?featureSeries        nsg:statistic         ?featureStat   ;
-                              schema:value          ?featureValue  ;
-                              schema:unitCode       ?featureUnit   .
+      ?featureAnnotation    bmo:compartment                    ?featureCompartment ;
+                            nsg:hasBody                        ?featureBody        .
+      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       .
+      FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
 
-        FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
-        }.
-      }.
-    } .
+      ?featureBody          schema:value / nsg:series          ?featureSeries      .
+      ?featureSeries        nsg:statistic                      ?featureStat        ;
+                            schema:value                       ?featureValue       ;
+                            schema:unitCode                    ?featureUnit
+
+    }.
+  } .
 }
