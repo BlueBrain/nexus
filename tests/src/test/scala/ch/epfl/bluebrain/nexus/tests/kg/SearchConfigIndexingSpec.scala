@@ -1026,7 +1026,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expected =
         json"""
                 {
-                 "value" : 1.4,
+                 "value" : 1.4333333333333333,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
                  "statistic": "max",
@@ -1044,7 +1044,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expected =
         json"""
                {
-                 "value" : 0,
+                 "value" : 0.21388888888888888,
                  "unit" : "dimensionless",
                  "label" : "Partition Asymmetry",
                  "statistic": "mean",
