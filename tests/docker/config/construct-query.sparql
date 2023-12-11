@@ -673,17 +673,16 @@ CONSTRUCT {
     ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
 
     OPTIONAL {
-      GRAPH ?g {
         ?featureAnnotation    bmo:compartment       ?featureCompartment ;
                               nsg:hasBody           ?featureBody        .
         ?featureBody          nsg:isMeasurementOf / rdfs:label ?featureLabel ;
                               nsg:series            ?featureSeries .
+        FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth",
+                "Section Strahler Orders", "Partition Asymmetry")) .
+
         ?featureSeries        nsg:statistic         ?featureStat   ;
                               schema:value          ?featureValue  ;
                               schema:unitCode       ?featureUnit   .
-
-        FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
-        }.
       }.
     } .
 }
