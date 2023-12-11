@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit
 
 import cats.Eq
-import ch.epfl.bluebrain.nexus.testkit.CirceEq.{IgnoredArrayOrder, ignoreJsonKeyOrderEq}
+import cats.implicits.catsSyntaxEq
+import ch.epfl.bluebrain.nexus.testkit.CirceEq.{ignoreJsonKeyOrderEq, IgnoredArrayOrder}
 import io.circe._
 import io.circe.syntax._
 import org.scalatest.matchers._
@@ -19,12 +20,14 @@ trait CirceEq {
     )
   })
 
-  def arrayThatContains(expectedValue: Json): BeMatcher[Json] = (left: Json) =>
+  def arrayThatContains(expectedValue: Json): BeMatcher[Json] = (left: Json) => {
+    implicit val jsonEq: Eq[Json] = ignoreJsonKeyOrderEq
     MatchResult(
-      left.asArray.get.exists(j => ignoreJsonKeyOrderEq.eqv(j, expectedValue)),
+      left.asArray.exists(arr => arr.exists(_ === expectedValue)),
       s"Json $left was not an array containing $expectedValue",
       s"Json $left was an array containing $expectedValue"
     )
+  }
 }
 
 object CirceEq {
