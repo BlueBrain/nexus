@@ -202,15 +202,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[BatchCopy].from {
     (
-      files: Files,
-      storages: Storages,
-      storagesStatistics: StoragesStatistics,
-      diskCopy: DiskStorageCopyFiles,
-      remoteDiskCopy: RemoteDiskStorageCopyFiles,
-      uuidF: UUIDF
+        files: Files,
+        storages: Storages,
+        aclCheck: AclCheck,
+        storagesStatistics: StoragesStatistics,
+        diskCopy: DiskStorageCopyFiles,
+        remoteDiskCopy: RemoteDiskStorageCopyFiles,
+        uuidF: UUIDF
     ) =>
-      BatchCopy.mk(files, storages, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
-
+      BatchCopy.mk(files, storages, aclCheck, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
   }
 
   make[BatchFiles].from {

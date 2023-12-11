@@ -46,7 +46,9 @@ object BatchFiles {
       for {
         pc                            <- fetchContext.onCreate(dest.project)
         (destStorageRef, destStorage) <- fetchFileStorage.fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
-        destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection => CopyRejection(source.project, dest.project, destStorage.id, e)}
+        destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
+                                           CopyRejection(source.project, dest.project, destStorage.id, e)
+                                         }
         fileResources                 <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
       } yield fileResources
     }.span("copyFiles")

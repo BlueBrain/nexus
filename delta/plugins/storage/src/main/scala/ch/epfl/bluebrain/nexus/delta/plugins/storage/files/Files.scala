@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -58,14 +58,15 @@ final class Files(
     log: FilesLog,
     aclCheck: AclCheck,
     fetchContext: FetchContext[FileRejection],
-    storages: Storages,
+    storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
     config: StorageTypeConfig
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
-) extends FetchFileStorage {
+) extends FetchFileStorage
+    with FetchFileResource {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -378,15 +379,7 @@ final class Files(
         FetchRejection(fileId, storage.id, e)
       }
 
-  /**
-    * Fetch the last version of a file
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
-    */
-  def fetch(id: FileId): IO[FileResource] =
+  override def fetch(id: FileId): IO[FileResource] =
     (for {
       (iri, _) <- id.expandIri(fetchContext.onRead)
       state    <- fetchState(id, iri)
@@ -761,7 +754,7 @@ object Files {
   def apply(
       fetchContext: FetchContext[FileRejection],
       aclCheck: AclCheck,
-      storages: Storages,
+      storages: FetchStorage,
       storagesStatistics: StoragesStatistics,
       xas: Transactors,
       storageTypeConfig: StorageTypeConfig,

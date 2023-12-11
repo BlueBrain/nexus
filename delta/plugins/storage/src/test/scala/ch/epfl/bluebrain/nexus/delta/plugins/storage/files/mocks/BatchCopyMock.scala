@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 
 object BatchCopyMock {
 
-  def withError( e: CopyFileRejection, events: ListBuffer[Event]): BatchCopy =
+  def withError(e: CopyFileRejection, events: ListBuffer[Event]): BatchCopy =
     withMockedCopyFiles((source, destStorage) =>
       caller => IO(events.addOne(BatchCopyCalled(source, destStorage, caller))) >> IO.raiseError(e)
     )
@@ -24,10 +24,12 @@ object BatchCopyMock {
       caller => IO(events.addOne(BatchCopyCalled(source, destStorage, caller))).as(stubbedAttr)
     )
 
-  def withMockedCopyFiles(copyFilesMock: (CopyFileSource, Storage) => Caller => IO[NonEmptyList[FileAttributes]]): BatchCopy =
+  def withMockedCopyFiles(
+      copyFilesMock: (CopyFileSource, Storage) => Caller => IO[NonEmptyList[FileAttributes]]
+  ): BatchCopy =
     new BatchCopy {
       override def copyFiles(source: CopyFileSource, destStorage: Storage)(implicit
-                                                                           c: Caller
+          c: Caller
       ): IO[NonEmptyList[FileAttributes]] = copyFilesMock(source, destStorage)(c)
     }
 

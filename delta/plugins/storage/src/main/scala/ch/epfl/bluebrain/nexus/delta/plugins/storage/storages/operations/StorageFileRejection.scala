@@ -80,18 +80,18 @@ object StorageFileRejection {
         )
 
     final case class SourceFileTooLarge(maxSize: Long, storageId: Iri)
-      extends CopyFileRejection(
-        s"Source file size exceeds maximum $maxSize on destination storage $storageId"
-      )
+        extends CopyFileRejection(
+          s"Source file size exceeds maximum $maxSize on destination storage $storageId"
+        )
 
     final case class TotalCopySizeTooLarge(totalSize: Long, spaceLeft: Long, storageId: Iri)
-      extends CopyFileRejection(
-        s"Combined size of source files ($totalSize) exceeds space ($spaceLeft) on destination storage $storageId"
-      )
+        extends CopyFileRejection(
+          s"Combined size of source files ($totalSize) exceeds space ($spaceLeft) on destination storage $storageId"
+        )
 
     implicit val statusCodes: HttpResponseFields[CopyFileRejection] = HttpResponseFields {
-      case _: UnsupportedOperation => StatusCodes.BadRequest
-      case _: SourceFileTooLarge => StatusCodes.BadRequest
+      case _: UnsupportedOperation  => StatusCodes.BadRequest
+      case _: SourceFileTooLarge    => StatusCodes.BadRequest
       case _: TotalCopySizeTooLarge => StatusCodes.BadRequest
     }
   }

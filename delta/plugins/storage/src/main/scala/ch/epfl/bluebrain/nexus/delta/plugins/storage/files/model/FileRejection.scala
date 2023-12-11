@@ -269,7 +269,7 @@ object FileRejection {
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case LinkRejection(_, _, rejection)            =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case CopyRejection(_, _, _, rejection) =>
+        case CopyRejection(_, _, _, rejection)         =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case ProjectContextRejection(rejection)        => rejection.asJsonObject
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
@@ -295,7 +295,7 @@ object FileRejection {
       // If this happens it signifies a system problem rather than the user having made a mistake
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
-      case CopyRejection(_, _, _, rejection) => (rejection.status, Seq.empty)
+      case CopyRejection(_, _, _, rejection)                               => (rejection.status, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)
