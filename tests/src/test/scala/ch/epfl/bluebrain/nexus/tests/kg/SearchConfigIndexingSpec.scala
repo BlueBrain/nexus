@@ -972,7 +972,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expected =
         json"""
                 {
-                 "value" : 2.3,
+                 "value" : 4,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
                  "statistic": "maximum",
@@ -1026,7 +1026,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expected =
         json"""
                 {
-                 "value" : 1.4333333333333333,
+                 "value" : 3,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
                  "statistic": "maximum",
@@ -1039,7 +1039,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       }
     }
 
-    "have the correct basal partition asymmetry index" in {
+    "have the correct basal dendrite partition asymmetry index" in {
       val query    = queryField(neuronMorphologyId, "basalDendritePartitionAsymmetry")
       val expected =
         json"""
