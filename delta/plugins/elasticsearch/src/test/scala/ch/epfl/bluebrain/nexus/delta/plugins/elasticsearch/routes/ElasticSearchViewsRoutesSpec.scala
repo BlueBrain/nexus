@@ -407,7 +407,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
 
     "reject if deprecating the default view" in {
-      Delete("/v1/views/myorg/myproject/nxv:defaultElasticSearchIndex?rev=1") ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/nxv:defaultElasticSearchIndex?rev=1") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual json"""{
           "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
