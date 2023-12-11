@@ -53,12 +53,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "kg/search/data/simulations/simulation-campaign-execution.json",
     "kg/search/data/simulations/simulation-campaign.json",
     "kg/search/data/simulations/simulation.json",
-    "kg/search/data/simulations/analysis-report-simulation.json",
-    "kg/search/features/axon-annotation.json",
-    "kg/search/features/apical-dendrite-annotation.json",
-    "kg/search/features/basal-dendrite-annotation.json",
-    "kg/search/features/morphology-annotation.json",
-    "kg/search/features/soma-annotation.json"
+    "kg/search/data/simulations/analysis-report-simulation.json"
   )
   private val otherResources = List(
     "kg/search/article.json",
@@ -66,7 +61,12 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "kg/search/license.json",
     "kg/search/activity.json",
     "kg/search/protocol.json",
-    "kg/search/person.json"
+    "kg/search/person.json",
+    "kg/search/features/axon-annotation.json",
+    "kg/search/features/apical-dendrite-annotation.json",
+    "kg/search/features/basal-dendrite-annotation.json",
+    "kg/search/features/morphology-annotation.json",
+    "kg/search/features/soma-annotation.json"
   )
   private val allResources   = otherResources ++ mainResources
 
@@ -886,7 +886,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "unit" : "μm",
                  "label" : "Total Length",
                  "statistic" : "mean",
-                 "compartment" : "NeuronMorphology",
+                 "compartment" : "NeuronMorphology"
                  }
                ]"""
 
