@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.CopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskCopyPaths
 
 class RemoteDiskStorageCopyFiles(
     destStorage: RemoteDiskStorage,
@@ -28,7 +29,7 @@ class RemoteDiskStorageCopyFiles(
         case remote: StorageValue.RemoteDiskStorageValue => IO(remote.folder)
         case other                                       => IO.raiseError(new Exception(s"Invalid storage type for remote copy: $other"))
       }
-      thingy.map(sourceBucket => (sourceBucket, sourcePath, destinationPath))
+      thingy.map(sourceBucket => RemoteDiskCopyPaths(sourceBucket, sourcePath, destinationPath))
     }
 
     maybePaths.flatMap { paths =>
@@ -39,7 +40,7 @@ class RemoteDiskStorageCopyFiles(
               FileAttributes(
                 uuid = cd.destinationDesc.uuid,
                 location = destinationPath,
-                path = x._3,
+                path = x.destPath,
                 filename = cd.destinationDesc.filename,
                 mediaType = cd.destinationDesc.mediaType,
                 bytes = cd.sourceAttributes.bytes,

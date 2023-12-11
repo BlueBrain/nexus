@@ -13,15 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import org.scalatest.Suite
 
 import java.nio.file.{Files => JavaFiles}
 import java.util.{Base64, UUID}
 
-trait FileFixtures extends EitherValues {
-
-  self: Suite =>
+trait FileFixtures {
 
   val uuid                  = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                 = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
@@ -49,7 +45,7 @@ trait FileFixtures extends EitherValues {
   val generatedId2          = project.base.iri / uuid2.toString
 
   val content = "file content"
-  val path    = AbsolutePath(JavaFiles.createTempDirectory("files")).rightValue
+  val path    = AbsolutePath(JavaFiles.createTempDirectory("files")).fold(e => throw new Exception(e), identity)
   val digest  =
     ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
 

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, Tran
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
@@ -43,7 +44,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
@@ -150,6 +151,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
+  // TODO refactor Files to depend on this rather than constructing it
+  make[FilesLog].from { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[IO]) =>
+    ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
+  }
+
   make[Files]
     .fromEffect {
       (
@@ -212,13 +218,16 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     (
         fetchContext: FetchContext[ContextRejection],
         files: Files,
-        batchCopy: BatchCopy
+        filesLog: FilesLog,
+        batchCopy: BatchCopy,
+        uuidF: UUIDF
     ) =>
       BatchFiles.mk(
         files,
         fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+        FilesLog.eval(filesLog),
         batchCopy
-      )
+      )(uuidF)
   }
 
   make[FilesRoutes].from {

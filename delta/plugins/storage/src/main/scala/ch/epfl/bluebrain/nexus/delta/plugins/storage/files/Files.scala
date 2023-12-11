@@ -68,7 +68,7 @@ final class Files(
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
-) {
+) extends FetchFileStorage {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -500,8 +500,7 @@ final class Files(
       .apply(path, desc)
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
-  def eval(cmd: FileCommand): IO[FileResource]                                                                   =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
+  private def eval(cmd: FileCommand): IO[FileResource]                                                           = FilesLog.eval(log)(cmd)
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
@@ -668,6 +667,11 @@ object Files {
   val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
 
   type FilesLog = ScopedEventLog[Iri, FileState, FileCommand, FileEvent, FileRejection]
+
+  object FilesLog {
+    def eval(log: FilesLog)(cmd: FileCommand): IO[FileResource] =
+      log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
+  }
 
   private[files] def next(
       state: Option[FileState],

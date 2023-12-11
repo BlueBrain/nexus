@@ -6,42 +6,35 @@ import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock.BatchFilesCopyFilesCalled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileId
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.BatchFilesMock.BatchFilesCopyFilesCalled
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.BatchFilesRoutesSpec.BatchFilesRoutesGenerators
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, schemas, FileFixtures, FileGen, FileResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.Generators
 import io.circe.Json
 import io.circe.syntax.KeyOps
-import org.scalatest.{Assertion, Assertions}
+import org.scalatest.Assertion
 
 import scala.collection.mutable.ListBuffer
 
-class BatchFilesRoutesSpec
-    extends BaseRouteSpec
-    with StorageFixtures
-    with FileFixtures
-    with BatchFilesRoutesGenerators {
+class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileFixtures with FileGen {
 
   implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
@@ -193,30 +186,6 @@ class BatchFilesRoutesSpec
 }
 
 object BatchFilesRoutesSpec {
-
-  trait BatchFilesRoutesGenerators { self: Generators with FileFixtures with Assertions =>
-    def genProjectRef(): ProjectRef = ProjectRef.unsafe(genString(), genString())
-    def genProject(): Project = {
-      val projRef     = genProjectRef()
-      val apiMappings = ApiMappings("file" -> schemas.files)
-      ProjectGen.project(projRef.project.value, projRef.organization.value, base = nxv.base, mappings = apiMappings)
-    }
-
-    def genUser(realmLabel: Label): User                                = User(genString(), realmLabel)
-    def genFilesIdsInProject(projRef: ProjectRef): NonEmptyList[FileId] =
-      NonEmptyList.of(genString(), genString()).map(id => FileId(id, projRef))
-    def genFileIdWithRev(projRef: ProjectRef): FileId                   = FileId(genString(), 4, projRef)
-    def genFileIdWithTag(projRef: ProjectRef): FileId                   = FileId(genString(), UserTag.unsafe(genString()), projRef)
-
-    def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
-      FileGen.resourceFor(
-        fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(fail(s"Bad file $fileId")),
-        fileId.project,
-        ResourceRef.Revision(Iri.unsafe(genString()), 1),
-        attributes(genString())
-      )
-  }
-
   def mkBulkCopyPayload(sourceProj: ProjectRef, sourceFileIds: NonEmptyList[FileId]): Json =
     Json.obj("sourceProjectRef" := sourceProj.toString, "files" := mkSourceFilesPayload(sourceFileIds))
 

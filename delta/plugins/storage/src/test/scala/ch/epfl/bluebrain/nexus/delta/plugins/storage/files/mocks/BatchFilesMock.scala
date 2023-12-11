@@ -1,10 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks
 
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
