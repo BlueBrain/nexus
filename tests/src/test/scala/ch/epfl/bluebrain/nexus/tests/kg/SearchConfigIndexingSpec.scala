@@ -939,7 +939,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "value" : 0,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
-                 "statistic": "max",
+                 "statistic": "maximum",
                  "compartment": "Axon"
                  }
            """
@@ -975,7 +975,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "value" : 2.3,
                  "unit" : "dimensionless",
                  "label" : "Section Strahler Orders",
-                 "statistic": "max",
+                 "statistic": "maximum",
                  "compartment": "ApicalDendrite"
                  }
            """
