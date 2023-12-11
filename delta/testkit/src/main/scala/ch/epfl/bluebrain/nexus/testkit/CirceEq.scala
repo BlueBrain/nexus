@@ -33,34 +33,38 @@ trait CirceEq {
 object CirceEq {
 
   val ignoreJsonKeyOrderEq: Eq[Json] = new Eq[Json] {
+    implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
+
     override def eqv(left: Json, right: Json): Boolean = {
       val leftSorted  = sortKeys(left)
       val rightSorted = sortKeys(right)
-      leftSorted == rightSorted
+      leftSorted == rightSorted || printer.print(leftSorted) == printer.print(rightSorted)
     }
+  }
 
-    private def sortKeys(value: Json): Json = {
-      def canonicalJson(json: Json): Json =
-        json.arrayOrObject[Json](
-          json,
-          arr => Json.fromValues(arr.map(canonicalJson).sortBy(_.hashCode)),
-          obj => sorted(obj).asJson
-        )
+  private def sortKeys(value: Json): Json = {
+    def canonicalJson(json: Json): Json =
+      json.arrayOrObject[Json](
+        json,
+        arr => Json.fromValues(arr.map(canonicalJson).sortBy(_.hashCode)),
+        obj => sorted(obj).asJson
+      )
 
-      def sorted(jObj: JsonObject): JsonObject =
-        JsonObject.fromIterable(jObj.toVector.sortBy(_._1).map { case (k, v) => k -> canonicalJson(v) })
+    def sorted(jObj: JsonObject): JsonObject =
+      JsonObject.fromIterable(jObj.toVector.sortBy(_._1).map { case (k, v) => k -> canonicalJson(v) })
 
-      canonicalJson(value)
-    }
+    canonicalJson(value)
   }
 
   final case class IgnoredArrayOrder(json: Json) extends Matcher[Json] {
     implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
     override def apply(left: Json): MatchResult = {
+      val leftSorted  = sortKeys(left)
+      val rightSorted = sortKeys(json)
       MatchResult(
-        ignoreJsonKeyOrderEq.eqv(left, json) || printer.print(left) == printer.print(json),
-        s"Both Json are not equal (ignoring array order)\n${printer.print(left)}\ndid not equal\n${printer.print(json)}",
+        leftSorted == rightSorted || printer.print(leftSorted) == printer.print(rightSorted),
+        s"Both Json are not equal (ignoring array order)\n${printer.print(leftSorted)}\ndid not equal\n${printer.print(rightSorted)}",
         ""
       )
     }
