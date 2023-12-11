@@ -1,17 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock.BatchFilesCopyFilesCalled
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileId
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{CopyRejection, FileNotFound, WrappedStorageRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.{SourceFileTooLarge, TotalCopySizeTooLarge, UnsupportedOperation}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
@@ -78,7 +83,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds, destTag = Some(destTag))
     }
 
-    "be rejected for a user without read permission on the source project" in {
+    "return 403 for a user without read permission on the source project" in {
       val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
       val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
 
@@ -90,7 +95,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       }
     }
 
-    "be rejected if tag and rev are present simultaneously for a source file" in {
+    "return 400 if tag and rev are present simultaneously for a source file" in {
       val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
 
       val route              = mkRoute(BatchFilesMock.unimplemented, sourceProj, user, permissions = Set())
@@ -101,6 +106,69 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
         response.status shouldBe StatusCodes.BadRequest
       }
     }
+
+    "return 400 for copy errors raised by batch file logic" in {
+      val unsupportedStorageType = UnsupportedOperation(StorageType.S3Storage)
+      val fileTooLarge           = SourceFileTooLarge(12, genIri())
+      val totalSizeTooLarge      = TotalCopySizeTooLarge(1L, 2L, genIri())
+
+      val errors = List(unsupportedStorageType, fileTooLarge, totalSizeTooLarge)
+        .map(CopyRejection(genProjectRef(), genProjectRef(), genIri(), _))
+
+      forAll(errors) { error =>
+        val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
+        val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
+        val events                       = ListBuffer.empty[BatchFilesCopyFilesCalled]
+        val batchFiles                   = BatchFilesMock.withError(error, events)
+
+        val route   = mkRoute(batchFiles, sourceProj, user, permissions = Set(files.permissions.read))
+        val payload = BatchFilesRoutesSpec.mkBulkCopyPayload(sourceProj.ref, sourceFileIds)
+
+        callBulkCopyEndpoint(route, destProj.ref, payload, user) {
+          response.status shouldBe StatusCodes.BadRequest
+          response.asJson shouldBe errorJson(error, Some(ClassUtils.simpleName(error.rejection)), error.loggedDetails)
+        }
+      }
+    }
+
+    "map other file rejections to the correct response" in {
+      val storageNotFound      = WrappedStorageRejection(StorageNotFound(genIri(), genProjectRef()))
+      val differentStorageType =
+        WrappedStorageRejection(DifferentStorageType(genIri(), StorageType.DiskStorage, StorageType.RemoteDiskStorage))
+      val fileNotFound         = FileNotFound(genIri(), genProjectRef())
+
+      val fileRejections: List[(FileRejection, StatusCode, Json)] = List(
+        (storageNotFound, StatusCodes.NotFound, errorJson(storageNotFound, Some("ResourceNotFound"))),
+        (fileNotFound, StatusCodes.NotFound, errorJson(fileNotFound, Some("ResourceNotFound"))),
+        (differentStorageType, StatusCodes.BadRequest, errorJson(differentStorageType, Some("DifferentStorageType")))
+      )
+
+      forAll(fileRejections) { case (error, expectedStatus, expectedJson) =>
+        val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
+        val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
+        val events                       = ListBuffer.empty[BatchFilesCopyFilesCalled]
+        val batchFiles                   = BatchFilesMock.withError(error, events)
+
+        val route   = mkRoute(batchFiles, sourceProj, user, permissions = Set(files.permissions.read))
+        val payload = BatchFilesRoutesSpec.mkBulkCopyPayload(sourceProj.ref, sourceFileIds)
+
+        callBulkCopyEndpoint(route, destProj.ref, payload, user) {
+          response.status shouldBe expectedStatus
+          response.asJson shouldBe expectedJson
+        }
+      }
+    }
+  }
+
+  def errorJson(t: Throwable, specificType: Option[String] = None, details: Option[String] = None): Json = {
+    val detailsObj = details.fold(Json.obj())(d => Json.obj("details" := d))
+    detailsObj.deepMerge(
+      Json.obj(
+        "@context" := Vocabulary.contexts.error.toString,
+        "@type"    := specificType.getOrElse(ClassUtils.simpleName(t)),
+        "reason"   := t.getMessage
+      )
+    )
   }
 
   def mkRoute(

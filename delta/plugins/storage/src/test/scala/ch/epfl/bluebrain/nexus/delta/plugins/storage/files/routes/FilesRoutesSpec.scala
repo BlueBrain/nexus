@@ -9,13 +9,13 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesConfig, permissions, contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics, contexts => storageContexts, permissions => storagesPermissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -43,10 +43,8 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.syntax.EncoderOps
 import org.scalatest._
-
-import java.util.UUID
 
 class FilesRoutesSpec
     extends BaseRouteSpec
@@ -138,8 +136,7 @@ class FilesRoutesSpec
       config,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
-      clock,
-      TransactionalFileCopier.mk()
+      clock
     )(uuidF, typedSystem)
   private val groupDirectives                              =
     DeltaSchemeDirectives(
@@ -362,45 +359,6 @@ class FilesRoutesSpec
       givenAFile { id =>
         Delete(s"/v1/files/org/proj/$id?rev=1") ~> routes ~> check {
           response.shouldBeForbidden
-        }
-      }
-    }
-
-    "copy a file" in {
-      givenAFileInProject(projectRef.toString) { oldFileId =>
-        val newFileUUId = UUID.randomUUID()
-        withUUIDF(newFileUUId) {
-          val newFileId = newFileUUId.toString
-          val json      =
-            Json.obj("sourceProjectRef" := projectRef, "files" := Json.arr(Json.obj("sourceFileId" := oldFileId)))
-
-          Post(s"/v1/files/${projectRefOrg2.toString}", json.toEntity) ~> asWriter ~> routes ~> check {
-            status shouldEqual StatusCodes.Created
-            val expectedId   = project2.base.iri / newFileId
-            val expectedAttr = attributes(filename = oldFileId, id = newFileUUId)
-            val expectedFile = fileMetadata(projectRefOrg2, expectedId, expectedAttr, diskIdRev)
-            val expected     = bulkOperationResponse(1, List(expectedFile))
-            response.asJson shouldEqual expected
-          }
-        }
-      }
-    }
-
-    "reject file copy request if tag and rev are present simultaneously" in {
-      givenAFileInProject(projectRef.toString) { oldFileId =>
-        val json = Json.obj(
-          "sourceProjectRef" := projectRef.toString,
-          "files"            := Json.arr(
-            Json.obj(
-              "sourceFileId" := oldFileId,
-              "sourceTag"    := "mytag",
-              "sourceRev"    := 3
-            )
-          )
-        )
-
-        Post(s"/v1/files/${projectRefOrg2.toString}", json.toEntity) ~> asWriter ~> routes ~> check {
-          status shouldEqual StatusCodes.UnsupportedMediaType
         }
       }
     }

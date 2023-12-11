@@ -4,12 +4,11 @@ import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{BodyPartEntity, ContentType, HttpEntity, Uri}
-import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{TransactionalFileCopier, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -18,10 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{RemoteDiskStorageConfig, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, InvalidStorageType, StorageFetchRejection, StorageIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
@@ -63,8 +61,7 @@ final class Files(
     storages: Storages,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
-    config: StorageTypeConfig,
-    copier: TransactionalFileCopier
+    config: StorageTypeConfig
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
@@ -197,78 +194,6 @@ final class Files(
       res       <- createLink(iri, id.project, pc, storageId, filename, mediaType, path, tag)
     } yield res
   }.span("createLink")
-
-  def copyFiles(
-      source: CopyFileSource,
-      dest: CopyFileDestination
-  )(implicit c: Caller): IO[NonEmptyList[FileResource]] = {
-    for {
-      (pc, destStorageRef, destStorage) <- fetchDestinationStorage(dest)
-      copyDetails                       <- source.files.traverse(fetchCopyDetails(destStorage, _))
-      _                                 <- validateSpaceOnStorage(destStorage, copyDetails.map(_.sourceAttributes.bytes))
-      destFilesAttributes               <- CopyFiles(destStorage, remoteDiskStorageClient, copier).apply(copyDetails)
-      fileResources                     <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
-    } yield fileResources
-  }
-
-  private def evalCreateCommands(
-      pc: ProjectContext,
-      dest: CopyFileDestination,
-      destStorageRef: ResourceRef.Revision,
-      destStorageTpe: StorageType,
-      destFilesAttributes: NonEmptyList[FileAttributes]
-  )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
-    destFilesAttributes.traverse { destFileAttributes =>
-      for {
-        iri      <- generateId(pc)
-        command   = CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, c.subject, dest.tag)
-        resource <- eval(command).onError { e =>
-                      logger.error(e)(
-                        s"Failed to save event during file copy, saved file must be manually deleted: $command"
-                      )
-                    }
-      } yield resource
-    }
-
-  private def validateSpaceOnStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = for {
-    space    <- storagesStatistics.getStorageAvailableSpace(destStorage)
-    maxSize   = destStorage.storageValue.maxFileSize
-    _        <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
-    totalSize = sourcesBytes.toList.sum
-    _        <- IO.raiseWhen(space.exists(_ < totalSize))(FileTooLarge(maxSize, space))
-  } yield ()
-
-  private def fetchCopyDetails(destStorage: Storage, fileId: FileId)(implicit c: Caller) =
-    for {
-      (file, sourceStorage) <- fetchSourceFile(fileId)
-      _                     <- validateStorageTypeForCopy(file.storageType, destStorage)
-      destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
-    } yield CopyFileDetails(destinationDesc, file.attributes, sourceStorage)
-
-  private def fetchSourceFile(id: FileId)(implicit c: Caller) =
-    for {
-      file          <- fetch(id)
-      sourceStorage <- storages.fetch(file.value.storage, id.project)
-      _             <- validateAuth(id.project, sourceStorage.value.storageValue.readPermission)
-    } yield (file.value, sourceStorage.value)
-
-  private def fetchDestinationStorage(
-      dest: CopyFileDestination
-  )(implicit c: Caller): IO[(ProjectContext, ResourceRef.Revision, Storage)] =
-    for {
-      pc                            <- fetchContext.onCreate(dest.project)
-      (destStorageRef, destStorage) <- fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
-    } yield (pc, destStorageRef, destStorage)
-
-  private def validateStorageTypeForCopy(source: StorageType, destination: Storage): IO[Unit] =
-    IO.raiseWhen(source == StorageType.S3Storage)(
-      WrappedStorageRejection(
-        InvalidStorageType(destination.id, source, Set(StorageType.DiskStorage, StorageType.RemoteDiskStorage))
-      )
-    ) >>
-      IO.raiseUnless(source == destination.tpe)(
-        WrappedStorageRejection(DifferentStorageType(destination.id, found = destination.tpe, expected = source))
-      )
 
   /**
     * Update an existing file
@@ -842,8 +767,7 @@ object Files {
       storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient,
-      clock: Clock[IO],
-      copier: TransactionalFileCopier
+      clock: Clock[IO]
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing]
@@ -857,8 +781,7 @@ object Files {
       storages,
       storagesStatistics,
       remoteDiskStorageClient,
-      storageTypeConfig,
-      copier
+      storageTypeConfig
     )
   }
 

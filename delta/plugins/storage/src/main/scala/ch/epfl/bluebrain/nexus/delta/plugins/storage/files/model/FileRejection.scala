@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{CopyFileRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -235,16 +235,13 @@ object FileRejection {
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
       extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
 
-  /**
-    * Rejection returned when interacting with the storage operations bundle to copy a file already in storage
-    */
   final case class CopyRejection(
-      sourceId: Iri,
-      sourceStorageId: Iri,
+      sourceProj: ProjectRef,
+      destProject: ProjectRef,
       destStorageId: Iri,
-      rejection: StorageFileRejection
+      rejection: CopyFileRejection
   ) extends FileRejection(
-        s"File '$sourceId' could not be copied from storage '$sourceStorageId' to storage '$destStorageId'",
+        s"Failed to copy files from $sourceProj to storage $destStorageId in project $destProject",
         Some(rejection.loggedDetails)
       )
 
@@ -272,6 +269,8 @@ object FileRejection {
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case LinkRejection(_, _, rejection)            =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
+        case CopyRejection(_, _, _, rejection) =>
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case ProjectContextRejection(rejection)        => rejection.asJsonObject
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
@@ -296,6 +295,7 @@ object FileRejection {
       // If this happens it signifies a system problem rather than the user having made a mistake
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
+      case CopyRejection(_, _, _, rejection) => (rejection.status, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)

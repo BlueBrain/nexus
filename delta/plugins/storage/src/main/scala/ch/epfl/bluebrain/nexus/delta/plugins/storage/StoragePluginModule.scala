@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskCopy
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskCopy
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageCopyFiles
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -183,8 +183,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               storageTypeConfig,
               cfg.files,
               remoteDiskStorageClient,
-              clock,
-              TransactionalFileCopier.mk()
+              clock
             )(
               uuidF,
               as
@@ -197,18 +196,18 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
 
-  make[DiskCopy].from { copier: TransactionalFileCopier => DiskCopy.mk(copier) }
+  make[DiskStorageCopyFiles].from { copier: TransactionalFileCopier => DiskStorageCopyFiles.mk(copier) }
 
-  make[RemoteDiskCopy].from { client: RemoteDiskStorageClient => RemoteDiskCopy.mk(client) }
+  make[RemoteDiskStorageCopyFiles].from { client: RemoteDiskStorageClient => RemoteDiskStorageCopyFiles.mk(client) }
 
   make[BatchCopy].from {
     (
-        files: Files,
-        storages: Storages,
-        storagesStatistics: StoragesStatistics,
-        diskCopy: DiskCopy,
-        remoteDiskCopy: RemoteDiskCopy,
-        uuidF: UUIDF
+      files: Files,
+      storages: Storages,
+      storagesStatistics: StoragesStatistics,
+      diskCopy: DiskStorageCopyFiles,
+      remoteDiskCopy: RemoteDiskStorageCopyFiles,
+      uuidF: UUIDF
     ) =>
       BatchCopy.mk(files, storages, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
 

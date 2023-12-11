@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.TransactionalFileCopier
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageCopyFiles, DiskStorageFetchFile, DiskStorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -89,8 +88,6 @@ object Storage {
 
     def saveFile(implicit as: ActorSystem): SaveFile =
       new DiskStorageSaveFile(this)
-
-    def copyFiles(copier: TransactionalFileCopier): CopyFiles = new DiskStorageCopyFiles(this, copier)
   }
 
   /**
@@ -139,9 +136,6 @@ object Storage {
 
     def linkFile(client: RemoteDiskStorageClient): LinkFile =
       new RemoteDiskStorageLinkFile(this, client)
-
-    def copyFiles(client: RemoteDiskStorageClient): CopyFiles =
-      new RemoteDiskStorageCopyFiles(this, client)
 
     def fetchComputedAttributes(client: RemoteDiskStorageClient): FetchAttributes =
       new RemoteStorageFetchAttributes(value, client)

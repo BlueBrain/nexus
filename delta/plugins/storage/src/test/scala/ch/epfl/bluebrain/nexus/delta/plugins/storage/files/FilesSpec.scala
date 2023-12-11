@@ -1,23 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.{ActorSystem, typed}
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.TransactionalFileCopier
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, FileAttributes, FileId, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
@@ -49,7 +45,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.{Assertion, DoNotDiscover}
 
 import java.net.URLDecoder
-import java.util.UUID
 
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
@@ -140,8 +135,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       cfg,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
-      clock,
-      TransactionalFileCopier.mk()
+      clock
     )
 
     def fileId(file: String): FileId = FileId(file, projectRef)
@@ -448,103 +442,6 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project is deprecated" in {
         files.tag(FileId(rdId, deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectContextRejection]
-      }
-    }
-
-    "copying a file" should {
-
-      "succeed from disk storage based on a tag" in {
-        // TODO: adding uuids whenever we want a new independent test is not sustainable. If we truly want to test this every
-        // time we should generate a new "Files" with a new UUIDF (and other dependencies we want to control).
-        // Alternatively we could normalise the expected values to not care about any generated Ids
-        val newFileUuid = UUID.randomUUID()
-        withUUIDF(newFileUuid) {
-          val source      = CopyFileSource(projectRef, NonEmptyList.of(FileId("file1", tag, projectRef)))
-          val destination = CopyFileDestination(projectRefOrg2, Some(diskId), None)
-
-          val expectedDestId   = project2.base.iri / newFileUuid.toString
-          val expectedFilename = "myfile.txt"
-          val expectedAttr     = attributes(filename = expectedFilename, projRef = projectRefOrg2, id = newFileUuid)
-          val expected         = mkResource(expectedDestId, projectRefOrg2, diskRev, expectedAttr)
-
-          val actual = files.copyFiles(source, destination).unsafeRunSync()
-          actual shouldEqual NonEmptyList.of(expected)
-
-          val fetched = files.fetch(FileId(newFileUuid.toString, projectRefOrg2)).accepted
-          fetched shouldEqual expected
-        }
-      }
-
-      "succeed from disk storage based on a rev and should tag the new file" in {
-        val newFileUuid = UUID.randomUUID()
-        withUUIDF(newFileUuid) {
-          val source      = CopyFileSource(projectRef, NonEmptyList.of(FileId("file1", 2, projectRef)))
-          val newTag      = UserTag.unsafe(genString())
-          val destination = CopyFileDestination(projectRefOrg2, Some(diskId), Some(newTag))
-
-          val expectedDestId   = project2.base.iri / newFileUuid.toString
-          val expectedFilename = "file.txt"
-          val expectedAttr     = attributes(filename = expectedFilename, projRef = projectRefOrg2, id = newFileUuid)
-          val expected         = mkResource(expectedDestId, projectRefOrg2, diskRev, expectedAttr, tags = Tags(newTag -> 1))
-
-          val actual = files.copyFiles(source, destination).accepted
-          actual shouldEqual NonEmptyList.of(expected)
-
-          val fetchedByTag = files.fetch(FileId(newFileUuid.toString, newTag, projectRefOrg2)).accepted
-          fetchedByTag shouldEqual expected
-        }
-      }
-
-      "reject if the source file doesn't exist" in {
-        val destination = CopyFileDestination(projectRefOrg2, None, None)
-        val source      = CopyFileSource(projectRef, NonEmptyList.of(fileIdIri(nxv + "other")))
-        files.copyFiles(source, destination).rejectedWith[FileNotFound]
-      }
-
-      "reject if the destination storage doesn't exist" in {
-        val destination = CopyFileDestination(projectRefOrg2, Some(storage), None)
-        val source      = CopyFileSource(projectRef, NonEmptyList.of(fileId("file1")))
-        files.copyFiles(source, destination).rejected shouldEqual
-          WrappedStorageRejection(StorageNotFound(storageIri, projectRefOrg2))
-      }
-
-      "reject if copying between different storage types" in {
-        val expectedError = DifferentStorageType(remoteIdIri, StorageType.RemoteDiskStorage, StorageType.DiskStorage)
-        val destination   = CopyFileDestination(projectRefOrg2, Some(remoteId), None)
-        val source        = CopyFileSource(projectRef, NonEmptyList.of(FileId("file1", projectRef)))
-        files.copyFiles(source, destination).rejected shouldEqual
-          WrappedStorageRejection(expectedError)
-      }
-
-      val smallDiskCapacity = 9
-      val smallDiskMaxSize  = 5
-
-      "reject if total size of source files exceed remaining available space on the destination storage" in {
-        givenAFileWithSize(5) { fileId1 =>
-          givenAFileWithSize(5) { fileId2 =>
-            val smallDiskPayload =
-              diskFieldsJson deepMerge json"""{"capacity": $smallDiskCapacity, "maxFileSize": $smallDiskMaxSize, "volume": "$path"}"""
-            storages.create(smallDiskId, projectRefOrg2, smallDiskPayload).accepted
-
-            val source        = CopyFileSource(projectRef, NonEmptyList.of(fileId1, fileId2))
-            val destination   = CopyFileDestination(projectRefOrg2, Some(smallDiskId), None)
-            val expectedError = FileTooLarge(smallDiskMaxSize.toLong, Some(smallDiskCapacity.toLong))
-
-            files.copyFiles(source, destination).rejected shouldEqual expectedError
-          }
-        }
-      }
-
-      "reject if any of the files exceed max file size of the destination storage" in {
-        givenAFileWithSize(1) { fileId1 =>
-          givenAFileWithSize(smallDiskMaxSize + 1) { fileId2 =>
-            val source        = CopyFileSource(projectRef, NonEmptyList.of(fileId1, fileId2))
-            val destination   = CopyFileDestination(projectRefOrg2, Some(smallDiskId), None)
-            val expectedError = FileTooLarge(smallDiskMaxSize.toLong, Some(smallDiskCapacity.toLong))
-
-            files.copyFiles(source, destination).rejected shouldEqual expectedError
-          }
-        }
       }
     }
 

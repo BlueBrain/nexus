@@ -2,15 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -43,7 +46,7 @@ object BatchFiles {
       for {
         pc                            <- fetchContext.onCreate(dest.project)
         (destStorageRef, destStorage) <- fetchFileStorage.fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
-        destFilesAttributes           <- batchCopy.copyFiles(source, destStorage)
+        destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection => CopyRejection(source.project, dest.project, destStorage.id, e)}
         fileResources                 <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
       } yield fileResources
     }.span("copyFiles")

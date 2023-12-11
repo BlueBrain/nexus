@@ -20,11 +20,15 @@ object BatchFilesMock {
 
   def withStubbedCopyFiles(
       stubbed: NonEmptyList[FileResource],
-      buffer: ListBuffer[BatchFilesCopyFilesCalled]
+      events: ListBuffer[BatchFilesCopyFilesCalled]
   ): BatchFiles =
     withMockedCopyFiles((source, dest) =>
-      c => IO(buffer.addOne(BatchFilesCopyFilesCalled(source, dest, c))).as(stubbed)
+      c => IO(events.addOne(BatchFilesCopyFilesCalled(source, dest, c))).as(stubbed)
     )
+
+  def withError(e: Throwable, events: ListBuffer[BatchFilesCopyFilesCalled]): BatchFiles = withMockedCopyFiles((source, dest) =>
+    c => IO(events.addOne(BatchFilesCopyFilesCalled(source, dest, c))) >> IO.raiseError(e)
+  )
 
   def withMockedCopyFiles(
       copyFilesMock: (CopyFileSource, CopyFileDestination) => Caller => IO[NonEmptyList[FileResource]]

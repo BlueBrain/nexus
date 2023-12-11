@@ -12,8 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{Dis
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.DifferentStorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskCopy, DiskCopyDetails}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskCopy, RemoteDiskCopyDetails}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.{TotalCopySizeTooLarge, SourceFileTooLarge}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskCopyDetails, DiskStorageCopyFiles}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskCopyDetails
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -27,11 +29,11 @@ trait BatchCopy {
 
 object BatchCopy {
   def mk(
-      files: Files,
-      storages: Storages,
-      storagesStatistics: StoragesStatistics,
-      diskCopy: DiskCopy,
-      remoteDiskCopy: RemoteDiskCopy
+          files: Files,
+          storages: Storages,
+          storagesStatistics: StoragesStatistics,
+          diskCopy: DiskStorageCopyFiles,
+          remoteDiskCopy: RemoteDiskStorageCopyFiles
   )(implicit uuidF: UUIDF): BatchCopy = new BatchCopy {
 
     override def copyFiles(source: CopyFileSource, destStorage: Storage)(implicit
@@ -60,9 +62,9 @@ object BatchCopy {
     private def validateSpaceOnStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = for {
       space    <- storagesStatistics.getStorageAvailableSpace(destStorage)
       maxSize   = destStorage.storageValue.maxFileSize
-      _        <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(FileTooLarge(maxSize, space))
+      _        <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(SourceFileTooLarge(maxSize, destStorage.id))
       totalSize = sourcesBytes.toList.sum
-      _        <- IO.raiseWhen(space.exists(_ < totalSize))(FileTooLarge(maxSize, space))
+      _        <- space.collectFirst { case s if s < totalSize => IO.raiseError(TotalCopySizeTooLarge(totalSize, s, destStorage.id)) }.getOrElse(IO.unit)
     } yield ()
 
     private def fetchDiskCopyDetails(destStorage: DiskStorage, fileId: FileId)(implicit c: Caller) =

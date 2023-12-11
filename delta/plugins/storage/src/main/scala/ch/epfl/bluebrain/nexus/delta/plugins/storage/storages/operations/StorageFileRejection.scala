@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 
 /**
   * Enumeration of Storage rejections related to file operations.
@@ -71,14 +74,26 @@ object StorageFileRejection {
   sealed abstract class CopyFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object CopyFileRejection {
-
-    /**
-      * Rejection performing this operation because the storage does not support it
-      */
     final case class UnsupportedOperation(tpe: StorageType)
-        extends FetchAttributeRejection(
+        extends CopyFileRejection(
           s"Copying a file attributes is not supported for storages of type '${tpe.iri}'"
         )
+
+    final case class SourceFileTooLarge(maxSize: Long, storageId: Iri)
+      extends CopyFileRejection(
+        s"Source file size exceeds maximum $maxSize on destination storage $storageId"
+      )
+
+    final case class TotalCopySizeTooLarge(totalSize: Long, spaceLeft: Long, storageId: Iri)
+      extends CopyFileRejection(
+        s"Combined size of source files ($totalSize) exceeds space ($spaceLeft) on destination storage $storageId"
+      )
+
+    implicit val statusCodes: HttpResponseFields[CopyFileRejection] = HttpResponseFields {
+      case _: UnsupportedOperation => StatusCodes.BadRequest
+      case _: SourceFileTooLarge => StatusCodes.BadRequest
+      case _: TotalCopySizeTooLarge => StatusCodes.BadRequest
+    }
   }
 
   /**
