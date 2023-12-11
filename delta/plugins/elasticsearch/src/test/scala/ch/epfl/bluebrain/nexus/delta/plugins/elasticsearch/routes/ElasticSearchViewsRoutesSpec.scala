@@ -405,6 +405,17 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
         )
       }
     }
+
+    "reject if deprecating the default view" in {
+      Delete("/v1/views/myorg/myproject/nxv:defaultElasticSearchIndex?rev=1") ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual json"""{
+          "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+          "@type": "ViewIsDefaultView",
+          "reason": "Cannot perform write operations on the default ElasticSearch view."
+        }"""
+      }
+    }
   }
 
   private val esMatchAllQuery = json"""{"query": { "match_all": {} } }"""

@@ -91,6 +91,14 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view '$id' is not deprecated.")
 
   /**
+    * Rejection returned when attempting to update/deprecate the default view.
+    */
+  final case object ViewIsDefaultView
+      extends BlazegraphViewRejection(s"Cannot perform write operations on the default Blazegraph view.")
+
+  type ViewIsDefaultView = ViewIsDefaultView.type
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -254,6 +262,7 @@ object BlazegraphViewRejection {
       case TagNotFound(_)               => StatusCodes.NotFound
       case ViewNotFound(_, _)           => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case ViewIsDefaultView            => StatusCodes.Forbidden
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
       case _                            => StatusCodes.BadRequest

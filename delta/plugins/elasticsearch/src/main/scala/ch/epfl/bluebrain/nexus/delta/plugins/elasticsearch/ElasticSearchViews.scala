@@ -201,6 +201,7 @@ final class ElasticSearchViews private (
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
       (iri, pc) <- expandWithContext(fetchContext.onModify, project, id)
+      _         <- validateNotDefaultView(iri)
       value     <- sourceDecoder(project, pc, iri, source)
       res       <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject))
     } yield res
@@ -231,6 +232,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
       (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      _        <- validateNotDefaultView(iri)
       res      <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagElasticSearchView")
@@ -255,9 +257,14 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
       (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      _        <- validateNotDefaultView(iri)
       res      <- eval(DeprecateElasticSearchView(iri, project, rev, subject))
     } yield res
   }.span("deprecateElasticSearchView")
+
+  private def validateNotDefaultView(iri: Iri): IO[Unit] = {
+    IO.raiseWhen(iri == defaultViewId)(ViewIsDefaultView)
+  }
 
   /**
     * Undeprecates an existing ElasticSearchView. View undeprecation implies unblocking any query capabilities and in

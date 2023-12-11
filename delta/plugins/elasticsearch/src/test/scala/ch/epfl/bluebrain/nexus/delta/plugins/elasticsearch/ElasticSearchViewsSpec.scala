@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDefaultView, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
@@ -522,6 +522,22 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
     }
 
+    "writing to the default view should fail" when {
+      val defaultViewId = iri"nxv:defaultElasticSearchIndex"
+      "deprecating" in {
+        views.deprecate(defaultViewId, projectRef, 1).rejectedWith[ViewIsDefaultView]
+      }
+
+      "updating" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(defaultViewId, projectRef, 1, source).rejectedWith[ViewIsDefaultView]
+      }
+
+      "tagging" in {
+        views.tag(defaultViewId, projectRef, UserTag.unsafe("tag"), 1, 1).rejectedWith[ViewIsDefaultView]
+      }
+    }
+
     def givenAView(test: String => Assertion): Assertion = {
       val id     = genString()
       val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
@@ -543,6 +559,5 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         s"view was deprecated"
       )
     }
-
   }
 }

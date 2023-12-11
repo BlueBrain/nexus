@@ -395,6 +395,21 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
       }
     }
 
+    "writing to the default view should fail" when {
+      val defaultViewId = nxv + "defaultSparqlIndex"
+      "deprecating" in {
+        views.deprecate(defaultViewId, projectRef, 1).rejected shouldEqual ViewIsDefaultView
+      }
+
+      "updating" in {
+        views.update(defaultViewId, projectRef, 1, indexingSource).rejected shouldEqual ViewIsDefaultView
+      }
+
+      "tagging" in {
+        views.tag(defaultViewId, projectRef, tag, tagRev = 1, 1).rejected shouldEqual ViewIsDefaultView
+      }
+    }
+
     def givenAView(test: String => Assertion): Assertion = {
       val viewId = genString()
       views.create(viewId, projectRef, indexingValue).accepted
