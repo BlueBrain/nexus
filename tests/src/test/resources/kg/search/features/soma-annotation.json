@@ -1,0 +1,183 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@id": "https://bbp.epfl.ch/data/soma-annotation",
+    "@type": [
+      "Annotation",
+      "NeuronMorphologyFeatureAnnotation"
+    ],
+    "brainLocation": {
+      "@type": "BrainLocation",
+      "atlasSpatialReferenceSystem": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+        "@type": [
+          "AtlasSpatialReferenceSystem",
+          "Entity",
+          "BrainAtlasSpatialReferenceSystem"
+        ]
+      },
+      "brainRegion": {
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/378",
+        "label": "Supplemental somasensory area"
+      },
+      "coordinatesInBrainAtlas": {
+        "valueX": {
+          "@type": "xsd:float",
+          "@value": 6019.400000000002
+        },
+        "valueY": {
+          "@type": "xsd:float",
+          "@value": 3647.125
+        },
+        "valueZ": {
+          "@type": "xsd:float",
+          "@value": 1806.549999999999
+        }
+      }
+    },
+    "compartment": "Soma",
+    "contribution": {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/mouffok",
+        "@type": [
+          "Agent",
+          "Person"
+        ],
+        "email": "sarah.mouffok@epfl.ch",
+        "familyName": "Mouffok",
+        "givenName": "Sarah",
+        "name": "Sarah Mouffok"
+      }
+    },
+    "generation": {
+      "@type": "Generation",
+      "activity": {
+        "@type": "Activity",
+        "endedAtTime": {
+          "@type": "xsd:dateTime",
+          "@value": "2023-09-21T11:35:48"
+        },
+        "startedAtTime": {
+          "@type": "xsd:dateTime",
+          "@value": "2023-09-21T11:35:48"
+        },
+        "wasAssociatedWith": {
+          "@type": [
+            "Agent",
+            "SoftwareAgent"
+          ],
+          "description": "NeuroM is a Python toolkit for the analysis and processing of neuron morphologies.",
+          "name": "NeuroM",
+          "softwareSourceCode": {
+            "@type": "SoftwareSourceCode",
+            "codeRepository": {
+              "@id": "https://github.com/BlueBrain/NeuroM"
+            },
+            "programmingLanguage": "Python",
+            "runtimePlatform": "3.9.6",
+            "version": "3.2.2"
+          }
+        }
+      }
+    },
+    "hasBody": [
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Soma Surface Area"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm²",
+              "value": 448.6385843654661
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm²",
+              "value": 448.6385843654661
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm²",
+              "value": 448.6385843654661
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm²",
+              "value": 448.6385843654661
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm²",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Soma Radius"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm",
+              "value": 5.975075244861534
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm",
+              "value": 5.975075244861534
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm",
+              "value": 5.975075244861534
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 5.975075244861534
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Soma Number Of Points"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "N",
+              "unitCode": "dimensionless",
+              "value": 3
+            }
+          ]
+        }
+      }
+    ],
+    "hasTarget": {
+      "@type": "AnnotationTarget",
+      "hasSource": {
+        "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+        "@type": [
+          "Entity",
+          "NeuronMorphology",
+          "ReconstructedNeuronMorphology"
+        ],
+        "_rev": 22
+      }
+    },
+    "name": "Neuron Morphology Feature Annotation"
+  }
