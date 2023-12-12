@@ -199,6 +199,28 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
+    "get an error if the user has access at project level but no default view exist" in {
+      val project              = genString()
+      val createProject        = adminDsl.createProjectWithName(org1, project, name = project, Bob)
+      val deleteDefaultView    =
+        deltaClient.delete[Json](s"/views/$org1/$project/nxv:defaultElasticSearchIndex?rev=1", Bob) { (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+        }
+      val assertListingFailure = deltaClient.get[Json](s"/resources/$org1/$project", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.NotFound
+        json shouldEqual
+          json"""
+            {
+              "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+              "@type" : "DefaultViewNotFound",
+              "reason" : "Default ElasticSearch view not found in project '$org1/$project'."
+            }
+              """
+      }
+
+      createProject >> deleteDefaultView >> assertListingFailure
+    }
+
     "get responses using after" in eventually {
       // Building the next results, replace the public url by the one used by the tests
       def next(json: Json) = {
