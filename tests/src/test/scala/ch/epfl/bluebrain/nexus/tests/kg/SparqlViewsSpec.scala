@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
-import cats.implicits._
+import org.scalatest.Assertion
 
 class SparqlViewsSpec extends BaseIntegrationSpec {
 
@@ -21,30 +22,32 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
 
   val projects = List(project1, project2)
 
-  "creating projects" should {
-    "add necessary permissions for user" in {
-      for {
-        _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
-        _ <- aclDsl.addPermissionAnonymous(s"/$project2", Views.Query)
-      } yield succeed
-    }
+  val idBase = "https://test.bbp.epfl.ch/"
 
-    "succeed if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId, name = project1, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId2, name = project2, ScoobyDoo)
-      } yield succeed
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val setPermissions = for {
+      _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
+      _ <- aclDsl.addPermissionAnonymous(s"/$project2", Views.Query)
+    } yield succeed
 
-    "wait until in project resolver is created" in {
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$project1", ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1L
-        }
+    val createProjects = for {
+      _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId, name = project1, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId2, name = project2, ScoobyDoo)
+    } yield succeed
+
+    (setPermissions >> createProjects).accepted
+
+    // wait until in project resolver is created
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$project1", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1L
       }
     }
+
+    ()
   }
 
   "creating the view" should {
@@ -331,17 +334,6 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "undeprecate a deprecated SPARQL view" in {
-      val viewId          = "hello"
-      val payload         = jsonContentOf("kg/views/sparql-view.json") deepMerge json"""{"@id": "$viewId"}"""
-      val createView      = deltaClient.put[Json](s"/views/$project1/$viewId", payload, ScoobyDoo) { expectCreated }
-      val deprecateView   = deltaClient.delete[Json](s"/views/$project1/$viewId?rev=1", ScoobyDoo) { expectOk }
-      val undeprecateView = deltaClient.put[Json](s"/views/$project1/$viewId/undeprecate?rev=2", payload, ScoobyDoo) {
-        expectOk
-      }
-      createView >> deprecateView >> undeprecateView
-    }
-
     "create a another SPARQL view" in {
       val payload = jsonContentOf("kg/views/sparql-view.json")
       deltaClient.put[Json](s"/views/$project1/test-resource:cell-view2", payload, ScoobyDoo) { (_, response) =>
@@ -365,6 +357,60 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
         val expected =
           json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
         json shouldEqual expected
+      }
+    }
+
+    "reindex a resource after view undeprecation" in {
+      givenADeprecatedView { view =>
+        postResource { resource =>
+          undeprecate(view) >> eventually { assertMatchId(view, resource) }
+        }
+      }
+    }
+
+    def givenAView(test: String => IO[Assertion]): IO[Assertion] = {
+      val viewId      = genId()
+      val viewPayload = jsonContentOf("kg/views/sparql-view-index-all.json", "withTag" -> false)
+      val createView  = deltaClient.put[Json](s"/views/$project1/$viewId", viewPayload, ScoobyDoo) { expectCreated }
+
+      createView >> test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => IO[Assertion]): IO[Assertion] =
+      givenAView { view =>
+        val deprecateView = deltaClient.delete[Json](s"/views/$project1/$view?rev=1", ScoobyDoo) { expectOk }
+        deprecateView >> test(view)
+      }
+
+    def undeprecate(view: String, rev: Int = 2): IO[Assertion] =
+      deltaClient.putEmptyBody[Json](s"/views/$project1/$view/undeprecate?rev=$rev", ScoobyDoo) { expectOk }
+
+    def postResource(test: String => IO[Assertion]): IO[Assertion] = {
+      val id = genId()
+      deltaClient.post[Json](s"/resources/$project1/_?indexing=sync", json"""{"@id": "$idBase$id"}""", ScoobyDoo) {
+        (_, response) => response.status shouldEqual StatusCodes.Created
+      } >> test(id)
+    }
+
+    def assertMatchId(view: String, id: String): IO[Assertion] = {
+      val query =
+        s"""
+           |SELECT (COUNT(*) as ?count)
+           |WHERE { <$idBase$id> ?p ?o }
+      """.stripMargin
+
+      deltaClient.sparqlQuery[Json](s"/views/$project1/$view/sparql", query, ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json.hcursor
+          .downField("results")
+          .downField("bindings")
+          .downN(0)
+          .downField("count")
+          .downField("value")
+          .as[Int] match {
+          case Left(_)      => fail("The Sparql query did not return a count value")
+          case Right(value) => value should be > 0
+        }
       }
     }
   }

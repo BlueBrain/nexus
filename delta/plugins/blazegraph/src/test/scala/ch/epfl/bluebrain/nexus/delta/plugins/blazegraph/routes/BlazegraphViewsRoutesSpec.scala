@@ -25,6 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors.resourceAlreadyExistsError
+import ch.epfl.bluebrain.nexus.delta.sdk.views.BlazegraphViewErrors._
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.Assertion
@@ -143,11 +145,13 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
 
     "reject creation of a view which already exits" in {
-      Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asWriter ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("routes/errors/view-already-exists.json")
+      givenAView { view =>
+        val viewPayload = indexingSource deepMerge json"""{"@id": "$view"}"""
+        Put(s"/v1/views/org/proj/$view", viewPayload.toEntity) ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual resourceAlreadyExistsError(nxv + view, projectRef)
+        }
       }
-
     }
     "fail to update a view without permission" in {
       Put("/v1/views/org/proj/aggregate-view?rev=1", aggregateSource.toEntity) ~> asReader ~> routes ~> check {
@@ -197,10 +201,12 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
 
     "reject querying a deprecated view" in {
-      val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
-      Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("routes/errors/view-deprecated.json", "id" -> indexingViewId)
+      givenADeprecatedView { view =>
+        val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
+        Post(s"/v1/views/org/proj/$view/sparql", queryEntity) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual viewIsDeprecatedError(nxv + view)
+        }
       }
     }
 
@@ -225,7 +231,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       givenAView { view =>
         Put(s"/v1/views/org/proj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("routes/errors/view-not-deprecated.json", "id" -> (nxv + view))
+          response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
         }
       }
     }
@@ -365,6 +371,18 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         response.header[Location].value.uri shouldEqual Uri(
           "https://bbp.epfl.ch/nexus/web/org/proj/resources/indexing-view"
         )
+      }
+    }
+
+    "reject if deprecating the default view" in {
+      Delete("/v1/views/org/proj/nxv:defaultSparqlIndex?rev=1") ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual
+          json"""{
+          "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+          "@type": "ViewIsDefaultView",
+          "reason": "Cannot perform write operations on the default Blazegraph view."
+        }"""
       }
     }
   }

@@ -96,6 +96,13 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view '$id' is not deprecated.")
 
   /**
+    * Rejection returned when attempting to update/deprecate the default view.
+    */
+  final case object ViewIsDefaultView
+      extends ElasticSearchViewRejection(s"Cannot perform write operations on the default ElasticSearch view.")
+  type ViewIsDefaultView = ViewIsDefaultView.type
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -271,6 +278,7 @@ object ElasticSearchViewRejection {
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
+      case ViewIsDefaultView                      => StatusCodes.Forbidden
       case ProjectContextRejection(rej)           => rej.status
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest

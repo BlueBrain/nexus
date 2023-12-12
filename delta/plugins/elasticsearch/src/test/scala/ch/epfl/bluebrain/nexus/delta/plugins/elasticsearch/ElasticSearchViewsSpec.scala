@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDefaultView, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.literal._
 import org.scalatest.Assertion
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import java.time.Instant
 import java.util.UUID
@@ -409,22 +410,8 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
     "undeprecate a view" when {
       "using the correct revision" in {
         givenADeprecatedView { view =>
-          views.undeprecate(view, projectRef, 2).accepted shouldEqual
-            resourceFor(
-              id = nxv + view,
-              deprecated = false,
-              rev = 3,
-              value = IndexingElasticSearchViewValue(
-                resourceTag = None,
-                IndexingElasticSearchViewValue.defaultPipeline,
-                mapping = Some(mapping),
-                settings = None,
-                context = None,
-                permission = queryPermissions
-              ),
-              source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-            )
-          views.fetch(view, projectRef).accepted.deprecated shouldEqual false
+          views.undeprecate(view, projectRef, 2).accepted should not be deprecated
+          views.fetch(view, projectRef).accepted should not be deprecated
         }
       }
     }
@@ -535,6 +522,22 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
     }
 
+    "writing to the default view should fail" when {
+      val defaultViewId = iri"nxv:defaultElasticSearchIndex"
+      "deprecating" in {
+        views.deprecate(defaultViewId, projectRef, 1).rejectedWith[ViewIsDefaultView]
+      }
+
+      "updating" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(defaultViewId, projectRef, 1, source).rejectedWith[ViewIsDefaultView]
+      }
+
+      "tagging" in {
+        views.tag(defaultViewId, projectRef, UserTag.unsafe("tag"), 1, 1).rejectedWith[ViewIsDefaultView]
+      }
+    }
+
     def givenAView(test: String => Assertion): Assertion = {
       val id     = genString()
       val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
@@ -549,5 +552,12 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
     }
 
+    def deprecated: BeMatcher[ViewResource] = BeMatcher { view =>
+      MatchResult(
+        view.deprecated,
+        s"view was not deprecated",
+        s"view was deprecated"
+      )
+    }
   }
 }

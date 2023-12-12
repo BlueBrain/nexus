@@ -59,9 +59,7 @@ trait BlazegraphViewRoutesFixtures
 
   val aclCheck = AclSimpleCheck().accepted
 
-  val realm                   = Label.unsafe("myrealm")
-  val bob                     = User("Bob", realm)
-  implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  val realm = Label.unsafe("myrealm")
 
   val reader = User("reader", realm)
   val writer = User("writer", realm)
