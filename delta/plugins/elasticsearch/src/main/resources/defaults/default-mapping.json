@@ -1,12 +1,10 @@
 {
   "properties": {
     "@type": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "@id": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "prefLabel": {
       "type": "text",
@@ -14,8 +12,7 @@
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "label": {
       "type": "text",
@@ -23,8 +20,7 @@
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "name": {
       "type": "text",
@@ -32,12 +28,15 @@
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
+    },
+    "description": {
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
+      "type": "text"
     },
     "_algorithm": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_uuid": {
       "type": "text",
@@ -45,92 +44,70 @@
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "_rev": {
-      "type": "long",
-      "copy_to": "_all_fields"
+      "type": "long"
     },
     "_tags": {
-      "type": "text",
-      "copy_to": "_all_fields"
+      "type": "text"
     },
     "_deprecated": {
-      "type": "boolean",
-      "copy_to": "_all_fields"
+      "type": "boolean"
     },
     "_markedForDeletion": {
-      "type": "boolean",
-      "copy_to": "_all_fields"
+      "type": "boolean"
     },
     "_createdAt": {
-      "type": "date",
-      "copy_to": "_all_fields"
+      "type": "text"
     },
     "_updatedAt": {
-      "type": "date",
-      "copy_to": "_all_fields"
+      "type": "date"
     },
     "_createdBy": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_updatedBy": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_constrainedBy": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_project": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_self": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_incoming": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_outgoing": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_original_source": {
-      "type": "text",
-      "analyzer": "nexus",
-      "copy_to": "_all_fields"
+      "type": "text"
     },
     "_bytes": {
-      "type": "long",
-      "copy_to": "_all_fields"
+      "type": "long"
     },
     "_mediaType": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_location": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_filename": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_digest": {
       "type": "nested",
       "properties": {
         "_algorithm": {
-          "type": "keyword",
-          "copy_to": "_all_fields"
+          "type": "keyword"
         },
         "_value": {
-          "type": "keyword",
-          "copy_to": "_all_fields"
+          "type": "keyword"
         }
       }
     },
@@ -138,16 +115,13 @@
       "type": "nested",
       "properties": {
         "_rev": {
-          "type": "long",
-          "copy_to": "_all_fields"
+          "type": "long"
         },
         "@id": {
-          "type": "keyword",
-          "copy_to": "_all_fields"
+          "type": "keyword"
         },
         "@type": {
-          "type": "keyword",
-          "copy_to": "_all_fields"
+          "type": "keyword"
         }
       }
     },
@@ -161,10 +135,6 @@
           "type": "keyword"
         }
       }
-    },
-    "_all_fields": {
-      "type": "text",
-      "analyzer": "nexus"
     }
   },
   "dynamic": false
