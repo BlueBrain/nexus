@@ -147,6 +147,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     JsonObject(
       "multi_match" -> Json.obj(
         "query"  -> value.asJson,
+        "type"   -> Json.fromString("phrase_prefix"),
         "fields" -> json"""[ "*", "_*" ]"""
       )
     )
