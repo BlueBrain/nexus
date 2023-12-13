@@ -1,11 +1,21 @@
 {
   "properties": {
     "@type": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "@id": {
       "type": "keyword",
-      "analyzer": "path_hierarchy"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "prefLabel": {
       "type": "text",
@@ -37,7 +47,12 @@
       "type": "text"
     },
     "_algorithm": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_uuid": {
       "type": "text",
@@ -48,86 +63,184 @@
       }
     },
     "_rev": {
-      "type": "long"
+      "type": "long",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_tags": {
       "type": "text"
     },
     "_deprecated": {
-      "type": "boolean"
+      "type": "boolean",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_markedForDeletion": {
-      "type": "boolean"
+      "type": "boolean",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_createdAt": {
       "type": "text"
     },
     "_updatedAt": {
-      "type": "date"
+      "type": "date",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_createdBy": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_updatedBy": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_constrainedBy": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_project": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_self": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_incoming": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_outgoing": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_original_source": {
       "type": "text"
     },
     "_bytes": {
-      "type": "long"
+      "type": "long",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_mediaType": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_location": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_filename": {
-      "type": "keyword"
+      "type": "keyword",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_digest": {
-      "type": "nested",
       "properties": {
         "_algorithm": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            }
+          }
         },
         "_value": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            }
+          }
         }
       }
     },
     "_storage": {
-      "type": "nested",
       "properties": {
         "_rev": {
-          "type": "long"
+          "type": "long",
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            }
+          }
         },
         "@id": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "path_hierarchy"
+            }
+          }
         },
         "@type": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            }
+          }
         }
       }
     },
     "_effectiveApiMappings": {
-      "type": "nested",
       "properties": {
         "_prefix": {
           "type": "keyword"
