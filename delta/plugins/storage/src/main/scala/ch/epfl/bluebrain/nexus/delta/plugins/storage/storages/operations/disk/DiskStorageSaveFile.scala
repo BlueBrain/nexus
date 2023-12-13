@@ -74,7 +74,7 @@ object DiskStorageSaveFile {
     for {
       (resolved, relative) <- computeLocation(project, disk, uuid, filename)
       dir                   = resolved.getParent
-      _                    <- IO.delay(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
+      _                    <- IO.blocking(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
     } yield resolved -> relative
 
   def computeLocation(

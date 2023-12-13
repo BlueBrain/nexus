@@ -184,12 +184,6 @@ object ResourceF {
         ResourceMetadata(r).asJsonObject
     }
 
-  implicit def resourceFEncoder[A: Encoder](implicit base: BaseUri): Encoder[ResourceF[A]] = Encoder.instance { r =>
-    ResourceIdAndTypes(r.resolvedId, r.types).asJson deepMerge
-      r.value.asJson deepMerge
-      ResourceMetadata(r).asJson
-  }
-
   final private case class ResourceIdAndTypes(resolvedId: Iri, types: Set[Iri])
 
   implicit private val idAndTypesEncoder: Encoder.AsObject[ResourceIdAndTypes] =

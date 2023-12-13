@@ -37,7 +37,7 @@ object DiskStorageCopyFiles {
                                         }
       } yield (copyDetails, destAttr)
 
-    private def computeDestLocation(destStorage: DiskStorage, cd: DiskCopyDetails): IO[(file.Path, file.Path)] =
+    private def computeDestLocation(destStorage: DiskStorage, cd: DiskCopyDetails) =
       computeLocation(destStorage.project, destStorage.value, cd.destinationDesc.uuid, cd.destinationDesc.filename)
 
     private def mkDestAttributes(cd: DiskCopyDetails, destPath: file.Path, destRelativePath: file.Path) =

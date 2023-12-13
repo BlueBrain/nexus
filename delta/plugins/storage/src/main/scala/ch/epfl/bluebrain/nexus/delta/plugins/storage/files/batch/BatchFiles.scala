@@ -69,7 +69,7 @@ object BatchFiles {
         } yield resource
       }
 
-    def generateId(pc: ProjectContext): IO[Iri] =
+    private def generateId(pc: ProjectContext): IO[Iri] =
       uuidF().map(uuid => pc.base.iri / uuid.toString)
 
     private def evalCreateCommand(command: CreateFile) =

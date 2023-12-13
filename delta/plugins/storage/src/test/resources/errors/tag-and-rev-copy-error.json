@@ -1,5 +1,0 @@
-{
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "InvalidFileLookup",
-  "reason" : "Only one of 'tag' and 'rev' can be used to lookup file '{{fileId}}'."
-}

@@ -2,11 +2,9 @@ package ch.epfl.bluebrain.nexus.storage
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Path
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.CopyBetween
 import ch.epfl.bluebrain.nexus.storage.routes.StatusFrom
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
@@ -96,13 +94,6 @@ object StorageError {
     *   a descriptive message on the operation that timed out
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
-
-  implicit val enc: Encoder[CopyBetween] = deriveEncoder
-
-  final case class CopyOperationFailed(failingCopy: CopyBetween)
-      extends StorageError(
-        s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}."
-      )
 
   @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")

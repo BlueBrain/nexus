@@ -20,18 +20,19 @@ object CopyFileSource {
         sourceFile <- j.hcursor.get[String]("sourceFileId").map(IdSegment(_))
         sourceTag  <- j.hcursor.get[Option[UserTag]]("sourceTag")
         sourceRev  <- j.hcursor.get[Option[Int]]("sourceRev")
-        fileId     <- (sourceTag, sourceRev) match {
-                        case (Some(tag), None)  => Right(FileId(sourceFile, tag, proj))
-                        case (None, Some(rev))  => Right(FileId(sourceFile, rev, proj))
-                        case (None, None)       => Right(FileId(sourceFile, proj))
-                        case (Some(_), Some(_)) =>
-                          // TODO any decoding failures will return a 415 which isn't accurate most of the time. It should
-                          // probably be a bad request instead.
-                          Left(
-                            DecodingFailure("Tag and revision cannot be simultaneously present for source file lookup", Nil)
-                          )
-                      }
+        fileId     <- parseFileId(sourceFile, proj, sourceTag, sourceRev)
       } yield fileId
+
+    def parseFileId(id: IdSegment, proj: ProjectRef, sourceTag: Option[UserTag], sourceRev: Option[Int]) =
+      (sourceTag, sourceRev) match {
+        case (Some(tag), None)  => Right(FileId(id, tag, proj))
+        case (None, Some(rev))  => Right(FileId(id, rev, proj))
+        case (None, None)       => Right(FileId(id, proj))
+        case (Some(_), Some(_)) =>
+          Left(
+            DecodingFailure("Tag and revision cannot be simultaneously present for source file lookup", Nil)
+          )
+      }
 
     for {
       sourceProj <- cur.get[ProjectRef]("sourceProjectRef")

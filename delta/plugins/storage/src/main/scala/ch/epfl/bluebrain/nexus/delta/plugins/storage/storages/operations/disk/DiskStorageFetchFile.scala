@@ -9,10 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedLocationFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
-import java.net.URI
-import java.nio.file.Paths
-import scala.util.{Failure, Success, Try}
-
 object DiskStorageFetchFile extends FetchFile {
 
   override def apply(attributes: FileAttributes): IO[AkkaSource] =

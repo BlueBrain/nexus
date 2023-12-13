@@ -9,10 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.DifferentStorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.{SourceFileTooLarge, TotalCopySizeTooLarge}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskCopyDetails, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskCopyDetails
@@ -106,7 +105,7 @@ object BatchCopy {
         .getOrElse(differentStorageTypeError(destStorage, sourceStorage))
 
     private def differentStorageTypeError[A](destStorage: Storage, sourceStorage: Storage) =
-      IO.raiseError[A](DifferentStorageType(sourceStorage.id, found = sourceStorage.tpe, expected = destStorage.tpe))
+      IO.raiseError[A](DifferentStorageTypes(sourceStorage.id, sourceStorage.tpe, destStorage.tpe))
 
     private def unsupported(tpe: StorageType) = IO.raiseError(CopyFileRejection.UnsupportedOperation(tpe))
 

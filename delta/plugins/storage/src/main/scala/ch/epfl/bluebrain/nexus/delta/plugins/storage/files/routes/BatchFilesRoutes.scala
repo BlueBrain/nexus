@@ -27,20 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.BulkOperationResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
-/**
-  * The files routes
-  *
-  * @param identities
-  *   the identity module
-  * @param aclCheck
-  *   to check acls
-  * @param files
-  *   the files module
-  * @param schemeDirectives
-  *   directives related to orgs and projects
-  * @param index
-  *   the indexing action on write operations
-  */
 final class BatchFilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
@@ -96,7 +82,7 @@ final class BatchFilesRoutes(
       _       <- EitherT.right[FileRejection](logger.info(s"Bulk file copy succeeded with results: $results"))
     } yield BulkOperationResults(results.toList))
       .onError(e =>
-        EitherT.right(logger.error(s"Bulk file copy operation failed for source $source and destination $dest with $e"))
+        EitherT.right(logger.error(e)(s"Bulk file copy operation failed for source $source and destination $dest"))
       )
       .value
 }

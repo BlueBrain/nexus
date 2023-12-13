@@ -143,7 +143,7 @@ object StorageRejection {
       extends StorageRejection(s"Storage ${id.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
 
   /**
-    * Signals an attempt to update/create a storage based on a previous revision with a different storage type
+    * Signals an attempt to update a storage to a different storage type
     *
     * @param id
     * @param found

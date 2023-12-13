@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 
 /**
@@ -89,10 +90,22 @@ object StorageFileRejection {
           s"Combined size of source files ($totalSize) exceeds space ($spaceLeft) on destination storage $storageId"
         )
 
+    final case class RemoteDiskClientError(underlying: HttpClientError)
+        extends CopyFileRejection(
+          s"Error from remote disk storage client: ${underlying.asString}"
+        )
+
+    final case class DifferentStorageTypes(id: Iri, source: StorageType, dest: StorageType)
+        extends CopyFileRejection(
+          s"Source storage $id of type $source cannot be different to the destination storage type $dest"
+        )
+
     implicit val statusCodes: HttpResponseFields[CopyFileRejection] = HttpResponseFields {
       case _: UnsupportedOperation  => StatusCodes.BadRequest
       case _: SourceFileTooLarge    => StatusCodes.BadRequest
       case _: TotalCopySizeTooLarge => StatusCodes.BadRequest
+      case _: DifferentStorageTypes => StatusCodes.BadRequest
+      case _: RemoteDiskClientError => StatusCodes.InternalServerError
     }
   }
 

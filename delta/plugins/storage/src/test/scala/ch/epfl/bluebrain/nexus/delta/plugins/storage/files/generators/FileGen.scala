@@ -1,12 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators
 
+import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
+import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, FileAttributes, FileId, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileFixtures, FileResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageGen, StorageResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageState, StorageType, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -17,7 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.Generators
 
+import java.nio.file.{Files => JavaFiles}
 import java.time.Instant
+import java.util.UUID
 import scala.util.Random
 
 trait FileGen { self: Generators with FileFixtures =>
@@ -143,4 +149,27 @@ object FileGen {
   ): FileResource =
     state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy).toResource
 
+  lazy val path = AbsolutePath(JavaFiles.createTempDirectory("files")).fold(e => throw new Exception(e), identity)
+
+  private val digest =
+    ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
+
+  def attributes(
+      filename: String,
+      size: Long,
+      id: UUID,
+      projRef: ProjectRef
+  ): FileAttributes = {
+    val uuidPathSegment = id.toString.take(8).mkString("/")
+    FileAttributes(
+      id,
+      s"file://$path/${projRef.toString}/$uuidPathSegment/$filename",
+      Uri.Path(s"${projRef.toString}/$uuidPathSegment/$filename"),
+      filename,
+      Some(`text/plain(UTF-8)`),
+      size,
+      digest,
+      Client
+    )
+  }
 }

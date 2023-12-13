@@ -1,8 +1,0 @@
-{
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/bulk-operation.json",
-    "https://bluebrain.github.io/nexus/contexts/metadata.json",
-    "https://bluebrain.github.io/nexus/contexts/files.json"
-  ],
-  "_results": {{results}}
-}

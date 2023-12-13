@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
@@ -69,9 +68,9 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val sourceProj             = genProject()
     val (source, destination)  =
       (genCopyFileSource(sourceProj.ref), genCopyFileDestination(destProj.ref, destStorage.storage))
-    val result                 = batchFiles.copyFiles(source, destination).attemptNarrow[CopyRejection].accepted
+    val expectedError          = CopyRejection(sourceProj.ref, destProj.ref, destStorage.id, error)
 
-    assertEquals(result, Left(CopyRejection(sourceProj.ref, destProj.ref, destStorage.id, error)))
+    batchFiles.copyFiles(source, destination).interceptEquals(expectedError).accepted
 
     val expectedActiveStorageFetched = ActiveStorageFetched(destination.storage, destProj.ref, destProj.context, c)
     val expectedBatchCopyCalled      = BatchCopyCalled(source, destStorage.storage, c)

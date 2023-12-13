@@ -422,8 +422,8 @@ final class Files(
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
-  def fetchAndValidateActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
-      caller: Caller
+  override def fetchAndValidateActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(
+      implicit caller: Caller
   ): IO[(ResourceRef.Revision, Storage)] =
     storageIdOpt match {
       case Some(storageId) =>
@@ -442,7 +442,7 @@ final class Files(
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
-  def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
+  private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileAttributes] =
@@ -467,7 +467,7 @@ final class Files(
       WrappedStorageRejection(s)
     }
 
-  def generateId(pc: ProjectContext): IO[Iri] =
+  private def generateId(pc: ProjectContext): IO[Iri] =
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   /**

@@ -43,7 +43,6 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import io.circe.syntax.EncoderOps
 import org.scalatest._
 
 class FilesRoutesSpec
@@ -64,14 +63,13 @@ class FilesRoutesSpec
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
-      storageContexts.storages          -> ContextValue.fromFile("contexts/storages.json"),
-      storageContexts.storagesMetadata  -> ContextValue.fromFile("contexts/storages-metadata.json"),
-      fileContexts.files                -> ContextValue.fromFile("contexts/files.json"),
-      Vocabulary.contexts.metadata      -> ContextValue.fromFile("contexts/metadata.json"),
-      Vocabulary.contexts.error         -> ContextValue.fromFile("contexts/error.json"),
-      Vocabulary.contexts.tags          -> ContextValue.fromFile("contexts/tags.json"),
-      Vocabulary.contexts.search        -> ContextValue.fromFile("contexts/search.json"),
-      Vocabulary.contexts.bulkOperation -> ContextValue.fromFile("contexts/bulk-operation.json")
+      storageContexts.storages         -> ContextValue.fromFile("contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
+      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
+      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
+      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
+      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
 
   private val reader   = User("reader", realm)
@@ -90,7 +88,7 @@ class FilesRoutesSpec
   private val asWriter   = addCredentials(OAuth2BearerToken("writer"))
   private val asS3Writer = addCredentials(OAuth2BearerToken("s3writer"))
 
-  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context, project2.ref -> project2.context))
+  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context))
 
   private val s3Read    = Permission.unsafe("s3/read")
   private val s3Write   = Permission.unsafe("s3/write")
@@ -139,11 +137,7 @@ class FilesRoutesSpec
       clock
     )(uuidF, typedSystem)
   private val groupDirectives                              =
-    DeltaSchemeDirectives(
-      fetchContext,
-      ioFromMap(uuid -> projectRef.organization, uuidOrg2 -> projectRefOrg2.organization),
-      ioFromMap(uuid -> projectRef, uuidOrg2              -> projectRefOrg2)
-    )
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
   private lazy val routes                                  = routesWithIdentities(identities)
   private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
@@ -169,12 +163,6 @@ class FilesRoutesSpec
     storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms)(callerWriter).accepted
     storages
       .create(dId, projectRef, diskFieldsJson deepMerge defaults deepMerge json"""{"capacity":5000}""")(callerWriter)
-      .void
-      .accepted
-    storages
-      .create(dId, projectRefOrg2, diskFieldsJson deepMerge defaults deepMerge json"""{"capacity":5000}""")(
-        callerWriter
-      )
       .void
       .accepted
   }
@@ -669,9 +657,6 @@ class FilesRoutesSpec
       test(id)
     }
 
-  def bulkOperationResponse(total: Int, results: List[Json]): Json =
-    FilesRoutesSpec.bulkOperationResponse(total, results.map(_.removeKeys("@context"))).accepted
-
   def fileMetadata(
       project: ProjectRef,
       id: Iri,
@@ -725,7 +710,4 @@ object FilesRoutesSpec {
       "type"        -> storageType,
       "self"        -> ResourceUris("files", project, id).accessUri
     )
-
-  def bulkOperationResponse(total: Int, results: List[Json]): IO[Json] =
-    loader.jsonContentOf("files/file-bulk-copy-response.json", "total" -> total, "results" -> results.asJson)
 }

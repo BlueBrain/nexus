@@ -234,22 +234,22 @@ final class Storages private (
   }.span("deprecateStorage")
 
   /**
-   * Undeprecate a storage
-   *
-   * @param id
-   * the storage identifier to expand as the id of the storage
-   * @param projectRef
-   * the project where the storage belongs
-   * @param rev
-   * the current revision of the storage
-   */
+    * Undeprecate a storage
+    *
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage belongs
+    * @param rev
+    *   the current revision of the storage
+    */
   def undeprecate(
-                   id: IdSegment,
-                   projectRef: ProjectRef,
-                   rev: Int
-                 )(implicit subject: Subject): IO[StorageResource] = {
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Int
+  )(implicit subject: Subject): IO[StorageResource] = {
     for {
-      pc <- fetchContext.onModify(projectRef)
+      pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
       res <- eval(UndeprecateStorage(iri, projectRef, rev, subject))
     } yield res

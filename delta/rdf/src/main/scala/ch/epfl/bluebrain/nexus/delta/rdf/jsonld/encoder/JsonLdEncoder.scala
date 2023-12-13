@@ -97,8 +97,6 @@ trait JsonLdEncoder[A] {
 
 object JsonLdEncoder {
 
-  def apply[A](enc: JsonLdEncoder[A]): JsonLdEncoder[A] = enc
-
   private def randomRootNode[A]: A => BNode = (_: A) => BNode.random
 
   /**

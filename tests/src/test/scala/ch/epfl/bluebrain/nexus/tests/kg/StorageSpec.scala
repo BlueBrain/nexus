@@ -422,11 +422,11 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     uploadFileToProjectStorage(fileInput, projectRef, storageId, rev)
 
   def uploadFileToProjectStorage(
-                                  fileInput: Input,
-                                  projRef: String,
-                                  storage: String,
-                                  rev: Option[Int]
-                                ): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
+      fileInput: Input,
+      projRef: String,
+      storage: String,
+      rev: Option[Int]
+  ): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
     val revString = rev.map(r => s"&rev=$r").getOrElse("")
     deltaClient.uploadFile[Json](
       s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",

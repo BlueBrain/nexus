@@ -11,9 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileResource, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.DifferentStorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.{SourceFileTooLarge, TotalCopySizeTooLarge, UnsupportedOperation}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.{DifferentStorageTypes, SourceFileTooLarge, TotalCopySizeTooLarge, UnsupportedOperation}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskCopyDetails, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskCopyDetails
@@ -107,7 +106,7 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       fetchStorage = stubbedFetchStorage(sourceStorage, events),
       aclCheck = aclCheck
     )
-    val expectedError = DifferentStorageType(sourceStorage.id, StorageType.DiskStorage, StorageType.RemoteDiskStorage)
+    val expectedError = DifferentStorageTypes(sourceStorage.id, StorageType.DiskStorage, StorageType.RemoteDiskStorage)
 
     batchCopy.copyFiles(source, genRemoteStorage())(caller(user)).interceptEquals(expectedError).map { _ =>
       val obtainedEvents = events.toList

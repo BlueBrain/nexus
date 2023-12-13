@@ -88,20 +88,17 @@ class FilesSpec(docker: RemoteStorageDocker)
     val diskId: IdSegment = nxv + "disk"
     val diskRev           = ResourceRef.Revision(iri"$diskId?rev=1", diskIdIri, 1)
 
-    val smallDiskId: IdSegment = nxv + "smalldisk"
-
     val storageIri         = nxv + "other-storage"
     val storage: IdSegment = nxv + "other-storage"
 
     val fetchContext = FetchContextDummy(
-      Map(project.ref -> project.context, project2.ref -> project2.context),
+      Map(project.ref -> project.context),
       Set(deprecatedProject.ref)
     )
 
     val aclCheck = AclSimpleCheck(
       (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
       (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
-      (bob, AclAddress.Project(projectRefOrg2), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
       (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
     ).accepted
 
@@ -110,10 +107,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val storageStatistics: StoragesStatistics = {
-      case (`smallDiskId`, _) => IO.pure { StorageStatEntry(10L, 0L) }
-      case (_, _)             => IO.pure { StorageStatEntry(10L, 100L) }
-    }
+    val storageStatistics: StoragesStatistics =
+      (_, _) => IO.pure { StorageStatEntry(10L, 100L) }
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
@@ -158,12 +153,10 @@ class FilesSpec(docker: RemoteStorageDocker)
       "create storages for files" in {
         val payload = diskFieldsJson deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}"""
         storages.create(diskId, projectRef, payload).accepted
-        storages.create(diskId, projectRefOrg2, payload).accepted
 
         val payload2 =
           json"""{"@type": "RemoteDiskStorage", "endpoint": "${docker.hostConfig.endpoint}", "folder": "${RemoteStorageDocker.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
         storages.create(remoteId, projectRef, payload2).accepted
-        storages.create(remoteId, projectRefOrg2, payload2).accepted
       }
 
       "succeed with the id passed" in {
@@ -630,12 +623,10 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     }
 
-    def givenAFile(assertion: FileId => Assertion): Assertion = givenAFileWithSize(1)(assertion)
-
-    def givenAFileWithSize(size: Int)(assertion: FileId => Assertion): Assertion = {
+    def givenAFile(assertion: FileId => Assertion): Assertion = {
       val filename = genString()
       val id       = fileId(filename)
-      files.create(id, Some(diskId), randomEntity(filename, size), None).accepted
+      files.create(id, Some(diskId), randomEntity(filename, 1), None).accepted
       files.fetch(id).accepted
       assertion(id)
     }
