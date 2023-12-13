@@ -4,7 +4,8 @@
       "type": "keyword"
     },
     "@id": {
-      "type": "keyword"
+      "type": "keyword",
+      "analyzer": "path_hierarchy"
     },
     "prefLabel": {
       "type": "text",
