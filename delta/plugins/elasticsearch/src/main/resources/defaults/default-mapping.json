@@ -1,10 +1,10 @@
 {
   "properties": {
     "@type": {
-      "type": "text"
+      "type": "keyword"
     },
     "@id": {
-      "type": "text",
+      "type": "keyword",
       "analyzer": "path_hierarchy"
     },
     "prefLabel": {
@@ -37,7 +37,7 @@
       "type": "text"
     },
     "_algorithm": {
-      "type": "text"
+      "type": "keyword"
     },
     "_uuid": {
       "type": "text",
@@ -66,25 +66,25 @@
       "type": "date"
     },
     "_createdBy": {
-      "type": "text"
+      "type": "keyword"
     },
     "_updatedBy": {
-      "type": "text"
+      "type": "keyword"
     },
     "_constrainedBy": {
-      "type": "text"
+      "type": "keyword"
     },
     "_project": {
-      "type": "text"
+      "type": "keyword"
     },
     "_self": {
-      "type": "text"
+      "type": "keyword"
     },
     "_incoming": {
-      "type": "text"
+      "type": "keyword"
     },
     "_outgoing": {
-      "type": "text"
+      "type": "keyword"
     },
     "_original_source": {
       "type": "text"
@@ -93,22 +93,22 @@
       "type": "long"
     },
     "_mediaType": {
-      "type": "text"
+      "type": "keyword"
     },
     "_location": {
-      "type": "text"
+      "type": "keyword"
     },
     "_filename": {
-      "type": "text"
+      "type": "keyword"
     },
     "_digest": {
       "type": "nested",
       "properties": {
         "_algorithm": {
-          "type": "text"
+          "type": "keyword"
         },
         "_value": {
-          "type": "text"
+          "type": "keyword"
         }
       }
     },
@@ -119,10 +119,10 @@
           "type": "long"
         },
         "@id": {
-          "type": "text"
+          "type": "keyword"
         },
         "@type": {
-          "type": "text"
+          "type": "keyword"
         }
       }
     },
@@ -130,10 +130,10 @@
       "type": "nested",
       "properties": {
         "_prefix": {
-          "type": "text"
+          "type": "keyword"
         },
         "_namespace": {
-          "type": "text"
+          "type": "keyword"
         }
       }
     }
