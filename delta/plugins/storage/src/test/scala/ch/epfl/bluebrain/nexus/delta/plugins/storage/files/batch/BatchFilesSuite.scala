@@ -1,16 +1,16 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.BatchFilesSpec._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchCopyMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCommand, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.TotalCopySizeTooLarge
@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 
-class BatchFilesSpec extends NexusSuite with StorageFixtures with Generators with FileFixtures with FileGen {
+class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators with FileFixtures with FileGen {
 
   test("batch copying should fetch storage, perform copy and evaluate create file commands") {
     val events                        = ListBuffer.empty[Event]
@@ -106,7 +106,7 @@ class BatchFilesSpec extends NexusSuite with StorageFixtures with Generators wit
   }
 }
 
-object BatchFilesSpec {
+object BatchFilesSuite {
   sealed trait Event
   final case class ActiveStorageFetched(
       storageIdOpt: Option[IdSegment],

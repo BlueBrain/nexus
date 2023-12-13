@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.Cre
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, FileAttributes, FileId, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileFixtures, FileResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageGen, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageState, StorageType, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -33,7 +33,9 @@ trait FileGen { self: Generators with FileFixtures =>
   def genUser(): User                  = User(genString(), Label.unsafe(genString()))
 
   def genFilesIdsInProject(projRef: ProjectRef): NonEmptyList[FileId] =
-    NonEmptyList.of(genString(), genString()).map(id => FileId(id, projRef))
+    NonEmptyList.of(genFileId(projRef), genFileId(projRef))
+
+  def genFileId(projRef: ProjectRef) = FileId(genString(), projRef)
 
   def genFileIdWithRev(projRef: ProjectRef): FileId = FileId(genString(), 4, projRef)
 
@@ -50,13 +52,33 @@ trait FileGen { self: Generators with FileFixtures =>
     CopyFileDestination(proj, genOption(IdSegment(storage.id.toString)), genOption(genUserTag))
   def genUserTag: UserTag                                                             = UserTag.unsafe(genString())
   def genOption[A](genA: => A): Option[A]                                             = if (Random.nextInt(2) % 2 == 0) Some(genA) else None
-  def genFileResource(fileId: FileId, context: ProjectContext): FileResource          =
+
+  def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
+    genFileResourceWithStorage(fileId, context, genRevision(), 1L)
+
+  def genFileResourceWithStorage(
+      fileId: FileId,
+      context: ProjectContext,
+      storageRef: ResourceRef.Revision,
+      fileSize: Long
+  ): FileResource =
     genFileResourceWithIri(
       fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(throw new Exception(s"Bad file $fileId")),
       fileId.project,
-      genRevision(),
-      attributes(genString())
+      storageRef,
+      attributes(genString(), size = fileSize)
     )
+
+  def genFileResourceAndStorage(
+      fileId: FileId,
+      context: ProjectContext,
+      storageVal: StorageValue,
+      fileSize: Long = 1L
+  ): (FileResource, StorageResource) = {
+    val storageRes = StorageGen.resourceFor(genIri(), fileId.project, storageVal)
+    val storageRef = ResourceRef.Revision(storageRes.id, storageRes.id, storageRes.rev)
+    (genFileResourceWithStorage(fileId, context, storageRef, fileSize), storageRes)
+  }
 
   def genFileResourceWithIri(
       iri: Iri,

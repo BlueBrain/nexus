@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.BatchFilesSpec.{BatchCopyCalled, Event}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite.{BatchCopyCalled, Event}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchCopy
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
