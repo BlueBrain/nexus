@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 /**
   * Error that can occur when using an [[SparqlClient]]
   */
-sealed abstract class SparqlClientError(val reason: String, details: Option[String])
+sealed abstract class SparqlClientError(val reason: String, val details: Option[String])
     extends Exception
     with Product
     with Serializable {
@@ -25,6 +25,8 @@ object SparqlClientError {
     */
   final case class WrappedHttpClientError(http: HttpClientError) extends SparqlClientError(http.reason, http.details) {
     override def getMessage: String = http.getMessage
+
+    def getOriginal: HttpClientError = http
   }
 
   /**
@@ -39,9 +41,9 @@ object SparqlClientError {
   /**
     * Error when trying to perform an update and the query passed is wrong.
     */
-  final case class InvalidUpdateRequest(index: String, queryString: String, details: String)
+  final case class InvalidUpdateRequest(index: String, queryString: String, override val details: Option[String])
       extends SparqlClientError(
         s"Attempting to update the index '$index' with a wrong query '$queryString'",
-        Some(details)
+        details
       )
 }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -40,5 +41,5 @@ package object model {
   /**
     * The id for the default elasticsearch view
     */
-  final val defaultViewId = nxv + "defaultElasticSearchIndex"
+  final val defaultViewId: Iri = nxv + "defaultElasticSearchIndex"
 }

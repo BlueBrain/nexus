@@ -288,6 +288,26 @@ Request
 Response
 :   @@snip [deprecated.json](../assets/views/elasticsearch/deprecated.json)
 
+## Undeprecate
+
+Unlocks the view, so further operations can be performed. It also restarts indexing resources into it.
+
+Undeprecating a view is considered to be an update as well.
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the view.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](../assets/views/elasticsearch/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](../assets/views/elasticsearch/undeprecated.json)
+
 ## Fetch
 
 ```

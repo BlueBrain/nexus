@@ -25,6 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
+import org.scalatest.Assertion
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import java.util.UUID
 
@@ -294,34 +296,47 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
     "deprecating a view" should {
       "deprecate the view" in {
-        views.deprecate(aggregateViewId, projectRef, 3).accepted shouldEqual resourceFor(
-          aggregateViewId,
-          projectRef,
-          aggregateValue,
-          uuid,
-          aggregateSource,
-          4,
-          deprecated = true,
-          tags = Tags(tag -> 1),
-          createdBy = bob,
-          updatedBy = bob
-        )
-
+        views.deprecate(aggregateViewId, projectRef, 3).accepted should be(deprecated)
+        views.fetch(aggregateViewId, projectRef).accepted should be(deprecated)
       }
 
       "reject when view doesn't exits" in {
         val doesntExist = nxv + "doesntexist"
-        views.deprecate(doesntExist, projectRef, 1).rejected shouldEqual ViewNotFound(
-          doesntExist,
-          projectRef
-        )
+        views.deprecate(doesntExist, projectRef, 1).rejected shouldEqual ViewNotFound(doesntExist, projectRef)
       }
 
       "reject when incorrect revision is provided" in {
-        views.deprecate(indexingViewId, projectRef, 42).rejected shouldEqual IncorrectRev(
-          42,
-          2
-        )
+        givenAView { view =>
+          views.deprecate(view, projectRef, 42).rejected shouldEqual IncorrectRev(42, 1)
+          views.fetch(view, projectRef).accepted should not be deprecated
+        }
+      }
+    }
+
+    "undeprecating a view" should {
+      "undeprecate the view" in {
+        givenADeprecatedView { view =>
+          views.undeprecate(view, projectRef, 2).accepted should not be deprecated
+          views.fetch(view, projectRef).accepted should not be deprecated
+        }
+      }
+
+      "reject when view doesn't exits" in {
+        val doesntExist = nxv + "doesntexist"
+        views.undeprecate(doesntExist, projectRef, 1).rejected shouldEqual ViewNotFound(doesntExist, projectRef)
+      }
+
+      "reject when incorrect revision is provided" in {
+        givenADeprecatedView { view =>
+          views.undeprecate(view, projectRef, 42).rejected shouldEqual IncorrectRev(42, 2)
+          views.fetch(view, projectRef).accepted should be(deprecated)
+        }
+      }
+
+      "reject when view is not deprecated" in {
+        givenAView { view =>
+          views.undeprecate(view, projectRef, 1).rejected shouldEqual ViewIsNotDeprecated(nxv + view)
+        }
       }
     }
 
@@ -378,6 +393,42 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
       "reject when the view is not found" in {
         views.fetch(doesntExistId, projectRef).rejected shouldEqual ViewNotFound(doesntExistId, projectRef)
       }
+    }
+
+    "writing to the default view should fail" when {
+      val defaultViewId = nxv + "defaultSparqlIndex"
+      "deprecating" in {
+        views.deprecate(defaultViewId, projectRef, 1).rejected shouldEqual ViewIsDefaultView
+      }
+
+      "updating" in {
+        views.update(defaultViewId, projectRef, 1, indexingSource).rejected shouldEqual ViewIsDefaultView
+      }
+
+      "tagging" in {
+        views.tag(defaultViewId, projectRef, tag, tagRev = 1, 1).rejected shouldEqual ViewIsDefaultView
+      }
+    }
+
+    def givenAView(test: String => Assertion): Assertion = {
+      val viewId = genString()
+      views.create(viewId, projectRef, indexingValue).accepted
+      test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => Assertion): Assertion = {
+      givenAView { view =>
+        views.deprecate(view, projectRef, 1).accepted
+        test(view)
+      }
+    }
+
+    def deprecated: BeMatcher[ViewResource] = BeMatcher { view =>
+      MatchResult(
+        view.deprecated,
+        s"view was not deprecated",
+        s"view was deprecated"
+      )
     }
   }
 }

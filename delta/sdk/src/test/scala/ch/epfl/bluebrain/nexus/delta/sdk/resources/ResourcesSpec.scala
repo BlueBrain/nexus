@@ -113,7 +113,6 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       }
 
       "create a tag event from a UpdateResource command when no changes are detected and a tag is provided" in {
-        println("Tag from update")
         val schema  = Latest(schemas.resources)
         val current = ResourceGen.currentState(projectRef, jsonld, schema)
         eval(

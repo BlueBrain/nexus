@@ -155,6 +155,22 @@ trait Schemas {
   )(implicit caller: Subject): IO[SchemaResource]
 
   /**
+    * Undeprecates an existing schema.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the schema
+    * @param projectRef
+    *   the project reference where the schema belongs
+    * @param rev
+    *   the revision of the schema
+    */
+  def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Int
+  )(implicit caller: Subject): IO[SchemaResource]
+
+  /**
     * Fetches a schema.
     *
     * @param id
@@ -230,13 +246,18 @@ object Schemas {
       (_: SchemaState).copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: SchemaUndeprecated): Option[SchemaState] = state.map {
+      (_: SchemaState).copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
-      case e: SchemaCreated    => created(e)
-      case e: SchemaUpdated    => updated(e)
-      case e: SchemaRefreshed  => refreshed(e)
-      case e: SchemaTagAdded   => tagAdded(e)
-      case e: SchemaTagDeleted => tagDeleted(e)
-      case e: SchemaDeprecated => deprecated(e)
+      case e: SchemaCreated      => created(e)
+      case e: SchemaUpdated      => updated(e)
+      case e: SchemaRefreshed    => refreshed(e)
+      case e: SchemaTagAdded     => tagAdded(e)
+      case e: SchemaTagDeleted   => tagDeleted(e)
+      case e: SchemaDeprecated   => deprecated(e)
+      case e: SchemaUndeprecated => undeprecated(e)
     }
   }
 
@@ -318,6 +339,18 @@ object Schemas {
           clock.realTimeInstant.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
       }
 
+    def undeprecate(c: UndeprecateSchema) =
+      state match {
+        case None                      =>
+          IO.raiseError(SchemaNotFound(c.id, c.project))
+        case Some(s) if s.rev != c.rev =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if !s.deprecated  =>
+          IO.raiseError(SchemaIsNotDeprecated(c.id))
+        case Some(s)                   =>
+          clock.realTimeInstant.map(SchemaUndeprecated(c.id, c.project, s.rev + 1, _: java.time.Instant, c.subject))
+      }
+
     def deleteTag(c: DeleteSchemaTag) =
       state match {
         case None                               =>
@@ -332,12 +365,13 @@ object Schemas {
       }
 
     cmd match {
-      case c: CreateSchema    => create(c)
-      case c: UpdateSchema    => update(c)
-      case c: RefreshSchema   => refresh(c)
-      case c: TagSchema       => tag(c)
-      case c: DeleteSchemaTag => deleteTag(c)
-      case c: DeprecateSchema => deprecate(c)
+      case c: CreateSchema      => create(c)
+      case c: UpdateSchema      => update(c)
+      case c: RefreshSchema     => refresh(c)
+      case c: TagSchema         => tag(c)
+      case c: DeleteSchemaTag   => deleteTag(c)
+      case c: DeprecateSchema   => deprecate(c)
+      case c: UndeprecateSchema => undeprecate(c)
     }
   }
 

@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@vocab": "https://music.example.com/"
+  },
+  "@type": "Album",
+  "title": "My Beautiful Dark Twisted Fantasy",
+  "released": "2010-11-22",
+  "label": "Roc-A-Fella Records",
+  "by": "kanye_west"
+}

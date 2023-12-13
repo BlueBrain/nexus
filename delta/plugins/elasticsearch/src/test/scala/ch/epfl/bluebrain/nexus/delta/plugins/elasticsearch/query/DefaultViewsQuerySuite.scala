@@ -4,6 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.DefaultViewNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
@@ -36,22 +37,27 @@ class DefaultViewsQuerySuite extends NexusSuite {
   private val project3     = ProjectRef(org2, Label.unsafe("proj3"))
   private val defaultView3 = ViewRef(project3, defaultViewId)
 
+  private val projectWithoutDefaultView = ProjectRef.unsafe(genString(), genString())
+
   private val aclCheck = AclSimpleCheck.unsafe(
     // Bob has full access
     (bob.subject, AclAddress.Root, Set(permissions.read)),
     // Alice has full access to all resources in org
     (alice.subject, AclAddress.Organization(org), Set(permissions.read)),
     // Charlie has access to resources in project1
-    (charlie.subject, AclAddress.Project(project1), Set(permissions.read))
+    (charlie.subject, AclAddress.Project(project1), Set(permissions.read)),
+    // Charlie has access to the project without default view
+    (charlie.subject, AclAddress.Project(projectWithoutDefaultView), Set(permissions.read))
   )
 
   private def fetchViews(predicate: Scope) = IO.pure {
     val viewRefs = predicate match {
-      case Scope.Root             => List(defaultView, defaultView2, defaultView3)
-      case Scope.Org(`org`)       => List(defaultView, defaultView2)
-      case Scope.Org(`org2`)      => List(defaultView3)
-      case Scope.Org(_)           => List.empty
-      case Scope.Project(project) => List(ViewRef(project, defaultViewId))
+      case Scope.Root                                 => List(defaultView, defaultView2, defaultView3)
+      case Scope.Org(`org`)                           => List(defaultView, defaultView2)
+      case Scope.Org(`org2`)                          => List(defaultView3)
+      case Scope.Org(_)                               => List.empty
+      case Scope.Project(`projectWithoutDefaultView`) => List.empty
+      case Scope.Project(project)                     => List(ViewRef(project, defaultViewId))
     }
     viewRefs.map { ref =>
       IndexingView(ref, "index", permissions.read)
@@ -122,5 +128,14 @@ class DefaultViewsQuerySuite extends NexusSuite {
 
   test(s"Raise an error for root for Anonymous") {
     defaultViewsQuery.list(rootSearch)(anon).intercept[AuthorizationFailed]
+  }
+
+  test(s"Raise a 'DefaultViewNotFound' the caller has access to the project but the project has no default view") {
+    val projectWithoutDefaultViewSearch =
+      ProjectSearch(projectWithoutDefaultView, ResourcesSearchParams(), Pagination.OnePage, SortList.empty)
+
+    defaultViewsQuery
+      .list(projectWithoutDefaultViewSearch)(charlie)
+      .interceptEquals(DefaultViewNotFound(projectWithoutDefaultView))
   }
 }

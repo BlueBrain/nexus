@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphErrorParser
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -79,6 +80,23 @@ object BlazegraphViewRejection {
     *   the view id
     */
   final case class ViewIsDeprecated(id: Iri) extends BlazegraphViewRejection(s"Blazegraph view '$id' is deprecated.")
+
+  /**
+    * Rejection returned when attempting to update/deprecate a view that is already deprecated.
+    *
+    * @param id
+    *   the view id
+    */
+  final case class ViewIsNotDeprecated(id: Iri)
+      extends BlazegraphViewRejection(s"Blazegraph view '$id' is not deprecated.")
+
+  /**
+    * Rejection returned when attempting to update/deprecate the default view.
+    */
+  final case object ViewIsDefaultView
+      extends BlazegraphViewRejection(s"Cannot perform write operations on the default Blazegraph view.")
+
+  type ViewIsDefaultView = ViewIsDefaultView.type
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
@@ -223,7 +241,9 @@ object BlazegraphViewRejection {
       r match {
         case ProjectContextRejection(rejection)                  => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)             =>
-          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
+          obj
+            .add(keywords.tpe, "SparqlClientError".asJson)
+            .add("details", BlazegraphErrorParser.details(rejection).asJson)
         case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidViewReferences(views)                        => obj.add("views", views.asJson)
         case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
@@ -242,6 +262,7 @@ object BlazegraphViewRejection {
       case TagNotFound(_)               => StatusCodes.NotFound
       case ViewNotFound(_, _)           => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case ViewIsDefaultView            => StatusCodes.Forbidden
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
       case _                            => StatusCodes.BadRequest

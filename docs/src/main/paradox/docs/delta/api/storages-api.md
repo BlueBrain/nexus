@@ -248,6 +248,27 @@ Request
 Response
 :   @@snip [deprecated.json](assets/storages/deprecated.json)
 
+## Undeprecate
+
+Unlocks the storage, so further operations can be performed. It will again be taken into account by the default storage
+selection mechanism.
+
+Undeprecating a storage is considered to be an update as well.
+
+```
+PUR /v1/storages/{org_label}/{project_label}/{storage_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the storage.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/storages/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/storages/undeprecated.json)
+
 ## Fetch
 
 ```

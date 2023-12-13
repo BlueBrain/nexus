@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -23,23 +23,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
   implicit private val f: FusionConfig = fusionConfig
-
-  val undefinedPermission = Permission.unsafe("not/defined")
-  val allowedPerms        = Set(
-    permissions.read,
-    permissions.write,
-    events.read
-  )
 
   private val viewId  = nxv + uuid.toString
   private val esId    = iri"http://example.com/es-projection"
@@ -98,44 +90,48 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
   val viewSource        = jsonContentOf("composite-view-source.json")
   val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    aclCheck.append(AclAddress.Root, reader -> Set(permissions.read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(permissions.write)).accepted
+  }
+
   "Composite views routes" should {
     "fail to create a view without permission" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "create a view" in {
-      aclCheck.append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)).accepted
-      Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> asBob ~> routes ~> check {
+      Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual viewMetadata(1, false)
       }
     }
 
     "reject creation of a view which already exists" in {
-      Put(s"/v1/views/myorg/myproj/$uuid", viewSource.toEntity) ~> asBob ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid", viewSource.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/view-already-exists.json", "uuid" -> uuid)
       }
     }
 
     "fail to update a view without permission" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSource.toEntity) ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSource.toEntity) ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "update a view" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSourceUpdated.toEntity) ~> asBob ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSourceUpdated.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewMetadata(2, false)
       }
     }
 
     "reject update of a view at a non-existent revision" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=3", viewSourceUpdated.toEntity) ~> asBob ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=3", viewSourceUpdated.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 3, "expected" -> 2)
       }
@@ -143,7 +139,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "tag a view" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post(s"/v1/views/myorg/myproj/$uuid/tags?rev=2", payload.toEntity) ~> asBob ~> routes ~> check {
+      Post(s"/v1/views/myorg/myproj/$uuid/tags?rev=2", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual viewMetadata(3, false)
       }
@@ -156,7 +152,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch a view" in {
-      Get(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
+      Get(s"/v1/views/myorg/myproj/$uuid") ~> asReader ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(view(3, false, "2 minutes"))
       }
@@ -170,7 +166,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         s"/v1/resources/myorg/myproj/_/$uuid?rev=1"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
             view(1, false, "1 minute")
@@ -183,7 +179,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fetch a view source" in {
       val endpoints = List(s"/v1/views/myorg/myproj/$uuid/source", s"/v1/resources/myorg/myproj/_/$uuid/source")
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual viewSourceUpdated.removeAllKeys("token")
         }
@@ -193,7 +189,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fetch the view tags" in {
       val endpoints = List(s"/v1/views/myorg/myproj/$uuid/tags", s"/v1/resources/myorg/myproj/_/$uuid/tags")
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asBob ~> routes ~> check {
+        Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
@@ -204,7 +200,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get(s"/v1/views/myorg/myproj/$uuid?rev=1&tag=mytag") ~> asBob ~> routes ~> check {
+      Get(s"/v1/views/myorg/myproj/$uuid?rev=1&tag=mytag") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
@@ -226,7 +222,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
         val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
         forAll(List(postRequest, getRequest)) { req =>
-          req ~> asBob ~> routes ~> check {
+          req ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.header[`Content-Type`].value.value shouldEqual mediaType.value
             response.asString shouldEqual expected
@@ -244,7 +240,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       )
 
       forAll(endpoints) { endpoint =>
-        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> asBob ~> routes ~> check {
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual esResult
         }
@@ -252,22 +248,57 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fail to deprecate a view without permission" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "reject a deprecation of a view without rev" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "deprecate a view" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asBob ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewMetadata(4, true)
+      }
+    }
+
+    "fail to undeprecate a view without permission" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "reject an undeprecation of a view without rev" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject an undeprecation of a view that is not deprecated" in {
+      givenAView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
+        }
+      }
+    }
+
+    "undeprecate a view" in {
+      givenADeprecatedView { view =>
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual viewMetadataWithId(nxv + view, 3, deprecated = false)
+        }
       }
     }
 
@@ -287,12 +318,9 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
         val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
         forAll(List(postRequest, getRequest)) { req =>
-          req ~> asBob ~> routes ~> check {
+          req ~> routes ~> check {
             response.status shouldEqual StatusCodes.BadRequest
-            response.asJson shouldEqual jsonContentOf(
-              "routes/errors/view-deprecated.json",
-              "id" -> viewId
-            )
+            response.asJson shouldEqual viewIsDeprecatedError(viewId)
           }
         }
       }
@@ -307,12 +335,9 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       )
 
       forAll(endpoints) { endpoint =>
-        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> asBob ~> routes ~> check {
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, ec) ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf(
-            "routes/errors/view-deprecated.json",
-            "id" -> viewId
-          )
+          response.asJson shouldEqual viewIsDeprecatedError(viewId)
         }
       }
     }
@@ -327,13 +352,34 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
   }
 
+  private def givenAView(test: String => Assertion): Assertion = {
+    val viewId = genString()
+    Put(s"/v1/views/myorg/myproj/$viewId", viewSource.toEntity) ~> asWriter ~> routes ~> check {
+      response.status shouldEqual StatusCodes.Created
+    }
+    test(viewId)
+  }
+
+  private def givenADeprecatedView(test: String => Assertion): Assertion = {
+    givenAView { view =>
+      Delete(s"/v1/views/myorg/myproj/$view?rev=1") ~> asWriter ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+      }
+      test(view)
+    }
+  }
+
   private def viewMetadata(rev: Int, deprecated: Boolean) =
+    viewMetadataWithId(nxv + uuid.toString, rev, deprecated)
+
+  private def viewMetadataWithId(id: Iri, rev: Int, deprecated: Boolean) =
     jsonContentOf(
       "routes/responses/view-metadata.json",
+      "id"         -> id,
       "uuid"       -> uuid,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "self"       -> ResourceUris("views", projectRef, viewId).accessUri
+      "self"       -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def view(rev: Int, deprecated: Boolean, rebuildInterval: String) =

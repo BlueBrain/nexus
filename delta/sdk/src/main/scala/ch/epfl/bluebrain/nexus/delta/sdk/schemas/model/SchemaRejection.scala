@@ -165,6 +165,14 @@ object SchemaRejection {
   final case class SchemaIsDeprecated(id: Iri) extends SchemaFetchRejection(s"Schema '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a schema that is not deprecated.
+    *
+    * @param id
+    *   the schema identifier
+    */
+  final case class SchemaIsNotDeprecated(id: Iri) extends SchemaFetchRejection(s"Schema '$id' is not deprecated.")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current schema, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *

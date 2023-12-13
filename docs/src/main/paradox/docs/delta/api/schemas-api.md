@@ -206,6 +206,26 @@ Request
 Response
 :   @@snip [deprecated.json](assets/schemas/deprecated.json)
 
+## Undeprecate
+
+Unlocks the schema, so further operations can be performed. It adds the schema to listing/querying results again.
+
+Undeprecating a schema is considered to be an update as well. 
+
+```
+PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the schema.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/schemas/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/schemas/undeprecated.json)
+
 ## Fetch
 
 ```

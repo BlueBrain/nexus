@@ -84,7 +84,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     val pss         = new ParameterizedSparqlString
     pss.setCommandText(queryString)
     for {
-      _          <- IO(pss.asUpdate()).adaptError(e => InvalidUpdateRequest(index, queryString, e.getMessage))
+      _          <- IO(pss.asUpdate()).adaptError(e => InvalidUpdateRequest(index, queryString, e.getMessage.some))
       queryOpt    = uniqueGraph(queries).map(graph => Query("using-named-graph-uri" -> graph.toString))
       formData    = FormData("update" -> queryString)
       reqEndpoint = endpoint(index).withQuery(queryOpt.getOrElse(Query.Empty))

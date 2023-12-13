@@ -4,9 +4,9 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReferences, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UndeprecateBlazegraphView, UpdateBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUndeprecated, BlazegraphViewUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReferences, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue}
@@ -206,6 +206,28 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
       }
     }
 
+    "evaluating the UndeprecateBlazegraphView command" should {
+      "emit an BlazegraphViewUndeprecated" in {
+        val deprecatedState   = Some(current(deprecated = true))
+        val undeprecateCmd    = UndeprecateBlazegraphView(id, project, 1, subject)
+        val undeprecatedEvent = BlazegraphViewUndeprecated(id, project, BlazegraphType, uuid, 2, epoch, subject)
+        eval(deprecatedState, undeprecateCmd).accepted shouldEqual undeprecatedEvent
+      }
+      "raise a ViewNotFound rejection" in {
+        val undeprecateCmd = UndeprecateBlazegraphView(id, project, 1, subject)
+        eval(None, undeprecateCmd).rejectedWith[ViewNotFound]
+      }
+      "raise a IncorrectRev rejection" in {
+        val deprecatedState = Some(current(deprecated = true))
+        val undeprecateCmd  = UndeprecateBlazegraphView(id, project, 2, subject)
+        eval(deprecatedState, undeprecateCmd).rejectedWith[IncorrectRev]
+      }
+      "raise a ViewIsDeprecated rejection" in {
+        val undeprecateCmd = UndeprecateBlazegraphView(id, project, 1, subject)
+        eval(Some(current()), undeprecateCmd).rejectedWith[ViewIsNotDeprecated]
+      }
+    }
+
     "applying an BlazegraphViewCreated event" should {
       "discard the event for a Current state" in {
         next(
@@ -295,6 +317,21 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
           Some(current()),
           BlazegraphViewDeprecated(id, project, BlazegraphType, uuid, 2, epoch, subject)
         ).value shouldEqual current(deprecated = true, rev = 2, updatedBy = subject)
+      }
+    }
+
+    "applying an BlazegraphViewUndeprecated event" should {
+      "discard the event for an Initial state" in {
+        next(
+          None,
+          BlazegraphViewUndeprecated(id, project, BlazegraphType, uuid, 2, epoch, subject)
+        ) shouldEqual None
+      }
+      "change the state" in {
+        next(
+          Some(current().copy(deprecated = true)),
+          BlazegraphViewUndeprecated(id, project, BlazegraphType, uuid, 2, epoch, subject)
+        ).value shouldEqual current(deprecated = false, rev = 2, updatedBy = subject)
       }
     }
   }

@@ -1,0 +1,10 @@
+{
+  "@type": "SparqlView",
+  "description": "A Sparql view of all resources in the project.",
+  "includeDeprecated": true,
+  "includeMetadata": true,
+  "name": "Default Sparql view",
+  "permission": "views/query",
+  "resourceSchemas": [],
+  "resourceTypes": []
+}

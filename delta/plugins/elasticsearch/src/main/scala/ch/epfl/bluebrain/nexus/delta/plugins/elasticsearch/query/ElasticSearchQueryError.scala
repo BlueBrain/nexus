@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.KeyOps
 import io.circe.{Encoder, JsonObject}
 
@@ -41,6 +42,15 @@ object ElasticSearchQueryError {
   final case class InvalidResourceId(id: String)
       extends ElasticSearchQueryError(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
+  /**
+    * Rejection returned when attempting to do an action which depends on a default view but none is found.
+    *
+    * @param project
+    *   the project reference
+    */
+  final case class DefaultViewNotFound(project: ProjectRef)
+      extends ElasticSearchQueryError(s"Default ElasticSearch view not found in project '$project'.")
+
   implicit val elasticSearchQueryErrorEncoder: Encoder.AsObject[ElasticSearchQueryError] =
     Encoder.AsObject.instance { r =>
       JsonObject(keywords.tpe := ClassUtils.simpleName(r), "reason" := r.reason)
@@ -53,6 +63,7 @@ object ElasticSearchQueryError {
     HttpResponseFields {
       case ElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case InvalidResourceId(_)            => StatusCodes.BadRequest
+      case DefaultViewNotFound(_)          => StatusCodes.NotFound
       case ProjectContextRejection(rej)    => rej.status
     }
 
