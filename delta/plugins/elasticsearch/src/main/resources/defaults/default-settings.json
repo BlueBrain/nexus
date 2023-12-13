@@ -1,7 +1,7 @@
 {
   "analysis": {
     "analyzer": {
-      "nexus": {
+      "default": {
         "type": "custom",
         "tokenizer": "classic",
         "filter": [
@@ -9,6 +9,37 @@
           "word_delimiter_nexus",
           "lowercase"
         ]
+      },
+      "path_hierarchy": {
+        "filter": [
+          "lowercase"
+        ],
+        "tokenizer": "path_hierarchy",
+        "type": "custom"
+      },
+      "autocomplete": {
+        "type": "custom",
+        "tokenizer": "autocomplete",
+        "filter": [
+          "lowercase"
+        ]
+      },
+      "autocomplete_search": {
+        "tokenizer": "lowercase"
+      }
+    },
+    "tokenizer": {
+      "autocomplete": {
+        "type": "edge_ngram",
+        "min_gram": 2,
+        "max_gram": 10,
+        "token_chars": [
+          "letter"
+        ]
+      },
+      "path_hierarchy": {
+        "reverse": true,
+        "type": "path_hierarchy"
       }
     },
     "filter": {
