@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, schema, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeDef, PipeRef}
