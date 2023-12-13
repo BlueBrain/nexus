@@ -1,10 +1,10 @@
 {
   "properties": {
     "@type": {
-      "type": "keyword"
+      "type": "text"
     },
     "@id": {
-      "type": "keyword",
+      "type": "text",
       "analyzer": "path_hierarchy"
     },
     "prefLabel": {
@@ -37,7 +37,7 @@
       "type": "text"
     },
     "_algorithm": {
-      "type": "keyword"
+      "type": "text"
     },
     "_uuid": {
       "type": "text",
@@ -66,25 +66,25 @@
       "type": "date"
     },
     "_createdBy": {
-      "type": "keyword"
+      "type": "text"
     },
     "_updatedBy": {
-      "type": "keyword"
+      "type": "text"
     },
     "_constrainedBy": {
-      "type": "keyword"
+      "type": "text"
     },
     "_project": {
-      "type": "keyword"
+      "type": "text"
     },
     "_self": {
-      "type": "keyword"
+      "type": "text"
     },
     "_incoming": {
-      "type": "keyword"
+      "type": "text"
     },
     "_outgoing": {
-      "type": "keyword"
+      "type": "text"
     },
     "_original_source": {
       "type": "text"
@@ -93,22 +93,22 @@
       "type": "long"
     },
     "_mediaType": {
-      "type": "keyword"
+      "type": "text"
     },
     "_location": {
-      "type": "keyword"
+      "type": "text"
     },
     "_filename": {
-      "type": "keyword"
+      "type": "text"
     },
     "_digest": {
       "type": "nested",
       "properties": {
         "_algorithm": {
-          "type": "keyword"
+          "type": "text"
         },
         "_value": {
-          "type": "keyword"
+          "type": "text"
         }
       }
     },
@@ -119,10 +119,10 @@
           "type": "long"
         },
         "@id": {
-          "type": "keyword"
+          "type": "text"
         },
         "@type": {
-          "type": "keyword"
+          "type": "text"
         }
       }
     },
@@ -130,10 +130,10 @@
       "type": "nested",
       "properties": {
         "_prefix": {
-          "type": "keyword"
+          "type": "text"
         },
         "_namespace": {
-          "type": "keyword"
+          "type": "text"
         }
       }
     }
