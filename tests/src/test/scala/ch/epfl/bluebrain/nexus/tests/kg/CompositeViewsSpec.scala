@@ -37,32 +37,30 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read)).accepted
 
-    "succeed if payload is correct" in {
-      val projectPayload = ProjectPayload(
-        "Description",
-        "https://music.example.com/",
-        Some("https://music.example.com/"),
-        Map(
-          "local"        -> "https://music.example.com/sources/local",
-          "remote_songs" -> "https://music.example.com/sources/songs",
-          "cross_albums" -> "https://music.example.com/sources/albums",
-          "bands"        -> "https://music.example.com/bands",
-          "albums"       -> "https://music.example.com/albums"
-        ),
-        enforceSchema = false
-      )
+    val projectPayload = ProjectPayload(
+      "Description",
+      "https://music.example.com/",
+      Some("https://music.example.com/"),
+      Map(
+        "local"        -> "https://music.example.com/sources/local",
+        "remote_songs" -> "https://music.example.com/sources/songs",
+        "cross_albums" -> "https://music.example.com/sources/albums",
+        "bands"        -> "https://music.example.com/bands",
+        "albums"       -> "https://music.example.com/albums"
+      ),
+      enforceSchema = false
+    )
 
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- List(
-               adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
-               adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
-               adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
-             ).sequence
-      } yield succeed
-    }
+    val setup = for {
+      _ <- aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read))
+      _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
+      _ <- adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry)
+      _ <- adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry)
+      _ <- adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+    } yield succeed
+
+    setup.accepted
 
     // wait until in project resolver is created
     eventually {
