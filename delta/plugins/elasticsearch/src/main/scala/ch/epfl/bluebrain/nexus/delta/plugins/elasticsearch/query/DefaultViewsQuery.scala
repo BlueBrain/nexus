@@ -6,7 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.{DefaultViewNotFound, ElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import io.circe.JsonObject
 
@@ -70,16 +71,26 @@ object DefaultViewsQuery {
     private def filterViews(scope: Scope)(implicit caller: Caller) =
       fetchViews(scope)
         .flatMap { allViews =>
-          aclCheck
+          val authorizedViews = aclCheck
             .mapFilter[IndexingView, IndexingView](
               allViews,
               v => ProjectAcl(v.ref.project) -> permissions.read,
               identity
             )(caller)
-        }
-        .flatMap {
-          case views if views.isEmpty => IO.raiseError(AuthorizationFailed("No views are accessible."))
-          case views                  => IO.pure(views)
+
+          scope match {
+            case Scope.Project(ref) =>
+              (canReadProject(ref), authorizedViews).flatMapN {
+                case (false, _)                     => raiseNoViewAccessibleError
+                case (true, views) if views.isEmpty => raiseDefaultViewError(ref)
+                case (_, views)                     => IO.pure(views)
+              }
+            case _                  =>
+              authorizedViews.flatMap {
+                case views if views.isEmpty => raiseNoViewAccessibleError
+                case views                  => IO.pure(views)
+              }
+          }
         }
 
     override def list(
@@ -98,6 +109,15 @@ object DefaultViewsQuery {
       filterViews(searchRequest.scope).flatMap { views =>
         aggregateAction(searchRequest, views)
       }
+
+    private def canReadProject(ref: ProjectRef)(implicit caller: Caller) =
+      aclCheck.authorizeFor(ProjectAcl(ref), permissions.read)
+
+    private def raiseNoViewAccessibleError: IO[Set[IndexingView]] =
+      IO.raiseError(AuthorizationFailed("No views are accessible."))
+
+    private def raiseDefaultViewError(ref: ProjectRef): IO[Set[IndexingView]] =
+      IO.raiseError(DefaultViewNotFound(ref))
 
   }
 }

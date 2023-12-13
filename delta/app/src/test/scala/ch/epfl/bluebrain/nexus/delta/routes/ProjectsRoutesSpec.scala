@@ -1,29 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConfig, ProjectProvisioning}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
@@ -57,16 +53,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
   private val superUser       = User("superUser", Label.unsafe(genString()))
   private val provisionedUser = User("user1", provisionedRealm)
   private val invalidUser     = User("!@#%^", provisionedRealm)
-
-  private def as(user: User) = addCredentials(OAuth2BearerToken(user.subject))
-
-  private def usersFixture(users: (User, AclAddress, Set[Permission])*) = {
-    AclSimpleCheck(
-      users: _*
-    ).accepted -> IdentitiesDummy(users.map { case (user, _, _) =>
-      Caller(user, Set(user, Anonymous, Authenticated(user.realm), Group("group", user.realm)))
-    }: _*)
-  }
 
   private val org1     = Label.unsafe("org1")
   private val org2     = Label.unsafe("org2")

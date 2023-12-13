@@ -493,6 +493,26 @@ Request
 Response
 :   @@snip [deprecated.json](../assets/views/composite/deprecated.json)
 
+## Undeprecate
+
+Unlocks the view, so further operations can be performed. It also starts indexing resources into it again.
+
+Undeprecating a view is considered to be an update as well.
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the view.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](../assets/views/composite/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](../assets/views/composite/undeprecated.json)
+
 ## Fetch
 
 ```

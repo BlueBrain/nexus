@@ -1,0 +1,188 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@id": "https://bbp.epfl.ch/data/axon-annotation",
+    "@type": [
+      "Annotation",
+      "NeuronMorphologyFeatureAnnotation"
+    ],
+    "brainLocation": {
+      "@type": "BrainLocation",
+      "atlasSpatialReferenceSystem": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+        "@type": [
+          "AtlasSpatialReferenceSystem"
+        ]
+      },
+      "brainRegion": {
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/262",
+        "label": "Reticular nucleus of the thalamus"
+      },
+      "coordinatesInBrainAtlas": {
+        "valueX": {
+          "@type": "xsd:float",
+          "@value": 23709
+        },
+        "valueY": {
+          "@type": "xsd:float",
+          "@value": 15765
+        },
+        "valueZ": {
+          "@type": "xsd:float",
+          "@value": 4789
+        }
+      }
+    },
+    "compartment": "Axon",
+    "contribution": {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/cgonzale",
+        "@type": [
+          "Agent",
+          "Person"
+        ],
+        "email": "cristina.gonzalezespinoza@epfl.ch",
+        "familyName": "Espinoza",
+        "givenName": "Cristina Elizabeth Gonzalez",
+        "name": "Cristina Elizabeth Gonzalez Espinoza"
+      }
+    },
+    "hasBody": [
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Neurite Max Radial Distance"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 0
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Length"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm",
+              "value": 10.0
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm",
+              "value": 60.58234
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm",
+              "value": 0.0
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm",
+              "value": 52.48914
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Total Area"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "μm²",
+              "value": 0
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "μm²",
+              "value": 0
+            },
+            {
+              "statistic": "median",
+              "unitCode": "μm²",
+              "value": 0
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "μm²",
+              "value": 0
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "μm²",
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "@type": "AnnotationBody",
+        "isMeasurementOf": {
+          "label": "Section Strahler Orders"
+        },
+        "value": {
+          "series": [
+            {
+              "statistic": "minimum",
+              "unitCode": "dimensionless",
+              "value": 0
+            },
+            {
+              "statistic": "maximum",
+              "unitCode": "dimensionless",
+              "value": 0
+
+            },
+            {
+              "statistic": "mean",
+              "unitCode": "dimensionless",
+              "value": 0
+
+            },
+            {
+              "statistic": "standard deviation",
+              "unitCode": "dimensionless",
+              "value": 0
+            }
+          ]
+        }
+      }
+    ],
+    "hasTarget": {
+      "@type": "AnnotationTarget",
+      "hasSource": {
+        "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+        "@type": [
+          "NeuronMorphology",
+          "ReconstructedCell",
+          "ReconstructedWholeBrainCell",
+          "ReconstructedNeuronMorphology"
+        ],
+        "_rev": 1
+      }
+    },
+    "name": "Neuron Morphology Feature Annotation"
+  }

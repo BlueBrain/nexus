@@ -12,7 +12,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsEffectEventually, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, EitherValues, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -55,7 +55,8 @@ trait BaseIntegrationSpec
     with ScalatestRouteTest
     with Eventually
     with AppendedClues
-    with ScalaFutures {
+    with ScalaFutures
+    with CatsEffectEventually {
 
   private val logger = Logger[this.type]
 

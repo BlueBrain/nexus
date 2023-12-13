@@ -9,6 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedLocationFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
+import java.net.URI
+import java.nio.file.Paths
+import scala.util.{Failure, Success, Try}
+
 object DiskStorageFetchFile extends FetchFile {
 
   override def apply(attributes: FileAttributes): IO[AkkaSource] =
@@ -18,8 +22,8 @@ object DiskStorageFetchFile extends FetchFile {
     absoluteDiskPath(path).redeemWith(
       e => IO.raiseError(UnexpectedLocationFormat(s"file://$path", e.getMessage)),
       path =>
-        IO(path.toFile.exists()).flatMap { exists =>
-          if (exists) IO(FileIO.fromPath(path))
+        IO.blocking(path.toFile.exists()).flatMap { exists =>
+          if (exists) IO.blocking(FileIO.fromPath(path))
           else IO.raiseError(FetchFileRejection.FileNotFound(path.toString))
         }
     )

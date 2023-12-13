@@ -37,7 +37,7 @@ object ResourcesTrialModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResourcesTrial(
-        resources.fetch(_, _, None),
+        resources.fetchState(_, _, None),
         validate,
         fetchContext.mapRejection(ProjectContextRejection),
         contextResolution,

@@ -15,7 +15,7 @@ Although the application is served by a Node.js server, the client communicates 
 
 ## Pages
 
-Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing system and help separating the application main features.
+Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing system and help separate the application's main features.
 
 Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: @ref:[Organizations](../fusion/organizations.md), @ref:[Projects](../fusion/projects.md), @ref:[Studios](../fusion/studios.md) and @ref:[My data](../fusion/my-data.md).
 
@@ -27,7 +27,7 @@ The search page has been removed, but every element that was previously availabl
 
 @@@
 
-The pages in Nexus Fusion are part of the source code and reside in the `src/pages` folder. While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming releases.
+The pages in Nexus Fusion are part of the source code and reside in the `src/pages` folder. While all the previous features are still available in the current version of Nexus Fusion, we expect their functionality to evolve and change in the upcoming releases.
 
 ## Plugins
 
@@ -47,9 +47,9 @@ Customize the Nexus codebase appearance by setting environment variables. Defaul
 #### Landing Page Customization
 
 - `LOGO_IMG`: HTTPS URL for the application logo. Recommended: SVG format with transparent background. Ideal size: ~35 px height, max 250 px width. @link:[Click here for an example SVG](https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/EPFL_BBP_logo.svg){ open=new }.
-- `LOGO_LINK`: HTTPS URL redirecting from the logo. Example: <https://www.epfl.ch>
+- `LOGO_LINK`: HTTPS URL redirecting from the logo. Example: <https://www.epfl.ch/en/>
 - `LANDING_VIDEO`: HTTPS URL for a landing page video. Requirements: MP4 format, H.264 codec, ~10MB, 1920×1080 resolution. @link:[Click here for an example video](https://github.com/BlueBrain/nexus-web/tree/main/src/videos/BrainRegionsNexusPage.mp4){ open=new }. Ensure that the video's main color is not too bright, as the text on top of it will be white.
-- `LANDING_POSTER_IMG`: HTTPS URL for a loading image on the landing page, displayed while the video loads. @link:[Click here for an example poster image](https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/BrainRegionsNexusPage.jpg){ open=new }. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video and be under 200 KB in size.
+- `LANDING_POSTER_IMG`: HTTPS URL for a loading image on the landing page, displayed while the video loads. @link:[Click here for an example poster image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/BrainRegionsNexusPage.jpg){ open=new }. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.
 - `MAIN_COLOR`: Main background color in hex code. Example color: #062d68
 
 #### Page Specific Customization
@@ -58,9 +58,9 @@ Customize the Nexus codebase appearance by setting environment variables. Defaul
 ![Example projects env](./assets/projects-envs.png)
 ![Example studios env](./assets/studios-envs.png)
 
-- `ORGANIZATION_IMG`: Provide the HTTPS URL for an image on the organization page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/sscx-by-layers-v3.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB.
-- `PROJECTS_IMG`: Share the HTTPS URL for an image on the projects page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/hippocampus.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB.
-- `STUDIOS_IMG`: Provide the HTTPS URL for an image on the studios page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/neocortex.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB.
+- `ORGANIZATION_IMG`: Provide the HTTPS URL for an image on the organization page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/sscx-by-layers-v3.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.
+- `PROJECTS_IMG`: Share the HTTPS URL for an image on the projects page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/hippocampus.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.
+- `STUDIOS_IMG`: Provide the HTTPS URL for an image on the studios page. @link:[Click here for an example image](https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/neocortex.png){ open=new }. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.
 
 #### Additional Options
 

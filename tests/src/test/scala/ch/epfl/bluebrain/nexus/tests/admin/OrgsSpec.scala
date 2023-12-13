@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.testkit.scalatest.OrgMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import io.circe.Json
+import org.scalactic.source.Position
 
 class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
 
@@ -267,5 +270,40 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
              }
       } yield succeed
     }
+  }
+
+  "undeprecate project" in {
+    for {
+      orgId <- thereIsADeprecatedOrganization
+      _     <- undeprecateOrganization(orgId, 2)
+      org   <- getOrganizationLatest(orgId)
+    } yield {
+      org shouldNot be(deprecated)
+    }
+  }
+
+  def thereIsAnOrganization: IO[String] = {
+    val org = genId()
+    adminDsl.createOrganization(org, genString(), Leela).as(org)
+  }
+  def thereIsADeprecatedOrganization: IO[String] = {
+    for {
+      org <- thereIsAnOrganization
+      _   <- deprecateOrganization(org)
+    } yield org
+  }
+
+  def deprecateOrganization(orgId: String): IO[Unit] = {
+    adminDsl.deprecateOrganization(orgId, Leela).as(())
+  }
+
+  def undeprecateOrganization(org: String, revision: Int)(implicit pos: Position) = {
+    deltaClient.put[Json](s"/orgs/$org/undeprecate?rev=$revision", Json.obj(), Leela) { (_, response) =>
+      response.status shouldBe StatusCodes.OK
+    }
+  }
+
+  def getOrganizationLatest(org: String): IO[Json] = {
+    deltaClient.getJson[Json](s"/orgs/$org", Leela)
   }
 }

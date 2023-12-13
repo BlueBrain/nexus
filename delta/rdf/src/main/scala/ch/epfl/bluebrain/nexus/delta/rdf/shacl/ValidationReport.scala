@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.{Encoder, Json}
@@ -38,8 +38,9 @@ object ValidationReport {
 
   private val shaclCtx: ContextValue = ContextValue(contexts.shacl)
 
-  final def apply(report: Resource)(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] = {
-    val tmpGraph = Graph.unsafe(DatasetFactory.create(report.getModel).asDatasetGraph())
+  final def apply(report: Resource)(implicit rcr: RemoteContextResolution): IO[ValidationReport] = {
+    implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+    val tmpGraph                = Graph.unsafe(DatasetFactory.create(report.getModel).asDatasetGraph())
     for {
       rootNode      <-
         IO.fromEither(

@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import io.circe.Json
 
 /**
   * Enumeration of resource commands
@@ -58,28 +56,26 @@ object ResourceCommand {
   /**
     * Command that signals the intent to create a new resource.
     *
-    * @param id
-    *   the resource identifier
     * @param project
     *   the project where the resource belongs
     * @param schema
     *   the schema used to constrain the resource
-    * @param source
-    *   the representation of the resource as posted by the subject
     * @param jsonld
     *   the jsonld representation of the resource
     * @param caller
     *   the subject which created this event
+    * @param tag
+    *   an optional tag to link to the resource at creation
     */
   final case class CreateResource(
-      id: Iri,
       project: ProjectRef,
       schema: ResourceRef,
-      source: Json,
-      jsonld: JsonLdResult,
+      jsonld: JsonLdAssembly,
       caller: Caller,
       tag: Option[UserTag]
   ) extends ResourceCommand {
+
+    override def id: Iri = jsonld.id
 
     override def rev: Int = 0
 
@@ -89,40 +85,37 @@ object ResourceCommand {
   /**
     * Command that signals the intent to update an existing resource.
     *
-    * @param id
-    *   the resource identifier
     * @param project
     *   the project where the resource belongs
     * @param schemaOpt
     *   the optional schema of the resource. A None value ignores the schema from this command
-    * @param source
-    *   the representation of the resource as posted by the subject
     * @param jsonld
     *   the jsonld representation of the resource
     * @param rev
     *   the last known revision of the resource
     * @param caller
     *   the subject which created this event
+    * @param tag
+    *   an optional tag to link to this new revision
     */
   final case class UpdateResource(
-      id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      source: Json,
-      jsonld: JsonLdResult,
+      jsonld: JsonLdAssembly,
       rev: Int,
       caller: Caller,
       tag: Option[UserTag]
   ) extends ResourceCommand
       with ModifyCommand {
+
+    override def id: Iri = jsonld.id
+
     def subject: Subject = caller.subject
   }
 
   /**
     * Command that signals the intent to refresh an existing resource.
     *
-    * @param id
-    *   the resource identifier
     * @param project
     *   the project where the resource belongs
     * @param schemaOpt
@@ -135,14 +128,15 @@ object ResourceCommand {
     *   the subject which created this event
     */
   final case class RefreshResource(
-      id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      jsonld: JsonLdResult,
+      jsonld: JsonLdAssembly,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand
       with ModifyCommand {
+
+    override def id: Iri = jsonld.id
     def subject: Subject = caller.subject
   }
 
@@ -155,8 +149,6 @@ object ResourceCommand {
     *   project where the resource belongs
     * @param schemaRef
     *   schema of the resource
-    * @param expanded
-    *   expanded representation of the resource
     * @param rev
     *   last known revision of the resource
     * @param caller
@@ -166,7 +158,6 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaRef: ResourceRef,
-      expanded: ExpandedJsonLd,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand

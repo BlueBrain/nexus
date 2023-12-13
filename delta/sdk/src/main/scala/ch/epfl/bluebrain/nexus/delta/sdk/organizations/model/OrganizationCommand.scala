@@ -72,4 +72,20 @@ object OrganizationCommand {
       rev: Int,
       subject: Subject
   ) extends OrganizationCommand
+
+  /**
+    * An intent to deprecate an organization.
+    *
+    * @param label
+    *   the organization label
+    * @param rev
+    *   the revision to deprecate
+    * @param subject
+    *   the subject which created this command.
+    */
+  final case class UndeprecateOrganization(
+      label: Label,
+      rev: Int,
+      subject: Subject
+  ) extends OrganizationCommand
 }

@@ -19,7 +19,9 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
-The latest stable release is **v1.8.0** released on **14.06.2023**.
+//TODO change the date
+
+The latest stable release is **v1.9.0** released on **14.06.2023**.
 
 ## 1.9.0
 
@@ -28,6 +30,8 @@ The latest stable release is **v1.8.0** released on **14.06.2023**.
 - @ref:[Resource payloads can't contain fields starting by `_` anymore](../delta/api/resources-api.md)
 - @ref:[The endpoint for fetching indexing errors as SSEs changed](../delta/api/views/index.md#fetch-indexing-failures-as-sses)
 - @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#remote-storages)
+- @ref:[Encoding of self, incoming and outgoing links](../releases/v1.9-release-notes.md#self-incoming-and-outgoing-links)
+- @ref:[Remove support for Tarball archives](../releases/v1.9-release-notes.md#remove-support-for-tarball-archives)
 
 ### New features / enhancements
 
@@ -35,6 +39,14 @@ The latest stable release is **v1.8.0** released on **14.06.2023**.
 - @ref:[Files can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
 - @ref:[Indexing errors can now be listed and filtered](../delta/api/views/index.md#listing-indexing-failures)
 - @ref:[Multi fetch operation allows to get multiple resources in a single call](../delta/api/multi-fetch.md)
+- @ref:[Resources trial and resource generation](../delta/api/trial.md#resource-generation)
+- @ref:[Schema changes](../releases/v1.9-release-notes.md#schema-changes)
+- @ref:[Tagging at creation/updates](../delta/api/resources-api.md)
+- @ref:[Undeprecating resources, files, projects, organizations](../releases/v1.9-release-notes.md)
+- @ref:[Improving performance of composite view](../releases/v1.9-release-notes.md#composite-views)
+- @ref:[Id resolution](../delta/api/id-resolution.md)
+
+And @ref:[more...](../releases/v1.9-release-notes.md)
 
 ## 1.8.0 (14.06.2023)
 

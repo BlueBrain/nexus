@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUndeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -31,7 +31,8 @@ class OrganizationSerializationSuite extends SerializationSuite {
       "organizations",
       "org-updated.json"
     ),
-    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> loadEvents("organizations", "org-deprecated.json")
+    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> loadEvents("organizations", "org-deprecated.json"),
+    OrganizationUndeprecated(org, orgUuid, 1, instant, subject)               -> loadEvents("organizations", "org-undeprecated.json")
   )
 
   orgsEventMapping.foreach { case (event, (database, sse)) =>

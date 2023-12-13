@@ -59,8 +59,8 @@ final class SchemasImpl private (
       pc               <- fetchContext.onCreate(projectRef)
       iri              <- id.traverse(expandIri(_, pc))
       jsonLd           <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved <- resolveImports(jsonLd.iri, projectRef, jsonLd.expanded)
-    } yield CreateSchema(jsonLd.iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
+      expandedResolved <- resolveImports(jsonLd.id, projectRef, jsonLd.expanded)
+    } yield CreateSchema(jsonLd.id, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
 
   override def update(
       id: IdSegment,
@@ -129,6 +129,17 @@ final class SchemasImpl private (
       iri <- expandIri(id, pc)
       res <- eval(DeprecateSchema(iri, projectRef, rev, caller))
     } yield res).span("deprecateSchema")
+
+  override def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Int
+  )(implicit caller: Subject): IO[SchemaResource] =
+    (for {
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(UndeprecateSchema(iri, projectRef, rev, caller))
+    } yield res).span("undeprecateSchema")
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource] = {
     for {

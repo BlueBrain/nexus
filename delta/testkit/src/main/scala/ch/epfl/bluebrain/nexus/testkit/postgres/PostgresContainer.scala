@@ -9,7 +9,7 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.DurationConverters.ScalaDurationOps
 
 class PostgresContainer(user: String, password: String)
-    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:15.4")) {
+    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:15.5")) {
   addEnv("POSTGRES_USER", user)
   addEnv("POSTGRES_PASSWORD", password)
   addExposedPort(5432)

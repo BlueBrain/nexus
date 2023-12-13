@@ -129,6 +129,28 @@ object OrganizationEvent {
       subject: Subject
   ) extends OrganizationEvent
 
+  /**
+    * Event representing organization undeprecation.
+    *
+    * @param label
+    *   the organization label
+    * @param uuid
+    *   the organization UUID
+    * @param rev
+    *   the deprecation revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class OrganizationUndeprecated(
+      label: Label,
+      uuid: UUID,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Label, OrganizationEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._

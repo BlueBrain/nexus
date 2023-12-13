@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQueryResponse, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, Blazeg
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -42,6 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.syntax.EncoderOps
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
@@ -297,6 +299,29 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
         )
       )
     }
+
+    "have a correct details when the query is malformed" in {
+      val proj                 = view1Proj1.project
+      val sparqlQueryWithError = SparqlQuery("SELEC")
+      val result               = viewsQuery.query(view1Proj1.viewId, proj, sparqlQueryWithError, SparqlNTriples)
+
+      rejectionDetailsOf(result) should contain(
+        "org.openrdf.query.MalformedQueryException: Lexical error at line 1, column 6.  Encountered: <EOF> after : \"SELEC\""
+      )
+    }
+
+    "have a correct details when the query is malformed and the error provides expected tokens" in {
+      val proj                 = view1Proj1.project
+      val sparqlQueryWithError = SparqlQuery("SELECT {")
+      val result               = viewsQuery.query(view1Proj1.viewId, proj, sparqlQueryWithError, SparqlNTriples)
+
+      rejectionDetailsOf(result) should contain(
+        "org.openrdf.query.MalformedQueryException: Encountered \" \"{\" \"{ \"\" at line 1, column 8. Was expecting one of: \"(\", \"*\", \"distinct\", \"reduced\", <VAR1>, <VAR2>."
+      )
+    }
   }
+
+  private def rejectionDetailsOf(io: IO[SparqlQueryResponse]) =
+    io.rejectedWith[BlazegraphViewRejection].asJson.hcursor.get[String]("details").toOption
 
 }

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUndeprecated, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -26,14 +26,15 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   private val s3ValUpdate     = s3Val.copy(bucket = "mybucket2", maxFileSize = 41)
   private val remoteValUpdate = remoteVal.copy(folder = Label.unsafe("myfolder2"), maxFileSize = 42)
 
-  private val diskCreated    = StorageCreated(dId, projectRef, diskVal, diskFieldsJson, 1, instant, subject)
-  private val s3Created      = StorageCreated(s3Id, projectRef, s3Val, s3FieldsJson, 1, instant, subject)
-  private val remoteCreated  = StorageCreated(rdId, projectRef, remoteVal, remoteFieldsJson, 1, instant, subject)
-  private val diskUpdated    = StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)
-  private val s3Updated      = StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)
-  private val remoteUpdated  = StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)
-  private val diskTagged     = StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)
-  private val diskDeprecated = StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)
+  private val diskCreated      = StorageCreated(dId, projectRef, diskVal, diskFieldsJson, 1, instant, subject)
+  private val s3Created        = StorageCreated(s3Id, projectRef, s3Val, s3FieldsJson, 1, instant, subject)
+  private val remoteCreated    = StorageCreated(rdId, projectRef, remoteVal, remoteFieldsJson, 1, instant, subject)
+  private val diskUpdated      = StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)
+  private val s3Updated        = StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)
+  private val remoteUpdated    = StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)
+  private val diskTagged       = StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)
+  private val diskDeprecated   = StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)
+  private val diskUndeprecated = StorageUndeprecated(dId, projectRef, DiskStorageType, 5, instant, subject)
 
   private val storagesMapping = List(
     (diskCreated, loadEvents("storages", "disk-storage-created.json"), Created),
@@ -43,7 +44,8 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
     (s3Updated, loadEvents("storages", "s3-storage-updated.json"), Updated),
     (remoteUpdated, loadEvents("storages", "remote-storage-updated.json"), Updated),
     (diskTagged, loadEvents("storages", "storage-tag-added.json"), Tagged),
-    (diskDeprecated, loadEvents("storages", "storage-deprecated.json"), Deprecated)
+    (diskDeprecated, loadEvents("storages", "storage-deprecated.json"), Deprecated),
+    (diskUndeprecated, loadEvents("storages", "storage-undeprecated.json"), Undeprecated)
   )
 
   private val storageEventSerializer    = StorageEvent.serializer

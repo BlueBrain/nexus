@@ -1,50 +1,53 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
-import cats.implicits._
+import org.scalatest.Assertion
 
 class SparqlViewsSpec extends BaseIntegrationSpec {
 
   private val orgId  = genId()
   private val projId = genId()
-  val fullId         = s"$orgId/$projId"
+  val project1       = s"$orgId/$projId"
 
   private val projId2 = genId()
-  val fullId2         = s"$orgId/$projId2"
+  val project2        = s"$orgId/$projId2"
 
-  val projects = List(fullId, fullId2)
+  val projects = List(project1, project2)
 
-  "creating projects" should {
-    "add necessary permissions for user" in {
-      for {
-        _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
-        _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
-      } yield succeed
-    }
+  val idBase = "https://test.bbp.epfl.ch/"
 
-    "succeed if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, ScoobyDoo)
-        _ <- adminDsl.createProjectWithName(orgId, projId2, name = fullId2, ScoobyDoo)
-      } yield succeed
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val setPermissions = for {
+      _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
+      _ <- aclDsl.addPermissionAnonymous(s"/$project2", Views.Query)
+    } yield succeed
 
-    "wait until in project resolver is created" in {
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1L
-        }
+    val createProjects = for {
+      _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId, name = project1, ScoobyDoo)
+      _ <- adminDsl.createProjectWithName(orgId, projId2, name = project2, ScoobyDoo)
+    } yield succeed
+
+    (setPermissions >> createProjects).accepted
+
+    // wait until in project resolver is created
+    eventually {
+      deltaClient.get[Json](s"/resolvers/$project1", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        _total.getOption(json).value shouldEqual 1L
       }
     }
+
+    ()
   }
 
   "creating the view" should {
@@ -61,13 +64,13 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
 
     "create an Sparql view that index tags" in {
       val payload = jsonContentOf("kg/views/sparql-view.json")
-      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$project1/test-resource:cell-view", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
 
     "get the created SparqlView" in {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project1/test-resource:cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val viewId   = "https://dev.nexus.test.com/simplified-resource/cell-view"
         val expected = jsonContentOf(
@@ -75,8 +78,8 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
           replacements(
             ScoobyDoo,
             "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
-            "self"           -> viewSelf(fullId, viewId),
-            "project-parent" -> s"${config.deltaUri}/projects/$fullId"
+            "self"           -> viewSelf(project1, viewId),
+            "project-parent" -> s"${config.deltaUri}/projects/$project1"
           ): _*
         )
 
@@ -85,15 +88,15 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "create an AggregateSparqlView" in {
-      val payload = jsonContentOf("kg/views/agg-sparql-view.json", "project1" -> fullId, "project2" -> fullId2)
+      val payload = jsonContentOf("kg/views/agg-sparql-view.json", "project1" -> project1, "project2" -> project2)
 
-      deltaClient.put[Json](s"/views/$fullId2/test-resource:agg-cell-view", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$project2/test-resource:agg-cell-view", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
 
     "get an AggregateSparqlView" in {
-      deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val viewId   = "https://dev.nexus.test.com/simplified-resource/agg-cell-view"
         val expected = jsonContentOf(
@@ -101,10 +104,10 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
           replacements(
             ScoobyDoo,
             "id"             -> viewId,
-            "resources"      -> viewSelf(fullId2, viewId),
-            "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
-            "project1"       -> fullId,
-            "project2"       -> fullId2
+            "resources"      -> viewSelf(project2, viewId),
+            "project-parent" -> s"${config.deltaUri}/projects/$project2",
+            "project1"       -> project1,
+            "project2"       -> project2
           ): _*
         )
 
@@ -117,7 +120,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
         val payload      = jsonContentOf(s"kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
-        val projectId    = if (i > 5) fullId2 else fullId
+        val projectId    = if (i > 5) project2 else project1
         val indexingMode = if (i % 2 == 0) "sync" else "async"
 
         deltaClient.put[Json](
@@ -131,14 +134,14 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "wait until in project view is indexed" in eventually {
-      deltaClient.get[Json](s"/views/$fullId?type=nxv%3ASparqlView", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project1?type=nxv%3ASparqlView", ScoobyDoo) { (json, response) =>
         _total.getOption(json).value shouldEqual 2
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "wait until all instances are indexed in default view of project 2" in eventually {
-      deltaClient.get[Json](s"/resources/$fullId2/resource", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$project2/resource", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         _total.getOption(json).value shouldEqual 4
       }
@@ -155,7 +158,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       """.stripMargin
 
     "search instances in SPARQL endpoint in project 1" in eventually {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project1/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("kg/views/sparql-search-response.json")
@@ -163,7 +166,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "search instances in SPARQL endpoint in project 2" in eventually {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId2/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project2/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("kg/views/sparql-search-response-2.json")
@@ -171,7 +174,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "search instances in AggregateSparqlView when logged" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:agg-cell-view/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project2/test-resource:agg-cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json should equalIgnoreArrayOrder(jsonContentOf("kg/views/sparql-search-response-aggregated.json"))
@@ -179,7 +182,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "search instances in AggregateSparqlView as anonymous" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:agg-cell-view/sparql", query, Anonymous) {
+      deltaClient.sparqlQuery[Json](s"/views/$project2/test-resource:agg-cell-view/sparql", query, Anonymous) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json should equalIgnoreArrayOrder(jsonContentOf("kg/views/sparql-search-response-2.json"))
@@ -187,7 +190,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "fetch statistics for cell-view" in eventually {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project1/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected =
           filterNestedKeys("delayInSeconds")(
@@ -206,7 +209,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "fetch statistics for defaultSparqlIndex" in eventually {
-      deltaClient.get[Json](s"/views/$fullId/nxv:defaultSparqlIndex/statistics", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project1/nxv:defaultSparqlIndex/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "kg/views/statistics.json",
@@ -221,7 +224,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "get no instances in SPARQL endpoint in project 1 with cell-view" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project1/test-resource:cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("kg/views/sparql-search-response-empty.json")
@@ -234,7 +237,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.post[Json](
-          s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags?rev=1",
+          s"/resources/$project1/resource/patchedcell:$unprefixedId/tags?rev=1",
           json"""{ "rev": 1, "tag": "one"}""",
           ScoobyDoo
         ) { (_, response) =>
@@ -244,7 +247,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "fetch updated statistics for cell-view" in eventually {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$project1/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "kg/views/statistics.json",
@@ -269,7 +272,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       """.stripMargin
 
     "search by tag in SPARQL endpoint in project 1 with default view" in eventually {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", byTagQuery, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project1/nxv:defaultSparqlIndex/sparql", byTagQuery, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("kg/views/sparql-search-response-tagged.json")
@@ -278,7 +281,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
 
     "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags added" in {
       eventually {
-        deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
+        deltaClient.sparqlQuery[Json](s"/views/$project1/test-resource:cell-view/sparql", query, ScoobyDoo) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             json shouldEqual jsonContentOf("kg/views/sparql-search-response.json")
@@ -292,7 +295,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.delete[Json](
-          s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags/one?rev=2",
+          s"/resources/$project1/resource/patchedcell:$unprefixedId/tags/one?rev=2",
           ScoobyDoo
         ) { (_, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -301,7 +304,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
     }
 
     "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags are deleted" in eventually {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$project1/test-resource:cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("kg/views/sparql-search-response-empty.json")
@@ -314,7 +317,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
 
       deltaClient.put[Json](
-        s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=3",
+        s"/resources/$project1/_/patchedcell:$unprefixedId?rev=3",
         filterKey("@id")(payload),
         ScoobyDoo
       ) { (_, response) =>
@@ -326,14 +329,14 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       val payload      = filterKey("@type")(jsonContentOf("kg/views/instances/instance2.json"))
       val id           = payload.asObject.value("@id").value.asString.value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
-      deltaClient.delete[Json](s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=3", ScoobyDoo) { (_, response) =>
+      deltaClient.delete[Json](s"/resources/$project1/_/patchedcell:$unprefixedId?rev=3", ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "create a another SPARQL view" in {
       val payload = jsonContentOf("kg/views/sparql-view.json")
-      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view2", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$project1/test-resource:cell-view2", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
@@ -342,18 +345,72 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
       val payload = jsonContentOf("kg/views/sparql-view.json").mapObject(
         _.remove("resourceTag").remove("resourceTypes").remove("resourceSchemas")
       )
-      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view2?rev=1&indexing=sync", payload, ScoobyDoo) {
+      deltaClient.put[Json](s"/views/$project1/test-resource:cell-view2?rev=1&indexing=sync", payload, ScoobyDoo) {
         (_, response) =>
           response.status shouldEqual StatusCodes.OK
       }
     }
 
     "restart the view indexing" in eventually {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:cell-view/offset", ScoobyDoo) { (json, response) =>
+      deltaClient.delete[Json](s"/views/$project1/test-resource:cell-view/offset", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected =
           json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
         json shouldEqual expected
+      }
+    }
+
+    "reindex a resource after view undeprecation" in {
+      givenADeprecatedView { view =>
+        postResource { resource =>
+          undeprecate(view) >> eventually { assertMatchId(view, resource) }
+        }
+      }
+    }
+
+    def givenAView(test: String => IO[Assertion]): IO[Assertion] = {
+      val viewId      = genId()
+      val viewPayload = jsonContentOf("kg/views/sparql-view-index-all.json", "withTag" -> false)
+      val createView  = deltaClient.put[Json](s"/views/$project1/$viewId", viewPayload, ScoobyDoo) { expectCreated }
+
+      createView >> test(viewId)
+    }
+
+    def givenADeprecatedView(test: String => IO[Assertion]): IO[Assertion] =
+      givenAView { view =>
+        val deprecateView = deltaClient.delete[Json](s"/views/$project1/$view?rev=1", ScoobyDoo) { expectOk }
+        deprecateView >> test(view)
+      }
+
+    def undeprecate(view: String, rev: Int = 2): IO[Assertion] =
+      deltaClient.putEmptyBody[Json](s"/views/$project1/$view/undeprecate?rev=$rev", ScoobyDoo) { expectOk }
+
+    def postResource(test: String => IO[Assertion]): IO[Assertion] = {
+      val id = genId()
+      deltaClient.post[Json](s"/resources/$project1/_?indexing=sync", json"""{"@id": "$idBase$id"}""", ScoobyDoo) {
+        (_, response) => response.status shouldEqual StatusCodes.Created
+      } >> test(id)
+    }
+
+    def assertMatchId(view: String, id: String): IO[Assertion] = {
+      val query =
+        s"""
+           |SELECT (COUNT(*) as ?count)
+           |WHERE { <$idBase$id> ?p ?o }
+      """.stripMargin
+
+      deltaClient.sparqlQuery[Json](s"/views/$project1/$view/sparql", query, ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json.hcursor
+          .downField("results")
+          .downField("bindings")
+          .downN(0)
+          .downField("count")
+          .downField("value")
+          .as[Int] match {
+          case Left(_)      => fail("The Sparql query did not return a count value")
+          case Right(value) => value should be > 0
+        }
       }
     }
   }
