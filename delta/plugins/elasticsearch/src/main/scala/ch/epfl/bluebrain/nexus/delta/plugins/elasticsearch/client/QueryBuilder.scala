@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder.allFields
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import io.circe.literal.JsonStringContext
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -73,7 +73,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
         mustTerms = typesTerms(params.typeOperator, includeTypes) ++
           params.locate.map { l => or(term(keywords.id, l), term(nxv.self.prefix, l)) } ++
           params.id.map(term(keywords.id, _)) ++
-          params.q.map(matchPhrasePrefix(allFields, _)) ++
+          params.q.map(multiMatch(_)) ++
           params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
           params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
           params.rev.map(term(nxv.rev.prefix, _)) ++
@@ -137,14 +137,19 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     }
   }
 
-  private def term[A: Encoder](k: String, value: A): JsonObject              =
+  private def term[A: Encoder](k: String, value: A): JsonObject             =
     JsonObject("term" -> Json.obj(k -> value.asJson))
 
-  private def terms[A: Encoder](k: String, values: Iterable[A]): JsonObject  =
+  private def terms[A: Encoder](k: String, values: Iterable[A]): JsonObject =
     JsonObject("terms" -> Json.obj(k -> values.asJson))
 
-  private def matchPhrasePrefix[A: Encoder](k: String, value: A): JsonObject =
-    JsonObject("match_phrase_prefix" -> Json.obj(k -> Json.obj("query" -> value.asJson)))
+  private def multiMatch[A: Encoder](value: A): JsonObject                  =
+    JsonObject(
+      "multi_match" -> Json.obj(
+        "query"  -> value.asJson,
+        "fields" -> json"""[ "*", "_*" ]"""
+      )
+    )
 
   def aggregation(bucketSize: Int): QueryBuilder = {
     val aggregations =
