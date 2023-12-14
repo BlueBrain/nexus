@@ -13,8 +13,14 @@ jobs:
     strategy:
       fail-fast: true
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Cache node modules
@@ -24,10 +30,6 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('/product-page/**/package-lock.json') }}
       - name: Coursier Cache
         uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v11
-        with:
-          java-version: adopt@1.11
       - name: Build Website
         run: ./build.sh
       - name: Publish website
