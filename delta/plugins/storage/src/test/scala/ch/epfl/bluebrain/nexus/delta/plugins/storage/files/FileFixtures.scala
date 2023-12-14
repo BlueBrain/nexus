@@ -37,7 +37,7 @@ trait FileFixtures {
   val generatedId2          = project.base.iri / uuid2.toString
 
   val content = "file content"
-  val path    = FileGen.path
+  val path    = FileGen.mkTempDir("files")
 
   def withUUIDF[T](id: UUID)(test: => T): T = (for {
     old <- ref.getAndSet(id)
@@ -50,7 +50,7 @@ trait FileFixtures {
       size: Long = 12,
       id: UUID = uuid,
       projRef: ProjectRef = projectRef
-  ): FileAttributes = FileGen.attributes(filename, size, id, projRef)
+  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path)
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart

@@ -149,7 +149,8 @@ object FileGen {
   ): FileResource =
     state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy).toResource
 
-  lazy val path = AbsolutePath(JavaFiles.createTempDirectory("files")).fold(e => throw new Exception(e), identity)
+  def mkTempDir(prefix: String) =
+    AbsolutePath(JavaFiles.createTempDirectory(prefix)).fold(e => throw new Exception(e), identity)
 
   private val digest =
     ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
@@ -158,7 +159,8 @@ object FileGen {
       filename: String,
       size: Long,
       id: UUID,
-      projRef: ProjectRef
+      projRef: ProjectRef,
+      path: AbsolutePath
   ): FileAttributes = {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
