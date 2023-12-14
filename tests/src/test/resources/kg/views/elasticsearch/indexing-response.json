@@ -1,133 +1,164 @@
 {
-  "@context" : [
+  "@context": [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
   ],
-  "@id" : "{{id}}",
-  "@type" : [
+  "@id": "{{id}}",
+  "@type": [
     "ElasticSearchView",
     "View"
   ],
-  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json",
-  "_deprecated" : false,
-  "_incoming" : "{{self}}/incoming",
-  "_outgoing" : "{{self}}/outgoing",
-  "_project" : "{{deltaUri}}/projects/{{project}}",
-  "_rev" : 1,
-  "_self" : "{{self}}",
-  "_createdBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-  "_updatedBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-  "includeDeprecated" : false,
-  "includeMetadata" : false,
-  "mapping" : {
-    "dynamic" : false,
-    "properties" : {
-      "@id" : {
-        "type" : "keyword"
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_deprecated": false,
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
+  "_project": "{{deltaUri}}/projects/{{project}}",
+  "_rev": 1,
+  "_self": "{{self}}",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "includeDeprecated": false,
+  "includeMetadata": false,
+  "mapping": {
+    "dynamic": false,
+    "properties": {
+      "@id": {
+        "type": "keyword"
       },
-      "@type" : {
-        "type" : "keyword"
+      "@type": {
+        "type": "keyword"
       },
-      "_project" : {
-        "type" : "keyword"
+      "_project": {
+        "type": "keyword"
       },
-      "brainRegion" : {
-        "properties" : {
-          "@id" : {
-            "fields" : {
-              "raw" : {
-                "type" : "keyword"
+      "brainRegion": {
+        "properties": {
+          "@id": {
+            "fields": {
+              "raw": {
+                "type": "keyword"
               }
             },
-            "type" : "text"
+            "type": "text"
           },
-          "label" : {
-            "fields" : {
-              "raw" : {
-                "type" : "keyword"
+          "label": {
+            "fields": {
+              "raw": {
+                "type": "keyword"
               }
             },
-            "type" : "text"
+            "type": "text"
           },
-          "shortName" : {
-            "fields" : {
-              "raw" : {
-                "type" : "keyword"
+          "shortName": {
+            "fields": {
+              "raw": {
+                "type": "keyword"
               }
             },
-            "type" : "text"
+            "type": "text"
           }
         },
-        "type" : "nested"
+        "type": "nested"
       },
-      "name" : {
-        "fields" : {
-          "raw" : {
-            "type" : "keyword"
+      "name": {
+        "fields": {
+          "raw": {
+            "type": "keyword"
           }
         },
-        "type" : "text"
+        "type": "text"
       }
     }
   },
-  "permission" : "views/query",
-  "pipeline" : [
+  "permission": "views/query",
+  "pipeline": [
     {
-      "name" : "filterBySchema",
-      "config" : {
-        "types" : [
+      "name": "filterBySchema",
+      "config": {
+        "types": [
           "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
         ]
       }
     },
     {
-      "name" : "filterByType",
-      "config" : {
-        "types" : [
+      "name": "filterByType",
+      "config": {
+        "types": [
           "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
         ]
       }
     },
     {
-      "name" : "filterDeprecated"
+      "name": "filterDeprecated"
     },
     {
-      "name" : "discardMetadata"
+      "name": "discardMetadata"
     },
     {
-      "name" : "defaultLabelPredicates"
+      "name": "defaultLabelPredicates"
     }
   ],
-  "resourceSchemas" : [
+  "resourceSchemas": [
     "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
   ],
-  "resourceTypes" : [
+  "resourceTypes": [
     "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
   ],
-  "settings" : {
-    "analysis" : {
-      "analyzer" : {
-        "nexus" : {
-          "filter" : [
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "default": {
+          "type": "custom",
+          "tokenizer": "classic",
+          "filter": [
+            "trim",
             "word_delimiter_nexus",
-            "lowercase",
-            "trim"
+            "lowercase"
+          ]
+        },
+        "path_hierarchy": {
+          "filter": [
+            "lowercase"
           ],
-          "tokenizer" : "classic",
-          "type" : "custom"
+          "tokenizer": "path_hierarchy",
+          "type": "custom"
+        },
+        "autocomplete": {
+          "type": "custom",
+          "tokenizer": "autocomplete",
+          "filter": [
+            "lowercase"
+          ]
+        },
+        "autocomplete_search": {
+          "tokenizer": "lowercase"
         }
       },
-      "filter" : {
-        "word_delimiter_nexus" : {
-          "preserve_original" : true,
-          "split_on_numerics" : false,
-          "type" : "word_delimiter_graph"
+      "filter": {
+        "word_delimiter_nexus": {
+          "preserve_original": true,
+          "split_on_numerics": false,
+          "type": "word_delimiter_graph"
+        }
+      },
+      "tokenizer": {
+        "autocomplete": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 10,
+          "token_chars": [
+            "letter"
+          ]
+        },
+        "path_hierarchy": {
+          "reverse": true,
+          "type": "path_hierarchy"
         }
       }
     },
-    "index" : {
-      "number_of_shards" : 1
+    "index": {
+      "number_of_shards": 1
     }
   },
-  "sourceAsText" : false
+  "sourceAsText": false
 }
