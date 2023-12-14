@@ -90,7 +90,12 @@
       }
     },
     "_createdAt": {
-      "type": "text"
+      "type": "date",
+      "fields": {
+        "fulltext": {
+          "type": "text"
+        }
+      }
     },
     "_updatedAt": {
       "type": "date",
