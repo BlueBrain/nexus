@@ -1,5 +1,0 @@
-{
-    "@id": "https://bluebrain.github.io/nexus/vocabulary/local",
-    "@type": "DiskStorage",
-    "default": false
-}

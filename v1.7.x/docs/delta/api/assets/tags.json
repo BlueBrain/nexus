@@ -1,9 +1,0 @@
-{
-  "@context": "https://bluebrain.github.io/nexus/contexts/tags.json",
-  "tags": [
-    {
-      "rev": 1,
-      "tag": "mytag"
-    }
-  ]
-}

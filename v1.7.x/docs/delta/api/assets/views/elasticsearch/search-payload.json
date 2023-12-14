@@ -1,7 +1,0 @@
-{
-  "query": {
-    "term": {
-      "@type": "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
-    }
-  }
-}

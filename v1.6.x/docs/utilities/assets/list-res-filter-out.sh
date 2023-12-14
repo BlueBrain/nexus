@@ -1,9 +1,0 @@
-+------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
-| Id                                                                                 | Type                                                                       | Revision | Deprecated |
-+------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
-| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_1  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_9  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_12 | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_7  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_8  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-+------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
