@@ -4,7 +4,8 @@
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
@@ -19,6 +20,8 @@
     },
     "prefLabel": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
@@ -27,6 +30,8 @@
     },
     "label": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
@@ -35,6 +40,8 @@
     },
     "name": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
@@ -42,20 +49,13 @@
       }
     },
     "description": {
+      "type": "text",
       "analyzer": "autocomplete",
-      "search_analyzer": "autocomplete_search",
-      "type": "text"
-    },
-    "_algorithm": {
-      "type": "keyword",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "search_analyzer": "autocomplete_search"
     },
     "_uuid": {
       "type": "text",
+      "analyzer": "keyword",
       "fields": {
         "raw": {
           "type": "keyword"
@@ -63,31 +63,17 @@
       }
     },
     "_rev": {
-      "type": "long",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "long"
     },
     "_tags": {
-      "type": "text"
+      "type": "text",
+      "analyzer": "keyword"
     },
     "_deprecated": {
-      "type": "boolean",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "boolean"
     },
     "_markedForDeletion": {
-      "type": "boolean",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "boolean"
     },
     "_createdAt": {
       "type": "date",
@@ -109,7 +95,8 @@
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
@@ -117,7 +104,8 @@
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
@@ -125,58 +113,35 @@
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
     "_project": {
-      "type": "keyword",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "keyword"
     },
     "_self": {
-      "type": "keyword",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "keyword"
     },
     "_incoming": {
-      "type": "keyword",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "keyword"
     },
     "_outgoing": {
-      "type": "keyword",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "keyword"
     },
     "_original_source": {
       "type": "text"
     },
     "_bytes": {
-      "type": "long",
-      "fields": {
-        "fulltext": {
-          "type": "text"
-        }
-      }
+      "type": "long"
     },
     "_mediaType": {
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
@@ -184,7 +149,8 @@
       "type": "keyword",
       "fields": {
         "fulltext": {
-          "type": "text"
+          "type": "text",
+          "analyzer": "path_hierarchy"
         }
       }
     },
@@ -202,29 +168,20 @@
           "type": "keyword",
           "fields": {
             "fulltext": {
-              "type": "text"
+              "type": "text",
+              "analyzer": "keyword"
             }
           }
         },
         "_value": {
-          "type": "keyword",
-          "fields": {
-            "fulltext": {
-              "type": "text"
-            }
-          }
+          "type": "keyword"
         }
       }
     },
     "_storage": {
       "properties": {
         "_rev": {
-          "type": "long",
-          "fields": {
-            "fulltext": {
-              "type": "text"
-            }
-          }
+          "type": "long"
         },
         "@id": {
           "type": "keyword",
@@ -239,7 +196,8 @@
           "type": "keyword",
           "fields": {
             "fulltext": {
-              "type": "text"
+              "type": "text",
+              "analyzer": "path_hierarchy"
             }
           }
         }
@@ -248,10 +206,21 @@
     "_effectiveApiMappings": {
       "properties": {
         "_prefix": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            }
+          }
         },
         "_namespace": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "path_hierarchy"
+            }
+          }
         }
       }
     }
