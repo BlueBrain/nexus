@@ -87,7 +87,8 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project)
         schemaRef      <- IO.fromEither(Resources.expandResourceRef(schema, projectContext))
         jsonld         <- sourceParser(project, projectContext, source.value)
-        validation     <- validateResource(jsonld, schemaRef, project, caller)
+        schemaClaim     = SchemaClaim(project, schemaRef, caller)
+        validation     <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
     }.attemptNarrow[ResourceRejection].map { attempt =>
@@ -115,12 +116,8 @@ object ResourcesTrial {
         schemaRefOpt   <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
         resource       <- fetchResource(id, project)
         jsonld         <- IO.fromEither(resource.toAssembly)
-        report         <- validateResource(
-                            jsonld,
-                            schemaRefOpt.getOrElse(resource.schema),
-                            project,
-                            caller
-                          )
+        schemaClaim     = SchemaClaim(project, schemaRefOpt.getOrElse(resource.schema), caller)
+        report         <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
       } yield report
     }
 

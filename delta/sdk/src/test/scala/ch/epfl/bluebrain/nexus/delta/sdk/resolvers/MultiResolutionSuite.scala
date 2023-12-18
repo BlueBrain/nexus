@@ -59,7 +59,9 @@ class MultiResolutionSuite extends NexusSuite with Fixtures {
       }
 
   def fetchProject: ProjectRef => IO[ProjectContext] =
-    FetchContextDummy(Map(projectRef -> ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base)))
+    FetchContextDummy(
+      Map(projectRef -> ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false))
+    )
       .mapRejection(ProjectContextRejection)
       .onRead
 

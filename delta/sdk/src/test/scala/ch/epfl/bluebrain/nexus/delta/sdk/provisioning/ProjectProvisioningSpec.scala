@@ -48,7 +48,8 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
       Some("Auto provisioned project"),
       ApiMappings.empty,
       Some(PrefixIri.unsafe(iri"http://example.com/base/")),
-      Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
+      Some(PrefixIri.unsafe(iri"http://example.com/vocab/")),
+      enforceSchema = true
     )
   )
 
@@ -84,6 +85,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
         projects.defaultApiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
         provisioningConfig.fields.vocab.value.value,
+        enforceSchema = provisioningConfig.fields.enforceSchema,
         markedForDeletion = false
       )
       aclCheck.fetchOne(projectRef).accepted shouldEqual acl
@@ -105,6 +107,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
         projects.defaultApiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
         provisioningConfig.fields.vocab.value.value,
+        enforceSchema = provisioningConfig.fields.enforceSchema,
         markedForDeletion = false
       )
     }

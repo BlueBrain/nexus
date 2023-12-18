@@ -24,7 +24,8 @@ class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
   private val context = ProjectContext.unsafe(
     ApiMappings.empty,
     nxv.base,
-    nxv.base
+    nxv.base,
+    enforceSchema = false
   )
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())

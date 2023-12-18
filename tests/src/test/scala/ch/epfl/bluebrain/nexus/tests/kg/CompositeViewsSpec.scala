@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import io.circe.Json
@@ -36,18 +37,30 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read)).accepted
 
-    val projectPayload = jsonContentOf("kg/views/composite/project.json")
-    val createProjects = for {
+    val projectPayload = ProjectPayload(
+      "Description",
+      "https://music.example.com/",
+      Some("https://music.example.com/"),
+      Map(
+        "local"        -> "https://music.example.com/sources/local",
+        "remote_songs" -> "https://music.example.com/sources/songs",
+        "cross_albums" -> "https://music.example.com/sources/albums",
+        "bands"        -> "https://music.example.com/bands",
+        "albums"       -> "https://music.example.com/albums"
+      ),
+      enforceSchema = false
+    )
+
+    val setup = for {
+      _ <- aclDsl.addPermissions("/", Jerry, Set(Organizations.Create, Views.Query, Events.Read))
       _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-      _ <- List(
-             adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
-             adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
-             adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
-           ).sequence
+      _ <- adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry)
+      _ <- adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry)
+      _ <- adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
     } yield succeed
-    createProjects.accepted
+
+    setup.accepted
 
     // wait until in project resolver is created
     eventually {

@@ -31,6 +31,7 @@ object ProjectGen {
       vocab: Iri = nxv.base,
       deprecated: Boolean = false,
       markedForDeletion: Boolean = false,
+      enforceSchema: Boolean = false,
       subject: Subject = Anonymous
   ): ProjectState =
     ProjectState(
@@ -45,6 +46,7 @@ object ProjectGen {
       mappings,
       ProjectBase.unsafe(base),
       vocab,
+      enforceSchema,
       Instant.EPOCH,
       subject,
       Instant.EPOCH,
@@ -68,6 +70,7 @@ object ProjectGen {
       defaultApiMappings,
       ProjectBase.unsafe(projectFields.baseOrGenerated(ref).value),
       projectFields.vocabOrGenerated(ref).value,
+      projectFields.enforceSchema,
       markedForDeletion
     )
 
@@ -80,6 +83,7 @@ object ProjectGen {
       mappings: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base,
       vocab: Iri = nxv.base,
+      enforceSchema: Boolean = false,
       markedForDeletion: Boolean = false
   ): Project =
     Project(
@@ -92,6 +96,7 @@ object ProjectGen {
       defaultApiMappings,
       ProjectBase.unsafe(base),
       vocab,
+      enforceSchema,
       markedForDeletion
     )
 
@@ -122,6 +127,7 @@ object ProjectGen {
       project.vocab,
       deprecated,
       markedForDeletion,
+      project.enforceSchema,
       subject
     ).toResource(defaultApiMappings)
 

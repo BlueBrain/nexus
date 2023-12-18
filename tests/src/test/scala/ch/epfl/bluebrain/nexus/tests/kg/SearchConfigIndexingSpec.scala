@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
@@ -13,6 +12,7 @@ import org.scalatest.Assertion
 import java.time.Instant
 import concurrent.duration._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
@@ -77,8 +77,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       _ <- aclDsl.cleanAcls(Rick)
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId1, path = "kg/projects/bbp.json", name = id1, authenticated = Rick)
-
+      _ <- adminDsl.createProject(orgId, projId1, ProjectPayload.generateBbp(id1), authenticated = Rick)
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
 

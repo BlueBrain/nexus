@@ -34,7 +34,8 @@ class DeltaSchemeDirectivesSpec
   private val mappings = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base, "view" -> schemaView)
   private val vocab    = iri"http://localhost/vocab/"
 
-  private val fetchContext = (_: ProjectRef) => IO.pure(ProjectContext.unsafe(mappings, nxv.base, vocab))
+  private val fetchContext = (_: ProjectRef) =>
+    IO.pure(ProjectContext.unsafe(mappings, nxv.base, vocab, enforceSchema = false))
 
   private val fetchOrgByUuid     = (_: UUID) => IO.none
   private val fetchProjectByUuid = (_: UUID) => IO.none

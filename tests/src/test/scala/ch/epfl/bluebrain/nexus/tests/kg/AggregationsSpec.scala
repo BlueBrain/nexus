@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
@@ -24,19 +25,16 @@ final class AggregationsSpec extends BaseIntegrationSpec {
     super.beforeAll()
 
     val setup = for {
-      _          <- aclDsl.addPermission("/", Charlie, Organizations.Create)
+      _ <- aclDsl.addPermission("/", Charlie, Organizations.Create)
       // First org and projects
-      _          <- adminDsl.createOrganization(org1, org1, Charlie)
-      proj11Json <- kgDsl.projectJson(name = proj11)
-      _          <- adminDsl.createProject(org1, proj11, proj11Json, Charlie)
-      proj12Json <- kgDsl.projectJson(name = proj12)
-      _          <- adminDsl.createProject(org1, proj12, proj12Json, Charlie)
+      _ <- adminDsl.createOrganization(org1, org1, Charlie)
+      _ <- adminDsl.createProject(org1, proj11, ProjectPayload.generate(proj11), Charlie)
+      _ <- adminDsl.createProject(org1, proj12, ProjectPayload.generate(proj12), Charlie)
       // Second org and projects
-      _          <- adminDsl.createOrganization(org2, org2, Charlie)
-      proj21Json <- kgDsl.projectJson(name = proj21)
-      _          <- adminDsl.createProject(org2, proj21, proj21Json, Charlie)
-      _          <- aclDsl.addPermission(s"/$ref12", Rose, Resources.Read)
-      _          <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
+      _ <- adminDsl.createOrganization(org2, org2, Charlie)
+      _ <- adminDsl.createProject(org2, proj21, ProjectPayload.generate(proj21), Charlie)
+      _ <- aclDsl.addPermission(s"/$ref12", Rose, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()
 
     val resourcePayload = SimpleResource.sourcePayload(5).accepted

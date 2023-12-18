@@ -4,12 +4,13 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{evaluate, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -18,6 +19,8 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import java.time.Instant
 
 class ProjectsSpec extends CatsEffectSpec {
+
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "The Projects state machine" when {
     val epoch                   = Instant.EPOCH
@@ -35,7 +38,8 @@ class ProjectsSpec extends CatsEffectSpec {
       description = Some("desc"),
       mappings = am,
       base = base.value,
-      vocab = vocab.value
+      vocab = vocab.value,
+      enforceSchema = true
     )
     val deprecatedState         = state.copy(deprecated = true)
     val label                   = state.label
@@ -66,28 +70,79 @@ class ProjectsSpec extends CatsEffectSpec {
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs, validateDeletion, clock)(_, _)
+      val eval   = evaluate(orgs, validateDeletion, clock)(_, _)
+      val fields = ProjectFields(desc, am, Some(base), Some(vocab), enforceSchema = true)
 
-      "create a new event" in {
-        eval(None, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
-          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, epoch, subject)
+      "create a new create event" in {
+        eval(None, CreateProject(ref, fields, subject)).accepted shouldEqual
+          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, enforceSchema = true, epoch, subject)
+      }
 
-        eval(Some(state), UpdateProject(ref, desc2, ApiMappings.empty, base, vocab, 1, subject)).accepted shouldEqual
-          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2, desc2, ApiMappings.empty, base, vocab, epoch, subject)
+      "create a new create event with a generated base and vocab" in {
+        val noBaseNoVocab  = ProjectFields(desc, am, None, None, enforceSchema = true)
+        val generatedBase  = PrefixIri.unsafe(iri"http://localhost/v1/resources/org/proj/_/")
+        val generatedVocab = PrefixIri.unsafe(iri"http://localhost/v1/vocabs/org/proj/")
+        eval(None, CreateProject(ref, noBaseNoVocab, subject)).accepted shouldEqual
+          ProjectCreated(
+            label,
+            uuid,
+            orgLabel,
+            orgUuid,
+            1,
+            desc,
+            am,
+            generatedBase,
+            generatedVocab,
+            enforceSchema = true,
+            epoch,
+            subject
+          )
+      }
 
+      "create a new update event" in {
+        eval(Some(state), UpdateProject(ref, fields, 1, subject)).accepted shouldEqual
+          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2, desc, am, base, vocab, enforceSchema = true, epoch, subject)
+      }
+
+      "create a new update event with a generated base and vocab" in {
+        val noBaseNoVocab  = ProjectFields(desc, am, None, None, enforceSchema = true)
+        val generatedBase  = PrefixIri.unsafe(iri"http://localhost/v1/resources/org/proj/_/")
+        val generatedVocab = PrefixIri.unsafe(iri"http://localhost/v1/vocabs/org/proj/")
+        eval(Some(state), UpdateProject(ref, noBaseNoVocab, 1, subject)).accepted shouldEqual
+          ProjectUpdated(
+            label,
+            uuid,
+            orgLabel,
+            orgUuid,
+            2,
+            desc,
+            am,
+            generatedBase,
+            generatedVocab,
+            enforceSchema = true,
+            epoch,
+            subject
+          )
+      }
+
+      "create a new deprecate event" in {
         eval(Some(state), DeprecateProject(ref, 1, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
+      }
 
-        eval(Some(state), DeleteProject(ref, 1, subject)).accepted shouldEqual
-          ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
-
+      "create a new undeprecation event" in {
         eval(Some(deprecatedState), UndeprecateProject(ref, 1, subject)).accepted shouldEqual
           ProjectUndeprecated(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
       }
 
+      "create a new deletion event" in {
+        eval(Some(state), DeleteProject(ref, 1, subject)).accepted shouldEqual
+          ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
+      }
+
       "reject with IncorrectRev" in {
         val list = List(
-          state           -> UpdateProject(ref, desc, am, base, vocab, 2, subject),
+          state           -> UpdateProject(ref, fields, 2, subject),
           state           -> DeprecateProject(ref, 2, subject),
           deprecatedState -> UndeprecateProject(ref, 2, subject)
         )
@@ -98,8 +153,8 @@ class ProjectsSpec extends CatsEffectSpec {
 
       "reject with OrganizationIsDeprecated" in {
         val list = List(
-          None                  -> CreateProject(ref2, desc, am, base, vocab, subject),
-          Some(state)           -> UpdateProject(ref2, desc, am, base, vocab, 1, subject),
+          None                  -> CreateProject(ref2, fields, subject),
+          Some(state)           -> UpdateProject(ref2, fields, 1, subject),
           Some(state)           -> DeprecateProject(ref2, 1, subject),
           Some(deprecatedState) -> UndeprecateProject(ref2, 1, subject)
         )
@@ -112,8 +167,8 @@ class ProjectsSpec extends CatsEffectSpec {
       "reject with OrganizationNotFound" in {
         val orgNotFound = ProjectRef(label, Label.unsafe("other"))
         val list        = List(
-          None                  -> CreateProject(orgNotFound, desc, am, base, vocab, subject),
-          Some(state)           -> UpdateProject(orgNotFound, desc, am, base, vocab, 1, subject),
+          None                  -> CreateProject(orgNotFound, fields, subject),
+          Some(state)           -> UpdateProject(orgNotFound, fields, 1, subject),
           Some(state)           -> DeprecateProject(orgNotFound, 1, subject),
           Some(deprecatedState) -> UndeprecateProject(orgNotFound, 1, subject)
         )
@@ -125,7 +180,7 @@ class ProjectsSpec extends CatsEffectSpec {
 
       "reject with ProjectIsDeprecated" in {
         val list = List(
-          deprecatedState -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
+          deprecatedState -> UpdateProject(ref, fields, 1, subject),
           deprecatedState -> DeprecateProject(ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -139,7 +194,7 @@ class ProjectsSpec extends CatsEffectSpec {
 
       "reject with ProjectNotFound" in {
         val list = List(
-          None -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
+          None -> UpdateProject(ref, fields, 1, subject),
           None -> DeprecateProject(ref, 1, subject),
           None -> DeleteProject(ref, 1, subject),
           None -> UndeprecateProject(ref, 1, subject)
@@ -150,8 +205,7 @@ class ProjectsSpec extends CatsEffectSpec {
       }
 
       "reject with ProjectAlreadyExists" in {
-        eval(Some(state), CreateProject(ref, desc, am, base, vocab, subject))
-          .rejectedWith[ProjectAlreadyExists]
+        eval(Some(state), CreateProject(ref, fields, subject)).rejectedWith[ProjectAlreadyExists]
       }
 
       "do not reject with ProjectIsDeprecated" in {
@@ -172,30 +226,57 @@ class ProjectsSpec extends CatsEffectSpec {
       "create a new ProjectCreated state" in {
         next(
           None,
-          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, time2, subject)
+          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, enforceSchema = true, time2, subject)
         ).value shouldEqual
           state.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
 
         next(
           Some(state),
-          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, time2, subject)
+          ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, enforceSchema = true, time2, subject)
         ) shouldEqual None
       }
 
       "create a new ProjectUpdated state" in {
         next(
           None,
-          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2, desc2, ApiMappings.empty, base, vocab, time2, subject)
+          ProjectUpdated(
+            label,
+            uuid,
+            orgLabel,
+            orgUuid,
+            2,
+            desc2,
+            ApiMappings.empty,
+            base,
+            vocab,
+            enforceSchema = false,
+            time2,
+            subject
+          )
         ) shouldEqual None
 
         next(
           Some(state),
-          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2, desc2, ApiMappings.empty, base, vocab, time2, subject)
+          ProjectUpdated(
+            label,
+            uuid,
+            orgLabel,
+            orgUuid,
+            2,
+            desc2,
+            ApiMappings.empty,
+            base,
+            vocab,
+            enforceSchema = false,
+            time2,
+            subject
+          )
         ).value shouldEqual
           state.copy(
             rev = 2,
             description = desc2,
             apiMappings = ApiMappings.empty,
+            enforceSchema = false,
             updatedAt = time2,
             updatedBy = subject
           )

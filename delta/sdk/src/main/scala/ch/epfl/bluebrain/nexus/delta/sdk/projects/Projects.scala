@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
@@ -171,11 +171,11 @@ object Projects {
   private[delta] def next(state: Option[ProjectState], event: ProjectEvent): Option[ProjectState] =
     (state, event) match {
       // format: off
-      case (None, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, instant, subject))  =>
-        Some(ProjectState(label, uuid, orgLabel, orgUuid, 1, deprecated = false, markedForDeletion = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject))
+      case (None, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, enforceSchema, instant, subject))  =>
+        Some(ProjectState(label, uuid, orgLabel, orgUuid, 1, deprecated = false, markedForDeletion = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, enforceSchema, instant, subject, instant, subject))
 
-      case (Some(s), ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, instant, subject))                 =>
-        Some(s.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject))
+      case (Some(s), ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, enforceSchema, instant, subject))                 =>
+        Some(s.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, enforceSchema = enforceSchema, rev = rev, updatedAt = instant, updatedBy = subject))
 
       case (Some(s), ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
         Some(s.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject))
@@ -195,6 +195,7 @@ object Projects {
       validateDeletion: ValidateProjectDeletion,
       clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
+      base: BaseUri,
       uuidF: UUIDF
   ): IO[ProjectEvent] = {
     val f: FetchOrganization = label =>
@@ -208,9 +209,7 @@ object Projects {
       fetchAndValidateOrg: FetchOrganization,
       validateDeletion: ValidateProjectDeletion,
       clock: Clock[IO]
-  )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      uuidF: UUIDF
-  ): IO[ProjectEvent] = {
+  )(state: Option[ProjectState], command: ProjectCommand)(implicit base: BaseUri, uuidF: UUIDF): IO[ProjectEvent] = {
 
     def create(c: CreateProject): IO[ProjectCreated] = state match {
       case None =>
@@ -218,19 +217,7 @@ object Projects {
           org  <- fetchAndValidateOrg(c.ref.organization)
           uuid <- uuidF()
           now  <- clock.realTimeInstant
-        } yield ProjectCreated(
-          c.ref.project,
-          uuid,
-          c.ref.organization,
-          org.uuid,
-          1,
-          c.description,
-          c.apiMappings,
-          c.base,
-          c.vocab,
-          now,
-          c.subject
-        )
+        } yield ProjectCreated(c.ref, uuid, org.uuid, c.fields, now, c.subject)
       case _    => IO.raiseError(ProjectAlreadyExists(c.ref))
     }
 
@@ -245,10 +232,10 @@ object Projects {
         case Some(s) if s.markedForDeletion =>
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
-          // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-              clock.realTimeInstant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
-          // format: on
+            clock.realTimeInstant.map(
+              ProjectUpdated(c.ref, s.uuid, s.organizationUuid, s.rev + 1, c.fields, _, c.subject)
+            )
       }
 
     def deprecate(c: DeprecateProject) =
@@ -313,7 +300,9 @@ object Projects {
     * Entity definition for [[Projects]]
     */
   def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
-      implicit uuidF: UUIDF
+      implicit
+      base: BaseUri,
+      uuidF: UUIDF
   ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
     ScopedEntityDefinition.untagged(
       entityType,
