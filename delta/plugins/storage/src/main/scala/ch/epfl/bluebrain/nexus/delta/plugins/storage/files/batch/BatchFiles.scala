@@ -49,11 +49,11 @@ object BatchFiles {
         destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
                                            CopyRejection(source.project, dest.project, destStorage.id, e)
                                          }
-        fileResources                 <- evalCreateCommands(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
+        fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
       } yield fileResources
     }.span("copyFiles")
 
-    private def evalCreateCommands(
+    private def createFileResources(
         pc: ProjectContext,
         dest: CopyFileDestination,
         destStorageRef: ResourceRef.Revision,

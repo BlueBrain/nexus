@@ -69,9 +69,6 @@ object StorageFileRejection {
         extends FetchAttributeRejection(rejection.loggedDetails)
   }
 
-  /**
-    * Rejection returned when a storage cannot fetch a file's attributes
-    */
   sealed abstract class CopyFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object CopyFileRejection {

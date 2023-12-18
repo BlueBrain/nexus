@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite._
@@ -7,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchCopyMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCommand, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -26,56 +27,46 @@ import scala.collection.mutable.ListBuffer
 
 class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators with FileFixtures with FileGen {
 
+  private val destProj: Project             = genProject()
+  private val (destStorageRef, destStorage) = (genRevision(), genStorage(destProj.ref, diskVal))
+  private val destFileUUId                  = UUID.randomUUID() // Not testing UUID generation, same for all of them
+  private val destination                   = genCopyFileDestination(destProj.ref, destStorage.storage)
+
   test("batch copying should fetch storage, perform copy and evaluate create file commands") {
-    val events                        = ListBuffer.empty[Event]
-    val destProj: Project             = genProject()
-    val (destStorageRef, destStorage) = (genRevision(), genStorage(destProj.ref, diskVal))
-    val fetchFileStorage              = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
-    val stubbedDestAttributes         = genAttributes()
-    val batchCopy                     = BatchCopyMock.withStubbedCopyFiles(events, stubbedDestAttributes)
-    val destFileUUId                  = UUID.randomUUID() // Not testing UUID generation, same for all of them
+    val events                = ListBuffer.empty[Event]
+    val fetchFileStorage      = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
+    val stubbedDestAttributes = genAttributes()
+    val batchCopy             = BatchCopyMock.withStubbedCopyFiles(events, stubbedDestAttributes)
 
     val batchFiles: BatchFiles = mkBatchFiles(events, destProj, destFileUUId, fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
-    val (source, destination)  = (genCopyFileSource(), genCopyFileDestination(destProj.ref, destStorage.storage))
-    val obtained               = batchFiles.copyFiles(source, destination).accepted
+    val source                 = genCopyFileSource()
 
-    val expectedFileIri = destProj.base.iri / destFileUUId.toString
-    val expectedCmds    = stubbedDestAttributes.map(
-      CreateFile(expectedFileIri, destProj.ref, destStorageRef, destStorage.value.tpe, _, c.subject, destination.tag)
-    )
+    batchFiles.copyFiles(source, destination).map { obtained =>
+      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes)
+      val expectedResources    = expectedCommands.map(genFileResourceFromCmd)
+      val expectedCommandCalls = expectedCommands.toList.map(FileCommandEvaluated)
+      val expectedEvents       = activeStorageFetchedAndBatchCopyCalled(source) ++ expectedCommandCalls
 
-    // resources returned are based on file command evaluation
-    assertEquals(obtained, expectedCmds.map(genFileResourceFromCmd))
-
-    val expectedActiveStorageFetched = ActiveStorageFetched(destination.storage, destProj.ref, destProj.context, c)
-    val expectedBatchCopyCalled      = BatchCopyCalled(source, destStorage.storage, c)
-    val expectedCommandsEvaluated    = expectedCmds.toList.map(FileCommandEvaluated)
-    val expectedEvents               = List(expectedActiveStorageFetched, expectedBatchCopyCalled) ++ expectedCommandsEvaluated
-    assertEquals(events.toList, expectedEvents)
+      assertEquals(obtained, expectedResources)
+      assertEquals(events.toList, expectedEvents)
+    }
   }
 
   test("copy rejections should be mapped to a file rejection") {
-    val events                        = ListBuffer.empty[Event]
-    val destProj: Project             = genProject()
-    val (destStorageRef, destStorage) = (genRevision(), genStorage(destProj.ref, diskVal))
-    val fetchFileStorage              = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
-    val error                         = TotalCopySizeTooLarge(1L, 2L, genIri())
-    val batchCopy                     = BatchCopyMock.withError(error, events)
+    val events           = ListBuffer.empty[Event]
+    val fetchFileStorage = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
+    val error            = TotalCopySizeTooLarge(1L, 2L, genIri())
+    val batchCopy        = BatchCopyMock.withError(error, events)
 
     val batchFiles: BatchFiles = mkBatchFiles(events, destProj, UUID.randomUUID(), fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
-    val sourceProj             = genProject()
-    val (source, destination)  =
-      (genCopyFileSource(sourceProj.ref), genCopyFileDestination(destProj.ref, destStorage.storage))
-    val expectedError          = CopyRejection(sourceProj.ref, destProj.ref, destStorage.id, error)
+    val source                 = genCopyFileSource()
+    val expectedError          = CopyRejection(source.project, destProj.ref, destStorage.id, error)
 
     batchFiles.copyFiles(source, destination).interceptEquals(expectedError).accepted
 
-    val expectedActiveStorageFetched = ActiveStorageFetched(destination.storage, destProj.ref, destProj.context, c)
-    val expectedBatchCopyCalled      = BatchCopyCalled(source, destStorage.storage, c)
-    val expectedEvents               = List(expectedActiveStorageFetched, expectedBatchCopyCalled)
-    assertEquals(events.toList, expectedEvents)
+    assertEquals(events.toList, activeStorageFetchedAndBatchCopyCalled(source))
   }
 
   def mockFetchFileStorage(
@@ -103,6 +94,26 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
       FetchContextDummy(Map(proj.ref -> proj.context)).mapRejection(FileRejection.ProjectContextRejection)
     BatchFiles.mk(fetchFileStorage, fetchContext, evalFileCmd, batchCopy)
   }
+
+  def activeStorageFetchedAndBatchCopyCalled(source: CopyFileSource)(implicit c: Caller): List[Event] = {
+    val expectedActiveStorageFetched = ActiveStorageFetched(destination.storage, destProj.ref, destProj.context, c)
+    val expectedBatchCopyCalled      = BatchCopyCalled(source, destStorage.storage, c)
+    List(expectedActiveStorageFetched, expectedBatchCopyCalled)
+  }
+
+  def createCommandsFromFileAttributes(stubbedDestAttributes: NonEmptyList[FileAttributes])(implicit
+      c: Caller
+  ): NonEmptyList[CreateFile] = stubbedDestAttributes.map(
+    CreateFile(
+      destProj.base.iri / destFileUUId.toString,
+      destProj.ref,
+      destStorageRef,
+      destStorage.value.tpe,
+      _,
+      c.subject,
+      destination.tag
+    )
+  )
 }
 
 object BatchFilesSuite {

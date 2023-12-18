@@ -57,14 +57,14 @@ class TransactionalFileCopierSuite extends CatsEffectSuite {
 
   test("rollback by deleting file copies and directories if error thrown during a copy") {
     for {
-      (source, _)      <- givenAFileExists
-      (failingDest, _) <- givenAFileExists
-      (dest1, dest3)    = (genFilePath, genFilePath)
-      failingCopy       = CopyBetween(source, failingDest)
-      files             = NonEmptyList.of(CopyBetween(source, dest1), failingCopy, CopyBetween(source, dest3))
-      error            <- copier.copyAll(files).intercept[CopyOperationFailed]
-      _                <- List(dest1, dest3, parent(dest1), parent(dest3)).traverse(fileShouldNotExist)
-      _                <- fileShouldExist(failingDest)
+      (source, _)           <- givenAFileExists
+      (existingFilePath, _) <- givenAFileExists
+      (dest1, dest3)         = (genFilePath, genFilePath)
+      failingCopy            = CopyBetween(source, existingFilePath)
+      files                  = NonEmptyList.of(CopyBetween(source, dest1), failingCopy, CopyBetween(source, dest3))
+      error                 <- copier.copyAll(files).intercept[CopyOperationFailed]
+      _                     <- List(dest1, dest3, parent(dest1), parent(dest3)).traverse(fileShouldNotExist)
+      _                     <- fileShouldExist(existingFilePath)
     } yield assertEquals(error.failingCopy, failingCopy)
   }
 

@@ -7,7 +7,6 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, FileResource}
@@ -25,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.BulkOperationResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 final class BatchFilesRoutes(
     identities: Identities,
@@ -43,7 +41,6 @@ final class BatchFilesRoutes(
 
   private val logger = Logger[BatchFilesRoutes]
 
-  import baseUri.prefixSegment
   import schemeDirectives.resolveProjectRef
 
   implicit val bulkOpJsonLdEnc: JsonLdEncoder[BulkOperationResults[FileResource]] =
@@ -57,12 +54,10 @@ final class BatchFilesRoutes(
             resolveProjectRef.apply { projectRef =>
               (post & pathEndOrSingleSlash & parameter("storage".as[IdSegment].?) & indexingMode & tagParam) {
                 (storage, mode, tag) =>
-                  operationName(s"$prefixSegment/files/{org}/{project}") {
-                    // Bulk create files by copying from another project
-                    entity(as[CopyFileSource]) { c: CopyFileSource =>
-                      val copyTo = CopyFileDestination(projectRef, storage, tag)
-                      emit(Created, copyFile(mode, c, copyTo))
-                    }
+                  // Bulk create files by copying from another project
+                  entity(as[CopyFileSource]) { c: CopyFileSource =>
+                    val copyTo = CopyFileDestination(projectRef, storage, tag)
+                    emit(Created, copyFiles(mode, c, copyTo))
                   }
               }
             }
@@ -71,7 +66,7 @@ final class BatchFilesRoutes(
       }
     }
 
-  private def copyFile(mode: IndexingMode, source: CopyFileSource, dest: CopyFileDestination)(implicit
+  private def copyFiles(mode: IndexingMode, source: CopyFileSource, dest: CopyFileDestination)(implicit
       caller: Caller
   ): IO[Either[FileRejection, BulkOperationResults[FileResource]]] =
     (for {

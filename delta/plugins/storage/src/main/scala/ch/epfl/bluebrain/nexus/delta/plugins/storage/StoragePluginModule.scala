@@ -151,7 +151,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  // TODO refactor Files to depend on this rather than constructing it
   make[FilesLog].from { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[IO]) =>
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
   }
