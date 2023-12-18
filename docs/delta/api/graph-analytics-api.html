@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -244,6 +244,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-relationships" class="header">Fetch relationships</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-properties" class="header">Fetch properties</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-progress" class="header">Fetch progress</a></li>
+    <li><a href="../../../docs/delta/api/graph-analytics-api.html#search" class="header">Search</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#internals" class="header">Internals</a>
     <ul>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html#document-structure" class="header">Document structure</a></li>
@@ -256,7 +257,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -274,6 +275,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-relationships" class="header">Fetch relationships</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-properties" class="header">Fetch properties</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-progress" class="header">Fetch progress</a></li>
+    <li><a href="../../../docs/delta/api/graph-analytics-api.html#search" class="header">Search</a></li>
     <li><a href="../../../docs/delta/api/graph-analytics-api.html#internals" class="header">Internals</a>
     <ul>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html#document-structure" class="header">Document structure</a></li>
@@ -287,6 +289,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h1>
 <p>Graph analytics is a feature introduced by the <code>graph-analytics</code> plugin and rooted in the <code>/v1/graph-analytics/{org_label}/{project_label}</code> collection. </p>
@@ -452,6 +461,114 @@ BlueBrain/nexus
   &quot;totalEvents&quot;: 8
 }</code></pre></dd>
 </dl>
+<h2><a href="#search" name="search" class="anchor"><span class="anchor-link"></span></a>Search</h2>
+<pre><code>POST /v1/graph-analytics/{org_label}/{project_label}/_search
+  {...}
+</code></pre>
+<p>Search documents that are in a given project&rsquo;s Graph Analytics view.</p>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body" title="ElasticSearch documentation" target="_blank" rel="noopener noreferrer">ElasticSearch documentation</a>.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/ga-search.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -XPOST \
+-H &quot;Content-Type: application/json&quot; \
+&quot;http://localhost:8080/v1/graph-analytics/myorg/myproj/_search&quot; -d \
+&#39;{
+  &quot;query&quot;: {
+    &quot;term&quot;: {
+      &quot;@id&quot;: &quot;https://example.com/person&quot;
+    }
+  }
+}&#39;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/ga-search.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;hits&quot;: {
+    &quot;hits&quot;: [
+      {
+        &quot;_id&quot;: &quot;http://example.com/person&quot;,
+        &quot;_index&quot;: &quot;delta_ga_myorg_myproj&quot;,
+        &quot;_score&quot;: 1.3121864,
+        &quot;_source&quot;: {
+          &quot;@id&quot;: &quot;http://example.com/person&quot;,
+          &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
+          &quot;properties&quot;: [
+            {
+              &quot;@id&quot;: &quot;http://example.com/epfl&quot;,
+              &quot;dataType&quot;: &quot;object&quot;,
+              &quot;isInArray&quot;: false,
+              &quot;path&quot;: &quot;http://schema.org/worksFor&quot;
+            }
+          ],
+          &quot;references&quot;: [
+            {
+              &quot;@id&quot;: &quot;http://example.com/epfl&quot;,
+              &quot;@type&quot;: [
+                &quot;http://schema.org/EducationalOrganization&quot;
+              ],
+              &quot;dataType&quot;: &quot;object&quot;,
+              &quot;found&quot;: true,
+              &quot;isInArray&quot;: false,
+              &quot;path&quot;: &quot;http://schema.org/worksFor&quot;
+            }
+          ],
+          &quot;relationships&quot;: [
+            {
+              &quot;@id&quot;: &quot;http://example.com/epfl&quot;,
+              &quot;@type&quot;: [
+                &quot;http://schema.org/EducationalOrganization&quot;
+              ],
+              &quot;dataType&quot;: &quot;object&quot;,
+              &quot;isInArray&quot;: false,
+              &quot;path&quot;: &quot;http://schema.org/worksFor&quot;
+            }
+          ],
+          &quot;remoteContexts&quot;: [
+            {
+              &quot;@type&quot;: &quot;ProjectRemoteContextRef&quot;,
+              &quot;iri&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+              &quot;resource&quot;: {
+                &quot;id&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+                &quot;project&quot;: &quot;myorg/myproj&quot;,
+                &quot;rev&quot;: 1
+              }
+            }
+          ],
+          &quot;_createdAt&quot;: &quot;2023-08-08T15:49:14.081Z&quot;,
+          &quot;_createdBy&quot;: {
+            &quot;@type&quot;: &quot;User&quot;,
+            &quot;realm&quot;: &quot;internal&quot;,
+            &quot;subject&quot;: &quot;delta&quot;
+          },
+          &quot;_deprecated&quot;: false,
+          &quot;_project&quot;: &quot;myorg/myproj&quot;,
+          &quot;_rev&quot;: 1,
+          &quot;_updatedAt&quot;: &quot;2023-08-08T15:49:14.081Z&quot;,
+          &quot;_updatedBy&quot;: {
+            &quot;@type&quot;: &quot;User&quot;,
+            &quot;realm&quot;: &quot;internal&quot;,
+            &quot;subject&quot;: &quot;delta&quot;
+          }
+        }
+      }
+    ],
+    &quot;max_score&quot;: 1.3121864,
+    &quot;total&quot;: {
+      &quot;relation&quot;: &quot;eq&quot;,
+      &quot;value&quot;: 1
+    }
+  },
+  &quot;timed_out&quot;: false,
+  &quot;took&quot;: 0,
+  &quot;_shards&quot;: {
+    &quot;failed&quot;: 0,
+    &quot;skipped&quot;: 0,
+    &quot;successful&quot;: 1,
+    &quot;total&quot;: 1
+  }
+}</code></pre></dd>
+</dl>
 <h2><a href="#internals" name="internals" class="anchor"><span class="anchor-link"></span></a>Internals</h2>
 <p>In order to implement the described endpoints we needed a way to transform our data so that it would answer the desired questions in a performant manner.</p>
 <p>The proposed solution was to stream our data, transform it and push it to a dedicated ElasticSearch index (one index per project). Then at query time we can run <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html">term aggregations</a> in order to get the desired counts.</p>
@@ -519,6 +636,17 @@ BlueBrain/nexus
       &quot;path&quot;: &quot;http://schema.org/brother&quot;,
       &quot;isInArray&quot;: false
     }
+  ],
+  &quot;remoteContexts&quot;: [
+    {
+      &quot;@type&quot;: &quot;ProjectRemoteContextRef&quot;,
+      &quot;iri&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+      &quot;resource&quot;: {
+        &quot;id&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+        &quot;project&quot;: &quot;myorg/myproject&quot;,
+        &quot;rev&quot;: 1
+      }
+    }
   ]
 }
 </code></pre>
@@ -531,6 +659,7 @@ BlueBrain/nexus
   <li><code>isInArray</code> - Boolean: Flag to inform whether the current path (or its parent) is part of an array.</li>
   <li><code>dataType</code> - String: The type of the value present in the current path. Possible values are: string, numeric and boolean</li>
   <li><code>found</code> - Boolean: Flag to inform whether an @id inside <code>references</code> has been resolved as a relationship.</li>
+  <li><code>remoteContexts</code> - Json Object Array: A collection of remote contexts detected during the JSON-LD resolution for this resource.  See the <a href="resources-api.html#fetch-remote-contexts">Resources - Fetch remote contexts</a> operation to learn about the remote context types.</li>
 </ul>
 </div>
 <div>
@@ -540,7 +669,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>

@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "projections": {
+      "@container": "@list"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/supervision.json"
+}

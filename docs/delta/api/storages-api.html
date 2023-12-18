@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -273,7 +273,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -321,6 +321,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#storages" name="storages" class="anchor"><span class="anchor-link"></span></a>Storages</h1>
 <p>Storages are rooted in the <code>/v1/storages/{org_label}/{project_label}</code> collection and are used to describe where <a href="files-api.html">files</a> are physically stored.</p>
@@ -355,13 +362,12 @@ BlueBrain/nexus
 <h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
 <p>The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.</p></div>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus Delta runs.</p>
-<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/v1.8.x/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
-<p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>.</p>
+<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/master/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
+<p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>. <a href="../../getting-started/running-nexus/configuration/index.html#remote-storage-configuration">More information about configuration</a></p>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
   &quot;endpoint&quot;: &quot;{endpoint}&quot;,
-  &quot;credentials&quot;: &quot;{credentials}&quot;,
   &quot;folder&quot;: &quot;{folder}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
@@ -372,7 +378,6 @@ BlueBrain/nexus
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
   <li><code>{endpoint}</code>: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-endpoint</code>.</li>
-  <li><code>{credentials}</code>: String - the service account access token to authenticate and authorize Nexus Delta client against the storage service. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-credentials</code>.</li>
   <li><code>{folder}</code>: String - the storage service bucket where files using this storage are going to be saved.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-write-permission</code> (<code>files/write</code>).</li>
@@ -385,8 +390,6 @@ BlueBrain/nexus
   &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
   &quot;endpoint&quot;: &quot;{endpoint}&quot;,
-  &quot;accessKey&quot;: &quot;{access_key}&quot;,
-  &quot;secretKey&quot;: &quot;{secret_key}&quot;,
   &quot;region&quot;: &quot;{region}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
@@ -397,8 +400,6 @@ BlueBrain/nexus
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
   <li><code>{endpoint}</code>: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-endpoint</code>.</li>
-  <li><code>{access_key}</code>: String - the Amazon S3 compatible access key. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-access-key</code>.</li>
-  <li><code>{secret_key}</code>: String - the Amazon S3 compatible secret key. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
   <li><code>{region}</code>: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>
@@ -771,6 +772,7 @@ BlueBrain/nexus
                                              &amp;updatedBy={updatedBy}
                                              &amp;q={search}
                                              &amp;sort={sort}
+                                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only storages from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -783,6 +785,7 @@ BlueBrain/nexus
                             &amp;updatedBy={updatedBy}
                             &amp;q={search}
                             &amp;sort={sort}
+                            &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only storages from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -795,6 +798,7 @@ BlueBrain/nexus
                 &amp;updatedBy={updatedBy}
                 &amp;q={search}
                 &amp;sort={sort}
+                &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
@@ -807,6 +811,7 @@ BlueBrain/nexus
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting storages based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the storages in the collection that have attribute values matching  (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort storages based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -958,7 +963,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>
@@ -968,7 +973,7 @@ v1.8.x
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/views/composite-view-api.html" title="CompositeView" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/views/composite-sink.html" title="Composite Sinks" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -977,7 +982,7 @@ v1.8.x
 <span class="md-footer-nav__direction">
 Previous
 </span>
-CompositeView
+Composite Sinks
 </span>
 </div>
 </a>

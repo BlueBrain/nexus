@@ -1,0 +1,22 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproj/_/5930546b-1a9c-493a-a3e6-e9cadc684516",
+  "@type": [
+    "AggregateElasticSearchView",
+    "View"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-05-17T10:01:48.384Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost:8080/v1/views/myorg/myproj/5930546b-1a9c-493a-a3e6-e9cadc684516/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/5930546b-1a9c-493a-a3e6-e9cadc684516/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_self": "http://localhost:8080/v1/views/myorg/myproj/5930546b-1a9c-493a-a3e6-e9cadc684516",
+  "_updatedAt": "2021-05-17T10:01:48.384Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
+}

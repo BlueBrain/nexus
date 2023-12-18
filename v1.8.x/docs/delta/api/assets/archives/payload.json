@@ -1,0 +1,21 @@
+{
+    "resources" : [
+        {
+            "@type": "Resource",
+            "resourceId": "http://localhost:8080/resource1",
+            "rev": 2
+        },
+        {
+            "@type": "Resource",
+            "resourceId": "http://localhost:8080/resource2",
+            "project": "myorg/myproject2",
+            "format": "expanded"
+        },
+        {
+            "@type": "File",
+            "resourceId": "http://localhost:8080/resource2",
+            "project": "myorg/myproject2",
+            "path": "my/custom/path/resource2.json"
+        }
+    ]
+}

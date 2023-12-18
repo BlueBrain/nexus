@@ -1,0 +1,21 @@
+curl -L \
+     -X GET \
+     -d '
+     {
+       "format": "source",
+        "resources" : [
+          {
+            "id": "https://bbp.epfl.ch/person/alex",
+            "project": "public/person"
+          },
+          {
+            "id": "https://bbp.epfl.ch/person/john-doe",
+            "project": "public/person"
+          },
+          {
+             "id": "https://bbp.epfl.ch/secret/xxx",
+             "project": "restricted/xxx"
+          }
+      ]
+     }
+'

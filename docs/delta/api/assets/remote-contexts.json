@@ -1,0 +1,18 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/remote-contexts.json",
+  "remoteContexts": [
+    {
+      "@type": "StaticContextRef",
+      "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json"
+    },
+    {
+      "@type": "ProjectContextRef",
+      "iri": "https://localhost/nexus/context",
+      "resource": {
+        "id": "https://localhost/nexus/context",
+        "project": "org/proj",
+        "rev": 5
+      }
+    }
+  ]
+}

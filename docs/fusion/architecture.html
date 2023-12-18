@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -244,7 +244,15 @@ BlueBrain/nexus
     <li><a href="../../docs/fusion/architecture.html#technology-overview" class="header">Technology Overview</a></li>
     <li><a href="../../docs/fusion/architecture.html#pages" class="header">Pages</a></li>
     <li><a href="../../docs/fusion/architecture.html#plugins" class="header">Plugins</a></li>
-    <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a></li>
+    <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a>
+    <ul>
+      <li><a href="../../docs/fusion/architecture.html#environment-variables-for-customization" class="header">Environment Variables for Customization</a>
+      <ul>
+        <li><a href="../../docs/fusion/architecture.html#landing-page-customization" class="header">Landing Page Customization</a></li>
+        <li><a href="../../docs/fusion/architecture.html#page-specific-customization" class="header">Page Specific Customization</a></li>
+        <li><a href="../../docs/fusion/architecture.html#additional-options" class="header">Additional Options</a></li>
+      </ul></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -253,7 +261,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -271,7 +279,15 @@ BlueBrain/nexus
     <li><a href="../../docs/fusion/architecture.html#technology-overview" class="header">Technology Overview</a></li>
     <li><a href="../../docs/fusion/architecture.html#pages" class="header">Pages</a></li>
     <li><a href="../../docs/fusion/architecture.html#plugins" class="header">Plugins</a></li>
-    <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a></li>
+    <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a>
+    <ul>
+      <li><a href="../../docs/fusion/architecture.html#environment-variables-for-customization" class="header">Environment Variables for Customization</a>
+      <ul>
+        <li><a href="../../docs/fusion/architecture.html#landing-page-customization" class="header">Landing Page Customization</a></li>
+        <li><a href="../../docs/fusion/architecture.html#page-specific-customization" class="header">Page Specific Customization</a></li>
+        <li><a href="../../docs/fusion/architecture.html#additional-options" class="header">Additional Options</a></li>
+      </ul></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -281,36 +297,52 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
 <h2><a href="#technology-overview" name="technology-overview" class="anchor"><span class="anchor-link"></span></a>Technology Overview</h2>
-<p>Nexus Fusion is a server-side rendered single-page webapp powered by <a href="https://react.dev" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="Typescript" target="_blank" rel="noopener noreferrer">Typescript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
-<p>The build step produces a server artifact to run on a Node.js server, with client-side assets and Javascript.</p>
-<p>We produce a docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/repository/docker/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
+<p>Nexus Fusion is a partially server-side rendered single-page web app powered by <a href="https://react.dev" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="TypeScript" target="_blank" rel="noopener noreferrer">TypeScript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
+<p>The build step produces a server artifact to run on a Node.js server, with client-side assets and JavaScript.</p>
+<p>We produce a Docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/repository/docker/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
 <p>Although the application is served by a Node.js server, the client communicates directly to <a href="../delta/index.html">Nexus Delta</a> using <a href="../utilities/index.html#nexus-js">Nexus.js</a>.</p>
 <h2><a href="#pages" name="pages" class="anchor"><span class="anchor-link"></span></a>Pages</h2>
-<p>Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing technologie and help seperating the application main features.</p>
-<p>Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: <a href="organizations.html">Organizations</a>, <a href="projects.html">Projects</a>, <a href="studios.html">Studios</a> and <a href="my-data.html">My data</a>. </p>
-<p>The page <a href="project.html">Project</a>, is responsible for handling all aspects of managing a single project.</p>
-<p>The search page has been removed, but every element that was previously available on the search page now has a link on the home page. These links redirect users to the appropriate global search type page.</p>
-<p>The pages in Nexus Fusion are part of the source code and reside in the <code>src/pages</code> folder.</p>
-<p>While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming release.</p>
+<p>Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing system and help separate the application&rsquo;s main features.</p>
+<p>Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: <a href="organizations.html">Organizations</a>, <a href="projects.html">Projects</a>, <a href="studios.html">Studios</a> and <a href="my-data.html">My data</a>.</p>
+<p>The page <a href="project.html">Project</a>, is responsible for handling all aspects of managing a single project.</p><div class="callout note tip"><div class="callout-title">Change of search page</div>
+<p>The search page has been removed, but every element that was previously available on the search page now has a link on the home page. These links redirect users to the appropriate global search type page.</p></div>
+<p>The pages in Nexus Fusion are part of the source code and reside in the <code>src/pages</code> folder. While all the previous features are still available in the current version of Nexus Fusion, we expect their functionality to evolve and change in the upcoming releases.</p>
 <h2><a href="#plugins" name="plugins" class="anchor"><span class="anchor-link"></span></a>Plugins</h2>
 <p>Plugins are ways to render resources. You can find more about them <a href="plugins.html">here</a>. It is important to note that the plugin repository is hosted separately from Nexus Fusion. Nexus Fusion will request a Plugin Manifest from this repository at run-time, and fetch plugins to render during run time based on a config. Both the plugins, the configuration, and the manifest should be hosted somewhere Nexus Fusion can request it.</p>
 <h2><a href="#customization" name="customization" class="anchor"><span class="anchor-link"></span></a>Customization</h2>
-<p>You can customize the Header of Nexus Fusion by setting up the following environment variables:</p>
+<p>Customize the Nexus codebase appearance by setting environment variables. Defaults are provided by Nexus Fusion if not set.</p>
+<h3><a href="#environment-variables-for-customization" name="environment-variables-for-customization" class="anchor"><span class="anchor-link"></span></a>Environment Variables for Customization</h3>
+<p><img src="./assets/environment-variables.png" alt="Nexus Header" /></p>
+<h4><a href="#landing-page-customization" name="landing-page-customization" class="anchor"><span class="anchor-link"></span></a>Landing Page Customization</h4>
 <ul>
-  <li><code>LOGO_IMG</code>: Url for an image to be used as application logo in the Header, for example, <code>https://www.epfl.ch/logo-img.png</code></li>
-  <li><code>LOGO_LINK</code>: Url for the logo, for example, <code>https://www.epfl.ch</code></li>
-  <li><code>ORGANIZATION_IMG</code>: Url for the organization page foreground image, for example, <code>https://www.epfl.ch/default-org-img.png</code></li>
-  <li><code>PROJECTS_IMG</code>: Url for the projects page foreground image, for example,<code>https://www.epfl.ch/default-projects-img.png</code></li>
-  <li><code>STUDIOS_IMG</code>: Url for the studios page foreground image, for example, <code>https://www.epfl.ch/default-studios-img.png</code></li>
-  <li><code>LANDING_VIDEO</code>: Url for video in the the landing page, for example, <code>https://www.epfl.ch/landing-page-video.mp4</code></li>
-  <li><code>LANDING_POSTER_IMG</code>: Url for the video&rsquo;s poster image in landing page (replace the video when loading, for example,<code>https://www.epfl.ch/landing-page-poster-img.png</code></li>
-  <li><code>MAIN_COLOR</code>: Url for the organization page, for example &ldquo;#062d68&rdquo;</li>
-  <li>If you use Nexus Forge, it is possible to include a <code>Forge templates</code> button by providing the url as <code>FORGE_LINK</code>, for example, <code>https://some-url.hi</code></li>
+  <li><code>LOGO_IMG</code>: HTTPS URL for the application logo. Recommended: SVG format with transparent background. Ideal size: ~35 px height, max 250 px width. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/EPFL_BBP_logo.svg" title="Click here for an example SVG" target="_blank" rel="noopener noreferrer">Click here for an example SVG</a>.</li>
+  <li><code>LOGO_LINK</code>: HTTPS URL redirecting from the logo. Example: <a href="https://www.epfl.ch">https://www.epfl.ch</a></li>
+  <li><code>LANDING_VIDEO</code>: HTTPS URL for a landing page video. Requirements: MP4 format, H.264 codec, ~10MB, 1920×1080 resolution. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/videos/BrainRegionsNexusPage.mp4" title="Click here for an example video" target="_blank" rel="noopener noreferrer">Click here for an example video</a>. Ensure that the video&rsquo;s main color is not too bright, as the text on top of it will be white.</li>
+  <li><code>LANDING_POSTER_IMG</code>: HTTPS URL for a loading image on the landing page, displayed while the video loads. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/BrainRegionsNexusPage.jpg" title="Click here for an example poster image" target="_blank" rel="noopener noreferrer">Click here for an example poster image</a>. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
+  <li><code>MAIN_COLOR</code>: Main background color in hex code. Example color: #062d68</li>
 </ul>
-<p>The full list of environment variables can be found <a href="https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list" title="here">here</a>.</p>
+<h4><a href="#page-specific-customization" name="page-specific-customization" class="anchor"><span class="anchor-link"></span></a>Page Specific Customization</h4>
+<p><img src="./assets/organizations-envs.png" alt="Example organization env" /> <img src="./assets/projects-envs.png" alt="Example projects env" /> <img src="./assets/studios-envs.png" alt="Example studios env" /></p>
+<ul>
+  <li><code>ORGANIZATION_IMG</code>: Provide the HTTPS URL for an image on the organization page. <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/sscx-by-layers-v3.png" title="Click here for an example image" target="_blank" rel="noopener noreferrer">Click here for an example image</a>. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
+  <li><code>PROJECTS_IMG</code>: Share the HTTPS URL for an image on the projects page. <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/hippocampus.png" title="Click here for an example image" target="_blank" rel="noopener noreferrer">Click here for an example image</a>. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
+  <li><code>STUDIOS_IMG</code>: Provide the HTTPS URL for an image on the studios page. <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/neocortex.png" title="Click here for an example image" target="_blank" rel="noopener noreferrer">Click here for an example image</a>. The recommended dimensions are approximately 1500 × 450 pixels. Please ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
+</ul>
+<h4><a href="#additional-options" name="additional-options" class="anchor"><span class="anchor-link"></span></a>Additional Options</h4>
+<ul>
+  <li><code>FORGE_LINK</code>: HTTPS URL for the <code>Forge templates</code> button (only if using Nexus Forge). Example: <a href="https://some-url.com">https://some-url.com</a></li>
+</ul>
+<p>For a comprehensive list of environment variables, see the <a href="https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list" title="Environment Variables List" target="_blank" rel="noopener noreferrer">Environment Variables List</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/architecture.md" title="Edit this page" class="md-source-file md-edit">
@@ -319,7 +351,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>

@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="active page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -247,18 +247,24 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#passivation" class="header">Passivation</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
-      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
-      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      </ul></li>
     </ul></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a>
+    <li><a href="../../../../docs/delta/api/views/index.html#indexing-failures" class="header">Indexing failures</a>
     <ul>
-      <li><a href="../../../../docs/delta/api/views/index.html#fetch-indexing-failures" class="header">Fetch indexing failures</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#listing-indexing-failures" class="header">Listing indexing failures</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      </ul></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#fetch-indexing-failures-as-sses" class="header">Fetch indexing failures as SSEs</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -267,7 +273,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -288,18 +294,24 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#passivation" class="header">Passivation</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
-      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
-      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      </ul></li>
     </ul></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a>
+    <li><a href="../../../../docs/delta/api/views/index.html#indexing-failures" class="header">Indexing failures</a>
     <ul>
-      <li><a href="../../../../docs/delta/api/views/index.html#fetch-indexing-failures" class="header">Fetch indexing failures</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#listing-indexing-failures" class="header">Listing indexing failures</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+      </ul></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#fetch-indexing-failures-as-sses" class="header">Fetch indexing failures as SSEs</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -309,6 +321,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h1>
 <p>Views are rooted in the <code>/v1/views/{org_label}/{project_label}</code> collection and are used to index the selected resources into a bucket. </p>
@@ -343,10 +362,6 @@ BlueBrain/nexus
   <li><code>async</code> - (default value) the view will be indexed asynchronously</li>
   <li><code>sync</code> - the view will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
-<h2><a href="#passivation" name="passivation" class="anchor"><span class="anchor-link"></span></a>Passivation</h2>
-<p>Views are now stopped if no event has been detected for a given period (by default 30 minutes).</p>
-<p>This value can be updated by updating the configuration keys: - <code>plugins.blazegraph.idle-timeout</code> - <code>plugins.composite-views.idle-timeout</code> - <code>plugins.elasticsearch.idle-timeout</code></p>
-<p>Setting an infinite time (<code>Inf</code>) will disable this feature.</p>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
 <p>There are three available endpoints to list views in different scopes.</p>
 <h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
@@ -359,6 +374,7 @@ BlueBrain/nexus
                                          &amp;updatedBy={updatedBy}
                                          &amp;q={search}
                                          &amp;sort={sort}
+                                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only views from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -371,6 +387,7 @@ BlueBrain/nexus
                          &amp;updatedBy={updatedBy}
                          &amp;q={search}
                          &amp;sort={sort}
+                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only views from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -383,8 +400,9 @@ BlueBrain/nexus
              &amp;updatedBy={updatedBy}
              &amp;q={search}
              &amp;sort={sort}
+             &amp;aggregations={aggregations}
 </code></pre>
-<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
+<h4><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h4>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
@@ -395,6 +413,7 @@ BlueBrain/nexus
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting views based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the views in the collection that have attribute values matching  (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort views based on a payloads&rsquo; field. This parameter can appear multiple times to  enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="../resources-api.html#aggregations">Aggregations</a>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -469,8 +488,76 @@ BlueBrain/nexus
   &quot;_next&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj?after=%5B1559045718752,%22https://bluebrain.github.io/nexus/vocabulary/myview29%22%5D&quot;
 }</code></pre></dd>
 </dl>
+<h2><a href="#indexing-failures" name="indexing-failures" class="anchor"><span class="anchor-link"></span></a>Indexing failures</h2>
+<h3><a href="#listing-indexing-failures" name="listing-indexing-failures" class="anchor"><span class="anchor-link"></span></a>Listing indexing failures</h3>
+<p>This endpoint returns the indexing failures for the view <code>{view_id}</code>. The caller must have <code>view/write</code> permission on <code>{org_label}/{project_label}</code>.</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/failures
+    ?from={from}
+    &amp;size={size}
+    &amp;instant={instant}
+</code></pre>
+<h4><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h4>
+<ul>
+  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{instant}</code>: Time Range - can be used to filter the results based on the moment they were risen</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/failures.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/views/myorg/myproj/myview/failures&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/failures.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;
+  ],
+  &quot;_total&quot;: 2,
+  &quot;_results&quot;: [
+    {
+      &quot;errorType&quot;: &quot;java.lang.Exception&quot;,
+      &quot;id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myid&quot;,
+      &quot;message&quot;: &quot;The resource could not be indexed for the following reason: &#39;...&#39;&quot;,
+      &quot;offset&quot;: {
+        &quot;@type&quot;: &quot;At&quot;,
+        &quot;value&quot;: 42
+      },
+      &quot;project&quot;: &quot;myorg/myproj&quot;,
+      &quot;_rev&quot;: 1
+    },
+    {
+      &quot;errorType&quot;: &quot;java.lang.Exception&quot;,
+      &quot;id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myid&quot;,
+      &quot;message&quot;: &quot;The resource could not be indexed for the following reason: &#39;...&#39;&quot;,
+      &quot;offset&quot;: {
+        &quot;@type&quot;: &quot;At&quot;,
+        &quot;value&quot;: 42
+      },
+      &quot;_rev&quot;: 1
+    }
+  ]
+}</code></pre></dd>
+</dl>
+<h3><a href="#fetch-indexing-failures-as-sses" name="fetch-indexing-failures-as-sses" class="anchor"><span class="anchor-link"></span></a>Fetch indexing failures as SSEs</h3>
+<p>This endpoint fetches the available indexing failures. The <code>Last-Event-Id</code> is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have <code>view/write</code> permission on <code>{org_label}/{project_label}</code>.</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/failures/sse
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/sse-failures.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/views/myorg/myproj/myview/failures/sse&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/sse-failures.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,&quot;errorType&quot;:&quot;java.lang.Exception&quot;,&quot;id&quot;:&quot;myid&quot;,&quot;message&quot;:&quot;boom&quot;,&quot;offset&quot;:{&quot;@type&quot;:&quot;At&quot;,&quot;value&quot;:42}}
+event:IndexingFailure
+id:1</code></pre></dd>
+</dl>
 <h2><a href="#server-sent-events" name="server-sent-events" class="anchor"><span class="anchor-link"></span></a>Server Sent Events</h2>
-<p>From Delta 1.5, it is possible to fetch SSEs for all resolvers or just resolvers in the scope of an organization or a project.</p>
+<p>From Delta 1.5, it is possible to fetch SSEs for all views or just views in the scope of an organization or a project.</p>
 <pre><code>GET /v1/views/events # for all view events in the application
 GET /v1/views/{org_label}/events # for view events in the given organization
 GET /v1/views/{org_label}/{project_label}/events # for view events in the given project
@@ -505,21 +592,6 @@ data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/met
 event:BlazegraphViewDeprecated
 id:4</code></pre></dd>
 </dl>
-<h3><a href="#fetch-indexing-failures" name="fetch-indexing-failures" class="anchor"><span class="anchor-link"></span></a>Fetch indexing failures</h3>
-<p>This endpoint fetches the available indexing failures as SSEs. The <code>Last-Event-Id</code> is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have <code>view/write</code> permission on <code>{org_label}/{project_label}</code>.</p>
-<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/failures
-</code></pre>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/failures.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/views/myorg/myproj/myview/failures&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/failures.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,&quot;errorType&quot;:&quot;java.lang.Exception&quot;,&quot;id&quot;:&quot;myid&quot;,&quot;message&quot;:&quot;boom&quot;,&quot;offset&quot;:{&quot;@type&quot;:&quot;At&quot;,&quot;value&quot;:42}}
-event:IndexingFailure
-id:1</code></pre></dd>
-</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/views/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -528,7 +600,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>

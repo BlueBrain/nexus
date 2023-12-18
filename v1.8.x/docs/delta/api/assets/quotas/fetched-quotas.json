@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/quotas.json",
+  "@type": "Quota",
+  "events": 4000,
+  "resources": 2000
+}

@@ -1,0 +1,62 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/aggregations.json",
+  "aggregations": {
+    "projects": {
+      "buckets": [
+        {
+          "doc_count": 5,
+          "key": "http://delta:8080/v1/projects/myorg/myproject"
+        },
+        {
+          "doc_count": 5,
+          "key": "http://delta:8080/v1/projects/myorg/myproject2"
+        }
+      ],
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0
+    },
+    "types": {
+      "buckets": [
+        {
+          "doc_count": 6,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/View"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/CompositeView"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/InProject"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/Project"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
+        },
+        {
+          "doc_count": 2,
+          "key": "https://bluebrain.github.io/nexus/vocabulary/Storage"
+        }
+      ],
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0
+    }
+  },
+  "total": 12
+}

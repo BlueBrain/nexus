@@ -1,0 +1,5 @@
+{
+  "name": "Nexus Dev",
+  "openIdConfig": "http://localhost:8080/auth/realms/bbp-test/.well-known/openid-configuration",
+  "logo": "http://localhost:8080/logo.png"
+}

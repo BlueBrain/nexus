@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -254,6 +254,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#elasticsearchprojection" class="header">ElasticSearchProjection</a></li>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#sparqlprojection" class="header">SparqlProjection</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
     <li><a href="../../../../docs/delta/api/views/composite-view-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#example" class="header">Example</a></li>
@@ -285,7 +286,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -313,6 +314,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#elasticsearchprojection" class="header">ElasticSearchProjection</a></li>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#sparqlprojection" class="header">SparqlProjection</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
     <li><a href="../../../../docs/delta/api/views/composite-view-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#example" class="header">Example</a></li>
@@ -345,6 +347,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#compositeview" name="compositeview" class="anchor"><span class="anchor-link"></span></a>CompositeView</h1>
 <p>This view is composed by multiple <code>sources</code> and <code>projections</code>.</p>
@@ -466,7 +475,6 @@ BlueBrain/nexus
          &quot;context&quot;: _context_,
          &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
          &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
-         &quot;resourceTag&quot;: &quot;{tag}&quot;,
          &quot;includeMetadata&quot;: {includeMetadata},
          &quot;includeDeprecated&quot;: {includeDeprecated},
          &quot;permission&quot;: {permission},
@@ -486,7 +494,6 @@ BlueBrain/nexus
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/#construct" title="Sparql Construct Query" target="_blank" rel="noopener noreferrer">Sparql Construct Query</a> - Defines the Sparql query to execute against the  intermediate Sparql space for each target resource.</li>
   <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
-  <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  included in the ElasticSearch document. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
   <li><code>{permission}</code>: String - the permission necessary to query this projection. Defaults to <code>views/query</code>.</li>
@@ -507,7 +514,6 @@ BlueBrain/nexus
          &quot;query&quot;: &quot;{query}&quot;,
          &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
          &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
-         &quot;resourceTag&quot;: &quot;{tag}&quot;,
          &quot;includeMetadata&quot;: {includeMetadata},
          &quot;includeDeprecated&quot;: {includeDeprecated},
         &quot;permission&quot;: &quot;{permission}&quot;
@@ -521,12 +527,13 @@ BlueBrain/nexus
   <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated  Iri will be assigned.</li>
   <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
-  <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/#construct" title="Sparql Construct Query" target="_blank" rel="noopener noreferrer">Sparql Construct Query</a> - Defines the Sparql query to  execute against the intermediate Sparql space for each target resource.</li>
   <li><code>{permission}</code>: String - the permission necessary to query this projection. Defaults to <code>views/query</code>.</li>
 </ul>
+<h2><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h2>
+<p>The queries that projections perform to the intermediate Sparql space can be either executed per individual resource, or in batches containing multiple resources. To learn more about it, please refer to the <a href="composite-sink.html">Composite Sink page</a>.</p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
@@ -2448,7 +2455,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>
@@ -2471,13 +2478,13 @@ AggregateSparqlView
 </span>
 </div>
 </a>
-<a href="../../../../docs/delta/api/storages-api.html" title="Storages" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../../docs/delta/api/views/composite-sink.html" title="Composite Sinks" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Storages
+Composite Sinks
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

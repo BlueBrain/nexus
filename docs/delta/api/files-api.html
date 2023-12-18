@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -241,6 +241,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
@@ -250,6 +251,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/files-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/files-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#list" class="header">List</a>
@@ -268,7 +270,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -283,6 +285,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
@@ -292,6 +295,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/files-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/files-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#list" class="header">List</a>
@@ -311,12 +315,34 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#files" name="files" class="anchor"><span class="anchor-link"></span></a>Files</h1>
 <p>Files are attachment resources rooted in the <code>/v1/files/{org_label}/{project_label}/</code> collection.</p>
 <p>Each file belongs to a <code>project</code> identifier by the label <code>{project_label}</code> inside an <code>organization</code> identifier by the label <code>{org_label}</code>.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When creating, updating and reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#nexus-metadata" name="nexus-metadata" class="anchor"><span class="anchor-link"></span></a>Nexus metadata</h2>
+<p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following files specific metadata can be present</p>
+<ul>
+  <li><code>_bytes</code>: size of the file in bytes</li>
+  <li><code>_digest</code>: algorithm and checksum used for file integrity</li>
+  <li><code>_filename</code>: name of the file</li>
+  <li><code>_location</code>: path where the file is stored on the underlying storage</li>
+  <li><code>_mediaType</code>: <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the type of the file</li>
+  <li><code>_origin</code>: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service</li>
+  <li><code>_storage</code>: <code>@id</code>, <code>@type</code>, and revision of the <a href="storages-api.html">Storage</a> used for the file</li>
+  <li><code>_uuid</code>: <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier" title="UUID" target="_blank" rel="noopener noreferrer">UUID</a> of the file</li>
+  <li><code>_project</code>: address of the file&rsquo;s project</li>
+  <li><code>_incoming</code>: address to query to obtain the <a href="resources-api.html#list-incoming-links">list of incoming links</a></li>
+  <li><code>_outgoing</code>: address to query to obtain the <a href="resources-api.html#list-outgoing-links">list of outgoing links</a></li>
+</ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a file (creation, update, tagging, deprecation) can specify whether the file should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
@@ -324,9 +350,9 @@ BlueBrain/nexus
   <li><code>sync</code> - the file will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
-<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}
+<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
 </code></pre>
-<p>&hellip; where <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used.</p>
+<p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
 <p>The json payload:</p>
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
@@ -377,9 +403,9 @@ BlueBrain/nexus
 </dl>
 <h2><a href="#create-using-put" name="create-using-put" class="anchor"><span class="anchor-link"></span></a>Create using PUT</h2>
 <p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
-<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
 </code></pre>
-<p>&hellip; where <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used.</p>
+<p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
 <p>Note that if the payload contains an @id different from the <code>{file_id}</code>, the request will fail.</p>
 <p><strong>Example</strong></p>
 <dl>
@@ -387,7 +413,7 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
      -F &quot;file=@/path/to/myfile.pdf;type=application/pdf&quot; \
-     &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=remote&quot;</code></pre></dd>
+     &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=remote&amp;tag=mytag&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/created-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -427,7 +453,7 @@ BlueBrain/nexus
 </dl>
 <h2><a href="#link-using-post" name="link-using-post" class="anchor"><span class="anchor-link"></span></a>Link using POST</h2>
 <p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>S3Storage</code> and <code>RemoteDiskStorage</code>.</p>
-<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}
+<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
   {
     &quot;path&quot;: &quot;{path}&quot;,
     &quot;filename&quot;: &quot;{filename}&quot;,
@@ -437,8 +463,9 @@ BlueBrain/nexus
 <ul>
   <li><code>{storageId}</code>: String - Selects a specific storage backend that supports linking existing files. This field is optional.  When not specified, the default storage of the project is used.</li>
   <li><code>{path}</code>: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.</li>
-  <li><code>{filenane}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
+  <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
   <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detectput</li>
+  <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -498,7 +525,7 @@ BlueBrain/nexus
 <h2><a href="#link-using-put" name="link-using-put" class="anchor"><span class="anchor-link"></span></a>Link using PUT</h2>
 <p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>S3Storage</code> and <code>RemoteDiskStorage</code>.</p>
 <p>This alternative endpoint allows to specify the resource <code>@id</code>.</p>
-<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
   {
     &quot;path&quot;: &quot;{path}&quot;,
     &quot;filename&quot;: &quot;{filename}&quot;,
@@ -509,8 +536,9 @@ BlueBrain/nexus
 <ul>
   <li><code>{storageId}</code>: String - Selects a specific storage backend that supports linking existing files. This field is optional. When not specified, the default storage of the project is used.</li>
   <li><code>{path}</code>: String - the relative location (from the point of view of the storage folder) on the remote storage where the file exists.</li>
-  <li><code>{filenane}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
+  <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
   <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.</li>
+  <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -518,7 +546,7 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
    -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/files/myorg/myproject/mylink?storage=remote&quot; -d \
+   &quot;http://localhost:8080/v1/files/myorg/myproject/mylink?storage=remote&amp;tag=mytag&quot; -d \
    &#39;{
       &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;
    }&#39;</code></pre></dd>
@@ -734,7 +762,7 @@ BlueBrain/nexus
 <h2><a href="#deprecate" name="deprecate" class="anchor"><span class="anchor-link"></span></a>Deprecate</h2>
 <p>Locks the file, so no further operations can be performed.</p>
 <p>Deprecating a file is considered to be an update as well. </p>
-<pre><code>DELETE /v1/files/{org_label}/{project_label}?rev={previous_rev}
+<pre><code>DELETE /v1/files/{org_label}/{project_label}/{file_id}?rev={previous_rev}
 </code></pre>
 <p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the file.</p>
 <p><strong>Example</strong></p>
@@ -768,6 +796,54 @@ BlueBrain/nexus
   &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile&quot;,
+  &quot;_storage&quot;: {
+    &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,
+    &quot;@type&quot;: &quot;DiskStorage&quot;,
+    &quot;_rev&quot;: 1
+  },
+  &quot;_updatedAt&quot;: &quot;2021-05-12T08:09:23.658Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_uuid&quot;: &quot;3e86d93a-c196-407d-a13c-cea7168e32e3&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks a previously deprecated file. Further operations can then be performed. The file will again be found when listing/querying.</p>
+<p>Undeprecating a file is considered to be an update as well.</p>
+<pre><code>PUT /v1/file/{org_label}/{project_label}/{file_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+   &quot;http://localhost:8080/v1/files/myorg/myproject/myfile/undeprecate?rev=4&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/myfile&quot;,
+  &quot;@type&quot;: &quot;File&quot;,
+  &quot;_bytes&quot;: 13896460,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
+  &quot;_createdAt&quot;: &quot;2021-05-12T07:30:54.576Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_deprecated&quot;: false,
+  &quot;_digest&quot;: {
+    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
+    &quot;_value&quot;: &quot;4c9f4292e3c0c5fc23cd60722adb8a1535f1dd7f0cf9203140d61fb889eef3cf&quot;
+  },
+  &quot;_filename&quot;: &quot;myfile2.pdf&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile/incoming&quot;,
+  &quot;_mediaType&quot;: &quot;application/pdf&quot;,
+  &quot;_origin&quot;: &quot;Client&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_rev&quot;: 5,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile&quot;,
   &quot;_storage&quot;: {
     &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,
@@ -879,6 +955,7 @@ BlueBrain/nexus
                                          &amp;updatedBy={updatedBy}
                                          &amp;q={search}
                                          &amp;sort={sort}
+                                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only files from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -891,6 +968,7 @@ BlueBrain/nexus
                          &amp;updatedBy={updatedBy}
                          &amp;q={search}
                          &amp;sort={sort}
+                         &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only files from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -903,6 +981,7 @@ BlueBrain/nexus
              &amp;updatedBy={updatedBy}
              &amp;q={search}
              &amp;sort={sort}
+             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
@@ -915,6 +994,7 @@ BlueBrain/nexus
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting files based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the files in the collection that have attribute values matching  (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort files based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -1077,7 +1157,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>

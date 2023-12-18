@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "name": "http://schema.org/name",
+    "description": "http://schema.org/description",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceSchemas": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "viewId": {
+      "@type": "@id"
+    },
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_indexingRev": "https://bluebrain.github.io/nexus/vocabulary/indexingRev"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/sparql.json"
+}

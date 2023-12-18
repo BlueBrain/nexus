@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="active page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -241,17 +241,20 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/resources-api.html#resources" class="header">Resources</a>
   <ul>
+    <li><a href="../../../docs/delta/api/resources-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#refresh" class="header">Refresh</a></li>
-    <li><a href="../../../docs/delta/api/resources-api.html#validate" class="header">Validate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list" class="header">List</a>
     <ul>
@@ -259,6 +262,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resources-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../docs/delta/api/resources-api.html#aggregations" class="header">Aggregations</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list-filtering-by-schema" class="header">List filtering by schema</a>
     <ul>
@@ -276,7 +280,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -291,17 +295,20 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/resources-api.html#resources" class="header">Resources</a>
   <ul>
+    <li><a href="../../../docs/delta/api/resources-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#refresh" class="header">Refresh</a></li>
-    <li><a href="../../../docs/delta/api/resources-api.html#validate" class="header">Validate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list" class="header">List</a>
     <ul>
@@ -309,6 +316,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resources-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../docs/delta/api/resources-api.html#aggregations" class="header">Aggregations</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list-filtering-by-schema" class="header">List filtering by schema</a>
     <ul>
@@ -327,6 +335,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h1>
 <p>Generic resources are rooted in the <code>/v1/resources/{org_label}/{project_label}/{schema_id}</code> collection.</p>
@@ -338,8 +353,18 @@ BlueBrain/nexus
 </ul><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When modifying resources, the caller must have <code>resources/write</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>When reading resources, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
-<p>From Delta v1.5, remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account the new version.</p></div>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Remote contexts</div>
+<p>Remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.</p></div><div class="callout note warning"><div class="callout-title">JSON payloads</div>
+<p>The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata</p></div>
+<h2><a href="#nexus-metadata" name="nexus-metadata" class="anchor"><span class="anchor-link"></span></a>Nexus metadata</h2>
+<p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following resource specific metadata can be present</p>
+<ul>
+  <li><code>_project</code>: address of the resource&rsquo;s project</li>
+  <li><code>_incoming</code>: address to query to obtain the <a href="resources-api.html#list-incoming-links">list of incoming links</a></li>
+  <li><code>_outgoing</code>: address to query to obtain the <a href="resources-api.html#list-outgoing-links">list of outgoing links</a></li>
+  <li><code>_constrainedBy</code>: <code>@id</code> of the schema used to validate the resource; the schema can only be identified uniquely  together with <code>_schemaProject</code>. If no schema has been used to validate the resource, it will indicate the  unconstrained identifier.</li>
+  <li><code>_schemaProject</code>: address of the project where the <code>_constrainedBy</code> schema is found</li>
+</ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
@@ -347,7 +372,7 @@ BlueBrain/nexus
   <li><code>sync</code> - the resource will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
-<pre><code>POST /v1/resources/{org_label}/{project_label}/{schema_id}
+<pre><code>POST /v1/resources/{org_label}/{project_label}/{schema_id}?tag={tag}
   {...}
 </code></pre>
 <p>The json payload: </p>
@@ -355,6 +380,12 @@ BlueBrain/nexus
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
   <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the  <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
 </ul>
+<p>The <code>{schema_id}</code> segment allows to define an existing SHACL schema to validate the resource with:</p>
+<ul>
+  <li>If <code>_</code> is provided, no SHACL validation will be performed</li>
+  <li>If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated from the provided payload.</li>
+</ul>
+<p>The <code>{tag}</code> param is an optional tag associated with the first revision of this resource</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -407,9 +438,11 @@ BlueBrain/nexus
 </dl>
 <h2><a href="#create-using-put" name="create-using-put" class="anchor"><span class="anchor-link"></span></a>Create using PUT</h2>
 <p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
-<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
   {...}
 </code></pre>
+<p>&hellip; where <code>{tag}</code> is an optional tag associated with the first revision of this resource. </p>
+<p>The <code>{schema_id}</code> has the same behaviour as <a href="resources-api.html#create-using-post">the creation using post operation</a>.</p>
 <p>Note that if the payload contains an @id different from the <code>{resource_id}</code>, the request will fail.</p>
 <p><strong>Example</strong></p>
 <dl>
@@ -461,13 +494,24 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2>
+<h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2><div class="callout note info"><div class="callout-title">A update operation which does not result in a change of the existing resources is ignored</div>
+<p>If the submitted update does not result in changes compared to the current revision of the resource, it will be ignored and the current revision will be returned to the user.</p>
+<p>Nevertheless, if a tag is provided, it will still be applied to the current revision of the resource.</p></div>
 <p>This operation overrides the payload.</p>
 <p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
-<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}&amp;tag={tag}
   {...}
 </code></pre>
-<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p>&hellip; where </p>
+<ul>
+  <li><code>{previous_rev}</code> is the last known revision number for the resource.</li>
+  <li><code>{tag}</code> is an optional tag associated with the same revision as the current update. For example, if <code>previous_rev</code> is 2, both the updated payload and <code>tag</code> will be associated with revision 3; the new latest revision.</li>
+</ul>
+<p>The <code>{schema_id}</code> segment allows to define an existing SHACL schema to validate the resource with:</p>
+<ul>
+  <li>If <code>_</code> is provided, no SHACL validation will be performed with the latest version of its current schema</li>
+  <li>If another value is provided, it has to match the identifier of the current schema as changing the schema of a resource is not currently supported. A different revision or tag of this schema can be provided though.</li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -518,7 +562,11 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#refresh" name="refresh" class="anchor"><span class="anchor-link"></span></a>Refresh</h2>
+<h2><a href="#refresh" name="refresh" class="anchor"><span class="anchor-link"></span></a>Refresh</h2><div class="callout note info"><div class="callout-title">A refresh operation which does not result in a change of the existing resources is ignored</div>
+<p>If the refresh does not result in changes compared to the current revision of the resource, the update will be ignored and the current revision will be returned to the user.</p></div>
+<p>If the submitted update does not result in changes compared to the current revision of the resource, it will be ignored and the current revision will be returned to the user.</p>
+<p>Nevertheless, if a tag is provided, it will still be applied to the current revision of the resource.</p>
+<p>@@@</p>
 <p>This operation refreshes the compacted and expanded representations of the resource.</p>
 <p>This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the schema or project contexts have changed, in order for the changes to be reflected in the resource.</p>
 <pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/refresh
@@ -547,24 +595,6 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2021-04-17T14:56:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
-}</code></pre></dd>
-</dl>
-<h2><a href="#validate" name="validate" class="anchor"><span class="anchor-link"></span></a>Validate</h2>
-<p>This operation runs validation of a resource against a schema. This would be useful to test whether resources would match the shape of a new schema. </p>
-<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
-</code></pre>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/validate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/validate&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/validated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot; : &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720.json&quot;,
-  &quot;@type&quot; : &quot;sh:ValidationReport&quot;,
-  &quot;conforms&quot; : true,
-  &quot;targetedNodes&quot; : 2
 }</code></pre></dd>
 </dl>
 <h2><a href="#tag" name="tag" class="anchor"><span class="anchor-link"></span></a>Tag</h2>
@@ -689,6 +719,69 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
 </dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks a previously deprecated resource. Further operations can then be performed. The resource will again be found when listing/querying.</p>
+<p>Undeprecating a resource is considered to be an update as well.</p>
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     -H &quot;Content-Type: application/json&quot; \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/undeprecate?rev=3&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 5,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-04-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#change-schema" name="change-schema" class="anchor"><span class="anchor-link"></span></a>Change schema</h2>
+<p>This operation allows to only change the schema of a resource without providing any payload.</p>
+<pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/update-schema
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/schema-change.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/update-schema&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/schema-changed.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myId&quot;,
+  &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId&quot;,
+  &quot;_constrainedBy&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/_/myNewSchema&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-04-17T14:56:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
 <h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
 <pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&amp;tag={tag}
 </code></pre>
@@ -698,6 +791,11 @@ BlueBrain/nexus
   <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p>The <code>{schema_id}</code> segment allows to pass the resource schema:</p>
+<ul>
+  <li>If <code>_</code> is provided, the value is ignored</li>
+  <li>If another value is provided, it must match the identifier of the resource schema.</li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -762,6 +860,47 @@ BlueBrain/nexus
   &quot;bool&quot;: false
 }</code></pre></dd>
 </dl>
+<h2><a href="#fetch-remote-contexts" name="fetch-remote-contexts" class="anchor"><span class="anchor-link"></span></a>Fetch remote contexts</h2>
+<p>Returns the remote contexts that have been detected during the JSON-LD resolution for this resource.</p>
+<p>These contexts can be:</p>
+<ul>
+  <li>Static contexts that are statically defined in Nexus</li>
+  <li>Project contexts that have been registered by Nexus, in this case the entry also provides the project this context lives and its revision at the time the JSON-LD resolution has been performed</li>
+</ul>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/remote-contexts?rev={rev}&amp;tag={tag}
+</code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/remote-contexts.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/org/proj/_/my-resource/remote-contexts&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/remote-contexts.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/remote-contexts.json&quot;,
+  &quot;remoteContexts&quot;: [
+    {
+      &quot;@type&quot;: &quot;StaticContextRef&quot;,
+      &quot;iri&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+    },
+    {
+      &quot;@type&quot;: &quot;ProjectContextRef&quot;,
+      &quot;iri&quot;: &quot;https://localhost/nexus/context&quot;,
+      &quot;resource&quot;: {
+        &quot;id&quot;: &quot;https://localhost/nexus/context&quot;,
+        &quot;project&quot;: &quot;org/proj&quot;,
+        &quot;rev&quot;: 5
+      }
+    }
+  ]
+}</code></pre></dd>
+</dl>
 <h2><a href="#fetch-tags" name="fetch-tags" class="anchor"><span class="anchor-link"></span></a>Fetch tags</h2>
 <pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?rev={rev}&amp;tag={tag}
 </code></pre>
@@ -797,6 +936,7 @@ BlueBrain/nexus
                                              &amp;deprecated={deprecated}
                                              &amp;rev={rev}
                                              &amp;type={type}
+                                             &amp;typeOperator={typeOperator}
                                              &amp;createdBy={createdBy}
                                              &amp;createdAt={createdAt}
                                              &amp;updatedBy={updatedBy}
@@ -804,6 +944,7 @@ BlueBrain/nexus
                                              &amp;schema={schema}
                                              &amp;q={search}
                                              &amp;sort={sort}
+                                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only resources from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -813,6 +954,7 @@ BlueBrain/nexus
                              &amp;deprecated={deprecated}
                              &amp;rev={rev}
                              &amp;type={type}
+                             &amp;typeOperator={typeOperator}
                              &amp;createdBy={createdBy}
                              &amp;createdAt={createdAt}
                              &amp;updatedBy={updatedBy}
@@ -820,6 +962,7 @@ BlueBrain/nexus
                              &amp;schema={schema}
                              &amp;q={search}
                              &amp;sort={sort}
+                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only resources from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -829,11 +972,15 @@ BlueBrain/nexus
                  &amp;deprecated={deprecated}
                  &amp;rev={rev}
                  &amp;type={type}
+                 &amp;typeOperator={typeOperator}
+                 &amp;createdAt={createdAt}
                  &amp;createdBy={createdBy}
+                 &amp;updatedAt={updatedAt}
                  &amp;updatedBy={updatedBy}
                  &amp;schema={schema}
                  &amp;q={search}
                  &amp;sort={sort}
+                 &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3><div class="callout note tip"><div class="callout-title">How to use time ranges</div>
 <p>A time range parameter allows to filter resources by their creation date or their last update date.</p>
@@ -855,6 +1002,7 @@ BlueBrain/nexus
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{typeOperator}</code>: String (<code>and</code>/<code>or</code>) - used to determine how multiple <code>type</code> values affect the query, either requiring all to match (<code>and</code>) or any to match (<code>or</code>); defaults to <code>or</code>.  See <a href="https://en.wikipedia.org/wiki/De_Morgan%27s_laws" title="De Morgan&#39;s laws">De Morgan&rsquo;s laws</a> for inference rules.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{createdAt}</code>: Time range - can be used to filter the resulting resources based on their creation date</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
@@ -862,6 +1010,7 @@ BlueBrain/nexus
   <li><code>{schema}</code>: Iri - can be used to filter the resulting resources based on the conformant schema</li>
   <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values  matching (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort resources based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a></li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -897,7 +1046,82 @@ BlueBrain/nexus
   ],
   &quot;_next&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b029%22%5D&quot;
 }</code></pre></dd>
+  <dt>Aggregations request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/aggregate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/myorg?aggregations=true&quot;</code></pre></dd>
+  <dt>Aggregations response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/aggregated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/aggregations.json&quot;,
+  &quot;aggregations&quot;: {
+    &quot;projects&quot;: {
+      &quot;buckets&quot;: [
+        {
+          &quot;doc_count&quot;: 5,
+          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject&quot;
+        },
+        {
+          &quot;doc_count&quot;: 5,
+          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject2&quot;
+        }
+      ],
+      &quot;doc_count_error_upper_bound&quot;: 0,
+      &quot;sum_other_doc_count&quot;: 0
+    },
+    &quot;types&quot;: {
+      &quot;buckets&quot;: [
+        {
+          &quot;doc_count&quot;: 6,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/View&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/CompositeView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/InProject&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Project&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/SparqlView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;
+        }
+      ],
+      &quot;doc_count_error_upper_bound&quot;: 0,
+      &quot;sum_other_doc_count&quot;: 0
+    }
+  },
+  &quot;total&quot;: 12
+}</code></pre></dd>
 </dl>
+<h3><a href="#aggregations" name="aggregations" class="anchor"><span class="anchor-link"></span></a>Aggregations</h3><div class="callout warning "><div class="callout-title">Warning</div>
+<p>Aggregations are experimental and the API is subject to change.</p></div>
+<p>Adding the <code>aggregations=true</code> query parameter to a list query allows to aggregate the underlying resources by predefined terms. Currently, the following aggregations will be returned:</p>
+<ul>
+  <li><code>projects</code>: a bucket aggregation of the resources by the project they belong to</li>
+  <li><code>types</code>: a bucket aggregation of the <code>@types</code> featured in the resources</li>
+</ul>
+<p>Aggregation works on the same scopes as listing (all projects, organization, and project), and only aggregates the resources for which the caller has <code>resource/read</code> permission.</p>
 <h2><a href="#list-filtering-by-schema" name="list-filtering-by-schema" class="anchor"><span class="anchor-link"></span></a>List filtering by schema</h2>
 <p>This operation is only available at the project scope.</p>
 <h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
@@ -907,6 +1131,7 @@ BlueBrain/nexus
                                                         &amp;rev={rev}&amp;type={type}
                                                         &amp;createdBy={createdBy}
                                                         &amp;updatedBy={updatedBy}
+                                                        &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
@@ -917,6 +1142,7 @@ BlueBrain/nexus
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a></li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -1135,7 +1361,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>
@@ -1158,13 +1384,13 @@ Schemas
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/trial.html" title="Trial" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Resolvers
+Trial
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

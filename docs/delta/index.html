@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +164,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -202,11 +197,15 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
+      <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -226,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -243,7 +243,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.8.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -252,11 +252,18 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h1>
 <p>Blue Brain Nexus Delta is a low latency, scalable and secure system that realizes a range of functions to support data management and knowledge graph lifecycles.</p>
 <p>It is a central piece of the Nexus ecosystem of software components as it offers a set of foundational capabilities to the other components (<a href="../fusion/index.html">Nexus Fusion</a> and <a href="../forge.html">Nexus Forge</a>) around data and metadata storage, management, validation and consumption in a secure setting.</p>
-<p>Nexus Delta is developed <a href="https://github.com/BlueBrain/nexus">in the open</a> with a permissive licence (<a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, version 2.0</a>) using open standards and interoperable semantic web technologies like <a href="https://openid.net/connect/">OpenID Connect</a>, <a href="https://datatracker.ietf.org/doc/html/rfc6749">OAuth 2.0</a>, <a href="https://www.w3.org/RDF/">RDF</a>, <a href="https://www.w3.org/TR/json-ld11/">JSON-LD</a>, <a href="https://www.w3.org/TR/shacl/">SHACL</a>, <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">Server-Sent Events</a>.</p>
+<p>Nexus Delta is developed <a href="https://github.com/BlueBrain/nexus">in the open</a> with a permissive licence (<a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, version 2.0</a>) using open standards and interoperable semantic web technologies like <a href="https://openid.net/developers/how-connect-works/">OpenID Connect</a>, <a href="https://datatracker.ietf.org/doc/html/rfc6749">OAuth 2.0</a>, <a href="https://www.w3.org/RDF/">RDF</a>, <a href="https://www.w3.org/TR/json-ld11/">JSON-LD</a>, <a href="https://www.w3.org/TR/shacl/">SHACL</a>, <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">Server-Sent Events</a>.</p>
 <p>It is quite versatile as it is able to handle very small to very large amounts of data on-premise or in the cloud and can be used in a large spectrum of industries being completely domain agnostic.</p>
 <p>Please refer to the <a href="architecture.html">architecture</a> and <a href="api/index.html">api reference</a> sections for more information about this component.</p>
 </div>
@@ -267,7 +274,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.8.x
+Snapshot
 </span>
 </div>
 </article>

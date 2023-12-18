@@ -1,0 +1,15 @@
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/permissions.json"],"@type":"PermissionsReplaced","permissions":["custom"],"_instant":"2021-05-10T13:57:16.947Z","_permissionsId":"http://localhost:8080/v1/permissions","_rev":1,"_subject":"http://localhost:8080/v1/anonymous"}
+event:PermissionsReplaced
+id:a1532190-b197-11eb-a8e0-49728f9d6e6c
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/permissions.json"],"@type":"PermissionsAppended","permissions":["appended"],"_instant":"2021-05-10T13:57:20.466Z","_permissionsId":"http://localhost:8080/v1/permissions","_rev":2,"_subject":"http://localhost:8080/v1/anonymous"}
+event:PermissionsAppended
+id:a3690940-b197-11eb-a8e0-49728f9d6e6c
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/permissions.json"],"@type":"PermissionsSubtracted","permissions":["custom"],"_instant":"2021-05-10T13:57:23.119Z","_permissionsId":"http://localhost:8080/v1/permissions","_rev":3,"_subject":"http://localhost:8080/v1/anonymous"}
+event:PermissionsSubtracted
+id:a4fdda10-b197-11eb-a8e0-49728f9d6e6c
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/permissions.json"],"@type":"PermissionsDeleted","_instant":"2021-05-10T13:59:02.898Z","_permissionsId":"http://localhost:8080/v1/permissions","_rev":4,"_subject":"http://localhost:8080/v1/anonymous"}
+event:PermissionsDeleted
+id:e0769d20-b197-11eb-a8e0-49728f9d6e6c
