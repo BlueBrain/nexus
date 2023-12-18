@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
@@ -232,23 +231,19 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  private def isCompositeMigrationRunning =
-    sys.env.getOrElse("MIGRATE_COMPOSITE_VIEWS", "false").toBooleanOption.getOrElse(false)
   make[CompositeViewsCoordinator].fromEffect {
     (
         compositeViews: CompositeViews,
         supervisor: Supervisor,
         lifecycle: CompositeProjectionLifeCycle,
-        config: CompositeViewsConfig,
-        xas: Transactors
+        config: CompositeViewsConfig
     ) =>
-      IO.whenA(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
-        CompositeViewsCoordinator(
-          compositeViews,
-          supervisor,
-          lifecycle,
-          config
-        )
+      CompositeViewsCoordinator(
+        compositeViews,
+        supervisor,
+        lifecycle,
+        config
+      )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
