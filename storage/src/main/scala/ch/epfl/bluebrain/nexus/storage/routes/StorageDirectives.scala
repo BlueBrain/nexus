@@ -39,11 +39,11 @@ object StorageDirectives {
   def validatePath(name: String, path: Path): Directive0 =
     if (pathInvalid(path)) failWith(PathInvalid(name, path)) else pass
 
-  def validatePaths(name: String, paths: NonEmptyList[Path]): Directive0 =
-    paths
+  def validatePaths(pathsByBucket: NonEmptyList[(String, Path)]): Directive0 =
+    pathsByBucket
       .collectFirst[Directive0] {
-        case p if pathInvalid(p) =>
-          failWith(PathInvalid(name, p))
+        case (bucket, p) if pathInvalid(p) =>
+          failWith(PathInvalid(bucket, p))
       }
       .getOrElse(pass)
 
@@ -70,6 +70,13 @@ object StorageDirectives {
       case exists: BucketExists => provide(exists)
       case _                    => reject(BucketNotFound(name))
     }
+
+  def bucketsExist(buckets: NonEmptyList[String])(implicit storages: Storages[_]): Directive1[BucketExists] =
+    buckets
+      .map(storages.exists)
+      .zip(buckets)
+      .collectFirst[Directive1[BucketExists]] { case (e, bucket) if !e.exists => reject(BucketNotFound(bucket)) }
+      .getOrElse(provide(BucketExists))
 
   /**
     * Returns the evidence that a path exists

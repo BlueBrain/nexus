@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
 import cats.effect.unsafe.implicits._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
@@ -21,6 +22,8 @@ import io.circe.{Decoder, DecodingFailure, Encoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
+
+  private val logger = Logger[StorageRoutes]
 
   def routes: Route =
     // Consume buckets/{name}/
@@ -72,12 +75,17 @@ class StorageRoutes()(implicit storages: Storages[AkkaSource], hc: HttpConfig) {
               },
               operationName(s"/${hc.prefix}/buckets/{}/files") {
                 post {
-                  // Copy files within protected directory
+                  // Copy files within protected directory between potentially different buckets
                   entity(as[CopyFilePayload]) { payload =>
                     val files = payload.files
-                    pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
-                      validatePaths(name, files.map(_.source)) {
-                        complete(storages.copyFiles(name, files).runWithStatus(Created))
+                    bucketsExist(files.map(_.sourceBucket)).apply { implicit bucketExistsEvidence =>
+                      pathsDoNotExist(name, files.map(_.destination)).apply { implicit pathNotExistEvidence =>
+                        validatePaths(files.map(c => c.sourceBucket -> c.source)) {
+                          complete(
+                            (logger.info(s"Received request to copy files: $files") >>
+                              storages.copyFiles(name, files)).runWithStatus(Created)
+                          )
+                        }
                       }
                     }
                   }

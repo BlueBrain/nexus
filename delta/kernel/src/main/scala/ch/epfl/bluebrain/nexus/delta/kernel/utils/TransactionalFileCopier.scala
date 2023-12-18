@@ -1,27 +1,41 @@
-package ch.epfl.bluebrain.nexus.storage.files
+package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.storage.StorageError.CopyOperationFailed
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import fs2.io.file.{CopyFlag, CopyFlags, Files, Path}
 
-trait CopyFiles {
-  def copyValidated(files: NonEmptyList[ValidatedCopyFile]): IO[Unit]
+trait TransactionalFileCopier {
+  def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit]
 }
 
-object CopyFiles {
-  def mk(): CopyFiles = files =>
-    copyAll(files.map(v => CopyBetween(Path.fromNioPath(v.absSourcePath), Path.fromNioPath(v.absDestPath))))
+final case class CopyBetween(source: Path, destination: Path)
 
-  def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
+final case class CopyOperationFailed(failingCopy: CopyBetween, e: Throwable) extends Rejection {
+  override def reason: String =
+    s"Copy operation failed from source ${failingCopy.source} to destination ${failingCopy.destination}. Underlying error: $e"
+}
+
+object TransactionalFileCopier {
+
+  private val logger = Logger[TransactionalFileCopier]
+
+  def mk(): TransactionalFileCopier = files => copyAll(files)
+
+  private def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit] =
     Ref.of[IO, Option[CopyOperationFailed]](None).flatMap { errorRef =>
       files
         .parTraverse { case c @ CopyBetween(source, dest) =>
-          copySingle(source, dest).onError(_ => errorRef.set(Some(CopyOperationFailed(c))))
+          copySingle(source, dest).onError(e => errorRef.set(Some(CopyOperationFailed(c, e))))
         }
         .void
-        .handleErrorWith(_ => rollbackCopiesAndRethrow(errorRef, files.map(_.destination)))
+        .handleErrorWith { e =>
+          val destinations = files.map(_.destination)
+          logger.error(e)(s"Transactional files copy failed, deleting created files: ${destinations}") >>
+            rollbackCopiesAndRethrow(errorRef, destinations)
+        }
     }
 
   def parent(p: Path): Path = Path.fromNioPath(p.toNioPath.getParent)

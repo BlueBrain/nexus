@@ -106,7 +106,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
   When not specified, the default storage of the project is used.
 - `{path}`: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
-- `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detectput
+- `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**

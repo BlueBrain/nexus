@@ -86,7 +86,9 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     }
 
     "move a file" in {
-      client.moveFile(bucket, Uri.Path("my/file-1.txt"), Uri.Path("other/file-1.txt"))(baseUri).accepted shouldEqual
+      client
+        .moveFile(bucket, Uri.Path("my/file-1.txt"), Uri.Path("other/file-1.txt"))(baseUri)
+        .accepted shouldEqual
         attributes.copy(
           location = s"file:///app/$BucketName/nexus/other/file-1.txt",
           digest = NotComputedDigest

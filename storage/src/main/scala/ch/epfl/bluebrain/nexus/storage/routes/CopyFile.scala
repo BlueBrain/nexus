@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.storage._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 
-final case class CopyFile(source: Uri.Path, destination: Uri.Path)
+final case class CopyFile(sourceBucket: String, source: Uri.Path, destination: Uri.Path)
 object CopyFile {
   implicit val dec: Decoder[CopyFile] = deriveDecoder
 }
