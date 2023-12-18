@@ -54,5 +54,6 @@
   ],
   "base" : "{{base}}",
   "description" : "{{description}}",
-  "vocab" : "{{vocab}}"
+  "vocab" : "{{vocab}}",
+  "enforceSchema" : false
 }

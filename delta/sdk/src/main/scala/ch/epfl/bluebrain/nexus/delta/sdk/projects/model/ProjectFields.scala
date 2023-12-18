@@ -20,12 +20,15 @@ import scala.annotation.nowarn
   *   an optional base Iri for generated resource IDs ending with ''/'' or ''#''
   * @param vocab
   *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+  * @param enforceSchema
+  *   a flag to ban unconstrained resources in this project
   */
 final case class ProjectFields(
     description: Option[String],
     apiMappings: ApiMappings = ApiMappings.empty,
     base: Option[PrefixIri],
-    vocab: Option[PrefixIri]
+    vocab: Option[PrefixIri],
+    enforceSchema: Boolean = false
 ) {
 
   /**

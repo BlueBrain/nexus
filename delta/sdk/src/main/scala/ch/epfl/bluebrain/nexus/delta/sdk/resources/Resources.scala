@@ -356,12 +356,11 @@ object Resources {
 
     def validate(
         jsonld: JsonLdAssembly,
-        schemaRef: ResourceRef,
-        projectRef: ProjectRef,
-        caller: Caller
+        schemaClaim: SchemaClaim,
+        enforceSchema: Boolean
     ): IO[(ResourceRef.Revision, ProjectRef)] = {
       validateResource
-        .apply(jsonld, schemaRef, projectRef, caller)
+        .apply(jsonld, schemaClaim, enforceSchema)
         .map(result => (result.schema, result.project))
     }
 
@@ -369,8 +368,9 @@ object Resources {
       state match {
         case None =>
           // format: off
+          val schemaClaim = SchemaClaim(c.project, c.schema, c.caller)
           for {
-            (schemaRev, schemaProject) <- validate(c.jsonld, c.schema, c.project, c.caller)
+            (schemaRev, schemaProject) <- validate(c.jsonld, schemaClaim, c.projectContext.enforceSchema)
             now                          <- clock.realTimeInstant
           } yield ResourceCreated(c.project, schemaRev, schemaProject, c.jsonld, now, c.subject, c.tag)
           // format: on
@@ -417,9 +417,9 @@ object Resources {
     def update(u: UpdateResource) = {
 
       def onChange(state: ResourceState) = {
-        val schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(state.schema.iri))
+        val schemaClaim = SchemaClaim(u.project, u.schemaOpt.getOrElse(ResourceRef.Latest(state.schema.iri)), u.caller)
         for {
-          (schemaRev, schemaProject) <- validate(u.jsonld, schemaRef, state.project, u.caller)
+          (schemaRev, schemaProject) <- validate(u.jsonld, schemaClaim, u.projectContext.enforceSchema)
           time                       <- clock.realTimeInstant
         } yield ResourceUpdated(u.project, schemaRev, schemaProject, u.jsonld, state.rev + 1, time, u.subject, u.tag)
       }
@@ -443,7 +443,8 @@ object Resources {
       for {
         state                      <- stateWhereResourceIsEditable(u)
         stateJsonLd                <- IO.fromEither(state.toAssembly)
-        (schemaRev, schemaProject) <- validate(stateJsonLd, u.schemaRef, state.project, u.caller)
+        schemaClaim                 = SchemaClaim(u.project, u.schemaRef, u.caller)
+        (schemaRev, schemaProject) <- validate(stateJsonLd, schemaClaim, u.projectContext.enforceSchema)
         types                       = state.expanded.getTypes.getOrElse(Set.empty)
         time                       <- clock.realTimeInstant
       } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, state.rev + 1, time, u.subject)
@@ -454,7 +455,8 @@ object Resources {
         state                      <- stateWhereResourceIsEditable(r)
         stateJsonLd                <- IO.fromEither(state.toAssembly)
         _                          <- raiseWhenDifferentSchema(r, state)
-        (schemaRev, schemaProject) <- validate(r.jsonld, r.schemaOpt.getOrElse(state.schema), state.project, r.caller)
+        schemaClaim                 = SchemaClaim(r.project, r.schemaOpt.getOrElse(state.schema), r.caller)
+        (schemaRev, schemaProject) <- validate(r.jsonld, schemaClaim, r.projectContext.enforceSchema)
         _                          <- IO.raiseWhen(stateJsonLd === r.jsonld)(NoChangeDetected(state))
         time                       <- clock.realTimeInstant
       } yield ResourceRefreshed(r.project, schemaRev, schemaProject, r.jsonld, state.rev + 1, time, r.subject)

@@ -27,7 +27,8 @@ class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
   private val context = ProjectContext.unsafe(
     ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
     iri"http://localhost/v1/resources/org/proj/_/",
-    iri"http://schema.org/"
+    iri"http://schema.org/",
+    enforceSchema = false
   )
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())

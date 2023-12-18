@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
-import ch.epfl.bluebrain.nexus.tests.kg.KgDsl
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, OptionValues}
 
@@ -158,53 +158,27 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
 
   private[tests] def randomProjectPrefix = genString(1, startPool) + genString(10, pool)
 
-  def projectPayload(
-      path: String = "admin/projects/create.json",
-      nxv: String = randomProjectPrefix,
-      person: String = randomProjectPrefix,
-      description: String = genString(),
-      base: String = s"${config.deltaUri.toString()}/${genString()}/",
-      vocab: String = s"${config.deltaUri.toString()}/${genString()}/"
-  ): IO[Json] =
-    loader.jsonContentOf(
-      path,
-      "nxv-prefix"    -> nxv,
-      "person-prefix" -> person,
-      "description"   -> description,
-      "base"          -> base,
-      "vocab"         -> vocab
-    )
-
   def createProjectWithName(
       orgId: String,
       projectId: String,
       name: String,
       authenticated: Authenticated
-  ): IO[Assertion] = {
-    KgDsl
-      .projectJson(name = name, config = config)
-      .flatMap(createProject(orgId, projectId, _, authenticated))
-  }
-
-  def createProjectWith(orgId: String, projectId: String, name: String, path: String, authenticated: Authenticated) = {
-    KgDsl
-      .projectJson(path = path, name = name, config = config)
-      .flatMap(createProject(orgId, projectId, _, authenticated))
-  }
+  )(implicit config: TestsConfig): IO[Assertion] =
+    createProject(orgId, projectId, ProjectPayload.generate(name), authenticated)
 
   def createProject(
       orgId: String,
       projectId: String,
-      json: Json,
+      payload: ProjectPayload,
       authenticated: Authenticated,
       expectedResponse: Option[StatusCode] = None
   ): IO[Assertion] =
-    updateProject(orgId, projectId, json, authenticated, 0, expectedResponse)
+    updateProject(orgId, projectId, payload, authenticated, 0, expectedResponse)
 
   def updateProject(
       orgId: String,
       projectId: String,
-      payload: Json,
+      payload: ProjectPayload,
       authenticated: Authenticated,
       rev: Int,
       expectedResponse: Option[StatusCode] = None
@@ -219,18 +193,19 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
                     schema = "projects"
                   )
       result   <-
-        cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
-          expectedResponse match {
-            case Some(status) =>
-              response.status shouldEqual status
-            case None         =>
-              if (rev == 0)
-                response.status shouldEqual StatusCodes.Created
-              else
-                response.status shouldEqual StatusCodes.OK
+        cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload.asJson, authenticated) {
+          (json, response) =>
+            expectedResponse match {
+              case Some(status) =>
+                response.status shouldEqual status
+              case None         =>
+                if (rev == 0)
+                  response.status shouldEqual StatusCodes.Created
+                else
+                  response.status shouldEqual StatusCodes.OK
 
-              filterProjectMetadataKeys(json) shouldEqual expected
-          }
+                filterProjectMetadataKeys(json) shouldEqual expected
+            }
         }
     } yield result
   }

@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import io.circe.optics.JsonPath._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 class SearchAccessSpec extends BaseIntegrationSpec {
 
@@ -26,8 +26,8 @@ class SearchAccessSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
 
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId1, path = "kg/projects/bbp.json", name = id1, authenticated = Rick)
-      _ <- adminDsl.createProjectWith(orgId, projId2, path = "kg/projects/bbp.json", name = id2, authenticated = Rick)
+      _ <- adminDsl.createProject(orgId, projId1, ProjectPayload.generateBbp(id1), authenticated = Rick)
+      _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generateBbp(id2), authenticated = Rick)
 
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)

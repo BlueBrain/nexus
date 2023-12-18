@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.iam
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.tests.Identity.userPermissions.{UserWithNoPermissions, UserWithPermissions}
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
@@ -19,11 +20,10 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
   override def beforeAll(): Unit = {
     super.beforeAll()
     val result = for {
-      _              <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
-      _              <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
-      projectPayload <- adminDsl.projectPayload()
-      _              <- adminDsl.createProject(org, project, projectPayload, Identity.ServiceAccount)
-      _              <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
+      _ <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
+      _ <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
+      _ <- adminDsl.createProject(org, project, ProjectPayload.generate(project), Identity.ServiceAccount)
+      _ <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
     } yield succeed
 
     result.accepted

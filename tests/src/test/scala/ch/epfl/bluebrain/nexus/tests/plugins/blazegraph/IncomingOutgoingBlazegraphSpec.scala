@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.mash.Radar
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.plugins.blazegraph.IncomingOutgoingBlazegraphSpec.Reference
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.optics.JsonPath.root
@@ -25,15 +24,12 @@ class IncomingOutgoingBlazegraphSpec extends BaseIntegrationSpec {
   private val orgLabel  = genId()
   private val projLabel = genId()
 
-  "BlazegraphPlugin" should {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createProjects(Radar, orgLabel, projLabel).accepted
+  }
 
-    "setup a project" in {
-      for {
-        _ <- aclDsl.addPermission("/", Radar, Organizations.Create)
-        _ <- adminDsl.createOrganization(orgLabel, orgLabel, Radar)
-        _ <- adminDsl.createProject(orgLabel, projLabel, Json.obj(), Radar)
-      } yield succeed
-    }
+  "BlazegraphPlugin" should {
 
     "create resources" in {
       // create 2 linked resources (Radar ----knows----> Hawkeye)
