@@ -241,9 +241,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#1-9-0" class="header">1.9.0</a>
+    <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
     <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
@@ -283,7 +284,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.9.x
 </label>
 </li>
 </ul>
@@ -298,9 +299,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#1-9-0" class="header">1.9.0</a>
+    <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
     <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
@@ -341,23 +343,26 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
-<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
-<div class="callout-title admonition-title">Snapshot version</div>
-<p>
-You are browsing the docs for the snapshot version of Nexus,
-the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
-</p>
-</div>
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.8.0</strong> released on <strong>14.06.2023</strong>.</p>
-<h2><a href="#1-9-0" name="1-9-0" class="anchor"><span class="anchor-link"></span></a>1.9.0</h2>
+<h2><a href="#1-9-0-18-12-2023-" name="1-9-0-18-12-2023-" class="anchor"><span class="anchor-link"></span></a>1.9.0 (18.12.2023)</h2>
 <h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
 <ul>
   <li><a href="../delta/api/resources-api.html">Resource payloads can&rsquo;t contain fields starting by <code>_</code> anymore</a></li>
   <li><a href="../delta/api/views/index.html#fetch-indexing-failures-as-sses">The endpoint for fetching indexing errors as SSEs changed</a></li>
   <li><a href="v1.9-release-notes.html#remote-storages">Credentials for storages can now only be defined at the configuration level</a></li>
+</ul>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<ul>
+  <li>Fetching resources using organization and project uuids</li>
+  <li>Tagging operations for resolvers/storages/views</li>
+  <li>Indexing projects within views</li>
+  <li>Removing generic endpoints to create/update/deprecate resources</li>
+  <li>Global SSE endpoint</li>
+  <li>SSE endpoints for realms/acls/organizations</li>
+  <li>SSE endpoint to fetch indexing errors</li>
+  <li>Injecting org/project uuids in SSEs related to resources</li>
 </ul>
 <h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
 <ul>
@@ -614,7 +619,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.9.x
 </span>
 </div>
 </article>

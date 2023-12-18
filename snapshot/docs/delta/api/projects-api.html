@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -330,6 +331,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;description&quot;: &quot;{description}&quot;,
   &quot;base&quot;: &quot;{base}&quot;,
   &quot;vocab&quot;: &quot;{vocab}&quot;,
+  &quot;enforceSchema&quot;: &quot;{enforceSchema}&quot;,
   &quot;apiMappings&quot;: [
    {
       &quot;prefix&quot;: &quot;{prefix}&quot;,
@@ -344,6 +346,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{description}</code>: String - an optional description for this project.</li>
   <li><code>{base}</code>: IRI - the <a href="https://www.w3.org/TR/json-ld11/#base-iri" title="JSON-LD @base" target="_blank" rel="noopener noreferrer">JSON-LD @base</a> used for generating fully qualified IRI ids  when performing operations on a sub-resource URIs and payloads (when no other @base is present in the @context payload).  E.g.: Let base be <code>http://localhost:8080/</code>. When a <a href="resources-api.html#create-using-post">resource is created</a> and no <code>@id</code> is present in the  payload, the platform will generate an @id which will look like <code>http://localhost:8080/{UUID}</code>. This field is optional  and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
   <li><code>{vocab}</code>: IRI - the <a href="https://www.w3.org/TR/json-ld11/#default-vocabulary" title="JSON-LD @vocab" target="_blank" rel="noopener noreferrer">JSON-LD @vocab</a>  for all unqualified predicates in children resources&rsquo; payload (when no other @vocab is present in the @context payload and the resources&rsquo; payload is not a JSON-LD aware payload). E.g. if the vocab is set to <code>https://schema.org/</code>, when  a field a resource is created and a field <code>name</code> is present in the payload, it will be expanded to  <code>http://schema.org/name</code> by the system during indexing and fetch operations. This field is optional and will default  to <code>{{base}}/v1/vocabs/{org_label}/{project_label}/</code>.</li>
+  <li><code>{enforceSchema}</code>: Boolean - Allows to ban the creation of unconstrained resources in this project</li>
   <li><code>{apiMappings}</code>: Json object - provides a convenient way to compact/expand URIs when performing operations on a  sub-resource. This field is optional.</li>
 </ul>
 <h3><a href="#api-mappings" name="api-mappings" class="anchor"><span class="anchor-link"></span></a>API Mappings</h3>

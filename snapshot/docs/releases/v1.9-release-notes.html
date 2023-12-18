@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="active page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -422,7 +423,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#v1-9-release-notes" name="v1-9-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.9 Release Notes</h1>
-<p>TODO add link to full changes on github</p>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.8.</p>
+  <p>With v1.9, Nexus Delta also changes its underlying runtime allowing to it to work properly, switching from <a href="https://monix.io/" title="Monix">Monix</a> which is not maintained anymore to <a href="https://typelevel.org/cats-effect/" title="Cats Effect">Cats Effect</a>.</p>
+</blockquote>
+<p>//TODO adjust the end date</p>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2023-06-15..2023-12-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.8.</p>
 <p>If you are currently using Nexus Delta from 1.8.x, please visit the <a href="v1.8-to-v1.9-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <h3><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h3>
@@ -481,7 +487,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#compressing-requests-to-elasticsearch" name="compressing-requests-to-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Compressing requests to Elasticsearch</h4>
 <p>The different requests to Elasticsearch are now compressed by default allowing to reduce the I/Os especially during indexing.</p>
 <h3><a href="#composite-views" name="composite-views" class="anchor"><span class="anchor-link"></span></a>Composite views</h3>
-<p>New features enhance performance of indexing of composite views, as well as authentication changes for views which incorporate projects on remote Delta instances</p>
+<p>New features enhance performance of indexing of composite views, as well as authentication changes for views which incorporate projects on remote Delta instances.</p>
 <h4><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h4>
 <p>Construct queries to the intermediate space can now be batched.</p>
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
@@ -577,7 +583,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.10-release-notes.html" title="v1.10 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -586,7 +592,7 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Releases
+v1.10 Release Notes
 </span>
 </div>
 </a>

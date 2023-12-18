@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -253,6 +254,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -300,6 +302,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -659,6 +662,44 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks the storage, so further operations can be performed. It will again be taken into account by the default storage selection mechanism.</p>
+<p>Undeprecating a storage is considered to be an update as well.</p>
+<pre><code>PUR /v1/storages/{org_label}/{project_label}/{storage_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the storage.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+   &quot;http://localhost:8080/v1/storages/myorg/myproject/remote?rev=4&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/storages-metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@type&quot;: [
+    &quot;Storage&quot;,
+    &quot;RemoteDiskStorage&quot;
+  ],
+  &quot;_algorithm&quot;: &quot;SHA-256&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
+  &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_deprecated&quot;: false,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_rev&quot;: 5,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;

@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -255,6 +256,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#update" class="header">Update</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
@@ -300,6 +302,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#update" class="header">Update</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
@@ -810,6 +813,44 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/myview/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
   &quot;_rev&quot;: 4,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/myview&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-05-12T13:01:01.232Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_uuid&quot;: &quot;7e737b83-30a0-4ea3-b6c9-cd1ed481d743&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks the view, so further operations can be performed. It also restarts indexing resources into it.</p>
+<p>Undeprecating a view is considered to be an update as well.</p>
+<pre><code>PUT /v1/views/{org_label}/{project_label}/{view_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the view.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -XPUT \
+  &quot;http://localhost:8080/v1/views/myorg/myproj/myview/undeprecate?rev=4&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/_/myview&quot;,
+  &quot;@type&quot;: [
+    &quot;ElasticSearchView&quot;,
+    &quot;View&quot;
+  ],
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/views.json&quot;,
+  &quot;_createdAt&quot;: &quot;2021-05-12T12:56:09.676Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_deprecated&quot;: false,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/myview/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/myview/outgoing&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 5,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/myview&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-12T13:01:01.232Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,

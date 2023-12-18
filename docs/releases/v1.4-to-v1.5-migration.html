@@ -278,7 +278,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.9.x
 </label>
 </li>
 </ul>
@@ -331,13 +331,6 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
-<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
-<div class="callout-title admonition-title">Snapshot version</div>
-<p>
-You are browsing the docs for the snapshot version of Nexus,
-the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
-</p>
-</div>
 <div class="md-content__searchable">
 <h1><a href="#v1-4-to-v1-5-migration" name="v1-4-to-v1-5-migration" class="anchor"><span class="anchor-link"></span></a>v1.4 To v1.5 Migration</h1>
 <p>The v1.5 release of Delta includes a lot of improvements like storing the compacted/expanded forms of resources to get immutability and improve performance.</p>
@@ -750,7 +743,7 @@ done
   <p>As the entire indexing will take place, some timeouts may occur</p></li>
   <li>Leaving kamon disabled (environment variable KAMON_ENABLED set to false) during this indexing is recommended</li>
   <li>Allocating temporarily more resources to Cassandra/Delta/elasticsearch/Blazegraph may help as this part is greedy in resources</li>
-  <li>Increasing temporarily the delay in retry strategies can also help reduce the pressure on the platform. See: <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L294" title="Delta configuration">Delta configuration</a></li>
+  <li>Increasing temporarily the delay in retry strategies can also help reduce the pressure on the platform. See: <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L294" title="Delta configuration">Delta configuration</a></li>
   <li>
   <p>Check the statistics views for different views, they should progressively tend to get to 0 remaining events.</p></li>
   <li>Check the cluster stats endpoint in <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-stats.html" title="elasticsearch">elasticsearch</a>, the number of indices and docs should stabilize after a while.</li>
@@ -775,7 +768,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.9.x
 </span>
 </div>
 </article>

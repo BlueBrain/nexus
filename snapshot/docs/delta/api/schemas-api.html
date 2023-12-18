@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -249,6 +250,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/schemas-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/schemas-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -291,6 +293,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/schemas-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/schemas-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -792,6 +795,40 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
   &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:55:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-04-17T15:05:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks the schema, so further operations can be performed. It adds the schema to listing/querying results again.</p>
+<p>Undeprecating a schema is considered to be an update as well. </p>
+<pre><code>PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/schemas/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     &quot;http://localhost:8080/v1/schemas/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/undeprecate?rev=4&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/schemas/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/schemas-metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@type&quot;: &quot;Schema&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 5,
   &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,

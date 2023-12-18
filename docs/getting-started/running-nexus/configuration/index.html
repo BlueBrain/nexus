@@ -274,7 +274,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.9.x
 </label>
 </li>
 </ul>
@@ -323,16 +323,9 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
-<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
-<div class="callout-title admonition-title">Snapshot version</div>
-<p>
-You are browsing the docs for the snapshot version of Nexus,
-the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
-</p>
-</div>
 <div class="md-content__searchable">
 <h1><a href="#nexus-configuration" name="nexus-configuration" class="anchor"><span class="anchor-link"></span></a>Nexus configuration</h1>
-<p>Nexus Delta service can be highly customized using <a href="https://github.com/BlueBrain/nexus/tree/master/delta/app/src/main/resources" title="configuration file(s)" target="_blank" rel="noopener noreferrer">configuration file(s)</a>. Many things can be adapted to your deployment needs: port where the service is running, timeouts, pagination defaults, etc. </p>
+<p>Nexus Delta service can be highly customized using <a href="https://github.com/BlueBrain/nexus/tree/v1.9.x/delta/app/src/main/resources" title="configuration file(s)" target="_blank" rel="noopener noreferrer">configuration file(s)</a>. Many things can be adapted to your deployment needs: port where the service is running, timeouts, pagination defaults, etc. </p>
 <p>There are 3 ways to modify the default configuration:</p>
 <ul>
   <li>Setting the env variable <code>DELTA_EXTERNAL_CONF</code> which defines the path to a HOCON file. The configuration keys that are defined here can be overridden by the other methods.</li>
@@ -342,24 +335,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>In terms of JVM pool memory allocation, we recommend setting the following values to the <code>JAVA_OPTS</code> environment variable: <code>-Xms4g -Xmx4g</code>. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.</p>
 <p>In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified</p>
 <h2><a href="#http-configuration" name="http-configuration" class="anchor"><span class="anchor-link"></span></a>Http configuration</h2>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L11" title="The `http` section" target="_blank" rel="noopener noreferrer">The <code>http</code> section</a> of the configuration defines the binding address and port where the service will be listening.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L11" title="The `http` section" target="_blank" rel="noopener noreferrer">The <code>http</code> section</a> of the configuration defines the binding address and port where the service will be listening.</p>
 <p>The configuration flag <code>akka.http.server.parsing.max-content-length</code> can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.</p>
 <h3><a href="#postgres-configuration" name="postgres-configuration" class="anchor"><span class="anchor-link"></span></a>Postgres configuration</h3>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L23" title="The `database` section" target="_blank" rel="noopener noreferrer">The <code>database</code> section</a> of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools (&lsquo;read&rsquo;, &lsquo;write&rsquo;, &lsquo;streaming&rsquo;), it is recommended to set the host, port, database name, username, and password via the <code>app.defaults.database</code> field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective <code>app.database.{read|write|streaming}</code> fields. </p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L23" title="The `database` section" target="_blank" rel="noopener noreferrer">The <code>database</code> section</a> of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools (&lsquo;read&rsquo;, &lsquo;write&rsquo;, &lsquo;streaming&rsquo;), it is recommended to set the host, port, database name, username, and password via the <code>app.defaults.database</code> field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective <code>app.database.{read|write|streaming}</code> fields. </p>
 <p>The pool size can be set using the <code>app.defaults.database.access.pool-size</code> setting for all pools, or individually for each pool (<code>app.database.{read|write|streaming}.access.pool-size</code>).</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the <a href="https://www.postgresql.org/docs/current/runtime-config-connection.html" title="Postgres Connection and Authentication documentation" target="_blank" rel="noopener noreferrer">Postgres Connection and Authentication documentation</a>.</p></div>
-<p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="init scripts" target="_blank" rel="noopener noreferrer">init scripts</a> should be run in the lexicographical order.</p>
+<p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/tree/v1.9.x/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="init scripts" target="_blank" rel="noopener noreferrer">init scripts</a> should be run in the lexicographical order.</p>
 <p>It is possible to let Nexus Delta automatically create them using the following configuration parameters: <code>app.database.tables-autocreate=true</code>.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>Auto creation of tables is included as a development convenience and should be avoided in production.</p></div>
 <h1><a href="#rdf-parser" name="rdf-parser" class="anchor"><span class="anchor-link"></span></a>RDF parser</h1>
-<p>The underlying <a href="https://jena.apache.org/" title="Apache Jena">Apache Jena</a> parser used to validate incoming data is <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L49" title="configurable using the `json-ld-api` field">configurable using the <code>json-ld-api</code> field</a> to enable different levels of strictness.</p>
+<p>The underlying <a href="https://jena.apache.org/" title="Apache Jena">Apache Jena</a> parser used to validate incoming data is <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L49" title="configurable using the `json-ld-api` field">configurable using the <code>json-ld-api</code> field</a> to enable different levels of strictness.</p>
 <h2><a href="#service-account-configuration" name="service-account-configuration" class="anchor"><span class="anchor-link"></span></a>Service account configuration</h2>
 <p>Nexus Delta uses a service account to perform automatic tasks under the hood. Examples of it are:</p>
 <ul>
   <li>Granting default ACLs to the user creating a project.</li>
   <li>Creating default views on project creation.</li>
 </ul>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L427" title="The `service-account` section" target="_blank" rel="noopener noreferrer">The <code>service-account</code> section</a> of the configuration defines the service account configuration.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L427" title="The `service-account` section" target="_blank" rel="noopener noreferrer">The <code>service-account</code> section</a> of the configuration defines the service account configuration.</p>
 <h2><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h2>
 <p>Automatic project provisioning allows to create a dedicated project for users the first time they connect to Delta that is to say the first time, they query the project listing endpoints.</p>
 <p>The generated project label will be:</p>
@@ -368,32 +361,32 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>This resulting string is then truncated to 64 characters if needed.</li>
 </ul>
 <p>This feature can be turned on via the flag <code>app.automatic-provisioning.enabled</code>.</p>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L197" title="The `automatic-provisioning` section" target="_blank" rel="noopener noreferrer">The <code>automatic-provisioning</code> section</a> of the configuration defines the project provisioning configuration.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L197" title="The `automatic-provisioning` section" target="_blank" rel="noopener noreferrer">The <code>automatic-provisioning</code> section</a> of the configuration defines the project provisioning configuration.</p>
 <h2><a href="#fusion-configuration" name="fusion-configuration" class="anchor"><span class="anchor-link"></span></a>Fusion configuration</h2>
 <p>When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing <code>text/html</code> in the <code>Accept</code> header.</p>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L40" title="The `fusion` section" target="_blank" rel="noopener noreferrer">The <code>fusion</code> section</a> of the configuration defines the fusion configuration.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L40" title="The `fusion` section" target="_blank" rel="noopener noreferrer">The <code>fusion</code> section</a> of the configuration defines the fusion configuration.</p>
 <h2><a href="#projections-configuration" name="projections-configuration" class="anchor"><span class="anchor-link"></span></a>Projections configuration</h2>
 <p>Projections in Nexus Delta are asynchronous processes that can replay the event log and process this information. For more information on projections, please refer to the <a href="../../../delta/architecture.html">Architecture page</a>.</p>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L281" title="The `projections` section">The <code>projections</code> section</a> of the configuration allows to configure the projections.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L281" title="The `projections` section">The <code>projections</code> section</a> of the configuration allows to configure the projections.</p>
 <p>In case of failure in a projection, Nexus Delta records the failure information inside the <code>public.failed_elem_logs</code> PostgreSQL table, which can be used for analysis, and ultimately resolution of the failures. The configuration allows to set how long the failure information is stored for (<code>app.projections.failed-elem-ttl</code>), and how often the projection deleting the expired failures is awoken (<code>app.projections.delete-expired-every</code>).</p>
 <h2><a href="#plugins-configuration" name="plugins-configuration" class="anchor"><span class="anchor-link"></span></a>Plugins configuration</h2>
 <p>Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local directory defined by the <code>DELTA_PLUGINS</code> environment variable are loaded as plugins into the Delta service. </p>
 <p>Each plugin configuration is rooted under <code>plugins.{plugin_name}</code>. All plugins have a <code>plugins.{plugin_name}.priority</code> configuration flag used to determine the order in which the routes are handled in case of collisions. </p>
 <p>For more information about plugins, please refer to the <a href="../../../delta/plugins/index.html">Plugins page</a>.</p>
 <h3><a href="#elasticsearch-views-plugin-configuration" name="elasticsearch-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views plugin configuration</h3>
-<p>The elasticsearch plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<p>The elasticsearch plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <p>The most important flags are: * <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running. * <code>plugins.elasticsearch.credentials.username</code> and <code>plugins.elasticsearch.credentials.password</code> to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.</p>
 <p>Please refer to the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/secure-cluster.html" title="Elasticsearch configuration">Elasticsearch configuration</a> which describes the different steps to achieve this.</p>
 <h3><a href="#blazegraph-views-plugin-configuration" name="blazegraph-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Blazegraph views plugin configuration</h3>
-<p>The blazegraph plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>The blazegraph plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>The most important flag is <code>plugins.blazegraph.base</code> which defines the endpoint where the Blazegraph service is running.</p>
-<p>The <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L23" title="`plugins.blazegraph.slow-queries` section"><code>plugins.blazegraph.slow-queries</code> section</a> of the Blazegraph configuration defines what is considered a slow Blazegraph query, which will get logged in the <code>public.blazegraph_queries</code> PostgreSQL table. This can be used to understand which Blazegraph queries can be improved.</p>
+<p>The <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L23" title="`plugins.blazegraph.slow-queries` section"><code>plugins.blazegraph.slow-queries</code> section</a> of the Blazegraph configuration defines what is considered a slow Blazegraph query, which will get logged in the <code>public.blazegraph_queries</code> PostgreSQL table. This can be used to understand which Blazegraph queries can be improved.</p>
 <h3><a href="#composite-views-plugin-configuration" name="composite-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Composite views plugin configuration</h3>
-<p>The composite views plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/composite-views/src/main/resources/composite-views.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>The composite views plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/composite-views/src/main/resources/composite-views.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.</p>
 <p>Authentication for remote sources can be specified in three different ways. The value of <code>plugins.composite-views.remote-source-credentials</code> should be speficied in the same way as remote storages, as shown <a href="index.html#remote-storage-configuration">here</a></p>
 <h3><a href="#storage-plugin-configuration" name="storage-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Storage plugin configuration</h3>
-<p>The storage plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/storage/src/main/resources/storage.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>The storage plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/storage/src/main/resources/storage.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>Nexus Delta supports 3 types of storages: &lsquo;disk&rsquo;, &lsquo;amazon&rsquo; (s3 compatible) and &lsquo;remote&rsquo;.</p>
 <ul>
   <li>For disk storages the most relevant configuration flag is <code>plugins.storage.storages.disk.default-volume</code>, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.</li>
@@ -444,14 +437,14 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }
 </code></pre>
 <h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
-<p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <h3><a href="#jira-plugin-configuration" name="jira-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Jira plugin configuration</h3>
-<p>The Jira plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/jira/src/main/resources/jira.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<p>The Jira plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/jira/src/main/resources/jira.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <p>Setting up the Jira plugin needs to set up the endpoint of the Jira instance but also the consumer key, the consumer secret and the private key required to interact with Jira (more details including the configuration steps in Jira <a href="https://developer.atlassian.com/server/jira/platform/oauth/#step-1--configure-jira" title="here">here</a>).</p>
 <h2><a href="#monitoring" name="monitoring" class="anchor"><span class="anchor-link"></span></a>Monitoring</h2>
 <p>For monitoring, Nexus Delta relies on <a href="https://kamon.io/" title="Kamon" target="_blank" rel="noopener noreferrer">Kamon</a>.</p>
 <p>Kamon can be disabled by passing the environment variable <code>KAMON_ENABLED</code> set to <code>false</code>.</p>
-<p>Delta configuration for Kamon is provided <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L391" title="in the `monitoring` section" target="_blank" rel="noopener noreferrer">in the <code>monitoring</code> section</a>. For a more complete description on the different options available, please look at the Kamon website.</p>
+<p>Delta configuration for Kamon is provided <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L391" title="in the `monitoring` section" target="_blank" rel="noopener noreferrer">in the <code>monitoring</code> section</a>. For a more complete description on the different options available, please look at the Kamon website.</p>
 <h3><a href="#instrumentation" name="instrumentation" class="anchor"><span class="anchor-link"></span></a>Instrumentation</h3>
 <p>Delta provides the Kamon instrumentation for:</p>
 <ul>
@@ -474,7 +467,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.9.x
 </span>
 </div>
 </article>

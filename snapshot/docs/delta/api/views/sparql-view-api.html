@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -251,6 +252,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#update" class="header">Update</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -291,6 +293,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#update" class="header">Update</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/sparql-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
@@ -632,7 +635,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/blazegraph/deprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X DELETE \
-     &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=3&quot;</code></pre></dd>
+     &quot;http://localhost:8080/v1/views/myorg/myproj/nxv:myview?rev=3&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/blazegraph/sparql/deprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -650,6 +653,44 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/Bob&quot;,
   &quot;_uuid&quot;: &quot;9c632570-cdaa-4a35-a6f9-1e95bd3a930e&quot;,
   &quot;_deprecated&quot;: true,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview/outgoing&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/org/proj&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_updatedAt&quot;: &quot;2021-04-24T17:28:01.321Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/Bob&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#undeprecate" name="undeprecate" class="anchor"><span class="anchor-link"></span></a>Undeprecate</h2>
+<p>Unlocks the view, so further operations can be performed. It also restarts the indexing process.</p>
+<p>Undeprecating a view is considered to be an update as well.</p>
+<pre><code>PUT /v1/views/{org_label}/{project_label}/{view_id}/undeprecate?rev={previous_rev}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the view.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/blazegraph/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X DELETE \
+     &quot;http://localhost:8080/v1/views/myorg/myproj/nxv:myview/undeprecate?rev=4&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/blazegraph/sparql/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/sparql-metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myview&quot;,
+  &quot;@type&quot;: [
+    &quot;SparqlView&quot;,
+    &quot;View&quot;
+  ],
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/views.json&quot;,
+  &quot;_createdAt&quot;: &quot;2021-04-18T17:10:22.748Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/Bob&quot;,
+  &quot;_uuid&quot;: &quot;9c632570-cdaa-4a35-a6f9-1e95bd3a930e&quot;,
+  &quot;_deprecated&quot;: false,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview&quot;,
   &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview/incoming&quot;,
   &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/org/proj/nxv:myview/outgoing&quot;,
