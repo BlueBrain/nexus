@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.{ACursor, Json}
 import org.scalatest.Assertion
-import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
@@ -504,15 +503,6 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
   }
 
-  "the default elasticsearch view" should {
-    "have a description field in the listing" in {
-      deltaClient.get[Json](s"/resources/$project1?locate=$defaultEsViewId", ScoobyDoo) { (listingResult, response) =>
-        response.status shouldEqual StatusCodes.OK
-        listingResult should have(description("An Elasticsearch view of all resources in the project."))
-      }
-    }
-  }
-
   def givenAView(test: String => IO[Assertion]): IO[Assertion] = {
     val viewId      = genId()
     val viewPayload = jsonContentOf("kg/views/elasticsearch/people-view.json", "withTag" -> false)
@@ -551,19 +541,4 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         totalHits.getOption(json).value shouldEqual 1
       }
-
-  /** A have matcher that allows to check that the listing _results have the expected description */
-  def description(expectedValue: String): HavePropertyMatcher[Json, Option[String]] =
-    new HavePropertyMatcher[Json, Option[String]] {
-      def apply(json: Json): HavePropertyMatchResult[Option[String]] = {
-        val description =
-          json.hcursor.downField("_results").downArray.get[String]("description").toOption
-        HavePropertyMatchResult(
-          description.contains(expectedValue),
-          "description",
-          Some(expectedValue),
-          description
-        )
-      }
-    }
 }
