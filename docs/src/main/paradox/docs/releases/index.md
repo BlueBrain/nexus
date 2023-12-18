@@ -49,6 +49,8 @@ The latest stable release is **v1.9.0** released on **14.06.2023**.
 
 And @ref:[more...](../releases/v1.9-release-notes.md)
 
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.9-release-notes.md).
+
 ## 1.8.0 (14.06.2023)
 
 ### Breaking changes
