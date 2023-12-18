@@ -45,6 +45,8 @@ applications.
 - @ref:[Indexing errors can now be listed and filtered](../delta/api/views/index.md#listing-indexing-failures)
 - @ref:[Multi fetch operation allows to get multiple resources in a single call](../delta/api/multi-fetch.md)
 
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.9-release-notes.md).
+
 ## 1.8.0 (14.06.2023)
 
 ### Breaking changes
