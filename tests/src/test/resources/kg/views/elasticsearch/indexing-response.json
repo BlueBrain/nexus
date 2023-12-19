@@ -107,7 +107,7 @@
   "settings": {
     "analysis": {
       "analyzer": {
-        "default": {
+        "nexus": {
           "type": "custom",
           "tokenizer": "classic",
           "filter": [
