@@ -409,7 +409,24 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "find the @id first when" in { pending }
+    "find the match on @id first even when other docs reference it" in {
+      val id = s"http://bbp.epfl.ch/${genString()}"
+
+      val resource: String => Json = id => json"""{ "@id": "$id" }"""
+      val resRef                   = json"""{ "http://schema.org/description": "$id" }"""
+      val resRef2                  = json"""{ "randomField": "$id" }"""
+
+      postResource(resource(id), project).accepted
+      postResource(resRef, project).accepted
+      postResource(resRef2, project).accepted
+
+      eventually {
+        fulltextListing(q = UrlUtils.encode(id), project) { json =>
+          val results = listing._results.getOption(json).value
+          results.head should have(`@id`(id))
+        }
+      }
+    }
 
     "find match by name" in {
       val id       = s"http://bbp.epfl.ch/${genString()}"
@@ -434,7 +451,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       postResource(resource, project).accepted
 
-      val query = UrlUtils.encode("cere north")
+      val query = UrlUtils.encode("cere nort")
 
       eventually {
         fulltextListing(q = query, project) { json =>
@@ -443,7 +460,6 @@ final class ListingsSpec extends BaseIntegrationSpec {
         }
       }
     }
-
   }
 
   def postResource(json: Json, projectRef: String): IO[Assertion] =
