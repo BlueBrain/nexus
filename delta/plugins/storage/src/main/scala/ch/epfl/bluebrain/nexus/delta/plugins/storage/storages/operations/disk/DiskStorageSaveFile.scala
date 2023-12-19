@@ -70,13 +70,23 @@ object DiskStorageSaveFile {
       disk: DiskStorageValue,
       uuid: UUID,
       filename: String
+  ): IO[(Path, Path)] =
+    for {
+      (resolved, relative) <- computeLocation(project, disk, uuid, filename)
+      dir                   = resolved.getParent
+      _                    <- IO.blocking(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
+    } yield resolved -> relative
+
+  def computeLocation(
+      project: ProjectRef,
+      disk: DiskStorageValue,
+      uuid: UUID,
+      filename: String
   ): IO[(Path, Path)] = {
     val relativePath = intermediateFolders(project, uuid, filename)
     for {
       relative <- IO.delay(Paths.get(relativePath)).adaptError(wrongPath(relativePath, _))
       resolved <- IO.delay(disk.volume.value.resolve(relative)).adaptError(wrongPath(relativePath, _))
-      dir       = resolved.getParent
-      _        <- IO.delay(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
     } yield resolved -> relative
   }
 

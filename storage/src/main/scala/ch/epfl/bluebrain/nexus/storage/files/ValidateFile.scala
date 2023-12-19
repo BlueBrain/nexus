@@ -25,7 +25,8 @@ trait ValidateFile {
   ): IO[RejOr[ValidatedMoveFile]]
 
   def forCopyWithinProtectedDir(
-      name: String,
+      sourceBucket: String,
+      destBucket: String,
       sourcePath: Uri.Path,
       destPath: Uri.Path
   ): IO[RejOr[ValidatedCopyFile]]
@@ -33,7 +34,12 @@ trait ValidateFile {
 
 sealed abstract case class ValidatedCreateFile(absDestPath: Path)
 sealed abstract case class ValidatedMoveFile(name: String, absSourcePath: Path, absDestPath: Path, isDir: Boolean)
-sealed abstract case class ValidatedCopyFile(name: String, absSourcePath: Path, absDestPath: Path)
+sealed abstract case class ValidatedCopyFile(
+    sourceBucket: String,
+    destBucket: String,
+    absSourcePath: Path,
+    absDestPath: Path
+)
 
 object ValidateFile {
 
@@ -71,25 +77,27 @@ object ValidateFile {
       }
 
       override def forCopyWithinProtectedDir(
-          name: String,
+          sourceBucket: String,
+          destBucket: String,
           sourcePath: Uri.Path,
           destPath: Uri.Path
       ): IO[RejOr[ValidatedCopyFile]] = {
 
-        val bucketProtectedPath = basePath(config, name)
-        val absSourcePath       = filePath(config, name, sourcePath)
-        val absDestPath         = filePath(config, name, destPath)
+        val sourceBucketProtectedPath = basePath(config, sourceBucket)
+        val destBucketProtectedPath   = basePath(config, destBucket)
+        val absSourcePath             = filePath(config, sourceBucket, sourcePath)
+        val absDestPath               = filePath(config, destBucket, destPath)
 
-        def notFound = PathNotFound(name, sourcePath)
+        def notFound = PathNotFound(destBucket, sourcePath)
 
         (for {
           _      <- rejectIf(fileExists(absSourcePath).map(!_), notFound)
-          _      <- rejectIf((!descendantOf(absSourcePath, bucketProtectedPath)).pure[IO], notFound)
-          _      <- throwIf(!descendantOf(absDestPath, bucketProtectedPath), PathInvalid(name, destPath))
-          _      <- rejectIf(fileExists(absDestPath), PathAlreadyExists(name, destPath))
+          _      <- rejectIf((!descendantOf(absSourcePath, sourceBucketProtectedPath)).pure[IO], notFound)
+          _      <- throwIf(!descendantOf(absDestPath, destBucketProtectedPath), PathInvalid(destBucket, destPath))
+          _      <- rejectIf(fileExists(absDestPath), PathAlreadyExists(destBucket, destPath))
           isFile <- EitherT.right[Rejection](isRegularFile(absSourcePath))
-          _      <- throwIf(!isFile, PathInvalid(name, sourcePath))
-        } yield new ValidatedCopyFile(name, absSourcePath, absDestPath) {}).value
+          _      <- throwIf(!isFile, PathInvalid(sourceBucket, sourcePath))
+        } yield new ValidatedCopyFile(sourceBucket, destBucket, absSourcePath, absDestPath) {}).value
       }
 
       def fileExists(absSourcePath: Path): IO[Boolean]     = IO.blocking(Files.exists(absSourcePath))

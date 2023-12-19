@@ -138,7 +138,6 @@ class FilesRoutesSpec
     )(uuidF, typedSystem)
   private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
-
   private lazy val routes                                  = routesWithIdentities(identities)
   private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
@@ -632,9 +631,11 @@ class FilesRoutesSpec
     }
   }
 
-  def givenAFile(test: String => Assertion): Assertion = {
+  def givenAFile(test: String => Assertion): Assertion = givenAFileInProject("org/proj")(test)
+
+  def givenAFileInProject(projRef: String)(test: String => Assertion): Assertion = {
     val id = genString()
-    Put(s"/v1/files/org/proj/$id", entity(s"$id")) ~> asWriter ~> routes ~> check {
+    Put(s"/v1/files/$projRef/$id", entity(s"$id")) ~> asWriter ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(id)

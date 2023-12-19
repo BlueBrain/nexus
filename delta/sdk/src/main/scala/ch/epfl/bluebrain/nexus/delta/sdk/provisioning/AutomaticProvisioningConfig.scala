@@ -35,7 +35,7 @@ object AutomaticProvisioningConfig {
     enabled = false,
     permissions = Set.empty,
     enabledRealms = Map.empty,
-    ProjectFields(None, ApiMappings.empty, None, None)
+    ProjectFields(None, ApiMappings.empty, None, None, false)
   )
 
   implicit private val permissionConfigReader: ConfigReader[Permission] =
@@ -77,11 +77,12 @@ object AutomaticProvisioningConfig {
       base                <- ConfigReader[Option[PrefixIri]].from(baseCursor)
       vocabCursor          = obj.atKeyOrUndefined("vocab")
       vocab               <- ConfigReader[Option[PrefixIri]].from(vocabCursor)
+      enforceSchema       <- obj.atKey("enforce-schema").flatMap(_.asBoolean)
     } yield AutomaticProvisioningConfig(
       enabled,
       permissions,
       enabledRealms,
-      ProjectFields(Some(description), apiMappings, base, vocab)
+      ProjectFields(Some(description), apiMappings, base, vocab, enforceSchema)
     )
   }
 }

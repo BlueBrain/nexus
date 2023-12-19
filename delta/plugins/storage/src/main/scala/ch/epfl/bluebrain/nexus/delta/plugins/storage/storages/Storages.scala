@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import fs2.Stream
 import io.circe.Json
@@ -46,7 +46,7 @@ final class Storages private (
     fetchContext: FetchContext[StorageFetchRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
     serviceAccount: ServiceAccount
-) {
+) extends FetchStorage {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -255,31 +255,7 @@ final class Storages private (
     } yield res
   }.span("undeprecateStorage")
 
-  /**
-    * Fetch the storage using the ''resourceRef''
-    *
-    * @param resourceRef
-    *   the storage reference (Latest, Revision or Tag)
-    * @param project
-    *   the project where the storage belongs
-    */
-  def fetch[R <: Throwable](
-      resourceRef: ResourceRef,
-      project: ProjectRef
-  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[StorageResource] =
-    fetch(IdSegmentRef(resourceRef), project).adaptError { case err: StorageFetchRejection =>
-      rejectionMapper.to(err)
-    }
-
-  /**
-    * Fetch the last version of a storage
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the storage with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
-    */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
+  override def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -299,13 +275,7 @@ final class Storages private (
       .currentStates(Scope.Project(project), _.toResource)
       .filter(_.value.default)
 
-  /**
-    * Fetches the default storage for a project.
-    *
-    * @param project
-    *   the project where to look for the default storage
-    */
-  def fetchDefault(project: ProjectRef): IO[StorageResource] = {
+  override def fetchDefault(project: ProjectRef): IO[StorageResource] = {
     for {
       defaultOpt <- fetchDefaults(project).reduce(updatedByDesc.min(_, _)).head.compile.last
       default    <- IO.fromOption(defaultOpt)(DefaultStorageNotFound(project))

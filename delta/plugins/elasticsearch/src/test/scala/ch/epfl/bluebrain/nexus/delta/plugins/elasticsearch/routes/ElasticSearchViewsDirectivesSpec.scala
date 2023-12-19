@@ -34,7 +34,7 @@ class ElasticSearchViewsDirectivesSpec extends RouteHelpers with CirceMarshallin
   private val mappings                    = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
   private val base                        = iri"http://localhost/base/"
   private val vocab                       = iri"http://localhost/vocab/"
-  implicit private val pc: ProjectContext = ProjectContext.unsafe(mappings, base, vocab)
+  implicit private val pc: ProjectContext = ProjectContext.unsafe(mappings, base, vocab, enforceSchema = false)
 
   implicit val configuration: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 

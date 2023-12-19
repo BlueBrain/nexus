@@ -177,7 +177,7 @@ object ResourceF {
   implicit private def metadataJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceMetadata] =
     JsonLdEncoder.computeFromCirce(BNode.random, ContextValue(contexts.metadata))
 
-  implicit def resourceFEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
+  implicit def resourceFEncoderObj[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
     Encoder.encodeJsonObject.contramapObject { r =>
       ResourceIdAndTypes(r.resolvedId, r.types).asJsonObject deepMerge
         r.value.asJsonObject deepMerge

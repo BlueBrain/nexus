@@ -8,6 +8,7 @@ import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
@@ -26,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -62,9 +63,8 @@ class FilesSpec(docker: RemoteStorageDocker)
   private val alice = User("Alice", realm)
 
   "The Files operations bundle" when {
-    implicit val hcc: HttpClientConfig                   = httpClientConfig
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val httpClient: HttpClient                  = HttpClient()
+    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system)
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
     val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
@@ -631,13 +631,12 @@ class FilesSpec(docker: RemoteStorageDocker)
       assertion(id)
     }
 
-    def givenADeprecatedFile(assertion: FileId => Assertion): Assertion = {
+    def givenADeprecatedFile(assertion: FileId => Assertion): Assertion =
       givenAFile { id =>
         files.deprecate(id, 1).accepted
         files.fetch(id).accepted.deprecated shouldEqual true
         assertion(id)
       }
-    }
 
     def assertRemainsDeprecated(id: FileId): Assertion =
       files.fetch(id).accepted.deprecated shouldEqual true

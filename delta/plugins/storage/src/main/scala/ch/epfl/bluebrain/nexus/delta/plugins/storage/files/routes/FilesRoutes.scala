@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
+
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -109,8 +111,31 @@ final class FilesRoutes(
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
                       concat(
                         (put & pathEndOrSingleSlash) {
-                          parameters("rev".as[Int].?, "storage".as[IdSegment].?, "tag".as[UserTag].?) {
-                            case (None, storage, tag)      =>
+                          concat(
+                            parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) {
+                              case (rev, storage, tag) =>
+                                concat(
+                                  // Update a Link
+                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                    emit(
+                                      files
+                                        .updateLink(fileId, storage, filename, mediaType, path, rev, tag)
+                                        .index(mode)
+                                        .attemptNarrow[FileRejection]
+                                    )
+                                  },
+                                  // Update a file
+                                  extractRequestEntity { entity =>
+                                    emit(
+                                      files
+                                        .update(fileId, storage, rev, entity, tag)
+                                        .index(mode)
+                                        .attemptNarrow[FileRejection]
+                                    )
+                                  }
+                                )
+                            },
+                            parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
                               concat(
                                 // Link a file with id segment
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
@@ -126,32 +151,15 @@ final class FilesRoutes(
                                 extractRequestEntity { entity =>
                                   emit(
                                     Created,
-                                    files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
-                                  )
-                                }
-                              )
-                            case (Some(rev), storage, tag) =>
-                              concat(
-                                // Update a Link
-                                entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                  emit(
                                     files
-                                      .updateLink(fileId, storage, filename, mediaType, path, rev, tag)
-                                      .index(mode)
-                                      .attemptNarrow[FileRejection]
-                                  )
-                                },
-                                // Update a file
-                                extractRequestEntity { entity =>
-                                  emit(
-                                    files
-                                      .update(fileId, storage, rev, entity, tag)
+                                      .create(fileId, storage, entity, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
                                 }
                               )
-                          }
+                            }
+                          )
                         },
                         // Deprecate a file
                         (delete & parameter("rev".as[Int])) { rev =>
@@ -173,7 +181,7 @@ final class FilesRoutes(
                       )
                     }
                   },
-                  (pathPrefix("tags")) {
+                  pathPrefix("tags") {
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
                       concat(
                         // Fetch a file tags

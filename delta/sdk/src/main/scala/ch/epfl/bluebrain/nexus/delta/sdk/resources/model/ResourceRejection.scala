@@ -150,6 +150,11 @@ object ResourceRejection {
       report: ResourceResolutionReport
   ) extends ResourceRejection(s"Schema '$schemaRef' could not be resolved in '$projectRef'")
 
+  final case class SchemaIsMandatory(project: ProjectRef)
+      extends ResourceRejection(
+        s"Project '$project' does not accept unconstrained resources. A schema must be provided."
+      )
+
   /**
     * Rejection returned when attempting to update/deprecate a resource with a different schema than the resource
     * schema.

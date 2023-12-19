@@ -82,39 +82,39 @@ class S3StorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: IO[Assertion] = {
+  override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
     val payload = jsonContentOf(
       "kg/storages/s3.json",
-      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",
+      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storId",
       "bucket"    -> bucket,
       "endpoint"  -> s3Endpoint
     )
 
     val payload2 = jsonContentOf(
       "kg/storages/s3.json",
-      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageId}2",
+      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storId}2",
       "bucket"          -> bucket,
       "endpoint"        -> s3Endpoint
     ) deepMerge Json.obj(
       "region"          -> Json.fromString("eu-west-2"),
-      "readPermission"  -> Json.fromString(s"$storageName/read"),
-      "writePermission" -> Json.fromString(s"$storageName/write")
+      "readPermission"  -> Json.fromString(s"$storName/read"),
+      "writePermission" -> Json.fromString(s"$storName/write")
     )
 
     for {
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
-      _         <- permissionDsl.addPermissions(Permission(storageName, "read"), Permission(storageName, "write"))
+      _         <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
       _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      storageId2 = s"${storageId}2"
+      storageId2 = s"${storId}2"
       _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
                      val expected = storageResponse(projectRef, storageId2, "s3/read", "s3/write")
                        .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))

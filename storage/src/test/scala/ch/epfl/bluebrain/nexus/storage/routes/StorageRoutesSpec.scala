@@ -290,10 +290,11 @@ class StorageRoutesSpec
 
     "copying a file" should {
 
-      "fail when bucket does not exist" in new Ctx {
+      "fail when destination bucket does not exist" in new Ctx {
         storages.exists(name) shouldReturn BucketDoesNotExist
 
-        val json = Json.arr(Json.obj("source" := "source/dir", "destination" := "/path/to/myfile.txt"))
+        val json =
+          Json.arr(Json.obj("sourceBucket" := name, "source" := "source/dir", "destination" := "/path/to/myfile.txt"))
 
         Post(s"/v1/buckets/$name/files", json) ~> route ~> check {
           status shouldEqual NotFound
@@ -305,6 +306,29 @@ class StorageRoutesSpec
             )
           )
           storages.exists(name) wasCalled once
+        }
+      }
+
+      "fail when a source bucket does not exist" in new Ctx {
+        val sourceBucket = randomString()
+        storages.exists(name) shouldReturn BucketExists
+        storages.exists(sourceBucket) shouldReturn BucketDoesNotExist
+
+        val json = Json.arr(
+          Json.obj("sourceBucket" := sourceBucket, "source" := "source/dir", "destination" := "/path/to/myfile.txt")
+        )
+
+        Post(s"/v1/buckets/$name/files", json) ~> route ~> check {
+          status shouldEqual NotFound
+          responseAs[Json] shouldEqual jsonContentOf(
+            "/error.json",
+            Map(
+              quote("{type}")   -> "BucketNotFound",
+              quote("{reason}") -> s"The provided bucket '$sourceBucket' does not exist."
+            )
+          )
+          storages.exists(name) wasCalled once
+          storages.exists(sourceBucket) wasCalled once
         }
       }
 
@@ -322,11 +346,11 @@ class StorageRoutesSpec
         val source = "source/dir"
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
-        val input  = NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest)))
+        val input  = NonEmptyList.of(CopyFile(name, Uri.Path(source), Uri.Path(dest)))
         storages.copyFiles(name, input)(BucketExists, PathDoesNotExist) shouldReturn
           IO.raiseError(InternalError("something went wrong"))
 
-        val json = Json.arr(Json.obj("source" := source, "destination" := dest))
+        val json = Json.arr(Json.obj("sourceBucket" := name, "source" := source, "destination" := dest))
 
         Post(s"/v1/buckets/$name/files", json) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -347,7 +371,7 @@ class StorageRoutesSpec
         val dest   = "dest/dir"
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
-        val json = Json.arr(Json.obj("source" := source, "destination" := dest))
+        val json = Json.arr(Json.obj("sourceBucket" := name, "source" := source, "destination" := dest))
 
         Post(s"/v1/buckets/$name/files", json) ~> route ~> check {
           status shouldEqual BadRequest
@@ -364,19 +388,21 @@ class StorageRoutesSpec
       }
 
       "pass" in new Ctx {
+        val sourceBucket = randomString()
         storages.exists(name) shouldReturn BucketExists
-        val source = "source/dir"
-        val dest   = "dest/dir"
-        val output =
+        storages.exists(sourceBucket) shouldReturn BucketExists
+        val source       = "source/dir"
+        val dest         = "dest/dir"
+        val output       =
           CopyFileOutput(Uri.Path(source), Uri.Path(dest), Paths.get(s"/rootdir/$source"), Paths.get(s"/rootdir/$dest"))
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
-        storages.copyFiles(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
+        storages.copyFiles(name, NonEmptyList.of(CopyFile(sourceBucket, Uri.Path(source), Uri.Path(dest))))(
           BucketExists,
           PathDoesNotExist
         ) shouldReturn
           IO.pure(Right(NonEmptyList.of(output)))
 
-        val json     = Json.arr(Json.obj("source" := source, "destination" := dest))
+        val json     = Json.arr(Json.obj("sourceBucket" := sourceBucket, "source" := source, "destination" := dest))
         val response = Json.arr(
           Json.obj(
             "sourcePath"                  := source,
@@ -390,7 +416,7 @@ class StorageRoutesSpec
           status shouldEqual Created
           responseAs[Json] shouldEqual response
 
-          storages.copyFiles(name, NonEmptyList.of(CopyFile(Uri.Path(source), Uri.Path(dest))))(
+          storages.copyFiles(name, NonEmptyList.of(CopyFile(sourceBucket, Uri.Path(source), Uri.Path(dest))))(
             BucketExists,
             PathDoesNotExist
           ) wasCalled once
@@ -406,8 +432,8 @@ class StorageRoutesSpec
         storages.pathExists(name, Uri.Path(existingDest)) shouldReturn PathExists
 
         val json = Json.arr(
-          Json.obj("source" := source, "destination" := dest),
-          Json.obj("source" := source, "destination" := existingDest)
+          Json.obj("sourceBucket" := name, "source" := source, "destination" := dest),
+          Json.obj("sourceBucket" := name, "source" := source, "destination" := existingDest)
         )
 
         Post(s"/v1/buckets/$name/files", json) ~> route ~> check {
@@ -423,8 +449,8 @@ class StorageRoutesSpec
         storages.pathExists(name, Uri.Path(dest)) shouldReturn PathDoesNotExist
 
         val json = Json.arr(
-          Json.obj("source" := source, "destination"        := dest),
-          Json.obj("source" := invalidSource, "destination" := dest)
+          Json.obj("sourceBucket" := name, "source" := source, "destination"        := dest),
+          Json.obj("sourceBucket" := name, "source" := invalidSource, "destination" := dest)
         )
 
         Post(s"/v1/buckets/$name/files", json) ~> route ~> check {

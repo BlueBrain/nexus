@@ -18,7 +18,7 @@ class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixtu
   val sourceDecoder                       = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)
 
   "StorageFields" when {
-    val pc = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base)
+    val pc = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)
 
     "dealing with disk storages" should {
       val json = diskJson.addContext(contexts.storages)

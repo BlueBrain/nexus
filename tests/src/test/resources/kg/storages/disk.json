@@ -1,5 +1,5 @@
 {
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/mystorage",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{id}}",
   "@type": "DiskStorage",
   "volume": "/default-volume",
   "default": false

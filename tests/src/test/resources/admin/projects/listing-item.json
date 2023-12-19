@@ -4,6 +4,7 @@
   "description": "{{projId}}",
   "base": "http://example.com/{{projId}}/",
   "vocab": "http://example.com/{{projId}}/vocab/",
+  "enforceSchema": false,
   "apiMappings": [
     {
       "prefix": "nxv-{{projId}}",
