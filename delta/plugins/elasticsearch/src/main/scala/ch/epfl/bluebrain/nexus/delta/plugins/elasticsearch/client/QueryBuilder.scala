@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, S
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -73,7 +74,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
         mustTerms = typesTerms(params.typeOperator, includeTypes) ++
           params.locate.map { l => or(term(keywords.id, l), term(nxv.self.prefix, l)) } ++
           params.id.map(term(keywords.id, _)) ++
-          params.q.map(multiMatch(_)) ++
+          params.q.map(multiMatch) ++
           params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
           params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
           params.rev.map(term(nxv.rev.prefix, _)) ++
@@ -143,14 +144,27 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   private def terms[A: Encoder](k: String, values: Iterable[A]): JsonObject =
     JsonObject("terms" -> Json.obj(k -> values.asJson))
 
-  private def multiMatch[A: Encoder](value: A): JsonObject                  =
-    JsonObject(
+  /**
+    * Defines a multi-match query. If the input [[q]] is an absolute IRI, then the `path_hierarchy` analyzer is used in
+    * order to not split the IRI into tokens that are not meaningful.
+    */
+  private def multiMatch(q: String): JsonObject = {
+    val iri      = Iri.absolute(q).toOption
+    val payload  = JsonObject(
       "multi_match" -> Json.obj(
-        "query"  -> value.asJson,
-        "type"   -> Json.fromString("phrase_prefix"),
-        "fields" -> json"""[ "@id.fulltext^10", "*", "*.fulltext", "_tags", "_original_source", "_uuid" ]"""
+        "query"  -> iri.map(_.toString).getOrElse(q).asJson,
+        "fields" -> json"""[ "*", "*.fulltext", "_tags", "_original_source", "_uuid" ]"""
       )
     )
+    val analyzer = JsonObject(
+      "multi_match" -> Json.obj("analyzer" := "path_hierarchy")
+    )
+
+    iri match {
+      case Some(_) => payload deepMerge analyzer
+      case None    => payload
+    }
+  }
 
   def aggregation(bucketSize: Int): QueryBuilder = {
     val aggregations =
