@@ -23,8 +23,6 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
   private val projects = List(project1, project2)
 
-  private val defaultEsViewId = "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
-
   override def beforeAll(): Unit = {
     super.beforeAll()
     val setup = for {
