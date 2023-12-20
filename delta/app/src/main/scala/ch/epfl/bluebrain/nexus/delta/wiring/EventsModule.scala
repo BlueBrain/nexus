@@ -34,7 +34,7 @@ object EventsModule extends ModuleDef {
       SseEventLog(
         sseEncoders,
         organizations.fetch(_).void,
-        projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
+        projects.fetch(_).void,
         config.sse,
         xas
       )(jo)
