@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
@@ -26,12 +26,18 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   private val fields = Json.obj("fields" := true)
 
+  private val suites = Map(
+    Label.unsafe("public")  -> Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2")),
+    Label.unsafe("private") -> Set(ProjectRef.unsafe("org3", "project3"))
+  )
+
   private lazy val routes = Route.seal(
     new SearchRoutes(
       IdentitiesDummy(),
       AclSimpleCheck().accepted,
       search,
-      fields
+      fields,
+      suites
     ).routes
   )
 
@@ -59,6 +65,15 @@ class SearchRoutesSpec extends BaseRouteSpec {
       Get("/v1/search/config") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual fields
+      }
+    }
+
+    "fetch a suite" in {
+      val searchSuiteName = "public"
+      val publicSuite     = suites(Label.unsafe(searchSuiteName))
+      Get(s"/v1/search/suites/$searchSuiteName") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual publicSuite.asJson
       }
     }
   }

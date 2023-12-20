@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -12,13 +13,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.{Json, JsonObject}
+import io.circe.syntax.EncoderOps
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 class SearchRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     search: Search,
-    configFields: Json
+    configFields: Json,
+    suites: SearchConfig.Suites
 )(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
@@ -48,8 +51,12 @@ class SearchRoutes(
             // Get fields config
             (pathPrefix("config") & get & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/search/config") {
-                emit(IO.pure(configFields: Json))
+                emit(IO.pure(configFields))
               }
+            },
+            // Get suite
+            (pathPrefix("suites") & get & label & pathEndOrSingleSlash) { suite =>
+              emit(IO.pure(suites(suite).asJson))
             }
           )
 

@@ -47,7 +47,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson, config.suites)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
