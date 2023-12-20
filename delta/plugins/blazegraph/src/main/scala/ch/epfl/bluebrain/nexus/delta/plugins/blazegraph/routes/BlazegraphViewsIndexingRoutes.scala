@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import cats.implicits._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -74,33 +74,22 @@ class BlazegraphViewsIndexingRoutes(
                   )
                 }
               },
-              // Fetch balzegraph view indexing failures
+              // Fetch blazegraph view indexing failures
               (pathPrefix("failures") & get) {
                 authorizeFor(ref, Write).apply {
-                  concat(
-                    (pathPrefix("sse") & lastEventId) { offset =>
+                  (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
+                    (pagination, timeRange, uri) =>
+                      implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
+                        searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                       emit(
                         fetch(id, ref)
-                          .map { view =>
-                            projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
+                          .flatMap { view =>
+                            projectionErrors.search(view.ref, pagination, timeRange)
                           }
                           .attemptNarrow[BlazegraphViewRejection]
+                          .rejectOn[ViewNotFound]
                       )
-                    },
-                    (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
-                      (pagination, timeRange, uri) =>
-                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
-                          searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
-                        emit(
-                          fetch(id, ref)
-                            .flatMap { view =>
-                              projectionErrors.search(view.ref, pagination, timeRange)
-                            }
-                            .attemptNarrow[BlazegraphViewRejection]
-                            .rejectOn[ViewNotFound]
-                        )
-                    }
-                  )
+                  }
                 }
               },
               // Manage an blazegraph view offset

@@ -15,8 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -95,30 +95,19 @@ final class ElasticSearchIndexingRoutes(
                 // Fetch elastic search view indexing failures
                 (pathPrefix("failures") & get) {
                   authorizeFor(ref, Write).apply {
-                    concat(
-                      (pathPrefix("sse") & lastEventId) { offset =>
+                    (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
+                      (pagination, timeRange, uri) =>
+                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
+                          searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                         emit(
                           fetch(id, ref)
-                            .map { view =>
-                              projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
+                            .flatMap { view =>
+                              projectionErrors.search(view.ref, pagination, timeRange)
                             }
                             .attemptNarrow[ElasticSearchViewRejection]
+                            .rejectOn[ViewNotFound]
                         )
-                      },
-                      (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
-                        (pagination, timeRange, uri) =>
-                          implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
-                            searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
-                          emit(
-                            fetch(id, ref)
-                              .flatMap { view =>
-                                projectionErrors.search(view.ref, pagination, timeRange)
-                              }
-                              .attemptNarrow[ElasticSearchViewRejection]
-                              .rejectOn[ViewNotFound]
-                          )
-                      }
-                    )
+                    }
                   }
                 },
                 // Manage an elasticsearch view offset
