@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -37,8 +37,6 @@ import io.circe.{Json, Printer}
   *   verify the acls for users
   * @param resources
   *   the resources module
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
@@ -46,7 +44,6 @@ final class ResourcesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     resources: Resources,
-    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[Resource]
 )(implicit
     baseUri: BaseUri,
@@ -58,8 +55,6 @@ final class ResourcesRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import schemeDirectives._
-
   private val resourceSchema = schemas.resources
 
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
@@ -69,7 +64,7 @@ final class ResourcesRoutes(
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { project =>
+          projectRef.apply { project =>
             concat(
               // Create a resource without schema nor id segment
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
@@ -317,7 +312,6 @@ object ResourcesRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       resources: Resources,
-      projectsDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[Resource]
   )(implicit
       baseUri: BaseUri,
@@ -325,7 +319,7 @@ object ResourcesRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig,
       decodingOption: DecodingOption
-  ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes
+  ): Route = new ResourcesRoutes(identities, aclCheck, resources, index).routes
 
   def asSourceWithMetadata(
       resource: ResourceF[Resource]

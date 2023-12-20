@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -21,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConf
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
 import io.circe.Json
 import org.scalactic.source.Position
@@ -31,7 +29,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfterAll {
+class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
@@ -79,8 +77,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
     )
   )
 
-  implicit private val projectsConfig: ProjectsConfig =
-    ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
+  implicit private val projectsConfig: ProjectsConfig = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
 
   private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 
@@ -116,8 +113,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
       aclCheck,
       projects,
       projectsStatistics,
-      provisioning,
-      DeltaSchemeDirectives.onlyResolveProjUuid(ioFromMap(projectUuid -> ref))
+      provisioning
     )
   )
 
@@ -351,33 +347,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap with BeforeAndAfte
       }
     }
 
-    "fetch a project by uuid" in {
-      Get(s"/v1/projects/$orgUuid/$projectUuid") ~> as(userWithReadPermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(fetchProjRev3)
-      }
-    }
-
-    "fetch a specific project revision by uuid" in {
-      Get(s"/v1/projects/$orgUuid/$projectUuid?rev=2") ~> as(userWithReadPermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(fetchProjRev2)
-      }
-    }
-
     "fetch a project with an incorrect revision" in {
       Get("/v1/projects/org1/proj?rev=42") ~> as(userWithReadPermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf(
-          "errors/revision-not-found.json",
-          "provided" -> 42,
-          "current"  -> 3
-        )
-      }
-    }
-
-    "fetch a project by uuid with an incorrect revision" in {
-      Get(s"/v1/projects/$orgUuid/$projectUuid?rev=42") ~> as(userWithReadPermission) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "errors/revision-not-found.json",

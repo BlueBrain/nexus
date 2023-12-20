@@ -73,9 +73,9 @@ final class FilesRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { ref =>
+          projectRef { project =>
             implicit class IndexOps(io: IO[FileResource]) {
-              def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(ref, _, m))
+              def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(project, _, m))
             }
 
             concat(
@@ -89,7 +89,7 @@ final class FilesRoutes(
                       emit(
                         Created,
                         files
-                          .createLink(storage, ref, filename, mediaType, path, tag)
+                          .createLink(storage, project, filename, mediaType, path, tag)
                           .index(mode)
                           .attemptNarrow[FileRejection]
                       )
@@ -98,14 +98,14 @@ final class FilesRoutes(
                     extractRequestEntity { entity =>
                       emit(
                         Created,
-                        files.create(storage, ref, entity, tag).index(mode).attemptNarrow[FileRejection]
+                        files.create(storage, project, entity, tag).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
                 }
               },
               (idSegment & indexingMode) { (id, mode) =>
-                val fileId = FileId(id, ref)
+                val fileId = FileId(id, project)
                 concat(
                   pathEndOrSingleSlash {
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
@@ -163,7 +163,7 @@ final class FilesRoutes(
                         },
                         // Deprecate a file
                         (delete & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(ref, Write).apply {
+                          authorizeFor(project, Write).apply {
                             emit(
                               files
                                 .deprecate(fileId, rev)
@@ -176,7 +176,7 @@ final class FilesRoutes(
 
                         // Fetch a file
                         (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(ref, id, fetch(FileId(id, ref)))
+                          emitOrFusionRedirect(project, id, fetch(FileId(id, project)))
                         }
                       )
                     }
@@ -185,9 +185,9 @@ final class FilesRoutes(
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
                       concat(
                         // Fetch a file tags
-                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
+                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(project, Read)) { id =>
                           emit(
-                            fetchMetadata(FileId(id, ref))
+                            fetchMetadata(FileId(id, project))
                               .map(_.value.tags)
                               .attemptNarrow[FileRejection]
                               .rejectOn[FileNotFound]
@@ -195,7 +195,7 @@ final class FilesRoutes(
                         },
                         // Tag a file
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
-                          authorizeFor(ref, Write).apply {
+                          authorizeFor(project, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
@@ -206,7 +206,7 @@ final class FilesRoutes(
                         },
                         // Delete a tag
                         (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
-                          ref,
+                          project,
                           Write
                         )) { (tag, rev) =>
                           emit(
@@ -221,7 +221,7 @@ final class FilesRoutes(
                     }
                   },
                   (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
-                    authorizeFor(ref, Write).apply {
+                    authorizeFor(project, Write).apply {
                       emit(
                         files
                           .undeprecate(fileId, rev)

@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
@@ -54,11 +53,10 @@ object OrganizationsModule extends ModuleDef {
         orgDeleter: OrganizationDeleter,
         cfg: AppConfig,
         aclCheck: AclCheck,
-        schemeDirectives: DeltaSchemeDirectives,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives)(
+      new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         cr,

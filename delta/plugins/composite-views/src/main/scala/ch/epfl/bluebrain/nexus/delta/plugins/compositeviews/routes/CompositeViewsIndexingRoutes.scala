@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -37,8 +37,7 @@ class CompositeViewsIndexingRoutes(
     expandId: ExpandId,
     details: CompositeIndexingDetails,
     projections: CompositeProjections,
-    projectionErrors: ProjectionErrors,
-    schemeDirectives: DeltaSchemeDirectives
+    projectionErrors: ProjectionErrors
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -51,8 +50,6 @@ class CompositeViewsIndexingRoutes(
     with ElasticSearchViewsDirectives
     with BlazegraphViewsDirectives {
 
-  import schemeDirectives._
-
   implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionOffset]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.offset))
 
@@ -62,27 +59,27 @@ class CompositeViewsIndexingRoutes(
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { implicit ref =>
+        projectRef { implicit project =>
           idSegment { id =>
             concat(
               // Manage composite view offsets
               (pathPrefix("offset") & pathEndOrSingleSlash) {
                 concat(
                   // Fetch all composite view offsets
-                  (get & authorizeFor(ref, Read)) {
-                    emit(fetchOffsets(ref, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+                  (get & authorizeFor(project, Read)) {
+                    emit(fetchOffsets(project, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
                   },
                   // Remove all composite view offsets (restart the view)
-                  (delete & authorizeFor(ref, Write)) {
-                    emit(fullRestart(ref, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+                  (delete & authorizeFor(project, Write)) {
+                    emit(fullRestart(project, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
                   }
                 )
               },
               // Fetch composite indexing description
               (get & pathPrefix("description") & pathEndOrSingleSlash) {
-                authorizeFor(ref, Read).apply {
+                authorizeFor(project, Read).apply {
                   emit(
-                    fetchView(id, ref)
+                    fetchView(id, project)
                       .flatMap(details.description)
                       .attemptNarrow[CompositeViewRejection]
                       .rejectOn[ViewNotFound]
@@ -91,9 +88,9 @@ class CompositeViewsIndexingRoutes(
               },
               // Fetch composite view statistics
               (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                authorizeFor(ref, Read).apply {
+                authorizeFor(project, Read).apply {
                   emit(
-                    fetchView(id, ref)
+                    fetchView(id, project)
                       .flatMap(details.statistics)
                       .attemptNarrow[CompositeViewRejection]
                       .rejectOn[ViewNotFound]
@@ -102,11 +99,11 @@ class CompositeViewsIndexingRoutes(
               },
               // Fetch elastic search view indexing failures
               (pathPrefix("failures") & get) {
-                authorizeFor(ref, Write).apply {
+                authorizeFor(project, Write).apply {
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetchView(id, ref)
+                        fetchView(id, project)
                           .map { view =>
                             projectionErrors.sses(view.project, view.id, offset)
                           }
@@ -118,7 +115,7 @@ class CompositeViewsIndexingRoutes(
                         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
                           searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                         emit(
-                          fetchView(id, ref)
+                          fetchView(id, project)
                             .flatMap { view =>
                               projectionErrors.search(view.ref, pagination, timeRange)
                             }
@@ -135,43 +132,43 @@ class CompositeViewsIndexingRoutes(
                   (pathPrefix("_") & pathPrefix("offset") & pathEndOrSingleSlash) {
                     concat(
                       // Fetch all composite view projection offsets
-                      (get & authorizeFor(ref, Read)) {
-                        emit(fetchView(id, ref).flatMap { v => details.offsets(v.indexingRef) })
+                      (get & authorizeFor(project, Read)) {
+                        emit(fetchView(id, project).flatMap { v => details.offsets(v.indexingRef) })
                       },
                       // Remove all composite view projection offsets
-                      (delete & authorizeFor(ref, Write)) {
-                        emit(fullRebuild(ref, id))
+                      (delete & authorizeFor(project, Write)) {
+                        emit(fullRebuild(project, id))
                       }
                     )
                   },
                   // Fetch all views' projections statistics
                   (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                    authorizeFor(ref, Read).apply {
-                      emit(fetchView(id, ref).flatMap { v => details.statistics(v) })
+                    authorizeFor(project, Read).apply {
+                      emit(fetchView(id, project).flatMap { v => details.statistics(v) })
                     }
                   },
                   // Manage a views' projection offset
                   (idSegment & pathPrefix("offset") & pathEndOrSingleSlash) { projectionId =>
                     concat(
                       // Fetch a composite view projection offset
-                      (get & authorizeFor(ref, Read)) {
+                      (get & authorizeFor(project, Read)) {
                         emit(
-                          projectionOffsets(ref, id, projectionId)
+                          projectionOffsets(project, id, projectionId)
                             .attemptNarrow[CompositeViewRejection]
                             .rejectOn[ViewNotFound]
                         )
                       },
                       // Remove a composite view projection offset
-                      (delete & authorizeFor(ref, Write)) {
-                        emit(partialRebuild(ref, id, projectionId))
+                      (delete & authorizeFor(project, Write)) {
+                        emit(partialRebuild(project, id, projectionId))
                       }
                     )
                   },
                   // Fetch a views' projection statistics
                   (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
-                    authorizeFor(ref, Read).apply {
+                    authorizeFor(project, Read).apply {
                       emit(
-                        projectionStatistics(ref, id, projectionId)
+                        projectionStatistics(project, id, projectionId)
                           .attemptNarrow[CompositeViewRejection]
                           .rejectOn[ViewNotFound]
                       )
@@ -183,16 +180,16 @@ class CompositeViewsIndexingRoutes(
                 concat(
                   // Fetch all views' sources statistics
                   (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                    authorizeFor(ref, Read).apply {
-                      emit(fetchView(id, ref).flatMap {
+                    authorizeFor(project, Read).apply {
+                      emit(fetchView(id, project).flatMap {
                         details.statistics
                       })
                     }
                   },
                   // Fetch a views' sources statistics
                   (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { sourceId =>
-                    authorizeFor(ref, Read).apply {
-                      emit(sourceStatistics(ref, id, sourceId))
+                    authorizeFor(project, Read).apply {
+                      emit(sourceStatistics(project, id, sourceId))
                     }
                   }
                 )
@@ -274,8 +271,7 @@ object CompositeViewsIndexingRoutes {
       expandId: ExpandId,
       statistics: CompositeIndexingDetails,
       projections: CompositeProjections,
-      projectionErrors: ProjectionErrors,
-      schemeDirectives: DeltaSchemeDirectives
+      projectionErrors: ProjectionErrors
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
@@ -289,7 +285,6 @@ object CompositeViewsIndexingRoutes {
       expandId,
       statistics,
       projections,
-      projectionErrors,
-      schemeDirectives
+      projectionErrors
     ).routes
 }

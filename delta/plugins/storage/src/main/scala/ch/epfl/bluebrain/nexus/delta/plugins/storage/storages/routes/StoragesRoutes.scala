@@ -60,17 +60,17 @@ final class StoragesRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
       pathPrefix("storages") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { ref =>
+          projectRef { project =>
             concat(
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
                 // Create a storage without id segment
                 (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
-                  authorizeFor(ref, Write).apply {
+                  authorizeFor(project, Write).apply {
                     emit(
                       Created,
                       storages
-                        .create(ref, source)
-                        .flatTap(index(ref, _, mode))
+                        .create(project, source)
+                        .flatTap(index(project, _, mode))
                         .mapValue(_.metadata)
                         .attemptNarrow[StorageRejection]
                     )
@@ -84,15 +84,15 @@ final class StoragesRoutes(
                       concat(
                         // Create or update a storage
                         put {
-                          authorizeFor(ref, Write).apply {
+                          authorizeFor(project, Write).apply {
                             (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a storage with id segment
                                 emit(
                                   Created,
                                   storages
-                                    .create(id, ref, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .create(id, project, source)
+                                    .flatTap(index(project, _, mode))
                                     .mapValue(_.metadata)
                                     .attemptNarrow[StorageRejection]
                                 )
@@ -100,8 +100,8 @@ final class StoragesRoutes(
                                 // Update a storage
                                 emit(
                                   storages
-                                    .update(id, ref, rev, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .update(id, project, rev, source)
+                                    .flatTap(index(project, _, mode))
                                     .mapValue(_.metadata)
                                     .attemptNarrow[StorageRejection]
                                 )
@@ -110,11 +110,11 @@ final class StoragesRoutes(
                         },
                         // Deprecate a storage
                         (delete & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(ref, Write).apply {
+                          authorizeFor(project, Write).apply {
                             emit(
                               storages
-                                .deprecate(id, ref, rev)
-                                .flatTap(index(ref, _, mode))
+                                .deprecate(id, project, rev)
+                                .flatTap(index(project, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[StorageRejection]
                                 .rejectOn[StorageNotFound]
@@ -124,12 +124,12 @@ final class StoragesRoutes(
                         // Fetch a storage
                         (get & idSegmentRef(id)) { id =>
                           emitOrFusionRedirect(
-                            ref,
+                            project,
                             id,
-                            authorizeFor(ref, Read).apply {
+                            authorizeFor(project, Read).apply {
                               emit(
                                 storages
-                                  .fetch(id, ref)
+                                  .fetch(id, project)
                                   .attemptNarrow[StorageRejection]
                                   .rejectOn[StorageNotFound]
                               )
@@ -141,11 +141,11 @@ final class StoragesRoutes(
                   },
                   // Undeprecate a storage
                   (put & pathPrefix("undeprecate") & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
-                    authorizeFor(ref, Write).apply {
+                    authorizeFor(project, Write).apply {
                       emit(
                         storages
-                          .undeprecate(id, ref, rev)
-                          .flatTap(index(ref, _, mode))
+                          .undeprecate(id, project, rev)
+                          .flatTap(index(project, _, mode))
                           .mapValue(_.metadata)
                           .attemptNarrow[StorageRejection]
                           .rejectOn[StorageNotFound]
@@ -155,9 +155,9 @@ final class StoragesRoutes(
                   // Fetch a storage original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                     operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
-                      authorizeFor(ref, Read).apply {
+                      authorizeFor(project, Read).apply {
                         val sourceIO = storages
-                          .fetch(id, ref)
+                          .fetch(id, project)
                           .map(res => res.value.source)
                         emit(sourceIO.attemptNarrow[StorageRejection].rejectOn[StorageNotFound])
                       }
@@ -167,10 +167,10 @@ final class StoragesRoutes(
                     operationName(s"$prefixSegment/storages/{org}/{project}/{id}/tags") {
                       concat(
                         // Fetch a storage tags
-                        (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                        (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
                           emit(
                             storages
-                              .fetch(id, ref)
+                              .fetch(id, project)
                               .map(_.value.tags)
                               .attemptNarrow[StorageRejection]
                               .rejectOn[StorageNotFound]
@@ -178,13 +178,13 @@ final class StoragesRoutes(
                         },
                         // Tag a storage
                         (post & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(ref, Write).apply {
+                          authorizeFor(project, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
                                 storages
-                                  .tag(id, ref, tag, tagRev, rev)
-                                  .flatTap(index(ref, _, mode))
+                                  .tag(id, project, tag, tagRev, rev)
+                                  .flatTap(index(project, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[StorageRejection]
                               )
@@ -195,8 +195,8 @@ final class StoragesRoutes(
                     }
                   },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                    authorizeFor(ref, Read).apply {
-                      emit(storagesStatistics.get(id, ref).attemptNarrow[StorageRejection])
+                    authorizeFor(project, Read).apply {
+                      emit(storagesStatistics.get(id, project).attemptNarrow[StorageRejection])
                     }
                   }
                 )

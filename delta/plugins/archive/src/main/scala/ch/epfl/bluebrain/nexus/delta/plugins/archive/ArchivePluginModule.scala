@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -70,12 +69,11 @@ object ArchivePluginModule extends ModuleDef {
         archives: Archives,
         identities: Identities,
         aclCheck: AclCheck,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
         jko: JsonKeyOrdering
     ) =>
-      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko)
+      new ArchiveRoutes(archives, identities, aclCheck)(baseUri, rcr, jko)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

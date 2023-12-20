@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.{GenerateSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -38,8 +38,7 @@ final class ResourcesTrialRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     generateSchema: GenerateSchema,
-    resourcesTrial: ResourcesTrial,
-    schemeDirectives: DeltaSchemeDirectives
+    resourcesTrial: ResourcesTrial
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -49,7 +48,6 @@ final class ResourcesTrialRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import schemeDirectives._
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       concat(validateRoute, generateRoute)
@@ -58,7 +56,7 @@ final class ResourcesTrialRoutes(
   private def validateRoute: Route =
     pathPrefix("resources") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { project =>
+        projectRef.apply { project =>
           (get & idSegment & idSegmentRef & pathPrefix("validate") & pathEndOrSingleSlash) { (schema, id) =>
             authorizeFor(project, Write).apply {
               val schemaOpt = underscoreToOption(schema)
@@ -76,7 +74,7 @@ final class ResourcesTrialRoutes(
   private def generateRoute: Route =
     (pathPrefix("trial") & pathPrefix("resources") & post) {
       extractCaller { implicit caller =>
-        (resolveProjectRef & pathEndOrSingleSlash) { project =>
+        (projectRef & pathEndOrSingleSlash) { project =>
           authorizeFor(project, Write).apply {
             (entity(as[GenerationInput])) { input =>
               generate(project, input)
@@ -148,8 +146,7 @@ object ResourcesTrialRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       schemas: Schemas,
-      resourcesTrial: ResourcesTrial,
-      schemeDirectives: DeltaSchemeDirectives
+      resourcesTrial: ResourcesTrial
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
@@ -160,7 +157,6 @@ object ResourcesTrialRoutes {
       identities,
       aclCheck,
       (project, source, caller) => schemas.createDryRun(project, source)(caller),
-      resourcesTrial,
-      schemeDirectives
+      resourcesTrial
     )
 }

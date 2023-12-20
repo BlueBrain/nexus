@@ -17,11 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
+class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
@@ -34,12 +33,7 @@ class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
 
-  private val groupDirectives =
-    DeltaSchemeDirectives(
-      fetchContextError,
-      ioFromMap(uuid -> projectRef.organization),
-      ioFromMap(uuid -> projectRef)
-    )
+  private val groupDirectives = DeltaSchemeDirectives(fetchContextError)
 
   private lazy val defaultViewsQuery = new DummyDefaultViewsQuery
 

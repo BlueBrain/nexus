@@ -258,7 +258,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         batchFiles: BatchFiles,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
@@ -266,7 +265,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering: JsonKeyOrdering
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new BatchFilesRoutes(identities, aclCheck, batchFiles, schemeDirectives, indexingAction(_, _, _)(shift))(
+      new BatchFilesRoutes(identities, aclCheck, batchFiles, indexingAction(_, _, _)(shift))(
         baseUri,
         storageConfig,
         cr,

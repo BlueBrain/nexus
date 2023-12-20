@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -51,7 +50,6 @@ object ResourcesTrialModule extends ModuleDef {
         aclCheck: AclCheck,
         schemas: Schemas,
         resourcesTrial: ResourcesTrial,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -61,8 +59,7 @@ object ResourcesTrialModule extends ModuleDef {
         identities,
         aclCheck,
         schemas,
-        resourcesTrial,
-        schemeDirectives
+        resourcesTrial
       )(
         baseUri,
         cr,

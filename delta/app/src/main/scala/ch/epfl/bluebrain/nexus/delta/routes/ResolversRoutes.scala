@@ -87,7 +87,7 @@ final class ResolversRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
-          (resolveProjectRef & indexingMode) { (project, indexingMode) =>
+          (projectRef & indexingMode) { (project, indexingMode) =>
             def index(resolver: ResolverResource): IO[Unit] =
               indexAction(resolver.value.project, resolver, indexingMode)
             val authorizeRead                               = authorizeFor(project, Read)

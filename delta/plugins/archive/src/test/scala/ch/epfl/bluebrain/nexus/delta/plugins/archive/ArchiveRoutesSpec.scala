@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, FileResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -87,8 +87,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val acceptMeta    = Accept(`application/ld+json`)
   private val acceptAll     = Accept(`*/*`)
 
-  private val fetchContext    = FetchContextDummy(List(project))
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
+  private val fetchContext = FetchContextDummy(List(project))
 
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
@@ -152,7 +151,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       archives        =
         Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas, clock)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
-      r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
+      r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck).routes)
     } yield r
   }.accepted
 

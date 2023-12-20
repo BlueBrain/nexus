@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
@@ -28,14 +28,11 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
   *   verify the acls for users
   * @param sseEventLog
   *   the event log
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 class EventsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    sseEventLog: SseEventLog,
-    schemeDirectives: DeltaSchemeDirectives
+    sseEventLog: SseEventLog
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -43,7 +40,6 @@ class EventsRoutes(
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
 
   import baseUri.prefixSegment
-  import schemeDirectives._
 
   private def resolveSelector: Directive1[Label] =
     label.flatMap { l =>
@@ -96,7 +92,7 @@ class EventsRoutes(
                   }
                 },
                 // SSE for events with a given selector within a given organization
-                (resolveScopedSelector & resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
+                (resolveScopedSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
                   operationName(s"$prefixSegment/$selector/{org}/events") {
                     concat(
                       authorizeFor(org, events.read).apply {
@@ -109,15 +105,15 @@ class EventsRoutes(
                   }
                 },
                 // SSE for events with a given selector within a given project
-                (resolveScopedSelector & resolveProjectRef & pathPrefix("events") & pathEndOrSingleSlash) {
-                  (selector, projectRef) =>
+                (resolveScopedSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) {
+                  (selector, project) =>
                     concat(
                       operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
-                        authorizeFor(projectRef, events.read).apply {
-                          emit(sseEventLog.streamBy(selector, projectRef, offset).attemptNarrow[ProjectRejection])
+                        authorizeFor(project, events.read).apply {
+                          emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
                         }
                       },
-                      (head & authorizeFor(projectRef, events.read)) {
+                      (head & authorizeFor(project, events.read)) {
                         complete(OK)
                       }
                     )
@@ -140,12 +136,11 @@ object EventsRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      sseEventLog: SseEventLog,
-      schemeDirectives: DeltaSchemeDirectives
+      sseEventLog: SseEventLog
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives).routes
+  ): Route = new EventsRoutes(identities, aclCheck, sseEventLog).routes
 
 }

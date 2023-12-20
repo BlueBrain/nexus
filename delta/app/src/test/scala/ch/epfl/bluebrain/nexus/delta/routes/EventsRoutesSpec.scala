@@ -7,12 +7,10 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -20,14 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import fs2.Stream
 
-import java.util.UUID
-
-class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
-
-  private val uuid = UUID.randomUUID()
+class EventsRoutesSpec extends BaseRouteSpec {
 
   private val projectRef = ProjectRef.unsafe("org", "proj")
 
@@ -91,12 +84,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     EventsRoutes(
       identities,
       aclCheck,
-      sseEventLog,
-      DeltaSchemeDirectives(
-        FetchContextDummy.empty,
-        ioFromMap(uuid -> projectRef.organization),
-        ioFromMap(uuid -> projectRef)
-      )
+      sseEventLog
     )
   )
 
@@ -115,9 +103,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
         "/v1/project/events",
         "/v1/resources/events",
         "/v1/resources/org/events",
-        s"/v1/resources/$uuid/events",
-        "/v1/resources/org/proj/events",
-        s"/v1/resources/$uuid/$uuid/events"
+        "/v1/resources/org/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -136,9 +122,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "return a 404 when trying to fetch events by org/proj for a global selector" in {
       val endpoints = List(
         "/v1/acl/org/events",
-        s"/v1/acl/$uuid/events",
-        "/v1/acl/org/proj/events",
-        s"/v1/acl/$uuid/$uuid/events"
+        "/v1/acl/org/proj/events"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
@@ -151,9 +135,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
       val endpoints = List(
         "/v1/resource/xxx/events",
         "/v1/resource/org/xxx/events",
-        "/v1/resource/xxx/proj/events",
-        s"/v1/resource/$uuid/xxx/events",
-        s"/v1/resource/xxx/$uuid/events"
+        "/v1/resource/xxx/proj/events"
       )
 
       forAll(endpoints) { endpoint =>

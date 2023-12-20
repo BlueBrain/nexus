@@ -281,7 +281,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views: CompositeViews,
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -292,8 +291,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         blazegraphQuery,
-        elasticSearchQuery,
-        schemeDirectives
+        elasticSearchQuery
       )(baseUri, cr, ordering, fusionConfig)
   }
 
@@ -305,7 +303,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         graphStream: CompositeGraphStream,
         projections: CompositeProjections,
         projectionErrors: ProjectionErrors,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         config: CompositeViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -318,8 +315,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views.expand,
         CompositeIndexingDetails(projections, graphStream, config.prefix),
         projections,
-        projectionErrors,
-        schemeDirectives
+        projectionErrors
       )(baseUri, config.pagination, cr, ordering)
   }
 

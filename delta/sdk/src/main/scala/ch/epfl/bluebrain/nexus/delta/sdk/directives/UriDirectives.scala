@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
-
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -23,7 +23,6 @@ import io.circe.Json
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
-import cats.implicits._
 
 trait UriDirectives extends QueryParamsUnmarshalling {
 

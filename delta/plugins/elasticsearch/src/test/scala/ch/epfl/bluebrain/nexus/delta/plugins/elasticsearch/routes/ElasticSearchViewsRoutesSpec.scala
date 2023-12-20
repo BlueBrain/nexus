@@ -24,11 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ElasticSearchViewErrors._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 import org.scalatest.Assertion
 
-class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
+class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
@@ -56,12 +55,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       ElasticSearchViewRejection.ProjectContextRejection
     )
 
-  private val groupDirectives =
-    DeltaSchemeDirectives(
-      fetchContextRejection,
-      ioFromMap(uuid -> projectRef.organization),
-      ioFromMap(uuid -> projectRef)
-    )
+  private val groupDirectives = DeltaSchemeDirectives(fetchContextRejection)
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
     fetchContextRejection,
@@ -95,7 +89,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
           aclCheck,
           views,
           viewsQuery,
-          groupDirectives,
           IndexingAction.noop
         )
       )
@@ -311,9 +304,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "fetch a view by rev and tag" in {
       val endpoints = List(
-        s"/v1/views/$uuid/$uuid/myid2",
-        s"/v1/resources/$uuid/$uuid/_/myid2",
-        s"/v1/resources/$uuid/$uuid/view/myid2",
         "/v1/views/myorg/myproject/myid2",
         "/v1/resources/myorg/myproject/_/myid2",
         s"/v1/views/myorg/myproject/$myId2Encoded",
@@ -332,9 +322,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
 
     "fetch a view original payload" in {
       val endpoints = List(
-        s"/v1/views/$uuid/$uuid/myid2/source",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source",
-        s"/v1/resources/$uuid/$uuid/view/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
         s"/v1/views/myorg/myproject/$myId2Encoded/source",
@@ -349,7 +336,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     }
     "fetch a view original payload by rev or tag" in {
       val endpoints = List(
-        s"/v1/views/$uuid/$uuid/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
         s"/v1/views/myorg/myproject/$myId2Encoded/source"
       )

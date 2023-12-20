@@ -115,12 +115,8 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
-    UUIDCache(config.projects.cache, config.organizations.cache, xas)
-  }
-
-  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache) =>
-    DeltaSchemeDirectives(fetchContext, uuidCache)
+  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection]) =>
+    DeltaSchemeDirectives(fetchContext)
   }
 
   make[ProjectsRoutes].from {
@@ -131,13 +127,12 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         projectsStatistics: ProjectsStatistics,
         projectProvisioning: ProjectProvisioning,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning)(
         baseUri,
         config.projects,
         cr,

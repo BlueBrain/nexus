@@ -20,13 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import fs2.Stream
 
 import java.time.Instant
-import java.util.UUID
 
-class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
+class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -35,9 +33,6 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
 
   private val identities = IdentitiesDummy(caller)
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
-
-  private val uuid       = UUID.randomUUID()
-  private val projectRef = ProjectRef.unsafe("org", "proj")
 
   private val elem1 = ServerSentEvent("""{"id":"id1"}""", "Success", "1")
   private val elem2 = ServerSentEvent("""{"id":"id2"}""", "Dropped", "2")
@@ -65,11 +60,7 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
       identities,
       aclCheck,
       sseElemStream,
-      DeltaSchemeDirectives(
-        FetchContextDummy.empty,
-        ioFromMap(uuid -> projectRef.organization),
-        ioFromMap(uuid -> projectRef)
-      )
+      DeltaSchemeDirectives(FetchContextDummy.empty)
     ).routes
   )
 

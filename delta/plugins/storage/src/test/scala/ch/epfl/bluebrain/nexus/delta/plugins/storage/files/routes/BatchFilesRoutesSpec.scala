@@ -22,12 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -178,11 +176,8 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       permissions: Set[Permission]
   ): Route = {
     val aclCheck: AclCheck = AclSimpleCheck((user, AclAddress.fromProject(proj.ref), permissions)).accepted
-    // TODO this dependency does nothing because we lookup using labels instead of UUIds in the tests...
-    // Does this endpoint need resolution by UUId? Do users need it?
-    val groupDirectives    = DeltaSchemeDirectives(FetchContextDummy(Map(proj.ref -> proj.context)))
     val identities         = IdentitiesDummy(Caller(user, Set(user)))
-    Route.seal(BatchFilesRoutes(config, identities, aclCheck, batchFiles, groupDirectives, IndexingAction.noop))
+    Route.seal(BatchFilesRoutes(config, identities, aclCheck, batchFiles, IndexingAction.noop))
   }
 
   def callBulkCopyEndpoint(

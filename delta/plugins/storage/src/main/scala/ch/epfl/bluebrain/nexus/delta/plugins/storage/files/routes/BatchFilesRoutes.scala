@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -29,7 +29,6 @@ final class BatchFilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     batchFiles: BatchFiles,
-    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
@@ -41,8 +40,6 @@ final class BatchFilesRoutes(
 
   private val logger = Logger[BatchFilesRoutes]
 
-  import schemeDirectives.resolveProjectRef
-
   implicit val bulkOpJsonLdEnc: JsonLdEncoder[BulkOperationResults[FileResource]] =
     BulkOperationResults.searchResultsJsonLdEncoder(ContextValue(contexts.files))
 
@@ -51,12 +48,12 @@ final class BatchFilesRoutes(
       pathPrefix("bulk") {
         pathPrefix("files") {
           extractCaller { implicit caller =>
-            resolveProjectRef.apply { projectRef =>
+            projectRef { project =>
               (post & pathEndOrSingleSlash & parameter("storage".as[IdSegment].?) & indexingMode & tagParam) {
                 (storage, mode, tag) =>
                   // Bulk create files by copying from another project
                   entity(as[CopyFileSource]) { c: CopyFileSource =>
-                    val copyTo = CopyFileDestination(projectRef, storage, tag)
+                    val copyTo = CopyFileDestination(project, storage, tag)
                     emit(Created, copyFiles(mode, c, copyTo))
                   }
               }
@@ -89,7 +86,6 @@ object BatchFilesRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       batchFiles: BatchFiles,
-      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[File]
   )(implicit
       baseUri: BaseUri,
@@ -97,7 +93,7 @@ object BatchFilesRoutes {
       ordering: JsonKeyOrdering
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new BatchFilesRoutes(identities, aclCheck, batchFiles, schemeDirectives, index).routes
+    new BatchFilesRoutes(identities, aclCheck, batchFiles, index).routes
   }
 
 }

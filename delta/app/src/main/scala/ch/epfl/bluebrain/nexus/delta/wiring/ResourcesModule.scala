@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -79,7 +78,6 @@ object ResourcesModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         resources: Resources,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         shift: Resource.Shift,
         baseUri: BaseUri,
@@ -92,7 +90,6 @@ object ResourcesModule extends ModuleDef {
         identities,
         aclCheck,
         resources,
-        schemeDirectives,
         indexingAction(_, _, _)(shift)
       )(
         baseUri,

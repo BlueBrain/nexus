@@ -9,66 +9,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, UUIDCache}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-
-import java.util.UUID
-import scala.util.Try
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * Directives requiring interactions with the projects and organizations modules
   * @param fetchContext
   *   fetch the context for a project
-  * @param fetchOrgByUuid
-  *   fetch an org by its uuid
-  * @param fetchProjByUuid
-  *   fetch a project by its uuid
   */
 final class DeltaSchemeDirectives(
-    fetchContext: ProjectRef => IO[ProjectContext],
-    fetchOrgByUuid: UUID => IO[Option[Label]],
-    fetchProjByUuid: UUID => IO[Option[ProjectRef]]
+    fetchContext: ProjectRef => IO[ProjectContext]
 ) extends QueryParamsUnmarshalling {
-
-  /**
-    * Extracts the organization segment and converts it to UUID. If the conversion is possible, it attempts to fetch the
-    * organization from the cache in order to retrieve the label. Otherwise it returns the fetched segment
-    */
-  def resolveOrg: Directive1[Label] =
-    pathPrefix(Segment).flatMap { segment =>
-      Try(UUID.fromString(segment))
-        .map(uuid =>
-          onSuccess(fetchOrgByUuid(uuid).attempt.unsafeToFuture()).flatMap {
-            case Right(Some(label)) => provide(label)
-            case _                  => label(segment)
-          }
-        )
-        .getOrElse(label(segment))
-    }
-
-  /**
-    * Consumes two path Segments parsing them as UUIDs and fetch the [[ProjectRef]] looking up on the ''projects''
-    * bundle. It fails fast if the project with the passed UUIDs is not found.
-    */
-  def resolveProjectRef: Directive1[ProjectRef] = {
-
-    def projectRefFromString(o: String, p: String): Directive1[ProjectRef] =
-      for {
-        org  <- label(o)
-        proj <- label(p)
-      } yield ProjectRef(org, proj)
-
-    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (oUuid, pUuid) =>
-      onSuccess(fetchProjByUuid(pUuid).attempt.unsafeToFuture()).flatMap {
-        case Right(Some(project)) => provide(project)
-        case _                    => projectRefFromString(oUuid.toString, pUuid.toString)
-      }
-    }
-
-    projectFromUuids | projectRef
-  }
 
   def projectContext(projectRef: ProjectRef): Directive1[ProjectContext] =
     onSuccess(fetchContext(projectRef).attempt.unsafeToFuture()).flatMap {
@@ -101,7 +53,7 @@ final class DeltaSchemeDirectives(
     replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId)
 
   private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
-    ((get | delete) & pathPrefix("resources") & resolveProjectRef & pathPrefix("_") & pathPrefix(Segment))
+    ((get | delete) & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
       .tflatMap { case (projectRef, id) =>
         mapRequestContext { ctx =>
           val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id
@@ -111,7 +63,7 @@ final class DeltaSchemeDirectives(
       .or(pass)
 
   private def replaceUriOn(rootResourceType: String, schemaId: Iri): Directive0 =
-    (pathPrefix("resources") & resolveProjectRef)
+    (pathPrefix("resources") & projectRef)
       .flatMap { projectRef =>
         iriSegment(projectRef).tfilter { case Tuple1(schema) => schema == schemaId }.flatMap { _ =>
           mapRequestContext { ctx =>
@@ -136,32 +88,7 @@ final class DeltaSchemeDirectives(
 
 object DeltaSchemeDirectives extends QueryParamsUnmarshalling {
 
-  def empty: DeltaSchemeDirectives = onlyResolveOrgUuid(_ => IO.none)
-
-  def onlyResolveOrgUuid(fetchOrgByUuid: UUID => IO[Option[Label]]) =
-    new DeltaSchemeDirectives(
-      (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
-      fetchOrgByUuid,
-      _ => IO.none
-    )
-
-  def onlyResolveProjUuid(fetchProjByUuid: UUID => IO[Option[ProjectRef]]) =
-    new DeltaSchemeDirectives(
-      (ref: ProjectRef) => IO.raiseError(ProjectNotFound(ref)),
-      _ => IO.none,
-      fetchProjByUuid
-    )
-
-  def apply(fetchContext: FetchContext[_], uuidCache: UUIDCache): DeltaSchemeDirectives =
-    apply(fetchContext, uuidCache.orgLabel, uuidCache.projectRef)
-
   def apply(fetchContext: FetchContext[_]): DeltaSchemeDirectives =
-    new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), _ => IO.none, _ => IO.none)
+    new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref))
 
-  def apply(
-      fetchContext: FetchContext[_],
-      fetchOrgByUuid: UUID => IO[Option[Label]],
-      fetchProjByUuid: UUID => IO[Option[ProjectRef]]
-  ): DeltaSchemeDirectives =
-    new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref), fetchOrgByUuid, fetchProjByUuid)
 }

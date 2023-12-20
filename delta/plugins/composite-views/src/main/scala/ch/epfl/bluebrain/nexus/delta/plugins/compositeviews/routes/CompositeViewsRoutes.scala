@@ -8,8 +8,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -34,8 +34,7 @@ class CompositeViewsRoutes(
     aclCheck: AclCheck,
     views: CompositeViews,
     blazegraphQuery: BlazegraphQuery,
-    elasticSearchQuery: ElasticSearchQuery,
-    schemeDirectives: DeltaSchemeDirectives
+    elasticSearchQuery: ElasticSearchQuery
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -47,8 +46,6 @@ class CompositeViewsRoutes(
     with RdfMarshalling
     with ElasticSearchViewsDirectives
     with BlazegraphViewsDirectives {
-
-  import schemeDirectives._
 
   private def emitMetadata(statusCode: StatusCode, io: IO[ViewResource]): Route =
     emit(
@@ -76,7 +73,7 @@ class CompositeViewsRoutes(
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { implicit project =>
+        projectRef { implicit project =>
           concat(
             //Create a view without id segment
             (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
@@ -207,8 +204,7 @@ object CompositeViewsRoutes {
       aclCheck: AclCheck,
       views: CompositeViews,
       blazegraphQuery: BlazegraphQuery,
-      elasticSearchQuery: ElasticSearchQuery,
-      schemeDirectives: DeltaSchemeDirectives
+      elasticSearchQuery: ElasticSearchQuery
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
@@ -220,7 +216,6 @@ object CompositeViewsRoutes {
       aclCheck,
       views,
       blazegraphQuery,
-      elasticSearchQuery,
-      schemeDirectives
+      elasticSearchQuery
     ).routes
 }

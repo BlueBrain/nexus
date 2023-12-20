@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.scalatest.OrgMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
-import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import io.circe.Json
 import org.scalactic.source.Position
@@ -88,19 +87,6 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
       deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         validate(json, "Organization", "orgs", id, s"Description $id", 1, id)
-      }
-    }
-
-    "fetch organization by UUID" in {
-      deltaClient.get[Json](s"/orgs/$id", Leela) { (jsonById, _) =>
-        runIO {
-          val orgUuid = _uuid.getOption(jsonById).value
-
-          deltaClient.get[Json](s"/orgs/$orgUuid", Leela) { (jsonByUuid, response) =>
-            response.status shouldEqual StatusCodes.OK
-            jsonByUuid shouldEqual jsonById
-          }
-        }
       }
     }
 
