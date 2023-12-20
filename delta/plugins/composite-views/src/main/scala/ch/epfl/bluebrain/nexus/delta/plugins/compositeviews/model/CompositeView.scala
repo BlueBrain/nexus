@@ -52,6 +52,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeView(
     id: Iri,
     project: ProjectRef,
+    name: Option[String],
+    description: Option[String],
     sources: NonEmptyMap[Iri, CompositeViewSource],
     projections: NonEmptyMap[Iri, CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy],
@@ -83,6 +85,8 @@ object CompositeView {
   ): CompositeView = CompositeView(
     id,
     project,
+    None,
+    None,
     sources.map { s => s.id -> s }.toNem,
     projections.map { p => p.id -> p }.toNem,
     rebuildStrategy,

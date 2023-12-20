@@ -66,6 +66,8 @@ final case class CompositeViewState(
   lazy val asCompositeView: CompositeView = CompositeView(
     id,
     project,
+    value.name,
+    value.description,
     value.sources,
     value.projections,
     value.rebuildStrategy,
