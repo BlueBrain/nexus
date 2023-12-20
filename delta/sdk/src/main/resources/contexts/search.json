@@ -15,7 +15,8 @@
     "_next": "https://bluebrain.github.io/nexus/vocabulary/next",
     "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
     "name": "http://schema.org/name",
-    "label": "http://www.w3.org/2000/01/rdf-schema#label"
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "description": "http://schema.org/description"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/search.json"
 }

@@ -2,169 +2,232 @@
   "properties": {
     "@type": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "@id": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "prefLabel": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "label": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "name": {
       "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search",
       "fields": {
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
-    "_algorithm": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+    "description": {
+      "type": "text",
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search"
     },
     "_uuid": {
       "type": "text",
+      "analyzer": "keyword",
       "fields": {
         "raw": {
           "type": "keyword"
         }
-      },
-      "copy_to": "_all_fields"
+      }
     },
     "_rev": {
-      "type": "long",
-      "copy_to": "_all_fields"
+      "type": "long"
     },
     "_tags": {
       "type": "text",
-      "copy_to": "_all_fields"
+      "analyzer": "keyword"
     },
     "_deprecated": {
-      "type": "boolean",
-      "copy_to": "_all_fields"
+      "type": "boolean"
     },
     "_markedForDeletion": {
-      "type": "boolean",
-      "copy_to": "_all_fields"
+      "type": "boolean"
     },
     "_createdAt": {
       "type": "date",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "nexus"
+        }
+      }
     },
     "_updatedAt": {
       "type": "date",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "nexus"
+        }
+      }
     },
     "_createdBy": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "_updatedBy": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "_constrainedBy": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "_project": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_self": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_incoming": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_outgoing": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
+      "type": "keyword"
     },
     "_original_source": {
       "type": "text",
-      "analyzer": "nexus",
-      "copy_to": "_all_fields"
+      "analyzer": "nexus"
     },
     "_bytes": {
-      "type": "long",
-      "copy_to": "_all_fields"
+      "type": "long"
     },
     "_mediaType": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "_location": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "path_hierarchy"
+        }
+      }
     },
     "_filename": {
       "type": "keyword",
-      "copy_to": "_all_fields"
+      "fields": {
+        "fulltext": {
+          "type": "text",
+          "analyzer": "nexus"
+        }
+      }
     },
     "_digest": {
-      "type": "nested",
       "properties": {
         "_algorithm": {
           "type": "keyword",
-          "copy_to": "_all_fields"
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "keyword"
+            }
+          }
         },
         "_value": {
-          "type": "keyword",
-          "copy_to": "_all_fields"
+          "type": "keyword"
         }
       }
     },
     "_storage": {
-      "type": "nested",
       "properties": {
         "_rev": {
-          "type": "long",
-          "copy_to": "_all_fields"
+          "type": "long"
         },
         "@id": {
           "type": "keyword",
-          "copy_to": "_all_fields"
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "path_hierarchy"
+            }
+          }
         },
         "@type": {
           "type": "keyword",
-          "copy_to": "_all_fields"
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "path_hierarchy"
+            }
+          }
         }
       }
     },
     "_effectiveApiMappings": {
-      "type": "nested",
       "properties": {
         "_prefix": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "nexus"
+            }
+          }
         },
         "_namespace": {
-          "type": "keyword"
+          "type": "keyword",
+          "fields": {
+            "fulltext": {
+              "type": "text",
+              "analyzer": "path_hierarchy"
+            }
+          }
         }
       }
-    },
-    "_all_fields": {
-      "type": "text",
-      "analyzer": "nexus"
     }
   },
   "dynamic": false

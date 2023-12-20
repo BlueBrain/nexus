@@ -21,7 +21,8 @@
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "name" : "Default Elasticsearch view"
+      "name": "Default Elasticsearch view",
+      "description": "An Elasticsearch view of all resources in the project."
     },
     {
       "@id": "{{defaultSparqlView}}",
@@ -35,11 +36,12 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
-      "_indexingRev" : 1,
+      "_indexingRev": 1,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "name" : "Default Sparql view"
+      "name": "Default Sparql view",
+      "description": "A Sparql view of all resources in the project."
     },
     {
       "@id": "{{searchView}}",
