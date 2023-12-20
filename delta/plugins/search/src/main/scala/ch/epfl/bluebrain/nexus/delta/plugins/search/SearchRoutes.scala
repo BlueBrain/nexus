@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, SearchRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig._
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -13,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.{Json, JsonObject}
-import io.circe.syntax.EncoderOps
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 class SearchRoutes(
@@ -54,9 +56,13 @@ class SearchRoutes(
                 emit(IO.pure(configFields))
               }
             },
-            // Get suite
-            (pathPrefix("suites") & get & label & pathEndOrSingleSlash) { suite =>
-              emit(IO.pure(suites(suite).asJson))
+            // Fetch suite
+            (pathPrefix("suites") & get & label & pathEndOrSingleSlash) { suiteName =>
+              emit(
+                IO.fromOption(suites.get(suiteName))(UnknownSuite(suiteName))
+                  .map(s => NamedSuite(suiteName, s))
+                  .attemptNarrow[SearchRejection]
+              )
             }
           )
 

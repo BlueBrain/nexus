@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 class SearchRoutesSpec extends BaseRouteSpec {
 
@@ -26,8 +28,9 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   private val fields = Json.obj("fields" := true)
 
-  private val suites = Map(
-    Label.unsafe("public")  -> Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2")),
+  private val publicProjects = Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2"))
+  private val suites         = Map(
+    Label.unsafe("public")  -> publicProjects,
     Label.unsafe("private") -> Set(ProjectRef.unsafe("org3", "project3"))
   )
 
@@ -69,13 +72,48 @@ class SearchRoutesSpec extends BaseRouteSpec {
     }
 
     "fetch a suite" in {
-      val searchSuiteName = "public"
-      val publicSuite     = suites(Label.unsafe(searchSuiteName))
-      Get(s"/v1/search/suites/$searchSuiteName") ~> routes ~> check {
+      Get(s"/v1/search/suites/public") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual publicSuite.asJson
+        response.asJson should have(name("public"))
+        response.asJson should have(projects(publicProjects))
+      }
+    }
+
+    "fetching a unknown suite" in {
+      Get(s"/v1/search/suites/unknown") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual
+          json"""
+             {
+               "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+               "@type" : "UnknownSuite",
+               "reason" : "The suite 'unknown' can't be found."
+             }
+              """
       }
     }
   }
 
+}
+
+object SuiteMatchers {
+  def name(expectedName: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualId = json.hcursor.get[String]("name").toOption
+    HavePropertyMatchResult(
+      actualId.contains(expectedName),
+      "name",
+      expectedName,
+      actualId.orNull
+    )
+  }
+
+  def projects(expected: Set[ProjectRef]) = HavePropertyMatcher[Json, Set[ProjectRef]] { json =>
+    val actualId = json.hcursor.get[Set[ProjectRef]]("projects").toOption
+    HavePropertyMatchResult(
+      actualId.contains(expected),
+      "name",
+      expected,
+      actualId.orNull
+    )
+  }
 }
