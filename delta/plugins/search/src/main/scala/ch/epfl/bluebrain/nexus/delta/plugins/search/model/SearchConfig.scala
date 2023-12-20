@@ -7,13 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparql
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import com.typesafe.config.Config
 import io.circe.parser._
-import io.circe.{Decoder, JsonObject}
+import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.{Decoder, Encoder, JsonObject}
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
 import pureconfig.{ConfigReader, ConfigSource}
@@ -42,9 +46,16 @@ object SearchConfig {
     }
   }
 
-  type Suites = Map[Label, Set[ProjectRef]]
+  type Suite  = Set[ProjectRef]
+  type Suites = Map[Label, Suite]
+
+  case class NamedSuite(name: Label, suite: Suite)
   implicit private val suitesMapReader: ConfigReader[Suites] =
     genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
+
+  implicit val suiteEncoder: Encoder[NamedSuite]         =
+    Encoder[JsonObject].contramap(s => JsonObject("projects" := s.suite.asJson, "name" := s.name.asJson))
+  implicit val suiteLdEncoder: JsonLdEncoder[NamedSuite] = JsonLdEncoder.computeFromCirce(ContextValue(contexts.suites))
 
   /**
     * Converts a [[Config]] into an [[SearchConfig]]
