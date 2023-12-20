@@ -1,14 +1,19 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers._
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.{`@id` => atId, filterSearchMetadata, filterSearchMetadataAndLinks, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import io.circe.Json
+import org.scalatest.Assertion
+
+import org.scalatest.LoneElement._
 
 import java.net.URLEncoder
 import java.util.UUID
@@ -35,49 +40,50 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
   private val resourceType = s"https://bluebrain.github.io/nexus/vocabulary/Type-${UUID.randomUUID()}"
 
-  "Setting up" should {
-    "succeed in setting up orgs, projects and acls" in {
-      for {
-        _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
-        // First org and projects
-        _ <- adminDsl.createOrganization(org1, org1, Bob)
-        _ <- adminDsl.createProjectWithName(org1, proj11, name = proj11, Bob)
-        _ <- adminDsl.createProjectWithName(org1, proj12, name = proj12, Bob)
-        _ <- adminDsl.createProjectWithName(org1, proj13, name = proj13, Bob)
-        // Second org and projects
-        _ <- adminDsl.createOrganization(org2, org2, Bob)
-        _ <- adminDsl.createProjectWithName(org2, proj21, name = proj21, Bob)
-        _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
-        _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
-      } yield succeed
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
 
-    "add additional resources" in {
-      val resourcePayload = SimpleResource.sourcePayloadWithType(resourceType, 5).accepted
-      for {
-        schemaPayload <- SchemaPayload.loadSimple(resourceType)
-        // Creation
-        _             <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
-        _             <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
-        _             <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
-                           expectCreated
-                         )
-        _             <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
-        _             <- deltaClient.put[Json](s"/resources/$ref13/_/resource13", resourcePayload, Bob)(expectCreated)
-        _             <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
-        // Tag
-        _             <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
-        _             <-
-          deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
-        _             <-
-          deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=2", tag(tag2, 2), Bob)(expectCreated)
-        _             <-
-          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag(tag3, 1), Bob)(expectCreated)
-        // Deprecate
-        _             <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
-      } yield succeed
-    }
+    val setupProjects = for {
+      _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
+      // First org and projects
+      _ <- adminDsl.createOrganization(org1, org1, Bob)
+      _ <- adminDsl.createProjectWithName(org1, proj11, name = proj11, Bob)
+      _ <- adminDsl.createProjectWithName(org1, proj12, name = proj12, Bob)
+      _ <- adminDsl.createProjectWithName(org1, proj13, name = proj13, Bob)
+      // Second org and projects
+      _ <- adminDsl.createOrganization(org2, org2, Bob)
+      _ <- adminDsl.createProjectWithName(org2, proj21, name = proj21, Bob)
+      _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
+    } yield succeed
+
+    val resourcePayload = SimpleResource.sourcePayloadWithType(resourceType, 5).accepted
+    val postResource    = for {
+      schemaPayload <- SchemaPayload.loadSimple(resourceType)
+      // Creation
+      _             <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
+      _             <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
+      _             <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
+                         expectCreated
+                       )
+      _             <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
+      _             <- deltaClient.put[Json](s"/resources/$ref13/_/resource13", resourcePayload, Bob)(expectCreated)
+      _             <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
+      // Tag
+      _             <-
+        deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
+      _             <-
+        deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
+      _             <-
+        deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=2", tag(tag2, 2), Bob)(expectCreated)
+      _             <-
+        deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag(tag3, 1), Bob)(expectCreated)
+      // Deprecate
+      _             <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
+    } yield succeed
+
+    (setupProjects >> postResource).accepted
+    ()
   }
 
   "Listing resources within a project" should {
@@ -211,7 +217,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
       def lens(json: Json) =
         listing._results
           .getOption(json)
-          .fold(Vector.empty[String]) { _.flatMap(`@id`.getOption) }
+          .fold(Vector.empty[String]) { _.flatMap(atId.getOption) }
 
       val result = deltaClient
         .stream(
@@ -381,5 +387,88 @@ final class ListingsSpec extends BaseIntegrationSpec {
     }
 
   }
+
+  "Fulltext search" should {
+
+    val project = ref11
+
+    "find a match by @id" in {
+      val id  = s"http://bbp.epfl.ch/${genString()}"
+      val id2 = s"http://bbp.epfl.ch/${genString()}"
+
+      val resource: String => Json = id => json"""{ "@id": "$id" }"""
+
+      postResource(resource(id), project).accepted
+      postResource(resource(id2), project).accepted
+
+      eventually {
+        fulltextListing(q = UrlUtils.encode(id), project) { json =>
+          val results = listing._results.getOption(json).value
+          results.loneElement should have(`@id`(id))
+        }
+      }
+    }
+
+    "find the match on @id first even when other docs reference it" in {
+      val id = s"http://bbp.epfl.ch/${genString()}"
+
+      val resource: String => Json = id => json"""{ "@id": "$id" }"""
+      val resRef                   = json"""{ "http://schema.org/description": "$id" }"""
+      val resRef2                  = json"""{ "randomField": "$id" }"""
+
+      postResource(resource(id), project).accepted
+      postResource(resRef, project).accepted
+      postResource(resRef2, project).accepted
+
+      eventually {
+        fulltextListing(q = UrlUtils.encode(id), project) { json =>
+          val results = listing._results.getOption(json).value
+          results.head should have(`@id`(id))
+        }
+      }
+    }
+
+    "find match by name" in {
+      val id       = s"http://bbp.epfl.ch/${genString()}"
+      val resource = json"""{ "@id": "$id", "http://schema.org/name": "Lorem ipsum dolor"}"""
+
+      postResource(resource, project).accepted
+
+      val query = UrlUtils.encode("lor ip dol")
+
+      eventually {
+        fulltextListing(q = query, project) { json =>
+          val results = listing._results.getOption(json).value
+          results.head should have(`@id`(id))
+        }
+      }
+    }
+
+    "find match by description" in {
+      val id       = s"http://bbp.epfl.ch/${genString()}"
+      val resource =
+        json"""{ "@id": "$id", "http://schema.org/description": "Northumberland is a ceremonial county bordering Scotland."}"""
+
+      postResource(resource, project).accepted
+
+      val query = UrlUtils.encode("cere nort")
+
+      eventually {
+        fulltextListing(q = query, project) { json =>
+          val results = listing._results.getOption(json).value
+          results.head should have(`@id`(id))
+        }
+      }
+    }
+  }
+
+  def postResource(json: Json, projectRef: String): IO[Assertion] =
+    deltaClient.post[Json](s"/resources/$projectRef", json, Bob)(expectCreated)
+
+  def fulltextListing(q: String, projectRef: String)(test: Json => Assertion): IO[Assertion] =
+    deltaClient.get[Json](s"/resources/$projectRef?q=$q", Bob) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      test(json)
+    }
 
 }
