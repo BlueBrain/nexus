@@ -55,7 +55,8 @@
       "_self": "{{searchViewSelf}}",
       "_project": "{{project}}",
       "_rev": 1,
-      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "name": "Default global search view"
     }
   ]
 }
