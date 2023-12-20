@@ -27,14 +27,6 @@ import java.util.UUID
 trait SseEventLog {
 
   /**
-    * Get stream of server sent events
-    *
-    * @param offset
-    *   the offset to start from
-    */
-  def stream(offset: Offset): ServerSentEventStream
-
-  /**
     * Get stream of server sent events for the given selector
     *
     * @param selector
@@ -181,8 +173,6 @@ object SseEventLog {
                   .evalMap(toServerSentEvent(_, fetchUuids))
               }
           }
-
-          override def stream(offset: Offset): Stream[IO, ServerSentEvent] = stream(Scope.root, None, offset)
 
           override def streamBy(selector: Label, offset: Offset): Stream[IO, ServerSentEvent] =
             stream(Scope.root, Some(selector), offset)

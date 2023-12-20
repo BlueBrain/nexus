@@ -53,7 +53,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val sseEventLog = new SseEventLog {
 
-    override def stream(offset: Offset): ServerSentEventStream = offset match {
+    def stream(offset: Offset): ServerSentEventStream = offset match {
       case Start     => Stream.emits(allEvents)
       case At(value) =>
         Stream.emits(allEvents).filter(_.id.exists(_.toLongOption.exists(_ > value)))
