@@ -105,12 +105,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to get the events stream without events/read permission" in {
       aclCheck.append(AclAddress.Root, alice -> Set(events.read)).accepted
 
-      Head("/v1/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
       val endpoints = List(
-        "/v1/events",
         "/v1/acl/events",
         "/v1/project/events",
         "/v1/resources/events",
@@ -163,13 +158,6 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
-    "get the events stream for all events" in {
-      Get("/v1/events") ~> asAlice ~> routes ~> check {
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(5).strip shouldEqual contentOf("events/eventstream-0-5.txt").strip
-      }
-    }
-
     "get the acl events" in {
       Get("/v1/acl/events") ~> asAlice ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
@@ -188,18 +176,6 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
           mediaType shouldBe MediaTypes.`text/event-stream`
           chunksStream.asString(1).strip shouldEqual contentOf("events/project-events.txt").strip
         }
-      }
-    }
-
-    "check access to all SSEs" in {
-      Head("/v1/events") ~> asAlice ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "check access to 'org/proj' SSEs" in {
-      Head("/v1/events") ~> asAlice ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
       }
     }
 

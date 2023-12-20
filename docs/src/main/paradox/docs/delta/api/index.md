@@ -25,7 +25,6 @@
 * @ref:[Search](search-api.md)
 * @ref:[Graph Analytics](graph-analytics-api.md)
 * @ref:[Jira integration](jira.md)
-* @ref:[Events](events-api.md)
 * @ref:[Supervision](supervision-api.md)
 
 @@@
