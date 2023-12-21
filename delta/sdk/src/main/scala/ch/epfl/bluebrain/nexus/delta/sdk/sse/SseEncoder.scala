@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.{Decoder, Encoder, JsonObject}
 
-abstract class SseEncoder[E <: Event] {
+abstract class SseEncoder[E <: ScopedEvent] {
   def databaseDecoder: Decoder[E]
 
   def entityType: EntityType
