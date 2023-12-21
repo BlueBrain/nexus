@@ -61,6 +61,7 @@ class ElasticSearchViewJsonLdSourceDecoder private (
   private def mapJsonToString(json: Json): Json = json
     .mapAllKeys("mapping", _.noSpaces.asJson)
     .mapAllKeys("settings", _.noSpaces.asJson)
+    .mapAllKeys("context", _.noSpaces.asJson)
 }
 
 object ElasticSearchViewJsonLdSourceDecoder {
