@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUndeprecated, OrganizationUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
@@ -11,8 +9,6 @@ import java.time.Instant
 import java.util.UUID
 
 class OrganizationSerializationSuite extends SerializationSuite {
-
-  private val sseEncoder = OrganizationEvent.sseEncoder
 
   val realm: Label        = Label.unsafe("myrealm")
   val subject: Subject    = User("username", realm)
@@ -35,17 +31,13 @@ class OrganizationSerializationSuite extends SerializationSuite {
     OrganizationUndeprecated(org, orgUuid, 1, instant, subject)               -> loadEvents("organizations", "org-undeprecated.json")
   )
 
-  orgsEventMapping.foreach { case (event, (database, sse)) =>
+  orgsEventMapping.foreach { case (event, (database, _)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(OrganizationEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(OrganizationEvent.serializer.codec.decodeJson(database), Right(event))
-    }
-
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
-      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 

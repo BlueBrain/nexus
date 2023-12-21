@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
@@ -15,8 +13,6 @@ import io.circe.Json
 import java.time.Instant
 
 class RealmSerializationSuite extends SerializationSuite {
-
-  private val sseEncoder = RealmEvent.sseEncoder
 
   val rev              = 1
   val instant: Instant = Instant.EPOCH
@@ -82,17 +78,13 @@ class RealmSerializationSuite extends SerializationSuite {
     ) -> loadEvents("realms", "realm-deprecated.json")
   )
 
-  realmMapping.foreach { case (event, (database, sse)) =>
+  realmMapping.foreach { case (event, (database, _)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(RealmEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(RealmEvent.serializer.codec.decodeJson(database), Right(event))
-    }
-
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
-      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 
