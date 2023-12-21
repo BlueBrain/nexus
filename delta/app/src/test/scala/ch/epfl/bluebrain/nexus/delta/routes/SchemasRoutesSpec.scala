@@ -75,10 +75,9 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
   private lazy val aclCheck = AclSimpleCheck().accepted
 
   private val fetchContext    = FetchContextDummy(List(project.value), ProjectContextRejection)
-  private val groupDirectives =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
-  private val config          = SchemasConfig(eventLogConfig)
+  private val config = SchemasConfig(eventLogConfig)
 
   private lazy val routes =
     Route.seal(
@@ -303,9 +302,6 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
     "fetch a schema by rev and tag" in {
       val endpoints = List(
-        s"/v1/schemas/$uuid/$uuid/myid2",
-        s"/v1/resources/$uuid/$uuid/_/myid2",
-        s"/v1/resources/$uuid/$uuid/schema/myid2",
         "/v1/schemas/myorg/myproject/myid2",
         "/v1/resources/myorg/myproject/_/myid2",
         "/v1/resources/myorg/myproject/schema/myid2",
@@ -329,9 +325,6 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
     "fetch a schema original payload" in {
       val endpoints = List(
-        s"/v1/schemas/$uuid/$uuid/myid2/source",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source",
-        s"/v1/resources/$uuid/$uuid/schema/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
         "/v1/resources/myorg/myproject/schema/myid2/source",
@@ -348,8 +341,6 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
     }
     "fetch a schema original payload by rev or tag" in {
       val endpoints = List(
-        s"/v1/schemas/$uuid/$uuid/myid2/source",
-        s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
         "/v1/resources/myorg/myproject/schema/myid2/source",

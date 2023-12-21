@@ -34,8 +34,8 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
     case other  => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
-  private val config              = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
-  private val orgConfig           = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config              = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
+  private val orgConfig           = OrganizationsConfig(eventLogConfig, pagination)
   private lazy val projectFixture = createProjectsFixture(fetchOrg, defaultApiMappings, config, clock)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)

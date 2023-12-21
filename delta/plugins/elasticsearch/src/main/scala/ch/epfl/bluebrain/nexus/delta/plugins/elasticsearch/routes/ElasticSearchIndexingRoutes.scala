@@ -16,8 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -46,8 +46,6 @@ import io.circe.syntax._
   *   the projections module
   * @param projectionErrors
   *   the projection errors module
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 final class ElasticSearchIndexingRoutes(
     identities: Identities,
@@ -55,7 +53,6 @@ final class ElasticSearchIndexingRoutes(
     fetch: FetchIndexingView,
     projections: Projections,
     projectionErrors: ProjectionErrors,
-    schemeDirectives: DeltaSchemeDirectives,
     viewsQuery: ElasticSearchViewsQuery
 )(implicit
     baseUri: BaseUri,
@@ -66,8 +63,6 @@ final class ElasticSearchIndexingRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import schemeDirectives._
-
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
 
@@ -77,16 +72,16 @@ final class ElasticSearchIndexingRoutes(
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { ref =>
+        projectRef { project =>
           concat(
             idSegment { id =>
               concat(
                 // Fetch an elasticsearch view statistics
                 (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                  authorizeFor(ref, Read).apply {
+                  authorizeFor(project, Read).apply {
                     emit(
-                      fetch(id, ref)
-                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
+                      fetch(id, project)
+                        .flatMap(v => projections.statistics(project, v.selectFilter, v.projection))
                         .attemptNarrow[ElasticSearchViewRejection]
                         .rejectOn[ViewNotFound]
                     )
@@ -94,13 +89,13 @@ final class ElasticSearchIndexingRoutes(
                 },
                 // Fetch elastic search view indexing failures
                 (pathPrefix("failures") & get) {
-                  authorizeFor(ref, Write).apply {
+                  authorizeFor(project, Write).apply {
                     (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
                       (pagination, timeRange, uri) =>
                         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
                           searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                         emit(
-                          fetch(id, ref)
+                          fetch(id, project)
                             .flatMap { view =>
                               projectionErrors.search(view.ref, pagination, timeRange)
                             }
@@ -114,18 +109,18 @@ final class ElasticSearchIndexingRoutes(
                 (pathPrefix("offset") & pathEndOrSingleSlash) {
                   concat(
                     // Fetch an elasticsearch view offset
-                    (get & authorizeFor(ref, Read)) {
+                    (get & authorizeFor(project, Read)) {
                       emit(
-                        fetch(id, ref)
+                        fetch(id, project)
                           .flatMap(v => projections.offset(v.projection))
                           .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]
                       )
                     },
                     // Remove an elasticsearch view offset (restart the view)
-                    (delete & authorizeFor(ref, Write)) {
+                    (delete & authorizeFor(project, Write)) {
                       emit(
-                        fetch(id, ref)
+                        fetch(id, project)
                           .flatMap { v => projections.scheduleRestart(v.projection) }
                           .as(Offset.start)
                           .attemptNarrow[ElasticSearchViewRejection]
@@ -136,7 +131,7 @@ final class ElasticSearchIndexingRoutes(
                 },
                 // Get elasticsearch view mapping
                 (pathPrefix("_mapping") & get & pathEndOrSingleSlash) {
-                  emit(viewsQuery.mapping(id, ref).attemptNarrow[ElasticSearchViewRejection])
+                  emit(viewsQuery.mapping(id, project).attemptNarrow[ElasticSearchViewRejection])
                 }
               )
             }
@@ -160,7 +155,6 @@ object ElasticSearchIndexingRoutes {
       fetch: FetchIndexingView,
       projections: Projections,
       projectionErrors: ProjectionErrors,
-      schemeDirectives: DeltaSchemeDirectives,
       viewsQuery: ElasticSearchViewsQuery
   )(implicit
       baseUri: BaseUri,
@@ -174,7 +168,6 @@ object ElasticSearchIndexingRoutes {
       fetch,
       projections,
       projectionErrors,
-      schemeDirectives,
       viewsQuery
     ).routes
 }

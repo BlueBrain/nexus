@@ -74,7 +74,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => IO.none, _ => IO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
   private lazy val routes     =
     Route.seal(
       BlazegraphViewsRoutesHandler(
@@ -84,7 +84,6 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
           viewsQuery,
           identities,
           aclCheck,
-          groupDirectives,
           IndexingAction.noop
         )
       )

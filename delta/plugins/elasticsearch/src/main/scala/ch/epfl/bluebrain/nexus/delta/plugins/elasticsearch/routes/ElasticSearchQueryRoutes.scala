@@ -62,15 +62,15 @@ class ElasticSearchQueryRoutes(
               }
             )
           },
-          resolveProjectRef.apply { ref =>
-            projectContext(ref) { implicit pc =>
+          projectRef { project =>
+            projectContext(project) { implicit pc =>
               (searchParametersInProject & paginated) { (params, sort, page) =>
                 concat(
                   // List/aggregate all resources inside a project
                   pathEndOrSingleSlash {
                     concat(
-                      aggregate(ProjectSearch(ref, params)),
-                      list(ProjectSearch(ref, params, page, sort))
+                      aggregate(ProjectSearch(project, params)),
+                      list(ProjectSearch(project, params, page, sort))
                     )
                   },
                   idSegment { schema =>
@@ -79,13 +79,13 @@ class ElasticSearchQueryRoutes(
                       underscoreToOption(schema) match {
                         case None        =>
                           concat(
-                            aggregate(ProjectSearch(ref, params)),
-                            list(ProjectSearch(ref, params, page, sort))
+                            aggregate(ProjectSearch(project, params)),
+                            list(ProjectSearch(project, params, page, sort))
                           )
                         case Some(value) =>
                           concat(
-                            aggregate(ProjectSearch(ref, params, value)(fetchContext)),
-                            list(ProjectSearch(ref, params, page, sort, value)(fetchContext))
+                            aggregate(ProjectSearch(project, params, value)(fetchContext)),
+                            list(ProjectSearch(project, params, page, sort, value)(fetchContext))
                           )
                       }
                     }
@@ -123,12 +123,12 @@ class ElasticSearchQueryRoutes(
                 }
               )
             },
-            resolveProjectRef.apply { ref =>
-              projectContext(ref) { implicit pc =>
+            projectRef { project =>
+              projectContext(project) { implicit pc =>
                 // List all resources of type resourceSegment inside a project
                 (searchParametersInProject & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
                   val request =
-                    DefaultSearchRequest.ProjectSearch(ref, params, page, sort, resourceSchema)(fetchContext)
+                    DefaultSearchRequest.ProjectSearch(project, params, page, sort, resourceSchema)(fetchContext)
                   concat(
                     aggregate(request),
                     list(request)

@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -33,8 +33,6 @@ import io.circe.{Json, JsonObject}
   *   the elasticsearch views operations bundle
   * @param viewsQuery
   *   the elasticsearch views query operations bundle
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
@@ -43,7 +41,6 @@ final class ElasticSearchViewsRoutes(
     aclCheck: AclCheck,
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
-    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[ElasticSearchView]
 )(implicit
     baseUri: BaseUri,
@@ -55,22 +52,20 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives
     with RdfMarshalling {
 
-  import schemeDirectives._
-
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { ref =>
+        projectRef { project =>
           concat(
             pathEndOrSingleSlash {
               // Create an elasticsearch view without id segment
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
-                authorizeFor(ref, Write).apply {
+                authorizeFor(project, Write).apply {
                   emit(
                     Created,
                     views
-                      .create(ref, source)
-                      .flatTap(index(ref, _, mode))
+                      .create(project, source)
+                      .flatTap(index(project, _, mode))
                       .mapValue(_.metadata)
                       .attemptNarrow[ElasticSearchViewRejection]
                       .rejectWhen(decodingFailedOrViewNotFound)
@@ -84,15 +79,15 @@ final class ElasticSearchViewsRoutes(
                   concat(
                     // Create or update an elasticsearch view
                     put {
-                      authorizeFor(ref, Write).apply {
+                      authorizeFor(project, Write).apply {
                         (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                           case (None, source)      =>
                             // Create an elasticsearch view with id segment
                             emit(
                               Created,
                               views
-                                .create(id, ref, source)
-                                .flatTap(index(ref, _, mode))
+                                .create(id, project, source)
+                                .flatTap(index(project, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[ElasticSearchViewRejection]
                                 .rejectWhen(decodingFailedOrViewNotFound)
@@ -101,8 +96,8 @@ final class ElasticSearchViewsRoutes(
                             // Update a view
                             emit(
                               views
-                                .update(id, ref, rev, source)
-                                .flatTap(index(ref, _, mode))
+                                .update(id, project, rev, source)
+                                .flatTap(index(project, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[ElasticSearchViewRejection]
                                 .rejectWhen(decodingFailedOrViewNotFound)
@@ -112,11 +107,11 @@ final class ElasticSearchViewsRoutes(
                     },
                     // Deprecate an elasticsearch view
                     (delete & parameter("rev".as[Int])) { rev =>
-                      authorizeFor(ref, Write).apply {
+                      authorizeFor(project, Write).apply {
                         emit(
                           views
-                            .deprecate(id, ref, rev)
-                            .flatTap(index(ref, _, mode))
+                            .deprecate(id, project, rev)
+                            .flatTap(index(project, _, mode))
                             .mapValue(_.metadata)
                             .attemptNarrow[ElasticSearchViewRejection]
                             .rejectWhen(decodingFailedOrViewNotFound)
@@ -126,10 +121,12 @@ final class ElasticSearchViewsRoutes(
                     // Fetch an elasticsearch view
                     (get & idSegmentRef(id)) { id =>
                       emitOrFusionRedirect(
-                        ref,
+                        project,
                         id,
-                        authorizeFor(ref, Read).apply {
-                          emit(views.fetch(id, ref).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
+                        authorizeFor(project, Read).apply {
+                          emit(
+                            views.fetch(id, project).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound]
+                          )
                         }
                       )
                     }
@@ -137,11 +134,11 @@ final class ElasticSearchViewsRoutes(
                 },
                 // Undeprecate an elasticsearch view
                 (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
-                  authorizeFor(ref, Write).apply {
+                  authorizeFor(project, Write).apply {
                     emit(
                       views
-                        .undeprecate(id, ref, rev)
-                        .flatTap(index(ref, _, mode))
+                        .undeprecate(id, project, rev)
+                        .flatTap(index(project, _, mode))
                         .mapValue(_.metadata)
                         .attemptNarrow[ElasticSearchViewRejection]
                         .rejectWhen(decodingFailedOrViewNotFound)
@@ -151,15 +148,15 @@ final class ElasticSearchViewsRoutes(
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                    emit(viewsQuery.query(id, ref, query, qp).attemptNarrow[ElasticSearchViewRejection])
+                    emit(viewsQuery.query(id, project, query, qp).attemptNarrow[ElasticSearchViewRejection])
                   }
                 },
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                  authorizeFor(ref, Read).apply {
+                  authorizeFor(project, Read).apply {
                     emit(
                       views
-                        .fetch(id, ref)
+                        .fetch(id, project)
                         .map(_.value.source)
                         .attemptNarrow[ElasticSearchViewRejection]
                         .rejectOn[ViewNotFound]
@@ -169,10 +166,10 @@ final class ElasticSearchViewsRoutes(
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
                   concat(
                     // Fetch an elasticsearch view tags
-                    (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                    (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
                       emit(
                         views
-                          .fetch(id, ref)
+                          .fetch(id, project)
                           .map(_.value.tags)
                           .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]
@@ -180,13 +177,13 @@ final class ElasticSearchViewsRoutes(
                     },
                     // Tag an elasticsearch view
                     (post & parameter("rev".as[Int])) { rev =>
-                      authorizeFor(ref, Write).apply {
+                      authorizeFor(project, Write).apply {
                         entity(as[Tag]) { case Tag(tagRev, tag) =>
                           emit(
                             Created,
                             views
-                              .tag(id, ref, tag, tagRev, rev)
-                              .flatTap(index(ref, _, mode))
+                              .tag(id, project, tag, tagRev, rev)
+                              .flatTap(index(project, _, mode))
                               .mapValue(_.metadata)
                               .attemptNarrow[ElasticSearchViewRejection]
                               .rejectWhen(decodingFailedOrViewNotFound)
@@ -215,7 +212,6 @@ object ElasticSearchViewsRoutes {
       aclCheck: AclCheck,
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
-      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[ElasticSearchView]
   )(implicit
       baseUri: BaseUri,
@@ -228,7 +224,6 @@ object ElasticSearchViewsRoutes {
       aclCheck,
       views,
       viewsQuery,
-      schemeDirectives,
       index
     ).routes
 }

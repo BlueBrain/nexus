@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
@@ -26,13 +25,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.JsonObject
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
+class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
@@ -43,13 +41,6 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     FetchContextDummy[ElasticSearchViewRejection](
       Map(project.value.ref -> project.value.context),
       ElasticSearchViewRejection.ProjectContextRejection
-    )
-
-  private val groupDirectives =
-    DeltaSchemeDirectives(
-      fetchContextRejection,
-      ioFromMap(uuid -> projectRef.organization),
-      ioFromMap(uuid -> projectRef)
     )
 
   private val myId         = nxv + "myid"
@@ -109,7 +100,6 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
         fetchView,
         projections,
         projectionErrors,
-        groupDirectives,
         viewsQuery
       )
     )

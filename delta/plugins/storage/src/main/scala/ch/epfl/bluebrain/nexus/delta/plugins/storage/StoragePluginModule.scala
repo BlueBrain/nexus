@@ -259,14 +259,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         batchFiles: BatchFiles,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new BatchFilesRoutes(identities, aclCheck, batchFiles, schemeDirectives, indexingAction(_, _, _)(shift))(
+      new BatchFilesRoutes(identities, aclCheck, batchFiles, indexingAction(_, _, _)(shift))(
         baseUri,
         showLocation,
         cr,

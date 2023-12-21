@@ -49,12 +49,11 @@ object EventsModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         sseEventLog: SseEventLog,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, cr, ordering)
+      new EventsRoutes(identities, aclCheck, sseEventLog)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: EventsRoutes) =>

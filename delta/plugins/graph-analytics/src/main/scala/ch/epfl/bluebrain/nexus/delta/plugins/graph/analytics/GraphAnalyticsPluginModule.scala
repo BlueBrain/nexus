@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 
 /**
   * Graph analytics plugin wiring.
@@ -61,7 +60,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         graphAnalytics: GraphAnalytics,
         projections: Projections,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -72,7 +70,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         graphAnalytics,
         project => projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)),
-        schemeDirectives,
         viewsQuery
       )(
         baseUri,

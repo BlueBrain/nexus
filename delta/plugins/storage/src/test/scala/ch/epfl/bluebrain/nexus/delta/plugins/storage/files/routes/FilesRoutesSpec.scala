@@ -39,7 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
@@ -50,7 +49,6 @@ class FilesRoutesSpec
     with CancelAfterFailure
     with StorageFixtures
     with FileFixtures
-    with IOFromMap
     with CatsIOValues {
 
   import akka.actor.typed.scaladsl.adapter._
@@ -136,8 +134,7 @@ class FilesRoutesSpec
       remoteDiskStorageClient,
       clock
     )(uuidF, typedSystem)
-  private val groupDirectives                              =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+  private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)
   private lazy val routes                                  = routesWithIdentities(identities)
   private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(identities, aclCheck, files, groupDirectives, IndexingAction.noop))
@@ -475,9 +472,6 @@ class FilesRoutesSpec
     "fetch a file by rev and tag" in {
       givenATaggedFile(tag) { id =>
         val endpoints = List(
-          s"/v1/files/$uuid/$uuid/$id",
-          s"/v1/resources/$uuid/$uuid/_/$id",
-          s"/v1/resources/$uuid/$uuid/file/$id",
           s"/v1/files/org/proj/$id",
           s"/v1/resources/org/proj/_/$id",
           s"/v1/resources/org/proj/file/$id",
@@ -530,9 +524,6 @@ class FilesRoutesSpec
       givenATaggedFile(tag) { id =>
         val attr      = attributes(id)
         val endpoints = List(
-          s"/v1/files/$uuid/$uuid/$id",
-          s"/v1/resources/$uuid/$uuid/_/$id",
-          s"/v1/resources/$uuid/$uuid/file/$id",
           s"/v1/files/org/proj/$id",
           s"/v1/resources/org/proj/_/$id",
           s"/v1/files/org/proj/${encodeId(id)}",

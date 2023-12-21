@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives, FileResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -30,25 +30,20 @@ import io.circe.Json
   *   the identities module
   * @param aclCheck
   *   to check acls
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 class ArchiveRoutes(
     archives: Archives,
     identities: Identities,
-    aclCheck: AclCheck,
-    schemeDirectives: DeltaSchemeDirectives
+    aclCheck: AclCheck
 )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jko: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
-
-  import schemeDirectives._
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("archives") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { implicit project =>
+          projectRef { implicit project =>
             concat(
               // create an archive without an id
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>

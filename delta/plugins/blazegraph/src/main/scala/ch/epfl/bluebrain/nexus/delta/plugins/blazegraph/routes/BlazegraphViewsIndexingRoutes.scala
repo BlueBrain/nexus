@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -36,8 +36,7 @@ class BlazegraphViewsIndexingRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projections: Projections,
-    projectionErrors: ProjectionErrors,
-    schemeDirectives: DeltaSchemeDirectives
+    projectionErrors: ProjectionErrors
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -49,8 +48,6 @@ class BlazegraphViewsIndexingRoutes(
     with RdfMarshalling
     with BlazegraphViewsDirectives {
 
-  import schemeDirectives._
-
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
 
@@ -60,15 +57,15 @@ class BlazegraphViewsIndexingRoutes(
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { implicit ref =>
+        projectRef { implicit project =>
           idSegment { id =>
             concat(
               // Fetch a blazegraph view statistics
               (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                authorizeFor(ref, permissions.read).apply {
+                authorizeFor(project, permissions.read).apply {
                   emit(
-                    fetch(id, ref)
-                      .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
+                    fetch(id, project)
+                      .flatMap(v => projections.statistics(project, v.selectFilter, v.projection))
                       .attemptNarrow[BlazegraphViewRejection]
                       .rejectOn[ViewNotFound]
                   )
@@ -76,13 +73,13 @@ class BlazegraphViewsIndexingRoutes(
               },
               // Fetch blazegraph view indexing failures
               (pathPrefix("failures") & get) {
-                authorizeFor(ref, Write).apply {
+                authorizeFor(project, Write).apply {
                   (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
                     (pagination, timeRange, uri) =>
                       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
                         searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                       emit(
-                        fetch(id, ref)
+                        fetch(id, project)
                           .flatMap { view =>
                             projectionErrors.search(view.ref, pagination, timeRange)
                           }
@@ -96,18 +93,18 @@ class BlazegraphViewsIndexingRoutes(
               (pathPrefix("offset") & pathEndOrSingleSlash) {
                 concat(
                   // Fetch a blazegraph view offset
-                  (get & authorizeFor(ref, permissions.read)) {
+                  (get & authorizeFor(project, permissions.read)) {
                     emit(
-                      fetch(id, ref)
+                      fetch(id, project)
                         .flatMap(v => projections.offset(v.projection))
                         .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]
                     )
                   },
                   // Remove an blazegraph view offset (restart the view)
-                  (delete & authorizeFor(ref, Write)) {
+                  (delete & authorizeFor(project, Write)) {
                     emit(
-                      fetch(id, ref)
+                      fetch(id, project)
                         .flatMap { r => projections.scheduleRestart(r.projection) }
                         .as(Offset.start)
                         .attemptNarrow[BlazegraphViewRejection]
@@ -136,8 +133,7 @@ object BlazegraphViewsIndexingRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       projections: Projections,
-      projectionErrors: ProjectionErrors,
-      schemeDirectives: DeltaSchemeDirectives
+      projectionErrors: ProjectionErrors
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
@@ -149,8 +145,7 @@ object BlazegraphViewsIndexingRoutes {
       identities,
       aclCheck,
       projections,
-      projectionErrors: ProjectionErrors,
-      schemeDirectives
+      projectionErrors
     ).routes
   }
 }

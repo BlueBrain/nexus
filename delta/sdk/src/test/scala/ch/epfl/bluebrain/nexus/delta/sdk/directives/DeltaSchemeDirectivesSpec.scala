@@ -17,8 +17,6 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.{Inspectors, OptionValues}
 
-import java.util.UUID
-
 class DeltaSchemeDirectivesSpec
     extends RouteHelpers
     with CatsEffectSpec
@@ -37,10 +35,7 @@ class DeltaSchemeDirectivesSpec
   private val fetchContext = (_: ProjectRef) =>
     IO.pure(ProjectContext.unsafe(mappings, nxv.base, vocab, enforceSchema = false))
 
-  private val fetchOrgByUuid     = (_: UUID) => IO.none
-  private val fetchProjectByUuid = (_: UUID) => IO.none
-
-  private val schemeDirectives = new DeltaSchemeDirectives(fetchContext, fetchOrgByUuid, fetchProjectByUuid)
+  private val schemeDirectives = new DeltaSchemeDirectives(fetchContext)
 
   private val route: Route =
     (get & uriPrefix(baseUri.base)) {

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, OpticsValidators}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalactic.source.Position
@@ -101,23 +101,6 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
         response.status shouldEqual StatusCodes.OK
         validateProject(json, payload)
         validate(json, "Project", "projects", id, description, 1, projId)
-      }
-    }
-
-    "fetch project by UUID" in {
-      deltaClient.get[Json](s"/orgs/$orgId", Identity.ServiceAccount) { (orgJson, _) =>
-        runIO {
-          val orgUuid = _uuid.getOption(orgJson).value
-          deltaClient.get[Json](s"/projects/$id", Bojack) { (projectJson, _) =>
-            runIO {
-              val projectUuid = _uuid.getOption(projectJson).value
-              deltaClient.get[Json](s"/projects/$orgUuid/$projectUuid", Bojack) { (json, response) =>
-                response.status shouldEqual StatusCodes.OK
-                json shouldEqual projectJson
-              }
-            }
-          }
-        }
       }
     }
 

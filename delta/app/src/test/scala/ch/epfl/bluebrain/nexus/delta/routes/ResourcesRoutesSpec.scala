@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -32,14 +31,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, Printer}
 import org.scalatest.Assertion
 
 import java.util.UUID
 
-class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
+class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -118,11 +116,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
           IdentitiesDummy(callerReader, callerWriter),
           aclCheck,
           resources,
-          DeltaSchemeDirectives(
-            fetchContext,
-            ioFromMap(uuid -> projectRef.organization),
-            ioFromMap(uuid -> projectRef)
-          ),
           IndexingAction.noop
         )
       ),
@@ -509,9 +502,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         val endpoints = List(
           s"/v1/resources/myorg/myproject/$mySchema/$id?rev=1",
           s"/v1/resources/myorg/myproject/_/$id?rev=1",
-          s"/v1/resources/$uuid/$uuid/_/$id?rev=1",
-          s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag",
-          s"/v1/resources/$uuid/$uuid/_/$id?tag=$myTag"
+          s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag"
         )
         val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "Custom")
         forAll(endpoints) { endpoint =>
@@ -628,9 +619,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         val endpoints = List(
           s"/v1/resources/myorg/myproject/$mySchema/$id/source?rev=1&annotate=true",
           s"/v1/resources/myorg/myproject/_/$id/source?rev=1&annotate=true",
-          s"/v1/resources/$uuid/$uuid/_/$id/source?rev=1&annotate=true",
-          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag&annotate=true",
-          s"/v1/resources/$uuid/$uuid/_/$id/source?tag=$myTag&annotate=true"
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag&annotate=true"
         )
         val meta      = standardWriterMetadata(id, schema = schema1.id)
 
@@ -651,9 +640,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         val endpoints = List(
           s"/v1/resources/myorg/myproject/$mySchema/$id/source?rev=1",
           s"/v1/resources/myorg/myproject/_/$id/source?rev=1",
-          s"/v1/resources/$uuid/$uuid/_/$id/source?rev=1",
-          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag",
-          s"/v1/resources/$uuid/$uuid/_/$id/source?tag=$myTag"
+          s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {

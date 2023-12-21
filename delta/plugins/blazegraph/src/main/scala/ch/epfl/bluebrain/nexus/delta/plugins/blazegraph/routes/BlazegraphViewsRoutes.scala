@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -38,8 +38,6 @@ import io.circe.Json
   *   the identity module
   * @param aclCheck
   *   to check the acls
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
@@ -48,7 +46,6 @@ class BlazegraphViewsRoutes(
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     aclCheck: AclCheck,
-    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[BlazegraphView]
 )(implicit
     baseUri: BaseUri,
@@ -62,22 +59,20 @@ class BlazegraphViewsRoutes(
     with RdfMarshalling
     with BlazegraphViewsDirectives {
 
-  import schemeDirectives._
-
   def routes: Route =
     concat(
       pathPrefix("views") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { implicit ref =>
+          projectRef { implicit project =>
             // Create a view without id segment
             concat(
               (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
-                authorizeFor(ref, Write).apply {
+                authorizeFor(project, Write).apply {
                   emit(
                     Created,
                     views
-                      .create(ref, source)
-                      .flatTap(index(ref, _, mode))
+                      .create(project, source)
+                      .flatTap(index(project, _, mode))
                       .mapValue(_.metadata)
                       .attemptNarrow[BlazegraphViewRejection]
                       .rejectWhen(decodingFailedOrViewNotFound)
@@ -89,15 +84,15 @@ class BlazegraphViewsRoutes(
                   pathEndOrSingleSlash {
                     concat(
                       put {
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
                           (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a view with id segment
                               emit(
                                 Created,
                                 views
-                                  .create(id, ref, source)
-                                  .flatTap(index(ref, _, mode))
+                                  .create(id, project, source)
+                                  .flatTap(index(project, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
@@ -106,8 +101,8 @@ class BlazegraphViewsRoutes(
                               // Update a view
                               emit(
                                 views
-                                  .update(id, ref, rev, source)
-                                  .flatTap(index(ref, _, mode))
+                                  .update(id, project, rev, source)
+                                  .flatTap(index(project, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
@@ -117,11 +112,11 @@ class BlazegraphViewsRoutes(
                       },
                       (delete & parameter("rev".as[Int])) { rev =>
                         // Deprecate a view
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
                           emit(
                             views
-                              .deprecate(id, ref, rev)
-                              .flatTap(index(ref, _, mode))
+                              .deprecate(id, project, rev)
+                              .flatTap(index(project, _, mode))
                               .mapValue(_.metadata)
                               .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
@@ -131,12 +126,12 @@ class BlazegraphViewsRoutes(
                       // Fetch a view
                       (get & idSegmentRef(id)) { id =>
                         emitOrFusionRedirect(
-                          ref,
+                          project,
                           id,
-                          authorizeFor(ref, Read).apply {
+                          authorizeFor(project, Read).apply {
                             emit(
                               views
-                                .fetch(id, ref)
+                                .fetch(id, project)
                                 .attemptNarrow[BlazegraphViewRejection]
                                 .rejectOn[ViewNotFound]
                             )
@@ -147,11 +142,11 @@ class BlazegraphViewsRoutes(
                   },
                   // Undeprecate a blazegraph view
                   (put & pathPrefix("undeprecate") & parameter("rev".as[Int]) &
-                    authorizeFor(ref, Write) & pathEndOrSingleSlash) { rev =>
+                    authorizeFor(project, Write) & pathEndOrSingleSlash) { rev =>
                     emit(
                       views
-                        .undeprecate(id, ref, rev)
-                        .flatTap(index(ref, _, mode))
+                        .undeprecate(id, project, rev)
+                        .flatTap(index(project, _, mode))
                         .mapValue(_.metadata)
                         .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]
@@ -165,7 +160,7 @@ class BlazegraphViewsRoutes(
                         queryResponseType.apply { responseType =>
                           emit(
                             viewsQuery
-                              .query(id, ref, query, responseType)
+                              .query(id, project, query, responseType)
                               .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
                           )
@@ -176,10 +171,10 @@ class BlazegraphViewsRoutes(
                   (pathPrefix("tags") & pathEndOrSingleSlash) {
                     concat(
                       // Fetch tags for a view
-                      (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                      (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
                         emit(
                           views
-                            .fetch(id, ref)
+                            .fetch(id, project)
                             .map(_.value.tags)
                             .attemptNarrow[BlazegraphViewRejection]
                             .rejectOn[ViewNotFound]
@@ -187,13 +182,13 @@ class BlazegraphViewsRoutes(
                       },
                       // Tag a view
                       (post & parameter("rev".as[Int])) { rev =>
-                        authorizeFor(ref, Write).apply {
+                        authorizeFor(project, Write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
                               Created,
                               views
-                                .tag(id, ref, tag, tagRev, rev)
-                                .flatTap(index(ref, _, mode))
+                                .tag(id, project, tag, tagRev, rev)
+                                .flatTap(index(project, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[BlazegraphViewRejection]
                                 .rejectOn[ViewNotFound]
@@ -205,10 +200,10 @@ class BlazegraphViewsRoutes(
                   },
                   // Fetch a view original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                    authorizeFor(ref, Read).apply {
+                    authorizeFor(project, Read).apply {
                       emit(
                         views
-                          .fetch(id, ref)
+                          .fetch(id, project)
                           .map(_.value.source)
                           .attemptNarrow[BlazegraphViewRejection]
                           .rejectOn[ViewNotFound]
@@ -216,7 +211,7 @@ class BlazegraphViewsRoutes(
                     }
                   },
                   //Incoming/outgoing links for views
-                  incomingOutgoing(id, ref)
+                  incomingOutgoing(id, project)
                 )
               }
             )
@@ -226,11 +221,11 @@ class BlazegraphViewsRoutes(
       //Handle all other incoming and outgoing links
       pathPrefix(Segment) { segment =>
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { ref =>
+          projectRef { project =>
             // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
             consumeIdSegmentIf(segment == "resources") {
               idSegment { id =>
-                incomingOutgoing(id, ref)
+                incomingOutgoing(id, project)
               }
             }
           }
@@ -278,7 +273,6 @@ object BlazegraphViewsRoutes {
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       aclCheck: AclCheck,
-      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[BlazegraphView]
   )(implicit
       baseUri: BaseUri,
@@ -292,7 +286,6 @@ object BlazegraphViewsRoutes {
       viewsQuery,
       identities,
       aclCheck,
-      schemeDirectives,
       index
     ).routes
   }

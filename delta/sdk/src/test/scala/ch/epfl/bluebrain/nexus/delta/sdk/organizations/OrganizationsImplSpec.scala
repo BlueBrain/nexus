@@ -26,7 +26,7 @@ class OrganizationsImplSpec
     with CancelAfterFailure
     with ConfigFixtures {
 
-  private val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = OrganizationsConfig(eventLogConfig, pagination)
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)

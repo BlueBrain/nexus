@@ -32,13 +32,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
 import org.scalatest.Assertion
 
 import java.util.UUID
 
-class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromMap {
+class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
@@ -125,10 +124,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     serviceAccount,
     clock
   ).accepted
-  private val schemeDirectives =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+  private val schemeDirectives = DeltaSchemeDirectives(fetchContext)
 
-  private lazy val routes      =
+  private lazy val routes =
     Route.seal(
       StoragesRoutes(identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
     )
@@ -343,9 +341,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
 
     "fetch a storage by rev and tag" in {
       val endpoints = List(
-        s"/v1/storages/$uuid/$uuid/remote-disk-storage",
-        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage",
-        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage",
         "/v1/resources/myorg/myproject/_/remote-disk-storage",
         "/v1/resources/myorg/myproject/storage/remote-disk-storage",
@@ -369,9 +364,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
     "fetch a storage original payload" in {
       val expectedSource = remoteFieldsJson deepMerge json"""{"default": false}"""
       val endpoints      = List(
-        s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
-        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
-        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         "/v1/resources/myorg/myproject/_/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source",
@@ -387,7 +379,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromM
 
     "fetch a storage original payload by rev or tag" in {
       val endpoints = List(
-        s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
       )
