@@ -51,6 +51,7 @@ object SearchRejection {
   implicit val searchHttpResponseFields: HttpResponseFields[SearchRejection] =
     HttpResponseFields {
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case UnknownSuite(_)                        => StatusCodes.NotFound
       case _                                      => StatusCodes.BadRequest
     }
 }

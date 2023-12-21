@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -18,6 +20,8 @@ import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
 
 class SearchPluginModule(priority: Int) extends ModuleDef {
+
+  implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   make[SearchConfig].fromEffect { (cfg: Config) => SearchConfig.load(cfg) }
 
@@ -38,6 +42,12 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   }
   many[ScopeInitialization].ref[SearchScopeInitialization]
 
+  many[RemoteContextResolution].addEffect(
+    for {
+      suitesCtx <- ContextValue.fromFile("contexts/suites.json")
+    } yield RemoteContextResolution.fixed(contexts.suites -> suitesCtx)
+  )
+
   make[SearchRoutes].from {
     (
         identities: Identities,
@@ -47,7 +57,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson, config.suites)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>

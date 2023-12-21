@@ -41,6 +41,8 @@ object CompositeViewsGen {
       CompositeView(
         id,
         project,
+        None,
+        None,
         value.sources,
         value.projections,
         value.rebuildStrategy,
