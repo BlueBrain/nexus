@@ -10,13 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, UserPermissionsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -60,8 +58,6 @@ object AclsModule extends ModuleDef {
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }
-
-  many[SseEncoder[_]].add { base: BaseUri => AclEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/acls-metadata.json"))
 
