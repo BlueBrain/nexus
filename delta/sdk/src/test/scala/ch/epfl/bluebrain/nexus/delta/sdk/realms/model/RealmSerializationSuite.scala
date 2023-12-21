@@ -51,7 +51,7 @@ class RealmSerializationSuite extends SerializationSuite {
       endSessionEndpoint = Some(endSessionEndpoint),
       instant = instant,
       subject = subject
-    ) -> loadEvents("realms", "realm-created.json"),
+    ) -> loadDatabaseEvents("realms", "realm-created.json"),
     RealmUpdated(
       label = realm,
       rev = rev,
@@ -69,16 +69,16 @@ class RealmSerializationSuite extends SerializationSuite {
       endSessionEndpoint = Some(endSessionEndpoint),
       instant = instant,
       subject = subject
-    ) -> loadEvents("realms", "realm-updated.json"),
+    ) -> loadDatabaseEvents("realms", "realm-updated.json"),
     RealmDeprecated(
       label = realm,
       rev = rev,
       instant = instant,
       subject = subject
-    ) -> loadEvents("realms", "realm-deprecated.json")
+    ) -> loadDatabaseEvents("realms", "realm-deprecated.json")
   )
 
-  realmMapping.foreach { case (event, (database, _)) =>
+  realmMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(RealmEvent.serializer, event, database)
     }

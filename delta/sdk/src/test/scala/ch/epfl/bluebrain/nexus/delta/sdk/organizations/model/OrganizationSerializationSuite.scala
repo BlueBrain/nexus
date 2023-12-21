@@ -19,19 +19,15 @@ class OrganizationSerializationSuite extends SerializationSuite {
   val rev                 = 1
 
   private val orgsEventMapping = Map(
-    OrganizationCreated(org, orgUuid, 1, Some(description), instant, subject) -> loadEvents(
-      "organizations",
-      "org-created.json"
-    ),
-    OrganizationUpdated(org, orgUuid, 1, Some(description), instant, subject) -> loadEvents(
-      "organizations",
-      "org-updated.json"
-    ),
-    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> loadEvents("organizations", "org-deprecated.json"),
-    OrganizationUndeprecated(org, orgUuid, 1, instant, subject)               -> loadEvents("organizations", "org-undeprecated.json")
+    // format: off
+    OrganizationCreated(org, orgUuid, 1, Some(description), instant, subject) -> loadDatabaseEvents("organizations", "org-created.json"),
+    OrganizationUpdated(org, orgUuid, 1, Some(description), instant, subject) -> loadDatabaseEvents("organizations", "org-updated.json"),
+    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> loadDatabaseEvents("organizations", "org-deprecated.json"),
+    OrganizationUndeprecated(org, orgUuid, 1, instant, subject)               -> loadDatabaseEvents("organizations", "org-undeprecated.json")
+    // format: on
   )
 
-  orgsEventMapping.foreach { case (event, (database, _)) =>
+  orgsEventMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(OrganizationEvent.serializer, event, database)
     }

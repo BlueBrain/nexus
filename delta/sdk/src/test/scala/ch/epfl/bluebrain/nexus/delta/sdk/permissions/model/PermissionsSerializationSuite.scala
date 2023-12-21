@@ -17,13 +17,15 @@ class PermissionsSerializationSuite extends SerializationSuite {
   val anonymous: Subject       = Anonymous
 
   private val permissionsMapping = Map(
-    PermissionsAppended(rev, permSet, instant, subject)   -> loadEvents("permissions", "permissions-appended.json"),
-    PermissionsSubtracted(rev, permSet, instant, subject) -> loadEvents("permissions", "permissions-subtracted.json"),
-    PermissionsReplaced(rev, permSet, instant, subject)   -> loadEvents("permissions", "permissions-replaced.json"),
-    PermissionsDeleted(rev, instant, anonymous)           -> loadEvents("permissions", "permissions-deleted.json")
+    // format: off
+    PermissionsAppended(rev, permSet, instant, subject)   -> loadDatabaseEvents("permissions", "permissions-appended.json"),
+    PermissionsSubtracted(rev, permSet, instant, subject) -> loadDatabaseEvents("permissions", "permissions-subtracted.json"),
+    PermissionsReplaced(rev, permSet, instant, subject)   -> loadDatabaseEvents("permissions", "permissions-replaced.json"),
+    PermissionsDeleted(rev, instant, anonymous)           -> loadDatabaseEvents("permissions", "permissions-deleted.json")
+    // format: on
   )
 
-  permissionsMapping.foreach { case (event, (database, _)) =>
+  permissionsMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(PermissionsEvent.serializer, event, database)
     }

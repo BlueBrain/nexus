@@ -28,13 +28,13 @@ class AclSerializationSuite extends SerializationSuite {
     Acl(address, Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
 
   private val aclsMapping           = Map(
-    AclAppended(acl(root), rev, instant, subject)         -> loadEvents("acls", "acl-appended.json"),
-    AclSubtracted(acl(orgAddress), rev, instant, subject) -> loadEvents("acls", "acl-subtracted.json"),
-    AclReplaced(acl(projAddress), rev, instant, subject)  -> loadEvents("acls", "acl-replaced.json"),
-    AclDeleted(projAddress, rev, instant, anonymous)      -> loadEvents("acls", "acl-deleted.json")
+    AclAppended(acl(root), rev, instant, subject)         -> loadDatabaseEvents("acls", "acl-appended.json"),
+    AclSubtracted(acl(orgAddress), rev, instant, subject) -> loadDatabaseEvents("acls", "acl-subtracted.json"),
+    AclReplaced(acl(projAddress), rev, instant, subject)  -> loadDatabaseEvents("acls", "acl-replaced.json"),
+    AclDeleted(projAddress, rev, instant, anonymous)      -> loadDatabaseEvents("acls", "acl-deleted.json")
   )
 
-  aclsMapping.foreach { case (event, (database, _)) =>
+  aclsMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(AclEvent.serializer, event, database)
     }
