@@ -61,21 +61,6 @@ class EventsRoutes(
       extractCaller { implicit caller =>
         lastEventId { offset =>
           concat(
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              concat(
-                // SSE for all events
-                get {
-                  operationName(s"$prefixSegment/events") {
-                    authorizeFor(AclAddress.Root, events.read).apply {
-                      emit(sseEventLog.stream(offset))
-                    }
-                  }
-                },
-                (head & authorizeFor(AclAddress.Root, events.read)) {
-                  complete(OK)
-                }
-              )
-            },
             get {
               concat(
                 // SSE for all events with a given selector

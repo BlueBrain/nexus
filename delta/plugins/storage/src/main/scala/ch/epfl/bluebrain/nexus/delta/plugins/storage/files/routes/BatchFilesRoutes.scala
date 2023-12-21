@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{CopyFileDestination, File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, FileResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -32,7 +32,7 @@ final class BatchFilesRoutes(
     index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
-    storageConfig: StorageTypeConfig,
+    showLocation: ShowFileLocation,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -77,23 +77,4 @@ final class BatchFilesRoutes(
         EitherT.right(logger.error(e)(s"Bulk file copy operation failed for source $source and destination $dest"))
       )
       .value
-}
-
-object BatchFilesRoutes {
-
-  def apply(
-      config: StorageTypeConfig,
-      identities: Identities,
-      aclCheck: AclCheck,
-      batchFiles: BatchFiles,
-      index: IndexingAction.Execute[File]
-  )(implicit
-      baseUri: BaseUri,
-      cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
-  ): Route = {
-    implicit val storageTypeConfig: StorageTypeConfig = config
-    new BatchFilesRoutes(identities, aclCheck, batchFiles, index).routes
-  }
-
 }

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, FilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
@@ -60,6 +60,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
+
+  make[ShowFileLocation].from { cfg: StorageTypeConfig => cfg.showFileLocation }
 
   make[HttpClient].named("storage").from { (as: ActorSystem[Nothing]) =>
     HttpClient.noRetry(compression = false)(as.classicSystem)
@@ -230,7 +232,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[FilesRoutes].from {
     (
-        cfg: StoragePluginConfig,
+        showLocation: ShowFileLocation,
         identities: Identities,
         aclCheck: AclCheck,
         files: Files,
@@ -242,10 +244,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      val storageConfig = cfg.storages.storageTypeConfig
       new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
-        storageConfig,
+        showLocation,
         cr,
         ordering,
         fusionConfig
@@ -254,7 +255,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[BatchFilesRoutes].from {
     (
-        cfg: StoragePluginConfig,
+        showLocation: ShowFileLocation,
         identities: Identities,
         aclCheck: AclCheck,
         batchFiles: BatchFiles,
@@ -264,17 +265,16 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      val storageConfig = cfg.storages.storageTypeConfig
       new BatchFilesRoutes(identities, aclCheck, batchFiles, indexingAction(_, _, _)(shift))(
         baseUri,
-        storageConfig,
+        showLocation,
         cr,
         ordering
       )
   }
 
-  make[File.Shift].from { (files: Files, base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
-    File.shift(files)(base, storageTypeConfig)
+  make[File.Shift].from { (files: Files, base: BaseUri, showLocation: ShowFileLocation) =>
+    File.shift(files)(base, showLocation)
   }
 
   many[ResourceShift[_, _, _]].ref[File.Shift]
@@ -336,7 +336,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
   many[SseEncoder[_]].add { (base: BaseUri) => StorageEvent.sseEncoder(base) }
-  many[SseEncoder[_]].add { (base: BaseUri, config: StorageTypeConfig) => FileEvent.sseEncoder(base, config) }
+  many[SseEncoder[_]].add { (base: BaseUri, showLocation: ShowFileLocation) =>
+    FileEvent.sseEncoder(base, showLocation)
+  }
 
   many[ScopedEventMetricEncoder[_]].add { FileEvent.fileEventMetricEncoder }
   many[ScopedEventMetricEncoder[_]].add { () => StorageEvent.storageEventMetricEncoder }

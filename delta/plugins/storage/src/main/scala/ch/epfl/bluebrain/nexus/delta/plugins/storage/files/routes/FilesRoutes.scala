@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId, 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -59,7 +59,7 @@ final class FilesRoutes(
     index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
-    storageConfig: StorageTypeConfig,
+    showLocation: ShowFileLocation,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -262,7 +262,6 @@ object FilesRoutes {
     *   the [[Route]] for files
     */
   def apply(
-      config: StorageTypeConfig,
       identities: Identities,
       aclCheck: AclCheck,
       files: Files,
@@ -270,13 +269,11 @@ object FilesRoutes {
       index: IndexingAction.Execute[File]
   )(implicit
       baseUri: BaseUri,
+      showLocation: ShowFileLocation,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = {
-    implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
-  }
+  ): Route = new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)
   object LinkFile {

@@ -177,7 +177,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
   ): Route = {
     val aclCheck: AclCheck = AclSimpleCheck((user, AclAddress.fromProject(proj.ref), permissions)).accepted
     val identities         = IdentitiesDummy(Caller(user, Set(user)))
-    Route.seal(BatchFilesRoutes(config, identities, aclCheck, batchFiles, IndexingAction.noop))
+    Route.seal(new BatchFilesRoutes(identities, aclCheck, batchFiles, IndexingAction.noop).routes)
   }
 
   def callBulkCopyEndpoint(
