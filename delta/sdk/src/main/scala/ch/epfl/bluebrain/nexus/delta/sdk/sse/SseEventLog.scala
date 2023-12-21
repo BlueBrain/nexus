@@ -134,7 +134,7 @@ object SseEventLog {
             )
             .flatMap { entityTypes =>
               EventStreaming
-                .fetchAll(
+                .fetchScoped(
                   scope,
                   entityTypes,
                   offset,
