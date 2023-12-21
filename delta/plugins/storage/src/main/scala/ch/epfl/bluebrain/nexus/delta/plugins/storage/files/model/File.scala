@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -48,7 +48,7 @@ object File {
 
   final case class Metadata(tags: List[UserTag])
 
-  implicit def fileEncoder(implicit config: StorageTypeConfig): Encoder.AsObject[File] =
+  implicit def fileEncoder(implicit showLocation: ShowFileLocation): Encoder.AsObject[File] =
     Encoder.encodeJsonObject.contramapObject { file =>
       implicit val storageType: StorageType = file.storageType
       val storageJson                       = Json.obj(
@@ -59,7 +59,7 @@ object File {
       file.attributes.asJsonObject.add("_storage", storageJson)
     }
 
-  implicit def fileJsonLdEncoder(implicit config: StorageTypeConfig): JsonLdEncoder[File] =
+  implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)
 
   implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
@@ -71,7 +71,7 @@ object File {
 
   type Shift = ResourceShift[FileState, File, Metadata]
 
-  def shift(files: Files)(implicit baseUri: BaseUri, config: StorageTypeConfig): Shift =
+  def shift(files: Files)(implicit baseUri: BaseUri, showLocation: ShowFileLocation): Shift =
     ResourceShift.withMetadata[FileState, File, Metadata](
       Files.entityType,
       (ref, project) => files.fetch(FileId(ref, project)),

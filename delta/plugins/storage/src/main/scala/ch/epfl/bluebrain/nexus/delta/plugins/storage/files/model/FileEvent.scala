@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.JsonObjOps
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -327,7 +327,7 @@ object FileEvent {
         )
     }
 
-  def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") config: StorageTypeConfig): SseEncoder[FileEvent] =
+  def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") showLocation: ShowFileLocation): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
       override val databaseDecoder: Decoder[FileEvent] = serializer.codec
 

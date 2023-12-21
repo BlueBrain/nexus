@@ -182,7 +182,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
     // Does this endpoint need resolution by UUId? Do users need it?
     val groupDirectives    = DeltaSchemeDirectives(FetchContextDummy(Map(proj.ref -> proj.context)))
     val identities         = IdentitiesDummy(Caller(user, Set(user)))
-    Route.seal(BatchFilesRoutes(config, identities, aclCheck, batchFiles, groupDirectives, IndexingAction.noop))
+    Route.seal(new BatchFilesRoutes(identities, aclCheck, batchFiles, groupDirectives, IndexingAction.noop).routes)
   }
 
   def callBulkCopyEndpoint(
