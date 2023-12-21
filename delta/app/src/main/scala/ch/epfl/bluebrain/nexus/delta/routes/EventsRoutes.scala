@@ -43,18 +43,11 @@ class EventsRoutes(
 
   private def resolveSelector: Directive1[Label] =
     label.flatMap { l =>
-      if (sseEventLog.allSelectors.contains(l))
+      if (sseEventLog.selectors.contains(l))
         provide(l)
       else
         reject()
     }
-
-  private def resolveScopedSelector: Directive1[Label] = label.flatMap { l =>
-    if (sseEventLog.scopedSelectors.contains(l))
-      provide(l)
-    else
-      reject()
-  }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -77,7 +70,7 @@ class EventsRoutes(
                   }
                 },
                 // SSE for events with a given selector within a given organization
-                (resolveScopedSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
+                (resolveSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
                   operationName(s"$prefixSegment/$selector/{org}/events") {
                     concat(
                       authorizeFor(org, events.read).apply {
@@ -90,18 +83,17 @@ class EventsRoutes(
                   }
                 },
                 // SSE for events with a given selector within a given project
-                (resolveScopedSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) {
-                  (selector, project) =>
-                    concat(
-                      operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
-                        authorizeFor(project, events.read).apply {
-                          emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
-                        }
-                      },
-                      (head & authorizeFor(project, events.read)) {
-                        complete(OK)
+                (resolveSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) { (selector, project) =>
+                  concat(
+                    operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
+                      authorizeFor(project, events.read).apply {
+                        emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
                       }
-                    )
+                    },
+                    (head & authorizeFor(project, events.read)) {
+                      complete(OK)
+                    }
+                  )
                 }
               )
             }

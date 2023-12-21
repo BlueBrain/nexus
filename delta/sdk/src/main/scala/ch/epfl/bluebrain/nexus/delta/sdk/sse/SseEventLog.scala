@@ -85,14 +85,9 @@ trait SseEventLog {
   def streamBy(selector: Label, project: ProjectRef, offset: Offset): IO[ServerSentEventStream]
 
   /**
-    * Return all SSE selectors
-    */
-  def allSelectors: Set[Label]
-
-  /**
     * Returns SSE selectors related to ScopedEvents
     */
-  def scopedSelectors: Set[Label]
+  def selectors: Set[Label]
 }
 
 object SseEventLog {
@@ -126,11 +121,7 @@ object SseEventLog {
           .groupMap(_._1)(_._2)
           .map { case (k, v) => k -> v.toList }
 
-        override val allSelectors                                       = sseEncoders.flatMap(_.selectors)
-
-        override val scopedSelectors: Set[Label] = sseEncoders.flatMap { encoder =>
-          if (encoder.handlesScopedEvent) encoder.selectors else Set.empty
-        }
+        override val selectors: Set[Label]                              = sseEncoders.flatMap(_.selectors)
 
         private def stream(scope: Scope, selector: Option[Label], offset: Offset): Stream[IO, ServerSentEvent] = {
           Stream
@@ -170,7 +161,7 @@ object SseEventLog {
           fetchProject(project).as(stream(Scope.Project(project), Some(selector), offset))
       }
     }.flatTap { sseLog =>
-      logger.info(s"SseLog is configured with selectors: ${sseLog.allSelectors.mkString("'", "','", "'")}")
+      logger.info(s"SseLog is configured with selectors: ${sseLog.selectors.mkString("'", "','", "'")}")
     }
 
 }
