@@ -39,7 +39,8 @@ final case class File(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
-    tags: Tags
+    tags: Tags,
+    sourceFile: Option[ResourceRef]
 ) {
   def metadata: Metadata = Metadata(tags.tags)
 }
@@ -56,7 +57,7 @@ object File {
         keywords.tpe -> storageType.iri.asJson,
         "_rev"       -> file.storage.rev.asJson
       )
-      file.attributes.asJsonObject.add("_storage", storageJson)
+      file.attributes.asJsonObject.add("_storage", storageJson).add("_sourceFile", file.sourceFile.asJson)
     }
 
   implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =

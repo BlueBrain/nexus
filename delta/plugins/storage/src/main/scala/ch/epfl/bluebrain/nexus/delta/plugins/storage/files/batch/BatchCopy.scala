@@ -112,7 +112,7 @@ object BatchCopy {
     private def notEnoughSpace(totalSize: Long, spaceLeft: Long, destStorage: Iri) =
       IO.raiseError(TotalCopySizeTooLarge(totalSize, spaceLeft, destStorage))
 
-    private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller) = {
+    private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller): IO[(File, Storage)] = {
       for {
         file          <- fetchFile.fetch(id)
         sourceStorage <- fetchStorage.fetch(file.value.storage, id.project)

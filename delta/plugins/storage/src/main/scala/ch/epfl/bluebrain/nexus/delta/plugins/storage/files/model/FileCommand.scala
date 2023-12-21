@@ -65,7 +65,8 @@ object FileCommand {
       storageType: StorageType,
       attributes: FileAttributes,
       subject: Subject,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      sourceFile: Option[ResourceRef]
   ) extends FileCommand {
     override def rev: Int = 0
   }

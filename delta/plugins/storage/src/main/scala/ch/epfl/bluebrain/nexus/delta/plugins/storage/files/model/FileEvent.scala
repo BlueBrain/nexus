@@ -94,7 +94,8 @@ object FileEvent {
       rev: Int,
       instant: Instant,
       subject: Subject,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      sourceFile: Option[ResourceRef]
   ) extends FileEvent
 
   /**
