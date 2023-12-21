@@ -1,7 +1,7 @@
 data:{"action":"Create"}
-event:Project
+event:Projects
 id:1
 
 data:{"action":"Update"}
-event:Project
+event:Projects
 id:3

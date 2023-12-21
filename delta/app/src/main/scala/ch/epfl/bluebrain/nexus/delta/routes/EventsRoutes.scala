@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 /**
   * The global events route.
@@ -38,8 +37,6 @@ class EventsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
-
-  import baseUri.prefixSegment
 
   private def resolveSelector: Directive1[Label] =
     label.flatMap { l =>

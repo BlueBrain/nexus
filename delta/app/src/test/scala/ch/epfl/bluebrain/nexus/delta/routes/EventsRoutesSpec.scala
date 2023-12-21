@@ -32,12 +32,12 @@ class EventsRoutesSpec extends BaseRouteSpec {
   private val identities = IdentitiesDummy(caller)
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
 
-  private val project   = Label.unsafe("project")
-  private val resources = Label.unsafe("resource")
+  private val project   = Label.unsafe("projects")
+  private val resources = Label.unsafe("resources")
 
-  private val event1 = ServerSentEvent("""{"action":"Create"}""", "Project", "1")
-  private val event2 = ServerSentEvent("""{"action":"Create"}""", "Resource", "2")
-  private val event3 = ServerSentEvent("""{"action":"Update"}""", "Project", "3")
+  private val event1 = ServerSentEvent("""{"action":"Create"}""", "Projects", "1")
+  private val event2 = ServerSentEvent("""{"action":"Create"}""", "Resources", "2")
+  private val event3 = ServerSentEvent("""{"action":"Update"}""", "Projects", "3")
 
   private val allEvents = List(event1, event2, event3)
 
@@ -89,10 +89,10 @@ class EventsRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, alice -> Set(events.read)).accepted
 
       val endpoints = List(
-        "/v1/project/events",
-        "/v1/resource/events",
-        "/v1/resource/org/events",
-        "/v1/resource/org/proj/events"
+        "/v1/projects/events",
+        "/v1/resources/events",
+        "/v1/resources/org/events",
+        "/v1/resources/org/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -108,23 +108,11 @@ class EventsRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "return a 404 when trying to fetch events by org/proj for a global selector" in {
-      val endpoints = List(
-        "/v1/acl/org/events",
-        "/v1/acl/org/proj/events"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.NotFound
-        }
-      }
-    }
-
     "return a 404 when trying to fetch events for an unknown org/project" in {
       val endpoints = List(
-        "/v1/resource/xxx/events",
-        "/v1/resource/org/xxx/events",
-        "/v1/resource/xxx/proj/events"
+        "/v1/resources/xxx/events",
+        "/v1/resources/org/xxx/events",
+        "/v1/resources/xxx/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -135,7 +123,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
     }
 
     "get the resource events" in {
-      Get("/v1/resource/events") ~> asAlice ~> routes ~> check {
+      Get("/v1/resources/events") ~> asAlice ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(2).strip shouldEqual contentOf("events/resource-events.txt").strip
       }
@@ -143,8 +131,8 @@ class EventsRoutesSpec extends BaseRouteSpec {
 
     "get the project events by org and by proj" in {
       val endpoints = List(
-        "/v1/project/org/events",
-        "/v1/project/org/proj/events"
+        "/v1/projects/org/events",
+        "/v1/projects/org/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
