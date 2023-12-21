@@ -28,8 +28,16 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
 
   private val queryConfig = QueryConfig(10, RefreshStrategy.Stop)
 
-  private lazy val prStore = ScopedEventStore[Iri, PullRequestEvent](
+
+  private lazy val gitlabPrStore = ScopedEventStore[Iri, PullRequestEvent](
     PullRequest.entityType,
+    PullRequestEvent.serializer,
+    queryConfig,
+    xas
+  )
+
+  private lazy val githubPrStore = ScopedEventStore[Iri, PullRequestEvent](
+    EntityType("github"),
     PullRequestEvent.serializer,
     queryConfig,
     xas
@@ -38,6 +46,7 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
   private val id1 = nxv + "id1"
   private val id2 = nxv + "id2"
   private val id3 = nxv + "id3"
+  private val id4 = nxv + "id4"
 
   // Scoped events
   private val project1 = ProjectRef.unsafe("org", "proj1")
@@ -47,17 +56,19 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
   private val event2   = PullRequestCreated(id2, project2, Instant.EPOCH, Anonymous)
   private val event3   = PullRequestUpdated(id1, project1, 2, Instant.EPOCH, Anonymous)
   private val event4   = PullRequestCreated(id3, project3, Instant.EPOCH, Anonymous)
+  private val event5   = PullRequestCreated(id4, project3, Instant.EPOCH, Anonymous)
 
   private val prDecoder: Decoder[IdRev] = PullRequestEvent.serializer.codec.map { e => IdRev(e.id, e.rev) }
 
   implicit private val multiDecoder: MultiDecoder[IdRev] =
-    MultiDecoder(PullRequest.entityType -> prDecoder)
+    MultiDecoder(PullRequest.entityType -> prDecoder, EntityType("github") -> prDecoder)
 
   test("Save events") {
-    (prStore.unsafeSave(event1) >>
-      prStore.unsafeSave(event2) >>
-      prStore.unsafeSave(event3) >>
-      prStore.unsafeSave(event4)).transact(xas.write)
+    (gitlabPrStore.unsafeSave(event1) >>
+      gitlabPrStore.unsafeSave(event2) >>
+      gitlabPrStore.unsafeSave(event3) >>
+      gitlabPrStore.unsafeSave(event4) >>
+      githubPrStore.unsafeSave(event5)).transact(xas.write)
   }
 
   test("Get events of all types from the start") {
@@ -74,7 +85,8 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         Offset.at(1L) -> IdRev(id1, 1),
         Offset.at(2L) -> IdRev(id2, 1),
         Offset.at(3L) -> IdRev(id1, 2),
-        Offset.at(4L) -> IdRev(id3, 1)
+        Offset.at(4L) -> IdRev(id3, 1),
+        Offset.at(5L) -> IdRev(id4, 1)
       )
   }
 
@@ -90,7 +102,8 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
       .map { e => e.offset -> e.value }
       .assert(
         Offset.at(3L) -> IdRev(id1, 2),
-        Offset.at(4L) -> IdRev(id3, 1)
+        Offset.at(4L) -> IdRev(id3, 1),
+        Offset.at(5L) -> IdRev(id4, 1)
       )
   }
 
@@ -105,6 +118,21 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
       )
       .map { e => e.offset -> e.value }
       .assertEmpty
+  }
+
+  test("Events for github entity type") {
+    EventStreaming
+      .fetchScoped(
+        Scope.root,
+        List(EntityType("github")),
+        Offset.start,
+        queryConfig,
+        xas
+      )
+      .map { e => e.offset -> e.value }
+      .assert(
+        Offset.at(5L) -> IdRev(id4, 1)
+      )
   }
 
   test("Get events from project 1 from offset 1") {
