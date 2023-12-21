@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 
@@ -36,13 +35,12 @@ class DiskStorageSpec extends StorageSpec {
     val storage2Read  = s"$storName/read"
     val storage2Write = s"$storName/write"
 
-    val expectedStorage = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val expectedStorage          = storageResponse(projectRef, storId, "resources/read", "files/write")
     val expectedStorageWithPerms = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
 
     for {
       _ <- storagesDsl.createDiskStorageDefaultPerms(storId, projectRef)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
-      _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
       _ <- storagesDsl.createDiskStorageCustomPerms(storageId2, projectRef, storage2Read, storage2Write)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed

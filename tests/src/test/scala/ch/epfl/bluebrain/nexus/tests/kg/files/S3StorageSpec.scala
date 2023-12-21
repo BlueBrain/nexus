@@ -100,18 +100,16 @@ class S3StorageSpec extends StorageSpec {
       "writePermission" -> Json.fromString(s"$storName/write")
     )
 
-    val expectedStorage = storageResponse(projectRef, storId, "resources/read", "files/write")
-    val storageId2 = s"${storId}2"
+    val expectedStorage          = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val storageId2               = s"${storId}2"
     val expectedStorageWithPerms =
       storageResponse(projectRef, storageId2, "s3/read", "s3/write")
         .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
 
     for {
-      _         <- storagesDsl.createStorage(payload, projectRef)
-      _         <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
-      // TODO removing this the test still passes - maybe because permissions are passed on the payload?
-//      _         <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _         <- storagesDsl.createStorage(payload2, projectRef)
+      _ <- storagesDsl.createStorage(payload, projectRef)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      _ <- storagesDsl.createStorage(payload2, projectRef)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }

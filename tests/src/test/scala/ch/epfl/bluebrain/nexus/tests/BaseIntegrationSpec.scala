@@ -73,8 +73,8 @@ trait BaseIntegrationSpec
   val permissionDsl         = new PermissionDsl(deltaClient)
   val adminDsl              = new AdminDsl(deltaClient, config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
-  val filesDsl = new FilesDsl(deltaClient)
-  val storagesDsl = new StoragesDsl(deltaClient)
+  val filesDsl              = new FilesDsl(deltaClient)
+  val storagesDsl           = new StoragesDsl(deltaClient)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
