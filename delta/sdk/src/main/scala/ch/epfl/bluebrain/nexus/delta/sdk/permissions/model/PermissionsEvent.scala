@@ -1,22 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
-import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.Codec
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -114,39 +106,5 @@ object PermissionsEvent {
     implicit val configuration: Configuration            = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
     Serializer(_ => Permissions.id)
-  }
-
-  def sseEncoder(implicit base: BaseUri): SseEncoder[PermissionsEvent] = new SseEncoder[PermissionsEvent] {
-
-    override val databaseDecoder: Decoder[PermissionsEvent] = serializer.codec
-
-    override def entityType: EntityType = Permissions.entityType
-
-    override val selectors: Set[Label] = Set(Label.unsafe("permissions"))
-
-    @nowarn("cat=unused")
-    override val sseEncoder: Encoder.AsObject[PermissionsEvent] = {
-      val context                                         = ContextValue(contexts.metadata, contexts.permissions)
-      implicit val derivationConfiguration: Configuration =
-        Configuration(
-          transformMemberNames = {
-            case "rev"     => "_rev"
-            case "instant" => "_instant"
-            case "subject" => "_subject"
-            case other     => other
-          },
-          transformConstructorNames = identity,
-          useDefaults = false,
-          discriminator = Some(keywords.tpe),
-          strictDecoding = false
-        )
-      implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-      Encoder.encodeJsonObject.contramapObject { event =>
-        deriveConfiguredEncoder[PermissionsEvent]
-          .encodeObject(event)
-          .add("_permissionsId", ResourceUris.permissions.accessUri.asJson)
-          .add(keywords.context, context.value)
-      }
-    }
   }
 }

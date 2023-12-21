@@ -32,17 +32,14 @@ class EventsRoutesSpec extends BaseRouteSpec {
   private val identities = IdentitiesDummy(caller)
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acl       = Label.unsafe("acl")
-  private val project   = Label.unsafe("project")
+  private val project   = Label.unsafe("projects")
   private val resources = Label.unsafe("resources")
 
-  private val event1 = ServerSentEvent("""{"action":"Add"}""", "Acl", "1")
-  private val event2 = ServerSentEvent("""{"action":"Create"}""", "Project", "2")
-  private val event3 = ServerSentEvent("""{"action":"Create"}""", "Resource", "3")
-  private val event4 = ServerSentEvent("""{"action":"Update"}""", "Project", "4")
-  private val event5 = ServerSentEvent("""{"action":"Remove"}""", "Acl", "5")
+  private val event1 = ServerSentEvent("""{"action":"Create"}""", "Projects", "1")
+  private val event2 = ServerSentEvent("""{"action":"Create"}""", "Resources", "2")
+  private val event3 = ServerSentEvent("""{"action":"Update"}""", "Projects", "3")
 
-  private val allEvents = List(event1, event2, event3, event4, event5)
+  private val allEvents = List(event1, event2, event3)
 
   private val sseEventLog = new SseEventLog {
 
@@ -75,9 +72,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
     ): IO[ServerSentEventStream] =
       IO.raiseWhen(project != projectRef)(ProjectNotFound(project)).as(streamBy(selector, offset))
 
-    override def allSelectors: Set[Label] = Set(acl, project, resources)
-
-    override def scopedSelectors: Set[Label] = Set(project, resources)
+    override def selectors: Set[Label] = Set(project, resources)
   }
 
   private val routes = Route.seal(
@@ -94,8 +89,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, alice -> Set(events.read)).accepted
 
       val endpoints = List(
-        "/v1/acl/events",
-        "/v1/project/events",
+        "/v1/projects/events",
         "/v1/resources/events",
         "/v1/resources/org/events",
         "/v1/resources/org/proj/events"
@@ -114,23 +108,11 @@ class EventsRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "return a 404 when trying to fetch events by org/proj for a global selector" in {
-      val endpoints = List(
-        "/v1/acl/org/events",
-        "/v1/acl/org/proj/events"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.NotFound
-        }
-      }
-    }
-
     "return a 404 when trying to fetch events for an unknown org/project" in {
       val endpoints = List(
-        "/v1/resource/xxx/events",
-        "/v1/resource/org/xxx/events",
-        "/v1/resource/xxx/proj/events"
+        "/v1/resources/xxx/events",
+        "/v1/resources/org/xxx/events",
+        "/v1/resources/xxx/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -140,23 +122,23 @@ class EventsRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "get the acl events" in {
-      Get("/v1/acl/events") ~> asAlice ~> routes ~> check {
+    "get the resource events" in {
+      Get("/v1/resources/events") ~> asAlice ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(2).strip shouldEqual contentOf("events/acl-events.txt").strip
+        chunksStream.asString(2).strip shouldEqual contentOf("events/resource-events.txt").strip
       }
     }
 
     "get the project events by org and by proj" in {
       val endpoints = List(
-        "/v1/project/org/events",
-        "/v1/project/org/proj/events"
+        "/v1/projects/org/events",
+        "/v1/projects/org/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("3") ~> asAlice ~> routes ~> check {
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> asAlice ~> routes ~> check {
           mediaType shouldBe MediaTypes.`text/event-stream`
-          chunksStream.asString(1).strip shouldEqual contentOf("events/project-events.txt").strip
+          chunksStream.asString(2).strip shouldEqual contentOf("events/project-events.txt").strip
         }
       }
     }

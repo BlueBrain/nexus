@@ -2,19 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.{Decoder, Encoder, JsonObject}
 
-import scala.reflect.ClassTag
-
-abstract class SseEncoder[E <: Event](implicit c: ClassTag[E]) {
+abstract class SseEncoder[E <: ScopedEvent] {
   def databaseDecoder: Decoder[E]
 
   def entityType: EntityType
-
-  def handlesScopedEvent: Boolean = classOf[ScopedEvent].isAssignableFrom(c.runtimeClass)
 
   def selectors: Set[Label]
 

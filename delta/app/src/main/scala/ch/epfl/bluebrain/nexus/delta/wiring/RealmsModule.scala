@@ -14,10 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -55,8 +53,6 @@ object RealmsModule extends ModuleDef {
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing]) =>
     HttpClient.noRetry(compression = false)(as.classicSystem)
   }
-
-  many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/realms-metadata.json"))
 

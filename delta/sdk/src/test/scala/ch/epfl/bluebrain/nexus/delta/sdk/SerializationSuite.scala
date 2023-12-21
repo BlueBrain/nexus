@@ -39,6 +39,9 @@ abstract class SerializationSuite
   def loadEvents(module: String, fileName: String): (Json, JsonObject) =
     (jsonContentOf(s"$module/database/$fileName"), jsonObjectContentOf(s"$module/sse/$fileName"))
 
+  def loadDatabaseEvents(module: String, fileName: String): Json =
+    jsonContentOf(s"$module/database/$fileName")
+
   private def generateOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value) =
     parse(serializer.printer.print(serializer.codec(obtained)))
       .getOrElse(fail(s"$obtained could not be parsed back as a json"))
