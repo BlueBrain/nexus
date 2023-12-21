@@ -6,7 +6,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
@@ -16,14 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitializ
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
 import io.circe.Json
 import org.scalactic.source.Position
 
 import java.util.UUID
 
-class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
+class OrganizationsRoutesSpec extends BaseRouteSpec {
 
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
@@ -31,7 +29,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
-  private val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = OrganizationsConfig(eventLogConfig, pagination)
 
   private val aopd = new OwnerPermissionsScopeInitialization(
     acl => aclChecker.append(acl),
@@ -67,8 +65,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
       identities,
       orgs,
       orgDeleter,
-      aclChecker,
-      DeltaSchemeDirectives.onlyResolveOrgUuid(ioFromMap(fixedUuid -> org1.label))
+      aclChecker
     )
   )
 
@@ -146,22 +143,8 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
-    "fetch an organization by UUID" in {
-      Get(s"/v1/orgs/$fixedUuid") ~> as(userWithReadPermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual org1Updated
-      }
-    }
-
     "fetch an organization by label and rev" in {
       Get("/v1/orgs/org1?rev=1") ~> as(userWithReadPermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual org1Created
-      }
-    }
-
-    "fetch an organization by UUID and rev" in {
-      Get(s"/v1/orgs/$fixedUuid?rev=1") ~> as(userWithReadPermission) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual org1Created
       }

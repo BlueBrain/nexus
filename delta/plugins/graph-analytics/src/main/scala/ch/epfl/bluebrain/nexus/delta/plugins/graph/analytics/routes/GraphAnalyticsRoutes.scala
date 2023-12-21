@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -30,46 +30,42 @@ import io.circe.JsonObject
   *   analytics the graph analytics module
   * @param fetchStatistics
   *   how to fetch the statistics for the graph analytics for a given project
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 class GraphAnalyticsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     graphAnalytics: GraphAnalytics,
     fetchStatistics: ProjectRef => IO[ProgressStatistics],
-    schemeDirectives: DeltaSchemeDirectives,
     viewsQuery: GraphAnalyticsViewsQuery
 )(implicit baseUri: BaseUri, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
-  import schemeDirectives._
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("graph-analytics") {
         extractCaller { implicit caller =>
-          resolveProjectRef { projectRef =>
+          projectRef { project =>
             concat(
               get {
                 concat(
                   // Fetch relationships
                   (pathPrefix("relationships") & pathEndOrSingleSlash) {
-                    authorizeFor(projectRef, Read).apply {
-                      emit(graphAnalytics.relationships(projectRef))
+                    authorizeFor(project, Read).apply {
+                      emit(graphAnalytics.relationships(project))
                     }
                   },
                   // Fetch properties for a type
                   (pathPrefix("properties") & idSegment & pathEndOrSingleSlash) { tpe =>
-                    authorizeFor(projectRef, Read).apply {
-                      emit(graphAnalytics.properties(projectRef, tpe))
+                    authorizeFor(project, Read).apply {
+                      emit(graphAnalytics.properties(project, tpe))
                     }
                   },
                   // Fetch the statistics
                   (pathPrefix("statistics") & pathEndOrSingleSlash) {
-                    authorizeFor(projectRef, Read).apply {
-                      emit(fetchStatistics(projectRef))
+                    authorizeFor(project, Read).apply {
+                      emit(fetchStatistics(project))
                     }
                   }
                 )
@@ -77,9 +73,9 @@ class GraphAnalyticsRoutes(
               post {
                 // Search a graph analytics view
                 (pathPrefix("_search") & pathEndOrSingleSlash) {
-                  authorizeFor(projectRef, query).apply {
+                  authorizeFor(project, query).apply {
                     (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                      emit(viewsQuery.query(projectRef, query, qp))
+                      emit(viewsQuery.query(project, query, qp))
                     }
                   }
                 }

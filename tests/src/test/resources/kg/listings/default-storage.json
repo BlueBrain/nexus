@@ -22,7 +22,8 @@
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "name" : "Local storage"
+      "name" : "Local storage",
+      "description": "Local storage of the Nexus service."
     }
   ]
 }

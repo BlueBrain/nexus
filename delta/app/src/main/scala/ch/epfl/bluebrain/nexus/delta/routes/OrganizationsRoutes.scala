@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -42,15 +42,12 @@ import scala.annotation.nowarn
   *   the organizations operations bundle
   * @param aclCheck
   *   verify the acl for users
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 final class OrganizationsRoutes(
     identities: Identities,
     organizations: Organizations,
     orgDeleter: OrganizationDeleter,
-    aclCheck: AclCheck,
-    schemeDirectives: DeltaSchemeDirectives
+    aclCheck: AclCheck
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -60,7 +57,6 @@ final class OrganizationsRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  import schemeDirectives._
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
@@ -104,7 +100,7 @@ final class OrganizationsRoutes(
                   )
                 }
             },
-            resolveOrg { org =>
+            label.apply { org =>
               concat(
                 pathEndOrSingleSlash {
                   operationName(s"$prefixSegment/orgs/{label}") {
@@ -200,14 +196,13 @@ object OrganizationsRoutes {
       identities: Identities,
       organizations: Organizations,
       orgDeleter: OrganizationDeleter,
-      aclCheck: AclCheck,
-      schemeDirectives: DeltaSchemeDirectives
+      aclCheck: AclCheck
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives).routes
+    new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck).routes
 
 }

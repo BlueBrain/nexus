@@ -7,12 +7,10 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -20,14 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import fs2.Stream
 
-import java.util.UUID
-
-class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
-
-  private val uuid = UUID.randomUUID()
+class EventsRoutesSpec extends BaseRouteSpec {
 
   private val projectRef = ProjectRef.unsafe("org", "proj")
 
@@ -53,7 +46,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val sseEventLog = new SseEventLog {
 
-    override def stream(offset: Offset): ServerSentEventStream = offset match {
+    def stream(offset: Offset): ServerSentEventStream = offset match {
       case Start     => Stream.emits(allEvents)
       case At(value) =>
         Stream.emits(allEvents).filter(_.id.exists(_.toLongOption.exists(_ > value)))
@@ -91,12 +84,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     EventsRoutes(
       identities,
       aclCheck,
-      sseEventLog,
-      DeltaSchemeDirectives(
-        FetchContextDummy.empty,
-        ioFromMap(uuid -> projectRef.organization),
-        ioFromMap(uuid -> projectRef)
-      )
+      sseEventLog
     )
   )
 
@@ -105,19 +93,12 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to get the events stream without events/read permission" in {
       aclCheck.append(AclAddress.Root, alice -> Set(events.read)).accepted
 
-      Head("/v1/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
       val endpoints = List(
-        "/v1/events",
         "/v1/acl/events",
         "/v1/project/events",
         "/v1/resources/events",
         "/v1/resources/org/events",
-        s"/v1/resources/$uuid/events",
-        "/v1/resources/org/proj/events",
-        s"/v1/resources/$uuid/$uuid/events"
+        "/v1/resources/org/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -136,9 +117,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "return a 404 when trying to fetch events by org/proj for a global selector" in {
       val endpoints = List(
         "/v1/acl/org/events",
-        s"/v1/acl/$uuid/events",
-        "/v1/acl/org/proj/events",
-        s"/v1/acl/$uuid/$uuid/events"
+        "/v1/acl/org/proj/events"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
@@ -151,22 +130,13 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
       val endpoints = List(
         "/v1/resource/xxx/events",
         "/v1/resource/org/xxx/events",
-        "/v1/resource/xxx/proj/events",
-        s"/v1/resource/$uuid/xxx/events",
-        s"/v1/resource/xxx/$uuid/events"
+        "/v1/resource/xxx/proj/events"
       )
 
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asAlice ~> `Last-Event-ID`("2") ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
         }
-      }
-    }
-
-    "get the events stream for all events" in {
-      Get("/v1/events") ~> asAlice ~> routes ~> check {
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(5).strip shouldEqual contentOf("events/eventstream-0-5.txt").strip
       }
     }
 
@@ -188,18 +158,6 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
           mediaType shouldBe MediaTypes.`text/event-stream`
           chunksStream.asString(1).strip shouldEqual contentOf("events/project-events.txt").strip
         }
-      }
-    }
-
-    "check access to all SSEs" in {
-      Head("/v1/events") ~> asAlice ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "check access to 'org/proj' SSEs" in {
-      Head("/v1/events") ~> asAlice ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
       }
     }
 

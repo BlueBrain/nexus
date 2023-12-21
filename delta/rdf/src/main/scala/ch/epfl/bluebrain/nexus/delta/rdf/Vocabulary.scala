@@ -239,6 +239,7 @@ object Vocabulary {
     val shacl                 = contexts + "shacl-20170720.json"
     val statistics            = contexts + "statistics.json"
     val supervision           = contexts + "supervision.json"
+    val suites                = contexts + "suites.json"
     val tags                  = contexts + "tags.json"
     val validation            = contexts + "validation.json"
     val version               = contexts + "version.json"

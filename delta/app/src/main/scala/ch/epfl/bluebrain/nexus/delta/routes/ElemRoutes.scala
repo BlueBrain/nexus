@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -49,7 +50,7 @@ class ElemRoutes(
       extractCaller { implicit caller =>
         lastEventId { offset =>
           pathPrefix("elems") {
-            resolveProjectRef { project =>
+            projectRef { project =>
               authorizeFor(project, events.read).apply {
                 (parameter("tag".as[UserTag].?) & types(project)) { (tag, types) =>
                   concat(

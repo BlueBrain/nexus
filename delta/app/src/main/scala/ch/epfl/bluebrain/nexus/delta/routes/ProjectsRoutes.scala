@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -39,16 +39,13 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
   *   the projects module
   * @param projectsStatistics
   *   the statistics by project
-  * @param schemeDirectives
-  *   directives related to orgs and projects
   */
 final class ProjectsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projects: Projects,
     projectsStatistics: ProjectsStatistics,
-    projectProvisioning: ProjectProvisioning,
-    schemeDirectives: DeltaSchemeDirectives
+    projectProvisioning: ProjectProvisioning
 )(implicit
     baseUri: BaseUri,
     config: ProjectsConfig,
@@ -59,7 +56,6 @@ final class ProjectsRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  import schemeDirectives._
 
   implicit val paginationConfig: PaginationConfig = config.pagination
 
@@ -100,7 +96,7 @@ final class ProjectsRoutes(
                 emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
               }
             },
-            resolveProjectRef.apply { project =>
+            projectRef.apply { project =>
               concat(
                 operationName(s"$prefixSegment/projects/{org}/{project}") {
                   concat(
@@ -204,8 +200,7 @@ object ProjectsRoutes {
       aclCheck: AclCheck,
       projects: Projects,
       projectsStatistics: ProjectsStatistics,
-      projectProvisioning: ProjectProvisioning,
-      schemeDirectives: DeltaSchemeDirectives
+      projectProvisioning: ProjectProvisioning
   )(implicit
       baseUri: BaseUri,
       config: ProjectsConfig,
@@ -213,6 +208,6 @@ object ProjectsRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route =
-    new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives).routes
+    new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning).routes
 
 }

@@ -1,15 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsGen
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.Main
@@ -17,10 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBra
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris, expectIndexingView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -40,9 +36,6 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
-
-  private val fetchContext    = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => IO.none, _ => IO.none)
 
   private val myId         = nxv + "myid"
   private val view         = CompositeViewsGen.resourceFor(projectRef, myId, uuid, viewValue, source = Json.obj())
@@ -68,7 +61,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
   private def lastRestart = restartStore.last(ViewRef(project.ref, myId)).map(_.flatMap(_.toOption)).accepted
 
   private val details: CompositeIndexingDetails = new CompositeIndexingDetails(
-    (_) =>
+    _ =>
       IO.pure(
         CompositeProgress(
           Map(
@@ -92,8 +85,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         expandOnlyIris,
         details,
         projections,
-        projectionErrors,
-        groupDirectives
+        projectionErrors
       )
     )
 
@@ -238,30 +230,8 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "return no failures without write permission" in {
-      val endpoints = List(
-        s"$viewEndpoint/failures",
-        s"$viewEndpoint/failures/sse"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
-          response.shouldBeForbidden
-        }
-      }
-    }
-
-    "return all failures as SSE when no LastEventID is provided" in {
-      Get(s"$viewEndpoint/failures/sse") ~> asWriter ~> routes ~> check {
-        response.status shouldBe StatusCodes.OK
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
-      }
-    }
-
-    "return failures as SSE only from the given LastEventID" in {
-      Get(s"$viewEndpoint/failures/sse") ~> asWriter ~> `Last-Event-ID`("1") ~> routes ~> check {
-        response.status shouldBe StatusCodes.OK
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
+      Get(s"$viewEndpoint/failures") ~> asReader ~> routes ~> check {
+        response.shouldBeForbidden
       }
     }
 

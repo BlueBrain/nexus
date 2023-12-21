@@ -25,23 +25,6 @@ trait ProjectionErrors {
   def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit]
 
   /**
-    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
-    * offset.
-    *
-    * @param projectionProject
-    *   the project the projection belongs to
-    * @param projectionId
-    *   IRI of the projection
-    * @param offset
-    *   failed elem offset
-    */
-  def failedElemEntries(
-      projectionProject: ProjectRef,
-      projectionId: Iri,
-      offset: Offset
-  ): Stream[IO, FailedElemLogRow]
-
-  /**
     * Get available failed elem entries for a given projection by projection name, starting from a failed elem offset.
     *
     * @param projectionName
@@ -94,12 +77,6 @@ object ProjectionErrors {
 
       override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit] =
         store.save(metadata, failures)
-
-      override def failedElemEntries(
-          projectionProject: ProjectRef,
-          projectionId: Iri,
-          offset: Offset
-      ): Stream[IO, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
 
       override def failedElemEntries(projectionName: String, offset: Offset): Stream[IO, FailedElemLogRow] =
         store.stream(projectionName, offset)

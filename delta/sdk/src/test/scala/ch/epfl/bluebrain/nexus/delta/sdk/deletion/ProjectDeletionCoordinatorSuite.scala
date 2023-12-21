@@ -45,7 +45,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
 
   private val deletionEnabled  = deletionConfig
   private val deletionDisabled = deletionConfig.copy(enabled = false)
-  private val config           = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionEnabled)
+  private val config           = ProjectsConfig(eventLogConfig, pagination, deletionEnabled)
 
   private val projectFixture = createProjectsFixture(fetchOrg, defaultApiMappings, config, clock)
 

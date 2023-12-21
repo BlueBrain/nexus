@@ -202,7 +202,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: ElasticSearchViews,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         viewsQuery: ElasticSearchViewsQuery,
         shift: ElasticSearchView.Shift,
@@ -216,7 +215,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         viewsQuery,
-        schemeDirectives,
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
@@ -262,7 +260,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views: ElasticSearchViews,
         projections: Projections,
         projectionErrors: ProjectionErrors,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
@@ -275,7 +272,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views.fetchIndexingView(_, _),
         projections,
         projectionErrors,
-        schemeDirectives,
         viewsQuery
       )(
         baseUri,

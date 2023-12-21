@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentType, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import io.circe.{Decoder, Encoder}
@@ -73,13 +73,11 @@ object FileAttributes {
 
   implicit def fileAttributesEncoder(implicit
       storageType: StorageType,
-      config: StorageTypeConfig
+      showLocation: ShowFileLocation
   ): Encoder.AsObject[FileAttributes] =
     Encoder.encodeJsonObject.contramapObject { attributes =>
       val obj = deriveConfiguredEncoder[FileAttributes].encodeObject(attributes)
-      if (!config.get(storageType).exists(_.showLocation))
-        obj.removeAllKeys("_location", "_path")
-      else
-        obj.remove("_path")
+      if (showLocation.types.contains(storageType)) obj.remove("_path")
+      else obj.removeAllKeys("_location", "_path")
     }
 }

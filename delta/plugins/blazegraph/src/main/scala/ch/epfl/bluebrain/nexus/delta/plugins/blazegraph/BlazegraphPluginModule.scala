@@ -197,7 +197,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         shift: BlazegraphView.Shift,
         baseUri: BaseUri,
@@ -211,7 +210,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         identities,
         aclCheck,
-        schemeDirectives,
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
@@ -229,7 +227,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views: BlazegraphViews,
         projections: Projections,
         projectionErrors: ProjectionErrors,
-        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -240,8 +237,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         projections,
-        projectionErrors,
-        schemeDirectives
+        projectionErrors
       )(
         baseUri,
         cr,

@@ -53,7 +53,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
 
   private val order = ResourceF.sortBy[Project]("_label").value
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
+  private val config = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
 
   private def fetchOrg: FetchOrganization = {
     case `org1`          => IO.pure(Organization(org1, orgUuid, None))

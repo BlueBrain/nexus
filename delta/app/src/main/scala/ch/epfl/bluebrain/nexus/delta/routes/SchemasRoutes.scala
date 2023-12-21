@@ -84,7 +84,7 @@ final class SchemasRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl)) {
       pathPrefix("schemas") {
         extractCaller { implicit caller =>
-          (resolveProjectRef & indexingMode) { (ref, mode) =>
+          (projectRef & indexingMode) { (ref, mode) =>
             def index(schema: SchemaResource): IO[Unit] = indexAction(schema.value.project, schema, mode)
             concat(
               // Create a schema without id segment

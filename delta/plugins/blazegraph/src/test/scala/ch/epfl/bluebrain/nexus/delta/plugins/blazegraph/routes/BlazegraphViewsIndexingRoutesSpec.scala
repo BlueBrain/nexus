@@ -1,20 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{InvalidResourceId, ProjectContextRejection, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{InvalidResourceId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsIndexingRoutes.FetchIndexingView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -23,28 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures with IOFromMap {
+class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures {
 
   private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
-
-  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
-    Map(project.ref -> project.context),
-    Set(deprecatedProject.ref),
-    ProjectContextRejection
-  )
-
-  private val groupDirectives =
-    DeltaSchemeDirectives(
-      fetchContext,
-      ioFromMap(uuid -> projectRef.organization),
-      ioFromMap(uuid -> projectRef)
-    )
 
   private val myId         = nxv + "myid"
   private val indexingView = ActiveViewDef(
@@ -74,8 +57,7 @@ class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures wit
         identities,
         aclCheck,
         projections,
-        projectionErrors,
-        groupDirectives
+        projectionErrors
       )
     )
 
@@ -165,32 +147,8 @@ class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures wit
 
   "return no blazegraph projection failures without write permission" in {
     aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-
-    val endpoints = List(
-      s"$viewEndpoint/failures",
-      s"$viewEndpoint/failures/sse"
-    )
-    forAll(endpoints) { endpoint =>
-      Get(endpoint) ~> routes ~> check {
-        response.shouldBeForbidden
-      }
-    }
-  }
-
-  "return all failures as SSE when no LastEventID is provided" in {
-    aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-    Get(s"$viewEndpoint/failures/sse") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
-    }
-  }
-
-  "return failures as SSE only from the given LastEventID" in {
-    Get(s"$viewEndpoint/failures/sse") ~> `Last-Event-ID`("1") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
+    Get(s"$viewEndpoint/failures") ~> routes ~> check {
+      response.shouldBeForbidden
     }
   }
 

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
@@ -27,13 +25,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.JsonObject
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
+class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
@@ -44,13 +41,6 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     FetchContextDummy[ElasticSearchViewRejection](
       Map(project.value.ref -> project.value.context),
       ElasticSearchViewRejection.ProjectContextRejection
-    )
-
-  private val groupDirectives =
-    DeltaSchemeDirectives(
-      fetchContextRejection,
-      ioFromMap(uuid -> projectRef.organization),
-      ioFromMap(uuid -> projectRef)
     )
 
   private val myId         = nxv + "myid"
@@ -110,7 +100,6 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
         fetchView,
         projections,
         projectionErrors,
-        groupDirectives,
         viewsQuery
       )
     )
@@ -200,32 +189,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
 
   "return no failures without write permission" in {
     aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-
-    val endpoints = List(
-      s"$viewEndpoint/failures",
-      s"$viewEndpoint/failures/sse"
-    )
-    forAll(endpoints) { endpoint =>
-      Get(endpoint) ~> routes ~> check {
-        response.shouldBeForbidden
-      }
-    }
-  }
-
-  "return all failures as SSE when no LastEventID is provided" in {
-    aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-    Get(s"$viewEndpoint/failures/sse") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
-    }
-  }
-
-  "return failures as SSE only from the given LastEventID" in {
-    Get(s"$viewEndpoint/failures/sse") ~> `Last-Event-ID`("1") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
+    Get(s"$viewEndpoint/failures") ~> routes ~> check {
+      response.shouldBeForbidden
     }
   }
 

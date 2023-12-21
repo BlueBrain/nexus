@@ -35,6 +35,7 @@ trait StorageFixtures extends CirceLiteral {
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret(MinioDocker.RootUser)), Some(Secret(MinioDocker.RootPassword)), permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), Anonymous, permissions.read, permissions.write, showLocation = false, 70, RetryStrategyConfig.AlwaysGiveUp)),
   )
+  implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation
   val diskFields        = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(1000), Some(50))
   val diskVal           = diskFields.toValue(config).get
   val diskFieldsUpdate  = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(2000), Some(40))

@@ -53,7 +53,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
     )
   )
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
+  private val config = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
 
   private lazy val projects = ProjectsImpl(
     fetchOrg,
