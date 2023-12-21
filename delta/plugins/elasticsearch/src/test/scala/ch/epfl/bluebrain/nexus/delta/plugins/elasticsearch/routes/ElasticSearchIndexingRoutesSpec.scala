@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -200,32 +199,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
 
   "return no failures without write permission" in {
     aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-
-    val endpoints = List(
-      s"$viewEndpoint/failures",
-      s"$viewEndpoint/failures/sse"
-    )
-    forAll(endpoints) { endpoint =>
-      Get(endpoint) ~> routes ~> check {
-        response.shouldBeForbidden
-      }
-    }
-  }
-
-  "return all failures as SSE when no LastEventID is provided" in {
-    aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-    Get(s"$viewEndpoint/failures/sse") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(2).strip shouldEqual contentOf("routes/sse/indexing-failures-1-2.txt")
-    }
-  }
-
-  "return failures as SSE only from the given LastEventID" in {
-    Get(s"$viewEndpoint/failures/sse") ~> `Last-Event-ID`("1") ~> routes ~> check {
-      response.status shouldBe StatusCodes.OK
-      mediaType shouldBe MediaTypes.`text/event-stream`
-      chunksStream.asString(3).strip shouldEqual contentOf("routes/sse/indexing-failure-2.txt")
+    Get(s"$viewEndpoint/failures") ~> routes ~> check {
+      response.shouldBeForbidden
     }
   }
 
