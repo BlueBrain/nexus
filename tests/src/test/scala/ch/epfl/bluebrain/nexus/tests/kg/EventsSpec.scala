@@ -154,87 +154,71 @@ class EventsSpec extends BaseIntegrationSpec {
     }
 
     "fetch resource events filtered by project" in eventually {
-      for {
-        uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
-                   val projectEvents = seq.drop(6)
-                   projectEvents.size shouldEqual 6
-                   projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                     "ResourceCreated",
-                     "ResourceUpdated",
-                     "ResourceTagAdded",
-                     "ResourceDeprecated",
-                     "FileCreated",
-                     "FileUpdated"
-                   )
-                   val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                   json shouldEqual jsonContentOf(
-                     "kg/events/events.json",
-                     replacements(
-                       BugsBunny,
-                       "resources"        -> s"${config.deltaUri}/resources/$id",
-                       "organizationUuid" -> uuids._1,
-                       "projectUuid"      -> uuids._2,
-                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
-                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
-                     ): _*
-                   )
-                 }
-      } yield succeed
+      deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
+        val projectEvents = seq.drop(6)
+        projectEvents.size shouldEqual 6
+        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+          "ResourceCreated",
+          "ResourceUpdated",
+          "ResourceTagAdded",
+          "ResourceDeprecated",
+          "FileCreated",
+          "FileUpdated"
+        )
+        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+        json shouldEqual jsonContentOf(
+          "kg/events/events.json",
+          replacements(
+            BugsBunny,
+            "resources"     -> s"${config.deltaUri}/resources/$id",
+            "project"       -> s"${config.deltaUri}/projects/$orgId/$projId",
+            "schemaProject" -> s"${config.deltaUri}/projects/$orgId/$projId"
+          ): _*
+        )
+      }
     }
 
     "fetch resource events filtered by organization 1" in {
-      for {
-        uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
-                   val projectEvents = seq.drop(6)
-                   projectEvents.size shouldEqual 6
-                   projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                     "ResourceCreated",
-                     "ResourceUpdated",
-                     "ResourceTagAdded",
-                     "ResourceDeprecated",
-                     "FileCreated",
-                     "FileUpdated"
-                   )
-                   val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                   json shouldEqual jsonContentOf(
-                     "kg/events/events.json",
-                     replacements(
-                       BugsBunny,
-                       "resources"        -> s"${config.deltaUri}/resources/$id",
-                       "organizationUuid" -> uuids._1,
-                       "projectUuid"      -> uuids._2,
-                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
-                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
-                     ): _*
-                   )
-                 }
-      } yield succeed
+      deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
+        val projectEvents = seq.drop(6)
+        projectEvents.size shouldEqual 6
+        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+          "ResourceCreated",
+          "ResourceUpdated",
+          "ResourceTagAdded",
+          "ResourceDeprecated",
+          "FileCreated",
+          "FileUpdated"
+        )
+        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+        json shouldEqual jsonContentOf(
+          "kg/events/events.json",
+          replacements(
+            BugsBunny,
+            "resources"     -> s"${config.deltaUri}/resources/$id",
+            "project"       -> s"${config.deltaUri}/projects/$orgId/$projId",
+            "schemaProject" -> s"${config.deltaUri}/projects/$orgId/$projId"
+          ): _*
+        )
+      }
     }
 
     "fetch resource events filtered by organization 2" in {
-      for {
-        uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-        _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
-            val projectEvents = seq.drop(6)
-            projectEvents.size shouldEqual 1
-            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
-            val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-            json shouldEqual jsonContentOf(
-              "kg/events/events2.json",
-              replacements(
-                BugsBunny,
-                "resources"        -> s"${config.deltaUri}/resources/$id",
-                "organizationUuid" -> uuids._1,
-                "projectUuid"      -> uuids._2,
-                "project"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                "schemaProject"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
-              ): _*
-            )
-          }
-      } yield succeed
+      deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
+        val projectEvents = seq.drop(6)
+        projectEvents.size shouldEqual 1
+        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
+        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+        json shouldEqual jsonContentOf(
+          "kg/events/events2.json",
+          replacements(
+            BugsBunny,
+            "resources"     -> s"${config.deltaUri}/resources/$id",
+            "project"       -> s"${config.deltaUri}/projects/$orgId2/$projId",
+            "schemaProject" -> s"${config.deltaUri}/projects/$orgId2/$projId"
+          ): _*
+        )
+      }
     }
 
     "fetch acls events" in {
@@ -246,39 +230,33 @@ class EventsSpec extends BaseIntegrationSpec {
     "fetch global events" in {
       // TODO: find a way to get the current event sequence in postgres
       IO.whenA(initialEventId.isDefined) {
-        for {
-          uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
-          uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-          _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
-                      val projectEvents = seq.drop(14)
-                      projectEvents.size shouldEqual 7
-                      projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                        "ResourceCreated",
-                        "ResourceCreated",
-                        "ResourceUpdated",
-                        "ResourceTagAdded",
-                        "ResourceDeprecated",
-                        "FileCreated",
-                        "FileUpdated"
-                      )
-                      val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                      json shouldEqual jsonContentOf(
-                        "kg/events/events-multi-project.json",
-                        replacements(
-                          BugsBunny,
-                          "resources"         -> s"${config.deltaUri}/resources/$id",
-                          "organizationUuid"  -> uuids._1,
-                          "projectUuid"       -> uuids._2,
-                          "organization2Uuid" -> uuids2._1,
-                          "project2Uuid"      -> uuids2._2,
-                          "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
-                          "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                          "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
-                          "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
-                        ): _*
-                      )
-                    }
-        } yield ()
+        deltaClient
+          .sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
+            val projectEvents = seq.drop(14)
+            projectEvents.size shouldEqual 7
+            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+              "ResourceCreated",
+              "ResourceCreated",
+              "ResourceUpdated",
+              "ResourceTagAdded",
+              "ResourceDeprecated",
+              "FileCreated",
+              "FileUpdated"
+            )
+            val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+            json shouldEqual jsonContentOf(
+              "kg/events/events-multi-project.json",
+              replacements(
+                BugsBunny,
+                "resources"      -> s"${config.deltaUri}/resources/$id",
+                "project"        -> s"${config.deltaUri}/projects/$orgId/$projId",
+                "project2"       -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                "schemaProject"  -> s"${config.deltaUri}/projects/$orgId/$projId",
+                "schemaProject2" -> s"${config.deltaUri}/projects/$orgId2/$projId"
+              ): _*
+            )
+          }
+          .void
       }.as(succeed)
     }
   }
