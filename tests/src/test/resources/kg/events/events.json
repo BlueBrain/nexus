@@ -23,8 +23,6 @@
     "_project": "{{project}}",
     "_rev": 1,
     "_schemaProject": "{{schemaProject}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
@@ -50,8 +48,6 @@
     "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "_project": "{{project}}",
     "_schemaProject": "{{schemaProject}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_rev": 2,
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
@@ -62,8 +58,6 @@
     "tag": "v1.0.0",
     "targetRev": 1,
     "_project": "{{project}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_rev": 3,
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
@@ -78,8 +72,6 @@
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
     "_project": "{{project}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_rev": 4,
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
@@ -109,8 +101,6 @@
     },
     "_rev": 1,
     "_project": "{{project}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
@@ -138,8 +128,6 @@
       "_rev": 1
     },
     "_project": "{{project}}",
-    "_projectUuid": "{{projectUuid}}",
-    "_organizationUuid": "{{organizationUuid}}",
     "_rev": 2,
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   }
