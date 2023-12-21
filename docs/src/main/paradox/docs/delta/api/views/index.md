@@ -186,22 +186,6 @@ Request
 Response
 :   @@snip [failures.json](../assets/views/failures.json)
 
-### Fetch indexing failures as SSEs
-
-This endpoint fetches the available indexing failures. The `Last-Event-Id` is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have `view/write` permission on `{org_label}/{project_label}`.
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/failures/sse
-```
-
-**Example**
-
-Request
-:   @@snip [failures.sh](../assets/views/sse-failures.sh)
-
-Response
-:   @@snip [failures.json](../assets/views/sse-failures.json)
-
 ## Server Sent Events
 
 From Delta 1.5, it is possible to fetch SSEs for all views or just views
