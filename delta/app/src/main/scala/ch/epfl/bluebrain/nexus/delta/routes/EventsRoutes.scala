@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 /**
   * The global events route.
@@ -39,22 +38,13 @@ class EventsRoutes(
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
 
-  import baseUri.prefixSegment
-
   private def resolveSelector: Directive1[Label] =
     label.flatMap { l =>
-      if (sseEventLog.allSelectors.contains(l))
+      if (sseEventLog.selectors.contains(l))
         provide(l)
       else
         reject()
     }
-
-  private def resolveScopedSelector: Directive1[Label] = label.flatMap { l =>
-    if (sseEventLog.scopedSelectors.contains(l))
-      provide(l)
-    else
-      reject()
-  }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -65,43 +55,36 @@ class EventsRoutes(
               concat(
                 // SSE for all events with a given selector
                 (resolveSelector & pathPrefix("events") & pathEndOrSingleSlash) { selector =>
-                  operationName(s"$prefixSegment/$selector/{org}/events") {
-                    concat(
-                      authorizeFor(AclAddress.Root, events.read).apply {
-                        emit(sseEventLog.streamBy(selector, offset))
-                      },
-                      (head & authorizeFor(AclAddress.Root, events.read)) {
-                        complete(OK)
-                      }
-                    )
-                  }
+                  concat(
+                    authorizeFor(AclAddress.Root, events.read).apply {
+                      emit(sseEventLog.streamBy(selector, offset))
+                    },
+                    (head & authorizeFor(AclAddress.Root, events.read)) {
+                      complete(OK)
+                    }
+                  )
                 },
                 // SSE for events with a given selector within a given organization
-                (resolveScopedSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
-                  operationName(s"$prefixSegment/$selector/{org}/events") {
-                    concat(
-                      authorizeFor(org, events.read).apply {
-                        emit(sseEventLog.streamBy(selector, org, offset).attemptNarrow[OrganizationRejection])
-                      },
-                      (head & authorizeFor(org, events.read)) {
-                        complete(OK)
-                      }
-                    )
-                  }
+                (resolveSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
+                  concat(
+                    authorizeFor(org, events.read).apply {
+                      emit(sseEventLog.streamBy(selector, org, offset).attemptNarrow[OrganizationRejection])
+                    },
+                    (head & authorizeFor(org, events.read)) {
+                      complete(OK)
+                    }
+                  )
                 },
                 // SSE for events with a given selector within a given project
-                (resolveScopedSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) {
-                  (selector, project) =>
-                    concat(
-                      operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
-                        authorizeFor(project, events.read).apply {
-                          emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
-                        }
-                      },
-                      (head & authorizeFor(project, events.read)) {
-                        complete(OK)
-                      }
-                    )
+                (resolveSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) { (selector, project) =>
+                  concat(
+                    authorizeFor(project, events.read).apply {
+                      emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
+                    },
+                    (head & authorizeFor(project, events.read)) {
+                      complete(OK)
+                    }
+                  )
                 }
               )
             }

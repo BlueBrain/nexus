@@ -221,12 +221,6 @@ class EventsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "fetch acls events" in {
-      deltaClient.sseEvents(s"/acls/events", BugsBunny, initialEventId, take = 1L) { sses =>
-        sses.flatMap(_._1) should contain theSameElementsInOrderAs List("AclAppended")
-      }
-    }
-
     "fetch global events" in {
       // TODO: find a way to get the current event sequence in postgres
       IO.whenA(initialEventId.isDefined) {

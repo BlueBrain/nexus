@@ -1,18 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 
 import java.time.Instant
 
 class AclSerializationSuite extends SerializationSuite {
-
-  private val sseEncoder = AclEvent.sseEncoder
 
   val instant: Instant = Instant.EPOCH
   val rev: Int         = 1
@@ -32,23 +28,19 @@ class AclSerializationSuite extends SerializationSuite {
     Acl(address, Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
 
   private val aclsMapping           = Map(
-    AclAppended(acl(root), rev, instant, subject)         -> loadEvents("acls", "acl-appended.json"),
-    AclSubtracted(acl(orgAddress), rev, instant, subject) -> loadEvents("acls", "acl-subtracted.json"),
-    AclReplaced(acl(projAddress), rev, instant, subject)  -> loadEvents("acls", "acl-replaced.json"),
-    AclDeleted(projAddress, rev, instant, anonymous)      -> loadEvents("acls", "acl-deleted.json")
+    AclAppended(acl(root), rev, instant, subject)         -> loadDatabaseEvents("acls", "acl-appended.json"),
+    AclSubtracted(acl(orgAddress), rev, instant, subject) -> loadDatabaseEvents("acls", "acl-subtracted.json"),
+    AclReplaced(acl(projAddress), rev, instant, subject)  -> loadDatabaseEvents("acls", "acl-replaced.json"),
+    AclDeleted(projAddress, rev, instant, anonymous)      -> loadDatabaseEvents("acls", "acl-deleted.json")
   )
 
-  aclsMapping.foreach { case (event, (database, sse)) =>
+  aclsMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(AclEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(AclEvent.serializer.codec.decodeJson(database), Right(event))
-    }
-
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
-      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 
