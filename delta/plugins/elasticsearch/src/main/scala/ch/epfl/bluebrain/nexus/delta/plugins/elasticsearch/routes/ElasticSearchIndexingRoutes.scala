@@ -90,30 +90,19 @@ final class ElasticSearchIndexingRoutes(
                 // Fetch elastic search view indexing failures
                 (pathPrefix("failures") & get) {
                   authorizeFor(project, Write).apply {
-                    concat(
-                      (pathPrefix("sse") & lastEventId) { offset =>
+                    (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
+                      (pagination, timeRange, uri) =>
+                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
+                          searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                         emit(
                           fetch(id, project)
-                            .map { view =>
-                              projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
+                            .flatMap { view =>
+                              projectionErrors.search(view.ref, pagination, timeRange)
                             }
                             .attemptNarrow[ElasticSearchViewRejection]
+                            .rejectOn[ViewNotFound]
                         )
-                      },
-                      (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
-                        (pagination, timeRange, uri) =>
-                          implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
-                            searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
-                          emit(
-                            fetch(id, project)
-                              .flatMap { view =>
-                                projectionErrors.search(view.ref, pagination, timeRange)
-                              }
-                              .attemptNarrow[ElasticSearchViewRejection]
-                              .rejectOn[ViewNotFound]
-                          )
-                      }
-                    )
+                    }
                   }
                 },
                 // Manage an elasticsearch view offset

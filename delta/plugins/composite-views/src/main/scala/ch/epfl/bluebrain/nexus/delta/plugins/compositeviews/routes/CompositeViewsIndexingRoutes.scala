@@ -100,30 +100,19 @@ class CompositeViewsIndexingRoutes(
               // Fetch elastic search view indexing failures
               (pathPrefix("failures") & get) {
                 authorizeFor(project, Write).apply {
-                  concat(
-                    (pathPrefix("sse") & lastEventId) { offset =>
+                  (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
+                    (pagination, timeRange, uri) =>
+                      implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
+                        searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
                       emit(
                         fetchView(id, project)
-                          .map { view =>
-                            projectionErrors.sses(view.project, view.id, offset)
+                          .flatMap { view =>
+                            projectionErrors.search(view.ref, pagination, timeRange)
                           }
                           .attemptNarrow[CompositeViewRejection]
+                          .rejectOn[ViewNotFound]
                       )
-                    },
-                    (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
-                      (pagination, timeRange, uri) =>
-                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
-                          searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)
-                        emit(
-                          fetchView(id, project)
-                            .flatMap { view =>
-                              projectionErrors.search(view.ref, pagination, timeRange)
-                            }
-                            .attemptNarrow[CompositeViewRejection]
-                            .rejectOn[ViewNotFound]
-                        )
-                    }
-                  )
+                  }
                 }
               },
               pathPrefix("projections") {

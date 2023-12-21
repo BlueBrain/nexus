@@ -29,7 +29,7 @@ The latest stable release is **v1.9.0** released on **14.06.2023**.
 ### Breaking changes
 
 - @ref:[Resource payloads can't contain fields starting by `_` anymore](../delta/api/resources-api.md)
-- @ref:[The endpoint for fetching indexing errors as SSEs changed](../delta/api/views/index.md#fetch-indexing-failures-as-sses)
+- The endpoint for fetching indexing errors as SSEs changed
 - @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#remote-storages)
 - @ref:[Encoding of self, incoming and outgoing links](../releases/v1.9-release-notes.md#self-incoming-and-outgoing-links)
 - @ref:[Remove support for Tarball archives](../releases/v1.9-release-notes.md#remove-support-for-tarball-archives)
