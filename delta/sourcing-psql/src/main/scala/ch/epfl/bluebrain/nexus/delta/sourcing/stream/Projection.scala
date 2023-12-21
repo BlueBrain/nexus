@@ -25,7 +25,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 final class Projection private[stream] (
     val name: String,
-    status: Ref[IO, ExecutionStatus],
+    status: SignallingRef[IO, ExecutionStatus],
     progress: Ref[IO, ProjectionProgress],
     signal: SignallingRef[IO, Boolean],
     fiber: Ref[IO, Fiber[IO, Throwable, Unit]]
@@ -45,13 +45,6 @@ final class Projection private[stream] (
   def currentProgress: IO[ProjectionProgress] = progress.get
 
   /**
-    * @return
-    *   true if the projection is still running, false otherwise
-    */
-  def isRunning: IO[Boolean] =
-    status.get.map(_.isRunning)
-
-  /**
     * Wait for the projection to complete within the defined timeout
     * @param timeout
     *   the maximum time expected for the projection to complete
@@ -59,8 +52,9 @@ final class Projection private[stream] (
     */
 
   def waitForCompletion(timeout: FiniteDuration): IO[ExecutionStatus] =
-    iterateUntilCompletion
-      .timeoutTo(timeout, logger.error(s"Timeout waiting for completion on projection $name") >> executionStatus)
+    status
+      .waitUntil(statusMeansStopped)
+      .timeoutTo(timeout, logger.error(s"Timeout waiting for completion on projection $name")) >> executionStatus
 
   private def statusMeansStopped(executionStatus: ExecutionStatus): Boolean = {
     executionStatus match {
@@ -68,19 +62,6 @@ final class Projection private[stream] (
       case ExecutionStatus.Failed(_) => true
       case ExecutionStatus.Stopped   => true
       case _                         => false
-    }
-  }
-
-  private def iterateUntilCompletion: IO[ExecutionStatus] = {
-    (for {
-      status <- executionStatus
-      _      <- Spawn[IO].cede
-    } yield status).flatMap { status =>
-      if (statusMeansStopped(status)) {
-        IO.pure(status)
-      } else {
-        iterateUntilCompletion
-      }
     }
   }
 
@@ -132,7 +113,7 @@ object Projection {
       saveFailedElems: List[FailedElem] => IO[Unit]
   )(implicit batch: BatchConfig): IO[Projection] =
     for {
-      status      <- Ref[IO].of[ExecutionStatus](ExecutionStatus.Pending)
+      status      <- SignallingRef[IO, ExecutionStatus](ExecutionStatus.Pending)
       signal      <- SignallingRef[IO, Boolean](false)
       progress    <- fetchProgress.map(_.getOrElse(ProjectionProgress.NoProgress))
       progressRef <- Ref[IO].of(progress)

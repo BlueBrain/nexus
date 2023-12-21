@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.data.NonEmptyList
-import cats.effect.IO
-
+import cats.effect.{IO, Ref}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
@@ -16,8 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, Projection}
 
 import scala.concurrent.duration._
-import cats.effect.Ref
-import cats.implicits._
 
 trait IndexingAction {
 
@@ -42,11 +40,12 @@ trait IndexingAction {
     for {
       // To collect the errors
       errorsRef <- Ref.of[IO, List[FailedElem]](List.empty)
+      saveErrors = (failed: List[FailedElem]) => errorsRef.update(_ ++ failed)
       // We build and start the projections where the resource will apply
       _         <- projections(project, elem)
                      .evalMap {
                        case s: SuccessElem[CompiledProjection] =>
-                         runProjection(s.value, failed => errorsRef.update(_ ++ failed))
+                         runProjection(s.value, saveErrors).onError { err => saveErrors(List(s.failed(err))) }
                        case _: DroppedElem                     => IO.unit
                        case f: FailedElem                      => logger.error(f.throwable)(s"Fetching '$f' returned an error.").as(None)
                      }
@@ -94,7 +93,7 @@ object IndexingAction {
             _               <- logger.debug(s"Synchronous indexing of resource '$project/${res.id}' has been requested.")
             // We create the GraphResource wrapped in an `Elem`
             elem            <- shift.toGraphResourceElem(project, res)
-            errorsPerAction <- internal.traverse(_.apply(project, elem))
+            errorsPerAction <- internal.parTraverse(_.apply(project, elem))
             errors           = errorsPerAction.toList.flatMap(_.map(_.throwable))
             _               <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors))
           } yield ()

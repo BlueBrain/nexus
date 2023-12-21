@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
-import munit.AnyFixture
+import munit.{AnyFixture, Location}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -48,30 +48,31 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
 
   private val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
 
-  private def startProjection(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
+  private def startProjection(metadata: ProjectionMetadata, strategy: ExecutionStrategy)(implicit loc: Location) =
     for {
       started <- Ref.of[IO, Boolean](false)
       compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
-      _       <- sv.run(compiled).assertEquals(Running).eventually
+      _       <- sv.run(compiled)
       _       <- started.get.assertEquals(true).eventually
     } yield ()
 
-  private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy) = {
+  private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy)(implicit loc: Location) = {
     val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
     for {
-      started   <- Ref.of[IO, Boolean](false)
-      projection =
-        CompiledProjection.fromStream(
-          metadata,
-          strategy,
-          evalStream(started.set(true)).map(_ >> Stream.raiseError[IO](expectedException))
-        )
-      _         <- sv.run(projection).assertEquals(Running).eventually
-      _         <- started.get.assertEquals(true).eventually
+      started       <- Ref.of[IO, Boolean](false)
+      alreadyFailed <- Ref.of[IO, Boolean](false)
+      failingOnce    = Stream.eval(alreadyFailed.get).flatMap {
+                         case true  => Stream.never[IO]
+                         case false => Stream.eval(alreadyFailed.set(true)) >> Stream.raiseError[IO](expectedException)
+                       }
+      projection     =
+        CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)).map(_ >> failingOnce))
+      _             <- sv.run(projection)
+      _             <- started.get.assertEquals(true).eventually
     } yield ()
   }
 
-  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: IO[Unit]) =
+  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: IO[Unit])(implicit loc: Location) =
     for {
       _ <- sv.destroy(metadata.name, onDestroy).assertEquals(Some(Stopped))
       _ <- sv.describe(metadata.name).assertEquals(None).eventually
@@ -84,14 +85,14 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
       restarts: Int,
       status: ExecutionStatus,
       progress: ProjectionProgress
-  ) =
+  )(implicit loc: Location) =
     sv.describe(metadata.name)
       .assertEquals(
         Some(SupervisedDescription(metadata, executionStrategy, restarts, status, progress))
       )
       .eventually
 
-  private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long) = {
+  private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long)(implicit loc: Location) = {
     val progress = ProjectionProgress(offset, Instant.EPOCH, processed, discarded, 0)
     assertDescribe(Supervisor.watchRestartMetadata, EveryNode, 0, Running, progress)
   }
@@ -229,7 +230,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
   test("Should restart a failing projection") {
     for {
       _ <- assertCrash(runnableByNode1, TransientSingleNode)
-      _ <- sv.describe(runnableByNode1.name).map(_.exists(_.restarts > 0)).assertEquals(true).eventually
+      _ <- sv.describe(runnableByNode1.name).map(_.map(_.restarts)).assertEquals(Some(1)).eventually
     } yield ()
   }
 
