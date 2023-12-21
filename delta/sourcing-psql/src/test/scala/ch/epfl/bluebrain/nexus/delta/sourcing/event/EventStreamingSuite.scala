@@ -28,7 +28,6 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
 
   private val queryConfig = QueryConfig(10, RefreshStrategy.Stop)
 
-
   private lazy val gitlabPrStore = ScopedEventStore[Iri, PullRequestEvent](
     PullRequest.entityType,
     PullRequestEvent.serializer,
