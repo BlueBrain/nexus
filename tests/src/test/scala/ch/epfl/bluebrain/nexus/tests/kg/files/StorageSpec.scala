@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.tests.kg
+package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
@@ -11,15 +10,12 @@ import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import org.apache.commons.codec.Charsets
 import org.scalatest.Assertion
 
-import java.util.Base64
-
-final case class Input(fileId: String, filename: String, ct: ContentType, contents: String)
 abstract class StorageSpec extends BaseIntegrationSpec {
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
@@ -49,18 +45,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
 
-  val emptyFileContent       = ""
-  val jsonFileContent        = """{ "initial": ["is", "a", "test", "file"] }"""
-  val updatedJsonFileContent = """{ "updated": ["is", "a", "test", "file"] }"""
-
-  val emptyTextFile                  = Input("empty", "empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
-  val jsonFileNoContentType          = Input("attachment.json", "attachment.json", ContentTypes.NoContentType, jsonFileContent)
-  val updatedJsonFileWithContentType =
-    jsonFileNoContentType.copy(contents = updatedJsonFileContent, ct = ContentTypes.`application/json`)
-  val textFileNoContentType          = Input("attachment2", "attachment2", ContentTypes.NoContentType, "text file")
-  val textFileWithContentType        =
-    Input("attachment3", "attachment2", ContentTypes.`application/octet-stream`, "text file")
-
   override def beforeAll(): Unit = {
     super.beforeAll()
     createProjects(Coyote, orgId, projId).accepted
@@ -84,12 +68,12 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "An empty file" should {
 
     "be successfully uploaded" in {
-      uploadFile(emptyTextFile, None)(expectCreated)
+      filesDsl.uploadFile(emptyTextFile, projectRef, storageId, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
-        expectDownload("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
+        filesDsl.expectDownload("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
       }
     }
   }
@@ -97,28 +81,28 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A json file" should {
 
     "be uploaded" in {
-      uploadFile(jsonFileNoContentType, None)(expectCreated)
+      filesDsl.uploadFile(jsonFileNoContentType, projectRef, storageId, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent)
+        filesDsl.expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent)
       }
     }
 
     "be downloaded as gzip" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, gzipHeaders) {
-        expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent, compressed = true)
+        filesDsl.expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent, compressed = true)
       }
     }
 
     "be updated" in {
-      uploadFile(updatedJsonFileWithContentType, Some(1))(expectOk)
+      filesDsl.uploadFile(updatedJsonFileWithContentType, projectRef, storageId, Some(1))(expectOk)
     }
 
     "download the updated file" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        expectDownload(
+        filesDsl.expectDownload(
           "attachment.json",
           ContentTypes.`application/json`,
           updatedJsonFileContent
@@ -128,7 +112,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "download the previous revision" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json?rev=1", Coyote, acceptAll) {
-        expectDownload(
+        filesDsl.expectDownload(
           "attachment.json",
           ContentTypes.`application/json`,
           jsonFileContent
@@ -171,12 +155,12 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A file without extension" should {
 
     "be uploaded" in {
-      uploadFile(textFileNoContentType, None)(expectCreated)
+      filesDsl.uploadFile(textFileNoContentType, projectRef, storageId, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment2", Coyote, acceptAll) {
-        expectDownload(
+        filesDsl.expectDownload(
           textFileNoContentType.filename,
           ContentTypes.`application/octet-stream`,
           textFileNoContentType.contents
@@ -417,46 +401,4 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
 
   }
-
-  def uploadFile(fileInput: Input, rev: Option[Int]): ((Json, HttpResponse) => Assertion) => IO[Assertion] =
-    uploadFileToProjectStorage(fileInput, projectRef, storageId, rev)
-
-  def uploadFileToProjectStorage(
-      fileInput: Input,
-      projRef: String,
-      storage: String,
-      rev: Option[Int]
-  ): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
-    val revString = rev.map(r => s"&rev=$r").getOrElse("")
-    deltaClient.uploadFile[Json](
-      s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
-      fileInput.contents,
-      fileInput.ct,
-      fileInput.filename,
-      Coyote
-    )
-  }
-
-  private def attachmentString(filename: String): String = {
-    val encodedFilename = new String(Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8)))
-    s"=?UTF-8?B?$encodedFilename?="
-  }
-
-  protected def expectDownload(
-      expectedFilename: String,
-      expectedContentType: ContentType,
-      expectedContent: String,
-      compressed: Boolean = false
-  ) =
-    (content: ByteString, response: HttpResponse) => {
-      response.status shouldEqual StatusCodes.OK
-      dispositionType(response) shouldEqual ContentDispositionTypes.attachment
-      attachmentName(response) shouldEqual attachmentString(expectedFilename)
-      contentType(response) shouldEqual expectedContentType
-      if (compressed) {
-        httpEncodings(response) shouldEqual Seq(HttpEncodings.gzip)
-        decodeGzip(content) shouldEqual expectedContent
-      } else
-        content.utf8String shouldEqual expectedContent
-    }
 }

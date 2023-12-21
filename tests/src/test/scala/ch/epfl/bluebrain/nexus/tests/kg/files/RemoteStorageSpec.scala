@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.tests.kg
+package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, StatusCodes}
 import akka.util.ByteString
@@ -15,9 +15,8 @@ import org.scalactic.source.Position
 import org.scalatest.Assertion
 
 import scala.annotation.nowarn
-import scala.sys.process._
 
-class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
+class RemoteStorageSpec extends StorageSpec {
 
   override def storageName: String = "external"
 
@@ -27,21 +26,16 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
 
   override def locationPrefix: Option[String] = Some(s"file:///tmp/$remoteFolder")
 
-  val externalEndpoint: String = s"http://storage-service:8080/v1"
   private val remoteFolder     = genId()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val createFolder = s"mkdir -p /tmp/$remoteFolder/protected"
-    s"docker exec nexus-storage-service bash -c \"$createFolder\"".!
-    ()
+    storagesDsl.mkProtectedFolderInStorageService(remoteFolder).accepted
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    val deleteFolder = s"rm -rf /tmp/$remoteFolder"
-    s"docker exec nexus-storage-service bash -c \"$deleteFolder\"".!
-    ()
+    storagesDsl.deleteFolderInStorageService(remoteFolder).accepted
   }
 
   private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
@@ -49,7 +43,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
       "kg/storages/remote-disk-response.json",
       replacements(
         Coyote,
-        "endpoint"    -> externalEndpoint,
+        "endpoint"    -> StoragesDsl.StorageServiceBaseUrl,
         "folder"      -> remoteFolder,
         "id"          -> id,
         "project"     -> project,
@@ -61,60 +55,22 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
     )
 
   override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
-    val payload       = jsonContentOf(
-      "kg/storages/remote-disk.json",
-      "endpoint" -> externalEndpoint,
-      "read"     -> "resources/read",
-      "write"    -> "files/write",
-      "folder"   -> remoteFolder,
-      "id"       -> storId
-    )
     val storageId2    = s"${storId}2"
     val storage2Read  = s"$storName/read"
     val storage2Write = s"$storName/write"
-    val payload2      = jsonContentOf(
-      "kg/storages/remote-disk.json",
-      "endpoint" -> externalEndpoint,
-      "read"     -> storage2Read,
-      "write"    -> storage2Write,
-      "folder"   -> remoteFolder,
-      "id"       -> storageId2
-    )
+
+    val expectedStorage = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val expectedStorageSource =
+      jsonContentOf("kg/storages/storage-source.json", "folder" -> remoteFolder, "storageBase" -> StoragesDsl.StorageServiceBaseUrl, "id" -> storId)
+    val expectedStorageWithPerms =  storageResponse(projectRef, storageId2, storage2Read, storage2Write)
 
     for {
-      _ <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
-             if (response.status != StatusCodes.Created) {
-               fail(s"Unexpected status '${response.status}', response:\n${json.spaces2}")
-             } else succeed
-           }
-      _ <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
-             val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
-      _ <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId/source", Coyote) { (json, response) =>
-             response.status shouldEqual StatusCodes.OK
-             val expected = jsonContentOf(
-               "kg/storages/storage-source.json",
-               "folder"      -> remoteFolder,
-               "storageBase" -> externalEndpoint,
-               "id"          -> storId
-             )
-             filterKey("credentials")(json) should equalIgnoreArrayOrder(expected)
-
-           }
-      _ <- permissionDsl.addPermissions(
-             Permission(storName, "read"),
-             Permission(storName, "write")
-           )
-      _ <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
-           }
-      _ <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
-             val expected = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
+      _ <- storagesDsl.createRemoteStorageDefaultPerms(storId, projectRef, remoteFolder)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      _ <- storagesDsl.checkStorageSource(projectRef, storId, expectedStorageSource)
+      _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
+      _ <- storagesDsl.createRemoteStorageCustomPerms(storageId2, projectRef, remoteFolder, storage2Read, storage2Write)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }
 
@@ -178,14 +134,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
 
   "Creating a remote storage" should {
     "fail creating a RemoteDiskStorage without folder" in {
-      val payload = jsonContentOf(
-        "kg/storages/remote-disk.json",
-        "endpoint" -> externalEndpoint,
-        "read"     -> "resources/read",
-        "write"    -> "files/write",
-        "folder"   -> "nexustest",
-        "id"       -> storageId
-      )
+      val payload = storagesDsl.remoteDiskPayloadDefaultPerms(storageId, "nexustest").accepted
 
       deltaClient.post[Json](s"/storages/$projectRef", filterKey("folder")(payload), Coyote) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
@@ -193,10 +142,8 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
     }
   }
 
-  def createFile(filename: String) = IO.delay {
-    val createFile = s"echo 'file content' > /tmp/$remoteFolder/$filename"
-    s"docker exec nexus-storage-service bash -c \"$createFile\"".!
-  }
+  def createFileInStorageService(filename: String): IO[Unit] =
+    storagesDsl.runCommandInStorageService(s"echo 'file content' > /tmp/$remoteFolder/$filename")
 
   def linkPayload(filename: String, path: String, mediaType: Option[String]) =
     Json.obj(
@@ -262,7 +209,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
       val payload   = linkPayload(filename, filename, Some(mediaType))
 
       for {
-        _ <- createFile(filename)
+        _ <- createFileInStorageService(filename)
         // Get a first response without the digest
         _ <- linkFile(payload)(fileId, filename, Some(mediaType))
         // Eventually
@@ -284,7 +231,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
       val payload = linkPayload(filename, filename, None)
 
       for {
-        _ <- createFile(filename)
+        _ <- createFileInStorageService(filename)
         // Get a first response without the digest
         _ <- linkFile(payload)(fileId, filename, None)
         // Eventually
@@ -306,7 +253,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
       val payload = linkPayload(filename, filename, None)
 
       for {
-        _ <- createFile(filename)
+        _ <- createFileInStorageService(filename)
         // Get a first response without the digest
         _ <- linkFile(payload)(fileId, filename, None)
         // Eventually
@@ -328,7 +275,7 @@ class RemoteStorageSpec extends StorageSpec with CopyFilesSpec {
       val payload = linkPayload(filename, filename, None)
 
       for {
-        _ <- createFile(filename)
+        _ <- createFileInStorageService(filename)
         // Get a first response without the digest
         _ <- linkFile(payload)(fileId, filename, None)
         // Eventually

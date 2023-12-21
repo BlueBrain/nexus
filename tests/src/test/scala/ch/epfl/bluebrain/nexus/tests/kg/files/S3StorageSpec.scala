@@ -1,11 +1,10 @@
-package ch.epfl.bluebrain.nexus.tests.kg
+package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
@@ -101,26 +100,19 @@ class S3StorageSpec extends StorageSpec {
       "writePermission" -> Json.fromString(s"$storName/write")
     )
 
+    val expectedStorage = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val storageId2 = s"${storId}2"
+    val expectedStorageWithPerms =
+      storageResponse(projectRef, storageId2, "s3/read", "s3/write")
+        .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
+
     for {
-      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
-                     filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-                     response.status shouldEqual StatusCodes.OK
-                   }
-      _         <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
-      storageId2 = s"${storId}2"
-      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
-                     val expected = storageResponse(projectRef, storageId2, "s3/read", "s3/write")
-                       .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
-                     filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-                     response.status shouldEqual StatusCodes.OK
-                   }
+      _         <- storagesDsl.createStorage(payload, projectRef)
+      _         <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      // TODO removing this the test still passes - maybe because permissions are passed on the payload?
+//      _         <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
+      _         <- storagesDsl.createStorage(payload2, projectRef)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }
 

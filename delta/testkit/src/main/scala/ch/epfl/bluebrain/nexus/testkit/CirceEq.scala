@@ -8,7 +8,7 @@ import io.circe.syntax._
 import org.scalatest.matchers._
 
 trait CirceEq {
-  def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)
+  def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = CirceEq.equalIgnoreArrayOrder(json)
 
   def field(fieldName: String, expectedValue: Json): HavePropertyMatcher[Json, Json] = HavePropertyMatcher(left => {
     val actualValue = left.hcursor.downField(fieldName).as[Json].getOrElse(Json.Null)
@@ -55,6 +55,8 @@ object CirceEq {
 
     canonicalJson(value)
   }
+
+  def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)
 
   final case class IgnoredArrayOrder(json: Json) extends Matcher[Json] {
     implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)

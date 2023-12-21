@@ -1,14 +1,13 @@
-package ch.epfl.bluebrain.nexus.tests.kg
+package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 
-class DiskStorageSpec extends StorageSpec with CopyFilesSpec {
+class DiskStorageSpec extends StorageSpec {
 
   override def storageName: String = "disk"
 
@@ -33,34 +32,19 @@ class DiskStorageSpec extends StorageSpec with CopyFilesSpec {
     )
 
   override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
-    val payload       = jsonContentOf("kg/storages/disk.json", "id" -> storId)
     val storageId2    = s"${storId}2"
     val storage2Read  = s"$storName/read"
     val storage2Write = s"$storName/write"
-    val payload2      =
-      jsonContentOf("kg/storages/disk-perms.json", "id" -> storageId2, "read" -> storage2Read, "write" -> storage2Write)
+
+    val expectedStorage = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val expectedStorageWithPerms = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
 
     for {
-      _ <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
-           }
-      _ <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storId", Coyote) { (json, response) =>
-             val expected = storageResponse(projectRef, storId, "resources/read", "files/write")
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
-      _ <- permissionDsl.addPermissions(
-             Permission(storName, "read"),
-             Permission(storName, "write")
-           )
-      _ <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
-           }
-      _ <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
-             val expected = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
+      _ <- storagesDsl.createDiskStorageDefaultPerms(storId, projectRef)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
+      _ <- storagesDsl.createDiskStorageCustomPerms(storageId2, projectRef, storage2Read, storage2Write)
+      _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }
 
