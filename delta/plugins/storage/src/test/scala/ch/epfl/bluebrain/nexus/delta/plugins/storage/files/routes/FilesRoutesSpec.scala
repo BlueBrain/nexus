@@ -140,7 +140,7 @@ class FilesRoutesSpec
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
   private lazy val routes                                  = routesWithIdentities(identities)
   private def routesWithIdentities(identities: Identities) =
-    Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
+    Route.seal(FilesRoutes(identities, aclCheck, files, groupDirectives, IndexingAction.noop))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)

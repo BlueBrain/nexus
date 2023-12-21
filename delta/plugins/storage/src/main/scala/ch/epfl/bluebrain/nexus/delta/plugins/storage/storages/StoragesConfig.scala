@@ -63,13 +63,15 @@ object StoragesConfig {
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]
   ) {
-    def get(tpe: StorageType): Option[StorageTypeEntryConfig] =
-      tpe match {
-        case StorageType.DiskStorage       => Some(disk)
-        case StorageType.S3Storage         => amazon
-        case StorageType.RemoteDiskStorage => remoteDisk
-      }
+    def showFileLocation: ShowFileLocation = {
+      val diskType   = if (disk.showLocation) Set(StorageType.DiskStorage) else Set()
+      val remoteType = if (remoteDisk.exists(_.showLocation)) Set(StorageType.RemoteDiskStorage) else Set()
+      val s3Type     = if (amazon.exists(_.showLocation)) Set(StorageType.S3Storage) else Set()
+      ShowFileLocation(diskType ++ remoteType ++ s3Type)
+    }
   }
+
+  final case class ShowFileLocation(types: Set[StorageType])
 
   object StorageTypeConfig {
 
