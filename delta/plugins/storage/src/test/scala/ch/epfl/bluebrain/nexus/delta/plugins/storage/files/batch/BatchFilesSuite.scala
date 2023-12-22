@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchCopyMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -38,12 +38,13 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val stubbedDestAttributes = genAttributes()
     val batchCopy             = BatchCopyMock.withStubbedCopyFiles(events, stubbedDestAttributes)
 
-    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, destFileUUId, fetchFileStorage, batchCopy)
+    val sourceProj             = genProject()
+    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, sourceProj, destFileUUId, fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
-    val source                 = genCopyFileSource()
+    val source                 = genCopyFileSource(sourceProj.ref)
 
     batchFiles.copyFiles(source, destination).map { obtained =>
-      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes)
+      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes, source.files, sourceProj)
       val expectedResources    = expectedCommands.map(genFileResourceFromCmd)
       val expectedCommandCalls = expectedCommands.toList.map(FileCommandEvaluated)
       val expectedEvents       = activeStorageFetchedAndBatchCopyCalled(source) ++ expectedCommandCalls
@@ -59,7 +60,8 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val error            = TotalCopySizeTooLarge(1L, 2L, genIri())
     val batchCopy        = BatchCopyMock.withError(error, events)
 
-    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, UUID.randomUUID(), fetchFileStorage, batchCopy)
+    val batchFiles: BatchFiles =
+      mkBatchFiles(events, destProj, genProject(), UUID.randomUUID(), fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
     val source                 = genCopyFileSource()
     val expectedError          = CopyRejection(source.project, destProj.ref, destStorage.id, error)
@@ -83,6 +85,7 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
   def mkBatchFiles(
       events: ListBuffer[Event],
       proj: Project,
+      sourceProj: Project,
       fixedUuid: UUID,
       fetchFileStorage: FetchFileStorage,
       batchCopy: BatchCopy
@@ -91,7 +94,8 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val evalFileCmd: CreateFile => IO[FileResource] = cmd =>
       IO(events.addOne(FileCommandEvaluated(cmd))).as(genFileResourceFromCmd(cmd))
     val fetchContext: FetchContext[FileRejection]   =
-      FetchContextDummy(Map(proj.ref -> proj.context)).mapRejection(FileRejection.ProjectContextRejection)
+      FetchContextDummy(Map(proj.ref -> proj.context, sourceProj.ref -> sourceProj.context))
+        .mapRejection(FileRejection.ProjectContextRejection)
     BatchFiles.mk(fetchFileStorage, fetchContext, evalFileCmd, batchCopy)
   }
 
@@ -101,19 +105,24 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     List(expectedActiveStorageFetched, expectedBatchCopyCalled)
   }
 
-  def createCommandsFromFileAttributes(stubbedDestAttributes: NonEmptyList[FileAttributes])(implicit
+  def createCommandsFromFileAttributes(
+      stubbedDestAttributes: NonEmptyList[FileAttributes],
+      sourceFiles: NonEmptyList[FileId],
+      sourceProj: Project
+  )(implicit
       c: Caller
-  ): NonEmptyList[CreateFile] = stubbedDestAttributes.map(
+  ): NonEmptyList[CreateFile] = stubbedDestAttributes.zip(sourceFiles).map { case (destAttr, source) =>
     CreateFile(
       destProj.base.iri / destFileUUId.toString,
       destProj.ref,
       destStorageRef,
       destStorage.value.tpe,
-      _,
+      destAttr,
       c.subject,
-      destination.tag
+      destination.tag,
+      Some(source.toResourceRef(_ => IO.pure(sourceProj.context)).accepted)
     )
-  )
+  }
 }
 
 object BatchFilesSuite {

@@ -48,7 +48,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     )
     
   // format: off
-  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None, None)
   private val createdTagged = created.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
@@ -169,6 +169,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     storageRef,
     DiskStorageType,
     attributes,
+    None,
     Tags(UserTag.unsafe("mytag") -> 3),
     5,
     false,
