@@ -5,6 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import org.scalatest.Assertion
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
@@ -109,6 +110,7 @@ class S3StorageSpec extends StorageSpec {
     for {
       _ <- storagesDsl.createStorage(payload, projectRef)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
       _ <- storagesDsl.createStorage(payload2, projectRef)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed

@@ -6,6 +6,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, projections}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax.KeyOps
@@ -72,6 +73,7 @@ class RemoteStorageSpec extends StorageSpec {
       _ <- storagesDsl.createRemoteStorageDefaultPerms(storId, projectRef, remoteFolder)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
       _ <- storagesDsl.checkStorageSource(projectRef, storId, expectedStorageSource)
+      _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
       _ <- storagesDsl.createRemoteStorageCustomPerms(storageId2, projectRef, remoteFolder, storage2Read, storage2Write)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
