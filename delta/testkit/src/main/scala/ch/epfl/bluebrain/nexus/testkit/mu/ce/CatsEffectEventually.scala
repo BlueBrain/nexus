@@ -19,7 +19,7 @@ trait CatsEffectEventually { self: Assertions with CatsEffectAssertions =>
         },
         onError = (err, details) =>
           IO.whenA(details.givingUp) {
-            logger.error(err)(
+            logger.debug(err)(
               s"Giving up on ${err.getClass.getSimpleName}, ${details.retriesSoFar} retries after ${details.cumulativeDelay}."
             )
           }

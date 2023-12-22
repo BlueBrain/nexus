@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -17,7 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.JsonObject
 import io.circe.literal._
+import io.circe.syntax.KeyOps
 
 import java.util.UUID
 
@@ -60,6 +63,21 @@ class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
         val (id, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
         id.toString should startWith(context.base.iri.toString)
+      }
+
+      "it has a context" in {
+        val additionalContext           =
+          JsonObject("description" := "http://schema.org/description")
+        val sourceWithAdditionalContext =
+          json"""{
+                   "@type": "ElasticSearchView",
+                   "mapping": $mapping,
+                   "context": $additionalContext,
+                   "pipeline": [{"name": "filterDeprecated"}]
+                 }"""
+
+        val (_, value) = decoder(ref, context, sourceWithAdditionalContext).accepted
+        value.asIndexingValue.get.context should contain(ContextObject(additionalContext))
       }
 
       "all legacy fields are specified" in {
