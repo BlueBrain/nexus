@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
@@ -202,7 +203,9 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       destTag: Option[UserTag] = None
   ): Assertion = {
     val (destProj, user)    = (genProject(), genUser(realm))
-    val sourceFileResources = sourceFileIds.map(genFileResource(_, destProj.context))
+    val sourceFileResources = sourceFileIds.map(f =>
+      genFileResource(f, destProj.context, Some(f.toResourceRef(_ => IO.pure(sourceProj.context)).accepted))
+    )
     val events              = ListBuffer.empty[BatchFilesCopyFilesCalled]
     val stubbedBatchFiles   = BatchFilesMock.withStubbedCopyFiles(sourceFileResources, events)
 
@@ -246,6 +249,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       )
       .accepted
       .mapObject(_.remove("@context"))
+      .deepMerge(res.value.sourceFile.fold(Json.obj())(s => Json.obj("_sourceFile" := s.original.toString)))
 }
 
 object BatchFilesRoutesSpec {

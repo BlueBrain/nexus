@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, Fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.TotalCopySizeTooLarge
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{Project, ProjectContext}
@@ -21,11 +23,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDum
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import org.scalatest.OptionValues
 
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 
-class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators with FileFixtures with FileGen {
+class BatchFilesSuite
+    extends NexusSuite
+    with StorageFixtures
+    with Generators
+    with FileFixtures
+    with FileGen
+    with OptionValues {
 
   private val destProj: Project             = genProject()
   private val (destStorageRef, destStorage) = (genRevision(), genStorage(destProj.ref, diskVal))
@@ -51,6 +60,31 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
 
       assertEquals(obtained, expectedResources)
       assertEquals(events.toList, expectedEvents)
+    }
+  }
+
+  test("batch copying should return source file iris including tags and revisions") {
+    val events                             = ListBuffer.empty[Event]
+    val fetchFileStorage                   = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
+    val sourceProj                         = genProject()
+    val (byRevFile, byTagFile, latestFile) =
+      (genFileIdWithRev(sourceProj.ref), genFileIdWithTag(sourceProj.ref), genFileId(sourceProj.ref))
+    val source                             = CopyFileSource(sourceProj.ref, NonEmptyList.of(byTagFile, byRevFile, latestFile))
+    val attr                               = source.files.as(attributes())
+    val batchCopy                          = BatchCopyMock.withStubbedCopyFiles(events, attr)
+
+    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, sourceProj, destFileUUId, fetchFileStorage, batchCopy)
+    implicit val c: Caller     = Caller(genUser(), Set())
+
+    batchFiles.copyFiles(source, destination).map { obtained =>
+      def expectedIri(fileId: FileId): IriOrBNode.Iri = sourceProj.context.base.iri / fileId.id.value.asString
+
+      val expectedByTag       = ResourceRef.Tag(expectedIri(byTagFile), byTagFile.id.asTag.value.tag)
+      val expectedByRev       = ResourceRef.Revision(expectedIri(byRevFile), byRevFile.id.asRev.value.rev)
+      val expectedLatest      = ResourceRef.Latest(expectedIri(latestFile))
+      val expectedSourceFiles = NonEmptyList.of(expectedByTag, expectedByRev, expectedLatest)
+
+      assertEquals(obtained.map(_.value.sourceFile.value), expectedSourceFiles)
     }
   }
 
