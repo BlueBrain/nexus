@@ -41,17 +41,8 @@ final class ProjectsImpl private (
                     .parUnorderedTraverse { init =>
                       init
                         .onProjectCreation(resource.value, caller)
-                        .attemptNarrow[ScopeInitializationFailed]
-                        .flatMap {
-                          case Left(e)  =>
-                            errorStore
-                              .save(init.entityType, resource.value.ref, e)
-                              .onError(e =>
-                                logger.error(e)(
-                                  s"Failed to save error for '${init.entityType}' initialization step on project '${resource.value.ref}'"
-                                )
-                              )
-                          case Right(_) => IO.unit
+                        .recoverWith { case e: ScopeInitializationFailed =>
+                          errorStore.save(init.entityType, resource.value.ref, e)
                         }
                     }
                     .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -25,14 +26,20 @@ trait ScopeInitializationErrorStore {
 
 object ScopeInitializationErrorStore {
 
+  private val logger = Logger[ScopeInitializationErrorStore]
+
   def apply(xas: Transactors, clock: Clock[IO]): ScopeInitializationErrorStore =
     (entityType: EntityType, project: ProjectRef, e: ScopeInitializationFailed) => {
-      clock.realTimeInstant.flatMap { instant =>
-        sql"""
+      clock.realTimeInstant
+        .flatMap { instant =>
+          sql"""
            |INSERT INTO scope_initialization_errors (type, org, project, message, instant)
            |VALUES ($entityType, ${project.organization}, ${project.project}, ${e.getMessage}, $instant)
            |""".stripMargin.update.run.void.transact(xas.write)
-      }
+        }
+        .onError { e =>
+          logger.error(e)(s"Failed to save error for '$entityType' initialization step on project '$project'")
+        }
     }
 
 }
