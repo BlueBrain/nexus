@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.tests.kg
+package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec

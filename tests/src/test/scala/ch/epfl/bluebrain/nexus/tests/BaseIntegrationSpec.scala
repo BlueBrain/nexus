@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.util.ByteString
 import cats.effect.unsafe.implicits._
 import cats.effect.{IO, Ref}
 import cats.syntax.all._
@@ -24,6 +22,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.ElasticSearchViewsDsl
+import ch.epfl.bluebrain.nexus.tests.kg.files.{FilesDsl, StoragesDsl}
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import org.scalactic.source.Position
@@ -74,6 +73,8 @@ trait BaseIntegrationSpec
   val permissionDsl         = new PermissionDsl(deltaClient)
   val adminDsl              = new AdminDsl(deltaClient, config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
+  val filesDsl              = new FilesDsl(deltaClient)
+  val storagesDsl           = new StoragesDsl(deltaClient)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
@@ -210,25 +211,8 @@ trait BaseIntegrationSpec
            }
     } yield ()
 
-  private[tests] def dispositionType(response: HttpResponse): ContentDispositionType =
-    response.header[`Content-Disposition`].value.dispositionType
-
-  private[tests] def attachmentName(response: HttpResponse): String =
-    response
-      .header[`Content-Disposition`]
-      .value
-      .params
-      .get("filename")
-      .value
-
   private[tests] def contentType(response: HttpResponse): ContentType =
     response.header[`Content-Type`].value.contentType
-
-  private[tests] def httpEncodings(response: HttpResponse): Seq[HttpEncoding] =
-    response.header[`Content-Encoding`].value.encodings
-
-  private[tests] def decodeGzip(input: ByteString): String =
-    Coders.Gzip.decode(input).map(_.utf8String).futureValue
 
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
@@ -250,5 +234,4 @@ trait BaseIntegrationSpec
 object BaseIntegrationSpec {
 
   val setupCompleted: Ref[IO, Boolean] = Ref.unsafe(false)
-
 }
