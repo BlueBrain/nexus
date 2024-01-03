@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterByType, FilterDeprecated}
@@ -105,9 +106,9 @@ object ElasticSearchViewValue {
         .collectFirst {
           case PipeStep(label, _, Some(config)) if label == FilterByType.ref.label =>
             val filterByTypeConfig = JsonLdDecoder[FilterByTypeConfig].apply(config)
-            filterByTypeConfig.map(_.types).getOrElse(Set.empty)
+            filterByTypeConfig.map(_.types).getOrElse(AllowedViewTypes.All)
         }
-        .getOrElse(Set.empty)
+        .getOrElse(AllowedViewTypes.All)
       SelectFilter(types, resourceTag.getOrElse(Latest))
     }
 

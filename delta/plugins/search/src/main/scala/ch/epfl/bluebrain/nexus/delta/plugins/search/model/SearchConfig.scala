@@ -6,14 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef}
 import com.typesafe.config.Config
 import io.circe.parser._
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -68,7 +67,7 @@ object SearchConfig {
     }
     for {
       fields        <- loadOption(pluginConfig, "fields", loadExternalConfig[JsonObject])
-      resourceTypes <- loadExternalConfig[Set[Iri]](pluginConfig.getString("indexing.resource-types"))
+      resourceTypes <- loadExternalConfig[AllowedViewTypes](pluginConfig.getString("indexing.resource-types"))
       mapping       <- loadExternalConfig[JsonObject](pluginConfig.getString("indexing.mapping"))
       settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
@@ -142,7 +141,7 @@ object SearchConfig {
     ).toOption
 
   final case class IndexingConfig(
-      resourceTypes: Set[Iri],
+      resourceTypes: AllowedViewTypes,
       mapping: JsonObject,
       settings: Option[JsonObject],
       query: SparqlConstructQuery,

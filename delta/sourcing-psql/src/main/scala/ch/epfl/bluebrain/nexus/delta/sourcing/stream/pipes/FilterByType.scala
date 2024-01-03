@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -25,10 +25,12 @@ class FilterByType(config: FilterByTypeConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] =
-    if (config.types.isEmpty || config.types.exists(element.value.types.contains)) IO.pure(element)
-    else IO.pure(element.dropped)
-
+  // TODO duplicated logic for schemas and types
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] = config.types match {
+    case AllowedViewTypes.All                                                             => IO.pure(element)
+    case AllowedViewTypes.RestrictedTo(types) if types.contains(element.value.schema.iri) => IO.pure(element)
+    case AllowedViewTypes.RestrictedTo(_)                                                 => IO.pure(element.dropped)
+  }
 }
 
 /**
@@ -42,24 +44,29 @@ object FilterByType extends PipeDef {
   override def ref: PipeRef                                         = PipeRef.unsafe("filterByType")
   override def withConfig(config: FilterByTypeConfig): FilterByType = new FilterByType(config)
 
-  final case class FilterByTypeConfig(types: Set[Iri]) {
+  final case class FilterByTypeConfig(types: AllowedViewTypes) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
           nxv + ref.toString,
           JsonObject(
-            (nxv + "types").toString -> Json.arr(types.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
+            (nxv + "types").toString -> Json.arr(
+              types.asRestrictedTo
+                .map(_.types.toList)
+                .getOrElse(List.empty)
+                .map(iri => Json.obj("@id" -> iri.asJson)): _*
+            )
           )
         )
       )
     )
   }
-  object FilterByTypeConfig                            {
+  object FilterByTypeConfig                                    {
     implicit val filterByTypeConfigJsonLdDecoder: JsonLdDecoder[FilterByTypeConfig] = deriveDefaultJsonLdDecoder
   }
 
   /**
     * Returns the pipe ref and config from the provided types
     */
-  def apply(types: Set[Iri]): (PipeRef, ExpandedJsonLd) = ref -> FilterByTypeConfig(types).toJsonLd
+  def apply(types: AllowedViewTypes): (PipeRef, ExpandedJsonLd) = ref -> FilterByTypeConfig(types).toJsonLd
 }

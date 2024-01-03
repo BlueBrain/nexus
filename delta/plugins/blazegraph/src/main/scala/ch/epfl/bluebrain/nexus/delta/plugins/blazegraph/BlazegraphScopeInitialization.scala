@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -14,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Identity}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
@@ -38,8 +37,8 @@ class BlazegraphScopeInitialization(
   private def defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     name = Some(defaults.name),
     description = Some(defaults.description),
-    resourceSchemas = Set.empty,
-    resourceTypes = Set.empty,
+    resourceSchemas = AllowedViewTypes.All,
+    resourceTypes = AllowedViewTypes.All,
     resourceTag = None,
     includeMetadata = true,
     includeDeprecated = true,

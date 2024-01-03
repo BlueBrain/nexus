@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -268,7 +268,8 @@ object StreamingQuery {
   }
 
   private def stateFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
-    val typeFragment = Option.when(selectFilter.types.nonEmpty)(fr"value -> 'types' ??| ${typesSqlArray(selectFilter)}")
+    val typeFragment =
+      selectFilter.types.asRestrictedTo.map(restriction => fr"value -> 'types' ??| ${typesSqlArray(restriction)}")
     Fragments.whereAndOpt(
       Scope(projectRef).asFragment,
       offset.asFragment,
@@ -278,7 +279,8 @@ object StreamingQuery {
   }
 
   private def tombstoneFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
-    val typeFragment  = Option.when(selectFilter.types.nonEmpty)(fr"cause -> 'types' ??| ${typesSqlArray(selectFilter)}")
+    val typeFragment  =
+      selectFilter.types.asRestrictedTo.map(restriction => fr"cause -> 'types' ??| ${typesSqlArray(restriction)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
       Scope(projectRef).asFragment,
@@ -288,7 +290,7 @@ object StreamingQuery {
     )
   }
 
-  private def typesSqlArray(selectFilter: SelectFilter): Fragment =
-    Fragment.const(s"ARRAY[${selectFilter.types.map(t => s"'$t'").mkString(",")}]")
+  private def typesSqlArray(restriction: AllowedViewTypes.RestrictedTo): Fragment =
+    Fragment.const(s"ARRAY[${restriction.types.map(t => s"'$t'").mkString(",")}]")
 
 }
