@@ -40,7 +40,7 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
     )
   }
 
-  def expectDownload(
+  def expectFileContentAndMetadata(
       expectedFilename: String,
       expectedContentType: ContentType,
       expectedContent: String,

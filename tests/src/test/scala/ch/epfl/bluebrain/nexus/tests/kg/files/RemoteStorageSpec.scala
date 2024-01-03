@@ -70,11 +70,17 @@ class RemoteStorageSpec extends StorageSpec {
     val expectedStorageWithPerms = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
 
     for {
-      _ <- storagesDsl.createRemoteStorageDefaultPerms(storId, projectRef, remoteFolder)
+      _ <- storagesDsl.createRemoteStorageWithDefaultPerms(storId, projectRef, remoteFolder)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
       _ <- storagesDsl.checkStorageSource(projectRef, storId, expectedStorageSource)
       _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _ <- storagesDsl.createRemoteStorageCustomPerms(storageId2, projectRef, remoteFolder, storage2Read, storage2Write)
+      _ <- storagesDsl.createRemoteStorageWithCustomPerms(
+             storageId2,
+             projectRef,
+             remoteFolder,
+             storage2Read,
+             storage2Write
+           )
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }

@@ -40,10 +40,10 @@ class DiskStorageSpec extends StorageSpec {
     val expectedStorageWithPerms = storageResponse(projectRef, storageId2, storage2Read, storage2Write)
 
     for {
-      _ <- storagesDsl.createDiskStorageDefaultPerms(storId, projectRef)
+      _ <- storagesDsl.createDiskStorageWithDefaultPerms(storId, projectRef)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
       _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _ <- storagesDsl.createDiskStorageCustomPerms(storageId2, projectRef, storage2Read, storage2Write)
+      _ <- storagesDsl.createDiskStorageWithCustomPerms(storageId2, projectRef, storage2Read, storage2Write)
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }

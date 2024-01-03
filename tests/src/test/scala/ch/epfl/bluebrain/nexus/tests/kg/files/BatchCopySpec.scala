@@ -10,13 +10,13 @@ import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.kg.files.BatchFilesSpec.{CopyStorageType, Response, StorageDetails}
+import ch.epfl.bluebrain.nexus.tests.kg.files.BatchCopySpec.{CopyStorageType, Response, StorageDetails}
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import org.scalatest.Assertion
 
-class BatchFilesSpec extends BaseIntegrationSpec {
+class BatchCopySpec extends BaseIntegrationSpec {
 
   "Batch copying files" should {
     val validStorageTypes = List(CopyStorageType.Disk, CopyStorageType.Remote)
@@ -117,7 +117,7 @@ class BatchFilesSpec extends BaseIntegrationSpec {
     response.ids.zip(sourceFiles).traverse { case (destId, FileInput(_, filename, contentType, contents)) =>
       deltaClient
         .get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(destId)}", Coyote, acceptAll) {
-          filesDsl.expectDownload(filename, contentType, contents)
+          filesDsl.expectFileContentAndMetadata(filename, contentType, contents)
         }
     }
 
@@ -142,7 +142,7 @@ class BatchFilesSpec extends BaseIntegrationSpec {
   ): IO[Assertion] = tpe match {
     case CopyStorageType.Disk   =>
       val storageId = genId()
-      storagesDsl.createDiskStorageDefaultPerms(storageId, s"$org/$proj") >>
+      storagesDsl.createDiskStorageWithDefaultPerms(storageId, s"$org/$proj") >>
         test(StorageDetails(org, proj, storageId))
     case CopyStorageType.Remote => givenANewRemoteStorageInExistingProject(org, proj)(test)
   }
@@ -153,7 +153,7 @@ class BatchFilesSpec extends BaseIntegrationSpec {
     val (folder, storageId) = (genId(), genId())
     for {
       _      <- storagesDsl.mkProtectedFolderInStorageService(folder)
-      _      <- storagesDsl.createRemoteStorageDefaultPerms(storageId, s"$org/$proj", folder)
+      _      <- storagesDsl.createRemoteStorageWithDefaultPerms(storageId, s"$org/$proj", folder)
       result <- test(StorageDetails(org, proj, storageId))
       _      <- storagesDsl.deleteFolderInStorageService(folder)
     } yield result
@@ -163,7 +163,7 @@ class BatchFilesSpec extends BaseIntegrationSpec {
     givenANewProjectAndStorageInExistingOrg(genId(), tpe)(test)
 }
 
-object BatchFilesSpec {
+object BatchCopySpec {
 
   sealed trait CopyStorageType
   object CopyStorageType {

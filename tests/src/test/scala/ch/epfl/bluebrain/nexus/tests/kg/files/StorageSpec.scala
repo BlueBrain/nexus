@@ -73,7 +73,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
-        filesDsl.expectDownload("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
+        filesDsl.expectFileContentAndMetadata("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
       }
     }
   }
@@ -86,13 +86,18 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        filesDsl.expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent)
+        filesDsl.expectFileContentAndMetadata("attachment.json", ContentTypes.`application/json`, jsonFileContent)
       }
     }
 
     "be downloaded as gzip" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, gzipHeaders) {
-        filesDsl.expectDownload("attachment.json", ContentTypes.`application/json`, jsonFileContent, compressed = true)
+        filesDsl.expectFileContentAndMetadata(
+          "attachment.json",
+          ContentTypes.`application/json`,
+          jsonFileContent,
+          compressed = true
+        )
       }
     }
 
@@ -102,7 +107,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "download the updated file" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        filesDsl.expectDownload(
+        filesDsl.expectFileContentAndMetadata(
           "attachment.json",
           ContentTypes.`application/json`,
           updatedJsonFileContent
@@ -112,7 +117,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "download the previous revision" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json?rev=1", Coyote, acceptAll) {
-        filesDsl.expectDownload(
+        filesDsl.expectFileContentAndMetadata(
           "attachment.json",
           ContentTypes.`application/json`,
           jsonFileContent
@@ -160,7 +165,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment2", Coyote, acceptAll) {
-        filesDsl.expectDownload(
+        filesDsl.expectFileContentAndMetadata(
           textFileNoContentType.filename,
           ContentTypes.`application/octet-stream`,
           textFileNoContentType.contents

@@ -22,16 +22,16 @@ class StoragesDsl(deltaClient: HttpClient) extends CirceUnmarshalling with Match
       response.status shouldEqual StatusCodes.Created
     }
 
-  def createDiskStorageDefaultPerms(id: String, projectRef: String): IO[Assertion] =
+  def createDiskStorageWithDefaultPerms(id: String, projectRef: String): IO[Assertion] =
     diskPayloadDefaultPerms(id).flatMap(createStorage(_, projectRef))
 
-  def createDiskStorageCustomPerms(id: String, projectRef: String, read: String, write: String): IO[Assertion] =
+  def createDiskStorageWithCustomPerms(id: String, projectRef: String, read: String, write: String): IO[Assertion] =
     diskPayload(id, read, write).flatMap(createStorage(_, projectRef))
 
-  def createRemoteStorageDefaultPerms(id: String, projectRef: String, folder: String): IO[Assertion] =
+  def createRemoteStorageWithDefaultPerms(id: String, projectRef: String, folder: String): IO[Assertion] =
     remoteDiskPayloadDefaultPerms(id, folder).flatMap(createStorage(_, projectRef))
 
-  def createRemoteStorageCustomPerms(
+  def createRemoteStorageWithCustomPerms(
       id: String,
       projectRef: String,
       folder: String,
