@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, SourceAsText}
 import io.circe.{Json, JsonObject}
 
@@ -36,9 +36,9 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
     Some("viewDescription"),
     Some(UserTag.unsafe("some.tag")),
     List(
-      PipeStep(FilterBySchema(Set(nxv + "some-schema")))
+      PipeStep(FilterBySchema(AllowedViewTypes.fromIri(nxv + "some-schema")))
         .description("Only keeping a specific schema"),
-      PipeStep(FilterByType(Set(nxv + "SomeType"))),
+      PipeStep(FilterByType(AllowedViewTypes.fromIri(nxv + "SomeType"))),
       PipeStep.noConfig(SourceAsText.ref)
     ),
     Some(jobj"""{"properties": {}}"""),

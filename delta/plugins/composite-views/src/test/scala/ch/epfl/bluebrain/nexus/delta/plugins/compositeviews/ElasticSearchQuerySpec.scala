@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
@@ -71,8 +71,8 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      Set.empty,
-      Set.empty,
+      AllowedViewTypes.All,
+      AllowedViewTypes.All,
       false,
       false,
       false,
@@ -92,14 +92,15 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      Set.empty,
-      Set.empty,
+      AllowedViewTypes.All,
+      AllowedViewTypes.All,
       false,
       false,
       permissions.query
     )
 
-  private val projectSource = ProjectSource(nxv + "source1", UUID.randomUUID(), Set.empty, Set.empty, None, false)
+  private val projectSource =
+    ProjectSource(nxv + "source1", UUID.randomUUID(), AllowedViewTypes.All, AllowedViewTypes.All, None, false)
 
   private val indexingView = ActiveViewDef(
     ViewRef(project.ref, id),

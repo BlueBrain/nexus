@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
 import io.circe.{Json, JsonObject}
 import munit.FunSuite
 
@@ -16,7 +17,7 @@ class SearchViewFactorySuite extends FunSuite {
 
   private val defaults = Defaults("name", "description")
   private val config   = IndexingConfig(
-    resourceTypes = Set(nxv + "Test"),
+    resourceTypes = AllowedViewTypes.fromIri(nxv + "Test"),
     mapping = JsonObject("mapping" -> Json.obj()),
     settings = Some(JsonObject("settings" -> Json.obj())),
     query = SparqlConstructQuery.unsafe("query"),

@@ -41,7 +41,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, ElemStream, EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
@@ -259,12 +259,19 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val projection1Id       = iri"https://bbp.epfl.ch/projection1"
   private val projection2Id       = iri"https://bbp.epfl.ch/projection2"
   private val projectSource       =
-    ProjectSource(source1Id, UUID.randomUUID(), Set.empty, Set.empty, None, includeDeprecated = false)
+    ProjectSource(
+      source1Id,
+      UUID.randomUUID(),
+      AllowedViewTypes.All,
+      AllowedViewTypes.All,
+      None,
+      includeDeprecated = false
+    )
   private val crossProjectSource  = CrossProjectSource(
     source2Id,
     UUID.randomUUID(),
-    Set.empty,
-    Set.empty,
+    AllowedViewTypes.All,
+    AllowedViewTypes.All,
     None,
     includeDeprecated = false,
     project2,
@@ -273,8 +280,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val remoteProjectSource = RemoteProjectSource(
     source3Id,
     UUID.randomUUID(),
-    Set.empty,
-    Set.empty,
+    AllowedViewTypes.All,
+    AllowedViewTypes.All,
     None,
     includeDeprecated = false,
     project3,
@@ -287,8 +294,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     UUID.randomUUID(),
     IndexingRev.init,
     query,
-    resourceSchemas = Set.empty,
-    resourceTypes = Set(iri"http://music.com/Band"),
+    resourceSchemas = AllowedViewTypes.All,
+    resourceTypes = AllowedViewTypes.fromIri(iri"http://music.com/Band"),
     includeMetadata = false,
     includeDeprecated = false,
     includeContext = false,
@@ -304,8 +311,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     UUID.randomUUID(),
     IndexingRev.init,
     query,
-    resourceSchemas = Set.empty,
-    resourceTypes = Set.empty,
+    resourceSchemas = AllowedViewTypes.All,
+    resourceTypes = AllowedViewTypes.All,
     includeMetadata = false,
     includeDeprecated = false,
     permissions.query

@@ -16,6 +16,7 @@ sealed trait AllowedViewTypes {
 object AllowedViewTypes       {
 
   def fromIris(types: Set[Iri]): AllowedViewTypes = if (types.nonEmpty) RestrictedTo(types) else All
+  def fromIri(iri: Iri): AllowedViewTypes         = fromIris(Set(iri))
 
   final case object All                          extends AllowedViewTypes
   final case class RestrictedTo(types: Set[Iri]) extends AllowedViewTypes

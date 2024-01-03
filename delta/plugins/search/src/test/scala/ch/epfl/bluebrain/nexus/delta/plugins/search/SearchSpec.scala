@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
@@ -77,8 +77,8 @@ class SearchSpec
     UUID.randomUUID(),
     IndexingRev.init,
     SparqlConstructQuery.unsafe("CONSTRUCT ..."),
-    Set.empty,
-    Set.empty,
+    AllowedViewTypes.All,
+    AllowedViewTypes.All,
     false,
     false,
     false,
@@ -92,7 +92,9 @@ class SearchSpec
   private val compViewProj1   = CompositeView(
     nxv + "searchView",
     project1.ref,
-    NonEmptyList.of(ProjectSource(nxv + "searchSource", UUID.randomUUID(), Set.empty, Set.empty, None, false)),
+    NonEmptyList.of(
+      ProjectSource(nxv + "searchSource", UUID.randomUUID(), AllowedViewTypes.All, AllowedViewTypes.All, None, false)
+    ),
     NonEmptyList.of(esProjection),
     None,
     UUID.randomUUID(),

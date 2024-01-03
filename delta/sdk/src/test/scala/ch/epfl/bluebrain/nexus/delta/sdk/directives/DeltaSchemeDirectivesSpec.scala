@@ -43,7 +43,8 @@ class DeltaSchemeDirectivesSpec
       concat(
         (pathPrefix("types") & projectRef & pathEndOrSingleSlash) { implicit projectRef =>
           types.apply { types =>
-            complete(types.mkString(","))
+            val typesAsString = types.asRestrictedTo.map(_.types.mkString(",")).getOrElse("")
+            complete(typesAsString)
           }
         },
         baseUriPrefix(baseUri.prefix) {
