@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, FailingScopeInitializationLog, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -264,6 +264,28 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
           .accepted
 
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))
+    }
+
+    "execute the successful init step even if there is a failing init step" in {
+      val successfulScopeInit = ScopeInitializationLog().accepted
+      val failingScopeInit    = new FailingScopeInitializationLog()
+
+      val org     = Label.unsafe(genString())
+      val project = ProjectRef(org, Label.unsafe(genString()))
+
+      val fetchOrg: FetchOrganization = {
+        case `org` => IO.pure(Organization(org, orgUuid, None))
+        case other => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+      }
+
+      val inits    = Set(failingScopeInit, successfulScopeInit)
+      val projects = ProjectsImpl(fetchOrg, validateDeletion, inits, defaultApiMappings, config, xas, clock)
+
+      val createProject                    = projects.create(project, payload)
+      val assertSuccessfulInitStepExecuted =
+        successfulScopeInit.createdProjects.get.map(p => p shouldEqual Set(project))
+
+      createProject >> assertSuccessfulInitStepExecuted
     }
   }
 }

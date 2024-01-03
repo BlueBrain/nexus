@@ -39,11 +39,20 @@ final class ProjectsImpl private (
       resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
       _        <- scopeInitializations
                     .parUnorderedTraverse { init =>
-                      init.onProjectCreation(resource.value, caller).handleErrorWith {
-                        // TODO: add a log line in case the saving to db fails
-                        case e: ScopeInitializationFailed => errorStore.save(init.entityType, resource.value.ref, e)
-                        case _                            => logger.error("wrong")
-                      }
+                      init
+                        .onProjectCreation(resource.value, caller)
+                        .attemptNarrow[ScopeInitializationFailed]
+                        .flatMap {
+                          case Left(e)  =>
+                            errorStore
+                              .save(init.entityType, resource.value.ref, e)
+                              .onError(e =>
+                                logger.error(e)(
+                                  s"Failed to save error for '${init.entityType}' initialization step on project '${resource.value.ref}'"
+                                )
+                              )
+                          case Right(_) => IO.unit
+                        }
                     }
                     .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }
                     .span("initializeProject")
