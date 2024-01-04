@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ValidViewTypes}
 
 /**
   * Directives requiring interactions with the projects and organizations modules
@@ -77,14 +77,14 @@ final class DeltaSchemeDirectives(
   /**
     * Extract the ''type'' query parameter(s) as Iri
     */
-  def types(implicit projectRef: ProjectRef): Directive1[AllowedViewTypes] =
+  def types(implicit projectRef: ProjectRef): Directive1[ValidViewTypes] =
     onSuccess(fetchContext(projectRef).attempt.unsafeToFuture()).flatMap {
       case Right(projectContext) =>
         implicit val pc: ProjectContext = projectContext
-        parameter("type".as[IriVocab].*).map[AllowedViewTypes](t =>
-          AllowedViewTypes.RestrictedTo(t.toSet.map((iriVocab: IriVocab) => iriVocab.value))
+        parameter("type".as[IriVocab].*).map[ValidViewTypes](t =>
+          ValidViewTypes.RestrictedTo(t.toSet.map((iriVocab: IriVocab) => iriVocab.value))
         )
-      case _                     => provide(AllowedViewTypes.All)
+      case _                     => provide(ValidViewTypes.All)
     }
 }
 

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -112,8 +112,8 @@ object BlazegraphView {
       description: Option[String],
       project: ProjectRef,
       uuid: UUID,
-      resourceSchemas: AllowedViewTypes,
-      resourceTypes: AllowedViewTypes,
+      resourceSchemas: ValidViewTypes,
+      resourceTypes: ValidViewTypes,
       resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,

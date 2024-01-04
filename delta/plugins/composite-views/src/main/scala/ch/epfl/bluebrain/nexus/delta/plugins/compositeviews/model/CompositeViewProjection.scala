@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
 
@@ -51,13 +51,13 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * @return
     *   the schemas to filter by, empty means all
     */
-  def resourceSchemas: AllowedViewTypes
+  def resourceSchemas: ValidViewTypes
 
   /**
     * @return
     *   the resource types to filter by, empty means all
     */
-  def resourceTypes: AllowedViewTypes
+  def resourceTypes: ValidViewTypes
 
   /**
     * @return
@@ -124,8 +124,8 @@ object CompositeViewProjection {
       uuid: UUID,
       indexingRev: IndexingRev,
       query: SparqlConstructQuery,
-      resourceSchemas: AllowedViewTypes,
-      resourceTypes: AllowedViewTypes,
+      resourceSchemas: ValidViewTypes,
+      resourceTypes: ValidViewTypes,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       includeContext: Boolean,
@@ -152,8 +152,8 @@ object CompositeViewProjection {
       uuid: UUID,
       indexingRev: IndexingRev,
       query: SparqlConstructQuery,
-      resourceSchemas: AllowedViewTypes,
-      resourceTypes: AllowedViewTypes,
+      resourceSchemas: ValidViewTypes,
+      resourceTypes: ValidViewTypes,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission

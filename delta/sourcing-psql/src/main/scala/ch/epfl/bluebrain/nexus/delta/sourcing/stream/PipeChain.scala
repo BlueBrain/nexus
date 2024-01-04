@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
 
 /**
   * An identified collection of pipe references along with their configuration. It can be compiled into a single
@@ -54,8 +54,8 @@ object PipeChain {
     *   include deprecated resources if true
     */
   def apply(
-      resourceSchemas: AllowedViewTypes,
-      resourceTypes: AllowedViewTypes,
+      resourceSchemas: ValidViewTypes,
+      resourceTypes: ValidViewTypes,
       includeMetadata: Boolean,
       includeDeprecated: Boolean
   ): Option[PipeChain] = {

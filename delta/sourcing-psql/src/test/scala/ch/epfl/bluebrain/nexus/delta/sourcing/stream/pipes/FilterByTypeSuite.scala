@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
@@ -50,7 +50,7 @@ class FilterByTypeSuite extends NexusSuite {
     registry
       .lookupA[FilterByType.type](FilterByType.ref)
       .rightValue
-      .withJsonLdConfig(FilterByTypeConfig(AllowedViewTypes.fromIris(types)).toJsonLd)
+      .withJsonLdConfig(FilterByTypeConfig(ValidViewTypes.fromIris(types)).toJsonLd)
       .rightValue
 
   test("Do not filter elements if the expected type set is empty") {

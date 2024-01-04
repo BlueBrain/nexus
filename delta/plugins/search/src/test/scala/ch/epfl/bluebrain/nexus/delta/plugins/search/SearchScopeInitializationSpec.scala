@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
@@ -43,7 +43,7 @@ class SearchScopeInitializationSpec
 
   private val indexingConfig =
     IndexingConfig(
-      AllowedViewTypes.All,
+      ValidViewTypes.All,
       JsonObject.empty,
       None,
       SparqlConstructQuery.unsafe(""),

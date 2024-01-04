@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
@@ -109,12 +109,12 @@ class CompositeViewDecodingSpec extends CatsEffectSpec with CirceLiteral with Fi
         Some(IndexGroup.unsafe("cv")),
         mapping,
         context,
-        resourceTypes = AllowedViewTypes.fromIri(iri"http://music.com/Band")
+        resourceTypes = ValidViewTypes.restrictedTo(iri"http://music.com/Band")
       ),
       SparqlProjectionFields(
         Some(iri"http://music.com/albums"),
         query2,
-        resourceTypes = AllowedViewTypes.fromIri(iri"http://music.com/Album")
+        resourceTypes = ValidViewTypes.restrictedTo(iri"http://music.com/Album")
       )
     ),
     Some(Interval(1.minutes))
@@ -142,12 +142,12 @@ class CompositeViewDecodingSpec extends CatsEffectSpec with CirceLiteral with Fi
         Some(IndexGroup.unsafe("cv")),
         mapping,
         context,
-        resourceTypes = AllowedViewTypes.fromIri(iri"http://music.com/Band")
+        resourceTypes = ValidViewTypes.restrictedTo(iri"http://music.com/Band")
       ),
       SparqlProjectionFields(
         None,
         query2,
-        resourceTypes = AllowedViewTypes.fromIri(iri"http://music.com/Album")
+        resourceTypes = ValidViewTypes.restrictedTo(iri"http://music.com/Album")
       )
     ),
     Some(Interval(1.minutes))

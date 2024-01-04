@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
@@ -51,7 +51,7 @@ class FilterBySchemaSuite extends NexusSuite {
     registry
       .lookupA[FilterBySchema.type](FilterBySchema.ref)
       .rightValue
-      .withJsonLdConfig(FilterBySchemaConfig(AllowedViewTypes.fromIris(schemas)).toJsonLd)
+      .withJsonLdConfig(FilterBySchemaConfig(ValidViewTypes.fromIris(schemas)).toJsonLd)
       .rightValue
 
   test("Do not filter elements if the expected schema set is empty") {

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Identity}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
@@ -37,8 +37,8 @@ class BlazegraphScopeInitialization(
   private def defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     name = Some(defaults.name),
     description = Some(defaults.description),
-    resourceSchemas = AllowedViewTypes.All,
-    resourceTypes = AllowedViewTypes.All,
+    resourceSchemas = ValidViewTypes.All,
+    resourceTypes = ValidViewTypes.All,
     resourceTag = None,
     includeMetadata = true,
     includeDeprecated = true,

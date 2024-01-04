@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 
@@ -43,8 +43,8 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
     val indexingValue            = IndexingBlazegraphViewValue(
       None,
       None,
-      AllowedViewTypes.All,
-      AllowedViewTypes.All,
+      ValidViewTypes.All,
+      ValidViewTypes.All,
       None,
       includeMetadata = false,
       includeDeprecated = false,

@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusEr
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{AllowedViewTypes, ElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -149,9 +149,9 @@ object DeltaClient {
         }
     }
 
-    private def typeQuery(restriction: AllowedViewTypes) = restriction match {
-      case AllowedViewTypes.All                 => Query.Empty
-      case AllowedViewTypes.RestrictedTo(types) => Query(types.map(t => "type" -> t.toString).toList: _*)
+    private def typeQuery(restriction: ValidViewTypes) = restriction match {
+      case ValidViewTypes.All                 => Query.Empty
+      case ValidViewTypes.RestrictedTo(types) => Query(types.map(t => "type" -> t.toString).toList: _*)
     }
 
     private def elemAddress(source: RemoteProjectSource) =

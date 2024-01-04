@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{nextIndexingRev, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.AllowedViewTypes
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import munit.FunSuite
 
@@ -22,8 +22,8 @@ class BlazegraphViewValueSuite extends FunSuite {
 
   test("Views with different reindexing fields") {
     val viewValues = List(
-      viewValue.copy(resourceSchemas = AllowedViewTypes.fromIri(Iri.unsafe("http://localhost/schema"))),
-      viewValue.copy(resourceTypes = AllowedViewTypes.fromIri(Iri.unsafe("https://localhost/type"))),
+      viewValue.copy(resourceSchemas = ValidViewTypes.restrictedTo(Iri.unsafe("http://localhost/schema"))),
+      viewValue.copy(resourceTypes = ValidViewTypes.restrictedTo(Iri.unsafe("https://localhost/type"))),
       viewValue.copy(resourceTag = Some(UserTag.unsafe("tag"))),
       viewValue.copy(includeMetadata = true),
       viewValue.copy(includeDeprecated = true)
