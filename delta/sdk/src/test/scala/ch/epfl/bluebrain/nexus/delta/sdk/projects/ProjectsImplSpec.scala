@@ -284,11 +284,13 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       val createProject                    = projects.create(project, payload)
       val assertSuccessfulInitStepExecuted =
         successfulScopeInit.createdProjects.get.map(p => p shouldEqual Set(project))
-      val assertProjectUnhealthy           = projects.healthy(project).map(_ shouldEqual false)
+      val assertProjectsAreHealthy         = projects.health.map(_ should be(empty))
+      val assertProjectsAreUnhealthy       = projects.health.map(_ should not be empty)
 
-      createProject >>
+      (assertProjectsAreHealthy >>
+        createProject >>
         assertSuccessfulInitStepExecuted >>
-        assertProjectUnhealthy
+        assertProjectsAreUnhealthy).accepted
     }
 
   }

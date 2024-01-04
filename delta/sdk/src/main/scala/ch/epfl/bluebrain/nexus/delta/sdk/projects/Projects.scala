@@ -6,13 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UndeprecateProject, UpdateProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUndeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -153,9 +153,9 @@ trait Projects {
   def defaultApiMappings: ApiMappings
 
   /**
-    * Returns true if the project is healthy, false otherwise.
+    * Returns the list of unhealthy projects
     */
-  def healthy(ref: ProjectRef): IO[Boolean]
+  def health: IO[List[ProjectRef]]
 
 }
 

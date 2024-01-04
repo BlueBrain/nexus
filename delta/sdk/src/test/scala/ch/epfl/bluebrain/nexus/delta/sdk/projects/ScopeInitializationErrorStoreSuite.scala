@@ -27,37 +27,32 @@ class ScopeInitializationErrorStoreSuite
   private val entityType     = EntityType("test")
   private val scopeInitError = ScopeInitializationFailed("boom")
 
-//  override def beforeAll(): Unit = {
-//    super.beforeAll()
-// //     clear the scoped_initialization_errors table
-//    sql"""DELETE FROM scope_initialization_errors""".update.run.void.transact(xas.write).accepted
-//  }
-
-  test("Clear table") {
-    sql"""DELETE FROM scope_initialization_errors""".update.run.void.transact(xas.write)
+  override def beforeEach(context: BeforeEach): Unit = {
+    super.beforeEach(context)
+    sql"""DELETE FROM scope_initialization_errors""".update.run.void.transact(xas.write).accepted
   }
 
   test("Inserting an error should succeed") {
     val project     = genRandomProjectRef()
     // format: off
     val expectedRow = 
-      List(ScopeInitErrorRow(1, entityType.value, project.organization.value, project.project.value, scopeInitError.reason, Instant.EPOCH))
+      List(ScopeInitErrorRow(1, entityType, project.organization, project.project, scopeInitError.reason, Instant.EPOCH))
     // format: on
 
     saveSimpleError(project) >>
-      errorStore.fetch(project).assertEquals(expectedRow)
+      errorStore.fetch.assertEquals(expectedRow)
   }
 
-  test("The count should be zero for a project without errors") {
-    val project = genRandomProjectRef()
-    errorStore.count(project).assertEquals(0)
+  test("The count should be zero for a project when there are no errors") {
+    assertIO(errorStore.fetch, List.empty)
   }
 
-  test("The count should be correct for a project that has errors") {
-    val project = genRandomProjectRef()
-    saveSimpleError(project) >>
-      saveSimpleError(project) >>
-      errorStore.count(project).assertEquals(2)
+  test("The count of errors is correct when there are errors across several projects") {
+    val project1 = genRandomProjectRef()
+    val project2 = genRandomProjectRef()
+    saveSimpleError(project1) >>
+      saveSimpleError(project2) >>
+      assertIO(errorStore.fetch.map(_.size), 2)
   }
 
   private def genRandomProjectRef() =

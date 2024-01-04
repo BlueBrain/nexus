@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import doobie.implicits._
 import doobie.postgres.implicits._
 
@@ -29,14 +29,9 @@ trait ScopeInitializationErrorStore {
   def save(entityType: EntityType, project: ProjectRef, e: ScopeInitializationFailed): IO[Unit]
 
   /**
-    * Count the number of errors for a given project
+    * Fetch all scope initialization errors
     */
-  def count(project: ProjectRef): IO[Int]
-
-  /**
-    * Fetch all errors for a given project
-    */
-  def fetch(project: ProjectRef): IO[List[ScopeInitErrorRow]]
+  def fetch: IO[List[ScopeInitErrorRow]]
 
 }
 
@@ -58,14 +53,8 @@ object ScopeInitializationErrorStore {
             logger.error(e)(s"Failed to save error for '$entityType' initialization step on project '$project'")
           }
 
-      override def count(project: ProjectRef): IO[Int] =
-        sql"""SELECT COUNT(*) FROM scope_initialization_errors WHERE project = ${project.project} AND org = ${project.organization}"""
-          .query[Int]
-          .unique
-          .transact(xas.read)
-
-      override def fetch(project: ProjectRef): IO[List[ScopeInitErrorRow]] =
-        sql"""SELECT ordering, type, org, project, message, instant FROM scope_initialization_errors WHERE project = ${project.project} AND org = ${project.organization} ORDER BY ordering"""
+      override def fetch: IO[List[ScopeInitErrorRow]] =
+        sql"""SELECT ordering, type, org, project, message, instant FROM scope_initialization_errors"""
           .query[ScopeInitErrorRow]
           .to[List]
           .transact(xas.read)
@@ -74,9 +63,9 @@ object ScopeInitializationErrorStore {
 
   case class ScopeInitErrorRow(
       ordering: Int,
-      entityType: String,
-      org: String,
-      project: String,
+      entityType: EntityType,
+      org: Label,
+      project: Label,
       message: String,
       instant: Instant
   )
