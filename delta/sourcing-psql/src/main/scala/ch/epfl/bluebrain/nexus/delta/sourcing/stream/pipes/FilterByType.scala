@@ -4,6 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
@@ -61,8 +62,7 @@ object FilterByType extends PipeDef {
     )
   }
   object FilterByTypeConfig                                  {
-    implicit val filterByTypeConfigJsonLdDecoder: JsonLdDecoder[FilterByTypeConfig] =
-      ValidViewTypes.jsonLdDec.map(FilterByTypeConfig(_))
+    implicit val filterByTypeConfigJsonLdDecoder: JsonLdDecoder[FilterByTypeConfig] = deriveDefaultJsonLdDecoder
   }
 
   /**
