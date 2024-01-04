@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectInitializationFailed, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, FailingScopeInitializationLog, ScopeInitializationLog}
@@ -287,10 +287,10 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       val assertProjectsAreHealthy         = projects.health.map(_ should be(empty))
       val assertProjectsAreUnhealthy       = projects.health.map(_ should be(List(project)))
 
-      (assertProjectsAreHealthy >>
-        createProject >>
-        assertSuccessfulInitStepExecuted >>
-        assertProjectsAreUnhealthy).accepted
+      assertProjectsAreHealthy.accepted
+      createProject.rejectedWith[ProjectInitializationFailed]
+      assertSuccessfulInitStepExecuted.accepted
+      assertProjectsAreUnhealthy.accepted
     }
 
   }

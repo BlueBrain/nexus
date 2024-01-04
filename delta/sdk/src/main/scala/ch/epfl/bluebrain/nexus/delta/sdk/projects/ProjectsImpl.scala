@@ -41,8 +41,10 @@ final class ProjectsImpl private (
                     .parUnorderedTraverse { init =>
                       init
                         .onProjectCreation(resource.value, caller)
-                        .recoverWith { case e: ScopeInitializationFailed =>
-                          errorStore.save(init.entityType, resource.value.ref, e)
+                        .onError {
+                          case e: ScopeInitializationFailed =>
+                            errorStore.save(init.entityType, resource.value.ref, e)
+                          case _                            => IO.unit
                         }
                     }
                     .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }
