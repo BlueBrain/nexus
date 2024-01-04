@@ -10,8 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
@@ -51,6 +53,8 @@ class OwnerPermissionsScopeInitialization(appendAcls: Acl => IO[Unit], ownerPerm
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("setProjectPermissions")
+
+  override def entityType: EntityType = Permissions.entityType
 }
 
 object OwnerPermissionsScopeInitialization {

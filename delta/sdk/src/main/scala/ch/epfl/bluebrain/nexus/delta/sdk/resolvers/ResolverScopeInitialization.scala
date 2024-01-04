@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -10,22 +9,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccoun
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverScopeInitialization.{logger, CreateResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 
 /**
   * The default creation of the InProject resolver as part of the project initialization.
   *
-  * @param resolvers
-  *   the resolvers module
-  * @param serviceAccount
-  *   the subject that will be recorded when performing the initialization
+  * @param createResolver
+  *   function used to create a resolver
+  * @param defaults
+  *   default name and description for the resolver
   */
 class ResolverScopeInitialization(createResolver: CreateResolver, defaults: Defaults) extends ScopeInitialization {
 
@@ -46,6 +44,8 @@ class ResolverScopeInitialization(createResolver: CreateResolver, defaults: Defa
       .span("createDefaultResolver")
 
   override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] = IO.unit
+
+  override def entityType: EntityType = Resolvers.entityType
 }
 
 object ResolverScopeInitialization {

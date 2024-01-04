@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
@@ -14,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 
 /**
   * The default creation of the default disk storage as part of the project initialization.
@@ -23,6 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
   *   the storages module
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
+  * @param defaults
+  *   default name and description for the storage
   */
 class StorageScopeInitialization(
     storages: Storages,
@@ -31,7 +31,7 @@ class StorageScopeInitialization(
 ) extends ScopeInitialization {
 
   private val logger                                        = Logger[StorageScopeInitialization]
-  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(Storages.entityType.value)
 
   implicit private val caller: Caller = serviceAccount.caller
 
@@ -65,4 +65,5 @@ class StorageScopeInitialization(
       subject: Identity.Subject
   ): IO[Unit] = IO.unit
 
+  override def entityType: EntityType = Storages.entityType
 }

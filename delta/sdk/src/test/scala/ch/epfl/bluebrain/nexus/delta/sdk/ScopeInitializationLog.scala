@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef}
 import cats.effect.Ref
 
 /**
@@ -24,6 +24,8 @@ final class ScopeInitializationLog private (
       subject: Identity.Subject
   ): IO[Unit] =
     createdProjects.update(_ + project.ref)
+
+  override def entityType: EntityType = EntityType("scopeInitializationLog")
 }
 
 object ScopeInitializationLog {

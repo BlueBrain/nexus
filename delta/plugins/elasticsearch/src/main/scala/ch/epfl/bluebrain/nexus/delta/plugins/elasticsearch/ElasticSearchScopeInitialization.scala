@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
@@ -15,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.views.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
 
 /**
@@ -26,6 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicat
   *   the ElasticSearchViews module
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
+  * @param defaults
+  *   default name and description for the view
   */
 class ElasticSearchScopeInitialization(
     views: ElasticSearchViews,
@@ -35,7 +35,7 @@ class ElasticSearchScopeInitialization(
 
   private val logger                                        = Logger[ElasticSearchScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
-  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(ElasticSearchViews.entityType.value)
 
   lazy val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
@@ -68,4 +68,5 @@ class ElasticSearchScopeInitialization(
       subject: Identity.Subject
   ): IO[Unit] = IO.unit
 
+  override def entityType: EntityType = ElasticSearchViews.entityType
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
@@ -38,5 +39,7 @@ trait ScopeInitialization {
     *   the identity that was recorded for the creation of the project
     */
   def onProjectCreation(project: Project, subject: Subject): IO[Unit]
+
+  def entityType: EntityType
 
 }

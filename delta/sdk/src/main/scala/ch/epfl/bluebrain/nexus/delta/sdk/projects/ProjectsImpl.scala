@@ -25,6 +25,7 @@ import fs2.Stream
 final class ProjectsImpl private (
     log: ProjectsLog,
     scopeInitializations: Set[ScopeInitialization],
+    errorStore: ScopeInitializationErrorStore,
     override val defaultApiMappings: ApiMappings
 ) extends Projects {
 
@@ -33,15 +34,20 @@ final class ProjectsImpl private (
   override def create(
       ref: ProjectRef,
       fields: ProjectFields
-  )(implicit caller: Subject): IO[ProjectResource] = {
+  )(implicit caller: Subject): IO[ProjectResource] =
     for {
       resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
       _        <- scopeInitializations
-                    .parUnorderedTraverse(_.onProjectCreation(resource.value, caller))
+                    .parUnorderedTraverse { init =>
+                      init
+                        .onProjectCreation(resource.value, caller)
+                        .recoverWith { case e: ScopeInitializationFailed =>
+                          errorStore.save(init.entityType, resource.value.ref, e)
+                        }
+                    }
                     .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }
                     .span("initializeProject")
     } yield resource
-  }
 
   override def update(ref: ProjectRef, rev: Int, fields: ProjectFields)(implicit
       caller: Subject
@@ -126,6 +132,7 @@ object ProjectsImpl {
     new ProjectsImpl(
       ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
       scopeInitializations,
+      ScopeInitializationErrorStore(xas, clock),
       defaultApiMappings
     )
 }
