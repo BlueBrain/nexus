@@ -291,6 +291,6 @@ object StreamingQuery {
   }
 
   private def typesSqlArray(restriction: ValidViewTypes.RestrictedTo): Fragment =
-    Fragment.const(s"ARRAY[${restriction.types.map(t => s"'$t'").mkString(",")}]")
+    Fragment.const(s"ARRAY[${restriction.types.map(t => s"'$t'").mkString(",")}]::TEXT[]")
 
 }
