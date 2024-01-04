@@ -152,6 +152,11 @@ trait Projects {
     */
   def defaultApiMappings: ApiMappings
 
+  /**
+    * Returns true if the project is healthy, false otherwise.
+    */
+  def healthy(ref: ProjectRef): IO[Boolean]
+
 }
 
 object Projects {

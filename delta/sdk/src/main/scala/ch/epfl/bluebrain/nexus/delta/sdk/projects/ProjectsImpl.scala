@@ -105,6 +105,8 @@ final class ProjectsImpl private (
   private def eval(cmd: ProjectCommand): IO[ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))
 
+  override def healthy(ref: ProjectRef): IO[Boolean] =
+    errorStore.count(ref).map(_ == 0)
 }
 
 object ProjectsImpl {
