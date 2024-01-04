@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -13,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ValidViewTypes}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, ValidViewTypes}
 
 /**
   * The default creation of the default SparqlView as part of the project initialization.
@@ -23,6 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
   *   the BlazegraphViews module
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
+  * @param defaults
+  *   default name and description for the view
   */
 class BlazegraphScopeInitialization(
     views: BlazegraphViews,
@@ -32,7 +33,7 @@ class BlazegraphScopeInitialization(
 
   private val logger                                        = Logger[BlazegraphScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
-  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(BlazegraphViews.entityType.value)
 
   private def defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     name = Some(defaults.name),
@@ -63,5 +64,7 @@ class BlazegraphScopeInitialization(
       organization: Organization,
       subject: Identity.Subject
   ): IO[Unit] = IO.unit
+
+  override def entityType: EntityType = BlazegraphViews.entityType
 
 }

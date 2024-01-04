@@ -14,7 +14,7 @@ sealed trait ValidViewTypes {
   }
 }
 
-object ValidViewTypes       {
+object ValidViewTypes {
   final case object All extends ValidViewTypes
 
   final case class RestrictedTo(types: Set[Iri]) extends ValidViewTypes

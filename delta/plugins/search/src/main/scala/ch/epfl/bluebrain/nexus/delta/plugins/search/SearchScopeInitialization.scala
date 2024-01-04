@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -14,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 final class SearchScopeInitialization(
@@ -51,4 +50,6 @@ final class SearchScopeInitialization(
       organization: Organization,
       subject: Identity.Subject
   ): IO[Unit] = IO.unit
+
+  override def entityType: EntityType = EntityType("searchView")
 }
