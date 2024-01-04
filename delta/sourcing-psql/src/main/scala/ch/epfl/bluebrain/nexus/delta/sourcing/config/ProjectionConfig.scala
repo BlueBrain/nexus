@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.config
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import pureconfig.ConfigReader
+import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration.FiniteDuration
@@ -56,7 +57,16 @@ object ProjectionConfig {
 
   object ClusterConfig {
     implicit final val clusterConfigReader: ConfigReader[ClusterConfig] =
-      deriveReader[ClusterConfig]
+      deriveReader[ClusterConfig].emap { config =>
+        Either.cond(
+          config.nodeIndex < config.size,
+          config,
+          new FailureReason {
+            override def description: String = s"'node-index' must be smaller than 'size'"
+          }
+        )
+
+      }
   }
 
 }
