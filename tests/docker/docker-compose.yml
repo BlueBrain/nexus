@@ -15,53 +15,65 @@ services:
       minio:
         condition: service_started
     environment:
-      DELTA_PLUGINS: "/opt/docker/plugins/"
-      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
-      KAMON_ENABLED: "false"
+      - DELTA_PLUGINS
+      - DELTA_EXTERNAL_CONF
+      - KAMON_ENABLED
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'
       - '-c'
       - |
         ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
-        /opt/docker/bin/delta-app -Xmx4G
+        /opt/docker/bin/delta-app -Xmx4G -Dapp.projections.cluster.size=${CLUSTER_SIZE}
     ports:
       - 8080:8080
     volumes:
       - ./config:/config
       - /tmp:/default-volume
 
-#  delta2:
-#    depends_on:
-#      - delta
-#    environment:
-#      DELTA_PLUGINS: "/opt/docker/plugins/"
-#      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
-#      KAMON_ENABLED: "false"
-#    image: bluebrain/nexus-delta:latest
-#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
-#                 "-Xmx4G" ]
-#    ports:
-#      - 8081:8080
-#    volumes:
-#      - ./config:/config
-#      - /tmp:/default-volume
-#
-#  delta3:
-#    depends_on:
-#      - delta2
-#    environment:
-#      DELTA_PLUGINS: "/opt/docker/plugins/"
-#      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
-#      KAMON_ENABLED: "false"
-#    image: bluebrain/nexus-delta:latest
-#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
-#                 "-Xmx4G" ]
-#    ports:
-#      - 8082:8080
-#    volumes:
-#      - ./config:/config
-#      - /tmp:/default-volume
+  delta2:
+    depends_on:
+      - delta
+    environment:
+      DELTA_PLUGINS: "/opt/docker/plugins/"
+      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
+      KAMON_ENABLED: "false"
+    image: bluebrain/nexus-delta:latest
+    profiles:
+      - "cluster"
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - |
+        ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
+        /opt/docker/bin/delta-app -Xmx4G -Dapp.projections.cluster.size=${CLUSTER_SIZE} -Dapp.projections.cluster.node-index=1 -Dapp.database.tables-autocreate=false
+    ports:
+      - 8081:8080
+    volumes:
+      - ./config:/config
+      - /tmp:/default-volume
+
+  delta3:
+    depends_on:
+      - delta2
+    environment:
+      DELTA_PLUGINS: "/opt/docker/plugins/"
+      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
+      KAMON_ENABLED: "false"
+    image: bluebrain/nexus-delta:latest
+    profiles:
+      - "cluster"
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - |
+        ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
+        /opt/docker/bin/delta-app -Xmx4G -Dapp.projections.cluster.size=${CLUSTER_SIZE} -Dapp.projections.cluster.node-index=2 -Dapp.database.tables-autocreate=false
+    ports:
+      - 8082:8080
+    volumes:
+      - ./config:/config
+      - /tmp:/default-volume
 
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.5
