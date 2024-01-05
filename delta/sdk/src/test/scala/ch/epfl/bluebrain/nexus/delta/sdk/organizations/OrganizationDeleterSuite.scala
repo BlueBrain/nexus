@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationAction}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
@@ -44,7 +44,8 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
   private lazy val orgDeleter      = OrganizationDeleter(xas)
   private val projRef              = ProjectRef.unsafe(org1.value, "myproj")
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
-  private lazy val orgs            = OrganizationsImpl(Set(), orgConfig, xas, clock)
+  private val noopInit             = ScopeInitializationAction.noErrorStore(Set.empty)
+  private lazy val orgs            = OrganizationsImpl(noopInit, orgConfig, xas, clock)
   private val permission           = Permissions.resources.read
   private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas, clock)
 

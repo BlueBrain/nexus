@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.{ScopeInitialization, ScopeInitializationAction}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -36,12 +36,14 @@ trait ProjectsFixture { self: CatsEffectSuite =>
   )(implicit
       base: BaseUri,
       uuidF: UUIDF
-  ): IOFixture[(Transactors, Projects)] =
+  ): IOFixture[(Transactors, Projects)] = {
+    val inits = ScopeInitializationAction.noErrorStore(scopeInitializations)
     ResourceSuiteLocalFixture(
       "projects",
       Doobie.resource().map { xas =>
-        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, scopeInitializations, apiMappings, config, xas, clock))
+        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, inits, apiMappings, config, xas, clock))
       }
     )
+  }
 
 }

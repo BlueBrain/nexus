@@ -77,6 +77,15 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(cr)
   }
 
+  make[ScopeInitializationAction].from {
+    (
+        inits: Set[ScopeInitialization],
+        xas: Transactors,
+        clock: Clock[IO]
+    ) =>
+      ScopeInitializationAction(inits, xas, clock)
+  }
+
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
       bulkOpCtx         <- ContextValue.fromFile("contexts/bulk-operation.json")
