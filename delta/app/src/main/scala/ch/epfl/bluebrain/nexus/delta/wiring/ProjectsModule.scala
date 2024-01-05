@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -51,7 +51,7 @@ object ProjectsModule extends ModuleDef {
     (
         config: AppConfig,
         organizations: Organizations,
-        scopeInitializations: Set[ScopeInitialization],
+        scopeInitializer: ScopeInitializer,
         mappings: ApiMappingsCollection,
         xas: Transactors,
         baseUri: BaseUri,
@@ -66,13 +66,17 @@ object ProjectsModule extends ModuleDef {
               WrappedOrganizationRejection(e)
             },
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
-          scopeInitializations,
+          scopeInitializer,
           mappings.merge,
           config.projects,
           xas,
           clock
         )(baseUri, uuidF)
       )
+  }
+
+  make[ProjectsHealth].from { (errorStore: ScopeInitializationErrorStore) =>
+    ProjectsHealth(errorStore)
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>

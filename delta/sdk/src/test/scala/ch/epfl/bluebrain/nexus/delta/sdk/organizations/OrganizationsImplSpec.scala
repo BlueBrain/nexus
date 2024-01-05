@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
-import cats.effect.IO
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, OrganizationResource, ProjectResource, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -39,16 +39,22 @@ class OrganizationsImplSpec
   val label        = Label.unsafe("myorg")
   val label2       = Label.unsafe("myorg2")
 
-  private lazy val (scopeInitLog, orgs) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> OrganizationsImpl(Set(scopeInitLog), config, xas, clock)
-  }.accepted
+  private def orgInitializer(wasExecuted: Ref[IO, Boolean]) = new ScopeInitializer {
+    override def initializeOrganization(organizationResource: OrganizationResource)(implicit
+        caller: Subject
+    ): IO[Unit] = wasExecuted.set(true)
+
+    override def initializeProject(projectResource: ProjectResource)(implicit caller: Subject): IO[Unit] =
+      IO.unit
+  }
+
+  private lazy val orgs = OrganizationsImpl(ScopeInitializer.noop, config, xas, clock)
 
   "Organizations implementation" should {
 
     "create an organization" in {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1, subject)
-      scopeInitLog.createdOrgs.get.accepted shouldEqual Set(label)
     }
 
     "update an organization" in {
@@ -81,8 +87,6 @@ class OrganizationsImplSpec
 
     "create another organization" in {
       orgs.create(label2, None).accepted
-
-      scopeInitLog.createdOrgs.get.accepted shouldEqual Set(label, label2)
     }
 
     "list organizations" in {
@@ -101,6 +105,14 @@ class OrganizationsImplSpec
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1), UnscoredResultEntry(result2)))
       orgs.list(FromPagination(0, 10), filter, order).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(result1)))
+    }
+
+    "run the initializer upon organization creation" in {
+      val initializerWasExecuted = Ref.unsafe[IO, Boolean](false)
+      val orgs                   = OrganizationsImpl(orgInitializer(initializerWasExecuted), config, xas, clock)
+
+      orgs.create(Label.unsafe(genString()), description).accepted
+      initializerWasExecuted.get.accepted shouldEqual true
     }
 
     "fail to fetch an organization on nonexistent revision" in {
