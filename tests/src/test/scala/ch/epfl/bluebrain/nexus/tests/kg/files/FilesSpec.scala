@@ -1,11 +1,15 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.`@id`
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import io.circe.Json
 import org.scalatest.Assertion
+import io.circe.syntax._
 
 class FilesSpec extends BaseIntegrationSpec {
 
@@ -28,7 +32,6 @@ class FilesSpec extends BaseIntegrationSpec {
         eventually { assertFileNotInListing(id) }
       }
     }
-
   }
 
   "Files undeprecation" should {
@@ -42,6 +45,18 @@ class FilesSpec extends BaseIntegrationSpec {
 
   }
 
+  "Creating a file with metadata" should {
+    "allow a file to be found via search" in {
+      val cerebellumId = givenAFileWithBrainRegion("cerebellum")
+      val cortexId     = givenAFileWithBrainRegion("cortex")
+
+      val results = queryForFilesWithBrainRegion("cerebellum").accepted
+
+      exactly(1, results) should have(`@id`(cerebellumId))
+      no(results) should have(`@id`(cortexId))
+    }
+  }
+
   private def assertListingTotal(id: String, expectedTotal: Int) =
     deltaClient.get[Json](s"/files/$projectRef?locate=$id&deprecated=false", Writer) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
@@ -53,6 +68,37 @@ class FilesSpec extends BaseIntegrationSpec {
 
   private def assertFileNotInListing(id: String) =
     assertListingTotal(id, 0)
+
+  private def queryForFilesWithBrainRegion(brainRegion: String): IO[List[Json]] = {
+    val metadata = UrlUtils.encode(Json.obj("keywords" := Json.obj("brainRegion" := brainRegion)).noSpaces)
+    deltaClient
+      .getJson[Json](s"/files/$projectRef?metadata=$metadata", Writer)
+      .map { json =>
+        json.hcursor.downField("_results").as[List[Json]].rightValue
+      }
+  }
+
+  private def givenAFileWithBrainRegion(brainRegion: String): String = {
+    val id     = genString()
+    val fullId = deltaClient
+      .uploadFileWithMetadata(
+        s"/files/$org/$project/$id",
+        "file content",
+        ContentTypes.`text/plain(UTF-8)`,
+        s"$id.json",
+        Writer,
+        Json.obj("keywords" := Json.obj("brainRegion" := brainRegion))
+      )
+      .map { case (json, response) =>
+        response.status shouldEqual StatusCodes.Created
+        json.hcursor.downField("@id").as[String].getOrElse(fail("Could not extract @id from response"))
+      }
+      .accepted
+
+    eventually { assertFileIsInListing(id) }
+
+    fullId
+  }
 
   /** Provides a file in the default storage */
   private def givenAFile(assertion: String => Assertion): Assertion = {

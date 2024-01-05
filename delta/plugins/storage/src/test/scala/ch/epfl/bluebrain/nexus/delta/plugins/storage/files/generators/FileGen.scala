@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
@@ -112,6 +113,7 @@ object FileGen {
       project: ProjectRef,
       storage: ResourceRef.Revision,
       attributes: FileAttributes,
+      metadata: Option[FileUserMetadata] = None,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -125,6 +127,7 @@ object FileGen {
       storage,
       storageType,
       attributes,
+      metadata,
       tags,
       rev,
       deprecated,
@@ -140,6 +143,7 @@ object FileGen {
       project: ProjectRef,
       storage: ResourceRef.Revision,
       attributes: FileAttributes,
+      metadata: Option[FileUserMetadata] = None,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -147,7 +151,19 @@ object FileGen {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): FileResource =
-    state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy).toResource
+    state(
+      id,
+      project,
+      storage,
+      attributes,
+      metadata,
+      storageType,
+      rev,
+      deprecated,
+      tags,
+      createdBy,
+      updatedBy
+    ).toResource
 
   def mkTempDir(prefix: String) =
     AbsolutePath(JavaFiles.createTempDirectory(prefix)).fold(e => throw new Exception(e), identity)

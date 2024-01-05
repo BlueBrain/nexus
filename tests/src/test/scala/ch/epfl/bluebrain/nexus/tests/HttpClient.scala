@@ -24,7 +24,6 @@ import org.scalatest.{AppendedClues, Assertion}
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -109,8 +108,8 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   }
 
   def uploadFile[A](
-      url: String,
-      attachment: String,
+      requestPath: String,
+      fileContents: String,
       contentType: ContentType,
       fileName: String,
       identity: Identity,
@@ -118,7 +117,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
     def buildClue(a: A, response: HttpResponse) =
       s"""
-         |Endpoint: PUT $url
+         |Endpoint: PUT $requestPath
          |Identity: $identity
          |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
          |Status code: ${response.status}
@@ -129,8 +128,8 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
 
     request(
       PUT,
-      url,
-      Some(attachment),
+      requestPath,
+      Some(fileContents),
       identity,
       (s: String) => {
         val entity = HttpEntity(contentType, s.getBytes)
@@ -141,6 +140,34 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
         assertResponse(a, response) withClue buildClue(a, response)
       },
       extraHeaders
+    )
+  }
+
+  def uploadFileWithMetadata(
+      requestPath: String,
+      fileContents: String,
+      contentType: ContentType,
+      fileName: String,
+      identity: Identity,
+      metadata: Json
+  )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
+
+    request[Json, String, (Json, HttpResponse)](
+      PUT,
+      requestPath,
+      Some(fileContents),
+      identity,
+      (s: String) => {
+        FormData(
+          BodyPart.Strict(
+            "file",
+            HttpEntity(contentType, s.getBytes),
+            Map("filename" -> fileName, "metadata" -> metadata.noSpaces)
+          )
+        ).toEntity()
+      },
+      (json: Json, response: HttpResponse) => (json, response),
+      jsonHeaders
     )
   }
 
@@ -218,7 +245,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       url,
       Some(query),
       identity,
-      (s: String) => HttpEntity(rdfApplicationSqlQuery, s),
+      (query: String) => HttpEntity(rdfApplicationSqlQuery, query),
       assertResponse,
       extraHeaders
     )

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
@@ -46,9 +47,10 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       digest,
       Client
     )
+  private val metadata   = FileUserMetadata(Map("key" -> "value"))
     
   // format: off
-  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), Some(metadata), 1, instant, subject, None)
   private val createdTagged = created.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
@@ -70,18 +72,21 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
 
   private val filesMapping = List(
     (
+      "FileCreated",
       created,
       loadEvents("files", "file-created.json"),
       Created,
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
+      "FileCreated with tags",
       createdTagged,
       loadEvents("files", "file-created-tagged.json"),
       Created,
       expected(createdTagged, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
+      "FileUpdated",
       updated,
       loadEvents("files", "file-updated.json"),
       Updated,
@@ -94,6 +99,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       )
     ),
     (
+      "FileAttributesUpdated",
       updatedAttr,
       loadEvents("files", "file-attributes-created-updated.json"),
       Updated,
@@ -106,24 +112,28 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       )
     ),
     (
+      "FileTagAdded",
       tagged,
       loadEvents("files", "file-tag-added.json"),
       Tagged,
       expected(tagged, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileTagDeleted",
       tagDeleted,
       loadEvents("files", "file-tag-deleted.json"),
       TagDeleted,
       expected(tagDeleted, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileDeprecated",
       deprecated,
       loadEvents("files", "file-deprecated.json"),
       Deprecated,
       expected(deprecated, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileUndeprecated",
       undeprecated,
       loadEvents("files", "file-undeprecated.json"),
       Undeprecated,
@@ -131,22 +141,22 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     )
   )
 
-  filesMapping.foreach { case (event, (database, sse), action, expectedExtraFields) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+  filesMapping.foreach { case (name, event, (database, sse), action, expectedExtraFields) =>
+    test(s"Correctly serialize $name") {
       assertEquals(FileEvent.serializer.codec(event), database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize $name") {
       assertEquals(FileEvent.serializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize $name as an SSE") {
       FileEvent.sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode $name to metric") {
       FileEvent.fileEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,
@@ -169,6 +179,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     storageRef,
     DiskStorageType,
     attributes,
+    Some(metadata),
     Tags(UserTag.unsafe("mytag") -> 3),
     5,
     false,

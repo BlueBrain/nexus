@@ -182,6 +182,10 @@
         }
       }
     },
+    "keywords": {
+      "type": "object",
+      "dynamic": true
+    },
     "_storage": {
       "properties": {
         "_rev": {

@@ -13,9 +13,11 @@ import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import io.circe.parser
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -41,8 +43,11 @@ sealed trait FormDataExtractor {
       entity: HttpEntity,
       maxFileSize: Long,
       storageAvailableSpace: Option[Long]
-  ): IO[(FileDescription, BodyPartEntity)]
+  ): IO[FileInformation]
 }
+
+case class FileInformation(metadata: Option[FileUserMetadata], description: FileDescription, contents: BodyPartEntity)
+
 object FormDataExtractor {
 
   private val fieldName: String = "file"
@@ -74,7 +79,7 @@ object FormDataExtractor {
           entity: HttpEntity,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[(FileDescription, BodyPartEntity)] = {
+      ): IO[FileInformation] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         for {
           formData <- unmarshall(entity, sizeLimit)
@@ -105,7 +110,7 @@ object FormDataExtractor {
           formData: FormData,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[Option[(FileDescription, BodyPartEntity)]] = IO
+      ): IO[Option[FileInformation]] = IO
         .fromFuture(
           IO(
             formData.parts
@@ -122,12 +127,16 @@ object FormDataExtractor {
             WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
         }
 
-      private def extractFile(part: FormData.BodyPart): Future[Option[(FileDescription, BodyPartEntity)]] = part match {
+      private def extractFile(part: FormData.BodyPart): Future[Option[FileInformation]] = part match {
         case part if part.name == fieldName =>
-          val filename    = part.filename.getOrElse("file")
+          val filename = part.filename.getOrElse("file")
+
           val contentType = detectContentType(filename, part.entity.contentType)
+          val metadata    = part.dispositionParams.get("metadata").flatMap { metadata =>
+            parser.parse(metadata).toOption.flatMap(_.as[FileUserMetadata].toOption)
+          }
           FileDescription(filename, contentType).unsafeToFuture().map { desc =>
-            Some(desc -> part.entity)
+            Some(FileInformation(metadata, desc, part.entity))
           }
         case part                           =>
           part.entity.discardBytes().future.as(None)

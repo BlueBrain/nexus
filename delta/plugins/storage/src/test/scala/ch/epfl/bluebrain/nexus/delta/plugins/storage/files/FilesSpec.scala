@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
@@ -142,12 +143,13 @@ class FilesSpec(docker: RemoteStorageDocker)
         project: ProjectRef,
         storage: ResourceRef.Revision,
         attributes: FileAttributes,
+        metadata: Option[FileUserMetadata] = None,
         storageType: StorageType = StorageType.DiskStorage,
         rev: Int = 1,
         deprecated: Boolean = false,
         tags: Tags = Tags.empty
     ): FileResource =
-      FileGen.resourceFor(id, project, storage, attributes, storageType, rev, deprecated, tags, bob, bob)
+      FileGen.resourceFor(id, project, storage, attributes, metadata, storageType, rev, deprecated, tags, bob, bob)
 
     "creating a file" should {
 
@@ -265,15 +267,16 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed and tag with the id passed" in {
         aclCheck.append(AclAddress.Root, bob -> Set(otherWrite)).accepted
-        val path     = Uri.Path("my/file-3.txt")
-        val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
-        val attr     =
+        val path      = Uri.Path("my/file-3.txt")
+        val tempAttr  = attributes("myfile.txt").copy(digest = NotComputedDigest)
+        val attr      =
           tempAttr.copy(
             location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"),
             origin = Storage,
             mediaType = None
           )
-        val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, tags = Tags(tag -> 1))
+        val expected  =
+          mkResource(file2, projectRef, remoteRev, attr, storageType = RemoteStorageType, tags = Tags(tag -> 1))
 
         val result    = files
           .createLink(fileId("file2"), Some(remoteId), Some("myfile.txt"), None, path, Some(tag))
@@ -354,7 +357,15 @@ class FilesSpec(docker: RemoteStorageDocker)
       "succeed" in {
         val tempAttr  = attributes("myfile.txt")
         val attr      = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val expected  = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 2, tags = Tags(tag -> 1))
+        val expected  = mkResource(
+          file2,
+          projectRef,
+          remoteRev,
+          attr,
+          storageType = RemoteStorageType,
+          rev = 2,
+          tags = Tags(tag -> 1)
+        )
         val updatedF2 = for {
           _ <- files.updateAttributes(file2, projectRef)
           f <- files.fetch(fileIdIri(file2))
@@ -371,7 +382,15 @@ class FilesSpec(docker: RemoteStorageDocker)
         val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
         val newTag   = UserTag.unsafe(genString())
         val expected =
-          mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1, newTag -> 3))
+          mkResource(
+            file2,
+            projectRef,
+            remoteRev,
+            attr,
+            storageType = RemoteStorageType,
+            rev = 3,
+            tags = Tags(tag -> 1, newTag -> 3)
+          )
         val actual   = files
           .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2, Some(newTag))
           .accepted

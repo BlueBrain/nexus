@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewType}
@@ -265,7 +265,7 @@ class ElasticSearchViewsQuerySuite
         bulk <- allResources.traverse { r =>
                   r.asDocument(ref).map { d =>
                     // We create a unique id across all indices
-                    ElasticSearchBulk.Index(view.index, genString(), d)
+                    ElasticSearchAction.Index(view.index, genString(), d)
                   }
                 }
         _    <- client.bulk(bulk)

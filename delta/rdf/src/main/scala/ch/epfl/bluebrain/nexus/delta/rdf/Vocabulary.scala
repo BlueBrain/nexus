@@ -99,6 +99,7 @@ object Vocabulary {
     val description       = schema + "description"
     val name              = schema + "name"
     val unitText          = schema + "unitText"
+    val keywords          = iri"https://schema.org/keywords"
     val value             = schema + "value"
     val Person            = schema + "Person"
     val QuantitativeValue = schema + "QuantitativeValue"
@@ -144,6 +145,7 @@ object Vocabulary {
     val instant               = Metadata("instant")
     val issuer                = Metadata("issuer")
     val label                 = Metadata("label")
+    val keywords              = Metadata("keywords")
     val maxScore              = Metadata("maxScore")
     val markedForDeletion     = Metadata("markedForDeletion")
     val next                  = Metadata("next")

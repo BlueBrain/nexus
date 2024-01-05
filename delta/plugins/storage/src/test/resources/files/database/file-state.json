@@ -20,6 +20,11 @@
     "path": "file.txt",
     "uuid": "8049ba90-7cc6-4de5-93a1-802c04200dcc"
   },
+  "metadata": {
+    "keywords": {
+      "key": "value"
+    }
+  },
   "createdAt": "1970-01-01T00:00:00Z",
   "createdBy": {
     "@type": "User",

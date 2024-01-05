@@ -64,7 +64,7 @@ object BatchFiles {
         for {
           iri      <- generateId(pc)
           command   =
-            CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, c.subject, dest.tag)
+            CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, None, c.subject, dest.tag)
           resource <- evalCreateCommand(command)
         } yield resource
       }

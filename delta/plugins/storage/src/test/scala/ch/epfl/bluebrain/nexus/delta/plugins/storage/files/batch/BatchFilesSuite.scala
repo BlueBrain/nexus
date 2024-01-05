@@ -109,6 +109,7 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
       destStorageRef,
       destStorage.value.tpe,
       _,
+      None,
       c.subject,
       destination.tag
     )

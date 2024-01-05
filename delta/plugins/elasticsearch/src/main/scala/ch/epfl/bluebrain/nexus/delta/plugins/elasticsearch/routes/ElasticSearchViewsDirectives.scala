@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.{Directive, Directive0, Directive1, MalformedQu
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.Or
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{FileUserMetadata, Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, UriDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriBase
@@ -28,6 +28,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
 
   private def types(implicit um: FromStringUnmarshaller[Type]): Directive1[List[Type]] =
     parameter("type".as[Type].*).map(_.toList.reverse)
+
+  private def userFileMetadata: Directive1[Option[FileUserMetadata]] =
+    parameter("metadata".as[FileUserMetadata].?)
 
   private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[TypeOperator] = {
     parameter("typeOperator".as[TypeOperator].?[TypeOperator](Or))
@@ -68,7 +71,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive1[ResourcesSearchParams] = {
-    (searchParams & createdAt & updatedAt & types & typeOperator & schema & id & locate & parameter("q".?) & tagParam)
+    (searchParams & createdAt & updatedAt & types & typeOperator & userFileMetadata & schema & id & locate & parameter(
+      "q".?
+    ) & tagParam)
       .tmap {
         case (
               deprecated,
@@ -79,6 +84,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
               updatedAt,
               types,
               typeOperator,
+              fileUserMetadata,
               schema,
               id,
               locate,
@@ -97,6 +103,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
             updatedAt,
             types,
             typeOperator,
+            fileUserMetadata,
             schema,
             qq,
             tag
@@ -111,7 +118,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
 
-    (searchParams & createdAt & updatedAt & types & typeOperator & schema & id & locate & parameter("q".?) & tagParam)
+    (searchParams & createdAt & updatedAt & types & typeOperator & userFileMetadata & schema & id & locate & parameter(
+      "q".?
+    ) & tagParam)
       .tmap {
         case (
               deprecated,
@@ -122,6 +131,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
               updatedAt,
               types,
               typeOperator,
+              keywords,
               schema,
               id,
               locate,
@@ -140,6 +150,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
             updatedAt,
             types,
             typeOperator,
+            keywords,
             schema,
             qq,
             tag

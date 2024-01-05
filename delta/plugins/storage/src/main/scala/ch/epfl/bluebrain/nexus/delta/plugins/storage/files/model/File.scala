@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -39,6 +40,7 @@ final case class File(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
+    metadata2: Option[FileUserMetadata],
     tags: Tags
 ) {
   def metadata: Metadata = Metadata(tags.tags)
@@ -56,7 +58,15 @@ object File {
         keywords.tpe -> storageType.iri.asJson,
         "_rev"       -> file.storage.rev.asJson
       )
-      file.attributes.asJsonObject.add("_storage", storageJson)
+      val v1                                = file.attributes.asJsonObject.add("_storage", storageJson)
+      file.metadata2 match {
+        case Some(metadata) =>
+          v1.add(
+            "keywords",
+            metadata.keywords.asJson
+          )
+        case None           => v1
+      }
     }
 
   implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =

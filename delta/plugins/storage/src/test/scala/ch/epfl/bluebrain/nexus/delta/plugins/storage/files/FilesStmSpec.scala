@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.{ContentTypes, Uri}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -45,21 +46,22 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     dig,
     Client
   )
+  private val metadata         = FileUserMetadata(Map("key" -> "value"))
 
   "The Files state machine" when {
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
-        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, Some(myTag))
+        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, None, bob, Some(myTag))
 
         evaluate(clock)(None, createCmd).accepted shouldEqual
-          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, Some(myTag))
+          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, None, 1, epoch, bob, Some(myTag))
       }
 
       "create a new event from a UpdateFile command" in {
         val updateCmd = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
         val current   =
-          FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
+          FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), Some(metadata), RemoteStorageType)
 
         evaluate(clock)(Some(current), updateCmd).accepted shouldEqual
           FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice, None)
@@ -121,7 +123,10 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
 
       "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(clock)(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
+        evaluate(clock)(
+          Some(current),
+          CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, None, bob, None)
+        )
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -179,7 +184,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     "producing next state" should {
 
       "from a new FileCreated event" in {
-        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, None)
+        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, None, 1, epoch, bob, None)
         val nextState = FileGen.state(id, projectRef, storageRef, attributes, createdBy = bob, updatedBy = bob)
 
         next(None, event).value shouldEqual nextState

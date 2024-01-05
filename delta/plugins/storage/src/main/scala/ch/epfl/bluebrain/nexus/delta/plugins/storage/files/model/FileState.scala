@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -52,6 +53,7 @@ final case class FileState(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
+    metadata: Option[FileUserMetadata],
     tags: Tags,
     rev: Int,
     deprecated: Boolean,
@@ -73,7 +75,7 @@ final case class FileState(
     */
   def types: Set[Iri] = Set(nxvFile)
 
-  private def file: File = File(id, project, storage, storageType, attributes, tags)
+  private def file: File = File(id, project, storage, storageType, attributes, metadata, tags)
 
   def toResource: FileResource =
     ResourceF(
@@ -103,6 +105,8 @@ object FileState {
       deriveConfiguredCodec[Digest]
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
       deriveConfiguredCodec[FileAttributes]
+    implicit val userMetadataCodec: Codec.AsObject[FileUserMetadata] =
+      deriveConfiguredCodec[FileUserMetadata]
     implicit val codec: Codec.AsObject[FileState]                    = deriveConfiguredCodec[FileState]
     Serializer.dropNullsInjectType()
   }

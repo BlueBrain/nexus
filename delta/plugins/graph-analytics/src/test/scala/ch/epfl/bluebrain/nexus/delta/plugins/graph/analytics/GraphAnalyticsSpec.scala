@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
@@ -63,9 +63,10 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
       client
         .bulk(
           List(
-            ElasticSearchBulk.Index(idx, "1", jsonContentOf("document-source.json", "id" -> sam, "brother" -> sam)),
-            ElasticSearchBulk.Index(idx, "2", jsonContentOf("document-source.json", "id" -> anna, "brother" -> robert)),
-            ElasticSearchBulk.Index(idx, "3", jsonContentOf("document-source.json", "id" -> sam, "brother" -> fred))
+            ElasticSearchAction.Index(idx, "1", jsonContentOf("document-source.json", "id" -> sam, "brother" -> sam)),
+            ElasticSearchAction
+              .Index(idx, "2", jsonContentOf("document-source.json", "id" -> anna, "brother" -> robert)),
+            ElasticSearchAction.Index(idx, "3", jsonContentOf("document-source.json", "id" -> sam, "brother" -> fred))
           )
         )
         .accepted

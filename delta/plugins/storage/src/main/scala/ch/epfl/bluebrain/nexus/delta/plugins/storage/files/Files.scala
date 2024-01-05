@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -95,12 +96,12 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- generateId(pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
+      pc                     <- fetchContext.onCreate(projectRef)
+      iri                    <- generateId(pc)
+      _                      <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, None, caller.subject, tag))
+      (storageRef, storage)  <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      (attributes, metadata) <- extractFileAttributes(iri, entity, storage)
+      res                    <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -125,11 +126,11 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      (iri, pc)             <- id.expandIri(fetchContext.onCreate)
-      _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, caller.subject, tag))
+      (iri, pc)              <- id.expandIri(fetchContext.onCreate)
+      _                      <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, None, caller.subject, tag))
+      (storageRef, storage)  <- fetchAndValidateActiveStorage(storageId, id.project, pc)
+      (attributes, metadata) <- extractFileAttributes(iri, entity, storage)
+      res                    <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -221,7 +222,7 @@ final class Files(
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
+      (attributes, _)       <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateFile")
@@ -405,12 +406,12 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] =
     for {
-      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
+      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, None, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- linkFile(storage, path, description, iri)
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, None, caller.subject, tag))
     } yield res
 
   private def linkFile(storage: Storage, path: Uri.Path, desc: FileDescription, fileId: Iri): IO[FileAttributes] =
@@ -445,17 +446,21 @@ final class Files(
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
-  private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileAttributes] =
+  private def extractFileAttributes(
+      iri: Iri,
+      entity: HttpEntity,
+      storage: Storage
+  ): IO[(FileAttributes, Option[FileUserMetadata])]                                                =
     for {
-      (description, source) <- extractFormData(iri, storage, entity)
-      attributes            <- saveFile(iri, storage, description, source)
-    } yield attributes
+      FileInformation(metadata, description, contents) <- extractFormData(iri, storage, entity)
+      attributes                                       <- saveFile(iri, storage, description, contents)
+    } yield attributes -> metadata
 
-  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[(FileDescription, BodyPartEntity)] =
+  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[FileInformation] =
     for {
       storageAvailableSpace <- storagesStatistics.getStorageAvailableSpace(storage)
-      (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
-    } yield (description, source)
+      fi                    <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
+    } yield fi
 
   private def saveFile(iri: Iri, storage: Storage, description: FileDescription, source: BodyPartEntity) =
     SaveFile(storage, remoteDiskStorageClient, config)
@@ -597,7 +602,7 @@ object Files {
   ): Option[FileState] = {
     // format: off
     def created(e: FileCreated): Option[FileState] = Option.when(state.isEmpty) {
-      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, Tags(e.tag, e.rev), e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, e.metadata, Tags(e.tag, e.rev), e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
     }
 
     def updated(e: FileUpdated): Option[FileState] = state.map { s =>
@@ -641,7 +646,7 @@ object Files {
     def create(c: CreateFile) = state match {
       case None    =>
         clock.realTimeInstant.map(
-          FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag)
+          FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, c.userMetadata, 1, _, c.subject, c.tag)
         )
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
