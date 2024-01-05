@@ -58,7 +58,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
   private lazy val projects = ProjectsImpl(
     fetchOrg,
     _ => IO.unit,
-    ScopeInitializer.withoutErrorStore(Set.empty),
+    ScopeInitializer.noop,
     ApiMappings.empty,
     config,
     xas,

@@ -44,8 +44,7 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
   private lazy val orgDeleter      = OrganizationDeleter(xas)
   private val projRef              = ProjectRef.unsafe(org1.value, "myproj")
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
-  private val noopInit             = ScopeInitializer.withoutErrorStore(Set.empty)
-  private lazy val orgs            = OrganizationsImpl(noopInit, orgConfig, xas, clock)
+  private lazy val orgs            = OrganizationsImpl(ScopeInitializer.noop, orgConfig, xas, clock)
   private val permission           = Permissions.resources.read
   private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas, clock)
 

@@ -79,4 +79,7 @@ object ScopeInitializer {
     }
     apply(scopeInitializations, dummyErrorStore)
   }
+
+  /** An initializer that does not perform any operation */
+  def noop: ScopeInitializer = withoutErrorStore(Set.empty)
 }
