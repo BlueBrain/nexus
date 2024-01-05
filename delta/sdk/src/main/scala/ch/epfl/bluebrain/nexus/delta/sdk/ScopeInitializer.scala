@@ -12,14 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
-// TODO: Review name
-// TODO: Add docstring
 trait ScopeInitializer {
 
+  /** Execute the actions necessary at org creation */
   def initializeOrganization(
       organizationResource: OrganizationResource
   )(implicit caller: Subject): IO[Unit]
 
+  /** Execute the actions necessary at project creation */
   def initializeProject(
       projectResource: ProjectResource
   )(implicit caller: Subject): IO[Unit]
@@ -37,6 +37,15 @@ object ScopeInitializer {
     apply(scopeInitializations, errorStore)
   }
 
+  /**
+    * Construct a [[ScopeInitializer]] out of the provided [[ScopeInitialization]]
+    *
+    * @param scopeInitializations
+    *   the set of initializations to execute
+    * @param errorStore
+    *   the store for initialization errors
+    * @return
+    */
   def apply(
       scopeInitializations: Set[ScopeInitialization],
       errorStore: => ScopeInitializationErrorStore
