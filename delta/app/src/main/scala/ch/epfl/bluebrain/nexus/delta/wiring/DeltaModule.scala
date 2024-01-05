@@ -77,13 +77,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(cr)
   }
 
-  make[ScopeInitializationAction].from {
+  make[ScopeInitializer].from {
     (
         inits: Set[ScopeInitialization],
         xas: Transactors,
         clock: Clock[IO]
     ) =>
-      ScopeInitializationAction(inits, xas, clock)
+      ScopeInitializer(inits, xas, clock)
   }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectInitializationFailed, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, FailingScopeInitialization, ScopeInitializationAction, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, FailingScopeInitialization, ScopeInitializationLog, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -76,7 +76,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     scopeInitLog -> ProjectsImpl(
       fetchOrg,
       validateDeletion,
-      ScopeInitializationAction.noErrorStore(Set(scopeInitLog)),
+      ScopeInitializer.noErrorStore(Set(scopeInitLog)),
       defaultApiMappings,
       config,
       xas,
@@ -291,7 +291,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       val projects       = ProjectsImpl(
         fetchOrg,
         validateDeletion,
-        ScopeInitializationAction(inits, xas, clock),
+        ScopeInitializer(inits, xas, clock),
         defaultApiMappings,
         config,
         xas,

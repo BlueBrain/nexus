@@ -27,13 +27,13 @@ object OrganizationsModule extends ModuleDef {
   make[Organizations].from {
     (
         config: AppConfig,
-        scopeInitializationAction: ScopeInitializationAction,
+        scopeInitializer: ScopeInitializer,
         clock: Clock[IO],
         uuidF: UUIDF,
         xas: Transactors
     ) =>
       OrganizationsImpl(
-        scopeInitializationAction,
+        scopeInitializer,
         config.organizations,
         xas,
         clock

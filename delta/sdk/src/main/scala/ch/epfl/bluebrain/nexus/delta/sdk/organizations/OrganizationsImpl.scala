@@ -11,14 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitializationAction}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
 final class OrganizationsImpl private (
     log: OrganizationsLog,
-    scopeInitializationAction: ScopeInitializationAction
+    scopeInitializer: ScopeInitializer
 ) extends Organizations {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -29,7 +29,7 @@ final class OrganizationsImpl private (
   )(implicit caller: Subject): IO[OrganizationResource] =
     for {
       resource <- eval(CreateOrganization(label, description, caller)).span("createOrganization")
-      _        <- scopeInitializationAction
+      _        <- scopeInitializer
                     .initializeOrganization(resource)
                     .span("initializeOrganization")
     } yield resource
@@ -84,7 +84,7 @@ object OrganizationsImpl {
     GlobalEventLog[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection]
 
   def apply(
-      scopeInitializationAction: ScopeInitializationAction,
+      scopeInitializer: ScopeInitializer,
       config: OrganizationsConfig,
       xas: Transactors,
       clock: Clock[IO]
@@ -93,7 +93,7 @@ object OrganizationsImpl {
   ): Organizations =
     new OrganizationsImpl(
       GlobalEventLog(Organizations.definition(clock), config.eventLog, xas),
-      scopeInitializationAction
+      scopeInitializer
     )
 
 }

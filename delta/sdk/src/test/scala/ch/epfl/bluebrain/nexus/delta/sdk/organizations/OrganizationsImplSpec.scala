@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationAction, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -40,7 +40,7 @@ class OrganizationsImplSpec
   val label2       = Label.unsafe("myorg2")
 
   private lazy val (scopeInitLog, orgs) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> OrganizationsImpl(ScopeInitializationAction.noErrorStore(Set(scopeInitLog)), config, xas, clock)
+    scopeInitLog -> OrganizationsImpl(ScopeInitializer.noErrorStore(Set(scopeInitLog)), config, xas, clock)
   }.accepted
 
   "Organizations implementation" should {

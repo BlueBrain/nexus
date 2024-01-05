@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializationAction
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -104,7 +104,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     (userWithReadSingleProjectPermission, AclAddress.Project(ref), Set(projectsPermissions.read))
   )
 
-  private val noopInit          = ScopeInitializationAction.noErrorStore(Set.empty)
+  private val noopInit          = ScopeInitializer.noErrorStore(Set.empty)
   private lazy val projects     =
     ProjectsImpl(fetchOrg, _ => IO.unit, noopInit, defaultApiMappings, projectsConfig, xas, clock)
   private lazy val provisioning =

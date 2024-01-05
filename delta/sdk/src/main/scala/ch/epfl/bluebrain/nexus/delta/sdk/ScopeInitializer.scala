@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 // TODO: Review name
 // TODO: Add docstring
-trait ScopeInitializationAction {
+trait ScopeInitializer {
 
   def initializeOrganization(
       organizationResource: OrganizationResource
@@ -26,13 +26,13 @@ trait ScopeInitializationAction {
 
 }
 
-object ScopeInitializationAction {
+object ScopeInitializer {
 
   def apply(
       scopeInitializations: Set[ScopeInitialization],
       xas: Transactors,
       clock: Clock[IO]
-  ): ScopeInitializationAction = {
+  ): ScopeInitializer = {
     lazy val errorStore = ScopeInitializationErrorStore(xas, clock)
     apply(scopeInitializations, errorStore)
   }
@@ -40,8 +40,8 @@ object ScopeInitializationAction {
   def apply(
       scopeInitializations: Set[ScopeInitialization],
       errorStore: => ScopeInitializationErrorStore
-  ): ScopeInitializationAction =
-    new ScopeInitializationAction {
+  ): ScopeInitializer =
+    new ScopeInitializer {
 
       override def initializeOrganization(
           organizationResource: OrganizationResource
@@ -74,7 +74,7 @@ object ScopeInitializationAction {
   /** A constructor for tests that does not store initialization errors */
   def noErrorStore(
       scopeInitializations: Set[ScopeInitialization]
-  ): ScopeInitializationAction = {
+  ): ScopeInitializer = {
     val dummyErrorStore = new ScopeInitializationErrorStore {
       override def save(entityType: EntityType, ref: ProjectRef, error: ScopeInitializationFailed): IO[Unit] = IO.unit
       override def fetch: IO[List[ScopeInitErrorRow]]                                                        = IO.pure(List.empty)

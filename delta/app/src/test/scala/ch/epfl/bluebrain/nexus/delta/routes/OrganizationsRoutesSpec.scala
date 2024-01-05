@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializationAction
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -37,7 +37,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     Set(orgsPermissions.write, orgsPermissions.read)
   )
 
-  private val orgInit                              = ScopeInitializationAction.noErrorStore(Set(aopd))
+  private val orgInit                              = ScopeInitializer.noErrorStore(Set(aopd))
   private lazy val orgs                            = OrganizationsImpl(orgInit, config, xas, clock)
   private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 

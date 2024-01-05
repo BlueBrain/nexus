@@ -51,7 +51,7 @@ object ProjectsModule extends ModuleDef {
     (
         config: AppConfig,
         organizations: Organizations,
-        scopeInitializationAction: ScopeInitializationAction,
+        scopeInitializer: ScopeInitializer,
         mappings: ApiMappingsCollection,
         xas: Transactors,
         baseUri: BaseUri,
@@ -66,7 +66,7 @@ object ProjectsModule extends ModuleDef {
               WrappedOrganizationRejection(e)
             },
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
-          scopeInitializationAction,
+          scopeInitializer,
           mappings.merge,
           config.projects,
           xas,

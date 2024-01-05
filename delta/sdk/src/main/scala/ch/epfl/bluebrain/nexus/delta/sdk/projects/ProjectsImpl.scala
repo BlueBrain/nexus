@@ -22,7 +22,7 @@ import fs2.Stream
 
 final class ProjectsImpl private (
     log: ProjectsLog,
-    scopeInitializationAction: ScopeInitializationAction,
+    scopeInitializer: ScopeInitializer,
     override val defaultApiMappings: ApiMappings
 ) extends Projects {
 
@@ -34,7 +34,7 @@ final class ProjectsImpl private (
   )(implicit caller: Subject): IO[ProjectResource] =
     for {
       resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
-      _        <- scopeInitializationAction
+      _        <- scopeInitializer
                     .initializeProject(resource)
                     .span("initializeProject")
     } yield resource
@@ -110,7 +110,7 @@ object ProjectsImpl {
   final def apply(
       fetchAndValidateOrg: FetchOrganization,
       validateDeletion: ValidateProjectDeletion,
-      scopeInitializationAction: ScopeInitializationAction,
+      scopeInitializer: ScopeInitializer,
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
       xas: Transactors,
@@ -121,7 +121,7 @@ object ProjectsImpl {
   ): Projects =
     new ProjectsImpl(
       ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
-      scopeInitializationAction,
+      scopeInitializer,
       defaultApiMappings
     )
 }
