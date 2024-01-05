@@ -75,8 +75,8 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  make[ProjectsHealth].from { (xas: Transactors, clock: Clock[IO]) =>
-    ProjectsHealth(xas, clock)
+  make[ProjectsHealth].from { (errorStore: ScopeInitializationErrorStore) =>
+    ProjectsHealth(errorStore)
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>

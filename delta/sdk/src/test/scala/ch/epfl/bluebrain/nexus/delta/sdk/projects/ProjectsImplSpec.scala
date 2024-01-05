@@ -274,6 +274,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))
     }
 
+    // TODO: This test should be made into an integration test
     "execute the successful init step even if there is a failing init step" in {
       val successfulScopeInit = ScopeInitializationLog().accepted
       val failingScopeInit    = new FailingScopeInitialization("resolver")
@@ -288,16 +289,17 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       }
 
       val inits          = Set(failingScopeInit, failingScopeInit2, successfulScopeInit)
+      val errorStore     = ScopeInitializationErrorStore(xas, clock)
       val projects       = ProjectsImpl(
         fetchOrg,
         validateDeletion,
-        ScopeInitializer(inits, xas, clock),
+        ScopeInitializer(inits, errorStore),
         defaultApiMappings,
         config,
         xas,
         clock
       )
-      val projectsHealth = ProjectsHealth(xas, clock)
+      val projectsHealth = ProjectsHealth(errorStore)
 
       val createProject                    = projects.create(project, payload)
       val assertSuccessfulInitStepExecuted =

@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig, ScopeInitializationErrorStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig, QueryConfig}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -77,13 +77,16 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(cr)
   }
 
+  make[ScopeInitializationErrorStore].from { (xas: Transactors, clock: Clock[IO]) =>
+    ScopeInitializationErrorStore(xas, clock)
+  }
+
   make[ScopeInitializer].from {
     (
         inits: Set[ScopeInitialization],
-        xas: Transactors,
-        clock: Clock[IO]
+        errorStore: ScopeInitializationErrorStore
     ) =>
-      ScopeInitializer(inits, xas, clock)
+      ScopeInitializer(inits, errorStore)
   }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>

@@ -1,16 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.effect.IO
-import cats.effect.kernel.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 
 trait ScopeInitializer {
 
@@ -27,15 +25,6 @@ trait ScopeInitializer {
 }
 
 object ScopeInitializer {
-
-  def apply(
-      scopeInitializations: Set[ScopeInitialization],
-      xas: Transactors,
-      clock: Clock[IO]
-  ): ScopeInitializer = {
-    lazy val errorStore = ScopeInitializationErrorStore(xas, clock)
-    apply(scopeInitializations, errorStore)
-  }
 
   /**
     * Construct a [[ScopeInitializer]] out of the provided [[ScopeInitialization]]
