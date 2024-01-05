@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ViewRestriction
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -39,13 +39,13 @@ sealed trait CompositeViewProjectionFields {
     * @return
     *   the schemas to filter by, empty means all
     */
-  def resourceSchemas: ValidViewTypes
+  def resourceSchemas: ViewRestriction
 
   /**
     * @return
     *   the resource types to filter by, empty means all
     */
-  def resourceTypes: ValidViewTypes
+  def resourceTypes: ViewRestriction
 
   /**
     * @return
@@ -90,8 +90,8 @@ object CompositeViewProjectionFields {
       mapping: JsonObject,
       context: ContextObject,
       settings: Option[JsonObject] = None,
-      resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-      resourceTypes: ValidViewTypes = ValidViewTypes.All,
+      resourceSchemas: ViewRestriction = ViewRestriction.None,
+      resourceTypes: ViewRestriction = ViewRestriction.None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       includeContext: Boolean = false,
@@ -124,8 +124,8 @@ object CompositeViewProjectionFields {
   final case class SparqlProjectionFields(
       id: Option[Iri] = None,
       query: SparqlConstructQuery,
-      resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-      resourceTypes: ValidViewTypes = ValidViewTypes.All,
+      resourceSchemas: ViewRestriction = ViewRestriction.None,
+      resourceTypes: ViewRestriction = ViewRestriction.None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       permission: Permission = permissions.query

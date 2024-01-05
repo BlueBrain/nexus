@@ -41,7 +41,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
@@ -262,16 +262,16 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     ProjectSource(
       source1Id,
       UUID.randomUUID(),
-      ValidViewTypes.All,
-      ValidViewTypes.All,
+      ViewRestriction.None,
+      ViewRestriction.None,
       None,
       includeDeprecated = false
     )
   private val crossProjectSource  = CrossProjectSource(
     source2Id,
     UUID.randomUUID(),
-    ValidViewTypes.All,
-    ValidViewTypes.All,
+    ViewRestriction.None,
+    ViewRestriction.None,
     None,
     includeDeprecated = false,
     project2,
@@ -280,8 +280,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val remoteProjectSource = RemoteProjectSource(
     source3Id,
     UUID.randomUUID(),
-    ValidViewTypes.All,
-    ValidViewTypes.All,
+    ViewRestriction.None,
+    ViewRestriction.None,
     None,
     includeDeprecated = false,
     project3,
@@ -294,8 +294,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     UUID.randomUUID(),
     IndexingRev.init,
     query,
-    resourceSchemas = ValidViewTypes.All,
-    resourceTypes = ValidViewTypes.restrictedTo(iri"http://music.com/Band"),
+    resourceSchemas = ViewRestriction.None,
+    resourceTypes = ViewRestriction.restrictedTo(iri"http://music.com/Band"),
     includeMetadata = false,
     includeDeprecated = false,
     includeContext = false,
@@ -311,8 +311,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     UUID.randomUUID(),
     IndexingRev.init,
     query,
-    resourceSchemas = ValidViewTypes.All,
-    resourceTypes = ValidViewTypes.All,
+    resourceSchemas = ViewRestriction.None,
+    resourceTypes = ViewRestriction.None,
     includeMetadata = false,
     includeDeprecated = false,
     permissions.query

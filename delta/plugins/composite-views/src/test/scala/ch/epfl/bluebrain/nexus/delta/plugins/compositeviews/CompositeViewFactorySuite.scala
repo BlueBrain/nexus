@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
 
@@ -26,12 +26,12 @@ class CompositeViewFactorySuite extends NexusSuite {
   private val uuid                              = UUID.randomUUID()
   implicit private val uuidF: UUIDF             = UUIDF.fixed(uuid)
 
-  private val schemas: ValidViewTypes = ValidViewTypes.restrictedTo(nxv + "Schema")
-  private val types: ValidViewTypes   = ValidViewTypes.restrictedTo(nxv + "Type")
-  private val tag: Some[UserTag]      = Some(UserTag.unsafe("tag"))
-  private val includeDeprecated       = true
-  private val includeMetadata         = true
-  private val includeContext          = true
+  private val schemas: ViewRestriction = ViewRestriction.restrictedTo(nxv + "Schema")
+  private val types: ViewRestriction   = ViewRestriction.restrictedTo(nxv + "Type")
+  private val tag: Some[UserTag]       = Some(UserTag.unsafe("tag"))
+  private val includeDeprecated        = true
+  private val includeMetadata          = true
+  private val includeContext           = true
 
   private val projectSourceId     = iri"http://localhost/project-source"
   private val projectSourceFields = ProjectSourceFields(
@@ -271,7 +271,7 @@ class CompositeViewFactorySuite extends NexusSuite {
       indexingRev = projectionRev,
       blazegraphProjectionFields.query,
       schemas,
-      ValidViewTypes.restrictedTo(nxv + "OldType"),
+      ViewRestriction.restrictedTo(nxv + "OldType"),
       includeMetadata,
       includeDeprecated,
       permissions.query

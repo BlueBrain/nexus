@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ViewRestriction}
 import io.circe.Encoder
 
 import java.util.UUID
@@ -32,13 +32,13 @@ sealed trait CompositeViewSourceFields {
     * @return
     *   the schemas to filter by, empty means all
     */
-  def resourceSchemas: ValidViewTypes
+  def resourceSchemas: ViewRestriction
 
   /**
     * @return
     *   the resource types to filter by, empty means all
     */
-  def resourceTypes: ValidViewTypes
+  def resourceTypes: ViewRestriction
 
   /**
     * @return
@@ -71,8 +71,8 @@ object CompositeViewSourceFields {
     */
   final case class ProjectSourceFields(
       id: Option[Iri] = None,
-      resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-      resourceTypes: ValidViewTypes = ValidViewTypes.All,
+      resourceSchemas: ViewRestriction = ViewRestriction.None,
+      resourceTypes: ViewRestriction = ViewRestriction.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
@@ -96,8 +96,8 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       project: ProjectRef,
       identities: Set[Identity],
-      resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-      resourceTypes: ValidViewTypes = ValidViewTypes.All,
+      resourceSchemas: ViewRestriction = ViewRestriction.None,
+      resourceTypes: ViewRestriction = ViewRestriction.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
@@ -122,8 +122,8 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       project: ProjectRef,
       endpoint: Uri,
-      resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-      resourceTypes: ValidViewTypes = ValidViewTypes.All,
+      resourceSchemas: ViewRestriction = ViewRestriction.None,
+      resourceTypes: ViewRestriction = ViewRestriction.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
@@ -39,13 +39,13 @@ sealed trait CompositeViewSource extends Product with Serializable {
     * @return
     *   the set of schemas considered for indexing; empty implies all
     */
-  def resourceSchemas: ValidViewTypes
+  def resourceSchemas: ViewRestriction
 
   /**
     * @return
     *   the set of resource types considered for indexing; empty implies all
     */
-  def resourceTypes: ValidViewTypes
+  def resourceTypes: ViewRestriction
 
   /**
     * @return
@@ -108,8 +108,8 @@ object CompositeViewSource {
   final case class ProjectSource(
       id: Iri,
       uuid: UUID,
-      resourceSchemas: ValidViewTypes,
-      resourceTypes: ValidViewTypes,
+      resourceSchemas: ViewRestriction,
+      resourceTypes: ViewRestriction,
       resourceTag: Option[UserTag],
       includeDeprecated: Boolean
   ) extends CompositeViewSource {
@@ -150,8 +150,8 @@ object CompositeViewSource {
   final case class CrossProjectSource(
       id: Iri,
       uuid: UUID,
-      resourceSchemas: ValidViewTypes,
-      resourceTypes: ValidViewTypes,
+      resourceSchemas: ViewRestriction,
+      resourceTypes: ViewRestriction,
       resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
@@ -196,8 +196,8 @@ object CompositeViewSource {
   final case class RemoteProjectSource(
       id: Iri,
       uuid: UUID,
-      resourceSchemas: ValidViewTypes,
-      resourceTypes: ValidViewTypes,
+      resourceSchemas: ViewRestriction,
+      resourceTypes: ViewRestriction,
       resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,

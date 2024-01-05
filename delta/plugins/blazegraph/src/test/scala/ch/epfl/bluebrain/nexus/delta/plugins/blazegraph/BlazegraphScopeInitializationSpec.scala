@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
@@ -69,8 +69,8 @@ class BlazegraphScopeInitializationSpec
       val resource = views.fetch(defaultViewId, project.ref).accepted
       resource.value match {
         case v: IndexingBlazegraphView  =>
-          v.resourceSchemas shouldBe ValidViewTypes.All
-          v.resourceTypes shouldBe ValidViewTypes.All
+          v.resourceSchemas shouldBe ViewRestriction.None
+          v.resourceTypes shouldBe ViewRestriction.None
           v.resourceTag shouldEqual None
           v.includeDeprecated shouldEqual true
           v.includeMetadata shouldEqual true

@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
@@ -183,8 +183,8 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         val value = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("tag")),
           List(
-            PipeStep(FilterBySchema(ValidViewTypes.restrictedTo(iri"http://localhost/schema"))),
-            PipeStep(FilterByType(ValidViewTypes.restrictedTo(iri"http://localhost/type"))),
+            PipeStep(FilterBySchema(ViewRestriction.restrictedTo(iri"http://localhost/schema"))),
+            PipeStep(FilterByType(ViewRestriction.restrictedTo(iri"http://localhost/type"))),
             PipeStep.noConfig(FilterDeprecated.ref)
           ),
           mapping = Some(mapping),

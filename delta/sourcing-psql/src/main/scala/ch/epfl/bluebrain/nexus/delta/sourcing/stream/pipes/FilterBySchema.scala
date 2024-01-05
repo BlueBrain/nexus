@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ValidViewTypes
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ViewRestriction
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -26,9 +26,9 @@ class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
   override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] = config.types match {
-    case ValidViewTypes.All                                                             => IO.pure(element)
-    case ValidViewTypes.RestrictedTo(types) if types.contains(element.value.schema.iri) => IO.pure(element)
-    case ValidViewTypes.RestrictedTo(_)                                                 => IO.pure(element.dropped)
+    case ViewRestriction.None                                                                => IO.pure(element)
+    case ViewRestriction.RestrictedTo(schemas) if schemas.contains(element.value.schema.iri) => IO.pure(element)
+    case ViewRestriction.RestrictedTo(_)                                                     => IO.pure(element.dropped)
   }
 
 }
@@ -44,7 +44,7 @@ object FilterBySchema extends PipeDef {
   override def ref: PipeRef                                             = PipeRef.unsafe("filterBySchema")
   override def withConfig(config: FilterBySchemaConfig): FilterBySchema = new FilterBySchema(config)
 
-  final case class FilterBySchemaConfig(types: ValidViewTypes) {
+  final case class FilterBySchemaConfig(types: ViewRestriction) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
@@ -52,7 +52,7 @@ object FilterBySchema extends PipeDef {
           JsonObject(
             (nxv + "types").toString -> Json.arr(
               types.asRestrictedTo
-                .map(_.types.toList)
+                .map(_.iris.toList)
                 .getOrElse(List.empty)
                 .map(iri => Json.obj("@id" -> iri.asJson)): _*
             )
@@ -61,12 +61,12 @@ object FilterBySchema extends PipeDef {
       )
     )
   }
-  object FilterBySchemaConfig                                  {
+  object FilterBySchemaConfig                                   {
     implicit val filterBySchemaConfigJsonLdDecoder: JsonLdDecoder[FilterBySchemaConfig] = deriveDefaultJsonLdDecoder
   }
 
   /**
     * Returns the pipe ref and config from the provided schema
     */
-  def apply(schemas: ValidViewTypes): (PipeRef, ExpandedJsonLd) = ref -> FilterBySchemaConfig(schemas).toJsonLd
+  def apply(schemas: ViewRestriction): (PipeRef, ExpandedJsonLd) = ref -> FilterBySchemaConfig(schemas).toJsonLd
 }

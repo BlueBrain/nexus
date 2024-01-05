@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
@@ -77,8 +77,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
     final case class LegacyIndexingElasticSearchViewFields(
         name: Option[String] = None,
         description: Option[String] = None,
-        resourceSchemas: ValidViewTypes = ValidViewTypes.All,
-        resourceTypes: ValidViewTypes = ValidViewTypes.All,
+        resourceSchemas: ViewRestriction = ViewRestriction.None,
+        resourceTypes: ViewRestriction = ViewRestriction.None,
         resourceTag: Option[UserTag] = None,
         sourceAsText: Boolean = false,
         includeMetadata: Boolean = false,

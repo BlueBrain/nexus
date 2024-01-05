@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
@@ -102,8 +102,8 @@ class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
           description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
-            PipeStep(FilterBySchema(ValidViewTypes.restrictedTo(context.vocab / "Person"))),
-            PipeStep(FilterByType(ValidViewTypes.restrictedTo(context.vocab / "Person"))),
+            PipeStep(FilterBySchema(ViewRestriction.restrictedTo(context.vocab / "Person"))),
+            PipeStep(FilterByType(ViewRestriction.restrictedTo(context.vocab / "Person"))),
             PipeStep.noConfig(FilterDeprecated.ref),
             PipeStep.noConfig(DiscardMetadata.ref),
             PipeStep.noConfig(DefaultLabelPredicates.ref)
@@ -186,7 +186,7 @@ class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
             PipeStep.noConfig(FilterDeprecated.ref),
-            PipeStep(FilterByType(ValidViewTypes.restrictedTo(context.vocab / "Person")))
+            PipeStep(FilterByType(ViewRestriction.restrictedTo(context.vocab / "Person")))
               .description("Keep only person type")
           ),
           mapping = Some(mapping),

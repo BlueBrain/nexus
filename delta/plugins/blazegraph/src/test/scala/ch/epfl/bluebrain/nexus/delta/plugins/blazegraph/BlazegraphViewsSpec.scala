@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ViewRestriction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -45,8 +45,8 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
     val indexingValue  = IndexingBlazegraphViewValue(
       None,
       None,
-      ValidViewTypes.All,
-      ValidViewTypes.All,
+      ViewRestriction.None,
+      ViewRestriction.None,
       None,
       includeMetadata = false,
       includeDeprecated = false,

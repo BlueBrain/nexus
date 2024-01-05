@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ViewRestriction}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
@@ -71,8 +71,8 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      ValidViewTypes.All,
-      ValidViewTypes.All,
+      ViewRestriction.None,
+      ViewRestriction.None,
       false,
       false,
       false,
@@ -92,15 +92,15 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      ValidViewTypes.All,
-      ValidViewTypes.All,
+      ViewRestriction.None,
+      ViewRestriction.None,
       false,
       false,
       permissions.query
     )
 
   private val projectSource =
-    ProjectSource(nxv + "source1", UUID.randomUUID(), ValidViewTypes.All, ValidViewTypes.All, None, false)
+    ProjectSource(nxv + "source1", UUID.randomUUID(), ViewRestriction.None, ViewRestriction.None, None, false)
 
   private val indexingView = ActiveViewDef(
     ViewRef(project.ref, id),

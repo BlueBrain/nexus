@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ValidViewTypes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ViewRestriction}
 import com.typesafe.config.Config
 import io.circe.parser._
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -67,7 +67,7 @@ object SearchConfig {
     }
     for {
       fields        <- loadOption(pluginConfig, "fields", loadExternalConfig[JsonObject])
-      resourceTypes <- loadExternalConfig[ValidViewTypes](pluginConfig.getString("indexing.resource-types"))
+      resourceTypes <- loadExternalConfig[ViewRestriction](pluginConfig.getString("indexing.resource-types"))
       mapping       <- loadExternalConfig[JsonObject](pluginConfig.getString("indexing.mapping"))
       settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
@@ -141,7 +141,7 @@ object SearchConfig {
     ).toOption
 
   final case class IndexingConfig(
-      resourceTypes: ValidViewTypes,
+      resourceTypes: ViewRestriction,
       mapping: JsonObject,
       settings: Option[JsonObject],
       query: SparqlConstructQuery,
