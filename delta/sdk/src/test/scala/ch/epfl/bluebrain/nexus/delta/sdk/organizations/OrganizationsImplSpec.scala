@@ -40,7 +40,7 @@ class OrganizationsImplSpec
   val label2       = Label.unsafe("myorg2")
 
   private lazy val (scopeInitLog, orgs) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> OrganizationsImpl(ScopeInitializer.noErrorStore(Set(scopeInitLog)), config, xas, clock)
+    scopeInitLog -> OrganizationsImpl(ScopeInitializer.withoutErrorStore(Set(scopeInitLog)), config, xas, clock)
   }.accepted
 
   "Organizations implementation" should {

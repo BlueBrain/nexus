@@ -37,7 +37,7 @@ trait ProjectsFixture { self: CatsEffectSuite =>
       base: BaseUri,
       uuidF: UUIDF
   ): IOFixture[(Transactors, Projects)] = {
-    val inits = ScopeInitializer.noErrorStore(scopeInitializations)
+    val inits = ScopeInitializer.withoutErrorStore(scopeInitializations)
     ResourceSuiteLocalFixture(
       "projects",
       Doobie.resource().map { xas =>

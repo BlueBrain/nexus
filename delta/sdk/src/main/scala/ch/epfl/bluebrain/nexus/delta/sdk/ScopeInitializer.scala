@@ -70,7 +70,7 @@ object ScopeInitializer {
     }
 
   /** A constructor for tests that does not store initialization errors */
-  def noErrorStore(
+  def withoutErrorStore(
       scopeInitializations: Set[ScopeInitialization]
   ): ScopeInitializer = {
     val dummyErrorStore = new ScopeInitializationErrorStore {

@@ -104,7 +104,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     (userWithReadSingleProjectPermission, AclAddress.Project(ref), Set(projectsPermissions.read))
   )
 
-  private val noopInit          = ScopeInitializer.noErrorStore(Set.empty)
+  private val noopInit          = ScopeInitializer.withoutErrorStore(Set.empty)
   private lazy val projects     =
     ProjectsImpl(fetchOrg, _ => IO.unit, noopInit, defaultApiMappings, projectsConfig, xas, clock)
   private lazy val provisioning =

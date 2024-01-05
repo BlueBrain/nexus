@@ -76,7 +76,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     scopeInitLog -> ProjectsImpl(
       fetchOrg,
       validateDeletion,
-      ScopeInitializer.noErrorStore(Set(scopeInitLog)),
+      ScopeInitializer.withoutErrorStore(Set(scopeInitLog)),
       defaultApiMappings,
       config,
       xas,

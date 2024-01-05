@@ -37,7 +37,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     Set(orgsPermissions.write, orgsPermissions.read)
   )
 
-  private val orgInit                              = ScopeInitializer.noErrorStore(Set(aopd))
+  private val orgInit                              = ScopeInitializer.withoutErrorStore(Set(aopd))
   private lazy val orgs                            = OrganizationsImpl(orgInit, config, xas, clock)
   private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 
