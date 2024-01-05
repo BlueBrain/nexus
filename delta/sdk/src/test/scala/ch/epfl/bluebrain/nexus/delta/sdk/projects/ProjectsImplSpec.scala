@@ -279,14 +279,15 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
         case other => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
       }
 
-      val inits    = Set(failingScopeInit, failingScopeInit2, successfulScopeInit)
-      val projects = ProjectsImpl(fetchOrg, validateDeletion, inits, defaultApiMappings, config, xas, clock)
+      val inits          = Set(failingScopeInit, failingScopeInit2, successfulScopeInit)
+      val projects       = ProjectsImpl(fetchOrg, validateDeletion, inits, defaultApiMappings, config, xas, clock)
+      val projectsHealth = ProjectsHealth(xas, clock)
 
       val createProject                    = projects.create(project, payload)
       val assertSuccessfulInitStepExecuted =
         successfulScopeInit.createdProjects.get.map(p => p shouldEqual Set(project))
-      val assertProjectsAreHealthy         = projects.health.map(_ should be(empty))
-      val assertProjectsAreUnhealthy       = projects.health.map(_ should be(Set(project)))
+      val assertProjectsAreHealthy         = projectsHealth.health.map(_ should be(empty))
+      val assertProjectsAreUnhealthy       = projectsHealth.health.map(_ should be(Set(project)))
 
       assertProjectsAreHealthy.accepted
       createProject.rejectedWith[ProjectInitializationFailed]

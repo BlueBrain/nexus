@@ -152,11 +152,6 @@ trait Projects {
     */
   def defaultApiMappings: ApiMappings
 
-  /**
-    * Returns the list of unhealthy projects
-    */
-  def health: IO[Set[ProjectRef]]
-
 }
 
 object Projects {

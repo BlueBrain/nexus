@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 
@@ -33,7 +33,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   private val projectRef  = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
   private val projectRef2 = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject2"))
 
-  private val unhealthyProjects = List(projectRef, projectRef2)
+  private val unhealthyProjects = Set(projectRef, projectRef2)
 
   private val metadata     = ProjectionMetadata("module", "name", Some(projectRef), None)
   private val progress     = ProjectionProgress(Offset.start, Instant.EPOCH, 1L, 1L, 1L)
@@ -42,16 +42,21 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   private val description2 =
     SupervisedDescription(metadata, ExecutionStrategy.TransientSingleNode, 0, ExecutionStatus.Running, progress)
 
-  private def routesTemplate(unhealthyProjects: List[ProjectRef]) = Route.seal(
+  def projectsHealth(unhealthyProjects: Set[ProjectRef]) =
+    new ProjectsHealth {
+      override def health: IO[Set[ProjectRef]] = IO.pure(unhealthyProjects)
+    }
+
+  private def routesTemplate(unhealthyProjects: Set[ProjectRef]) = Route.seal(
     new SupervisionRoutes(
       identities,
       aclCheck,
       IO.pure { List(description1, description2) },
-      IO.pure { unhealthyProjects }
+      projectsHealth(unhealthyProjects)
     ).routes
   )
 
-  private val routes = routesTemplate(List.empty)
+  private val routes = routesTemplate(Set.empty)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -84,7 +89,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     }
 
     "return a successful http code when there are no unhealthy projects" in {
-      val routesWithHealthyProjects = routesTemplate(List.empty)
+      val routesWithHealthyProjects = routesTemplate(Set.empty)
       Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithHealthyProjects ~> check {
         response.status shouldEqual StatusCodes.OK
       }
@@ -94,7 +99,16 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       val routesWithUnhealthyProjects = routesTemplate(unhealthyProjects)
       Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithUnhealthyProjects ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
-        response.asJson shouldEqual unhealthyProjects.asJson
+        response.asJson shouldEqual
+          json"""
+            {
+              "status" : "Some projects are unhealthy.",
+              "unhealthyProjects" : [
+                "myorg/myproject",
+                "myorg/myproject2"
+              ]
+            }
+              """
       }
     }
 

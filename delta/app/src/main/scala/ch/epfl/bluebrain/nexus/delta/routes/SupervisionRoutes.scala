@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.SupervisionBundle
+import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.{allProjectsAreHealthy, unhealthyProjectsEncoder, SupervisionBundle}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
@@ -18,17 +18,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisedDescription
-import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax.EncoderOps
+import io.circe.syntax.KeyOps
+import io.circe.{Encoder, Json}
 
 class SupervisionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     supervised: IO[List[SupervisedDescription]],
-    projectsHealth: IO[List[ProjectRef]]
+    projectsHealth: ProjectsHealth
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -47,9 +48,9 @@ class SupervisionRoutes(
                   emit(supervised.map(SupervisionBundle))
                 },
                 (pathPrefix("projects") & pathEndOrSingleSlash) {
-                  onSuccess(projectsHealth.unsafeToFuture()) { projects =>
-                    if (projects.isEmpty) emit(StatusCodes.OK, IO.pure(projects.asJson))
-                    else emit(StatusCodes.InternalServerError, IO.pure(projects.asJson))
+                  onSuccess(projectsHealth.health.unsafeToFuture()) { projects =>
+                    if (projects.isEmpty) emit(StatusCodes.OK, IO.pure(allProjectsAreHealthy))
+                    else emit(StatusCodes.InternalServerError, IO.pure(unhealthyProjectsEncoder(projects)))
                   }
                 }
               )
@@ -69,5 +70,13 @@ object SupervisionRoutes {
     deriveEncoder
   implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[SupervisionBundle] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.supervision))
+
+  private val allProjectsAreHealthy                              =
+    Json.obj("status" := "All projects are healthy.")
+
+  private val unhealthyProjectsEncoder: Encoder[Set[ProjectRef]] =
+    Encoder.instance { set =>
+      Json.obj("status" := "Some projects are unhealthy.", "unhealthyProjects" := set)
+    }
 
 }
