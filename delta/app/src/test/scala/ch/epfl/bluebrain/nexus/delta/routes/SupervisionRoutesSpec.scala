@@ -46,8 +46,8 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     new SupervisionRoutes(
       identities,
       aclCheck,
-      IO.delay { List(description1, description2) },
-      IO.delay { unhealthyProjects }
+      IO.pure { List(description1, description2) },
+      IO.pure { unhealthyProjects }
     ).routes
   )
 
