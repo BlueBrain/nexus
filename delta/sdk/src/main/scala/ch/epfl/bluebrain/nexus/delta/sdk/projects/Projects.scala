@@ -155,7 +155,7 @@ trait Projects {
   /**
     * Returns the list of unhealthy projects
     */
-  def health: IO[List[ProjectRef]]
+  def health: IO[Set[ProjectRef]]
 
 }
 

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 /**
   * Simple implementation that records created orgs and projects
   */
-final class FailingScopeInitializationLog extends ScopeInitialization {
+final class FailingScopeInitialization(entityType: String) extends ScopeInitialization {
 
   override def onOrganizationCreation(
       organization: Organization,
@@ -18,8 +18,9 @@ final class FailingScopeInitializationLog extends ScopeInitialization {
   override def onProjectCreation(
       project: Project,
       subject: Identity.Subject
-  ): IO[Unit] =
-    IO.raiseError(ScopeInitializationFailed("failed at project creation"))
+  ): IO[Unit] = {
+    IO.raiseError(ScopeInitializationFailed(s"failed at project creation"))
+  }
 
-  override def entityType: EntityType = EntityType("failingScopeInitializationLog")
+  override def entityType: EntityType = EntityType(entityType)
 }

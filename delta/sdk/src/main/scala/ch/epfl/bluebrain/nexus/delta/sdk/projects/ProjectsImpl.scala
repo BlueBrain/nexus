@@ -107,8 +107,10 @@ final class ProjectsImpl private (
   private def eval(cmd: ProjectCommand): IO[ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))
 
-  override def health: IO[List[ProjectRef]] =
-    errorStore.fetch.map(_.map(err => ProjectRef(err.org, err.project)))
+  override def health: IO[Set[ProjectRef]] =
+    errorStore.fetch
+      .map(_.map(err => ProjectRef(err.org, err.project)))
+      .map(_.toSet)
 }
 
 object ProjectsImpl {
