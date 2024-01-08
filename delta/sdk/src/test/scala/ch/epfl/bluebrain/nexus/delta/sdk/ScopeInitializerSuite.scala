@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
@@ -22,7 +21,7 @@ class ScopeInitializerSuite extends NexusSuite {
   private val fail = new ScopeInitialization {
     override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] =
       IO.raiseError(ScopeInitializationFailed("failed during org creation"))
-    override def onProjectCreation(project: Project, subject: Subject): IO[Unit]                =
+    override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit]             =
       IO.raiseError(ScopeInitializationFailed("failed during project creation"))
     override def entityType: EntityType                                                         = EntityType("fail")
   }
@@ -34,7 +33,7 @@ class ScopeInitializerSuite extends NexusSuite {
     override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] =
       ref.set(orgSignal)
 
-    override def onProjectCreation(project: Project, subject: Subject): IO[Unit] =
+    override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
       ref.set(projectSignal)
 
     override def entityType: EntityType = EntityType("success")
@@ -57,9 +56,11 @@ class ScopeInitializerSuite extends NexusSuite {
       errors.get
   }
 
+  val projectRef = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
+
   test("A ScopeInitializer should succeed if there are no init steps") {
     ScopeInitializer.noop.initializeOrganization(org) >>
-      ScopeInitializer.noop.initializeProject(project)
+      ScopeInitializer.noop.initializeProject(projectRef)
   }
 
   test("A ScopeInitializer should fail if there is a failing org init step") {
@@ -70,7 +71,7 @@ class ScopeInitializerSuite extends NexusSuite {
 
   test("A ScopeInitializer should fail if there is a failing project init step") {
     failingScopeInitializer
-      .initializeProject(project)
+      .initializeProject(projectRef)
       .intercept[ProjectInitializationFailed]
   }
 
@@ -86,7 +87,7 @@ class ScopeInitializerSuite extends NexusSuite {
     val wasExecuted      = Ref.unsafe[IO, String]("")
     val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted)))
 
-    scopeInitializer.initializeProject(project) >>
+    scopeInitializer.initializeProject(projectRef) >>
       assertIO(wasExecuted.get, projectSignal)
   }
 
@@ -102,7 +103,7 @@ class ScopeInitializerSuite extends NexusSuite {
     val wasExecuted      = Ref.unsafe[IO, String]("")
     val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted), fail))
 
-    scopeInitializer.initializeProject(project).intercept[ProjectInitializationFailed] >>
+    scopeInitializer.initializeProject(projectRef).intercept[ProjectInitializationFailed] >>
       assertIO(wasExecuted.get, projectSignal)
   }
 
@@ -113,7 +114,7 @@ class ScopeInitializerSuite extends NexusSuite {
     val expectedErrorRow = List(ScopeInitErrorRow(0, EntityType("fail"), org.value.label, project.value.ref.project, "failed during project creation", Instant.EPOCH))
     // format: on
 
-    scopeInitializer.initializeProject(project).intercept[ProjectInitializationFailed] >>
+    scopeInitializer.initializeProject(projectRef).intercept[ProjectInitializationFailed] >>
       assertIO(errors.get, expectedErrorRow)
   }
 

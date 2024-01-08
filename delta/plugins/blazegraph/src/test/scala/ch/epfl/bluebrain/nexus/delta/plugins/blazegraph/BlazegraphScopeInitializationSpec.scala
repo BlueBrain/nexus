@@ -65,7 +65,7 @@ class BlazegraphScopeInitializationSpec
 
     "create a default SparqlView on newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
-      init.onProjectCreation(project, bob).accepted
+      init.onProjectCreation(project.ref, bob).accepted
       val resource = views.fetch(defaultViewId, project.ref).accepted
       resource.value match {
         case v: IndexingBlazegraphView  =>
@@ -85,7 +85,7 @@ class BlazegraphScopeInitializationSpec
 
     "not create a default SparqlView if one already exists" in {
       views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
-      init.onProjectCreation(project, bob).accepted
+      init.onProjectCreation(project.ref, bob).accepted
       views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
     }
   }

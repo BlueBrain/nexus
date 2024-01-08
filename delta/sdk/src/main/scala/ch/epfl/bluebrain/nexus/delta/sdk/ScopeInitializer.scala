@@ -19,7 +19,7 @@ trait ScopeInitializer {
 
   /** Execute the actions necessary at project creation */
   def initializeProject(
-      projectResource: ProjectResource
+      project: ProjectRef
   )(implicit caller: Subject): IO[Unit]
 
 }
@@ -52,15 +52,15 @@ object ScopeInitializer {
           .void
 
       override def initializeProject(
-          projectResource: ProjectResource
+          project: ProjectRef
       )(implicit caller: Subject): IO[Unit] =
         scopeInitializations
           .parUnorderedTraverse { init =>
             init
-              .onProjectCreation(projectResource.value, caller)
+              .onProjectCreation(project, caller)
               .onError {
                 case e: ScopeInitializationFailed =>
-                  errorStore.save(init.entityType, projectResource.value.ref, e)
+                  errorStore.save(init.entityType, project, e)
                 case _                            => IO.unit
               }
           }

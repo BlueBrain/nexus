@@ -58,7 +58,7 @@ class SearchScopeInitializationSpec
 
     "create a composite view on a new project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
-      scopeInit.onProjectCreation(project, bob).accepted
+      scopeInit.onProjectCreation(project.ref, bob).accepted
       val view = views.fetch(defaultViewId, project.ref).accepted
       view.rev shouldEqual 1L
       view.createdBy shouldEqual sa.caller.subject
@@ -66,7 +66,7 @@ class SearchScopeInitializationSpec
 
     "not create a composite view if one exists" in {
       views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
-      scopeInit.onProjectCreation(project, bob).accepted
+      scopeInit.onProjectCreation(project.ref, bob).accepted
       views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
     }
 

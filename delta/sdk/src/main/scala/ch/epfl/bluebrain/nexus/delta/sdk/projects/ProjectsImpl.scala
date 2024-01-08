@@ -35,7 +35,7 @@ final class ProjectsImpl private (
     for {
       resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
       _        <- scopeInitializer
-                    .initializeProject(resource)
+                    .initializeProject(resource.value.ref)
                     .span("initializeProject")
     } yield resource
 

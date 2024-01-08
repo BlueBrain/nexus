@@ -62,7 +62,7 @@ class StorageScopeInitializationSpec
 
     "create a default storage on newly created project" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]
-      init.onProjectCreation(project, bob).accepted
+      init.onProjectCreation(project.ref, bob).accepted
       val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.value.storageValue shouldEqual DiskStorageValue(
         name = Some(defaults.name),
@@ -81,7 +81,7 @@ class StorageScopeInitializationSpec
 
     "not create a default storage if one already exists" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).accepted.rev shouldEqual 1L
-      init.onProjectCreation(project, bob).accepted
+      init.onProjectCreation(project.ref, bob).accepted
       val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.rev shouldEqual 1L
     }

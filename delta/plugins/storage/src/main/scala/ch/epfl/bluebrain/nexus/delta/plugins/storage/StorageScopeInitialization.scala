@@ -10,9 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, ProjectRef}
 
 /**
   * The default creation of the default disk storage as part of the project initialization.
@@ -46,16 +45,16 @@ class StorageScopeInitialization(
     maxFileSize = None
   )
 
-  override def onProjectCreation(project: Project, subject: Identity.Subject): IO[Unit] =
+  override def onProjectCreation(project: ProjectRef, subject: Identity.Subject): IO[Unit] =
     storages
-      .create(defaultStorageId, project.ref, defaultValue)
+      .create(defaultStorageId, project, defaultValue)
       .void
       .handleErrorWith {
         case _: ResourceAlreadyExists   => IO.unit // nothing to do, storage already exits
         case _: ProjectContextRejection => IO.unit // project or org are likely deprecated
         case rej                        =>
           val str =
-            s"Failed to create the default DiskStorage for project '${project.ref}' due to '${rej.getMessage}'."
+            s"Failed to create the default DiskStorage for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultStorage")

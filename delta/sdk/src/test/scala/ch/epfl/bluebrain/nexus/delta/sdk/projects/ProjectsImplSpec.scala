@@ -77,7 +77,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
         caller: Subject
     ): IO[Unit] = IO.unit
 
-    override def initializeProject(projectResource: ProjectResource)(implicit caller: Subject): IO[Unit] =
+    override def initializeProject(project: ProjectRef)(implicit caller: Subject): IO[Unit] =
       wasExecuted.set(true)
   }
 
