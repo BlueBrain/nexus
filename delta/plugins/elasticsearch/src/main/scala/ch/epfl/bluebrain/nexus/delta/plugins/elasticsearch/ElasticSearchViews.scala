@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import io.circe.Json
 
 import java.util.UUID
@@ -394,8 +395,8 @@ final class ElasticSearchViews private (
         IO.pure(toIndexViewDef(envelope))
       }
 
-  private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
-    envelope.toElem { v => Some(v.project) }.traverse { v =>
+  private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =
+    elem.withProject(elem.value.project).traverse { v =>
       IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 

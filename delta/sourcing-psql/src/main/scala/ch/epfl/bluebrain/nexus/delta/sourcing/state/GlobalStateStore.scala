@@ -6,10 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -45,7 +46,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def currentStates(offset: Offset): EnvelopeStream[S]
+  def currentStates(offset: Offset): SuccessElemStream[S]
 
   /**
     * Fetches states from the given type from the provided offset
@@ -56,7 +57,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def states(offset: Offset): EnvelopeStream[S]
+  def states(offset: Offset): SuccessElemStream[S]
 
 }
 
@@ -122,21 +123,21 @@ object GlobalStateStore {
         .option
         .transact(xas.read)
 
-    private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
-      StreamingQuery[Envelope[S]](
+    private def states(offset: Offset, strategy: RefreshStrategy): SuccessElemStream[S] =
+      StreamingQuery[Elem.SuccessElem[S]](
         offset,
         offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                        |ORDER BY ordering
-                       |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[S]],
+                       |LIMIT ${config.batchSize}""".stripMargin.query[Elem.SuccessElem[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
       )
 
-    override def currentStates(offset: Offset): EnvelopeStream[S] = states(offset, RefreshStrategy.Stop)
+    override def currentStates(offset: Offset): SuccessElemStream[S] = states(offset, RefreshStrategy.Stop)
 
-    override def states(offset: Offset): EnvelopeStream[S] = states(offset, config.refreshStrategy)
+    override def states(offset: Offset): SuccessElemStream[S] = states(offset, config.refreshStrategy)
   }
 
 }

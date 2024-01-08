@@ -5,8 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{ProjectScopedMetric, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import fs2.Stream
 import io.circe.{Json, JsonObject}
 
@@ -105,22 +106,25 @@ object MetricsStream {
     )
   )
 
-  private val envelopes = List(
+  private val elems = List(
     // Create file in proj1
-    Envelope(EntityType("entity"), nxv + "1", 1, metric1, Instant.EPOCH, Offset.At(1L)),
+    elem("1", 1L, metric1),
     // Update file in proj1
-    Envelope(EntityType("entity"), nxv + "2", 1, metric2, Instant.EPOCH, Offset.At(2L)),
+    elem("2", 2L, metric2),
     // Tag file in proj1
-    Envelope(EntityType("entity"), nxv + "3", 1, metric3, Instant.EPOCH, Offset.At(3L)),
+    elem("3", 3L, metric3),
     // Delete file tag in proj 1
-    Envelope(EntityType("entity"), nxv + "4", 1, metric4, Instant.EPOCH, Offset.At(4L)),
+    elem("4", 4L, metric4),
     // Create file in proj 2
-    Envelope(EntityType("entity"), nxv + "5", 1, metric5, Instant.EPOCH, Offset.At(5L)),
+    elem("5", 5L, metric5),
     // Deprecate file in proj 2
-    Envelope(EntityType("entity"), nxv + "6", 1, metric6, Instant.EPOCH, Offset.At(6L))
+    elem("6", 6L, metric6)
   )
 
-  val metricsStream: Stream[IO, Envelope[ProjectScopedMetric]] =
-    Stream.emits(envelopes)
+  def elem(idSuffix: String, offset: Long, metric: ProjectScopedMetric) =
+    Elem.SuccessElem(EntityType("entity"), nxv + idSuffix, None, Instant.EPOCH, Offset.At(offset), metric, 1)
+
+  val metricsStream: Stream[IO, Elem.SuccessElem[ProjectScopedMetric]] =
+    Stream.emits(elems)
 
 }

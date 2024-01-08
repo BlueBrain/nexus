@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EnvelopeStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -87,26 +87,26 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
     * @param offset
     *   offset to start from
     */
-  def currentEvents(offset: Offset): EnvelopeStream[E]
+  def currentEvents(offset: Offset): SuccessElemStream[E]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
     * @param offset
     *   offset to start from
     */
-  def events(offset: Offset): EnvelopeStream[E]
+  def events(offset: Offset): SuccessElemStream[E]
 
   /**
     * Allow to stream all latest states within [[Envelope]] s without applying transformation
     * @param offset
     *   offset to start from
     */
-  def currentStates(offset: Offset): EnvelopeStream[S]
+  def currentStates(offset: Offset): SuccessElemStream[S]
 
   /**
     * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
     */
-  def currentStates: EnvelopeStream[S] = currentStates(Offset.Start)
+  def currentStates: SuccessElemStream[S] = currentStates(Offset.Start)
 
   /**
     * Allow to stream all latest states from the provided offset
@@ -189,16 +189,16 @@ object GlobalEventLog {
       override def delete(id: Id): IO[Unit] =
         (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
 
-      override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
+      override def currentEvents(offset: Offset): SuccessElemStream[E] = eventStore.currentEvents(offset)
 
-      override def events(offset: Offset): EnvelopeStream[E] = eventStore.events(offset)
+      override def events(offset: Offset): SuccessElemStream[E] = eventStore.events(offset)
 
       override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
         currentStates(offset).map { e =>
           f(e.value)
         }
 
-      override def currentStates(offset: Offset): EnvelopeStream[S] = stateStore.currentStates(offset)
+      override def currentStates(offset: Offset): SuccessElemStream[S] = stateStore.currentStates(offset)
 
     }
 

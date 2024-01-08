@@ -6,9 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -53,7 +54,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def currentEvents(offset: Offset): EnvelopeStream[E]
+  def currentEvents(offset: Offset): SuccessElemStream[E]
 
   /**
     * Fetches events from the given type from the provided offset
@@ -64,7 +65,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def events(offset: Offset): EnvelopeStream[E]
+  def events(offset: Offset): SuccessElemStream[E]
 
 }
 
@@ -114,21 +115,21 @@ object GlobalEventStore {
         select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
       }
 
-      private def events(offset: Offset, strategy: RefreshStrategy): Stream[IO, Envelope[E]] =
-        StreamingQuery[Envelope[E]](
+      private def events(offset: Offset, strategy: RefreshStrategy): Stream[IO, Elem.SuccessElem[E]] =
+        StreamingQuery[Elem.SuccessElem[E]](
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
                          |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                          |ORDER BY ordering
-                         |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[E]],
+                         |LIMIT ${config.batchSize}""".stripMargin.query[Elem.SuccessElem[E]],
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas
         )
 
-      override def currentEvents(offset: Offset): Stream[IO, Envelope[E]] = events(offset, RefreshStrategy.Stop)
+      override def currentEvents(offset: Offset): Stream[IO, Elem.SuccessElem[E]] = events(offset, RefreshStrategy.Stop)
 
-      override def events(offset: Offset): Stream[IO, Envelope[E]] = events(offset, config.refreshStrategy)
+      override def events(offset: Offset): Stream[IO, Elem.SuccessElem[E]] = events(offset, config.refreshStrategy)
     }
 
 }

@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import io.circe.Json
 
 /**
@@ -344,8 +345,8 @@ final class CompositeViews private (
   def views(start: Offset): ElemStream[CompositeViewDef] =
     log.states(Scope.Root, start).map(toCompositeViewDef)
 
-  private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
-    envelope.toElem { v => Some(v.project) }.map { v =>
+  private def toCompositeViewDef(elem: Elem.SuccessElem[CompositeViewState]) =
+    elem.withProject(elem.value.project).map { v =>
       CompositeViewDef(v)
     }
 

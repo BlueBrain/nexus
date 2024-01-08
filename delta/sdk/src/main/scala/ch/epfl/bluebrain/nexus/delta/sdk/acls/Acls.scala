@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 
@@ -149,7 +149,7 @@ trait Acls {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = Offset.Start): EnvelopeStream[AclEvent]
+  def events(offset: Offset = Offset.Start): SuccessElemStream[AclEvent]
 
   /**
     * The current ACLs events. The stream stops after emitting all known events.
@@ -157,7 +157,7 @@ trait Acls {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[AclEvent]
+  def currentEvents(offset: Offset = Offset.Start): SuccessElemStream[AclEvent]
 
   /**
     * Overrides ''acl''.
