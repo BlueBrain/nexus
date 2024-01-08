@@ -5,10 +5,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.noopStore
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 trait ScopeInitializer {
 
@@ -72,13 +72,8 @@ object ScopeInitializer {
   /** A constructor for tests that does not store initialization errors */
   def withoutErrorStore(
       scopeInitializations: Set[ScopeInitialization]
-  ): ScopeInitializer = {
-    val dummyErrorStore = new ScopeInitializationErrorStore {
-      override def save(entityType: EntityType, ref: ProjectRef, error: ScopeInitializationFailed): IO[Unit] = IO.unit
-      override def fetch: IO[List[ScopeInitErrorRow]]                                                        = IO.pure(List.empty)
-    }
-    apply(scopeInitializations, dummyErrorStore)
-  }
+  ): ScopeInitializer =
+    apply(scopeInitializations, noopStore)
 
   /** An initializer that does not perform any operation */
   def noop: ScopeInitializer = withoutErrorStore(Set.empty)

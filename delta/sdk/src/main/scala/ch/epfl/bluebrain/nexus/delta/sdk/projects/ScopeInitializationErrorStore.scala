@@ -33,6 +33,10 @@ trait ScopeInitializationErrorStore {
     */
   def fetch: IO[List[ScopeInitErrorRow]]
 
+  /**
+    * Delete all scope initialization errors for the provided project
+    */
+  def delete(project: ProjectRef): IO[Unit]
 }
 
 object ScopeInitializationErrorStore {
@@ -58,6 +62,10 @@ object ScopeInitializationErrorStore {
           .query[ScopeInitErrorRow]
           .to[List]
           .transact(xas.read)
+
+      override def delete(project: ProjectRef): IO[Unit] =
+        sql"""DELETE FROM scope_initialization_errors WHERE project = ${project.project} AND org = ${project.organization}""".update.run.void
+          .transact(xas.write)
     }
   }
 
@@ -69,5 +77,12 @@ object ScopeInitializationErrorStore {
       message: String,
       instant: Instant
   )
+
+  /** A no-op error store that does not store anything */
+  def noopStore: ScopeInitializationErrorStore = new ScopeInitializationErrorStore {
+    override def save(entityType: EntityType, project: ProjectRef, e: ScopeInitializationFailed): IO[Unit] = IO.unit
+    override def fetch: IO[List[ScopeInitErrorRow]]                                                        = IO.pure(List.empty)
+    override def delete(project: ProjectRef): IO[Unit]                                                     = IO.unit
+  }
 
 }

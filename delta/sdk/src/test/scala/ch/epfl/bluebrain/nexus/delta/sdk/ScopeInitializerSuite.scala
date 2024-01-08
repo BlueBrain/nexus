@@ -54,9 +54,11 @@ class ScopeInitializerSuite extends NexusSuite {
 
     override def fetch: IO[List[ScopeInitErrorRow]] =
       errors.get
+
+    override def delete(project: ProjectRef): IO[Unit] = IO.unit
   }
 
-  val projectRef = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
+  private val projectRef = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
 
   test("A ScopeInitializer should succeed if there are no init steps") {
     ScopeInitializer.noop.initializeOrganization(org) >>
@@ -107,7 +109,7 @@ class ScopeInitializerSuite extends NexusSuite {
       assertIO(wasExecuted.get, projectSignal)
   }
 
-  test("Save an error upon project failure") {
+  test("Save an error upon project initialization failure") {
     val errors           = Ref.unsafe[IO, List[ScopeInitErrorRow]](List.empty)
     val scopeInitializer = ScopeInitializer(Set(fail), simpleErrorStore(errors))
     // format: off
