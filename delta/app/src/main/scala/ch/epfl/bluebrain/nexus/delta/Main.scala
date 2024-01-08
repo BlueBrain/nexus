@@ -72,7 +72,17 @@ object Main extends IOApp {
       configNames                = enabledDefs.map(_.configFileName)
       cfgPathOpt                 = sys.env.get(externalConfigEnvVariable)
       (appConfig, mergedConfig) <- AppConfig.loadOrThrow(cfgPathOpt, configNames, classLoader)
+      _                         <- logClusterConfig(appConfig.projections.cluster)
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
+
+  private def logClusterConfig(config: ClusterConfig) = {
+    if (config.size == 1)
+      logger.info(s"Delta is running in standalone mode.")
+    else
+      logger.info(
+        s"Delta is running in clustered mode. The current node is number ${config.nodeIndex} out of a total of ${config.size} nodes."
+      )
+  }
 
   private def logPlugins(pluginDefs: List[PluginDef]): IO[Unit] = {
     def pluginLogEntry(pdef: PluginDef): String =

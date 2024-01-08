@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.IO
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
@@ -14,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, FailingScopeInitializationLog, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -72,9 +72,17 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     case _            => IO.raiseError(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
   }
 
-  private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> ProjectsImpl(fetchOrg, validateDeletion, Set(scopeInitLog), defaultApiMappings, config, xas, clock)
-  }.accepted
+  private def projectInitializer(wasExecuted: Ref[IO, Boolean]) = new ScopeInitializer {
+    override def initializeOrganization(organizationResource: OrganizationResource)(implicit
+        caller: Subject
+    ): IO[Unit] = IO.unit
+
+    override def initializeProject(projectResource: ProjectResource)(implicit caller: Subject): IO[Unit] =
+      wasExecuted.set(true)
+  }
+
+  private lazy val projects =
+    ProjectsImpl(fetchOrg, validateDeletion, ScopeInitializer.noop, defaultApiMappings, config, xas, clock)
 
   "The Projects operations bundle" should {
     "create a project" in {
@@ -84,7 +92,6 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
         1,
         subject
       )
-      scopeInitLog.createdProjects.get.accepted shouldEqual Set(ref)
     }
 
     val anotherProjResource = resourceFor(
@@ -95,10 +102,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
 
     "create another project" in {
       val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous).accepted
-
       project shouldEqual anotherProjResource
-
-      scopeInitLog.createdProjects.get.accepted shouldEqual Set(ref, anotherRef)
     }
 
     "not create a project if it already exists" in {
@@ -266,26 +270,16 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))
     }
 
-    "execute the successful init step even if there is a failing init step" in {
-      val successfulScopeInit = ScopeInitializationLog().accepted
-      val failingScopeInit    = new FailingScopeInitializationLog()
+    "run the initializer upon project creation" in {
+      val projectRef             = ProjectRef.unsafe("org", genString())
+      val initializerWasExecuted = Ref.unsafe[IO, Boolean](false)
+      // format: off
+      val projects = ProjectsImpl(fetchOrg, validateDeletion, projectInitializer(initializerWasExecuted), defaultApiMappings, config, xas, clock)
+      // format: on
 
-      val org     = Label.unsafe(genString())
-      val project = ProjectRef(org, Label.unsafe(genString()))
-
-      val fetchOrg: FetchOrganization = {
-        case `org` => IO.pure(Organization(org, orgUuid, None))
-        case other => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
-      }
-
-      val inits    = Set(failingScopeInit, successfulScopeInit)
-      val projects = ProjectsImpl(fetchOrg, validateDeletion, inits, defaultApiMappings, config, xas, clock)
-
-      val createProject                    = projects.create(project, payload)
-      val assertSuccessfulInitStepExecuted =
-        successfulScopeInit.createdProjects.get.map(p => p shouldEqual Set(project))
-
-      createProject >> assertSuccessfulInitStepExecuted
+      projects.create(projectRef, payload)(Identity.Anonymous).accepted
+      initializerWasExecuted.get.accepted shouldEqual true
     }
+
   }
 }
