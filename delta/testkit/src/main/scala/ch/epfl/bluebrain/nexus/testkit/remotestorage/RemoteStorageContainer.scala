@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit.remotestorage
 
+import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.containers.{BindMode, GenericContainer}
-import org.testcontainers.utility.DockerImageName
+import org.testcontainers.utility.{DockerImageName, MountableFile}
 
 import java.nio.file.Path
 
@@ -15,7 +15,7 @@ class RemoteStorageContainer(storageVersion: String, rootVolume: Path)
   addEnv("CONFIG_FORCE_app_subject_anonymous", "true")
   addEnv("CONFIG_FORCE_app_instance_interface", "0.0.0.0")
   addEnv("CONFIG_FORCE_app_storage_root__volume", "/app")
-  addFileSystemBind(rootVolume.toString, "/app", BindMode.READ_WRITE)
+  withCopyToContainer(MountableFile.forHostPath(rootVolume.toString, Integer.getInteger("777")), "/app")
   addExposedPort(8080)
   setWaitStrategy(Wait.forLogMessage(".*Bound\\sto\\s0\\.0\\.0\\.0.*", 1))
 }
