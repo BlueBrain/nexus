@@ -182,4 +182,8 @@ object Optics {
     val allProjects = root.projections.each.metadata.project
   }
 
+  object files {
+    val _sourceFile = root._sourceFile.string
+  }
+
 }

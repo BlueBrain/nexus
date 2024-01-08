@@ -105,13 +105,17 @@ class BatchCopySpec extends BaseIntegrationSpec {
     val uri         = s"/bulk/files/$destProjRef?storage=nxv:${destStorage.storageId}"
 
     for {
-      response   <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
-                      (json, expectCreated(json, response))
-                    }
-      _          <- checkFileResourcesExist(destProjRef, response)
-      assertions <- checkFileContentsAreCopiedCorrectly(destProjRef, sourceFiles, response)
+      response             <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
+                                (json, expectCreated(json, response))
+                              }
+      expectedSourceFileIds = sourceFiles.map(expectedSourceFileId(_, sourceProjRef))
+      _                    <- checkFileResourcesExist(destProjRef, expectedSourceFileIds.zip(response.ids))
+      assertions           <- checkFileContentsAreCopiedCorrectly(destProjRef, sourceFiles, response)
     } yield assertions.head
   }
+
+  def expectedSourceFileId(input: FileInput, sourceProjRef: String): String =
+    s"http://delta:8080/v1/resources/$sourceProjRef/_/${input.fileId}"
 
   def checkFileContentsAreCopiedCorrectly(destProjRef: String, sourceFiles: List[FileInput], response: Response) =
     response.ids.zip(sourceFiles).traverse { case (destId, FileInput(_, filename, contentType, contents)) =>
@@ -121,11 +125,12 @@ class BatchCopySpec extends BaseIntegrationSpec {
         }
     }
 
-  def checkFileResourcesExist(destProjRef: String, response: Response) =
-    response.ids.traverse { id =>
-      deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
+  def checkFileResourcesExist(destProjRef: String, fullResourceUrls: List[(String, String)]) =
+    fullResourceUrls.traverse { case (source, dest) =>
+      deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(dest)}", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        Optics.`@id`.getOption(json) shouldEqual Some(id)
+        Optics.`@id`.getOption(json) shouldEqual Some(dest)
+        Optics.files._sourceFile.getOption(json) shouldEqual Some(source)
       }
     }
 
