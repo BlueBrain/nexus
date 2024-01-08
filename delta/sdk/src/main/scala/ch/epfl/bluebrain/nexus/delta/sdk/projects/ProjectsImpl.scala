@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
@@ -24,8 +22,7 @@ import fs2.Stream
 
 final class ProjectsImpl private (
     log: ProjectsLog,
-    scopeInitializations: Set[ScopeInitialization],
-    errorStore: ScopeInitializationErrorStore,
+    scopeInitializer: ScopeInitializer,
     override val defaultApiMappings: ApiMappings
 ) extends Projects {
 
@@ -37,15 +34,8 @@ final class ProjectsImpl private (
   )(implicit caller: Subject): IO[ProjectResource] =
     for {
       resource <- eval(CreateProject(ref, fields, caller)).span("createProject")
-      _        <- scopeInitializations
-                    .parUnorderedTraverse { init =>
-                      init
-                        .onProjectCreation(resource.value, caller)
-                        .recoverWith { case e: ScopeInitializationFailed =>
-                          errorStore.save(init.entityType, resource.value.ref, e)
-                        }
-                    }
-                    .adaptError { case e: ScopeInitializationFailed => ProjectInitializationFailed(e) }
+      _        <- scopeInitializer
+                    .initializeProject(resource)
                     .span("initializeProject")
     } yield resource
 
@@ -120,7 +110,7 @@ object ProjectsImpl {
   final def apply(
       fetchAndValidateOrg: FetchOrganization,
       validateDeletion: ValidateProjectDeletion,
-      scopeInitializations: Set[ScopeInitialization],
+      scopeInitializer: ScopeInitializer,
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
       xas: Transactors,
@@ -131,8 +121,7 @@ object ProjectsImpl {
   ): Projects =
     new ProjectsImpl(
       ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
-      scopeInitializations,
-      ScopeInitializationErrorStore(xas, clock),
+      scopeInitializer,
       defaultApiMappings
     )
 }

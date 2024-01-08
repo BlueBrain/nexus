@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.syntax.all._
@@ -18,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationE
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -70,7 +72,17 @@ object Main extends IOApp {
       configNames                = enabledDefs.map(_.configFileName)
       cfgPathOpt                 = sys.env.get(externalConfigEnvVariable)
       (appConfig, mergedConfig) <- AppConfig.loadOrThrow(cfgPathOpt, configNames, classLoader)
+      _                         <- logClusterConfig(appConfig.projections.cluster)
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
+
+  private def logClusterConfig(config: ClusterConfig) = {
+    if (config.size == 1)
+      logger.info(s"Delta is running in standalone mode.")
+    else
+      logger.info(
+        s"Delta is running in clustered mode. The current node is number ${config.nodeIndex} out of a total of ${config.size} nodes."
+      )
+  }
 
   private def logPlugins(pluginDefs: List[PluginDef]): IO[Unit] = {
     def pluginLogEntry(pdef: PluginDef): String =
@@ -106,21 +118,24 @@ object Main extends IOApp {
       )
     )
 
-  private def routes(locator: Locator): Route = {
+  private def routes(locator: Locator, clusterConfig: ClusterConfig): Route = {
     import akka.http.scaladsl.server.Directives._
     import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
-    cors(locator.get[CorsSettings]) {
-      handleExceptions(locator.get[ExceptionHandler]) {
-        handleRejections(locator.get[RejectionHandler]) {
-          uriPrefix(locator.get[BaseUri].base) {
-            encodeResponse {
-              val (strict, rest) = locator.get[Set[PriorityRoute]].partition(_.requiresStrictEntity)
-              concat(
-                concat(rest.toVector.sortBy(_.priority).map(_.route): _*),
-                locator.get[StrictEntity].apply() {
-                  concat(strict.toVector.sortBy(_.priority).map(_.route): _*)
-                }
-              )
+    val nodeHeader = RawHeader("X-Delta-Node", clusterConfig.nodeIndex.toString)
+    respondWithHeader(nodeHeader) {
+      cors(locator.get[CorsSettings]) {
+        handleExceptions(locator.get[ExceptionHandler]) {
+          handleRejections(locator.get[RejectionHandler]) {
+            uriPrefix(locator.get[BaseUri].base) {
+              encodeResponse {
+                val (strict, rest) = locator.get[Set[PriorityRoute]].partition(_.requiresStrictEntity)
+                concat(
+                  concat(rest.toVector.sortBy(_.priority).map(_.route): _*),
+                  locator.get[StrictEntity].apply() {
+                    concat(strict.toVector.sortBy(_.priority).map(_.route): _*)
+                  }
+                )
+              }
             }
           }
         }
@@ -139,7 +154,7 @@ object Main extends IOApp {
             cfg.http.interface,
             cfg.http.port
           )
-          .bindFlow(RouteResult.routeToFlow(routes(locator)))
+          .bindFlow(RouteResult.routeToFlow(routes(locator, cfg.projections.cluster)))
       )
     )
 

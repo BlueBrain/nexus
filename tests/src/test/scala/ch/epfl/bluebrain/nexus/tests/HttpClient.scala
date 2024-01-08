@@ -37,6 +37,9 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
 
   private def fromFuture[A](future: => Future[A]) = IO.fromFuture { IO.delay(future) }
 
+  private def assertDeltaNodeHeader(response: HttpResponse) =
+    response.headers.map(_.name()) should contain("X-Delta-Node") withClue "A default header is missing."
+
   def apply(req: HttpRequest): IO[HttpResponse] =
     fromFuture(httpExt.singleRequest(req))
 
@@ -133,7 +136,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
         val entity = HttpEntity(contentType, s.getBytes)
         FormData(BodyPart.Strict("file", entity, Map("filename" -> fileName))).toEntity()
       },
-      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
+      (a: A, response: HttpResponse) => {
+        assertDeltaNodeHeader(response)
+        assertResponse(a, response) withClue buildClue(a, response)
+      },
       extraHeaders
     )
   }
@@ -185,7 +191,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       url,
       body,
       identity,
-      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
+      (a: A, response: HttpResponse) => {
+        assertDeltaNodeHeader(response)
+        assertResponse(a, response) withClue buildClue(a, response)
+      },
       extraHeaders
     )
   }

@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -28,8 +29,10 @@ object SupervisionModule extends ModuleDef {
         supervisor: Supervisor,
         baseUri: BaseUri,
         rc: RemoteContextResolution @Id("aggregate"),
-        jo: JsonKeyOrdering
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, rc, jo)
+        jo: JsonKeyOrdering,
+        projectsHealth: ProjectsHealth
+    ) =>
+      new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections(), projectsHealth)(baseUri, rc, jo)
   }
 
   many[RemoteContextResolution].addEffect(
