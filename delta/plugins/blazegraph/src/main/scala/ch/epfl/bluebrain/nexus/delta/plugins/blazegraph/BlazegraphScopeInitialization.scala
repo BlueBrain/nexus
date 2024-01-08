@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, IriFilter}
 
 /**
   * The default creation of the default SparqlView as part of the project initialization.
@@ -38,8 +38,8 @@ class BlazegraphScopeInitialization(
   private def defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     name = Some(defaults.name),
     description = Some(defaults.description),
-    resourceSchemas = Set.empty,
-    resourceTypes = Set.empty,
+    resourceSchemas = IriFilter.None,
+    resourceTypes = IriFilter.None,
     resourceTag = None,
     includeMetadata = true,
     includeDeprecated = true,

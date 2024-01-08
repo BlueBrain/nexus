@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Tag}
 
 /**
   * Contains the information that can be used for filtering when streaming states
@@ -10,14 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
   * @param tag
   *   tag that a view is indexing
   */
-case class SelectFilter(types: Set[Iri], tag: Tag)
+case class SelectFilter(types: IriFilter, tag: Tag)
 
 object SelectFilter {
 
   /** All types with specified tag */
-  val tag: Tag => SelectFilter = SelectFilter(Set.empty, _)
+  val tag: Tag => SelectFilter = SelectFilter(IriFilter.None, _)
 
   /** All types with latest tag */
-  val latest: SelectFilter = SelectFilter(Set.empty, Tag.Latest)
+  val latest: SelectFilter = SelectFilter(IriFilter.None, Tag.Latest)
 
 }

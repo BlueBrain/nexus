@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.implicits._
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -24,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
@@ -78,8 +77,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
     final case class LegacyIndexingElasticSearchViewFields(
         name: Option[String] = None,
         description: Option[String] = None,
-        resourceSchemas: Set[Iri] = Set.empty,
-        resourceTypes: Set[Iri] = Set.empty,
+        resourceSchemas: IriFilter = IriFilter.None,
+        resourceTypes: IriFilter = IriFilter.None,
         resourceTag: Option[UserTag] = None,
         sourceAsText: Boolean = false,
         includeMetadata: Boolean = false,
@@ -156,14 +155,14 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   private def toValue(fields: ElasticSearchViewFields): ElasticSearchViewValue = fields match {
     case i: LegacyIndexingElasticSearchViewFields =>
+      val resourceSchemasPipeStep = i.resourceSchemas.asRestrictedTo.map(FilterBySchema(_)).map(PipeStep(_)).toList
+      val resourceTypesPipeStep   = i.resourceTypes.asRestrictedTo.map(FilterByType(_)).map(PipeStep(_)).toList
       // Translate legacy fields into a pipeline
-      val pipeline = List(
-        i.resourceSchemas.nonEmpty -> PipeStep(FilterBySchema(i.resourceSchemas)),
-        i.resourceTypes.nonEmpty   -> PipeStep(FilterByType(i.resourceTypes)),
-        !i.includeDeprecated       -> PipeStep.noConfig(FilterDeprecated.ref),
-        !i.includeMetadata         -> PipeStep.noConfig(DiscardMetadata.ref),
-        true                       -> PipeStep.noConfig(DefaultLabelPredicates.ref),
-        i.sourceAsText             -> PipeStep.noConfig(SourceAsText.ref)
+      val pipeline                = resourceSchemasPipeStep ++ resourceTypesPipeStep ++ List(
+        !i.includeDeprecated -> PipeStep.noConfig(FilterDeprecated.ref),
+        !i.includeMetadata   -> PipeStep.noConfig(DiscardMetadata.ref),
+        true                 -> PipeStep.noConfig(DefaultLabelPredicates.ref),
+        i.sourceAsText       -> PipeStep.noConfig(SourceAsText.ref)
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(

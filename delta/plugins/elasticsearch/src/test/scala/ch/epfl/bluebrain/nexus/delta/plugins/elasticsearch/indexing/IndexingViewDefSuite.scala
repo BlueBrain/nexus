@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindTypedPipeErr
@@ -52,7 +52,7 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   private val customMapping      = jobj"""{"properties": {}}"""
   private val customSettings     = jobj"""{"analysis": {}}"""
-  private val filterByTypeConfig = FilterByTypeConfig(Set(nxv + "PullRequest"))
+  private val filterByTypeConfig = FilterByTypeConfig(IriFilter.restrictedTo(nxv + "PullRequest"))
   private val indexingCustom     = IndexingElasticSearchViewValue(
     Some("viewName"),
     Some("viewDescription"),

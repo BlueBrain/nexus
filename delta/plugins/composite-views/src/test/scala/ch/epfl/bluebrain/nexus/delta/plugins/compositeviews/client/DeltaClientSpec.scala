@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -141,8 +141,8 @@ class DeltaClientSpec
   private val source = RemoteProjectSource(
     iri"http://example.com/remote-project-source",
     UUID.randomUUID(),
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     None,
     includeDeprecated = false,
     project,

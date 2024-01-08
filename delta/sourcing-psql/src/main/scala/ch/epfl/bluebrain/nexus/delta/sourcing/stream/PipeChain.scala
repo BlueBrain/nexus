@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
-
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 
 /**
   * An identified collection of pipe references along with their configuration. It can be compiled into a single
@@ -55,20 +54,23 @@ object PipeChain {
     *   include deprecated resources if true
     */
   def apply(
-      resourceSchemas: Set[Iri],
-      resourceTypes: Set[Iri],
+      resourceSchemas: IriFilter,
+      resourceTypes: IriFilter,
       includeMetadata: Boolean,
       includeDeprecated: Boolean
-  ): Option[PipeChain] =
+  ): Option[PipeChain] = {
+    val resourceSchemasPipeChain = resourceSchemas.asRestrictedTo.map(FilterBySchema(_)).toList
+    val resourceTypesPipeChain   = resourceTypes.asRestrictedTo.map(FilterByType(_)).toList
+
     NonEmptyChain
       .fromSeq {
-        List(
-          resourceSchemas.nonEmpty -> FilterBySchema(resourceSchemas),
-          resourceTypes.nonEmpty   -> FilterByType(resourceTypes),
-          !includeDeprecated       -> FilterDeprecated(),
-          !includeMetadata         -> DiscardMetadata()
-        ).mapFilter { case (b, p) => Option.when(b)(p) }
+        resourceSchemasPipeChain ++ resourceTypesPipeChain ++
+          List(
+            !includeDeprecated -> FilterDeprecated(),
+            !includeMetadata   -> DiscardMetadata()
+          ).mapFilter { case (b, p) => Option.when(b)(p) }
       }
       .map(PipeChain(_))
+  }
 
 }
