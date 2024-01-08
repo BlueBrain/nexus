@@ -39,6 +39,8 @@ object DefaultViewsQuery {
 
   type Elasticsearch = DefaultViewsQuery[SearchResults[JsonObject], AggregationResult]
 
+  private val excludeOriginalSource = "_source_excludes" -> "_original_source"
+
   def apply(
       aclCheck: AclCheck,
       client: ElasticSearchClient,
@@ -52,7 +54,7 @@ object DefaultViewsQuery {
       aclCheck,
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
-          .search(request.params, views.map(_.index), Uri.Query.Empty)(request.pagination, request.sort)
+          .search(request.params, views.map(_.index), Uri.Query(excludeOriginalSource))(request.pagination, request.sort)
           .adaptError { case e: HttpClientError => ElasticSearchClientError(e) },
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
