@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Secret}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.{logger, PartitionsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import com.zaxxer.hikari.HikariDataSource
@@ -32,7 +32,13 @@ final case class Transactors(
   private val loader = ClasspathResourceLoader()
 
   private def execDDL(ddl: String): IO[Unit] =
-    loader.contentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+    loader
+      .contentOf(ddl)
+      .flatMap(Fragment.const0(_).update.run.transact(write))
+      .onError { e =>
+        logger.error(e)(s"Executing ddl $ddl failed.")
+      }
+      .void
 
   def execDDLs(ddls: List[String]): IO[Unit] =
     ddls.traverse(execDDL).void
@@ -40,6 +46,8 @@ final case class Transactors(
 }
 
 object Transactors {
+
+  private val logger = Logger[Transactors]
 
   private val dropScript      = "scripts/postgres/drop/drop-tables.ddl"
   private val scriptDirectory = "/scripts/postgres/init/"
@@ -98,7 +106,6 @@ object Transactors {
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
         ec        <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
-        blocker   <- Resource.unit[IO]
         dataSource = {
           val ds = new HikariDataSource
           ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")

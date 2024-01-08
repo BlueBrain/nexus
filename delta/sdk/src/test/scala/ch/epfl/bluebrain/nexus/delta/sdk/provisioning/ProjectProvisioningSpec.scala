@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -58,7 +58,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
   private lazy val projects = ProjectsImpl(
     fetchOrg,
     _ => IO.unit,
-    Set.empty,
+    ScopeInitializer.noop,
     ApiMappings.empty,
     config,
     xas,
