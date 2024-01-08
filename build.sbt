@@ -1002,7 +1002,8 @@ ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com
 ThisBuild / developers                   := List(
   Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
   Developer("olivergrabinski ", "Oliver Grabinski", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("dantb", "Daniel Tattan-Birch", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
 )
 ThisBuild / githubOwner                  := "BlueBrain"
 ThisBuild / githubRepository             := "nexus"
