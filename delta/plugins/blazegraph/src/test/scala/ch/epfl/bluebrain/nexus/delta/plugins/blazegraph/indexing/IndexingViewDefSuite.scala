@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindTypedPipeErr
@@ -49,10 +49,10 @@ class IndexingViewDefSuite extends NexusSuite {
 
   private val namespace = s"${prefix}_${uuid}_1"
 
-  private val filterByTypeConfig = FilterByTypeConfig(ViewRestriction.restrictedTo(nxv + "PullRequest"))
+  private val filterByTypeConfig = FilterByTypeConfig(IriFilter.restrictedTo(nxv + "PullRequest"))
   private val indexing           = IndexingBlazegraphViewValue(
     resourceTag = Some(UserTag.unsafe("some.tag")),
-    resourceTypes = ViewRestriction.restrictedTo(nxv + "PullRequest")
+    resourceTypes = IriFilter.restrictedTo(nxv + "PullRequest")
   )
 
   private val aggregate =

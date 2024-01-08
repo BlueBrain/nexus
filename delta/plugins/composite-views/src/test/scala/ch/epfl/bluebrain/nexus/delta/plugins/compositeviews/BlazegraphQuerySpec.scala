@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
 import org.scalatest.CancelAfterFailure
@@ -64,8 +64,8 @@ class BlazegraphQuerySpec extends CatsEffectSpec with CancelAfterFailure {
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      ViewRestriction.None,
-      ViewRestriction.None,
+      IriFilter.None,
+      IriFilter.None,
       false,
       false,
       permission
@@ -80,8 +80,8 @@ class BlazegraphQuerySpec extends CatsEffectSpec with CancelAfterFailure {
       UUID.randomUUID(),
       IndexingRev.init,
       construct,
-      ViewRestriction.None,
-      ViewRestriction.None,
+      IriFilter.None,
+      IriFilter.None,
       false,
       false,
       false,
@@ -93,7 +93,7 @@ class BlazegraphQuerySpec extends CatsEffectSpec with CancelAfterFailure {
     )
 
   private val projectSource =
-    ProjectSource(nxv + "source1", UUID.randomUUID(), ViewRestriction.None, ViewRestriction.None, None, false)
+    ProjectSource(nxv + "source1", UUID.randomUUID(), IriFilter.None, IriFilter.None, None, false)
 
   private val indexingView = ActiveViewDef(
     ViewRef(project.ref, id),

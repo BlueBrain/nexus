@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import io.circe.{Json, JsonObject}
 
 import java.time.Instant
@@ -32,8 +32,8 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   private val indexingValue    = IndexingBlazegraphViewValue(
     Some("viewName"),
     Some("viewDescription"),
-    ViewRestriction.restrictedTo(nxv + "some-schema"),
-    ViewRestriction.restrictedTo(nxv + "SomeType"),
+    IriFilter.restrictedTo(nxv + "some-schema"),
+    IriFilter.restrictedTo(nxv + "SomeType"),
     Some(UserTag.unsafe("some.tag")),
     includeMetadata = false,
     includeDeprecated = false,

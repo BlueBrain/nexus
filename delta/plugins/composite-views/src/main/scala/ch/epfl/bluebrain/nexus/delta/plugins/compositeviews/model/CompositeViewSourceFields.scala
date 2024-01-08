@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, IriFilter, ProjectRef}
 import io.circe.Encoder
 
 import java.util.UUID
@@ -32,13 +32,13 @@ sealed trait CompositeViewSourceFields {
     * @return
     *   the schemas to filter by, empty means all
     */
-  def resourceSchemas: ViewRestriction
+  def resourceSchemas: IriFilter
 
   /**
     * @return
     *   the resource types to filter by, empty means all
     */
-  def resourceTypes: ViewRestriction
+  def resourceTypes: IriFilter
 
   /**
     * @return
@@ -71,8 +71,8 @@ object CompositeViewSourceFields {
     */
   final case class ProjectSourceFields(
       id: Option[Iri] = None,
-      resourceSchemas: ViewRestriction = ViewRestriction.None,
-      resourceTypes: ViewRestriction = ViewRestriction.None,
+      resourceSchemas: IriFilter = IriFilter.None,
+      resourceTypes: IriFilter = IriFilter.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
@@ -96,8 +96,8 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       project: ProjectRef,
       identities: Set[Identity],
-      resourceSchemas: ViewRestriction = ViewRestriction.None,
-      resourceTypes: ViewRestriction = ViewRestriction.None,
+      resourceSchemas: IriFilter = IriFilter.None,
+      resourceTypes: IriFilter = IriFilter.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
@@ -122,8 +122,8 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       project: ProjectRef,
       endpoint: Uri,
-      resourceSchemas: ViewRestriction = ViewRestriction.None,
-      resourceTypes: ViewRestriction = ViewRestriction.None,
+      resourceSchemas: IriFilter = IriFilter.None,
+      resourceTypes: IriFilter = IriFilter.None,
       resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {

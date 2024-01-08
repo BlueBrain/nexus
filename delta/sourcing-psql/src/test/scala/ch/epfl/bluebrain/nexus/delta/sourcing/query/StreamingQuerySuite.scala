@@ -146,7 +146,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
   }
 
   test("Running a stream on latest states on project 1 from the beginning, filtering for types") {
-    val allowedViewTypes = ViewRestriction.fromSet(Set(nxv + "Fix", nxv + "Feature"))
+    val allowedViewTypes = IriFilter.fromSet(Set(nxv + "Fix", nxv + "Feature"))
     val (iri, void)      = stream(project1, Offset.start, SelectFilter(allowedViewTypes, Tag.Latest))
 
     val expected = List(

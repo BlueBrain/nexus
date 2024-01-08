@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID
@@ -27,7 +27,7 @@ class SearchConfigHookSuite extends NexusSuite with CompositeViewsFixture {
   private val defaults      = Defaults("viewName", "viewDescription")
   private val currentConfig =
     IndexingConfig(
-      resourceTypes = ViewRestriction.restrictedTo(nxv + "Test"),
+      resourceTypes = IriFilter.restrictedTo(nxv + "Test"),
       mapping = JsonObject("mapping" -> Json.obj()),
       settings = Some(JsonObject("settings" -> Json.obj())),
       query = SparqlConstructQuery.unsafe("query"),
@@ -103,7 +103,7 @@ class SearchConfigHookSuite extends NexusSuite with CompositeViewsFixture {
 
   test("A search view should be updated when resource types are updated") {
     val previousConfig =
-      currentConfig.copy(resourceTypes = ViewRestriction.fromSet(Set(nxv + "Test", nxv + "NewType")))
+      currentConfig.copy(resourceTypes = IriFilter.fromSet(Set(nxv + "Test", nxv + "NewType")))
     assertViewUpdated(searchView(defaults, previousConfig))
   }
 

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -280,7 +280,7 @@ object StreamingQuery {
 
   private def tombstoneFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
     val typeFragment  =
-      selectFilter.types.asRestrictedTo.map(restriction => fr"cause -> 'types' ??| ${typesSqlArray(restriction)}")
+      selectFilter.types.asRestrictedTo.map(includedTypes => fr"cause -> 'types' ??| ${typesSqlArray(includedTypes)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
       Scope(projectRef).asFragment,
@@ -290,7 +290,7 @@ object StreamingQuery {
     )
   }
 
-  private def typesSqlArray(restriction: ViewRestriction.RestrictedTo): Fragment =
-    Fragment.const(s"ARRAY[${restriction.iris.map(t => s"'$t'").mkString(",")}]")
+  private def typesSqlArray(includedTypes: IriFilter.Include): Fragment =
+    Fragment.const(s"ARRAY[${includedTypes.iris.map(t => s"'$t'").mkString(",")}]")
 
 }

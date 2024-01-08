@@ -2,30 +2,30 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ViewRestriction
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
 import munit.FunSuite
 
 class PipeChainSuite extends FunSuite {
 
-  private val resourceSchemas = ViewRestriction.restrictedTo(nxv + "MySchema")
-  private val resourceTypes   = ViewRestriction.restrictedTo(nxv + "MyType")
+  private val resourceSchemas = IriFilter.restrictedTo(nxv + "MySchema")
+  private val resourceTypes   = IriFilter.restrictedTo(nxv + "MyType")
 
   private def chain(
-      schemas: ViewRestriction,
-      types: ViewRestriction,
+      schemas: IriFilter,
+      types: IriFilter,
       includeMetadata: Boolean,
       includeDeprecated: Boolean
   ) =
     PipeChain(schemas, types, includeMetadata, includeDeprecated).map(_.pipes.map(_._1))
 
   test("Do not create a pipechain if there is no constraint") {
-    assertEquals(PipeChain(ViewRestriction.None, ViewRestriction.None, true, true), None)
+    assertEquals(PipeChain(IriFilter.None, IriFilter.None, true, true), None)
   }
 
   test("Create a pipechain with schemas") {
     assertEquals(
-      chain(resourceSchemas, ViewRestriction.None, true, true),
+      chain(resourceSchemas, IriFilter.None, true, true),
       Some(NonEmptyChain.one(FilterBySchema.ref))
     )
   }

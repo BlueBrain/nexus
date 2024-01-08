@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ViewRestriction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -45,8 +45,8 @@ class ElasticSearchViewSpec extends CatsEffectSpec with CirceLiteral with CirceE
     "be converted to compacted Json-LD" in {
       forAll(
         List(
-          PipeStep(FilterBySchema(ViewRestriction.restrictedTo(nxv.Schema))),
-          PipeStep(FilterByType(ViewRestriction.restrictedTo(nxv + "Morphology"))),
+          PipeStep(FilterBySchema(IriFilter.restrictedTo(nxv.Schema))),
+          PipeStep(FilterByType(IriFilter.restrictedTo(nxv + "Morphology"))),
           PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
         )        -> "jsonld/indexing-view-compacted-1.json" ::
           List(
@@ -61,8 +61,8 @@ class ElasticSearchViewSpec extends CatsEffectSpec with CirceLiteral with CirceE
     "be converted to expanded Json-LD" in {
       indexingView(
         List(
-          PipeStep(FilterBySchema(ViewRestriction.restrictedTo(nxv.Schema))),
-          PipeStep(FilterByType(ViewRestriction.restrictedTo(nxv + "Morphology"))),
+          PipeStep(FilterBySchema(IriFilter.restrictedTo(nxv.Schema))),
+          PipeStep(FilterByType(IriFilter.restrictedTo(nxv + "Morphology"))),
           PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
         )
       ).toExpandedJsonLd.accepted.json shouldEqual jsonContentOf("jsonld/indexing-view-expanded.json")

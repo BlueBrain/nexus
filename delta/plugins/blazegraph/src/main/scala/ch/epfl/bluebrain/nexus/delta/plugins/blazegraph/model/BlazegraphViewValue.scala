@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ViewRestriction
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -73,8 +73,8 @@ object BlazegraphViewValue {
   final case class IndexingBlazegraphViewValue(
       name: Option[String] = None,
       description: Option[String] = None,
-      resourceSchemas: ViewRestriction = ViewRestriction.None,
-      resourceTypes: ViewRestriction = ViewRestriction.None,
+      resourceSchemas: IriFilter = IriFilter.None,
+      resourceTypes: IriFilter = IriFilter.None,
       resourceTag: Option[UserTag] = None,
       includeMetadata: Boolean = false,
       includeDeprecated: Boolean = false,
