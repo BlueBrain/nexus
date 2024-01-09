@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import io.circe.Json
-import org.scalatest.Assertion
 import io.circe.syntax._
+import org.scalatest.Assertion
 
 class FilesSpec extends BaseIntegrationSpec {
 
@@ -46,7 +46,7 @@ class FilesSpec extends BaseIntegrationSpec {
   }
 
   "Creating a file with metadata" should {
-    "allow a file to be found via search" in {
+    "allow a file to be found via keyword search" in {
       val cerebellumId = givenAFileWithBrainRegion("cerebellum")
       val cortexId     = givenAFileWithBrainRegion("cortex")
 
@@ -54,6 +54,14 @@ class FilesSpec extends BaseIntegrationSpec {
 
       exactly(1, results) should have(`@id`(cerebellumId))
       no(results) should have(`@id`(cortexId))
+    }
+
+    "when searching for a keyword which no document has, no results should be returned" in {
+      givenAFileWithBrainRegion("cerebellum")
+      givenAFileWithBrainRegion("cortex")
+
+      queryForFilesWithBrainRegion("hippocampus").accepted shouldBe empty
+      queryForFilesWithKeywords("nonExistentKey" -> "value").accepted shouldBe empty
     }
   }
 
@@ -70,7 +78,11 @@ class FilesSpec extends BaseIntegrationSpec {
     assertListingTotal(id, 0)
 
   private def queryForFilesWithBrainRegion(brainRegion: String): IO[List[Json]] = {
-    val metadata = UrlUtils.encode(Json.obj("keywords" := Json.obj("brainRegion" := brainRegion)).noSpaces)
+    queryForFilesWithKeywords("brainRegion" -> brainRegion)
+  }
+
+  private def queryForFilesWithKeywords(keywords:(String, String)*): IO[List[Json]] = {
+    val metadata = UrlUtils.encode(Json.obj("keywords" := keywords.toMap.asJson).noSpaces)
     deltaClient
       .getJson[Json](s"/files/$projectRef?metadata=$metadata", Writer)
       .map { json =>
