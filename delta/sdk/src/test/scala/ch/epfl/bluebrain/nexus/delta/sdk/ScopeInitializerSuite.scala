@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 import java.time.Instant
 
@@ -22,7 +23,9 @@ class ScopeInitializerSuite extends NexusSuite {
     override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] =
       IO.raiseError(ScopeInitializationFailed("failed during org creation"))
     override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit]             =
-      IO.raiseError(ScopeInitializationFailed("failed during project creation"))
+      IO.sleep(2.seconds) >> IO.println(s"failed here ${Instant.now}") >> IO.raiseError(
+        ScopeInitializationFailed("failed during project creation")
+      )
     override def entityType: EntityType                                                         = EntityType("fail")
   }
 
@@ -34,7 +37,9 @@ class ScopeInitializerSuite extends NexusSuite {
       ref.set(orgSignal)
 
     override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
-      ref.set(projectSignal)
+      IO.println(s"Waiting ${Instant.now}") >> IO.sleep(4.seconds) >> IO.println(s"hello ${Instant.now}") >> ref.set(
+        projectSignal
+      )
 
     override def entityType: EntityType = EntityType("success")
   }
@@ -85,7 +90,7 @@ class ScopeInitializerSuite extends NexusSuite {
       assertIO(wasExecuted.get, orgSignal)
   }
 
-  test("The ScopeInitializer should execute the provided init steps") {
+  test("The ScopeInitializer should execute the provided init step upon project creation") {
     val wasExecuted      = Ref.unsafe[IO, String]("")
     val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted)))
 
@@ -103,7 +108,7 @@ class ScopeInitializerSuite extends NexusSuite {
 
   test("A failing step should not prevent a successful one to run on project creation") {
     val wasExecuted      = Ref.unsafe[IO, String]("")
-    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted), fail))
+    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(fail, success(wasExecuted)))
 
     scopeInitializer.initializeProject(projectRef).intercept[ProjectInitializationFailed] >>
       assertIO(wasExecuted.get, projectSignal)
