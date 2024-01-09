@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
 
@@ -62,8 +62,8 @@ class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
         val expected    = IndexingBlazegraphViewValue(
           name = Some("viewName"),
           description = Some("viewDescription"),
-          resourceSchemas = Set(context.vocab / "Person"),
-          resourceTypes = Set(context.vocab / "Person"),
+          resourceSchemas = IriFilter.restrictedTo(context.vocab / "Person"),
+          resourceTypes = IriFilter.restrictedTo(context.vocab / "Person"),
           resourceTag = Some(UserTag.unsafe("release")),
           includeMetadata = false,
           includeDeprecated = false,
