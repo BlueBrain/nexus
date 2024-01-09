@@ -223,7 +223,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
@@ -249,7 +248,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../docs/delta/api/permissions-api.html#fetch-latest-revision-" class="header">Fetch (latest revision)</a></li>
     <li><a href="../../../docs/delta/api/permissions-api.html#fetch-specific-revision-" class="header">Fetch (specific revision)</a></li>
-    <li><a href="../../../docs/delta/api/permissions-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -280,7 +278,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../docs/delta/api/permissions-api.html#fetch-latest-revision-" class="header">Fetch (latest revision)</a></li>
     <li><a href="../../../docs/delta/api/permissions-api.html#fetch-specific-revision-" class="header">Fetch (specific revision)</a></li>
-    <li><a href="../../../docs/delta/api/permissions-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -673,46 +670,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#server-sent-events" name="server-sent-events" class="anchor"><span class="anchor-link"></span></a>Server Sent Events</h2>
-<p>This endpoint allows clients to receive automatic updates from the permissions in a streaming fashion.</p>
-<pre><code>GET /v1/permissions/events
-</code></pre>
-<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
-<p>The response contains a series of permission events, represented in the following way</p>
-<pre><code>data:{payload}
-event:{type}
-id:{id}
-</code></pre>
-<p>where&hellip;</p>
-<ul>
-  <li><code>{payload}</code>: Json - is the actual payload of the current permission</li>
-  <li><code>{type}</code>: String - is a type identifier for the current event. Possible types are: PermissionsAppended,  PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted</li>
-  <li><code>{id}</code>: String - is the identifier of the permission event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/permissions/event.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl \
- &quot;http://localhost:8080/v1/permissions/events&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/permissions/event.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/permissions.json&quot;],&quot;@type&quot;:&quot;PermissionsReplaced&quot;,&quot;permissions&quot;:[&quot;custom&quot;],&quot;_instant&quot;:&quot;2021-05-10T13:57:16.947Z&quot;,&quot;_permissionsId&quot;:&quot;http://localhost:8080/v1/permissions&quot;,&quot;_rev&quot;:1,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:PermissionsReplaced
-id:a1532190-b197-11eb-a8e0-49728f9d6e6c
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/permissions.json&quot;],&quot;@type&quot;:&quot;PermissionsAppended&quot;,&quot;permissions&quot;:[&quot;appended&quot;],&quot;_instant&quot;:&quot;2021-05-10T13:57:20.466Z&quot;,&quot;_permissionsId&quot;:&quot;http://localhost:8080/v1/permissions&quot;,&quot;_rev&quot;:2,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:PermissionsAppended
-id:a3690940-b197-11eb-a8e0-49728f9d6e6c
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/permissions.json&quot;],&quot;@type&quot;:&quot;PermissionsSubtracted&quot;,&quot;permissions&quot;:[&quot;custom&quot;],&quot;_instant&quot;:&quot;2021-05-10T13:57:23.119Z&quot;,&quot;_permissionsId&quot;:&quot;http://localhost:8080/v1/permissions&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:PermissionsSubtracted
-id:a4fdda10-b197-11eb-a8e0-49728f9d6e6c
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/permissions.json&quot;],&quot;@type&quot;:&quot;PermissionsDeleted&quot;,&quot;_instant&quot;:&quot;2021-05-10T13:59:02.898Z&quot;,&quot;_permissionsId&quot;:&quot;http://localhost:8080/v1/permissions&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:PermissionsDeleted
-id:e0769d20-b197-11eb-a8e0-49728f9d6e6c</code></pre></dd>
-</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/permissions-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -764,7 +721,7 @@ Realms
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2023 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

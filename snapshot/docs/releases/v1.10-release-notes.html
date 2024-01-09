@@ -223,7 +223,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
@@ -244,6 +243,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
     <ul>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#fetching-by-org-and-project-uuids" class="header">Fetching by org and project UUIDs</a></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#projects" class="header">Projects</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#enforce-the-use-of-a-schema" class="header">Enforce the use of a schema</a></li>
@@ -256,9 +256,21 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-views" class="header">Undeprecate views</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#elasticsearch-views" class="header">Elasticsearch views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#global-search" class="header">Global search</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#fetch-search-suites-endpoint" class="header">Fetch search suites endpoint</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#sses" class="header">SSEs</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
@@ -293,6 +305,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
     <ul>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#fetching-by-org-and-project-uuids" class="header">Fetching by org and project UUIDs</a></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#projects" class="header">Projects</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#enforce-the-use-of-a-schema" class="header">Enforce the use of a schema</a></li>
@@ -305,9 +318,21 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-views" class="header">Undeprecate views</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#elasticsearch-views" class="header">Elasticsearch views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#global-search" class="header">Global search</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#fetch-search-suites-endpoint" class="header">Fetch search suites endpoint</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#sses" class="header">SSEs</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
@@ -341,6 +366,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>//TODO adjust the end date</p>
 <p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2023-06-15..2023-12-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.9.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
+<h3><a href="#fetching-by-org-and-project-uuids" name="fetching-by-org-and-project-uuids" class="anchor"><span class="anchor-link"></span></a>Fetching by org and project UUIDs</h3>
+<p>The legacy way of being able to:</p>
+<ul>
+  <li>Fetch/Update organizations by their UUIDs</li>
+  <li>Fetch/Update projects by their UUIDs</li>
+  <li>Create/Update/Fetch the different types of resources by their project uuids</li>
+</ul>
+<p>has been removed.</p>
+<p>Only the ability to fetch by their labels remains.</p>
 <h3><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h3>
 <h4><a href="#enforce-the-use-of-a-schema" name="enforce-the-use-of-a-schema" class="anchor"><span class="anchor-link"></span></a>Enforce the use of a schema</h4>
 <p>It is now possible to ban unconstrained resource in a project.</p>
@@ -353,10 +387,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#undeprecate-views" name="undeprecate-views" class="anchor"><span class="anchor-link"></span></a>Undeprecate views</h4>
 <p>Previously deprecated views can now be undeprecated. This is available for all view types.</p>
 <p><a href="../delta/api/views/elasticsearch-view-api.html#undeprecate">More information (ElasticSearch views)</a> <a href="../delta/api/views/sparql-view-api.html#undeprecate">More information (Sparql views)</a> <a href="../delta/api/views/composite-view-api.html#undeprecate">More information (Composite views)</a></p>
+<h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views</h3>
+<h4><a href="#new-mapping-and-settings-for-the-default-elasticsearch-view" name="new-mapping-and-settings-for-the-default-elasticsearch-view" class="anchor"><span class="anchor-link"></span></a>New mapping and settings for the default Elasticsearch view</h4>
+<p>The default Elasticsearch view now uses a new mapping and settings which improves the ability to search for resources using the listing endpoints.</p>
 <h3><a href="#storages" name="storages" class="anchor"><span class="anchor-link"></span></a>Storages</h3>
 <h4><a href="#undeprecate-storages" name="undeprecate-storages" class="anchor"><span class="anchor-link"></span></a>Undeprecate Storages</h4>
 <p>Previously deprecated storages can now be undeprecated.</p>
 <p><a href="../delta/api/storages-api.html#undeprecate">More information</a></p>
+<h3><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h3>
+<h4><a href="#fetch-search-suites-endpoint" name="fetch-search-suites-endpoint" class="anchor"><span class="anchor-link"></span></a>Fetch search suites endpoint</h4>
+<p>An endpoint to fetch a search suite has been added.</p>
+<p><a href="../delta/api/search-api.html#fetch-a-suite">More information</a></p>
+<h3><a href="#sses" name="sses" class="anchor"><span class="anchor-link"></span></a>SSEs</h3>
+<h4><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h4>
+<ul>
+  <li>The ability to fetch indexing errors as SSEs has been removed</li>
+  <li>The ability to fetch all global events as SSEs has been removed.</li>
+  <li>The ability to fetch events for global entities (ACLs, Organizations, Permissions, Realms) has been removed.</li>
+</ul>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>TODO</p>
 <h2><a href="#nexus-storage" name="nexus-storage" class="anchor"><span class="anchor-link"></span></a>Nexus Storage</h2>
@@ -418,7 +466,7 @@ v1.9 Release Notes
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2023 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

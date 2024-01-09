@@ -223,7 +223,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
@@ -398,7 +397,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
 <h4><a href="#better-reporting-of-indexing-errors" name="better-reporting-of-indexing-errors" class="anchor"><span class="anchor-link"></span></a>Better reporting of indexing errors</h4>
 <p>Indexing errors for the different views are now available as Server Sent Events via the API making it easier to identify and fix them by either updating the resource or updating the view.</p>
-<p><a href="../delta/api/views/index.html#fetch-indexing-failures-as-sses">More information</a></p>
 <p>Errors related to indexing into Elasticsearch have also been improved to give more precise and relevant feedback.</p>
 <h4><a href="#only-trigger-reindexing-when-indexing-is-impacted" name="only-trigger-reindexing-when-indexing-is-impacted" class="anchor"><span class="anchor-link"></span></a>Only trigger reindexing when indexing is impacted</h4>
 <p>Indexing views will now only restart if its new configuration changes the way, data is impacted. For example, updating the name, the description or the permission of the view won&rsquo;t trigger reindexing anymore.</p>
@@ -559,7 +557,7 @@ v1.7 To v1.8 Migration
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2023 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
