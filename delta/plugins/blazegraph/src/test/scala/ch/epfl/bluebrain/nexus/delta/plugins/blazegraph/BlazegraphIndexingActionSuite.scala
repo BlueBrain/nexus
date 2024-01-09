@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -75,9 +75,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
     ViewRef(project, id4)
   )
 
-  private val id5 = nxv + "view5"
-
-  private def viewStream: ElemStream[IndexingViewDef] =
+  private def viewStream: SuccessElemStream[IndexingViewDef] =
     Stream(
       SuccessElem(
         tpe = BlazegraphViews.entityType,
@@ -113,14 +111,6 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view4,
-        rev = 1
-      ),
-      DroppedElem(
-        tpe = BlazegraphViews.entityType,
-        id = id5,
-        project = Some(project),
-        Instant.EPOCH,
-        Offset.at(5L),
         rev = 1
       )
     )
@@ -159,7 +149,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
   )
 
   test("Collect only the adequate views") {
-    val expected = IdAcc(Set(id1), Set(id2, id4, id5), Set(id3))
+    val expected = IdAcc(Set(id1), Set(id2, id4), Set(id3))
 
     indexingAction
       .projections(project, elem)

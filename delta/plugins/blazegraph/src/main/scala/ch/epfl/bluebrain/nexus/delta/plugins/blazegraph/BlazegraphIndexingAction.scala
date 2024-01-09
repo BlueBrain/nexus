@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, SuccessElemStream, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -27,7 +27,7 @@ import scala.concurrent.duration.FiniteDuration
   *   a maximum duration for the indexing
   */
 final class BlazegraphIndexingAction(
-    fetchCurrentViews: ProjectRef => ElemStream[IndexingViewDef],
+    fetchCurrentViews: ProjectRef => SuccessElemStream[IndexingViewDef],
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
     override val timeout: FiniteDuration

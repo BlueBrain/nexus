@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
@@ -144,7 +144,7 @@ class ElasticSearchDefaultViewsResetterSuite
   private val viewElem2 =
     viewElem1.copy(project = Some(project2), value = defaultView.copy(ref = ViewRef(project2, iri"$defaultEsViewId")))
 
-  val viewStream: ElemStream[IndexingViewDef] = Stream(viewElem1, viewElem2)
+  val viewStream: SuccessElemStream[IndexingViewDef] = Stream(viewElem1, viewElem2)
 
   private lazy val resetWithNoViewCreation = ElasticSearchDefaultViewsResetter(
     viewStream,

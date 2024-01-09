@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -100,7 +100,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
   private val resumeSignal    = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
-  private def viewStream: ElemStream[IndexingViewDef] =
+  private def viewStream: SuccessElemStream[IndexingViewDef] =
     Stream(
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
@@ -109,14 +109,6 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
-        rev = 1
-      ),
-      DroppedElem(
-        tpe = ElasticSearchViews.entityType,
-        id = nxv + "dropped",
-        project = Some(project),
-        Instant.EPOCH,
-        Offset.at(2L),
         rev = 1
       ),
       SuccessElem(
@@ -138,15 +130,6 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         rev = 1
       )
     ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++ Stream(
-      FailedElem(
-        tpe = ElasticSearchViews.entityType,
-        id = nxv + "failed_coord",
-        project = Some(project),
-        Instant.EPOCH,
-        Offset.at(5L),
-        new IllegalStateException("Something got wrong :("),
-        rev = 1
-      ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = deprecatedView1.ref.viewId,

@@ -368,7 +368,7 @@ final class ElasticSearchViews private (
   /**
     * Return the existing indexing views in a project in a finite stream
     */
-  def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
+  def currentIndexingViews(project: ProjectRef): SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Project(project))
       .evalMapFilter { envelope =>
@@ -378,7 +378,7 @@ final class ElasticSearchViews private (
   /**
     * Return all existing indexing views in a finite stream
     */
-  def currentIndexingViews: ElemStream[IndexingViewDef] =
+  def currentIndexingViews: SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Root)
       .evalMapFilter { envelope =>
@@ -388,7 +388,7 @@ final class ElasticSearchViews private (
   /**
     * Return the indexing views in a non-ending stream
     */
-  def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
+  def indexingViews(start: Offset): SuccessElemStream[IndexingViewDef] =
     log
       .states(Scope.Root, start)
       .evalMapFilter { envelope =>

@@ -340,7 +340,7 @@ final class CompositeViews private (
     log.states(Scope.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(elem: Elem.SuccessElem[CompositeViewState]) =
-    elem.withProject(elem.value.project).map { v =>
+    elem.withProject(elem.value.project).mapValue { v =>
       CompositeViewDef(v)
     }
 
