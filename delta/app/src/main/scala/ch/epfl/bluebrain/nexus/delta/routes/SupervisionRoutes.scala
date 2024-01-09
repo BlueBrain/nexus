@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisedDescription
@@ -56,8 +56,7 @@ class SupervisionRoutes(
                 }
               )
             },
-            // TODO: review permission
-            authorizeFor(AclAddress.Root, supervision.write).apply {
+            authorizeFor(AclAddress.Root, projects.write).apply {
               (post & pathPrefix("projects") & projectRef & pathPrefix("heal") & pathEndOrSingleSlash) { project =>
                 emit(projectHealer.heal(project))
               }

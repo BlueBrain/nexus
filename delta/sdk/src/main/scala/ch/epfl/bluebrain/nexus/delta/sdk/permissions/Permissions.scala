@@ -215,8 +215,7 @@ object Permissions {
   }
 
   object supervision {
-    final val read: Permission  = Permission.unsafe("supervision/read")
-    final val write: Permission = Permission.unsafe("supervision/write")
+    final val read: Permission = Permission.unsafe("supervision/read")
   }
 
   private[delta] def next(

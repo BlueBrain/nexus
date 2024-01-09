@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
-import cats.effect.IO
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
@@ -42,13 +42,14 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   private val description2 =
     SupervisedDescription(metadata, ExecutionStrategy.TransientSingleNode, 0, ExecutionStatus.Running, progress)
 
-  def projectsHealth(unhealthyProjects: Set[ProjectRef]) =
+  private def projectsHealth(unhealthyProjects: Set[ProjectRef]) =
     new ProjectsHealth {
       override def health: IO[Set[ProjectRef]] = IO.pure(unhealthyProjects)
     }
 
-  def projectHealer = new ProjectHealer {
-    override def heal(project: ProjectRef): IO[Unit] = IO.unit
+  private val healerWasExecuted: Ref[IO, Boolean] = Ref.unsafe[IO, Boolean](false)
+  private def projectHealer                       = new ProjectHealer {
+    override def heal(project: ProjectRef): IO[Unit] = healerWasExecuted.set(true)
   }
 
   private def routesTemplate(unhealthyProjects: Set[ProjectRef]) = Route.seal(
@@ -65,7 +66,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclCheck.append(AclAddress.Root, superviser -> Set(supervision.read, supervision.write)).accepted
+    aclCheck.append(AclAddress.Root, superviser -> Set(supervision.read, projects.write)).accepted
   }
 
   "The supervision projection endpoint" should {
@@ -120,17 +121,17 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   }
 
   "The projects healing endpoint" should {
-    // todo: check the right permission
-    "be forbidden without supervision/write permission" in {
+    "be forbidden without projects/write permission" in {
       Post("/v1/supervision/projects/myorg/myproject/heal") ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
-    "succeed" in {
+    "succeed and execute the healer" in {
       Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
       }
+      healerWasExecuted.get.accepted shouldEqual true
     }
   }
 
