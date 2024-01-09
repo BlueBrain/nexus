@@ -27,7 +27,7 @@ object EventStreaming {
 
     streamA(
       offset,
-      offset => scopedEvents(typeIn, scope, offset, config).query[Elem.SuccessElem[Json]],
+      offset => scopedEvents(typeIn, scope, offset, config),
       xas,
       config
     )
@@ -82,16 +82,21 @@ object EventStreaming {
       xas: Transactors,
       cfg: QueryConfig,
       decode: (EntityType, Json) => IO[Option[A]]
-  ): SuccessElemStream[A]                                                                       =
+  ): SuccessElemStream[A]           =
     StreamingQuery[Elem.SuccessElem[Json]](start, query, _.offset, cfg, xas)
       // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
       .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
       .collect { case Some(e) => e }
 
-  private def scopedEvents(typeIn: Option[Fragment], scope: Scope, o: Offset, cfg: QueryConfig) =
-    fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
+  private def scopedEvents(
+      typeIn: Option[Fragment],
+      scope: Scope,
+      o: Offset,
+      cfg: QueryConfig
+  ): Query0[Elem.SuccessElem[Json]] =
+    fr"""SELECT type, id, value, rev, instant, ordering, org, project FROM public.scoped_events
         |${Fragments.whereAndOpt(typeIn, scope.asFragment, o.asFragment)}
         |ORDER BY ordering
-        |LIMIT ${cfg.batchSize}""".stripMargin
+        |LIMIT ${cfg.batchSize}""".stripMargin.query[Elem.SuccessElem[Json]]
 
 }

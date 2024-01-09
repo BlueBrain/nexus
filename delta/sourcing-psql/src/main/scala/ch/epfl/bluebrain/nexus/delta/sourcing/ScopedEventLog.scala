@@ -113,24 +113,6 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
   def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def currentEvents(scope: Scope, offset: Offset): SuccessElemStream[E]
-
-  /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def events(scope: Scope, offset: Offset): SuccessElemStream[E]
-
-  /**
     * Allow to stream all latest states within [[Envelope]] s without applying transformation
     * @param scope
     *   to filter returned states
@@ -309,12 +291,6 @@ object ScopedEventLog {
         stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
           stateMachine.evaluate(state, command, maxDuration)
         }
-
-      override def currentEvents(scope: Scope, offset: Offset): SuccessElemStream[E] =
-        eventStore.currentEvents(scope, offset)
-
-      override def events(scope: Scope, offset: Offset): SuccessElemStream[E] =
-        eventStore.events(scope, offset)
 
       override def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =
         stateStore.currentStates(scope, offset)

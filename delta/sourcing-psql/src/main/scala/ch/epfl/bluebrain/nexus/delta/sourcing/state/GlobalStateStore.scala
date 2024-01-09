@@ -6,11 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, SuccessElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -46,19 +45,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def currentStates(offset: Offset): SuccessElemStream[S]
-
-  /**
-    * Fetches states from the given type from the provided offset
-    *
-    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
-    * when new events are persisted.
-    *
-    * @param offset
-    *   the offset
-    */
-  def states(offset: Offset): SuccessElemStream[S]
-
+  def currentStates(offset: Offset): Stream[IO, S]
 }
 
 object GlobalStateStore {
@@ -123,21 +110,19 @@ object GlobalStateStore {
         .option
         .transact(xas.read)
 
-    private def states(offset: Offset, strategy: RefreshStrategy): SuccessElemStream[S] =
-      StreamingQuery[Elem.SuccessElem[S]](
+    private def states(offset: Offset, strategy: RefreshStrategy): Stream[IO, S] =
+      StreamingQuery[GlobalStateValue[S]](
         offset,
-        offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
+        offset => sql"""SELECT value, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                        |ORDER BY ordering
-                       |LIMIT ${config.batchSize}""".stripMargin.query[Elem.SuccessElem[S]],
+                       |LIMIT ${config.batchSize}""".stripMargin.query[GlobalStateValue[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
-      )
+      ).map(_.value)
 
-    override def currentStates(offset: Offset): SuccessElemStream[S] = states(offset, RefreshStrategy.Stop)
-
-    override def states(offset: Offset): SuccessElemStream[S] = states(offset, config.refreshStrategy)
+    override def currentStates(offset: Offset): Stream[IO, S] = states(offset, RefreshStrategy.Stop)
   }
 
 }

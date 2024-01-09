@@ -3,16 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
-import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -51,13 +49,6 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private val event6 = PullRequestCreated(id3, project3, Instant.EPOCH, Anonymous)
 
-  private val envelope1 = Elem.SuccessElem(PullRequest.entityType, id1, None, Instant.EPOCH, Offset.at(1L), event1, 1)
-  private val envelope2 = Elem.SuccessElem(PullRequest.entityType, id1, None, Instant.EPOCH, Offset.at(2L), event2, 2)
-  private val envelope3 = Elem.SuccessElem(PullRequest.entityType, id1, None, Instant.EPOCH, Offset.at(3L), event3, 3)
-  private val envelope4 = Elem.SuccessElem(PullRequest.entityType, id2, None, Instant.EPOCH, Offset.at(4L), event4, 1)
-  private val envelope5 = Elem.SuccessElem(PullRequest.entityType, id1, None, Instant.EPOCH, Offset.at(5L), event5, 1)
-  private val envelope6 = Elem.SuccessElem(PullRequest.entityType, id3, None, Instant.EPOCH, Offset.at(6L), event6, 1)
-
   private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assertEquals(6)
 
   test("Save events") {
@@ -88,31 +79,4 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   test("Get an empty stream for an unknown (project, id)") {
     store.history(project2, id2, 2).assertEmpty
   }
-
-  test("Fetch all current events from the beginning") {
-    store
-      .currentEvents(Scope.Root, Offset.Start)
-      .assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
-  }
-
-  test("Fetch current events for `org` from offset 2") {
-    store.currentEvents(Scope.Org(Label.unsafe("org")), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
-  }
-
-  test("Fetch current events for `proj1` from the beginning") {
-    store.currentEvents(Scope.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
-  }
-
-  test("Fetch all events from the beginning") {
-    store.events(Scope.Root, Offset.Start).assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
-  }
-
-  test(s"Fetch current events for `${project1.organization}` from offset 2") {
-    store.events(Scope.Org(project1.organization), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
-  }
-
-  test(s"Fetch current events for `$project1` from the beginning") {
-    store.events(Scope.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
-  }
-
 }

@@ -4,17 +4,14 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Scope, Serializer, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Serializer, Transactors}
 import doobie._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
-import io.circe.Decoder
 
 /**
   * A
@@ -52,25 +49,6 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
     * Fetches the history for the global event up to the last existing revision
     */
   def history(ref: ProjectRef, id: Id): Stream[IO, E] = history(ref, id, None)
-
-  /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def currentEvents(scope: Scope, offset: Offset): SuccessElemStream[E]
-
-  /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def events(scope: Scope, offset: Offset): SuccessElemStream[E]
-
 }
 
 object ScopedEventStore {
@@ -82,12 +60,9 @@ object ScopedEventStore {
       xas: Transactors
   ): ScopedEventStore[Id, E] =
     new ScopedEventStore[Id, E] {
-
-      import IriInstances._
-      implicit val putId: Put[Id]      = serializer.putId
-      implicit val getValue: Get[E]    = serializer.getValue
-      implicit val putValue: Put[E]    = serializer.putValue
-      implicit val decoder: Decoder[E] = serializer.codec
+      implicit val putId: Put[Id]   = serializer.putId
+      implicit val getValue: Get[E] = serializer.getValue
+      implicit val putValue: Put[E] = serializer.putValue
 
       private def insertEvent(event: E) =
         sql"""
@@ -128,28 +103,5 @@ object ScopedEventStore {
 
         select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
       }
-
-      private def events(
-          scope: Scope,
-          offset: Offset,
-          strategy: RefreshStrategy
-      ): SuccessElemStream[E] =
-        StreamingQuery[Elem.SuccessElem[E]](
-          offset,
-          offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
-                         |${Fragments.whereAndOpt(Some(fr"type = $tpe"), scope.asFragment, offset.asFragment)}
-                         |ORDER BY ordering
-                         |LIMIT ${config.batchSize}""".stripMargin.query[Elem.SuccessElem[E]],
-          _.offset,
-          config.copy(refreshStrategy = strategy),
-          xas
-        )
-
-      override def currentEvents(scope: Scope, offset: Offset): SuccessElemStream[E] =
-        events(scope, offset, RefreshStrategy.Stop)
-
-      override def events(scope: Scope, offset: Offset): SuccessElemStream[E] =
-        events(scope, offset, config.refreshStrategy)
-
     }
 }

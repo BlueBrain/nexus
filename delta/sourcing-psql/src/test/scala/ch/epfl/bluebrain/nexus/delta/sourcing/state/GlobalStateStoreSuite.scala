@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -41,11 +40,6 @@ class GlobalStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   private val state2        = Total(id2, 1, 12, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val updatedState1 = Total(id1, 2, 42, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
-  private val envelope1 = Elem.SuccessElem(Arithmetic.entityType, id1, None, Instant.EPOCH, Offset.at(1L), state1, 1)
-  private val envelope2 = Elem.SuccessElem(Arithmetic.entityType, id2, None, Instant.EPOCH, Offset.at(2L), state2, 1)
-  private val envelope3 =
-    Elem.SuccessElem(Arithmetic.entityType, id1, None, Instant.EPOCH, Offset.at(3L), updatedState1, 2)
-
   private def assertCount(expected: Int) =
     sql"select count(*) from global_states".query[Int].unique.transact(xas.read).assertEquals(expected)
 
@@ -65,19 +59,11 @@ class GlobalStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all current states from the beginning") {
-    store.currentStates(Offset.Start).assert(envelope1, envelope2)
+    store.currentStates(Offset.Start).assert(state1, state2)
   }
 
   test("Fetch all current states from offset 2") {
-    store.currentStates(Offset.at(1L)).assert(envelope2)
-  }
-
-  test("Fetch all states from the beginning") {
-    store.states(Offset.Start).take(2).assert(envelope1, envelope2)
-  }
-
-  test("Fetch all states from offset 2") {
-    store.states(Offset.at(1L)).take(1).assert(envelope2)
+    store.currentStates(Offset.at(1L)).assert(state2)
   }
 
   test("Update state 1 successfully") {
@@ -89,7 +75,7 @@ class GlobalStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all current states from the beginning after updating state 1") {
-    store.currentStates(Offset.Start).assert(envelope2, envelope3)
+    store.currentStates(Offset.Start).assert(state2, updatedState1)
   }
 
   test("Delete state 2 successfully") {
@@ -101,7 +87,7 @@ class GlobalStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all current states from the beginning after deleting state 2") {
-    store.currentStates(Offset.Start).assert(envelope3)
+    store.currentStates(Offset.Start).assert(updatedState1)
   }
 
 }

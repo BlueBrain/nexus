@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
 import cats.{Applicative, Eval, Traverse}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -234,7 +233,6 @@ object Elem {
       value: A,
       rev: Int
   ) extends Elem[A] {
-    def valueClass: String                        = ClassUtils.simpleName(value)
     def withProject(project: ProjectRef): Elem[A] = this.copy(project = Some(project))
   }
 
@@ -245,8 +243,9 @@ object Elem {
       import doobie.postgres.implicits._
       import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
       implicit val v: Get[Value] = pgDecoderGetT[Value]
-      Read[(EntityType, Iri, Value, Int, Instant, Long)].map { case (tpe, id, value, rev, instant, offset) =>
-        SuccessElem(tpe, id, None, instant, Offset.at(offset), value, rev)
+      Read[(EntityType, Iri, Value, Int, Instant, Long, String, String)].map {
+        case (tpe, id, value, rev, instant, offset, org, proj) =>
+          SuccessElem(tpe, id, Some(ProjectRef.unsafe(org, proj)), instant, Offset.at(offset), value, rev)
       }
     }
   }

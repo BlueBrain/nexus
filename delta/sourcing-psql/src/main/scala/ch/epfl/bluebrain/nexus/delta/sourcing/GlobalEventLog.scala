@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -81,18 +80,6 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
     * @param id
     */
   def delete(id: Id): IO[Unit]
-
-  /**
-    * Allow to stream all latest states within [[Envelope]] s without applying transformation
-    * @param offset
-    *   offset to start from
-    */
-  def currentStates(offset: Offset): SuccessElemStream[S]
-
-  /**
-    * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
-    */
-  final def currentStates: SuccessElemStream[S] = currentStates(Offset.Start)
 
   /**
     * Allow to stream all latest states from the provided offset
@@ -176,12 +163,7 @@ object GlobalEventLog {
         (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
 
       override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
-        currentStates(offset).map { e =>
-          f(e.value)
-        }
-
-      override def currentStates(offset: Offset): SuccessElemStream[S] = stateStore.currentStates(offset)
-
+        stateStore.currentStates(offset).map(f)
     }
 
 }
