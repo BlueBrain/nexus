@@ -83,20 +83,6 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
   def delete(id: Id): IO[Unit]
 
   /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param offset
-    *   offset to start from
-    */
-  def currentEvents(offset: Offset): SuccessElemStream[E]
-
-  /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param offset
-    *   offset to start from
-    */
-  def events(offset: Offset): SuccessElemStream[E]
-
-  /**
     * Allow to stream all latest states within [[Envelope]] s without applying transformation
     * @param offset
     *   offset to start from
@@ -106,7 +92,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
   /**
     * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
     */
-  def currentStates: SuccessElemStream[S] = currentStates(Offset.Start)
+  final def currentStates: SuccessElemStream[S] = currentStates(Offset.Start)
 
   /**
     * Allow to stream all latest states from the provided offset
@@ -122,7 +108,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
     * @param f
     *   the function to apply on each state
     */
-  def currentStates[T](f: S => T): Stream[IO, T] = currentStates(Offset.Start, f)
+  final def currentStates[T](f: S => T): Stream[IO, T] = currentStates(Offset.Start, f)
 }
 
 object GlobalEventLog {
@@ -188,10 +174,6 @@ object GlobalEventLog {
 
       override def delete(id: Id): IO[Unit] =
         (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
-
-      override def currentEvents(offset: Offset): SuccessElemStream[E] = eventStore.currentEvents(offset)
-
-      override def events(offset: Offset): SuccessElemStream[E] = eventStore.events(offset)
 
       override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
         currentStates(offset).map { e =>

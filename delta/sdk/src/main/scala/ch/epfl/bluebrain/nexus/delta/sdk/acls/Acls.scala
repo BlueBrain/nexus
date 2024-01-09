@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, SuccessElemStream}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 
 import java.time.Instant
@@ -141,23 +140,6 @@ trait Acls {
     *   the caller that contains the provided identities
     */
   def listSelf(filter: AclAddressFilter)(implicit caller: Caller): IO[AclCollection]
-
-  /**
-    * A non terminating stream of events for ACLs. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset = Offset.Start): SuccessElemStream[AclEvent]
-
-  /**
-    * The current ACLs events. The stream stops after emitting all known events.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(offset: Offset = Offset.Start): SuccessElemStream[AclEvent]
 
   /**
     * Overrides ''acl''.

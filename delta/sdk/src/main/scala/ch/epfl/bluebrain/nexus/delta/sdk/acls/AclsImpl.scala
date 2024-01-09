@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, SuccessElemStream}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
+
 final class AclsImpl private (
     log: AclsLog,
     minimum: Set[Permission]
@@ -68,11 +68,7 @@ final class AclsImpl private (
       .map(_.filter(caller.identities))
       .span("listSelfAcls", Map("withAncestors" -> filter.withAncestors))
 
-  override def events(offset: Offset): SuccessElemStream[AclEvent]                            = log.events(offset)
-
-  override def currentEvents(offset: Offset): SuccessElemStream[AclEvent] = log.currentEvents(offset)
-
-  override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource] =
+  override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource]         =
     eval(ReplaceAcl(acl, rev, caller)).span("replaceAcls")
 
   override def append(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource] =
