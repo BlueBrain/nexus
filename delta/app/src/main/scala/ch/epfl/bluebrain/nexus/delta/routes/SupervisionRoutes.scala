@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectRejection, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisedDescription
 import io.circe.generic.semiauto.deriveEncoder
@@ -58,7 +59,7 @@ class SupervisionRoutes(
             },
             authorizeFor(AclAddress.Root, projects.write).apply {
               (post & pathPrefix("projects") & projectRef & pathPrefix("heal") & pathEndOrSingleSlash) { project =>
-                emit(projectHealer.heal(project))
+                emit(projectHealer.heal(project).attemptNarrow[ProjectRejection])
               }
             }
           )

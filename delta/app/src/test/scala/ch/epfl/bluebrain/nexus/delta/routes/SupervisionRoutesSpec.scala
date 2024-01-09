@@ -6,9 +6,11 @@ import akka.http.scaladsl.server.Route
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectHealingFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
@@ -47,22 +49,28 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       override def health: IO[Set[ProjectRef]] = IO.pure(unhealthyProjects)
     }
 
-  private val healerWasExecuted: Ref[IO, Boolean] = Ref.unsafe[IO, Boolean](false)
-  private def projectHealer                       = new ProjectHealer {
+  private def projectHealer(healerWasExecuted: Ref[IO, Boolean]) = new ProjectHealer {
     override def heal(project: ProjectRef): IO[Unit] = healerWasExecuted.set(true)
   }
+  private val failingHealer                                      = new ProjectHealer {
+    override def heal(project: ProjectRef): IO[Unit] =
+      IO.raiseError(ProjectHealingFailed(ScopeInitializationFailed("failure details"), project))
+  }
+  private val noopHealer                                         = new ProjectHealer {
+    override def heal(project: ProjectRef): IO[Unit] = IO.unit
+  }
 
-  private def routesTemplate(unhealthyProjects: Set[ProjectRef]) = Route.seal(
+  private def routesTemplate(unhealthyProjects: Set[ProjectRef], healer: ProjectHealer) = Route.seal(
     new SupervisionRoutes(
       identities,
       aclCheck,
       IO.pure { List(description1, description2) },
       projectsHealth(unhealthyProjects),
-      projectHealer
+      healer
     ).routes
   )
 
-  private val routes = routesTemplate(Set.empty)
+  private val routes = routesTemplate(Set.empty, noopHealer)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -95,14 +103,14 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     }
 
     "return a successful http code when there are no unhealthy projects" in {
-      val routesWithHealthyProjects = routesTemplate(Set.empty)
+      val routesWithHealthyProjects = routesTemplate(Set.empty, noopHealer)
       Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithHealthyProjects ~> check {
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "return an error code when there are unhealthy projects" in {
-      val routesWithUnhealthyProjects = routesTemplate(unhealthyProjects)
+      val routesWithUnhealthyProjects = routesTemplate(unhealthyProjects, noopHealer)
       Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithUnhealthyProjects ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
         response.asJson shouldEqual
@@ -122,17 +130,39 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   "The projects healing endpoint" should {
     "be forbidden without projects/write permission" in {
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> routes ~> check {
+      val healerWasExecuted = Ref.unsafe[IO, Boolean](false)
+      val routesWithHealer  = routesTemplate(Set.empty, projectHealer(healerWasExecuted))
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> routesWithHealer ~> check {
         response.shouldBeForbidden
       }
+      healerWasExecuted.get.accepted shouldEqual false
     }
 
     "succeed and execute the healer" in {
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routes ~> check {
+      val healerWasExecuted = Ref.unsafe[IO, Boolean](false)
+      val routesWithHealer  = routesTemplate(Set.empty, projectHealer(healerWasExecuted))
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routesWithHealer ~> check {
         response.status shouldEqual StatusCodes.OK
       }
       healerWasExecuted.get.accepted shouldEqual true
     }
+
+    "return an error if the healing failed" in {
+      val routesWithFailingHealer = routesTemplate(Set.empty, failingHealer)
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routesWithFailingHealer ~> check {
+        response.status shouldEqual StatusCodes.InternalServerError
+        response.asJson shouldEqual
+          json"""
+            {
+              "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+              "@type" : "ProjectHealingFailed",
+              "reason" : "Healing project 'myorg/myproject' has failed.",
+              "details" : "failure details"
+            }
+              """
+      }
+    }
+
   }
 
 }

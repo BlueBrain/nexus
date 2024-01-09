@@ -136,6 +136,9 @@ object ProjectRejection {
   final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
       extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
 
+  final case class ProjectHealingFailed(failure: ScopeInitializationFailed, project: ProjectRef)
+      extends ProjectRejection(s"Healing project '$project' has failed.")
+
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
@@ -146,6 +149,7 @@ object ProjectRejection {
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
+        case ProjectHealingFailed(rejection, _)      => default.add("details", rejection.reason.asJson)
         case ProjectIsReferenced(_, references)      => default.add("referencedBy", references.asJson)
         case IncorrectRev(provided, expected)        =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
@@ -166,6 +170,7 @@ object ProjectRejection {
       case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
+      case ProjectRejection.ProjectHealingFailed(_, _)        => StatusCodes.InternalServerError
       case _                                                  => StatusCodes.BadRequest
     }
 
