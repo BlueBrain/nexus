@@ -668,15 +668,16 @@ CONSTRUCT {
 
   # Morphology features
   OPTIONAL {
-    ?id a nsg:NeuronMorphology  ;
-          ^nsg:hasSource / ^nsg:hasTarget ?featureAnnotation    .
+    ?id a nsg:NeuronMorphology  .
+
     ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
+          nsg:hasSource / nsg:hasTarget ?id    .
 
     OPTIONAL {
       ?featureAnnotation    bmo:compartment                    ?featureCompartment ;
                             nsg:hasBody                        ?featureBody        .
       ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       .
-      FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
+      FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Width", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
 
       ?featureBody          schema:value / nsg:series          ?featureSeries      .
       ?featureSeries        nsg:statistic                      ?featureStat        ;
