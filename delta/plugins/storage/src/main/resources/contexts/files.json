@@ -4,7 +4,7 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/fileId",
       "@type": "@id"
     },
-    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "@vocab": "https://bluebrain.github.io/nexus/keywords/",
     "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
     "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
     "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
