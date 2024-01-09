@@ -40,22 +40,22 @@ val handleBarsVersion       = "4.3.1"
 val hikariVersion           = "5.1.0"
 val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.6"
-val kamonVersion            = "2.6.6"
+val kamonVersion            = "2.7.0"
 val kanelaAgentVersion      = "1.0.18"
 val kindProjectorVersion    = "0.13.2"
 val log4catsVersion         = "2.6.0"
 val logbackVersion          = "1.4.14"
-val magnoliaVersion         = "1.1.6"
+val magnoliaVersion         = "1.1.8"
 val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M10"
 val munitCatsEffectVersion  = "2.0.0-M4"
-val nimbusJoseJwtVersion    = "9.37.1"
-val postgresJdbcVersion     = "42.7.0"
+val nimbusJoseJwtVersion    = "9.37.3"
+val postgresJdbcVersion     = "42.7.1"
 val pureconfigVersion       = "0.17.4"
 val scalaTestVersion        = "3.2.17"
 val scalaXmlVersion         = "2.2.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
-val testContainersVersion   = "1.19.1"
+val testContainersVersion   = "1.19.3"
 
 lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 
@@ -913,7 +913,7 @@ lazy val compilation = {
   Seq(
     scalaVersion                           := scalaCompilerVersion,
     scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
-    javaSpecificationVersion               := "17",
+    javaSpecificationVersion               := "21",
     javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
@@ -977,7 +977,7 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser   := "nexus",
-    dockerBaseImage       := "eclipse-temurin:17-jre",
+    dockerBaseImage       := "eclipse-temurin:21-jre",
     dockerBuildxPlatforms := Seq("linux/arm64/v8", "linux/amd64"),
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
