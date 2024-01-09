@@ -122,13 +122,13 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   "The projects healing endpoint" should {
     // todo: check the right permission
     "be forbidden without supervision/write permission" in {
-      Post("/v1/supervision/bro/myorg/myproject/heal") ~> routes ~> check {
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "succeed" in {
-      Post("/v1/supervision/bro/myorg/myproject/heal") ~> asSuperviser ~> routes ~> check {
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
       }
     }

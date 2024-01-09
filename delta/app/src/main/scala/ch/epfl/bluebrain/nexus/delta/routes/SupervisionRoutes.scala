@@ -58,7 +58,7 @@ class SupervisionRoutes(
             },
             // TODO: review permission
             authorizeFor(AclAddress.Root, supervision.write).apply {
-              (post & pathPrefix("bro") & projectRef & pathPrefix("heal") & pathEndOrSingleSlash) { project =>
+              (post & pathPrefix("projects") & projectRef & pathPrefix("heal") & pathEndOrSingleSlash) { project =>
                 emit(projectHealer.heal(project))
               }
             }
