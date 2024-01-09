@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -25,9 +25,11 @@ class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] =
-    if (config.types.isEmpty || config.types.contains(element.value.schema.iri)) IO.pure(element)
-    else IO.pure(element.dropped)
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] = config.types match {
+    case IriFilter.None                                                           => IO.pure(element)
+    case IriFilter.Include(schemas) if schemas.contains(element.value.schema.iri) => IO.pure(element)
+    case IriFilter.Include(_)                                                     => IO.pure(element.dropped)
+  }
 
 }
 
@@ -42,24 +44,29 @@ object FilterBySchema extends PipeDef {
   override def ref: PipeRef                                             = PipeRef.unsafe("filterBySchema")
   override def withConfig(config: FilterBySchemaConfig): FilterBySchema = new FilterBySchema(config)
 
-  final case class FilterBySchemaConfig(types: Set[Iri]) {
+  final case class FilterBySchemaConfig(types: IriFilter) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
           nxv + ref.toString,
           JsonObject(
-            (nxv + "types").toString -> Json.arr(types.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
+            (nxv + "types").toString -> Json.arr(
+              types.asRestrictedTo
+                .map(_.iris.toList)
+                .getOrElse(List.empty)
+                .map(iri => Json.obj("@id" -> iri.asJson)): _*
+            )
           )
         )
       )
     )
   }
-  object FilterBySchemaConfig                            {
+  object FilterBySchemaConfig                             {
     implicit val filterBySchemaConfigJsonLdDecoder: JsonLdDecoder[FilterBySchemaConfig] = deriveDefaultJsonLdDecoder
   }
 
   /**
     * Returns the pipe ref and config from the provided schema
     */
-  def apply(schemas: Set[Iri]): (PipeRef, ExpandedJsonLd) = ref -> FilterBySchemaConfig(schemas).toJsonLd
+  def apply(schemas: IriFilter): (PipeRef, ExpandedJsonLd) = ref -> FilterBySchemaConfig(schemas).toJsonLd
 }

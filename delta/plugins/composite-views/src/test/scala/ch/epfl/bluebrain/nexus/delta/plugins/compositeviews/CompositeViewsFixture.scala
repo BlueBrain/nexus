@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, IriFilter, Label, ProjectRef}
 import io.circe.{Json, JsonObject}
 
 import java.time.Instant
@@ -53,8 +53,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
 
   val projectFields      = ProjectSourceFields(
     Some(iri"http://example.com/project-source"),
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     None
   )
   val crossProjectFields = CrossProjectSourceFields(
@@ -93,8 +93,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
   val projectSource = ProjectSource(
     iri"http://example.com/project-source",
     uuid,
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     None,
     false
   )
@@ -104,8 +104,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
   val crossProjectSource = CrossProjectSource(
     iri"http://example.com/cross-project-source",
     uuid,
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     None,
     false,
     otherProject,
@@ -115,8 +115,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
   val remoteProjectSource = RemoteProjectSource(
     iri"http://example.com/remote-project-source",
     uuid,
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     None,
     false,
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
@@ -128,8 +128,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
     uuid,
     IndexingRev.init,
     query,
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     false,
     false,
     false,
@@ -144,8 +144,8 @@ trait CompositeViewsFixture extends ConfigFixtures {
     uuid,
     IndexingRev.init,
     query,
-    Set.empty,
-    Set.empty,
+    IriFilter.None,
+    IriFilter.None,
     false,
     false,
     permissions.query

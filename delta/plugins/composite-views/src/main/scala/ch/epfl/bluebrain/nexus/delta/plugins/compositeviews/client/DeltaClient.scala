@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusEr
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, IriFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -149,9 +149,10 @@ object DeltaClient {
         }
     }
 
-    private def typeQuery(types: Set[Iri])               =
-      if (types.isEmpty) Query.Empty
-      else Query(types.map(t => "type" -> t.toString).toList: _*)
+    private def typeQuery(restriction: IriFilter) = restriction match {
+      case IriFilter.None           => Query.Empty
+      case IriFilter.Include(types) => Query(types.map(t => "type" -> t.toString).toList: _*)
+    }
 
     private def elemAddress(source: RemoteProjectSource) =
       (source.endpoint / "elems" / source.project.organization.value / source.project.project.value)
