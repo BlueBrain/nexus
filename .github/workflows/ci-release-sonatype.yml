@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           check-latest: true
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release

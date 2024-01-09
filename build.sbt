@@ -913,7 +913,7 @@ lazy val compilation = {
   Seq(
     scalaVersion                           := scalaCompilerVersion,
     scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
-    javaSpecificationVersion               := "17",
+    javaSpecificationVersion               := "21",
     javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
@@ -977,7 +977,7 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser   := "nexus",
-    dockerBaseImage       := "eclipse-temurin:17-jre",
+    dockerBaseImage       := "eclipse-temurin:21-jre",
     dockerBuildxPlatforms := Seq("linux/arm64/v8", "linux/amd64"),
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
