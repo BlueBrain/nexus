@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.{allProjectsAreHea
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.{baseUriPrefix, projectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisedDescription
 import io.circe.generic.semiauto.deriveEncoder
@@ -29,7 +29,8 @@ class SupervisionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     supervised: IO[List[SupervisedDescription]],
-    projectsHealth: ProjectsHealth
+    projectsHealth: ProjectsHealth,
+    projectHealer: ProjectHealer
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -41,21 +42,27 @@ class SupervisionRoutes(
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("supervision") {
         extractCaller { implicit caller =>
-          get {
+          concat(
             authorizeFor(AclAddress.Root, supervision.read).apply {
               concat(
-                (pathPrefix("projections") & pathEndOrSingleSlash) {
+                (pathPrefix("projections") & get & pathEndOrSingleSlash) {
                   emit(supervised.map(SupervisionBundle))
                 },
-                (pathPrefix("projects") & pathEndOrSingleSlash) {
+                (pathPrefix("projects") & get & pathEndOrSingleSlash) {
                   onSuccess(projectsHealth.health.unsafeToFuture()) { projects =>
                     if (projects.isEmpty) emit(StatusCodes.OK, IO.pure(allProjectsAreHealthy))
                     else emit(StatusCodes.InternalServerError, IO.pure(unhealthyProjectsEncoder(projects)))
                   }
                 }
               )
+            },
+            // TODO: review permission
+            authorizeFor(AclAddress.Root, supervision.write).apply {
+              (post & pathPrefix("bro") & projectRef & pathPrefix("heal") & pathEndOrSingleSlash) { project =>
+                emit(projectHealer.heal(project))
+              }
             }
-          }
+          )
         }
       }
     }

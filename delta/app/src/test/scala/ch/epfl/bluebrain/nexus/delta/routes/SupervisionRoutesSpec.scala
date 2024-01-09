@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -47,12 +47,17 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       override def health: IO[Set[ProjectRef]] = IO.pure(unhealthyProjects)
     }
 
+  def projectHealer = new ProjectHealer {
+    override def heal(project: ProjectRef): IO[Unit] = IO.unit
+  }
+
   private def routesTemplate(unhealthyProjects: Set[ProjectRef]) = Route.seal(
     new SupervisionRoutes(
       identities,
       aclCheck,
       IO.pure { List(description1, description2) },
-      projectsHealth(unhealthyProjects)
+      projectsHealth(unhealthyProjects),
+      projectHealer
     ).routes
   )
 
@@ -60,7 +65,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclCheck.append(AclAddress.Root, superviser -> Set(supervision.read)).accepted
+    aclCheck.append(AclAddress.Root, superviser -> Set(supervision.read, supervision.write)).accepted
   }
 
   "The supervision projection endpoint" should {
@@ -112,6 +117,21 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       }
     }
 
+  }
+
+  "The projects healing endpoint" should {
+    // todo: check the right permission
+    "be forbidden without supervision/write permission" in {
+      Post("/v1/supervision/bro/myorg/myproject/heal") ~> routes ~> check {
+        response.shouldBeForbidden
+      }
+    }
+
+    "succeed" in {
+      Post("/v1/supervision/bro/myorg/myproject/heal") ~> asSuperviser ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+      }
+    }
   }
 
 }
