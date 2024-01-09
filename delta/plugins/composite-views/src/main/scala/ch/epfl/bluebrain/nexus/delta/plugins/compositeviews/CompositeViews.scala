@@ -334,12 +334,6 @@ final class CompositeViews private (
     log.currentStates(Scope.Project(project)).map(toCompositeViewDef)
 
   /**
-    * Return all existing indexing views in a finite stream
-    */
-  def currentViews: ElemStream[CompositeViewDef] =
-    log.currentStates(Scope.Root).map(toCompositeViewDef)
-
-  /**
     * Return the indexing views in a non-ending stream
     */
   def views(start: Offset): ElemStream[CompositeViewDef] =

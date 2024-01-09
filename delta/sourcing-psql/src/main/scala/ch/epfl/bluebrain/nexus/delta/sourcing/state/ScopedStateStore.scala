@@ -71,28 +71,6 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   def get(ref: ProjectRef, id: Id, tag: Tag): IO[S]
 
   /**
-    * Fetches latest states from the given type from the beginning.
-    *
-    * The stream is completed when it reaches the end.
-    * @param scope
-    *   to filter returned states
-    */
-  def currentStates(scope: Scope): SuccessElemStream[S] =
-    currentStates(scope, Offset.Start)
-
-  /**
-    * Fetches states from the given type with the given tag from the beginning.
-    *
-    * The stream is completed when it reaches the end.
-    * @param scope
-    *   to filter returned states
-    * @param tag
-    *   only states with this tag will be selected
-    */
-  def currentStates(scope: Scope, tag: Tag): SuccessElemStream[S] =
-    currentStates(scope, tag, Offset.Start)
-
-  /**
     * Fetches latest states from the given type from the provided offset.
     *
     * The stream is completed when it reaches the end.
@@ -101,7 +79,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =
+  final def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =
     currentStates(scope, Latest, offset)
 
   /**
@@ -118,31 +96,6 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   def currentStates(scope: Scope, tag: Tag, offset: Offset): SuccessElemStream[S]
 
   /**
-    * Fetches latest states from the given type from the beginning
-    *
-    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
-    * when new events are persisted.
-    *
-    * @param scope
-    *   to filter returned states
-    */
-  def states(scope: Scope): SuccessElemStream[S] =
-    states(scope, Latest, Offset.Start)
-
-  /**
-    * Fetches states from the given type with the given tag from the beginning
-    *
-    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
-    * when new states are persisted.
-    *
-    * @param scope
-    *   to filter returned states
-    * @param tag
-    *   only states with this tag will be selected
-    */
-  def states(scope: Scope, tag: Tag): SuccessElemStream[S] = states(scope, tag, Offset.Start)
-
-  /**
     * Fetches latest states from the given type from the provided offset
     *
     * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
@@ -153,7 +106,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def states(scope: Scope, offset: Offset): SuccessElemStream[S] =
+  final def states(scope: Scope, offset: Offset): SuccessElemStream[S] =
     states(scope, Latest, offset)
 
   /**
