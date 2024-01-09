@@ -56,7 +56,7 @@ object ScopeInitializer {
           project: ProjectRef
       )(implicit caller: Subject): IO[Unit] = {
         completeAllAndRaiseFirstError(
-          scopeInitializations.toList,
+          scopeInitializations,
           _.onProjectCreation(project, caller),
           errorStore.save(_, project, _)
         ).adaptError { case e: ScopeInitializationFailed =>
@@ -75,15 +75,15 @@ object ScopeInitializer {
         *   what to do when a [[ScopeInitialization]] occurs
         */
       private def completeAllAndRaiseFirstError(
-          scopeInits: List[ScopeInitialization],
+          scopeInits: Set[ScopeInitialization],
           fetchIO: ScopeInitialization => IO[Unit],
           onError: (EntityType, ScopeInitializationFailed) => IO[Unit]
       ): IO[Unit] =
         Ref.of[IO, Option[ScopeInitializationFailed]](None).flatMap { errorRef =>
-          scopeInits.parTraverse { inits =>
-            fetchIO(inits).handleErrorWith { e =>
+          scopeInits.parUnorderedTraverse { init =>
+            fetchIO(init).handleErrorWith { e =>
               e match {
-                case e: ScopeInitializationFailed => onError(inits.entityType, e) >> errorRef.set(Some(e))
+                case e: ScopeInitializationFailed => onError(init.entityType, e) >> errorRef.set(Some(e))
                 case _                            => IO.unit
               }
             }

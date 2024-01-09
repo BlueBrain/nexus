@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 import java.time.Instant
 
@@ -23,9 +22,7 @@ class ScopeInitializerSuite extends NexusSuite {
     override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] =
       IO.raiseError(ScopeInitializationFailed("failed during org creation"))
     override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit]             =
-      IO.sleep(2.seconds) >> IO.println(s"failed here ${Instant.now}") >> IO.raiseError(
-        ScopeInitializationFailed("failed during project creation")
-      )
+      IO.raiseError(ScopeInitializationFailed("failed during project creation"))
     override def entityType: EntityType                                                         = EntityType("fail")
   }
 
@@ -37,9 +34,7 @@ class ScopeInitializerSuite extends NexusSuite {
       ref.set(orgSignal)
 
     override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
-      IO.println(s"Waiting ${Instant.now}") >> IO.sleep(4.seconds) >> IO.println(s"hello ${Instant.now}") >> ref.set(
-        projectSignal
-      )
+      ref.set(projectSignal)
 
     override def entityType: EntityType = EntityType("success")
   }
