@@ -54,7 +54,10 @@ object DefaultViewsQuery {
       aclCheck,
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
-          .search(request.params, views.map(_.index), Uri.Query(excludeOriginalSource))(request.pagination, request.sort)
+          .search(request.params, views.map(_.index), Uri.Query(excludeOriginalSource))(
+            request.pagination,
+            request.sort
+          )
           .adaptError { case e: HttpClientError => ElasticSearchClientError(e) },
       (request: DefaultSearchRequest, views: Set[IndexingView]) =>
         client
