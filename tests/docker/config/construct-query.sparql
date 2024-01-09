@@ -670,7 +670,7 @@ CONSTRUCT {
   OPTIONAL {
     ?id a nsg:NeuronMorphology  .
 
-    ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
+    ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  ;
           nsg:hasSource / nsg:hasTarget ?id    .
 
     OPTIONAL {
@@ -682,7 +682,7 @@ CONSTRUCT {
       ?featureBody          schema:value / nsg:series          ?featureSeries      .
       ?featureSeries        nsg:statistic                      ?featureStat        ;
                             schema:value                       ?featureValue       ;
-                            schema:unitCode                    ?featureUnit
+                            schema:unitCode                    ?featureUnit        .
 
     }.
   } .
