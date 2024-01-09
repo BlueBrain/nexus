@@ -69,36 +69,6 @@ object ScopeInitializer {
           }
       }
 
-//      /**
-//        * Execute all the provided initializations in parallel and raise the first error that occurs. The IOs still
-//        * running after the failure are not cancelled.
-//        * @param scopeInits
-//        *   the list of initializations to execute
-//        * @param fetchIO
-//        *   how to get the IO for each [[ScopeInitialization]]
-//        * @param onError
-//        *   what to do when a [[ScopeInitialization]] occurs
-//        */
-//      private def completeAllAndRaiseFirstError(
-//          scopeInits: Set[ScopeInitialization],
-//          fetchIO: ScopeInitialization => IO[Unit],
-//          onError: (EntityType, ScopeInitializationFailed) => IO[Unit]
-//      ): IO[Unit] =
-//        Ref.of[IO, Option[ScopeInitializationFailed]](None).flatMap { errorRef =>
-//          scopeInits.parUnorderedTraverse { init =>
-//            fetchIO(init).handleErrorWith { e =>
-//              e match {
-//                case e: ScopeInitializationFailed => onError(init.entityType, e) >> errorRef.set(Some(e))
-//                case _                            => IO.unit
-//              }
-//            }
-//          } >>
-//            errorRef.get.flatMap {
-//              case Some(value) => IO.raiseError(value)
-//              case None        => IO.unit
-//            }
-//        }
-
     }
 
   /** A constructor for tests that does not store initialization errors */
