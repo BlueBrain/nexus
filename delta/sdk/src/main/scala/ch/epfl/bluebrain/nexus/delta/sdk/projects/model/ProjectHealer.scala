@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectHealingFailed, ProjectInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -29,12 +27,8 @@ object ProjectHealer {
       implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
       override def heal(project: ProjectRef): IO[Unit] =
-        reinitializeProject(project) >> errorStore.delete(project)
+        scopeInitializer.initializeProject(project) >> errorStore.delete(project)
 
-      private def reinitializeProject(project: ProjectRef): IO[Unit] =
-        scopeInitializer
-          .initializeProject(project)
-          .adaptError { case ProjectInitializationFailed(failure) => ProjectHealingFailed(failure, project) }
     }
 
 }

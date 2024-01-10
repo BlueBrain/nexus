@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectHealingFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
@@ -62,7 +62,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   private val failingHealer = new ProjectHealer {
     override def heal(project: ProjectRef): IO[Unit] =
-      IO.raiseError(ProjectHealingFailed(ScopeInitializationFailed("failure details"), project))
+      IO.raiseError(ProjectInitializationFailed(ScopeInitializationFailed("failure details")))
   }
 
   private val noopHealer = new ProjectHealer {
@@ -174,8 +174,8 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
           json"""
             {
               "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-              "@type" : "ProjectHealingFailed",
-              "reason" : "Healing project 'myorg/myproject' has failed.",
+              "@type" : "ProjectInitializationFailed",
+              "reason" : "The project has been successfully created but it could not be initialized correctly",
               "details" : "failure details"
             }
               """
