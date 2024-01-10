@@ -48,11 +48,18 @@ class ScopeInitializationErrorStoreSuite
   }
 
   test("The count of errors is correct when there are errors across several projects") {
-    val project1 = genRandomProjectRef()
-    val project2 = genRandomProjectRef()
+    val (project1, project2) = (genRandomProjectRef(), genRandomProjectRef())
     saveSimpleError(project1) >>
       saveSimpleError(project2) >>
       assertIO(errorStore.fetch.map(_.size), 2)
+  }
+
+  test("Deleting should only delete the errors for the provided project") {
+    val (project1, project2) = (genRandomProjectRef(), genRandomProjectRef())
+    saveSimpleError(project1) >> saveSimpleError(project2) >>
+      errorStore.delete(project1) >>
+      numberOfErrorsIn(project1).assertEquals(0) >>
+      numberOfErrorsIn(project2).assertEquals(1)
   }
 
   private def genRandomProjectRef() =
@@ -60,5 +67,8 @@ class ScopeInitializationErrorStoreSuite
 
   private def saveSimpleError(project: ProjectRef) =
     errorStore.save(entityType, project, scopeInitError)
+
+  private def numberOfErrorsIn(project: ProjectRef) =
+    errorStore.fetch.map(_.count(x => ProjectRef(x.org, x.project) == project))
 
 }

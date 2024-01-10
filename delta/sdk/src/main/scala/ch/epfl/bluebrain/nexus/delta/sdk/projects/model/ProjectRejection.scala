@@ -166,6 +166,7 @@ object ProjectRejection {
       case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
+      case ProjectRejection.ProjectInitializationFailed(_)    => StatusCodes.InternalServerError
       case _                                                  => StatusCodes.BadRequest
     }
 
