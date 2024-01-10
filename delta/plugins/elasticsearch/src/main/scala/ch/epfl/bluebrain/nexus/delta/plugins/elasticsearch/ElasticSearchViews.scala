@@ -371,8 +371,8 @@ final class ElasticSearchViews private (
   def currentIndexingViews(project: ProjectRef): SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Project(project))
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
   /**
@@ -381,8 +381,8 @@ final class ElasticSearchViews private (
   def currentIndexingViews: SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Root)
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
   /**
@@ -391,8 +391,8 @@ final class ElasticSearchViews private (
   def indexingViews(start: Offset): SuccessElemStream[IndexingViewDef] =
     log
       .states(Scope.Root, start)
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
   private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =

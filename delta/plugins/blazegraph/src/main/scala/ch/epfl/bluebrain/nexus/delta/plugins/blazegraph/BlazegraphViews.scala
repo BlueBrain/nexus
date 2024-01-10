@@ -320,16 +320,16 @@ final class BlazegraphViews(
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): SuccessElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Project(project)).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope))
+    log.currentStates(Scope.Project(project)).evalMapFilter { elem =>
+      IO.pure(toIndexViewDef(elem))
     }
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def indexingViews(start: Offset): SuccessElemStream[IndexingViewDef] =
-    log.states(Scope.Root, start).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope))
+    log.states(Scope.Root, start).evalMapFilter { elem =>
+      IO.pure(toIndexViewDef(elem))
     }
 
   private def toIndexViewDef(elem: Elem.SuccessElem[BlazegraphViewState]) =

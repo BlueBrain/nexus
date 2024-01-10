@@ -505,27 +505,27 @@ final class Files(
                          )
       stream        <- log
                          .states(Scope.root, offset)
-                         .map { envelope =>
-                           envelope.value match {
+                         .map { elem =>
+                           elem.value match {
                              case f
                                  if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed && !f.deprecated =>
                                SuccessElem(
                                  entityType,
-                                 envelope.id,
-                                 Some(envelope.value.project),
-                                 envelope.instant,
-                                 envelope.offset,
+                                 elem.id,
+                                 Some(elem.value.project),
+                                 elem.instant,
+                                 elem.offset,
                                  f,
-                                 envelope.rev
+                                 elem.rev
                                )
                              case _ =>
                                DroppedElem(
                                  entityType,
-                                 envelope.id,
-                                 Some(envelope.value.project),
-                                 envelope.instant,
-                                 envelope.offset,
-                                 envelope.rev
+                                 elem.id,
+                                 Some(elem.value.project),
+                                 elem.instant,
+                                 elem.offset,
+                                 elem.rev
                                )
                            }
                          }

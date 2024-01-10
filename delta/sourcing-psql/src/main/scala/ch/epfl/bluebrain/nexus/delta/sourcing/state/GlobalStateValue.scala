@@ -13,7 +13,7 @@ final case class GlobalStateValue[Value](
 
 object GlobalStateValue {
   @nowarn("cat=unused")
-  implicit def envelopeRead[Value](implicit s: Decoder[Value]): Read[GlobalStateValue[Value]] = {
+  implicit def read[Value](implicit s: Decoder[Value]): Read[GlobalStateValue[Value]] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
     implicit val v: Get[Value] = pgDecoderGetT[Value]
     Read[(Value, Long)].map { case (value, offset) => GlobalStateValue(Offset.at(offset), value) }

@@ -20,7 +20,7 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
 
   private val ref = ProjectRef.unsafe("org", "proj")
 
-  private def makeEnvelope(sseData: SseData) = Elem.SuccessElem(
+  private def makeSuccessElem(sseData: SseData) = Elem.SuccessElem(
     EntityType("Person"),
     nxv + "1",
     None,
@@ -31,17 +31,17 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
   )
 
   test("Should not inject project uuids") {
-    val envelope = makeEnvelope(
+    val elem = makeSuccessElem(
       SseData("Person", None, JsonObject("name" -> "John Doe".asJson))
     )
     assertEquals(
-      SseEventLog.toServerSentEvent(envelope),
+      SseEventLog.toServerSentEvent(elem),
       ServerSentEvent("""{"name":"John Doe"}""", "Person", "5")
     )
   }
 
   test("Should not inject project uuids when the ref is unknown") {
-    val envelope = Elem.SuccessElem(
+    val elem = Elem.SuccessElem(
       EntityType("Person"),
       nxv + "1",
       None,
@@ -51,13 +51,13 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
       4
     )
     assertEquals(
-      SseEventLog.toServerSentEvent(envelope),
+      SseEventLog.toServerSentEvent(elem),
       ServerSentEvent("""{"name":"John Doe"}""", "Person", "5")
     )
   }
 
   test("Should inject project uuids when the ref is unknown") {
-    val envelope = Elem.SuccessElem(
+    val elem = Elem.SuccessElem(
       EntityType("Person"),
       nxv + "1",
       None,
@@ -67,7 +67,7 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
       4
     )
     assertEquals(
-      SseEventLog.toServerSentEvent(envelope),
+      SseEventLog.toServerSentEvent(elem),
       ServerSentEvent(
         s"""{"name":"John Doe"}""",
         "Person",

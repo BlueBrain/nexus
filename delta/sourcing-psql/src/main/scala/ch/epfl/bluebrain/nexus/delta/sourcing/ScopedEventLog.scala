@@ -113,7 +113,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
   def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
-    * Allow to stream all latest states within [[Envelope]] s without applying transformation
+    * Allow to stream all latest states within [[Elem.SuccessElem]] s without applying transformation
     * @param scope
     *   to filter returned states
     * @param offset
@@ -122,7 +122,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
   def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S]
 
   /**
-    * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
+    * Allow to stream all latest states from the beginning within [[Elem.SuccessElem]] s without applying transformation
     * @param scope
     *   to filter returned states
     */

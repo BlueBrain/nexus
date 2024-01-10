@@ -241,7 +241,7 @@ object Elem {
 
   object SuccessElem {
     @nowarn("cat=unused")
-    implicit def envelopeRead[Value](implicit s: Decoder[Value]): Read[SuccessElem[Value]] = {
+    implicit def read[Value](implicit s: Decoder[Value]): Read[SuccessElem[Value]] = {
       import doobie._
       import doobie.postgres.implicits._
       import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -252,7 +252,7 @@ object Elem {
       }
     }
 
-    implicit val traverseElem: Traverse[SuccessElem] = new Traverse[SuccessElem] {
+    implicit val traverse: Traverse[SuccessElem] = new Traverse[SuccessElem] {
       override def traverse[G[_]: Applicative, A, B](s: SuccessElem[A])(f: A => G[B]): G[SuccessElem[B]] =
         Applicative[G].map(f(s.value))(v => s.copy(value = v))
 

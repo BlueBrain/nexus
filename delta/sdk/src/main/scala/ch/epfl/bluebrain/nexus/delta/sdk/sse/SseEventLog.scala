@@ -96,12 +96,12 @@ object SseEventLog {
   private val logger = Logger[SseEventLog]
 
   private[sse] def toServerSentEvent(
-      envelope: Elem.SuccessElem[SseData]
+      elem: Elem.SuccessElem[SseData]
   )(implicit jo: JsonKeyOrdering): ServerSentEvent = {
-    val data = envelope.value.data
-    envelope.offset match {
-      case Start     => ServerSentEvent(defaultPrinter.print(data.asJson.sort), envelope.value.tpe)
-      case At(value) => ServerSentEvent(defaultPrinter.print(data.asJson.sort), envelope.value.tpe, value.toString)
+    val data = elem.value.data
+    elem.offset match {
+      case Start     => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe)
+      case At(value) => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe, value.toString)
     }
   }
 
