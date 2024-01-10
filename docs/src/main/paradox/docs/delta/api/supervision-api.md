@@ -24,7 +24,8 @@ Response
 GET /v1/supervision/projects
 ```
 
-Indicates whether there are any unhealthy projects.
+Indicates whether there are any unhealthy projects. A project is considered healthy if it has been correctly provisioned
+on creation.
 
 **Example**
 
@@ -43,7 +44,7 @@ Response (unhealthy)
 POST /v1/supervision/projects/{orgLabel}/{projectLabel}/heal
 ```
 
-Attempts to heal a project.
+Attempts to heal a project. This will attempt to run again the provisioning process for the project.
 
 **Example**
 
