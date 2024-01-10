@@ -58,7 +58,7 @@ class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with Doobie
 
     "set the owner permissions for a newly created project" in {
       val project  = ProjectGen.project(genString(), genString())
-      init.onProjectCreation(project, bob.subject).accepted
+      init.onProjectCreation(project.ref, bob.subject).accepted
       val resource = acls.fetch(AclAddress.Project(project.ref)).accepted
       resource.value.value shouldEqual Map(bob.subject -> PermissionsGen.ownerPermissions)
       resource.rev shouldEqual 1L
@@ -72,7 +72,7 @@ class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with Doobie
           sa.caller.subject
         )
         .accepted
-      init.onProjectCreation(project, bob.subject).accepted
+      init.onProjectCreation(project.ref, bob.subject).accepted
       val resource = acls.fetch(AclAddress.Project(project.ref)).accepted
       resource.value.value shouldEqual Map(bob.subject -> Set(Permissions.resources.read))
       resource.rev shouldEqual 1L
