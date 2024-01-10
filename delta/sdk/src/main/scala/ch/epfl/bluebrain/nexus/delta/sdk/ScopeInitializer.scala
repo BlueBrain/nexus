@@ -58,10 +58,13 @@ object ScopeInitializer {
       )(implicit caller: Subject): IO[Unit] = {
         scopeInitializations.toList
           .parFoldMapA { scope =>
-            scope.onProjectCreation(project, caller).attempt.flatTap {
-              case Left(e: ScopeInitializationFailed) => errorStore.save(scope.entityType, project, e)
-              case _                                  => IO.unit
-            }
+            scope
+              .onProjectCreation(project, caller)
+              .onError {
+                case e: ScopeInitializationFailed => errorStore.save(scope.entityType, project, e)
+                case _                            => IO.unit
+              }
+              .attempt
           }
           .flatMap(IO.fromEither)
           .adaptError { case e: ScopeInitializationFailed =>
