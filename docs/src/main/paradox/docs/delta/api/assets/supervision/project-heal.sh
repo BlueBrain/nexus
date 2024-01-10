@@ -1,0 +1,1 @@
+curl -X POST "http://localhost:8080/v1/supervision/projects/myorg/myproject/heal"

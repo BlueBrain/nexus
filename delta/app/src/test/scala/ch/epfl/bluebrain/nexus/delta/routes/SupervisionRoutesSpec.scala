@@ -143,6 +143,12 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       val routesWithHealer  = routesTemplate(Set.empty, projectHealer(healerWasExecuted))
       Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routesWithHealer ~> check {
         response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          json"""
+            {
+                "message" : "Project 'myorg/myproject' has been healed."
+            }
+              """
       }
       healerWasExecuted.get.accepted shouldEqual true
     }
