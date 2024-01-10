@@ -45,8 +45,8 @@ object ScopeInitializer {
           organizationResource: OrganizationResource
       )(implicit caller: Subject): IO[Unit] =
         scopeInitializations.toList
-          .parFoldMapA { scope =>
-            scope.onOrganizationCreation(organizationResource.value, caller).attempt
+          .parFoldMapA { init =>
+            init.onOrganizationCreation(organizationResource.value, caller).attempt
           }
           .flatMap(IO.fromEither)
           .adaptError { case e: ScopeInitializationFailed =>
@@ -57,11 +57,11 @@ object ScopeInitializer {
           project: ProjectRef
       )(implicit caller: Subject): IO[Unit] = {
         scopeInitializations.toList
-          .parFoldMapA { scope =>
-            scope
+          .parFoldMapA { init =>
+            init
               .onProjectCreation(project, caller)
               .onError {
-                case e: ScopeInitializationFailed => errorStore.save(scope.entityType, project, e)
+                case e: ScopeInitializationFailed => errorStore.save(init.entityType, project, e)
                 case _                            => IO.unit
               }
               .attempt
