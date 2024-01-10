@@ -72,7 +72,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
+    Some(PipeChain(unknownPipe -> ExpandedJsonLd.empty)),
     SelectFilter.latest,
     index = IndexLabel.unsafe("view3"),
     mapping = jobj"""{"properties": { }}""",
@@ -99,7 +99,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
   )
   private val resumeSignal    = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
-  // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
+  // Streams 3 elements until signal is set to true, then 1 updated view and 1 deprecated view
   private def viewStream: SuccessElemStream[IndexingViewDef] =
     Stream(
       SuccessElem(
@@ -116,7 +116,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         id = view2.ref.viewId,
         project = Some(project),
         instant = Instant.EPOCH,
-        offset = Offset.at(3L),
+        offset = Offset.at(2L),
         value = view2,
         rev = 1
       ),
@@ -125,7 +125,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         id = view3.ref.viewId,
         project = Some(project),
         instant = Instant.EPOCH,
-        offset = Offset.at(4L),
+        offset = Offset.at(3L),
         value = view3,
         rev = 1
       )
@@ -135,7 +135,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         id = deprecatedView1.ref.viewId,
         project = Some(project),
         instant = Instant.EPOCH,
-        offset = Offset.at(6L),
+        offset = Offset.at(4L),
         value = deprecatedView1,
         rev = 1
       ),
@@ -144,17 +144,17 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
         id = updatedView2.ref.viewId,
         project = Some(project),
         instant = Instant.EPOCH,
-        offset = Offset.at(7L),
+        offset = Offset.at(5L),
         value = updatedView2,
         rev = 1
       ),
-      // Elem at offset 8 represents a view update that does not require reindexing
+      // Elem at offset 6 represents a view update that does not require reindexing
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = updatedView2.ref.viewId,
         project = Some(project),
         instant = Instant.EPOCH,
-        offset = Offset.at(8L),
+        offset = Offset.at(6L),
         value = updatedView2,
         rev = 1
       )
@@ -189,7 +189,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
            )
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .assertEquals(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(3L), Instant.EPOCH, 3, 0, 1)))
              .eventually
     } yield ()
   }
@@ -264,7 +264,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
       _ <- resumeSignal.set(true)
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .assertEquals(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
+             .assertEquals(Some(ProjectionProgress(Offset.at(6L), Instant.EPOCH, 6, 0, 1)))
              .eventually
     } yield ()
   }
@@ -301,18 +301,9 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
     } yield ()
   }
 
-  test("Coordinator projection should have one error after failed elem offset 4") {
-    for {
-      entries <-
-        projectionErrors.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
-      r        = entries.assertOneElem
-      _        = assertEquals(r.failedElemData.id, nxv + "failed_coord")
-    } yield ()
-  }
-
   test("View 2_2 projection should have one error after failed elem offset 4") {
     for {
-      entries <- projectionErrors.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      entries <- projectionErrors.failedElemEntries(updatedView2.projection, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
