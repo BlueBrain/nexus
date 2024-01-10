@@ -12,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
@@ -44,12 +43,12 @@ class OwnerPermissionsScopeInitialization(appendAcls: Acl => IO[Unit], ownerPerm
       }
       .span("setOrgPermissions")
 
-  override def onProjectCreation(project: Project, subject: Subject): IO[Unit] =
-    appendAcls(Acl(project.ref, subject -> ownerPermissions))
+  override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
+    appendAcls(Acl(project, subject -> ownerPermissions))
       .handleErrorWith {
         case _: AclRejection.IncorrectRev => IO.unit // acls are already set
         case rej                          =>
-          val str = s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.getMessage}'."
+          val str = s"Failed to apply the owner permissions for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("setProjectPermissions")

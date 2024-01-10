@@ -29,7 +29,7 @@ class ResolverScopeInitializationSuite extends NexusSuite {
                     (_, resolver) => ref.set(Some(resolver)),
                     defaults
                   )
-      _        <- scopeInit.onProjectCreation(project, bob)
+      _        <- scopeInit.onProjectCreation(project.ref, bob)
       expected  = InProjectValue(Some(defaults.name), Some(defaults.description), Priority.unsafe(1))
       _        <- ref.get.assertEquals(Some(expected))
     } yield ()
@@ -40,7 +40,7 @@ class ResolverScopeInitializationSuite extends NexusSuite {
       (project, _) => IO.raiseError(ResourceAlreadyExists(nxv.defaultResolver, project)),
       defaults
     )
-    scopeInit.onProjectCreation(project, bob).assert
+    scopeInit.onProjectCreation(project.ref, bob).assert
   }
 
   test("Raises a failure otherwise") {
@@ -48,6 +48,6 @@ class ResolverScopeInitializationSuite extends NexusSuite {
       (_, _) => IO.raiseError(new IllegalStateException("Something got wrong !")),
       defaults
     )
-    scopeInit.onProjectCreation(project, bob).intercept[ScopeInitializationFailed]
+    scopeInit.onProjectCreation(project.ref, bob).intercept[ScopeInitializationFailed]
   }
 }

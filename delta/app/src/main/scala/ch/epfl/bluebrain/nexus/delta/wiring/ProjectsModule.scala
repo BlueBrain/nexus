@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectsHealth}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -78,6 +78,11 @@ object ProjectsModule extends ModuleDef {
   make[ProjectsHealth].from { (errorStore: ScopeInitializationErrorStore) =>
     ProjectsHealth(errorStore)
   }
+
+  make[ProjectHealer].from(
+    (errorStore: ScopeInitializationErrorStore, scopeInitializer: ScopeInitializer, serviceAccount: ServiceAccount) =>
+      ProjectHealer(errorStore, scopeInitializer, serviceAccount)
+  )
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
     ProjectsStatistics(xas)

@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, OrganizationResource, ProjectResource, ScopeInitializer}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, OrganizationResource, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
@@ -44,7 +44,7 @@ class OrganizationsImplSpec
         caller: Subject
     ): IO[Unit] = wasExecuted.set(true)
 
-    override def initializeProject(projectResource: ProjectResource)(implicit caller: Subject): IO[Unit] =
+    override def initializeProject(project: ProjectRef)(implicit caller: Subject): IO[Unit] =
       IO.unit
   }
 

@@ -33,6 +33,8 @@ class ProjectsHealthSuite extends NexusSuite {
 
     override def fetch: IO[List[ScopeInitErrorRow]] =
       IO.pure(errors)
+
+    override def delete(project: ProjectRef): IO[Unit] = IO.unit
   }
 
   test("return empty set when there are no errors") {

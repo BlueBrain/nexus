@@ -10,10 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, IriFilter}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 
 /**
   * The default creation of the default SparqlView as part of the project initialization.
@@ -46,16 +45,16 @@ class BlazegraphScopeInitialization(
     permission = permissions.query
   )
 
-  override def onProjectCreation(project: Project, subject: Identity.Subject): IO[Unit] =
+  override def onProjectCreation(project: ProjectRef, subject: Identity.Subject): IO[Unit] =
     views
-      .create(defaultViewId, project.ref, defaultValue)
+      .create(defaultViewId, project, defaultValue)
       .void
       .handleErrorWith {
         case _: ResourceAlreadyExists   => IO.unit // nothing to do, view already exits
         case _: ProjectContextRejection => IO.unit // project or org are likely deprecated
         case rej                        =>
           val str =
-            s"Failed to create the default SparqlView for project '${project.ref}' due to '${rej.getMessage}'."
+            s"Failed to create the default SparqlView for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultSparqlView")

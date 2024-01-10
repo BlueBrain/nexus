@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverScopeInitialization.{logger, CreateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
@@ -31,14 +30,14 @@ class ResolverScopeInitialization(createResolver: CreateResolver, defaults: Defa
     InProjectValue(Some(defaults.name), Some(defaults.description), Priority.unsafe(1))
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
-  override def onProjectCreation(project: Project, subject: Subject): IO[Unit] =
-    createResolver(project.ref, defaultInProjectResolverValue)
+  override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
+    createResolver(project, defaultInProjectResolverValue)
       .handleErrorWith {
         case _: ResourceAlreadyExists   => IO.unit // nothing to do, resolver already exits
         case _: ProjectContextRejection => IO.unit // project or org is likely deprecated
         case rej                        =>
           val str =
-            s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.getMessage}'."
+            s"Failed to create the default InProject resolver for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultResolver")
