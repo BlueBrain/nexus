@@ -81,7 +81,7 @@ class FilesSpec extends BaseIntegrationSpec {
     queryForFilesWithKeywords("brainRegion" -> brainRegion)
   }
 
-  private def queryForFilesWithKeywords(keywords:(String, String)*): IO[List[Json]] = {
+  private def queryForFilesWithKeywords(keywords: (String, String)*): IO[List[Json]] = {
     val metadata = UrlUtils.encode(Json.obj("keywords" := keywords.toMap.asJson).noSpaces)
     deltaClient
       .getJson[Json](s"/files/$projectRef?metadata=$metadata", Writer)

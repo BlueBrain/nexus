@@ -11,11 +11,12 @@ import akka.stream.scaladsl.{Keep, Sink}
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import io.circe.parser
 
@@ -123,24 +124,33 @@ object FormDataExtractor {
         .adaptError {
           case _: EntityStreamSizeException =>
             FileTooLarge(maxFileSize, storageAvailableSpace)
-          case th                           =>
+          case NotARejection(th)            =>
             WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
         }
 
       private def extractFile(part: FormData.BodyPart): Future[Option[FileInformation]] = part match {
         case part if part.name == fieldName =>
-          val filename = part.filename.getOrElse("file")
-
+          val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
-          val metadata    = part.dispositionParams.get("metadata").flatMap { metadata =>
-            parser.parse(metadata).toOption.flatMap(_.as[FileUserMetadata].toOption)
-          }
-          FileDescription(filename, contentType).unsafeToFuture().map { desc =>
-            Some(FileInformation(metadata, desc, part.entity))
-          }
+
+          (for {
+            metadata    <- extractUserMetadata(part)
+            description <- FileDescription(filename, contentType)
+          } yield {
+            Some(FileInformation(metadata, description, part.entity))
+          }).unsafeToFuture()
         case part                           =>
           part.entity.discardBytes().future.as(None)
       }
+
+      private def extractUserMetadata(part: Multipart.FormData.BodyPart) =
+        part.dispositionParams.get("metadata") match {
+          case Some(value) =>
+            IO.fromEither(parser.parse(value).flatMap(_.as[FileUserMetadata]))
+              .map(Some(_))
+              .adaptError(err => InvalidUserMetadata(err.getMessage))
+          case None        => IO.none
+        }
 
       private def detectContentType(filename: String, contentTypeFromAkka: ContentType) = {
         val bodyDefinedContentType = Option.when(contentTypeFromAkka != defaultContentType)(contentTypeFromAkka)

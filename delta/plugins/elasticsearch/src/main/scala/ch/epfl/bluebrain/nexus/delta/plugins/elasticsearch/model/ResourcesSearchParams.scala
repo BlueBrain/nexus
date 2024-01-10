@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import io.circe.{parser, Decoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{parser, Decoder}
 
 import scala.util.{Failure, Success}
 
@@ -67,7 +67,7 @@ final case class ResourcesSearchParams(
 
 object ResourcesSearchParams {
 
-  case class FileUserMetadata(keywords: Map[String, String])
+  case class FileUserMetadata(keywords: Map[Label, String])
 
   object FileUserMetadata {
 

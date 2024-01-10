@@ -46,7 +46,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     dig,
     Client
   )
-  private val metadata         = FileUserMetadata(Map("key" -> "value"))
+  private val metadata         = FileUserMetadata(Map(Label.unsafe("key") -> "value"))
 
   "The Files state machine" when {
     "evaluating an incoming command" should {

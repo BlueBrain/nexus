@@ -47,7 +47,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       digest,
       Client
     )
-  private val metadata   = FileUserMetadata(Map("key" -> "value"))
+  private val metadata   = FileUserMetadata(Map(Label.unsafe("key") -> "value"))
     
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), Some(metadata), 1, instant, subject, None)

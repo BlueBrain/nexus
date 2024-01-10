@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
 import io.circe.syntax.KeyOps
@@ -34,6 +35,8 @@ class FormDataExtractorSpec
     val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
     val mediaTypeDetector = MediaTypeDetectorConfig(Map("custom" -> customMediaType))
     val extractor         = FormDataExtractor(mediaTypeDetector)
+    val KeyThatIsTooLong  =
+      "this-key-is-too-long-to-be-a-label-lalalalalalalaalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalaalalalla"
 
     def entityWithMetadata(metadata: JsonObject) = {
       createEntity("file", NoContentType, Some("file.custom"), Some(metadata))
@@ -54,6 +57,10 @@ class FormDataExtractorSpec
 
     def dispositionParameters(filename: Option[String], metadata: Option[JsonObject]): Map[String, String] = {
       Map.from(filename.map("filename" -> _) ++ metadata.map("metadata" -> _.toJson.noSpaces))
+    }
+
+    def metadataWithKeywords(keywords: (String, Json)*): JsonObject = {
+      JsonObject("keywords" := JsonObject.fromIterable(keywords))
     }
 
     "be extracted with the default content type" in {
@@ -91,9 +98,14 @@ class FormDataExtractorSpec
     }
 
     "be extracted with custom user metadata" in {
-      val entity                          = entityWithMetadata(JsonObject("keywords" := Json.obj("key" := "value")))
+      val entity                          = entityWithMetadata(metadataWithKeywords("key" := "value"))
       val FileInformation(metadata, _, _) = extractor(iri, entity, 2000, None).accepted
-      metadata.value shouldEqual FileUserMetadata(Map("key" -> "value"))
+      metadata.value shouldEqual FileUserMetadata(Map(Label.unsafe("key") -> "value"))
+    }
+
+    "fail to be extracted if the custom user metadata has invalid keywords" in {
+      val entity = entityWithMetadata(metadataWithKeywords(KeyThatIsTooLong := "value"))
+      extractor(iri, entity, 2000, None).rejectedWith[InvalidUserMetadata]
     }
 
     "fail to be extracted if no file part exists found" in {
