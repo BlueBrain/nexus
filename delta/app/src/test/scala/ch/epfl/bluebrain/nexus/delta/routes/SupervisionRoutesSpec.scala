@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import org.scalatest.Assertion
 
 import java.time.Instant
 
@@ -49,14 +50,22 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       override def health: IO[Set[ProjectRef]] = IO.pure(unhealthyProjects)
     }
 
-  private def projectHealer(healerWasExecuted: Ref[IO, Boolean]) = new ProjectHealer {
-    override def heal(project: ProjectRef): IO[Unit] = healerWasExecuted.set(true)
+  // A project healer that can be used to assert that the heal method was called on a specific project
+  class MockProjectHealer extends ProjectHealer {
+    private val healerWasExecuted                                = Ref.unsafe[IO, Set[ProjectRef]](Set.empty)
+    override def heal(project: ProjectRef): IO[Unit]             = healerWasExecuted.update(_ + project)
+    def assertHealWasCalledOn(project: ProjectRef): Assertion    =
+      healerWasExecuted.get.map(_ should contain(project)).accepted
+    def assertHealWasNotCalledOn(project: ProjectRef): Assertion =
+      healerWasExecuted.get.map(_ should not contain project).accepted
   }
-  private val failingHealer                                      = new ProjectHealer {
+
+  private val failingHealer = new ProjectHealer {
     override def heal(project: ProjectRef): IO[Unit] =
       IO.raiseError(ProjectHealingFailed(ScopeInitializationFailed("failure details"), project))
   }
-  private val noopHealer                                         = new ProjectHealer {
+
+  private val noopHealer = new ProjectHealer {
     override def heal(project: ProjectRef): IO[Unit] = IO.unit
   }
 
@@ -130,18 +139,22 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   "The projects healing endpoint" should {
     "be forbidden without projects/write permission" in {
-      val healerWasExecuted = Ref.unsafe[IO, Boolean](false)
-      val routesWithHealer  = routesTemplate(Set.empty, projectHealer(healerWasExecuted))
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> routesWithHealer ~> check {
+      val projectHealer    = new MockProjectHealer
+      val project          = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
+      val routesWithHealer = routesTemplate(Set.empty, projectHealer)
+
+      Post(s"/v1/supervision/projects/$project/heal") ~> routesWithHealer ~> check {
         response.shouldBeForbidden
       }
-      healerWasExecuted.get.accepted shouldEqual false
+      projectHealer.assertHealWasNotCalledOn(project)
     }
 
     "succeed and execute the healer" in {
-      val healerWasExecuted = Ref.unsafe[IO, Boolean](false)
-      val routesWithHealer  = routesTemplate(Set.empty, projectHealer(healerWasExecuted))
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routesWithHealer ~> check {
+      val projectHealer    = new MockProjectHealer
+      val project          = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
+      val routesWithHealer = routesTemplate(Set.empty, projectHealer)
+
+      Post(s"/v1/supervision/projects/$project/heal") ~> asSuperviser ~> routesWithHealer ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -150,7 +163,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
             }
               """
       }
-      healerWasExecuted.get.accepted shouldEqual true
+      projectHealer.assertHealWasCalledOn(project)
     }
 
     "return an error if the healing failed" in {

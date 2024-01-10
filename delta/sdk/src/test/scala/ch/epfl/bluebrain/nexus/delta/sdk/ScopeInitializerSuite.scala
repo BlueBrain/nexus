@@ -29,14 +29,17 @@ class ScopeInitializerSuite extends NexusSuite {
   private val projectSignal = "project step executed"
   private val orgSignal     = "org step executed"
 
-  private def success(ref: Ref[IO, String]) = new ScopeInitialization {
+  // A mock scope initialization that can be used to assert that init steps were executed
+  class MockScopeInitialization extends ScopeInitialization {
+    private val wasExecuted                                                                     = Ref.unsafe[IO, String]("")
     override def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit] =
-      ref.set(orgSignal)
+      wasExecuted.set(orgSignal)
+    override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit]             =
+      wasExecuted.set(projectSignal)
+    override def entityType: EntityType                                                         = EntityType("mock")
 
-    override def onProjectCreation(project: ProjectRef, subject: Subject): IO[Unit] =
-      ref.set(projectSignal)
-
-    override def entityType: EntityType = EntityType("success")
+    def assertOrgInitializationWasExecuted: IO[Unit]     = assertIO(wasExecuted.get, orgSignal)
+    def assertProjectInitializationWasExecuted: IO[Unit] = assertIO(wasExecuted.get, projectSignal)
   }
 
   private val failingScopeInitializer = ScopeInitializer.withoutErrorStore(Set(fail))
@@ -78,35 +81,35 @@ class ScopeInitializerSuite extends NexusSuite {
   }
 
   test("The ScopeInitializer should execute the provided init step upon org creation") {
-    val wasExecuted      = Ref.unsafe[IO, String]("")
-    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted)))
+    val init             = new MockScopeInitialization
+    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(init))
 
     scopeInitializer.initializeOrganization(org) >>
-      assertIO(wasExecuted.get, orgSignal)
+      init.assertOrgInitializationWasExecuted
   }
 
   test("The ScopeInitializer should execute the provided init step upon project creation") {
-    val wasExecuted      = Ref.unsafe[IO, String]("")
-    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted)))
+    val init             = new MockScopeInitialization
+    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(init))
 
     scopeInitializer.initializeProject(projectRef) >>
-      assertIO(wasExecuted.get, projectSignal)
+      init.assertProjectInitializationWasExecuted
   }
 
   test("A failing step should not prevent a successful one to run on org creation") {
-    val wasExecuted      = Ref.unsafe[IO, String]("")
-    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(success(wasExecuted), fail))
+    val init             = new MockScopeInitialization
+    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(init, fail))
 
     scopeInitializer.initializeOrganization(org).intercept[OrganizationInitializationFailed] >>
-      assertIO(wasExecuted.get, orgSignal)
+      init.assertOrgInitializationWasExecuted
   }
 
   test("A failing step should not prevent a successful one to run on project creation") {
-    val wasExecuted      = Ref.unsafe[IO, String]("")
-    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(fail, success(wasExecuted)))
+    val init             = new MockScopeInitialization
+    val scopeInitializer = ScopeInitializer.withoutErrorStore(Set(fail, init))
 
     scopeInitializer.initializeProject(projectRef).intercept[ProjectInitializationFailed] >>
-      assertIO(wasExecuted.get, projectSignal)
+      init.assertProjectInitializationWasExecuted
   }
 
   test("Save an error upon project initialization failure") {
