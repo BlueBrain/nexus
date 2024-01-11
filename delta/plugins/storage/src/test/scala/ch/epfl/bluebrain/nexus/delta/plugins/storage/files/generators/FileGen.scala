@@ -48,9 +48,11 @@ trait FileGen { self: Generators with FileFixtures =>
 
   def genFileIdWithTag(projRef: ProjectRef): FileId = FileId(genString(), UserTag.unsafe(genString()), projRef)
 
-  def genAttributes(): NonEmptyList[FileAttributes] = {
+  def genAttributesAndMetadata(): NonEmptyList[(FileAttributes, Option[FileUserMetadata])] = {
     val proj = genProject()
-    genFilesIdsInProject(proj.ref).map(genFileResource(_, proj.context)).map(_.value.attributes)
+    genFilesIdsInProject(proj.ref)
+      .map(genFileResource(_, proj.context))
+      .map(res => res.value.attributes -> res.value.userMetadata)
   }
 
   def genCopyFileSource(): CopyFileSource                                             = genCopyFileSource(genProjectRef())
@@ -73,7 +75,8 @@ trait FileGen { self: Generators with FileFixtures =>
       fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(throw new Exception(s"Bad file $fileId")),
       fileId.project,
       storageRef,
-      attributes(genString(), size = fileSize)
+      attributes(genString(), size = fileSize),
+      Some(randomUserMetadata())
     )
 
   def genFileResourceAndStorage(
@@ -91,12 +94,13 @@ trait FileGen { self: Generators with FileFixtures =>
       iri: Iri,
       projRef: ProjectRef,
       storageRef: ResourceRef.Revision,
-      attr: FileAttributes
+      attr: FileAttributes,
+      metadata: Option[FileUserMetadata]
   ): FileResource =
-    FileGen.resourceFor(iri, projRef, storageRef, attr)
+    FileGen.resourceFor(iri, projRef, storageRef, attr, metadata)
 
   def genFileResourceFromCmd(cmd: CreateFile): FileResource                  =
-    genFileResourceWithIri(cmd.id, cmd.project, cmd.storage, cmd.attributes)
+    genFileResourceWithIri(cmd.id, cmd.project, cmd.storage, cmd.attributes, cmd.userMetadata)
   def genIri(): Iri                                                          = Iri.unsafe(genString())
   def genStorage(proj: ProjectRef, storageValue: StorageValue): StorageState =
     StorageGen.storageState(genIri(), proj, storageValue)

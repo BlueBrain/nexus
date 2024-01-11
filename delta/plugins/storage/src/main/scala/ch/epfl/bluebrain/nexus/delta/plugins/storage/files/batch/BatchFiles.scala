@@ -6,6 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
@@ -58,13 +59,22 @@ object BatchFiles {
         dest: CopyFileDestination,
         destStorageRef: ResourceRef.Revision,
         destStorageTpe: StorageType,
-        destFilesAttributes: NonEmptyList[FileAttributes]
+        destFilesAttributes: NonEmptyList[(FileAttributes, Option[FileUserMetadata])]
     )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
-      destFilesAttributes.traverse { destFileAttributes =>
+      destFilesAttributes.traverse { case (destFileAttributes, destFileMetadata) =>
         for {
           iri      <- generateId(pc)
           command   =
-            CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, None, c.subject, dest.tag)
+            CreateFile(
+              iri,
+              dest.project,
+              destStorageRef,
+              destStorageTpe,
+              destFileAttributes,
+              destFileMetadata,
+              c.subject,
+              dest.tag
+            )
           resource <- evalCreateCommand(command)
         } yield resource
       }

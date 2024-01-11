@@ -23,8 +23,10 @@ object DiskStorageCopyFiles {
         .traverse(mkCopyDetailsAndDestAttributes(destStorage, _))
         .flatMap { copyDetailsAndDestAttributes =>
           val copyDetails = copyDetailsAndDestAttributes.map(_._1)
-          val destAttrs   = copyDetailsAndDestAttributes.map(_._2)
-          copier.copyAll(copyDetails).as(destAttrs)
+          val destDetails = copyDetailsAndDestAttributes.map { case (_, attributes) =>
+            attributes
+          }
+          copier.copyAll(copyDetails).as(destDetails)
         }
 
     private def mkCopyDetailsAndDestAttributes(destStorage: DiskStorage, copyFile: DiskCopyDetails) =

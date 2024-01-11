@@ -40,7 +40,7 @@ final case class File(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
-    metadata2: Option[FileUserMetadata],
+    userMetadata: Option[FileUserMetadata],
     tags: Tags
 ) {
   def metadata: Metadata = Metadata(tags.tags)
@@ -59,7 +59,7 @@ object File {
         "_rev"       -> file.storage.rev.asJson
       )
       val v1                                = file.attributes.asJsonObject.add("_storage", storageJson)
-      file.metadata2 match {
+      file.userMetadata match {
         case Some(metadata) =>
           v1.add(
             "keywords",

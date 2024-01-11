@@ -5,16 +5,18 @@ import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart}
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.Generators
 
 import java.util.{Base64, UUID}
 
-trait FileFixtures {
+trait FileFixtures extends Generators {
 
   val uuid                  = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                 = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
@@ -51,6 +53,8 @@ trait FileFixtures {
       id: UUID = uuid,
       projRef: ProjectRef = projectRef
   ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path)
+
+  def randomUserMetadata(): FileUserMetadata = FileUserMetadata(Map(Label.unsafe(genString()) -> genString()))
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart

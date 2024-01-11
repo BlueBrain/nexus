@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import cats.implicits.toTraverseOps
+import cats.implicits.{catsSyntaxParallelTraverse1, toTraverseOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
-import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.kg.files.BatchCopySpec.{CopyStorageType, Response, StorageDetails}
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
@@ -85,7 +85,8 @@ class BatchCopySpec extends BaseIntegrationSpec {
     }
   }
 
-  def genTextFileInput(): FileInput = FileInput(genId(), genString(), ContentTypes.`text/plain(UTF-8)`, genString())
+  def genTextFileInput(): FileInput =
+    FileInput(genId(), genString(), ContentTypes.`text/plain(UTF-8)`, genString(), Map(genString() -> genString()))
 
   def mkPayload(sourceProjRef: String, sourceFiles: List[FileInput]): Json = {
     val sourcePayloads = sourceFiles.map(f => Json.obj("sourceFileId" := f.fileId))
@@ -93,7 +94,9 @@ class BatchCopySpec extends BaseIntegrationSpec {
   }
 
   def uploadFile(file: FileInput, storage: StorageDetails): IO[Assertion] =
-    filesDsl.uploadFile(file, storage.projRef, storage.storageId, None)(expectCreated)
+    filesDsl
+      .uploadFileWithKeywords(file, storage.projRef, storage.storageId, None, file.keywords)
+      .map { case (_, response) => response.status shouldEqual StatusCodes.Created }
 
   def copyFilesAndCheckSavedResourcesAndContents(
       sourceProjRef: String,
@@ -105,24 +108,45 @@ class BatchCopySpec extends BaseIntegrationSpec {
     val uri         = s"/bulk/files/$destProjRef?storage=nxv:${destStorage.storageId}"
 
     for {
-      response   <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
-                      (json, expectCreated(json, response))
-                    }
-      _          <- checkFileResourcesExist(destProjRef, response)
-      assertions <- checkFileContentsAreCopiedCorrectly(destProjRef, sourceFiles, response)
-    } yield assertions.head
+      response <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
+                    (json, expectCreated(json, response))
+                  }
+      ids       = response.ids
+      _        <- checkFileResourcesExist(destProjRef, ids)
+      _        <- checkFileContentsAreCopiedCorrectly(destProjRef, sourceFiles, ids)
+      _        <- assertFileUserMetadataWasCopiedCorrectly(destProjRef, sourceFiles, ids)
+    } yield succeed
   }
 
-  def checkFileContentsAreCopiedCorrectly(destProjRef: String, sourceFiles: List[FileInput], response: Response) =
-    response.ids.zip(sourceFiles).traverse { case (destId, FileInput(_, filename, contentType, contents)) =>
+  def checkFileContentsAreCopiedCorrectly(destProjRef: String, sourceFiles: List[FileInput], ids: List[String]) =
+    ids.zip(sourceFiles).traverse { case (destId, FileInput(_, filename, contentType, contents, _)) =>
       deltaClient
         .get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(destId)}", Coyote, acceptAll) {
           filesDsl.expectFileContentAndMetadata(filename, contentType, contents)
         }
     }
 
-  def checkFileResourcesExist(destProjRef: String, response: Response) =
-    response.ids.traverse { id =>
+  def assertFileUserMetadataWasCopiedCorrectly(
+      destProjRef: String,
+      sourceFiles: List[FileInput],
+      ids: List[String]
+  ): IO[Assertion] = {
+    ids
+      .zip(sourceFiles)
+      .parTraverse { case (id, FileInput(_, _, _, _, keywords)) =>
+        deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json.hcursor.downField("keywords").as[Map[String, String]].toOption match {
+            case Some(value) => value shouldEqual keywords
+            case None        => fail("keywords missing")
+          }
+        }
+      }
+      .map(_ => succeed)
+  }
+
+  def checkFileResourcesExist(destProjRef: String, ids: List[String]) =
+    ids.traverse { id =>
       deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         Optics.`@id`.getOption(json) shouldEqual Some(id)
