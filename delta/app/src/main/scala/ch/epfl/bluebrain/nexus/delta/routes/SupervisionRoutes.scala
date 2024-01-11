@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.{allProjectsAreHealthy, healingSuccessful, unhealthyProjectsEncoder, SupervisionBundle}
+import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
@@ -62,7 +62,7 @@ class SupervisionRoutes(
                 emit(
                   projectHealer
                     .heal(project)
-                    .map(_ => healingSuccessful(project))
+                    .map(_ => healingSuccessfulResponse(project))
                     .attemptNarrow[ProjectRejection]
                 )
               }
@@ -91,7 +91,7 @@ object SupervisionRoutes {
       Json.obj("status" := "Some projects are unhealthy.", "unhealthyProjects" := set)
     }
 
-  private def healingSuccessful(project: ProjectRef) =
+  private def healingSuccessfulResponse(project: ProjectRef) =
     Json.obj("message" := s"Project '$project' has been healed.")
 
 }
