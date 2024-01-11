@@ -44,11 +44,10 @@ object ScopeInitializer {
       override def initializeOrganization(
           organizationResource: OrganizationResource
       )(implicit caller: Subject): IO[Unit] =
-        scopeInitializations.toList
-          .parFoldMapA { init =>
-            init.onOrganizationCreation(organizationResource.value, caller).attempt
+        scopeInitializations
+          .runAll { init =>
+            init.onOrganizationCreation(organizationResource.value, caller)
           }
-          .flatMap(IO.fromEither)
           .adaptError { case e: ScopeInitializationFailed =>
             OrganizationInitializationFailed(e)
           }
@@ -56,23 +55,33 @@ object ScopeInitializer {
       override def initializeProject(
           project: ProjectRef
       )(implicit caller: Subject): IO[Unit] = {
-        scopeInitializations.toList
-          .parFoldMapA { init =>
+        scopeInitializations
+          .runAll { init =>
             init
               .onProjectCreation(project, caller)
               .onError {
                 case e: ScopeInitializationFailed => errorStore.save(init.entityType, project, e)
                 case _                            => IO.unit
               }
-              .attempt
           }
-          .flatMap(IO.fromEither)
           .adaptError { case e: ScopeInitializationFailed =>
             ProjectInitializationFailed(e)
           }
       }
 
     }
+
+  implicit private class SetOps[A](set: Set[A]) {
+
+    /**
+      * Runs all the provided effects in parallel, but does not cancel the rest if one fails. This is needed because if
+      * we use parTraverse, the rest of the effects will be canceled if one fails.
+      * @param f
+      *   effect to run on each element of the set
+      */
+    def runAll(f: A => IO[Unit]): IO[Unit] =
+      set.toList.parFoldMapA(f(_).attempt).flatMap(IO.fromEither)
+  }
 
   /** A constructor for tests that does not store initialization errors */
   def withoutErrorStore(
