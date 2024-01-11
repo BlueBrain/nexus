@@ -74,8 +74,9 @@ object ScopeInitializer {
   implicit private class SetOps[A](set: Set[A]) {
 
     /**
-      * Runs all the provided effects in parallel, but does not cancel the rest if one fails. This is needed because if
-      * we use parTraverse, the rest of the effects will be canceled if one fails.
+      * Runs all the provided effects in parallel, but does not cancel the rest if one fails. In this implementation,
+      * the error being raised is the first one that occurs. This is needed because if we use parTraverse, the rest of
+      * the effects will be canceled if one fails.
       * @param f
       *   effect to run on each element of the set
       */
