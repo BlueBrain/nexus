@@ -221,11 +221,11 @@ object Operation {
     def apply(element: SuccessElem[In]): IO[Elem[Out]]
 
     /**
-      * Checks if the provided envelope has a successful element value of type `I`. If true, it will return it in Right.
+      * Checks if the provided elem has a successful element value of type `I`. If true, it will return it in Right.
       * Otherwise it will return it in Left with the type `O`. This is safe because [[Elem]] is covariant.
       *
       * @param element
-      *   an envelope with an Elem to be tested
+      *   an elem with an Elem to be tested
       */
     protected def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
       element match {

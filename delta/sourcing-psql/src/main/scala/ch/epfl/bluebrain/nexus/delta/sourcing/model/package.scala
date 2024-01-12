@@ -6,7 +6,7 @@ import fs2.{Pipe, Stream}
 
 package object model {
 
-  type EnvelopeStream[Value] = Stream[IO, Envelope[Value]]
+  type SuccessElemStream[Value] = Stream[IO, Elem.SuccessElem[Value]]
 
   type ElemStream[Value] = Stream[IO, Elem[Value]]
 

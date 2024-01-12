@@ -113,38 +113,20 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
   def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E]
-
-  /**
-    * Allow to stream all current events within [[Envelope]] s
-    * @param scope
-    *   to filter returned events
-    * @param offset
-    *   offset to start from
-    */
-  def events(scope: Scope, offset: Offset): EnvelopeStream[E]
-
-  /**
-    * Allow to stream all latest states within [[Envelope]] s without applying transformation
+    * Allow to stream all latest states within [[Elem.SuccessElem]] s without applying transformation
     * @param scope
     *   to filter returned states
     * @param offset
     *   offset to start from
     */
-  def currentStates(scope: Scope, offset: Offset): EnvelopeStream[S]
+  def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S]
 
   /**
-    * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
+    * Allow to stream all latest states from the beginning within [[Elem.SuccessElem]] s without applying transformation
     * @param scope
     *   to filter returned states
     */
-  def currentStates(scope: Scope): EnvelopeStream[S] = currentStates(scope, Offset.Start)
+  def currentStates(scope: Scope): SuccessElemStream[S] = currentStates(scope, Offset.Start)
 
   /**
     * Allow to stream all current states from the provided offset
@@ -173,7 +155,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
     * @param offset
     *   the start offset
     */
-  def states(scope: Scope, offset: Offset): EnvelopeStream[S]
+  def states(scope: Scope, offset: Offset): SuccessElemStream[S]
 }
 
 object ScopedEventLog {
@@ -310,13 +292,7 @@ object ScopedEventLog {
           stateMachine.evaluate(state, command, maxDuration)
         }
 
-      override def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E] =
-        eventStore.currentEvents(scope, offset)
-
-      override def events(scope: Scope, offset: Offset): EnvelopeStream[E] =
-        eventStore.events(scope, offset)
-
-      override def currentStates(scope: Scope, offset: Offset): EnvelopeStream[S] =
+      override def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =
         stateStore.currentStates(scope, offset)
 
       override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[IO, T] =
@@ -324,7 +300,7 @@ object ScopedEventLog {
           f(s.value)
         }
 
-      override def states(scope: Scope, offset: Offset): EnvelopeStream[S] =
+      override def states(scope: Scope, offset: Offset): SuccessElemStream[S] =
         stateStore.states(scope, offset)
     }
 

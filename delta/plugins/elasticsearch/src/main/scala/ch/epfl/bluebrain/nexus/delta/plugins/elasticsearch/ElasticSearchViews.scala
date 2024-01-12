@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import io.circe.Json
 
 import java.util.UUID
@@ -367,35 +368,35 @@ final class ElasticSearchViews private (
   /**
     * Return the existing indexing views in a project in a finite stream
     */
-  def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
+  def currentIndexingViews(project: ProjectRef): SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Project(project))
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
   /**
     * Return all existing indexing views in a finite stream
     */
-  def currentIndexingViews: ElemStream[IndexingViewDef] =
+  def currentIndexingViews: SuccessElemStream[IndexingViewDef] =
     log
       .currentStates(Scope.Root)
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
   /**
     * Return the indexing views in a non-ending stream
     */
-  def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
+  def indexingViews(start: Offset): SuccessElemStream[IndexingViewDef] =
     log
       .states(Scope.Root, start)
-      .evalMapFilter { envelope =>
-        IO.pure(toIndexViewDef(envelope))
+      .evalMapFilter { elem =>
+        IO.pure(toIndexViewDef(elem))
       }
 
-  private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
-    envelope.toElem { v => Some(v.project) }.traverse { v =>
+  private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =
+    elem.withProject(elem.value.project).traverse { v =>
       IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 

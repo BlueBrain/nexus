@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -41,7 +41,7 @@ object BlazegraphCoordinator {
     *   the general supervisor
     */
   final private class Active(
-      fetchViews: Offset => ElemStream[IndexingViewDef],
+      fetchViews: Offset => SuccessElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       cache: LocalCache[ViewRef, ActiveViewDef],
@@ -145,7 +145,7 @@ object BlazegraphCoordinator {
     }
 
   def apply(
-      fetchViews: Offset => ElemStream[IndexingViewDef],
+      fetchViews: Offset => SuccessElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       supervisor: Supervisor,

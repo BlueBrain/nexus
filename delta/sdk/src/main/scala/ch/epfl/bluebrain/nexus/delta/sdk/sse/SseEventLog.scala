@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 import fs2.Stream
 import io.circe.syntax.EncoderOps
@@ -95,12 +96,12 @@ object SseEventLog {
   private val logger = Logger[SseEventLog]
 
   private[sse] def toServerSentEvent(
-      envelope: Envelope[SseData]
+      elem: Elem.SuccessElem[SseData]
   )(implicit jo: JsonKeyOrdering): ServerSentEvent = {
-    val data = envelope.value.data
-    envelope.offset match {
-      case Start     => ServerSentEvent(defaultPrinter.print(data.asJson.sort), envelope.value.tpe)
-      case At(value) => ServerSentEvent(defaultPrinter.print(data.asJson.sort), envelope.value.tpe, value.toString)
+    val data = elem.value.data
+    elem.offset match {
+      case Start     => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe)
+      case At(value) => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe, value.toString)
     }
   }
 

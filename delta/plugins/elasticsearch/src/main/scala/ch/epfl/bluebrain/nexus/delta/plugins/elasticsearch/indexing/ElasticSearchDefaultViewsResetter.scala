@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import doobie.implicits._
 
 /** A way to reset default Elasticsearch views */
@@ -53,7 +53,7 @@ object ElasticSearchDefaultViewsResetter {
     )
 
   def apply(
-      views: ElemStream[IndexingViewDef],
+      views: SuccessElemStream[IndexingViewDef],
       deleteIndex: IndexLabel => IO[Boolean],
       createView: (Iri, ProjectRef, ElasticSearchViewValue) => IO[Unit],
       newViewValue: ElasticSearchViewValue,

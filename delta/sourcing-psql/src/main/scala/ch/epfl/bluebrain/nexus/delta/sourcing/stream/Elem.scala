@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
+import cats.implicits.{toFoldableOps, toFunctorOps, toTraverseOps}
 import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import doobie.Read
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
@@ -91,9 +93,9 @@ sealed trait Elem[+A] extends Product with Serializable {
     *   the mapping function
     */
   def map[B](f: A => B): Elem[B] = this match {
-    case e: SuccessElem[A] => e.copy(value = f(e.value))
-    case e: FailedElem     => e
-    case e: DroppedElem    => e
+    case s: SuccessElem[A] => s.mapValue(f)
+    case f: FailedElem     => f
+    case d: DroppedElem    => d
   }
 
   /**
@@ -231,7 +233,34 @@ object Elem {
       offset: Offset,
       value: A,
       rev: Int
-  ) extends Elem[A]
+  ) extends Elem[A] {
+    def mapValue[B](f: A => B): Elem.SuccessElem[B] = copy(value = f(value))
+
+    def withProject(project: ProjectRef): Elem.SuccessElem[A] = this.copy(project = Some(project))
+  }
+
+  object SuccessElem {
+    @nowarn("cat=unused")
+    implicit def read[Value](implicit s: Decoder[Value]): Read[SuccessElem[Value]] = {
+      import doobie._
+      import doobie.postgres.implicits._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+      implicit val v: Get[Value] = pgDecoderGetT[Value]
+      Read[(EntityType, Iri, Value, Int, Instant, Long, String, String)].map {
+        case (tpe, id, value, rev, instant, offset, org, proj) =>
+          SuccessElem(tpe, id, Some(ProjectRef.unsafe(org, proj)), instant, Offset.at(offset), value, rev)
+      }
+    }
+
+    implicit val traverse: Traverse[SuccessElem] = new Traverse[SuccessElem] {
+      override def traverse[G[_]: Applicative, A, B](s: SuccessElem[A])(f: A => G[B]): G[SuccessElem[B]] =
+        Applicative[G].map(f(s.value))(v => s.copy(value = v))
+
+      override def foldLeft[A, B](s: SuccessElem[A], b: B)(f: (B, A) => B): B = f(b, s.value)
+
+      override def foldRight[A, B](s: SuccessElem[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = f(s.value, lb)
+    }
+  }
 
   /**
     * An element that has suffered a processing failure.
@@ -279,20 +308,20 @@ object Elem {
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {
     override def traverse[G[_]: Applicative, A, B](fa: Elem[A])(f: A => G[B]): G[Elem[B]] =
       fa match {
-        case s: SuccessElem[A]    => Applicative[G].map(f(s.value))(s.success)
+        case s: SuccessElem[A]    => s.traverse(f).widen[Elem[B]]
         case dropped: DroppedElem => Applicative[G].pure(dropped)
         case failed: FailedElem   => Applicative[G].pure(failed)
       }
 
     override def foldLeft[A, B](fa: Elem[A], b: B)(f: (B, A) => B): B =
       fa match {
-        case s: SuccessElem[A] => f(b, s.value)
+        case s: SuccessElem[A] => s.foldLeft(b)(f)
         case _                 => b
       }
 
     override def foldRight[A, B](fa: Elem[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] =
       fa match {
-        case s: SuccessElem[A] => f(s.value, lb)
+        case s: SuccessElem[A] => s.foldRight(lb)(f)
         case _                 => lb
       }
   }

@@ -43,7 +43,7 @@ object BlazegraphDeletionTask {
 
   def apply(views: BlazegraphViews) =
     new BlazegraphDeletionTask(
-      project => views.currentIndexingViews(project).evalMapFilter(_.toIO),
+      project => views.currentIndexingViews(project).map(_.value),
       (v: ActiveViewDef, subject: Subject) =>
         views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).handleErrorWith { r =>
           logger.error(s"Deprecating '$v' resulted in error: '$r'.")

@@ -286,8 +286,8 @@ final class Storages private (
     * Return the existing storages in a project in a finite stream
     */
   def currentStorages(project: ProjectRef): Stream[IO, Elem[StorageState]] =
-    log.currentStates(Scope.Project(project)).map {
-      _.toElem { s => Some(s.project) }
+    log.currentStates(Scope.Project(project)).map { e =>
+      e.withProject(e.value.project)
     }
 
   private def unsetPreviousDefaultIfRequired(

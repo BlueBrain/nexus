@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EnvelopeStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -78,12 +78,12 @@ object EventMetricsProjection {
   def apply(
       sink: Sink,
       supervisor: Supervisor,
-      metrics: Offset => EnvelopeStream[ProjectScopedMetric],
+      metrics: Offset => SuccessElemStream[ProjectScopedMetric],
       init: IO[Unit]
   ): IO[EventMetricsProjection] = {
 
     val source = Source { (offset: Offset) =>
-      metrics(offset).map { e => e.toElem { m => Some(m.project) } }
+      metrics(offset).map(e => e.withProject(e.value.project))
     }
 
     val compiledProjection =

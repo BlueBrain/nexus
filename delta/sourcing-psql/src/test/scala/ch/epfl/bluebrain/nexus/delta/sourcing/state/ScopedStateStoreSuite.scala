@@ -11,11 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
@@ -56,13 +57,20 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   private val state3 = PullRequestActive(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val state4 = PullRequestActive(id4, project3, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
-  private val envelope1        = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(1L))
-  private val envelope2        = Envelope(PullRequest.entityType, id2, 1, state2, Instant.EPOCH, Offset.at(2L))
-  private val envelope3        = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(3L))
-  private val envelope4        = Envelope(PullRequest.entityType, id4, 1, state4, Instant.EPOCH, Offset.at(4L))
-  private val envelope1Tagged  = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(5L))
-  private val envelope3Tagged  = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(6L))
-  private val envelopeUpdated1 = Envelope(PullRequest.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(7L))
+  private val elem1        =
+    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), state1, 1)
+  private val elem2        =
+    Elem.SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), state2, 1)
+  private val elem3        =
+    Elem.SuccessElem(PullRequest.entityType, id1, Some(project2), Instant.EPOCH, Offset.at(3L), state3, 1)
+  private val elem4        =
+    Elem.SuccessElem(PullRequest.entityType, id4, Some(project3), Instant.EPOCH, Offset.at(4L), state4, 1)
+  private val elem1Tagged  =
+    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(5L), state1, 1)
+  private val elem3Tagged  =
+    Elem.SuccessElem(PullRequest.entityType, id1, Some(project2), Instant.EPOCH, Offset.at(6L), state3, 1)
+  private val elem1Updated =
+    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(7L), updatedState1, 2)
 
   private def assertCount(expected: Int) =
     sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assertEquals(expected)
@@ -86,35 +94,35 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all current latest states from the beginning") {
-    store.currentStates(Scope.Root).assert(envelope1, envelope2, envelope3, envelope4)
+    store.currentStates(Scope.Root, Offset.Start).assert(elem1, elem2, elem3, elem4)
   }
 
   test("Fetch all latest states from the beginning") {
-    store.states(Scope.Root).assert(envelope1, envelope2, envelope3, envelope4)
+    store.states(Scope.Root, Offset.Start).assert(elem1, elem2, elem3, elem4)
   }
 
   test(s"Fetch current states for ${project1.organization} from the beginning") {
-    store.currentStates(Scope.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
+    store.currentStates(Scope.Org(project1.organization), Offset.Start).assert(elem1, elem2, elem3)
   }
 
   test(s"Fetch states for  ${project1.organization} from the beginning") {
-    store.states(Scope.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
+    store.states(Scope.Org(project1.organization), Offset.Start).assert(elem1, elem2, elem3)
   }
 
   test(s"Fetch current states for $project1 from offset 2") {
-    store.currentStates(Scope.Project(project1), Offset.at(1L)).assert(envelope2)
+    store.currentStates(Scope.Project(project1), Offset.at(1L)).assert(elem2)
   }
 
   test(s"Fetch states for $project1 from offset 2") {
-    store.states(Scope.Project(project1), Offset.at(1L)).assert(envelope2)
+    store.states(Scope.Project(project1), Offset.at(1L)).assert(elem2)
   }
 
   test(s"Fetch all current states from the beginning for tag `$customTag`") {
-    store.currentStates(Scope.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
+    store.currentStates(Scope.Root, customTag, Offset.Start).assert(elem1Tagged, elem3Tagged)
   }
 
   test(s"Fetch all states from the beginning for tag `$customTag`") {
-    store.states(Scope.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
+    store.states(Scope.Root, customTag, Offset.Start).assert(elem1Tagged, elem3Tagged)
   }
 
   test("Update state 1 successfully") {
@@ -126,7 +134,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all current latest states from the beginning") {
-    store.currentStates(Scope.Root).assert(envelope2, envelope3, envelope4, envelopeUpdated1)
+    store.currentStates(Scope.Root, Offset.Start).assert(elem2, elem3, elem4, elem1Updated)
   }
 
   test("Delete tagged state 3 successfully") {
@@ -138,7 +146,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test(s"Fetch all states from the beginning for tag `$customTag` after deletion of `state3`") {
-    store.states(Scope.Root, customTag).assert(envelope1Tagged)
+    store.states(Scope.Root, customTag, Offset.Start).assert(elem1Tagged)
   }
 
   test("Check that the given ids does exist") {

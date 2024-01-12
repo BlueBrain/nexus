@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -15,7 +15,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import io.circe.Decoder
 
 /**
   * Allow to save and fetch [[GlobalState]] s from the database
@@ -45,19 +44,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def currentStates(offset: Offset): EnvelopeStream[S]
-
-  /**
-    * Fetches states from the given type from the provided offset
-    *
-    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
-    * when new events are persisted.
-    *
-    * @param offset
-    *   the offset
-    */
-  def states(offset: Offset): EnvelopeStream[S]
-
+  def currentStates(offset: Offset): Stream[IO, S]
 }
 
 object GlobalStateStore {
@@ -73,10 +60,9 @@ object GlobalStateStore {
   ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import IriInstances._
-    implicit val putId: Put[Id]      = serializer.putId
-    implicit val getValue: Get[S]    = serializer.getValue
-    implicit val putValue: Put[S]    = serializer.putValue
-    implicit val decoder: Decoder[S] = serializer.codec
+    implicit val putId: Put[Id]   = serializer.putId
+    implicit val getValue: Get[S] = serializer.getValue
+    implicit val putValue: Put[S] = serializer.putValue
 
     override def save(state: S): ConnectionIO[Unit] = {
       sql"SELECT 1 FROM global_states WHERE type = $tpe AND id = ${state.id}"
@@ -122,21 +108,19 @@ object GlobalStateStore {
         .option
         .transact(xas.read)
 
-    private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
-      StreamingQuery[Envelope[S]](
+    private def states(offset: Offset, strategy: RefreshStrategy): Stream[IO, S] =
+      StreamingQuery[(S, Long)](
         offset,
-        offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
+        offset => sql"""SELECT value, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                        |ORDER BY ordering
-                       |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[S]],
-        _.offset,
+                       |LIMIT ${config.batchSize}""".stripMargin.query[(S, Long)],
+        { case (_, offset: Long) => Offset.at(offset) },
         config.copy(refreshStrategy = strategy),
         xas
-      )
+      ).map { case (value, _) => value }
 
-    override def currentStates(offset: Offset): EnvelopeStream[S] = states(offset, RefreshStrategy.Stop)
-
-    override def states(offset: Offset): EnvelopeStream[S] = states(offset, config.refreshStrategy)
+    override def currentStates(offset: Offset): Stream[IO, S]                    = states(offset, RefreshStrategy.Stop)
   }
 
 }

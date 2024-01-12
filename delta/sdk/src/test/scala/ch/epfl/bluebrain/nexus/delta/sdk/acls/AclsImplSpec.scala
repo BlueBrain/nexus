@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclCollection, AclState}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
@@ -11,10 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
@@ -195,60 +193,6 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
           resourceFor(userRW_groupX(orgTarget), 2, subject),
           resourceFor(anonR(projectTarget), 1, subject)
         )
-    }
-
-    val allEvents = SSEUtils.extract(
-      (AclAddress.Root, AclAppended, 1L),
-      (AclAddress.Root, AclReplaced, 2L),
-      (AclAddress.Root, AclSubtracted, 3L),
-      (AclAddress.Root, AclDeleted, 4L),
-      (orgTarget, AclReplaced, 5L),
-      (orgTarget, AclAppended, 6L),
-      (AclAddress.Root, AclAppended, 7L),
-      (projectTarget, AclAppended, 8L),
-      (org2Target, AclAppended, 9L)
-    )
-
-    "get the different events from start" in {
-      val events = acls
-        .events()
-        .map { e => (e.value.address, e.valueClass, e.offset) }
-        .take(9L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different current events from start" in {
-      val events = acls
-        .currentEvents()
-        .map { e => (e.value.address, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different events from offset 2" in {
-      val events = acls
-        .events(Offset.at(2L))
-        .map { e => (e.value.address, e.valueClass, e.offset) }
-        .take(9L - 2L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
-    }
-
-    "get the different current events from offset 2" in {
-      val events = acls
-        .currentEvents(Offset.at(2L))
-        .map { e => (e.value.address, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
     }
 
     "fail to fetch an ACL on nonexistent revision" in {

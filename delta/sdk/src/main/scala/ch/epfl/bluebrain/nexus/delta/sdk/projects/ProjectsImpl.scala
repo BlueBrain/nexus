@@ -88,8 +88,8 @@ final class ProjectsImpl private (
     log.currentStates(Scope.root).map(_.value.project)
 
   override def states(offset: Offset): ElemStream[ProjectState] =
-    log.states(Scope.root, offset).map {
-      _.toElem { p => Some(p.project) }
+    log.states(Scope.root, offset).map { e =>
+      e.withProject { e.value.project }
     }
 
   private def eval(cmd: ProjectCommand): IO[ProjectResource] =
