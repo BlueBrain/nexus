@@ -54,22 +54,6 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     }
   }
 
-  test("batch copying should fetch storage, perform copy and evaluate create file commands 2") {
-    val events                 = ListBuffer.empty[Event]
-    val fetchFileStorage       = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
-    val stubbedDestAttributes  = genAttributesAndMetadata()
-    val batchCopy              = BatchCopyMock.withStubbedCopyFiles(events, stubbedDestAttributes)
-    implicit val c: Caller     = Caller(genUser(), Set())
-    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, destFileUUId, fetchFileStorage, batchCopy)
-
-    val sourceProject = genProjectRef()
-
-    batchFiles.copyFiles(
-      CopyFileSource(sourceProject, NonEmptyList.of(genFileId(sourceProject), genFileId(sourceProject))),
-      destination
-    )
-  }
-
   test("copy rejections should be mapped to a file rejection") {
     val events           = ListBuffer.empty[Event]
     val fetchFileStorage = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
