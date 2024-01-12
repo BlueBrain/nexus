@@ -1,1 +1,0 @@
-curl "http://localhost:8080/v1/resolvers/myorg/myproj/nxv:myresolver/fd8a2b32-170e-44e8-808f-44a8cbbc49b0"
