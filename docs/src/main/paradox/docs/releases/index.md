@@ -44,6 +44,12 @@ applications.
 - @ref:[Files can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
 - @ref:[Indexing errors can now be listed and filtered](../delta/api/views/index.md#listing-indexing-failures)
 - @ref:[Multi fetch operation allows to get multiple resources in a single call](../delta/api/multi-fetch.md)
+- **Global User Interface Improvements:** Multi-type filter selection in "My Data" section, improved header menu behavior, and enhanced UI element uniformity.
+- **Data Explorer Enhancements:** New filtering and navigation features, fullscreen mode for Graph Flow, advanced mode beta, and improved navigation with back and forward buttons.
+- **Resource Management and Display:** Display of resources missing paths, clearer resource counts, introduction of Data Cart logic, and improved ACL checks.
+- **Code Editor and Studio Enhancements:** New URL copying feature in Code Editor, typo corrections and layout adjustments in the studio interface, and enhanced resource management tools.
+- **Operational Improvements:** Advanced search and filter capabilities, bulk request handling, new resource tagging features, and enhanced error handling mechanisms.
+- **Hotfixes and Minor Updates:** Addressing issues such as navigation speed, URL encoding in downloads, and UI glitches.
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.9-release-notes.md).
 
@@ -270,7 +276,7 @@ This release contains bugfixes and minor improvements:
   @link:[#2880](https://github.com/BlueBrain/nexus/issues/2880)
 - Label 'none of' in filter was previously mis labelled as 'any of'
   @link:[#2872](https://github.com/BlueBrain/nexus/issues/2872)
-- The behaviour of  'none of' filter has been fixed to avoid confusion with other filters
+- The behaviour of 'none of' filter has been fixed to avoid confusion with other filters
   @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
 - Preview plugin big fix to prevent it from crashing for certain file paths
   @link:[#2884](https://github.com/BlueBrain/nexus/issues/2884)
