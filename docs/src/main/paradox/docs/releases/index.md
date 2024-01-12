@@ -22,9 +22,11 @@ applications.
 
 //TODO change the date
 
-The latest stable release is **v1.9.0** released on **14.06.2023**.
+The latest stable release is **v1.9.0** released on **18.12.2023**.
 
-## 1.9.0
+## 1.10.0
+
+## 1.9.0 (18.12.2023)
 
 ### Breaking changes
 
@@ -33,6 +35,17 @@ The latest stable release is **v1.9.0** released on **14.06.2023**.
 - @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#remote-storages)
 - @ref:[Encoding of self, incoming and outgoing links](../releases/v1.9-release-notes.md#self-incoming-and-outgoing-links)
 - @ref:[Remove support for Tarball archives](../releases/v1.9-release-notes.md#remove-support-for-tarball-archives)
+
+### Deprecations
+
+- Fetching resources using organization and project uuids
+- Tagging operations for resolvers/storages/views
+- Indexing projects within views
+- Removing generic endpoints to create/update/deprecate resources
+- Global SSE endpoint
+- SSE endpoints for realms/acls/organizations
+- SSE endpoint to fetch indexing errors
+- Injecting org/project uuids in SSEs related to resources
 
 ### New features / enhancements
 
@@ -46,8 +59,12 @@ The latest stable release is **v1.9.0** released on **14.06.2023**.
 - @ref:[Undeprecating resources, files, projects, organizations](../releases/v1.9-release-notes.md)
 - @ref:[Improving performance of composite view](../releases/v1.9-release-notes.md#composite-views)
 - @ref:[Id resolution](../delta/api/id-resolution.md)
-
-And @ref:[more...](../releases/v1.9-release-notes.md)
+- **Global User Interface Improvements:** Multi-type filter selection in "My Data" section, improved header menu behavior, and enhanced UI element uniformity.
+- **Data Explorer Enhancements:** New filtering and navigation features, fullscreen mode for Graph Flow, advanced mode beta, and improved navigation with back and forward buttons.
+- **Resource Management and Display:** Display of resources missing paths, clearer resource counts, introduction of Data Cart logic, and improved ACL checks.
+- **Code Editor and Studio Enhancements:** New URL copying feature in Code Editor, typo corrections and layout adjustments in the studio interface, and enhanced resource management tools.
+- **Operational Improvements:** Advanced search and filter capabilities, bulk request handling, new resource tagging features, and enhanced error handling mechanisms.
+- **Hotfixes and Minor Updates:** Addressing issues such as navigation speed, URL encoding in downloads, and UI glitches.
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.9-release-notes.md).
 
@@ -274,7 +291,7 @@ This release contains bugfixes and minor improvements:
   @link:[#2880](https://github.com/BlueBrain/nexus/issues/2880)
 - Label 'none of' in filter was previously mis labelled as 'any of'
   @link:[#2872](https://github.com/BlueBrain/nexus/issues/2872)
-- The behaviour of  'none of' filter has been fixed to avoid confusion with other filters
+- The behaviour of 'none of' filter has been fixed to avoid confusion with other filters
   @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
 - Preview plugin big fix to prevent it from crashing for certain file paths
   @link:[#2884](https://github.com/BlueBrain/nexus/issues/2884)
