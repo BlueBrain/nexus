@@ -15,7 +15,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import io.circe.Decoder
 
 /**
   * Allow to save and fetch [[GlobalState]] s from the database
@@ -61,10 +60,9 @@ object GlobalStateStore {
   ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import IriInstances._
-    implicit val putId: Put[Id]      = serializer.putId
-    implicit val getValue: Get[S]    = serializer.getValue
-    implicit val putValue: Put[S]    = serializer.putValue
-    implicit val decoder: Decoder[S] = serializer.codec
+    implicit val putId: Put[Id]   = serializer.putId
+    implicit val getValue: Get[S] = serializer.getValue
+    implicit val putValue: Put[S] = serializer.putValue
 
     override def save(state: S): ConnectionIO[Unit] = {
       sql"SELECT 1 FROM global_states WHERE type = $tpe AND id = ${state.id}"
@@ -111,18 +109,18 @@ object GlobalStateStore {
         .transact(xas.read)
 
     private def states(offset: Offset, strategy: RefreshStrategy): Stream[IO, S] =
-      StreamingQuery[GlobalStateValue[S]](
+      StreamingQuery[(S, Long)](
         offset,
         offset => sql"""SELECT value, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                        |ORDER BY ordering
-                       |LIMIT ${config.batchSize}""".stripMargin.query[GlobalStateValue[S]],
-        _.offset,
+                       |LIMIT ${config.batchSize}""".stripMargin.query[(S, Long)],
+        { case (_, offset: Long) => Offset.at(offset) },
         config.copy(refreshStrategy = strategy),
         xas
-      ).map(_.value)
+      ).map { case (value, _) => value }
 
-    override def currentStates(offset: Offset): Stream[IO, S] = states(offset, RefreshStrategy.Stop)
+    override def currentStates(offset: Offset): Stream[IO, S]                    = states(offset, RefreshStrategy.Stop)
   }
 
 }
