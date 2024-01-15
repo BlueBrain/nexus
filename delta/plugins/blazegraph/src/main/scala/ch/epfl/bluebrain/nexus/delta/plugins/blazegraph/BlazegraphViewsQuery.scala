@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -93,6 +96,8 @@ trait BlazegraphViewsQuery {
 object BlazegraphViewsQuery {
 
   private val loader = ClasspathResourceLoader.withContext(getClass)
+
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   final def apply(
       aclCheck: AclCheck,
@@ -195,7 +200,7 @@ object BlazegraphViewsQuery {
                        client.query(indices, query, responseType).adaptError { case e: SparqlClientError =>
                          WrappedBlazegraphClientError(e)
                        }
-                     )
+                     ).span("blazegraphQuery")
         } yield qr
 
       private def toSparqlLinks(sparqlResults: SparqlResults)(implicit
