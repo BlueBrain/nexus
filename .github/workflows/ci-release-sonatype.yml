@@ -10,7 +10,6 @@ jobs:
     timeout-minutes: 30
     env:
       CI_RELEASE: publishSigned
-      RELEASE_TO_SONATYPE: true
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
       PGP_SECRET: ${{ secrets.PGP_SECRET }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
