@@ -8,17 +8,6 @@ class HandlebarsExpander {
 
   private val handleBars = new Handlebars()
     .`with`(EscapingStrategy.NOOP)
-    .registerHelper(
-      "empty",
-      new Helper[Iterable[_]] {
-        override def apply(context: Iterable[_], options: Options): CharSequence = {
-          context.iterator.isEmpty match {
-            case true  => options.fn()
-            case false => options.inverse()
-          }
-        }
-      }
-    )
 
   def expand(templateText: String, attributes: Map[String, Any]) = {
     if (attributes.isEmpty) {

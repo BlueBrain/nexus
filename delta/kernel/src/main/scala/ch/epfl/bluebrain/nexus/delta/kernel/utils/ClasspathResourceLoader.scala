@@ -53,7 +53,8 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
       resourcePath: String,
       attributes: (String, Any)*
   ): IO[String] = {
-    resourceAsTextFrom(resourcePath).map(handlebarsExpander.expand(_, attributes.toMap))
+    resourceAsTextFrom(resourcePath)
+      .map(handlebarsExpander.expand(_, attributes.toMap))
   }
 
   /**
