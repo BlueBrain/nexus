@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
 
 /**
   * Search parameters for any generic resource type.
@@ -64,13 +62,6 @@ final case class ResourcesSearchParams(
 }
 
 object ResourcesSearchParams {
-
-  case class FileUserMetadata(keywords: Map[Label, String])
-
-  object FileUserMetadata {
-
-    implicit val decoder: Decoder[FileUserMetadata] = deriveDecoder[FileUserMetadata]
-  }
 
   sealed trait TypeOperator extends Product with Serializable {
 

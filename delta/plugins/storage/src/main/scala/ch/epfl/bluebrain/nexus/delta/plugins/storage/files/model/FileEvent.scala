@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType

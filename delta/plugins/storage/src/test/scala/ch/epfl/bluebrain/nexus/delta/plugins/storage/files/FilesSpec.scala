@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client

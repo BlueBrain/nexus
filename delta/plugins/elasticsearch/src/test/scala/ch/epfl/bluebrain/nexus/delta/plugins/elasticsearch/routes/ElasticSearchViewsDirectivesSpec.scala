@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -49,7 +48,7 @@ class ElasticSearchViewsDirectivesSpec extends RouteHelpers with CirceMarshallin
   implicit val paramTypeOperatorCodec: Codec[ResourcesSearchParams.TypeOperator] =
     deriveConfiguredCodec[ResourcesSearchParams.TypeOperator]
   implicit val paramsCodec: Codec[ResourcesSearchParams]                         = deriveConfiguredCodec[ResourcesSearchParams]
-  implicit val metadataCodec: Codec[FileUserMetadata]                            = deriveConfiguredCodec[FileUserMetadata]
+//  implicit val metadataCodec: Codec[FileUserMetadata]                            = deriveConfiguredCodec[FileUserMetadata]
 
   private val route: Route =
     get {

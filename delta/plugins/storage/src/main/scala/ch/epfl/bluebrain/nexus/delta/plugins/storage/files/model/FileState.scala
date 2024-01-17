@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

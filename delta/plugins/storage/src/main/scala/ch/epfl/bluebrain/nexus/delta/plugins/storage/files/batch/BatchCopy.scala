@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FetchFileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._

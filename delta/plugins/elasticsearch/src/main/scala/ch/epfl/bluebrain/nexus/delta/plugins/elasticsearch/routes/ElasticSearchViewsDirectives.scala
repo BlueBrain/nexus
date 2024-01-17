@@ -38,7 +38,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       }
   }
 
-  private def userFileMetadata: Directive1[Map[Label, String]] = {
+  private def keywords: Directive1[Map[Label, String]] = {
     parameter("keywords".as[Map[Label, String]].withDefault(Map.empty[Label, String]))
   }
 
@@ -81,7 +81,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive1[ResourcesSearchParams] = {
-    (searchParams & createdAt & updatedAt & types & typeOperator & userFileMetadata & schema & id & locate & parameter(
+    (searchParams & createdAt & updatedAt & types & typeOperator & keywords & schema & id & locate & parameter(
       "q".?
     ) & tagParam)
       .tmap {
@@ -128,7 +128,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
 
-    (searchParams & createdAt & updatedAt & types & typeOperator & userFileMetadata & schema & id & locate & parameter(
+    (searchParams & createdAt & updatedAt & types & typeOperator & keywords & schema & id & locate & parameter(
       "q".?
     ) & tagParam)
       .tmap {

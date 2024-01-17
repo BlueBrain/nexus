@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation

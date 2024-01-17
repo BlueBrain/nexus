@@ -14,7 +14,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

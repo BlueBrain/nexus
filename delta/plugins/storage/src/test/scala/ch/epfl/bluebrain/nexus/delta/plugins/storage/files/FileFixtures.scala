@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart}
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
