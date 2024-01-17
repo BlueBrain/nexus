@@ -2,17 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{FileUserMetadata, Type, TypeOperator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{parser, Decoder}
-
-import scala.util.{Failure, Success}
 
 /**
   * Search parameters for any generic resource type.
@@ -53,7 +51,7 @@ final case class ResourcesSearchParams(
     updatedAt: TimeRange = TimeRange.Anytime,
     types: List[Type] = List.empty,
     typeOperator: TypeOperator = TypeOperator.Or,
-    fileUserMetadata: Option[FileUserMetadata] = None,
+    keywords: Map[Label, String] = Map.empty,
     schema: Option[ResourceRef] = None,
     q: Option[String] = None,
     tag: Option[UserTag] = None
@@ -71,14 +69,7 @@ object ResourcesSearchParams {
 
   object FileUserMetadata {
 
-    implicit val decoder: Decoder[FileUserMetadata]                               = deriveDecoder[FileUserMetadata]
-    implicit val fromStringUnmarshaller: FromStringUnmarshaller[FileUserMetadata] =
-      Unmarshaller.strict[String, FileUserMetadata] { str =>
-        parser.parse(str).flatMap(_.as[FileUserMetadata]).toTry match {
-          case Failure(exception) => throw exception
-          case Success(value)     => value
-        }
-      }
+    implicit val decoder: Decoder[FileUserMetadata] = deriveDecoder[FileUserMetadata]
   }
 
   sealed trait TypeOperator extends Product with Serializable {

@@ -83,7 +83,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
           range(nxv.updatedAt.prefix, params.updatedAt) ++
           params.tag.map(term(nxv.tags.prefix, _)) ++
-          params.fileUserMetadata.toList.flatMap(_.keywords).map { case (key, value) =>
+          params.keywords.map { case (key, value) =>
             term(s"keywords.$key", value)
           },
         mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),

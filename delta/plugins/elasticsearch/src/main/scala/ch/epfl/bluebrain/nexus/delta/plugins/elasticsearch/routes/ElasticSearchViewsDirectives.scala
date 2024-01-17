@@ -6,14 +6,15 @@ import akka.http.scaladsl.server.{Directive, Directive0, Directive1, MalformedQu
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.Or
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{FileUserMetadata, Type, TypeOperator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, UriDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import io.circe.parser
 
 trait ElasticSearchViewsDirectives extends UriDirectives {
 
@@ -29,8 +30,17 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   private def types(implicit um: FromStringUnmarshaller[Type]): Directive1[List[Type]] =
     parameter("type".as[Type].*).map(_.toList.reverse)
 
-  private def userFileMetadata: Directive1[Option[FileUserMetadata]] =
-    parameter("metadata".as[FileUserMetadata].?)
+  implicit val keywordsFromStringUnmarshaller: FromStringUnmarshaller[Map[Label, String]] = Unmarshaller.strict {
+    string =>
+      parser.parse(string).flatMap(_.as[Map[Label, String]]) match {
+        case Left(e)      => throw e
+        case Right(value) => value
+      }
+  }
+
+  private def userFileMetadata: Directive1[Map[Label, String]] = {
+    parameter("keywords".as[Map[Label, String]].withDefault(Map.empty[Label, String]))
+  }
 
   private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[TypeOperator] = {
     parameter("typeOperator".as[TypeOperator].?[TypeOperator](Or))

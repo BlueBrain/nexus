@@ -82,9 +82,9 @@ class FilesSpec extends BaseIntegrationSpec {
   }
 
   private def queryForFilesWithKeywords(keywords: (String, String)*): IO[List[Json]] = {
-    val metadata = UrlUtils.encode(Json.obj("keywords" := keywords.toMap.asJson).noSpaces)
+    val encodedKeywords = UrlUtils.encode(keywords.toMap.asJson.noSpaces)
     deltaClient
-      .getJson[Json](s"/files/$projectRef?metadata=$metadata", Writer)
+      .getJson[Json](s"/files/$projectRef?keywords=$encodedKeywords", Writer)
       .map { json =>
         json.hcursor.downField("_results").as[List[Json]].rightValue
       }
