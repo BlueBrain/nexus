@@ -54,7 +54,7 @@ trait FileFixtures extends Generators {
       projRef: ProjectRef = projectRef
   ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path)
 
-  def randomUserMetadata(): FileUserMetadata = FileUserMetadata(Map(Label.unsafe(genString()) -> genString()))
+  def genUserMetadata(): FileUserMetadata = FileUserMetadata(Map(Label.unsafe(genString()) -> genString()))
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart

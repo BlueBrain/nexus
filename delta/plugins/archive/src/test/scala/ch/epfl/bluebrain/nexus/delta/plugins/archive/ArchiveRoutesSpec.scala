@@ -303,11 +303,11 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
             projectRef,
             fileId,
             file.value.attributes,
+            file.value.userMetadata,
             storageRef,
             createdBy = subject,
             updatedBy = subject
           )
-          .accepted
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }

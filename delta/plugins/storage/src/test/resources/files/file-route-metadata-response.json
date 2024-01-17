@@ -13,6 +13,11 @@
     "@type": "{{storageType}}",
     "_rev": {{storageRev}}
   },
+  {{#unless (empty keywords)}}
+  "keywords": {
+    {{#each keywords}}"{{@key}}": "{{this}}"{{/each}}
+  }
+  {{/unless}},
   "_bytes": {{bytes}},
   "_digest": {
     "_value": "{{digest}}",

@@ -63,12 +63,13 @@ trait FileGen { self: Generators with FileFixtures =>
   def genOption[A](genA: => A): Option[A]                                             = if (Random.nextInt(2) % 2 == 0) Some(genA) else None
 
   def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
-    genFileResourceWithStorage(fileId, context, genRevision(), 1L)
+    genFileResourceWithStorage(fileId, context, genRevision(), Some(genUserMetadata()), 1L)
 
   def genFileResourceWithStorage(
       fileId: FileId,
       context: ProjectContext,
       storageRef: ResourceRef.Revision,
+      userMetadata: Option[FileUserMetadata],
       fileSize: Long
   ): FileResource =
     genFileResourceWithIri(
@@ -76,18 +77,19 @@ trait FileGen { self: Generators with FileFixtures =>
       fileId.project,
       storageRef,
       attributes(genString(), size = fileSize),
-      Some(randomUserMetadata())
+      userMetadata
     )
 
   def genFileResourceAndStorage(
       fileId: FileId,
       context: ProjectContext,
       storageVal: StorageValue,
+      userMetadata: Option[FileUserMetadata],
       fileSize: Long = 1L
   ): (FileResource, StorageResource) = {
     val storageRes = StorageGen.resourceFor(genIri(), fileId.project, storageVal)
     val storageRef = ResourceRef.Revision(storageRes.id, storageRes.id, storageRes.rev)
-    (genFileResourceWithStorage(fileId, context, storageRef, fileSize), storageRes)
+    (genFileResourceWithStorage(fileId, context, storageRef, userMetadata, fileSize), storageRes)
   }
 
   def genFileResourceWithIri(

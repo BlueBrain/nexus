@@ -40,12 +40,13 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
   private val sourceFileId        = genFileId(sourceProj.ref)
   private val source              = CopyFileSource(sourceProj.ref, NonEmptyList.of(sourceFileId))
   private val storageStatEntry    = StorageStatEntry(files = 10L, spaceUsed = 5L)
-  private val stubbedFileAttr     = NonEmptyList.of(attributes(genString()))
-  private val stubbedFileMetadata = NonEmptyList.of(Some(randomUserMetadata()))
+  private val stubbedFileAttr     = attributes(genString())
+  private val stubbedFileMetadata = genUserMetadata()
 
   test("successfully perform disk copy") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, Some(stubbedFileMetadata))
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy                = mkBatchCopy(
@@ -53,13 +54,13 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       fetchStorage = stubbedFetchStorage(sourceStorage, events),
       aclCheck = aclCheck,
       stats = stubbedStorageStats(storageStatEntry, events),
-      diskCopy = stubbedDiskCopy(stubbedFileAttr, events)
+      diskCopy = stubbedDiskCopy(NonEmptyList.of(stubbedFileAttr), events)
     )
     val destStorage: DiskStorage = genDiskStorage()
 
     batchCopy.copyFiles(source, destStorage)(caller(user)).map { obtained =>
       val obtainedEvents = events.toList
-      assertEquals(obtained, stubbedFileAttr.zip(stubbedFileMetadata))
+      assertEquals(obtained, NonEmptyList.of(stubbedFileAttr -> Some(stubbedFileMetadata)))
       sourceFileWasFetched(obtainedEvents, sourceFileId)
       sourceStorageWasFetched(obtainedEvents, sourceFileRes.value.storage, sourceProj.ref)
       destinationDiskStorageStatsWereFetched(obtainedEvents, destStorage)
@@ -74,7 +75,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("successfully perform remote disk copy") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, remoteVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, remoteVal, Some(stubbedFileMetadata))
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy                      = mkBatchCopy(
@@ -82,13 +84,13 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       fetchStorage = stubbedFetchStorage(sourceStorage, events),
       aclCheck = aclCheck,
       stats = stubbedStorageStats(storageStatEntry, events),
-      remoteCopy = stubbedRemoteCopy(stubbedFileAttr, events)
+      remoteCopy = stubbedRemoteCopy(NonEmptyList.of(stubbedFileAttr), events)
     )
     val destStorage: RemoteDiskStorage = genRemoteStorage()
 
     batchCopy.copyFiles(source, destStorage)(caller(user)).map { obtained =>
       val obtainedEvents = events.toList
-      assertEquals(obtained, stubbedFileAttr.zip(stubbedFileMetadata))
+      assertEquals(obtained, NonEmptyList.of(stubbedFileAttr -> Some(stubbedFileMetadata)))
       sourceFileWasFetched(obtainedEvents, sourceFileId)
       sourceStorageWasFetched(obtainedEvents, sourceFileRes.value.storage, sourceProj.ref)
       destinationRemoteStorageStatsWereNotFetched(obtainedEvents)
@@ -110,7 +112,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if a source storage is different to destination storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, Some(stubbedFileMetadata))
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy     = mkBatchCopy(
@@ -129,7 +132,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if user does not have read access on a source file's storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, Some(stubbedFileMetadata))
     val user                           = genUser()
     val aclCheck                       = AclSimpleCheck((user, AclAddress.fromProject(sourceProj.ref), Set())).accepted
 
@@ -148,7 +152,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if a single source file exceeds max size for destination storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, 1000L)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, Some(stubbedFileMetadata), 1000L)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy   = mkBatchCopy(
@@ -172,7 +177,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
     val capacity                       = 10L
     val statEntry                      = StorageStatEntry(files = 10L, spaceUsed = 1L)
     val spaceLeft                      = capacity - statEntry.spaceUsed
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, fileSize)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, Some(stubbedFileMetadata), fileSize)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy = mkBatchCopy(

@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
@@ -39,9 +39,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import org.scalatest._
 
 class FilesRoutesSpec
@@ -660,45 +662,76 @@ class FilesRoutesSpec
       updatedBy: Subject = callerWriter.subject
   )(implicit baseUri: BaseUri): Json =
     FilesRoutesSpec
-      .fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
-      .accepted
+      .fileMetadata(project, id, attributes, None, storage, storageType, rev, deprecated, createdBy, updatedBy)
 
   private def nxvBase(id: String): String = (nxv + id).toString
 
 }
 
-object FilesRoutesSpec {
-  private val loader                     = ClasspathResourceLoader()
+object FilesRoutesSpec extends CirceLiteral {
   def fileMetadata(
       project: ProjectRef,
       id: Iri,
       attributes: FileAttributes,
+      userMetadata: Option[FileUserMetadata],
       storage: ResourceRef.Revision,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject,
       updatedBy: Subject
-  )(implicit baseUri: BaseUri): IO[Json] =
-    loader.jsonContentOf(
-      "files/file-route-metadata-response.json",
-      "project"     -> project,
-      "id"          -> id,
-      "rev"         -> rev,
-      "storage"     -> storage.iri,
-      "storageType" -> storageType,
-      "storageRev"  -> storage.rev,
-      "bytes"       -> attributes.bytes,
-      "digest"      -> attributes.digest.asInstanceOf[ComputedDigest].value,
-      "algorithm"   -> attributes.digest.asInstanceOf[ComputedDigest].algorithm,
-      "filename"    -> attributes.filename,
-      "mediaType"   -> attributes.mediaType.fold("")(_.value),
-      "origin"      -> attributes.origin,
-      "uuid"        -> attributes.uuid,
-      "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.asIri,
-      "updatedBy"   -> updatedBy.asIri,
-      "type"        -> storageType,
-      "self"        -> ResourceUris("files", project, id).accessUri
-    )
+  )(implicit baseUri: BaseUri): Json = {
+    val self               = ResourceUris("files", project, id).accessUri
+    val keywordsJson: Json = userMetadata match {
+      case Some(meta) =>
+        Json.obj(
+          "keywords" -> JsonObject
+            .fromIterable(
+              meta.keywords.map { case (k, v) =>
+                k.value -> v.asJson
+              }
+            )
+            .toJson
+        )
+      case None       => Json.obj()
+    }
+
+    val mainJson = json"""
+      {
+        "@context" : [
+          "https://bluebrain.github.io/nexus/contexts/files.json",
+          "https://bluebrain.github.io/nexus/contexts/metadata.json"
+        ],
+        "@id" : "$id",
+        "@type" : "File",
+        "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/files.json",
+        "_createdAt" : "1970-01-01T00:00:00Z",
+        "_createdBy" : "${createdBy.asIri}",
+        "_storage" : {
+          "@id": "${storage.iri}",
+          "@type": "$storageType",
+          "_rev": ${storage.rev}
+        },
+        "_bytes": ${attributes.bytes},
+        "_digest": {
+          "_value": "${attributes.digest.asInstanceOf[ComputedDigest].value}",
+          "_algorithm": "${attributes.digest.asInstanceOf[ComputedDigest].algorithm}"
+        },
+        "_filename": "${attributes.filename}",
+        "_origin": "${attributes.origin}",
+        "_mediaType": "${attributes.mediaType.fold("")(_.value)}",
+        "_deprecated" : $deprecated,
+        "_incoming" : "$self/incoming",
+        "_outgoing" : "$self/outgoing",
+        "_project" : "http://localhost/v1/projects/$project",
+        "_rev" : $rev,
+        "_self" : "$self",
+        "_updatedAt" : "1970-01-01T00:00:00Z",
+        "_updatedBy" : "${updatedBy.asIri}",
+        "_uuid": "${attributes.uuid}"
+      }
+    """
+
+    mainJson deepMerge (keywordsJson)
+  }
 }
