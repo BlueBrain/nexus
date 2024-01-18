@@ -5,7 +5,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationError._
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
+import io.circe.parser
 import pureconfig.ConfigReader
+import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.module.cats._
 
@@ -57,13 +59,36 @@ object AuthorizationMethod {
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
     implicit val jsonObjectReader: ConfigReader[util.Map[String, AnyRef]] =
       ConfigReader.configObjectConfigReader.map(configObj => configObj.unwrapped())
-    implicit val jwkSetReader: ConfigReader[JWKSet]                       = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].map {
-      jwkKeys => new JWKSet(jwkKeys.map(key => JWK.parse(key)).toList.asJava)
+
+    implicit val jwkSetReader: ConfigReader[JWKSet]     = ConfigReader[NonEmptyList[util.Map[String, AnyRef]]].emap {
+      jwkKeys =>
+        jwkKeys
+          .traverse(fixX5CKeyIfPassedAsString)
+          .map { keyMaps =>
+            new JWKSet(keyMaps.map(key => JWK.parse(key)).toList.asJava)
+          }
     }
-    implicit val anonymousReader                                          = deriveReader[Anonymous.type]
-    implicit val verifyToken: ConfigReader[VerifyToken]                   = deriveReader[VerifyToken]
+    implicit val anonymousReader                        = deriveReader[Anonymous.type]
+    implicit val verifyToken: ConfigReader[VerifyToken] = deriveReader[VerifyToken]
 
     deriveReader[AuthorizationMethod]
   }
 
+  private def fixX5CKeyIfPassedAsString(
+      m: util.Map[String, AnyRef]
+  ): Either[FailureReason, util.Map[String, AnyRef]] = {
+
+    def parseJsonList(s: String): Either[FailureReason, util.List[String]] = (for {
+      json       <- parser.parse(s).leftMap(_.toString())
+      array      <- json.asArray.toRight("Invalid JSON array")
+      stringList <- array.traverse(_.asString).toRight("Invalid JSON string within the array")
+    } yield stringList.asJava).leftMap(reason => CannotConvert(s, "java.util.List[String]", reason))
+
+    m.asScala.toList
+      .traverse {
+        case (k, v: String) if k == "x5c" => parseJsonList(v).map(k -> _)
+        case (k, v)                       => Right((k, v))
+      }
+      .map(_.toMap.asJava)
+  }
 }
