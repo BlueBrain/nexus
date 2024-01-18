@@ -307,8 +307,6 @@ object Resolvers {
         )
     }
 
-
-
     def deprecate(c: DeprecateResolver): IO[ResolverDeprecated] = state match {
       // Resolver can't be found
       case None                      =>
