@@ -136,37 +136,6 @@ private class StoragesSpec
       }
     }
 
-    "tagging a storage" should {
-
-      "succeed" in {
-        storages.tag(rdId, projectRef, tag, tagRev = 1, 1).accepted shouldEqual
-          resourceFor(
-            rdId,
-            projectRef,
-            remoteVal,
-            remoteFieldsJson,
-            rev = 2,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 1)
-          )
-      }
-
-      "reject if it doesn't exists" in {
-        storages.tag(nxv + "other", projectRef, tag, tagRev = 1, 1).rejectedWith[StorageNotFound]
-      }
-
-      "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-        storages.tag(rdId, projectRef, tag, tagRev = 2, 2).rejectedWith[ProjectContextRejection]
-      }
-
-      "reject if project is deprecated" in {
-        storages.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 2).rejectedWith[ProjectContextRejection]
-      }
-    }
-
     "deprecating a storage" should {
 
       "succeed" in {
@@ -202,23 +171,6 @@ private class StoragesSpec
       "reject if project is deprecated" in {
         storages.deprecate(s3Id, deprecatedProject.ref, 1).rejectedWith[ProjectContextRejection]
       }
-
-      "allow tagging" in {
-        val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "default": false}"""
-        storages.tag(s3Id, projectRef, tag, tagRev = 3, 3).accepted shouldEqual
-          resourceFor(
-            s3Id,
-            projectRef,
-            s3Val.copy(default = false),
-            payload,
-            rev = 4,
-            deprecated = true,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 3)
-          )
-      }
-
     }
 
     "undeprecating a storage" should {

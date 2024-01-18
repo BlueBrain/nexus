@@ -4,9 +4,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UndeprecateStorage, UpdateStorage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUndeprecated, StorageUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, RevisionNotFound, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, UndeprecateStorage, UpdateStorage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
@@ -78,18 +78,6 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         }
       }
 
-      "create a new event from a TagStorage command" in {
-        val state = storageState(dId, project, diskVal, rev = 3)
-        eval(Some(state), TagStorage(dId, project, 2, UserTag.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, DiskStorageType, 2, UserTag.unsafe("myTag"), 4, epoch, alice)
-      }
-
-      "create a new event from a TagStorage command when storage is deprecated" in {
-        val state = storageState(dId, project, diskVal, rev = 3, deprecated = true)
-        eval(Some(state), TagStorage(dId, project, 2, UserTag.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, DiskStorageType, 2, UserTag.unsafe("myTag"), 4, epoch, alice)
-      }
-
       "create a new event from a DeprecateStorage command" in {
         val state = storageState(dId, project, diskVal, rev = 3)
         eval(Some(state), DeprecateStorage(dId, project, 3, alice)).accepted shouldEqual
@@ -100,19 +88,6 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         val state = storageState(dId, project, diskVal, rev = 3, deprecated = true)
         eval(Some(state), UndeprecateStorage(dId, project, 3, alice)).accepted shouldEqual
           StorageUndeprecated(dId, project, DiskStorageType, 4, epoch, alice)
-      }
-
-      "reject with IncorrectRev" in {
-        val state    = storageState(dId, project, diskVal)
-        val commands = List(
-          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
-          TagStorage(dId, project, 1, UserTag.unsafe("tag"), 2, alice),
-          DeprecateStorage(dId, project, 2, alice),
-          UndeprecateStorage(dId, project, 2, alice)
-        )
-        forAll(commands) { cmd =>
-          eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
-        }
       }
 
       "reject with StorageNotAccessible" in {
@@ -186,17 +161,6 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
           .rejectedWith[ResourceAlreadyExists]
       }
 
-      "reject with StorageNotFound" in {
-        val commands = List(
-          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
-          TagStorage(dId, project, 1, UserTag.unsafe("tag"), 2, alice),
-          DeprecateStorage(dId, project, 2, alice)
-        )
-        forAll(commands) { cmd =>
-          eval(None, cmd).rejectedWith[StorageNotFound]
-        }
-      }
-
       "reject with StorageIsDeprecated" in {
         val state    = storageState(dId, project, diskVal, rev = 2, deprecated = true)
         val commands = List(
@@ -216,12 +180,6 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         forAll(commands) { cmd =>
           eval(Some(state), cmd).rejectedWith[StorageIsNotDeprecated]
         }
-      }
-
-      "reject with RevisionNotFound" in {
-        val state = storageState(dId, project, diskVal)
-        eval(Some(state), TagStorage(dId, project, 3, UserTag.unsafe("myTag"), 1, alice)).rejected shouldEqual
-          RevisionNotFound(provided = 3, current = 1)
       }
 
       "reject with DifferentStorageType" in {

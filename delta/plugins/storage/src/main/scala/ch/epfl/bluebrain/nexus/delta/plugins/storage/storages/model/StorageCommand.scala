@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 /**
@@ -86,25 +85,6 @@ object StorageCommand {
       rev: Int,
       subject: Subject
   ) extends StorageCommand
-
-  /**
-    * Command to tag a storage
-    *
-    * @param id
-    *   the storage identifier
-    * @param project
-    *   the project the storage belongs to
-    * @param targetRev
-    *   the revision that is being aliased with the provided ''tag''
-    * @param tag
-    *   the tag of the alias for the provided ''tagRev''
-    * @param rev
-    *   the last known revision of the storage
-    * @param subject
-    *   the identity associated to this command
-    */
-  final case class TagStorage(id: Iri, project: ProjectRef, targetRev: Int, tag: UserTag, rev: Int, subject: Subject)
-      extends StorageCommand
 
   /**
     * Command to deprecate a storage

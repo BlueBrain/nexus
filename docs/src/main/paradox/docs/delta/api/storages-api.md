@@ -196,37 +196,6 @@ Payload
 Response
 :   @@snip [updated.json](assets/storages/updated.json)
 
-## Tag
-
-Links a storage revision to a specific name.
-
-Tagging a storage is considered to be an update as well.
-
-```
-POST /v1/storages/{org_label}/{project_label}/{storage_id}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-
-... where
-
-- `{previous_rev}`: Number - the last known revision for the storage.
-- `{name}`: String - label given to the storage at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [tag.sh](assets/storages/tag.sh)
-
-Payload
-:   @@snip [tag.json](assets/tag.json)
-
-Response
-:   @@snip [tagged.json](assets/storages/tagged.json)
-
 ## Deprecate
 
 Locks the storage, so no further operations can be performed. It will also not be taken into account by the

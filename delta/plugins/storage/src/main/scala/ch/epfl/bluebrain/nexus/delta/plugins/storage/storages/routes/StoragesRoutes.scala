@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
@@ -175,21 +174,6 @@ final class StoragesRoutes(
                               .attemptNarrow[StorageRejection]
                               .rejectOn[StorageNotFound]
                           )
-                        },
-                        // Tag a storage
-                        (post & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(project, Write).apply {
-                            entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(
-                                Created,
-                                storages
-                                  .tag(id, project, tag, tagRev, rev)
-                                  .flatTap(index(project, _, mode))
-                                  .mapValue(_.metadata)
-                                  .attemptNarrow[StorageRejection]
-                              )
-                            }
-                          }
                         }
                       )
                     }

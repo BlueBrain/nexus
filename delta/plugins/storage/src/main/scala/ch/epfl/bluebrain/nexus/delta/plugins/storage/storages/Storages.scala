@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUndeprecated, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import fs2.Stream
@@ -182,34 +181,6 @@ final class Storages private (
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.span("updateStorage")
-
-  /**
-    * Add a tag to an existing storage
-    *
-    * @param id
-    *   the storage identifier to expand as the id of the storage
-    * @param projectRef
-    *   the project where the storage belongs
-    * @param tag
-    *   the tag name
-    * @param tagRev
-    *   the tag revision
-    * @param rev
-    *   the current revision of the storage
-    */
-  def tag(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit subject: Subject): IO[StorageResource] = {
-    for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
-      res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject))
-    } yield res
-  }.span("tagStorage")
 
   /**
     * Deprecate an existing storage
@@ -464,16 +435,6 @@ object Storages {
         } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1, instant, c.subject)
     }
 
-    def tag(c: TagStorage) = state match {
-      case None                                               => IO.raiseError(StorageNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                            =>
-        clock.realTimeInstant.map(
-          StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject)
-        )
-    }
-
     def deprecate(c: DeprecateStorage) = state match {
       case None                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
@@ -493,7 +454,6 @@ object Storages {
     cmd match {
       case c: CreateStorage      => create(c)
       case c: UpdateStorage      => update(c)
-      case c: TagStorage         => tag(c)
       case c: DeprecateStorage   => deprecate(c)
       case c: UndeprecateStorage => undeprecate(c)
     }
