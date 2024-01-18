@@ -92,31 +92,6 @@ object ResolverCommand {
   }
 
   /**
-    * Command to tag a resolver
-    *
-    * @param id
-    *   the resolver identifier
-    * @param project
-    *   the project the resolver belongs to
-    * @param targetRev
-    *   the revision that is being aliased with the provided ''tag''
-    * @param tag
-    *   the tag of the alias for the provided ''tagRev''
-    * @param rev
-    *   the last known revision of the resolver
-    * @param subject
-    *   the identity associated to this command
-    */
-  final case class TagResolver(
-      id: Iri,
-      project: ProjectRef,
-      targetRev: Int,
-      tag: UserTag,
-      rev: Int,
-      subject: Subject
-  ) extends ResolverCommand
-
-  /**
     * Command to deprecate a resolver
     * @param id
     *   the resolver identifier

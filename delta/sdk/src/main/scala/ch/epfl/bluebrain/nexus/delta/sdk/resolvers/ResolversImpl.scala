@@ -19,11 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversImpl.ResolversLog
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{PriorityAlreadyExists, ResolverNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import doobie.implicits._
 import io.circe.Json
@@ -102,22 +101,6 @@ final class ResolversImpl private (
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
   }.span("updateResolver")
-
-  override def tag(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit
-      subject: Identity.Subject
-  ): IO[ResolverResource] = {
-    for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
-      res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject))
-    } yield res
-  }.span("tagResolver")
 
   override def deprecate(
       id: IdSegment,

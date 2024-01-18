@@ -326,35 +326,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "tagging a resolver" should {
-
-      "succeed" in {
-        Post(
-          s"/v1/resolvers/${project.ref}/in-project-put/tags?rev=2",
-          tagPayload.toEntity
-        ) ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.Created
-          response.asJson shouldEqual resolverMetadata(
-            nxv + "in-project-put",
-            InProject,
-            project.ref,
-            rev = 3,
-            createdBy = bob,
-            updatedBy = alice
-          )
-        }
-      }
-
-      "fail if it there are no resolver/write permissions" in {
-        Post(
-          s"/v1/resolvers/${project2.ref}/in-project-put/tags?rev=2",
-          tagPayload.toEntity
-        ) ~> asBob ~> routes ~> check {
-          response.shouldBeForbidden
-        }
-      }
-    }
-
     "deprecating a resolver" should {
 
       "succeed" in {

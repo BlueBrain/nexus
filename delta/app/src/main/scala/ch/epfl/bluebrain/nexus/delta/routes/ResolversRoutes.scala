@@ -146,14 +146,6 @@ final class ResolversRoutes(
                       // Fetch a resolver tags
                       (get & idSegmentRef(resolver) & authorizeRead) { resolverRef =>
                         emitTags(resolvers.fetch(resolverRef, project))
-                      },
-                      // Tag a resolver
-                      (post & parameter("rev".as[Int])) { rev =>
-                        authorizeWrite {
-                          entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emitMetadata(Created, resolvers.tag(resolver, project, tag, tagRev, rev).flatTap(index))
-                          }
-                        }
                       }
                     )
                   },
