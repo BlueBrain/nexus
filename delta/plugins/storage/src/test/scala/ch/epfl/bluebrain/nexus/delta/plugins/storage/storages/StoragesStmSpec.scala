@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, UndeprecateStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
@@ -90,6 +90,18 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
           StorageUndeprecated(dId, project, DiskStorageType, 4, epoch, alice)
       }
 
+      "reject with IncorrectRev" in {
+        val state    = storageState(dId, project, diskVal)
+        val commands = List(
+          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
+          DeprecateStorage(dId, project, 2, alice),
+          UndeprecateStorage(dId, project, 2, alice)
+        )
+        forAll(commands) { cmd =>
+          eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+        }
+      }
+
       "reject with StorageNotAccessible" in {
         val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
         val inaccessibleDiskVal   =
@@ -159,6 +171,16 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         val state = storageState(dId, project, diskVal)
         eval(Some(state), CreateStorage(dId, project, diskFields, Json.obj(), bob))
           .rejectedWith[ResourceAlreadyExists]
+      }
+
+      "reject with StorageNotFound" in {
+        val commands = List(
+          UpdateStorage(dId, project, diskFields, Json.obj(), 2, alice),
+          DeprecateStorage(dId, project, 2, alice)
+        )
+        forAll(commands) { cmd =>
+          eval(None, cmd).rejectedWith[StorageNotFound]
+        }
       }
 
       "reject with StorageIsDeprecated" in {
