@@ -136,7 +136,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
   "The Resolvers route" when {
 
-    val tagPayload              = json"""{"tag": "my-tag", "rev": 1}"""
     val priority: AtomicInteger = new AtomicInteger(0)
     def newPriority             = json"""{"priority": ${priority.incrementAndGet()}}"""
 
