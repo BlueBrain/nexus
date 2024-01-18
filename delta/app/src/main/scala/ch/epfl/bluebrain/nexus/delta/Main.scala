@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationE
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
@@ -73,7 +74,13 @@ object Main extends IOApp {
       cfgPathOpt                 = sys.env.get(externalConfigEnvVariable)
       (appConfig, mergedConfig) <- AppConfig.loadOrThrow(cfgPathOpt, configNames, classLoader)
       _                         <- logClusterConfig(appConfig.projections.cluster)
+      _                         <- logDatabaseConfig(appConfig.database)
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
+
+  private def logDatabaseConfig(config: DatabaseConfig) =
+    logger.info(s"Database config for reads is ${config.read.host} (${config.read.poolSize})") >>
+      logger.info(s"Database config for writes is ${config.write.host} (${config.write.poolSize})") >>
+      logger.info(s"Database config for streaming is ${config.streaming.host} (${config.streaming.poolSize})")
 
   private def logClusterConfig(config: ClusterConfig) = {
     if (config.size == 1)
