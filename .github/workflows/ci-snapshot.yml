@@ -46,6 +46,3 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             app/Docker/publish \
             storage/Docker/publish
-      - name: Publish to Github Packages
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false publish

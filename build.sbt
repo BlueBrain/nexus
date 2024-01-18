@@ -851,15 +851,7 @@ lazy val assertJavaVersion =
   )
 
 lazy val shared = Seq(
-  organization      := "ch.epfl.bluebrain.nexus",
-  // TODO: remove when https://github.com/djspiewak/sbt-github-packages/issues/28 is fixed
-  githubTokenSource := TokenSource.Or(
-    TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
-    TokenSource.Or(
-      TokenSource.Environment("CI"),   // available in GH Actions
-      TokenSource.Environment("SHELL") // safe to assume this will be set in all our devs environments
-    )
-  )
+  organization := "ch.epfl.bluebrain.nexus"
 )
 
 lazy val kamonSettings = Seq(
@@ -953,12 +945,6 @@ lazy val release = Seq(
   pomPostProcess                      := { node =>
     XmlTransformer.transformer(moduleFilter("org.scoverage") | moduleFilter("com.sksamuel.scapegoat")).transform(node).head
   },
-  publishTo                           := {
-    val original            = publishTo.value
-    val ghTo                = githubPublishTo.value
-    val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_TO_SONATYPE", "false").toBoolean
-    if (RELEASE_TO_SONATYPE) original else ghTo
-  },
   sonatypeCredentialHost              := "s01.oss.sonatype.org",
   sonatypeRepository                  := "https://s01.oss.sonatype.org/service/local",
   versionScheme                       := Some("strict")
@@ -1005,8 +991,6 @@ ThisBuild / developers                   := List(
   Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
   Developer("dantb", "Daniel Tattan-Birch", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
 )
-ThisBuild / githubOwner                  := "BlueBrain"
-ThisBuild / githubRepository             := "nexus"
 ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
