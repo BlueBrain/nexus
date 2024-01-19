@@ -434,7 +434,7 @@ object Resources {
       for {
         state         <- stateWhereResourceIsEditable(u)
         stateJsonLd   <- IO.fromEither(state.toAssembly)
-        changeDetected = stateJsonLd =!= u.jsonld
+        changeDetected = sys.env.get("DISABLE_CHANGE_DETECTION").contains("true") || stateJsonLd =!= u.jsonld
         event         <- if (u.schemaOpt.isDefined || changeDetected) onChange(state) else fallbackToTag(state)
       } yield event
     }
