@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
@@ -277,6 +278,16 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
         next(Some(current), event).value shouldEqual
           current.copy(rev = 2, value = diskVal, source = diskFieldsJson, updatedAt = time2, updatedBy = alice)
+      }
+
+      "from a new StorageTagAdded event, only the revision is updated" in {
+        val event   = StorageTagAdded(dId, project, DiskStorageType, 1, UserTag.unsafe("unused"), 3, time2, alice)
+        val current = storageState(dId, project, diskVal, rev = 2)
+
+        next(None, event) shouldEqual None
+
+        next(Some(current), event).value shouldEqual
+          current.copy(rev = 3, updatedAt = time2, updatedBy = alice)
       }
 
       "from a new StorageDeprecated event" in {

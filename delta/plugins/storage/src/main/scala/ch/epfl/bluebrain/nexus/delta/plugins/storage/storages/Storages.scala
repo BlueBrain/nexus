@@ -335,6 +335,10 @@ object Storages {
       s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def tagAdded(e: StorageTagAdded): Option[StorageState] = state.map { s =>
+      s.copy(rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     def deprecated(e: StorageDeprecated): Option[StorageState] = state.map { s =>
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
@@ -346,7 +350,7 @@ object Storages {
     event match {
       case e: StorageCreated      => created(e)
       case e: StorageUpdated      => updated(e)
-      case _: StorageTagAdded     => None
+      case e: StorageTagAdded     => tagAdded(e)
       case e: StorageDeprecated   => deprecated(e)
       case e: StorageUndeprecated => undeprecated(e)
     }
