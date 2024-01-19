@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
+import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FetchFileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileResource, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
@@ -20,12 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import shapeless.syntax.typeable.typeableOps
 
 trait BatchCopy {
   def copyFiles(source: CopyFileSource, destStorage: Storage)(implicit
       c: Caller
-  ): IO[NonEmptyList[FileAttributes]]
+  ): IO[NonEmptyList[FileAttributes]] // return source file Iri here along with new file attributes
 }
 
 object BatchCopy {
@@ -112,14 +114,23 @@ object BatchCopy {
     private def notEnoughSpace(totalSize: Long, spaceLeft: Long, destStorage: Iri) =
       IO.raiseError(TotalCopySizeTooLarge(totalSize, spaceLeft, destStorage))
 
-    private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller): IO[(File, Storage)] = {
+    private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller): IO[(File, Storage)] =
       for {
         file          <- fetchFile.fetch(id)
         sourceStorage <- fetchStorage.fetch(file.value.storage, id.project)
         perm           = sourceStorage.value.storageValue.readPermission
         _             <- aclCheck.authorizeForOr(id.project, perm)(AuthorizationFailed(id.project, perm))
       } yield (file.value, sourceStorage.value)
-    }
   }
 
+  def extractSourceFileIri(file: FileResource, fileId: FileId): Iri = {
+    val lookupQuery = fileId.id match {
+      case _: IdSegmentRef.Latest        =>
+        // need to refer to specific revision, since the file may be updated after the copy
+        Uri.Query("rev" -> file.rev.toString)
+      case IdSegmentRef.Revision(_, rev) => Uri.Query("rev" -> rev.toString)
+      case IdSegmentRef.Tag(_, tag)      => Uri.Query("tag" -> tag.value)
+    }
+    file.id.queryParams(lookupQuery)
+  }
 }
