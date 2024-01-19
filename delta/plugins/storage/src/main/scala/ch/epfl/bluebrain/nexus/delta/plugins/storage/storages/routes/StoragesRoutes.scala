@@ -162,22 +162,6 @@ final class StoragesRoutes(
                       }
                     }
                   },
-                  (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/storages/{org}/{project}/{id}/tags") {
-                      concat(
-                        // Fetch a storage tags
-                        (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
-                          emit(
-                            storages
-                              .fetch(id, project)
-                              .map(_.value.tags)
-                              .attemptNarrow[StorageRejection]
-                              .rejectOn[StorageNotFound]
-                          )
-                        }
-                      )
-                    }
-                  },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(project, Read).apply {
                       emit(storagesStatistics.get(id, project).attemptNarrow[StorageRejection])

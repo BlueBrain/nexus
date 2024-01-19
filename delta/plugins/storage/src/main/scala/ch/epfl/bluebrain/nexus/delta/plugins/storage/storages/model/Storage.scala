@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
@@ -34,12 +34,6 @@ sealed trait Storage extends Product with Serializable {
     *   a reference to the project that the storage belongs to
     */
   def project: ProjectRef
-
-  /**
-    * @return
-    *   the tag -> rev mapping
-    */
-  def tags: Tags
 
   /**
     * @return
@@ -77,7 +71,6 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: DiskStorageValue,
-      tags: Tags,
       source: Json
   ) extends Storage {
     override val default: Boolean           = value.default
@@ -97,7 +90,6 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: S3StorageValue,
-      tags: Tags,
       source: Json
   ) extends Storage {
 
@@ -122,7 +114,6 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: RemoteDiskStorageValue,
-      tags: Tags,
       source: Json
   ) extends Storage {
     override val default: Boolean           = value.default

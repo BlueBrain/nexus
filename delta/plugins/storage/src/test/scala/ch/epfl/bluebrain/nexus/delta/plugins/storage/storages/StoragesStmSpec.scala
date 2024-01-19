@@ -10,10 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
@@ -278,18 +277,6 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
         next(Some(current), event).value shouldEqual
           current.copy(rev = 2, value = diskVal, source = diskFieldsJson, updatedAt = time2, updatedBy = alice)
-      }
-
-      "from a new StorageTagAdded event" in {
-        val tag1    = UserTag.unsafe("tag1")
-        val tag2    = UserTag.unsafe("tag2")
-        val event   = StorageTagAdded(dId, project, DiskStorageType, 1, tag2, 3, time2, alice)
-        val current = storageState(dId, project, diskVal, tags = Tags(tag1 -> 2), rev = 2)
-
-        next(None, event) shouldEqual None
-
-        next(Some(current), event).value shouldEqual
-          current.copy(rev = 3, updatedAt = time2, updatedBy = alice, tags = Tags(tag1 -> 2, tag2 -> 1))
       }
 
       "from a new StorageDeprecated event" in {

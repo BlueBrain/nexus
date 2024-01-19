@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -232,8 +232,7 @@ private class StoragesSpec
         remoteFieldsJson,
         rev = 2,
         createdBy = bob,
-        updatedBy = bob,
-        tags = Tags(tag -> 1)
+        updatedBy = bob
       )
 
       "succeed" in {
@@ -249,9 +248,9 @@ private class StoragesSpec
         storages.fetch(IdSegmentRef(rdId, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
-      "reject if tag does not exist" in {
-        val otherTag = UserTag.unsafe("other")
-        storages.fetch(IdSegmentRef(rdId, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
+      "reject fetch by tag" in {
+        val id = IdSegmentRef.Tag(rdId, UserTag.unsafe("other"))
+        storages.fetch(id, projectRef).rejected shouldEqual FetchByTagNotSupported(id)
       }
 
       "reject if revision does not exist" in {

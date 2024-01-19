@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -233,10 +232,8 @@ final class Storages private (
       notFound = StorageNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
-                   case Revision(_, rev) =>
-                     log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-                   case Tag(_, tag)      =>
-                     log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+                   case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
+                   case t: Tag           => IO.raiseError(FetchByTagNotSupported(t))
                  }
     } yield state.toResource
   }.span("fetchStorage")
@@ -325,7 +322,6 @@ object Storages {
           e.project,
           e.value,
           e.source,
-          Tags.empty,
           e.rev,
           deprecated = false,
           e.instant,
@@ -339,10 +335,6 @@ object Storages {
       s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
-    def tagAdded(e: StorageTagAdded): Option[StorageState] = state.map { s =>
-      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
-    }
-
     def deprecated(e: StorageDeprecated): Option[StorageState] = state.map { s =>
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
@@ -354,7 +346,7 @@ object Storages {
     event match {
       case e: StorageCreated      => created(e)
       case e: StorageUpdated      => updated(e)
-      case e: StorageTagAdded     => tagAdded(e)
+      case _: StorageTagAdded     => None
       case e: StorageDeprecated   => deprecated(e)
       case e: StorageUndeprecated => undeprecated(e)
     }
@@ -465,21 +457,11 @@ object Storages {
       fetchPermissions: IO[Set[Permission]],
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
-    ScopedEntityDefinition(
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(None, evaluate(access, fetchPermissions, config, clock)(_, _), next),
       StorageEvent.serializer,
       StorageState.serializer,
-      Tagger[StorageEvent](
-        {
-          case r: StorageTagAdded => Some(r.tag -> r.targetRev)
-          case _                  => None
-        },
-        { _ =>
-          None
-        }
-      ),
-      _ => None,
       onUniqueViolation = (id: Iri, c: StorageCommand) =>
         c match {
           case c: CreateStorage => ResourceAlreadyExists(id, c.project)

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -50,7 +50,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
       fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
       Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
       Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
-      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
       Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
 
@@ -297,8 +296,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
     "fail to fetch a storage and do listings without resources/read permission" in {
       val endpoints = List(
         "/v1/storages/myorg/myproject/caches",
-        "/v1/storages/myorg/myproject/remote-disk-storage",
-        "/v1/storages/myorg/myproject/remote-disk-storage/tags"
+        "/v1/storages/myorg/myproject/remote-disk-storage"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1")) { suffix =>
@@ -365,27 +363,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual remoteFieldsJson
         }
-      }
-    }
-
-    "fetch the storage tags" in {
-      Get("/v1/resources/myorg/myproject/_/remote-disk-storage/tags?rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
-      }
-    }
-
-    "return not found if tag not found" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=myother") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
-      }
-    }
-
-    "reject if provided rev and tag simultaneously" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
       }
     }
 
