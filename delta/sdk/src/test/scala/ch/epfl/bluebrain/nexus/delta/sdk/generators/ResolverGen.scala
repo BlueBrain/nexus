@@ -28,8 +28,7 @@ object ResolverGen {
       id,
       project,
       InProjectValue(Priority.unsafe(priority)),
-      Json.obj(),
-      Tags.empty
+      Json.obj()
     )
 
   /**
