@@ -328,14 +328,14 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     "deprecating a resolver" should {
 
       "succeed" in {
-        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=3") ~> asAlice ~> routes ~> check {
+        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=2") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resolverMetadata(
               nxv + "in-project-put",
               InProject,
               project.ref,
-              rev = 4,
+              rev = 3,
               deprecated = true,
               createdBy = bob,
               updatedBy = alice
@@ -344,7 +344,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if resolver has already been deprecated" in {
-        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=4") ~> asAlice ~> routes ~> check {
+        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=3") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             jsonContentOf("resolvers/errors/resolver-deprecated.json", "id" -> (nxv + "in-project-put"))
@@ -361,7 +361,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
       "prevent further updates" in {
         Put(
-          s"/v1/resolvers/${project.ref}/in-project-put?rev=4",
+          s"/v1/resolvers/${project.ref}/in-project-put?rev=3",
           inProjectPayload.toEntity
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
@@ -369,26 +369,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             "resolvers/errors/resolver-deprecated.json",
             "id" -> (nxv + "in-project-put")
           )
-        }
-      }
-
-      "allow adding new tags" in {
-        val newTagPayload = json"""{"tag": "my-tag2", "rev": 4}"""
-        Post(
-          s"/v1/resolvers/${project.ref}/in-project-put/tags?rev=4",
-          newTagPayload.toEntity
-        ) ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.Created
-          response.asJson shouldEqual
-            resolverMetadata(
-              nxv + "in-project-put",
-              InProject,
-              project.ref,
-              rev = 5,
-              deprecated = true,
-              createdBy = bob,
-              updatedBy = alice
-            )
         }
       }
 
@@ -426,7 +406,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         .deepMerge(json"""{"priority": $priority}""")
         .removeKeys("@context")
 
-    val inProjectLast = inProject(nxv + "in-project-put", 34, 5, deprecated = true, updatedBy = alice)
+    val inProjectLast = inProject(nxv + "in-project-put", 34, 3, deprecated = true, updatedBy = alice)
 
     val crossProjectUseCurrentLast = crossProjectUseCurrentPayload
       .deepMerge(json"""{"priority": 35}""")
@@ -513,24 +493,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
       }
 
-      "get the version by tag" in {
-        val endpoints = List(
-          s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag",
-          s"/v1/resources/${project.ref}/_/in-project-put?tag=my-tag",
-          s"/v1/resources/${project.ref}/resolver/in-project-put?tag=my-tag"
-        )
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            val id       = nxv + "in-project-put"
-            val expected = inProjectPayload
-              .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
-              .deepMerge(resolverMetaContext)
-            response.asJson shouldEqual expected
-          }
-        }
-      }
-
       "get the original payload" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put/source",
@@ -561,29 +523,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         }
       }
 
-      "get the original payload by tag" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/source?tag=my-tag") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload
-          response.asJson shouldEqual expected
-        }
-      }
-
-      "get the resolver tags" in {
-        val endpoints = List(
-          s"/v1/resolvers/${project.ref}/in-project-put/tags",
-          s"/v1/resources/${project.ref}/_/in-project-put/tags",
-          s"/v1/resources/${project.ref}/resolver/in-project-put/tags"
-        )
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}, {"rev": 4, "tag": "my-tag2"}]}"""
-              .addContext(contexts.tags)
-          }
-        }
-      }
-
       "fail if the resolver does not exist" in {
         Get(s"/v1/resolvers/${project.ref}/xxxx") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
@@ -601,7 +540,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           response.asJson shouldEqual jsonContentOf(
             "errors/revision-not-found.json",
             "provided" -> 10,
-            "current"  -> 5
+            "current"  -> 3
           )
         }
       }
