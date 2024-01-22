@@ -545,6 +545,20 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         }
       }
 
+      "fail if attempting to fetch by tag" in {
+        Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=some") ~> asBob ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual
+            json"""
+                {
+                  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+                  "@type" : "FetchByTagNotSupported",
+                  "reason" : "Fetching resolvers by tag is no longer supported. Id some and tag some"
+                }
+                  """
+        }
+      }
+
       "fail if it there are no resolver/read permissions" in {
         forAll(
           List(

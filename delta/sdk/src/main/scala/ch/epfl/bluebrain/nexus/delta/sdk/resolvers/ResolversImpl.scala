@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversImpl.ResolversLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{PriorityAlreadyExists, ResolverNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{FetchByTagNotSupported, PriorityAlreadyExists, ResolverNotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
@@ -124,7 +124,7 @@ final class ResolversImpl private (
                    case Revision(_, rev) =>
                      log.stateOr(projectRef, iri, rev, notFound, RevisionNotFound)
                    case Tag(_, tag)      =>
-                     log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
+                     log.stateOr(projectRef, iri, tag, notFound, FetchByTagNotSupported(tag))
                  }
     } yield state.toResource
   }.span("fetchResolver")

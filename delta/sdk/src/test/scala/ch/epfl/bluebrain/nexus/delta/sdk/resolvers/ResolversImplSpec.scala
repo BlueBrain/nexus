@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -575,13 +574,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
 
       "fail if revision does not exist" in {
         resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).assertRejectedEquals(RevisionNotFound(30, 3))
-      }
-
-      "fail if tag does not exist" in {
-        val unknownTag = UserTag.unsafe("xxx")
-        resolvers
-          .fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef)
-          .assertRejectedEquals(TagNotFound(unknownTag))
       }
     }
 
