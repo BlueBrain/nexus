@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
+import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
@@ -810,14 +811,20 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     val Base    = "http://my-original-base.com/"
     val NewBase = "http://my-new-base.com/"
+    val vocab   = s"${config.deltaUri}/vocabs/$project3/"
 
     val ResourceId     = "resource-with-type"
     val FullResourceId = s"$Base/$ResourceId"
     val idEncoded      = UrlUtils.encode(FullResourceId)
 
-    val ResourceType        = "my-type"
-    val FullResourceType    = s"$Base$ResourceType"
-    val NewFullResourceType = s"$NewBase$ResourceType"
+    val resourceType = "my-type"
+
+    def contextWithBase(base: String) =
+      json"""
+      [
+        "https://bluebrain.github.io/nexus/contexts/metadata.json",
+        { "@base" : "$base", "@vocab" : "$vocab" }
+      ]"""
 
     "create a project" in {
       val payload = ProjectPayload.generateWithCustomBase(project3, Base)
@@ -826,32 +833,30 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     "create resource using the created project" in {
       val payload =
-        jsonContentOf("kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+        jsonContentOf("kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> resourceType)
       deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 
-    "type should be expanded" in {
+    "have a context injected from the project configuration" in {
       deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        json should have(`@type`(FullResourceType))
+        json should have(`@type`(resourceType))
+        Optics.context.getOption(json).value shouldEqual contextWithBase(Base)
       }
     }
 
-    "update a project" in {
-      val payload = ProjectPayload.generateWithCustomBase(project3, NewBase)
-      adminDsl.updateProject(orgId, projId3, payload, Rick, 1)
-    }
-
-    "do a refresh" in {
-      deltaClient
-        .put[Json](s"/resources/$project3/_/$idEncoded/refresh?rev=1", Json.Null, Rick) { expectOk }
-    }
-
-    "type should be updated" in {
-      deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        json should have(`@type`(NewFullResourceType))
-      }
+    "have a context injected from the new project configuration after a refresh" in {
+      val newProjectPayload = ProjectPayload.generateWithCustomBase(project3, NewBase)
+      for {
+        _ <- adminDsl.updateProject(orgId, projId3, newProjectPayload, Rick, 1)
+        _ <- deltaClient.put[Json](s"/resources/$project3/_/$idEncoded/refresh?rev=1", Json.Null, Rick) { expectOk }
+        _ <- deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               json should have(`@type`(resourceType))
+               Optics.context.getOption(json).value shouldEqual contextWithBase(NewBase)
+               Optics._rev.getOption(json).value shouldEqual 2
+             }
+      } yield succeed
     }
   }
 
@@ -925,6 +930,34 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
+  }
+
+  "checking for update changes for a large resource" should {
+    "succeed" in {
+      val id                 = "large"
+      val tpe                = "Random"
+      val largeRandomPayload = {
+        val entry = Json.obj(
+          "array"  := (1 to 100).toList,
+          "string" := "some-value"
+        )
+        (1 to 500).foldLeft(JsonObject("@type" := tpe)) { case (acc, index) =>
+          acc.add(s"prop$index", entry)
+        }
+      }.asJson
+
+      for {
+        _ <- deltaClient.put[Json](s"/resources/$projectOptionalSchema/_/test-resource:$id", largeRandomPayload, Rick) {
+               expectCreated
+             }
+        _ <- deltaClient
+               .put[Json](s"/resources/$projectOptionalSchema/_/test-resource:$id?rev=1", largeRandomPayload, Rick) {
+                 (json, response) =>
+                   response.status shouldEqual StatusCodes.OK
+                   Optics._rev.getOption(json).value shouldEqual 1
+               }
+      } yield succeed
+    }
   }
 
   private def givenAResourceWithSchemaAndTag(projectRef: String, schema: Option[String], tag: Option[String])(

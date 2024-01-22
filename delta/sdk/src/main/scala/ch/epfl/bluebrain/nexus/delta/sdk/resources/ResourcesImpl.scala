@@ -223,6 +223,7 @@ object ResourcesImpl {
     */
   final def apply(
       validateResource: ValidateResource,
+      detectChange: DetectChange,
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
@@ -233,7 +234,7 @@ object ResourcesImpl {
       uuidF: UUIDF = UUIDF.random
   ): Resources =
     new ResourcesImpl(
-      ScopedEventLog(Resources.definition(validateResource, clock), config.eventLog, xas),
+      ScopedEventLog(Resources.definition(validateResource, detectChange, clock), config.eventLog, xas),
       fetchContext,
       JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     )

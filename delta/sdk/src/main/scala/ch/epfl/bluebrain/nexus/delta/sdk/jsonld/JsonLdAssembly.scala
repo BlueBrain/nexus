@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
-import cats.Eq
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import io.circe.Json
 
@@ -27,7 +26,7 @@ import io.circe.Json
   * @param graph
   *   its graph representation
   * @param remoteContexts
-  *   it
+  *   the resolved remote contexts
   */
 final case class JsonLdAssembly(
     id: Iri,
@@ -45,20 +44,6 @@ final case class JsonLdAssembly(
 }
 
 object JsonLdAssembly {
-
-  /**
-    * Defines the equality between two instances
-    *
-    *   - If the remote contexts and the local context are the same, then the compacted form will be the same
-    *   - If the graph forms are isomorphic then, the expanded form will be the same
-    */
-  implicit val jsonLdAssemblyEq: Eq[JsonLdAssembly] = Eq.instance { (jsonld1, jsonld2) =>
-    jsonld1.id == jsonld2.id &&
-    jsonld1.remoteContexts == jsonld2.remoteContexts &&
-    jsonld1.compacted.ctx == jsonld2.compacted.ctx &&
-    jsonld1.graph.isIsomorphic(jsonld2.graph) &&
-    jsonld1.source == jsonld2.source
-  }
 
   def apply(
       iri: Iri,
