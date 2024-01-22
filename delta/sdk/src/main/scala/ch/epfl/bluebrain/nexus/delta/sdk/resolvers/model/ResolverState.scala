@@ -68,16 +68,14 @@ final case class ResolverState(
           id = id,
           project = project,
           value = inProjectValue,
-          source = source,
-          tags = tags
+          source = source
         )
       case crossProjectValue: CrossProjectValue =>
         CrossProjectResolver(
           id = id,
           project = project,
           value = crossProjectValue,
-          source = source,
-          tags = tags
+          source = source
         )
     }
   }

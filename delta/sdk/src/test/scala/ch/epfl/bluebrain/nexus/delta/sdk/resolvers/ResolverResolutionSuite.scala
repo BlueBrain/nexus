@@ -78,8 +78,7 @@ class ResolverResolutionSuite extends NexusSuite {
         projects,
         identityResolution
       ),
-      Json.obj(),
-      Tags.empty
+      Json.obj()
     )
 
   def listResolvers(resolvers: List[Resolver]): ProjectRef => IO[List[Resolver]] = (_: ProjectRef) => IO.pure(resolvers)

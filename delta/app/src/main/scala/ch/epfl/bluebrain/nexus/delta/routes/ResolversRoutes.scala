@@ -79,9 +79,6 @@ final class ResolversRoutes(
     emit(io.map(_.value.source).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
   }
 
-  private def emitTags(io: IO[ResolverResource]): Route =
-    emit(io.map(_.value.tags).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
-
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
@@ -138,15 +135,6 @@ final class ResolversRoutes(
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(resolver) & authorizeRead) {
                     resolverRef =>
                       emitSource(resolvers.fetch(resolverRef, project))
-                  },
-                  // Tags
-                  (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    concat(
-                      // Fetch a resolver tags
-                      (get & idSegmentRef(resolver) & authorizeRead) { resolverRef =>
-                        emitTags(resolvers.fetch(resolverRef, project))
-                      }
-                    )
                   },
                   // Fetch a resource using a resolver
                   (get & idSegmentRef) { resourceIdRef =>
