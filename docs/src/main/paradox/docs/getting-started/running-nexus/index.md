@@ -262,7 +262,7 @@ of throughput with various hardware configurations. When the usage profiles are 
 should narrow the scope:
 
 1.  Nexus uses a collection of data stores (@link:[PostgreSQL](https://www.postgresql.org/){ open=new },
-    @link:[Elasticsearch](https://www.elastic.co/elasticsearch/){ open=new }, 
+    @link:[Elasticsearch](https://www.elastic.co/elasticsearch){ open=new }, 
     @link:[Blazegraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
@@ -302,7 +302,7 @@ implications to the total amount of disk used by the primary store.
 
 ### Elasticsearch
 
-Nexus uses @link:[Elasticsearch](https://www.elastic.co/elasticsearch/){ open=new } to host several _system_ indices and _user
+Nexus uses @link:[Elasticsearch](https://www.elastic.co/elasticsearch){ open=new } to host several _system_ indices and _user
 defined_ ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends
 on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the _primary
 store_, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be
