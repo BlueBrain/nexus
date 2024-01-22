@@ -47,6 +47,15 @@ object TransactionalFileCopier {
       // the copy attributes flag won't always preserve permissions due to umask
       sourcePerms <- Files[IO].getPosixPermissions(source)
       _           <- Files[IO].setPosixPermissions(dest, sourcePerms)
+      // timestamps may also not be set, depending on the underlying file system
+      sourceAttr  <- Files[IO].getBasicFileAttributes(source)
+      _           <- Files[IO].setFileTimes(
+                       dest,
+                       lastModified = sourceAttr.lastModifiedTime.some,
+                       lastAccess = sourceAttr.lastAccessTime.some,
+                       creationTime = sourceAttr.creationTime.some,
+                       followLinks = false
+                     )
     } yield ()
 
   private def rollbackCopiesAndRethrow(

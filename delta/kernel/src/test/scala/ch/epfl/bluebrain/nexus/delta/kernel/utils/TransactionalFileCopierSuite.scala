@@ -96,6 +96,7 @@ class TransactionalFileCopierSuite extends CatsEffectSuite {
   def assertBasicAttrEqual(obtained: BasicFileAttributes, expected: BasicFileAttributes): IO[Unit] =
     IO {
       assertEquals(obtained.creationTime, expected.creationTime)
+      assertEquals(obtained.lastModifiedTime, expected.lastModifiedTime)
       assertEquals(obtained.isDirectory, expected.isDirectory)
       assertEquals(obtained.isOther, expected.isOther)
       assertEquals(obtained.isRegularFile, expected.isRegularFile)
