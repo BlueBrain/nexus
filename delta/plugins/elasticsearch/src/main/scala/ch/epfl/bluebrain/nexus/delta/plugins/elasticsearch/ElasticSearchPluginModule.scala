@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -118,12 +118,13 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchDefaultViewsResetter].from {
     (
         client: ElasticSearchClient,
+        projects: Projects,
         views: ElasticSearchViews,
         scope: ElasticSearchScopeInitialization,
         xas: Transactors,
         serviceAccount: ServiceAccount
     ) =>
-      ElasticSearchDefaultViewsResetter(client, views, scope.defaultValue, xas)(serviceAccount.subject)
+      ElasticSearchDefaultViewsResetter(client, projects, views, scope.defaultValue, xas)(serviceAccount.subject)
   }
 
   make[ElasticSearchCoordinator].fromEffect {
