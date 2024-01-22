@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read,
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
@@ -67,7 +67,7 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
       write,
       10
     )
-    storage = RemoteDiskStorage(iri, project, storageValue, Tags.empty, Json.obj())
+    storage = RemoteDiskStorage(iri, project, storageValue, Json.obj())
   }
 
   "RemoteDiskStorage operations" should {

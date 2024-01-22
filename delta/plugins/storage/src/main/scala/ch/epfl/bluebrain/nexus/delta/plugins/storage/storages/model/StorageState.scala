@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{Dis
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -48,7 +48,6 @@ final case class StorageState(
     project: ProjectRef,
     value: StorageValue,
     source: Json,
-    tags: Tags,
     rev: Int,
     deprecated: Boolean,
     createdAt: Instant,
@@ -63,9 +62,9 @@ final case class StorageState(
 
   def storage: Storage =
     value match {
-      case value: DiskStorageValue       => DiskStorage(id, project, value, tags, source)
-      case value: S3StorageValue         => S3Storage(id, project, value, tags, source)
-      case value: RemoteDiskStorageValue => RemoteDiskStorage(id, project, value, tags, source)
+      case value: DiskStorageValue       => DiskStorage(id, project, value, source)
+      case value: S3StorageValue         => S3Storage(id, project, value, source)
+      case value: RemoteDiskStorageValue => RemoteDiskStorage(id, project, value, source)
     }
 
   def toResource: StorageResource =

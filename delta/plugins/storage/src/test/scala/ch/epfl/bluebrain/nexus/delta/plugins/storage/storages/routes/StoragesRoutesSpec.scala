@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -50,7 +50,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
       fileContexts.files               -> ContextValue.fromFile("contexts/files.json"),
       Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
       Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
-      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
       Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
 
@@ -294,34 +293,13 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
       }
     }
 
-    "tag a storage" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      // the revision is 2 because this storage has been updated to default = false
-      Post(
-        "/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=2",
-        payload.toEntity
-      ) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual
-          storageMetadata(
-            projectRef,
-            rdId,
-            StorageType.RemoteDiskStorage,
-            rev = 3,
-            createdBy = writer,
-            updatedBy = writer
-          )
-      }
-    }
-
     "fail to fetch a storage and do listings without resources/read permission" in {
       val endpoints = List(
         "/v1/storages/myorg/myproject/caches",
-        "/v1/storages/myorg/myproject/remote-disk-storage",
-        "/v1/storages/myorg/myproject/remote-disk-storage/tags"
+        "/v1/storages/myorg/myproject/remote-disk-storage"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
+        forAll(List("", "?rev=1")) { suffix =>
           Get(s"$endpoint$suffix") ~> routes ~> check {
             response.shouldBeForbidden
           }
@@ -339,7 +317,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
       }
     }
 
-    "fetch a storage by rev and tag" in {
+    "fetch a storage by rev" in {
       val endpoints = List(
         "/v1/storages/myorg/myproject/remote-disk-storage",
         "/v1/resources/myorg/myproject/_/remote-disk-storage",
@@ -349,14 +327,12 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
         s"/v1/resources/myorg/myproject/storage/$remoteIdEncoded"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf(
-              "storages/remote-storage-fetched.json",
-              "self" -> self(rdId)
-            )
-          }
+        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf(
+            "storages/remote-storage-fetched.json",
+            "self" -> self(rdId)
+          )
         }
       }
     }
@@ -377,43 +353,16 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
       }
     }
 
-    "fetch a storage original payload by rev or tag" in {
+    "fetch a storage original payload by rev" in {
       val endpoints = List(
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual remoteFieldsJson
-          }
+        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual remoteFieldsJson
         }
-      }
-    }
-
-    "fetch the storage tags" in {
-      Get("/v1/resources/myorg/myproject/_/remote-disk-storage/tags?rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
-      }
-      Get("/v1/storages/myorg/myproject/remote-disk-storage/tags") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
-      }
-    }
-
-    "return not found if tag not found" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=myother") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
-      }
-    }
-
-    "reject if provided rev and tag simultaneously" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
       }
     }
 

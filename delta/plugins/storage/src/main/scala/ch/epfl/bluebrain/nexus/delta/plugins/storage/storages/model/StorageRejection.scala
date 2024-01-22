@@ -13,10 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -47,14 +47,10 @@ object StorageRejection {
   final case class RevisionNotFound(provided: Int, current: Int)
       extends StorageFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
-  /**
-    * Rejection returned when a subject intends to retrieve a storage at a specific tag, but the provided tag does not
-    * exist.
-    *
-    * @param tag
-    *   the provided tag
-    */
-  final case class TagNotFound(tag: UserTag) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
+  final case class FetchByTagNotSupported(tag: IdSegmentRef.Tag)
+      extends StorageFetchRejection(
+        s"Fetching storages by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
+      )
 
   /**
     * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
@@ -235,12 +231,12 @@ object StorageRejection {
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
       case RevisionNotFound(_, _)       => StatusCodes.NotFound
-      case TagNotFound(_)               => StatusCodes.NotFound
       case StorageNotFound(_, _)        => StatusCodes.NotFound
       case DefaultStorageNotFound(_)    => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
+      case FetchByTagNotSupported(_)    => StatusCodes.BadRequest
       case StorageNotAccessible(_, _)   => StatusCodes.BadRequest
       case _                            => StatusCodes.BadRequest
     }

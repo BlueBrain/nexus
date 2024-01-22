@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
@@ -60,7 +59,7 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
       maxFileSize = 20
     )
     createBucket(storageValue).accepted
-    storage = S3Storage(iri, project, storageValue, Tags.empty, Json.obj())
+    storage = S3Storage(iri, project, storageValue, Json.obj())
     attributes = FileAttributes(
       uuid,
       s"http://bucket2.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",
