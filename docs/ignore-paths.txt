@@ -9,6 +9,7 @@ https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-link/README.md
 https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-sdk/README.md
 https://github.com/BlueBrain/nexus-js/blob/main/packages/react-nexus/README.md
 https://github.com/BlueBrain/nexus-web/blob/main/README.md.*
+https://github.com/lightbend/config.*
 https://www.janelia.org
 http://mouselight.janelia.org/
 http://ml-neuronbrowser.janelia.org

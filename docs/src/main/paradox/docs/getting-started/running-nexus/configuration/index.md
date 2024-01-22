@@ -6,7 +6,7 @@ There are 3 ways to modify the default configuration:
 
 - Setting the env variable `DELTA_EXTERNAL_CONF` which defines the path to a HOCON file. The configuration keys that are defined here can be overridden by the other methods.
 - Using JVM properties as arguments when running the service: -D`{property}`. For example: `-Dapp.http.interface="127.0.0.1"`.
-- Using @link:[FORCE_CONFIG_{property}](https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides){ open=new }
+- Using @link:[FORCE_CONFIG_{property}](https://github.com/lightbend/config#optional-system-or-env-variable-overrides){ open=new }
   environment variables. In order to enable this style of configuration, the JVM property
   `-Dconfig.override_with_env_vars=true` needs to be set. Once set, a configuration flag can be overridden. For example: `CONFIG_FORCE_app_http_interface="127.0.0.1"`.
 

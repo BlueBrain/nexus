@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -136,37 +136,6 @@ private class StoragesSpec
       }
     }
 
-    "tagging a storage" should {
-
-      "succeed" in {
-        storages.tag(rdId, projectRef, tag, tagRev = 1, 1).accepted shouldEqual
-          resourceFor(
-            rdId,
-            projectRef,
-            remoteVal,
-            remoteFieldsJson,
-            rev = 2,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 1)
-          )
-      }
-
-      "reject if it doesn't exists" in {
-        storages.tag(nxv + "other", projectRef, tag, tagRev = 1, 1).rejectedWith[StorageNotFound]
-      }
-
-      "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-        storages.tag(rdId, projectRef, tag, tagRev = 2, 2).rejectedWith[ProjectContextRejection]
-      }
-
-      "reject if project is deprecated" in {
-        storages.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 2).rejectedWith[ProjectContextRejection]
-      }
-    }
-
     "deprecating a storage" should {
 
       "succeed" in {
@@ -202,23 +171,6 @@ private class StoragesSpec
       "reject if project is deprecated" in {
         storages.deprecate(s3Id, deprecatedProject.ref, 1).rejectedWith[ProjectContextRejection]
       }
-
-      "allow tagging" in {
-        val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "default": false}"""
-        storages.tag(s3Id, projectRef, tag, tagRev = 3, 3).accepted shouldEqual
-          resourceFor(
-            s3Id,
-            projectRef,
-            s3Val.copy(default = false),
-            payload,
-            rev = 4,
-            deprecated = true,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 3)
-          )
-      }
-
     }
 
     "undeprecating a storage" should {
@@ -280,8 +232,7 @@ private class StoragesSpec
         remoteFieldsJson,
         rev = 2,
         createdBy = bob,
-        updatedBy = bob,
-        tags = Tags(tag -> 1)
+        updatedBy = bob
       )
 
       "succeed" in {
@@ -297,9 +248,9 @@ private class StoragesSpec
         storages.fetch(IdSegmentRef(rdId, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
-      "reject if tag does not exist" in {
-        val otherTag = UserTag.unsafe("other")
-        storages.fetch(IdSegmentRef(rdId, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
+      "reject fetch by tag" in {
+        val id = IdSegmentRef.Tag(rdId, UserTag.unsafe("other"))
+        storages.fetch(id, projectRef).rejected shouldEqual FetchByTagNotSupported(id)
       }
 
       "reject if revision does not exist" in {
