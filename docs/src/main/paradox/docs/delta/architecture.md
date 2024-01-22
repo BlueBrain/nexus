@@ -193,7 +193,7 @@ The authorization flow is as follows:
 [Nexus Fusion]: ../fusion/index.md
 [Nexus Forge]: ../forge.md
 [PostgreSQL]: https://www.postgresql.org/
-[Elasticsearch]: https://www.elastic.co/elasticsearch/
+[Elasticsearch]: https://www.elastic.co/elasticsearch
 [Blazegraph]: https://blazegraph.com/
 [cluster configuration]: https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L290
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
