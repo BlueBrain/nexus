@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.DetectChange.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
 import io.circe.Json
 
@@ -12,32 +14,33 @@ import io.circe.Json
   */
 trait DetectChange {
   def apply(newValue: JsonLdAssembly, currentState: ResourceState): IO[Boolean] =
-    apply(newValue, currentState.source, currentState.compacted, currentState.remoteContexts)
+    apply(
+      newValue,
+      Current(currentState.types, currentState.source, currentState.compacted, currentState.remoteContexts)
+    )
 
-  def apply(
-      newValue: JsonLdAssembly,
-      currentSource: Json,
-      currentCompacted: CompactedJsonLd,
-      currentRemoteContexts: Set[RemoteContextRef]
-  ): IO[Boolean]
+  def apply(newValue: JsonLdAssembly, current: Current): IO[Boolean]
 }
 
 object DetectChange {
 
+  final case class Current(
+      types: Set[Iri],
+      source: Json,
+      compacted: CompactedJsonLd,
+      remoteContexts: Set[RemoteContextRef]
+  )
+
   private val Disabled = new DetectChange {
 
-    override def apply(
-        newValue: JsonLdAssembly,
-        currentSource: Json,
-        currentCompacted: CompactedJsonLd,
-        currentRemoteContexts: Set[RemoteContextRef]
-    ): IO[Boolean] = IO.pure(true)
+    override def apply(newValue: JsonLdAssembly, current: Current): IO[Boolean] = IO.pure(true)
   }
 
   /**
     * Default implementation
     *
     * There will be a change if:
+    *   - If there is a change in the resource types
     *   - If there is a change in one of the remote JSON-LD contexts
     *   - If there is a change in the local JSON-LD context
     *   - If there is a change in the rest of the payload
@@ -46,17 +49,13 @@ object DetectChange {
     */
   private val Impl = new DetectChange {
 
-    override def apply(
-        newValue: JsonLdAssembly,
-        currentSource: Json,
-        currentCompacted: CompactedJsonLd,
-        currentRemoteContexts: Set[RemoteContextRef]
-    ): IO[Boolean] =
+    override def apply(newValue: JsonLdAssembly, current: Current): IO[Boolean] =
       IO.cede
         .as(
-          newValue.remoteContexts != currentRemoteContexts ||
-            newValue.compacted.ctx != currentCompacted.ctx ||
-            newValue.source != currentSource
+          newValue.types != current.types ||
+            newValue.remoteContexts != current.remoteContexts ||
+            newValue.compacted.ctx != current.compacted.ctx ||
+            newValue.source != current.source
         )
         .guarantee(IO.cede)
   }

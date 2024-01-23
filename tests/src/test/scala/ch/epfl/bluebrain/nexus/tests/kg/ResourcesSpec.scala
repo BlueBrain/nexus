@@ -809,15 +809,19 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val projId3  = genId()
     val project3 = s"$orgId/$projId3"
 
-    val Base    = "http://my-original-base.com/"
-    val NewBase = "http://my-new-base.com/"
-    val vocab   = s"${config.deltaUri}/vocabs/$project3/"
+    val originalBase = "http://my-original-base.com/"
+    val newBase      = "http://my-new-base.com/"
+    val vocab        = s"${config.deltaUri}/vocabs/$project3/"
 
-    val ResourceId     = "resource-with-type"
-    val FullResourceId = s"$Base/$ResourceId"
-    val idEncoded      = UrlUtils.encode(FullResourceId)
+    val noContextId        = s"${originalBase}no-context"
+    val noContextIdEncoded = UrlUtils.encode(noContextId)
 
-    val resourceType = "my-type"
+    val noBaseId        = s"${originalBase}no-base"
+    val noBaseIdEncoded = UrlUtils.encode(noBaseId)
+
+    val tpe             = "my-type"
+    val expandedType    = s"$originalBase$tpe"
+    val newExpandedType = s"$newBase$tpe"
 
     def contextWithBase(base: String) =
       json"""
@@ -827,34 +831,75 @@ class ResourcesSpec extends BaseIntegrationSpec {
       ]"""
 
     "create a project" in {
-      val payload = ProjectPayload.generateWithCustomBase(project3, Base)
+      val payload = ProjectPayload.generateWithCustomBase(project3, originalBase)
       adminDsl.createProject(orgId, projId3, payload, Rick)
     }
 
-    "create resource using the created project" in {
-      val payload =
-        jsonContentOf("kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> resourceType)
+    "create resource without a context" in {
+      val payload = json"""{ "@id": "$noContextId", "@type": "$tpe" }"""
       deltaClient.post[Json](s"/resources/$project3/", payload, Rick) { expectCreated }
     }
 
-    "have a context injected from the project configuration" in {
-      deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
+    "fetch the resource with a context injected from the project configuration" in {
+      deltaClient.get[Json](s"/resources/$project3/_/$noContextIdEncoded", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        json should have(`@type`(resourceType))
-        Optics.context.getOption(json).value shouldEqual contextWithBase(Base)
+        json should have(`@type`(tpe))
+        Optics.context.getOption(json).value shouldEqual contextWithBase(originalBase)
       }
     }
 
-    "have a context injected from the new project configuration after a refresh" in {
-      val newProjectPayload = ProjectPayload.generateWithCustomBase(project3, NewBase)
+    "create resource with a context without a base" in {
+      val payload = json"""{ "@context": { "name":  "https://schema.org/name"}, "@id": "$noBaseId", "@type": "$tpe" }"""
+      deltaClient.post[Json](s"/resources/$project3/", payload, Rick) {
+        expectCreated
+      }
+    }
+
+    "fetch the resource with without a define base" in {
+      deltaClient.get[Json](s"/resources/$project3/_/$noBaseIdEncoded", Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should have(`@type`(expandedType))
+      }
+    }
+
+    "update the project base" in {
+      val newProjectPayload = ProjectPayload.generateWithCustomBase(project3, newBase)
+      adminDsl.updateProject(orgId, projId3, newProjectPayload, Rick, 1)
+    }
+
+    "fetch the resource with a context injected from the new project configuration after a refresh" in {
       for {
-        _ <- adminDsl.updateProject(orgId, projId3, newProjectPayload, Rick, 1)
-        _ <- deltaClient.put[Json](s"/resources/$project3/_/$idEncoded/refresh?rev=1", Json.Null, Rick) { expectOk }
-        _ <- deltaClient.get[Json](s"/resources/$project3/_/$idEncoded", Rick) { (json, response) =>
+        _ <- deltaClient.put[Json](s"/resources/$project3/_/$noContextIdEncoded/refresh?rev=1", Json.Null, Rick) {
+               expectOk
+             }
+        _ <- deltaClient.get[Json](s"/resources/$project3/_/$noContextIdEncoded", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               json should have(`@type`(resourceType))
-               Optics.context.getOption(json).value shouldEqual contextWithBase(NewBase)
+               json should have(`@type`(tpe))
+               Optics.context.getOption(json).value shouldEqual contextWithBase(newBase)
                Optics._rev.getOption(json).value shouldEqual 2
+             }
+        _ <- deltaClient.put[Json](s"/resources/$project3/_/$noContextIdEncoded/refresh?rev=2", Json.Null, Rick) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.OK
+                 Optics._rev.getOption(json).value shouldEqual 2
+             }
+      } yield succeed
+    }
+
+    "fetch the resource with a defined base from the new project configuration after a refresh" in {
+      for {
+        _ <- deltaClient.put[Json](s"/resources/$project3/_/$noBaseIdEncoded/refresh?rev=1", Json.Null, Rick) {
+               expectOk
+             }
+        _ <- deltaClient.get[Json](s"/resources/$project3/_/$noBaseIdEncoded", Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               json should have(`@type`(newExpandedType))
+               Optics._rev.getOption(json).value shouldEqual 2
+             }
+        _ <- deltaClient.put[Json](s"/resources/$project3/_/$noBaseIdEncoded/refresh?rev=2", Json.Null, Rick) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.OK
+                 Optics._rev.getOption(json).value shouldEqual 2
              }
       } yield succeed
     }

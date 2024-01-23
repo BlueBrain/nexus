@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -8,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticContextRef
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.DetectChange.Current
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
@@ -31,26 +33,32 @@ class DetectChangeSuite extends NexusSuite {
     remoteContexts
   )
 
+  private val current = DetectChange.Current(Set.empty, source, compacted, remoteContexts)
+
   private val detectChange = DetectChange(enabled = true)
 
   test("No change is detected") {
-    detectChange(jsonld, source, compacted, remoteContexts).assertEquals(false)
+    detectChange(jsonld, current).assertEquals(false)
+  }
+
+  test("A change is detected if resource types are different") {
+    val otherTypes: Set[Iri] = Set(nxv + "another-type")
+    detectChange(jsonld, current.copy(types = otherTypes)).assertEquals(true)
   }
 
   test("A change is detected if the remote contexts are different") {
     val otherRemoteContexts: Set[RemoteContextRef] = Set(StaticContextRef(nxv + "another-static"))
-    detectChange(jsonld, source, compacted, otherRemoteContexts).assertEquals(true)
+    detectChange(jsonld, current.copy(remoteContexts = otherRemoteContexts)).assertEquals(true)
   }
 
   test("A change is detected if the local contexts are different") {
-    val otherLocalContext =
-      CompactedJsonLd.unsafe(id, ContextValue(nxv + "another-context"), JsonObject("field" := "value"))
-    detectChange(jsonld, source, otherLocalContext, remoteContexts).assertEquals(true)
+    val otherLocalContext = compacted.copy(ctx = ContextValue(nxv + "another-context"))
+    detectChange(jsonld, current.copy(compacted = otherLocalContext)).assertEquals(true)
   }
 
   test("A change is detected if the source differs") {
     val otherSource = Json.obj("source" := "another-value")
-    detectChange(jsonld, otherSource, compacted, remoteContexts).assertEquals(true)
+    detectChange(jsonld, current.copy(source = otherSource)).assertEquals(true)
   }
 
 }
