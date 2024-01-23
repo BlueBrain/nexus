@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 /**
@@ -90,31 +89,6 @@ object ResolverCommand {
   ) extends ResolverCommand {
     override def subject: Subject = caller.subject
   }
-
-  /**
-    * Command to tag a resolver
-    *
-    * @param id
-    *   the resolver identifier
-    * @param project
-    *   the project the resolver belongs to
-    * @param targetRev
-    *   the revision that is being aliased with the provided ''tag''
-    * @param tag
-    *   the tag of the alias for the provided ''tagRev''
-    * @param rev
-    *   the last known revision of the resolver
-    * @param subject
-    *   the identity associated to this command
-    */
-  final case class TagResolver(
-      id: Iri,
-      project: ProjectRef,
-      targetRev: Int,
-      tag: UserTag,
-      rev: Int,
-      subject: Subject
-  ) extends ResolverCommand
 
   /**
     * Command to deprecate a resolver
