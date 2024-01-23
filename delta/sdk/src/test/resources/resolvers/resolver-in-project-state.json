@@ -14,9 +14,6 @@
   "source": {
     "resolver": "value"
   },
-  "tags": {
-    "mytag": 3
-  },
   "createdAt": "1970-01-01T00:00:00Z",
   "createdBy": {
     "@type": "User",
