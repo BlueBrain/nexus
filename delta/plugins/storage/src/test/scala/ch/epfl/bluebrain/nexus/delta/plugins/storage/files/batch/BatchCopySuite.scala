@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.Generators
@@ -239,16 +239,16 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   private def genDiskStorageWithCapacity(capacity: Long) = {
     val limitedDiskVal = diskVal.copy(capacity = Some(capacity))
-    DiskStorage(nxv + genString(), genProject().ref, limitedDiskVal, Tags.empty, json"""{"disk": "value"}""")
+    DiskStorage(nxv + genString(), genProject().ref, limitedDiskVal, json"""{"disk": "value"}""")
   }
 
   private def genDiskStorage() = genDiskStorageWithCapacity(1000L)
 
   private def genRemoteStorage() =
-    RemoteDiskStorage(nxv + genString(), genProject().ref, remoteVal, Tags.empty, json"""{"disk": "value"}""")
+    RemoteDiskStorage(nxv + genString(), genProject().ref, remoteVal, json"""{"disk": "value"}""")
 
   private def genS3Storage() =
-    S3Storage(nxv + genString(), genProject().ref, s3Val, Tags.empty, json"""{"disk": "value"}""")
+    S3Storage(nxv + genString(), genProject().ref, s3Val, json"""{"disk": "value"}""")
 }
 
 object BatchCopySuite {
