@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -439,85 +438,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       }
     }
 
-    val tag  = UserTag.unsafe("my-tag")
-    val tag2 = UserTag.unsafe("my-tag2")
-
-    "tagging a resolver" should {
-      "succeed" in {
-        forAll(
-          List(
-            nxv + "in-project"    -> updatedInProjectValue,
-            nxv + "cross-project" -> updatedCrossProjectValue
-          )
-        ) { case (id, value) =>
-          resolvers.tag(id, projectRef, tag, 1, 2).accepted shouldEqual resolverResourceFor(
-            id,
-            projectRef,
-            value,
-            sourceWithoutId(value),
-            tags = Tags(tag -> 1),
-            rev = 3,
-            subject = bob.subject
-          )
-        }
-      }
-
-      "fail if it doesn't exist" in {
-        forAll(
-          List(
-            nxv + "in-project-xxx",
-            nxv + "cross-project-xxx"
-          )
-        ) { id =>
-          resolvers.tag(id, projectRef, tag, 1, 2).assertRejectedEquals(ResolverNotFound(id, projectRef))
-        }
-      }
-
-      "fail if the provided revision does not match" in {
-        forAll(
-          List(
-            nxv + "in-project",
-            nxv + "cross-project"
-          )
-        ) { id =>
-          resolvers.tag(id, projectRef, tag, 1, 21).assertRejectedEquals(IncorrectRev(21, 3))
-        }
-      }
-
-      "fail if the tag revision is invalid" in {
-        forAll(
-          List(
-            nxv + "in-project",
-            nxv + "cross-project"
-          )
-        ) { id =>
-          resolvers.tag(id, projectRef, tag, 20, 3).assertRejectedEquals(RevisionNotFound(20, 3))
-        }
-      }
-
-      "fail if the project does not exist" in {
-        forAll(
-          List(
-            nxv + "in-project",
-            nxv + "cross-project"
-          )
-        ) { id =>
-          resolvers.tag(id, unknownProjectRef, tag, 1, 3).rejectedWith[ProjectContextRejection]
-        }
-      }
-
-      "fail if the project is deprecated" in {
-        forAll(
-          List(
-            nxv + "in-project",
-            nxv + "cross-project"
-          )
-        ) { id =>
-          resolvers.tag(id, deprecatedProjectRef, tag, 1, 3).rejectedWith[ProjectContextRejection]
-        }
-      }
-    }
-
     "deprecating a resolver" should {
       "succeed" in {
         forAll(
@@ -526,13 +446,12 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             nxv + "cross-project" -> updatedCrossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.deprecate(id, projectRef, 3).accepted shouldEqual resolverResourceFor(
+          resolvers.deprecate(id, projectRef, 2).accepted shouldEqual resolverResourceFor(
             id,
             projectRef,
             value,
             sourceWithoutId(value),
-            tags = Tags(tag -> 1),
-            rev = 4,
+            rev = 3,
             subject = bob.subject,
             deprecated = true
           )
@@ -557,7 +476,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, projectRef, 3).assertRejectedEquals(IncorrectRev(3, 4))
+          resolvers.deprecate(id, projectRef, 10).assertRejectedEquals(IncorrectRev(10, 3))
         }
       }
 
@@ -590,7 +509,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, projectRef, 4).assertRejectedEquals(ResolverIsDeprecated(id))
+          resolvers.deprecate(id, projectRef, 3).assertRejectedEquals(ResolverIsDeprecated(id))
         }
       }
 
@@ -602,28 +521,8 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           )
         ) { case (id, value) =>
           resolvers
-            .update(id, projectRef, 4, sourceWithoutId(value))
+            .update(id, projectRef, 3, sourceWithoutId(value))
             .assertRejectedEquals(ResolverIsDeprecated(id))
-        }
-      }
-
-      "tag it after it has been deprecated" in {
-        forAll(
-          List(
-            nxv + "in-project"    -> updatedInProjectValue,
-            nxv + "cross-project" -> updatedCrossProjectValue
-          )
-        ) { case (id, value) =>
-          resolvers.tag(id, projectRef, tag2, 4, 4).accepted shouldEqual resolverResourceFor(
-            id,
-            projectRef,
-            value,
-            sourceWithoutId(value),
-            tags = Tags(tag -> 1, tag2 -> 4),
-            rev = 5,
-            subject = bob.subject,
-            deprecated = true
-          )
         }
       }
     }
@@ -633,8 +532,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       projectRef,
       updatedInProjectValue,
       sourceWithoutId(updatedInProjectValue),
-      tags = Tags(tag -> 1, tag2 -> 4),
-      rev = 5,
+      rev = 3,
       subject = bob.subject,
       deprecated = true
     )
@@ -643,8 +541,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       projectRef,
       updatedCrossProjectValue,
       sourceWithoutId(updatedCrossProjectValue),
-      tags = Tags(tag -> 1, tag2 -> 4),
-      rev = 5,
+      rev = 3,
       subject = bob.subject,
       deprecated = true
     )
@@ -658,45 +555,9 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       }
 
       "succeed by rev" in {
-        val inProjectExpectedByRev    = resolverResourceFor(
-          nxv + "in-project",
-          projectRef,
-          updatedInProjectValue,
-          sourceWithoutId(updatedInProjectValue),
-          tags = Tags(tag -> 1),
-          rev = 3,
-          subject = bob.subject
-        )
-        val crossProjectExpectedByRev = resolverResourceFor(
-          nxv + "cross-project",
-          projectRef,
-          updatedCrossProjectValue,
-          sourceWithoutId(updatedCrossProjectValue),
-          tags = Tags(tag -> 1),
-          rev = 3,
-          subject = bob.subject
-        )
-
-        forAll(List(inProjectExpectedByRev, crossProjectExpectedByRev)) { resource =>
+        forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
           resolvers.fetch(IdSegmentRef(resource.value.id, 3), projectRef).accepted shouldEqual
             resource
-        }
-      }
-
-      "succeed by tag" in {
-        forAll(
-          List(
-            nxv + "in-project"    -> inProjectValue,
-            nxv + "cross-project" -> crossProjectValue
-          )
-        ) { case (id, value) =>
-          resolvers.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resolverResourceFor(
-            id,
-            projectRef,
-            value,
-            sourceWithoutId(value),
-            subject = bob.subject
-          )
         }
       }
 
@@ -709,14 +570,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       }
 
       "fail if revision does not exist" in {
-        resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).assertRejectedEquals(RevisionNotFound(30, 5))
-      }
-
-      "fail if tag does not exist" in {
-        val unknownTag = UserTag.unsafe("xxx")
-        resolvers
-          .fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef)
-          .assertRejectedEquals(TagNotFound(unknownTag))
+        resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).assertRejectedEquals(RevisionNotFound(30, 3))
       }
     }
 

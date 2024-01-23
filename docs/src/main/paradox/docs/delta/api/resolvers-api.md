@@ -171,37 +171,6 @@ Response
 :   @@snip [updated.json](assets/resolvers/updated.json)
 
 
-## Tag
-
-Links a resolver revision to a specific name. 
-
-Tagging a resolver is considered to be an update as well.
-
-```
-POST /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-... where 
-
-- `{previous_rev}`: Number - the last known revision for the resolver.
-- `{name}`: String - label given to the resolver at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [tag.sh](assets/resolvers/tag.sh)
-
-Payload
-:   @@snip [tag.json](assets/tag.json)
-
-Response
-:   @@snip [tagged.json](assets/resolvers/tagged.json)
-
-
 ## Deprecate
 
 Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.

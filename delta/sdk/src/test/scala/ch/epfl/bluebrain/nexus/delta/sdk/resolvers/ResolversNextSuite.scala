@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.next
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.ProvidedIdentities
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
@@ -49,7 +48,6 @@ class ResolversNextSuite extends NexusSuite with ResolverStateMachineFixture wit
       project,
       inProjectCreated.value,
       inProjectCreated.source,
-      Tags.empty,
       1,
       deprecated = false,
       epoch,
@@ -66,7 +64,6 @@ class ResolversNextSuite extends NexusSuite with ResolverStateMachineFixture wit
       project,
       crossProjectCreated.value,
       crossProjectCreated.source,
-      Tags.empty,
       1,
       deprecated = false,
       epoch,
@@ -155,7 +152,6 @@ class ResolversNextSuite extends NexusSuite with ResolverStateMachineFixture wit
   bothStates.foreach { state =>
     test(s"Update the tag list fot a ${state.value.tpe} resolver") {
       val expected = state.copy(
-        tags = state.tags + (tagEvent.tag -> tagEvent.targetRev),
         rev = tagEvent.rev,
         updatedAt = tagEvent.instant,
         updatedBy = tagEvent.subject
