@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
@@ -200,7 +200,6 @@ object Resolvers {
           project = e.project,
           value = e.value,
           source = e.source,
-          tags = Tags.empty,
           rev = e.rev,
           deprecated = false,
           createdAt = e.instant,
@@ -221,7 +220,7 @@ object Resolvers {
     }
 
     def tagAdded(e: ResolverTagAdded): Option[ResolverState] = state.map { s =>
-      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def deprecated(e: ResolverDeprecated): Option[ResolverState] = state.map {

@@ -451,7 +451,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             projectRef,
             value,
             sourceWithoutId(value),
-            tags = Tags.empty,
             rev = 3,
             subject = bob.subject,
             deprecated = true
@@ -533,7 +532,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       projectRef,
       updatedInProjectValue,
       sourceWithoutId(updatedInProjectValue),
-      tags = Tags.empty,
       rev = 3,
       subject = bob.subject,
       deprecated = true
@@ -543,7 +541,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       projectRef,
       updatedCrossProjectValue,
       sourceWithoutId(updatedCrossProjectValue),
-      tags = Tags.empty,
       rev = 3,
       subject = bob.subject,
       deprecated = true

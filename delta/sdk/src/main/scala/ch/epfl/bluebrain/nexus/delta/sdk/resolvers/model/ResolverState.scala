@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -28,8 +28,6 @@ import scala.annotation.nowarn
   *   additional fields to configure the resolver
   * @param source
   *   the representation of the resolver as posted by the subject
-  * @param tags
-  *   the collection of tag aliases
   * @param rev
   *   the current state revision
   * @param deprecated
@@ -48,7 +46,6 @@ final case class ResolverState(
     project: ProjectRef,
     value: ResolverValue,
     source: Json,
-    tags: Tags,
     rev: Int,
     deprecated: Boolean,
     createdAt: Instant,
