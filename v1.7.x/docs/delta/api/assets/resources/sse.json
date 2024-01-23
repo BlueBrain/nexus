@@ -1,0 +1,16 @@
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceCreated","_resourceId":"http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_source":{"@type":"Hobbit","age":23,"name":"Frodo"},"_types":["http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit"],"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/unconstrained.json","_project":"http://localhost:8080/v1/projects/myorg/myproject","_schemaProject": "http://localhost:8080/v1/projects/myorg/myproject","_instant":"2021-04-24T07:35:47.447631Z","_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_rev": 1,"_subject":"http://localhost:8080/v1/realms/github/users/myuser"}
+event:ResourceCreated
+id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceUpdated","_resourceId":"http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_source":{"@type":"Hobbit","age":25,"name":"Frodo"},"_types":["http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit"],"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/unconstrained.json","_project":"http://localhost:8080/v1/projects/myorg/myproject", "_schemaProject": "http://localhost:8080/v1/projects/myorg/myproject","_instant":"2021-04-24T07:36:27.130185Z","_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_rev":2,"_subject":"http://localhost:8080/v1/realms/github/users/myuser"}
+event:ResourceUpdated
+id:c6642f90-9652-11e9-89a7-6d3c5701d287
+
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceTagAdded","_resourceId":"http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","tag":"mytag","targetRev":1,"_types":["http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit"],"_project":"http://localhost:8080/v1/projects/myorg/myproject","_instant":"2021-04-24T07:40:59.2813Z","_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_project":"http://localhost:8080/v1/projects/myorg/myproject","_rev":3,"_subject":"http://localhost:8080/v1/anonymous"}
+event:ResourceTagAdded
+id:e024e5f0-9652-11e9-89a7-6d3c5701d287
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceDeprecated","_resourceId":"http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_types":["http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit"],"_project":"http://localhost:8080/v1/projects/myorg/myproject","_instant":"2021-04-24T07:45:12.558514Z","_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_rev":4,"_subject":"http://localhost:8080/v1/realms/github/users/myuser"}
+event:ResourceDeprecated
+id:ce6549e0-9652-11e9-89a7-6d3c5701d287

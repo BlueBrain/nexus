@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "resourceId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/resourceId",
+      "@type": "@id"
+    },
+    "_expiresInSeconds": "https://bluebrain.github.io/nexus/vocabulary/expiresInSeconds"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/archives.json"
+}

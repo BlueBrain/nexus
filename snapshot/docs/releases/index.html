@@ -241,9 +241,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#1-9-0" class="header">1.9.0</a>
+    <li><a href="../../docs/releases/index.html#1-10-0" class="header">1.10.0</a></li>
+    <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
     <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
@@ -298,9 +300,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#1-9-0" class="header">1.9.0</a>
+    <li><a href="../../docs/releases/index.html#1-10-0" class="header">1.10.0</a></li>
+    <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
     <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
@@ -352,8 +356,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
 <p>//TODO change the date</p>
-<p>The latest stable release is <strong>v1.9.0</strong> released on <strong>14.06.2023</strong>.</p>
-<h2><a href="#1-9-0" name="1-9-0" class="anchor"><span class="anchor-link"></span></a>1.9.0</h2>
+<p>The latest stable release is <strong>v1.9.0</strong> released on <strong>18.12.2023</strong>.</p>
+<h2><a href="#1-10-0" name="1-10-0" class="anchor"><span class="anchor-link"></span></a>1.10.0</h2>
+<h2><a href="#1-9-0-18-12-2023-" name="1-9-0-18-12-2023-" class="anchor"><span class="anchor-link"></span></a>1.9.0 (18.12.2023)</h2>
 <h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
 <ul>
   <li><a href="../delta/api/resources-api.html">Resource payloads can&rsquo;t contain fields starting by <code>_</code> anymore</a></li>
@@ -361,6 +366,17 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><a href="v1.9-release-notes.html#remote-storages">Credentials for storages can now only be defined at the configuration level</a></li>
   <li><a href="v1.9-release-notes.html#self-incoming-and-outgoing-links">Encoding of self, incoming and outgoing links</a></li>
   <li><a href="v1.9-release-notes.html#remove-support-for-tarball-archives">Remove support for Tarball archives</a></li>
+</ul>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<ul>
+  <li>Fetching resources using organization and project uuids</li>
+  <li>Tagging operations for resolvers/storages/views</li>
+  <li>Indexing projects within views</li>
+  <li>Removing generic endpoints to create/update/deprecate resources</li>
+  <li>Global SSE endpoint</li>
+  <li>SSE endpoints for realms/acls/organizations</li>
+  <li>SSE endpoint to fetch indexing errors</li>
+  <li>Injecting org/project uuids in SSEs related to resources</li>
 </ul>
 <h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
 <ul>
@@ -374,8 +390,14 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><a href="v1.9-release-notes.html">Undeprecating resources, files, projects, organizations</a></li>
   <li><a href="v1.9-release-notes.html#composite-views">Improving performance of composite view</a></li>
   <li><a href="../delta/api/id-resolution.html">Id resolution</a></li>
+  <li><strong>Global User Interface Improvements:</strong> Multi-type filter selection in &ldquo;My Data&rdquo; section, improved header menu behavior, and enhanced UI element uniformity.</li>
+  <li><strong>Data Explorer Enhancements:</strong> New filtering and navigation features, fullscreen mode for Graph Flow, advanced mode beta, and improved navigation with back and forward buttons.</li>
+  <li><strong>Resource Management and Display:</strong> Display of resources missing paths, clearer resource counts, introduction of Data Cart logic, and improved ACL checks.</li>
+  <li><strong>Code Editor and Studio Enhancements:</strong> New URL copying feature in Code Editor, typo corrections and layout adjustments in the studio interface, and enhanced resource management tools.</li>
+  <li><strong>Operational Improvements:</strong> Advanced search and filter capabilities, bulk request handling, new resource tagging features, and enhanced error handling mechanisms.</li>
+  <li><strong>Hotfixes and Minor Updates:</strong> Addressing issues such as navigation speed, URL encoding in downloads, and UI glitches.</li>
 </ul>
-<p>And <a href="v1.9-release-notes.html">more&hellip;</a></p>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.9-release-notes.html">release notes</a>.</p>
 <h2><a href="#1-8-0-14-06-2023-" name="1-8-0-14-06-2023-" class="anchor"><span class="anchor-link"></span></a>1.8.0 (14.06.2023)</h2>
 <h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
 <ul>

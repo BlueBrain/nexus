@@ -1,0 +1,7 @@
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationUpdated","description":"organization updated description","_instant":"2021-05-10T13:31:53.579Z","_label":"myorg","_organizationId":"http://localhost:8080/v1/orgs/myorg","_rev":2,"_subject":"http://localhost:8080/v1/anonymous","_uuid":"2393f414-8fff-4e79-b622-d7a887649952"}
+event:OrganizationUpdated
+id:1550b8e0-b194-11eb-9673-bd8b74949729
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationDeprecated","_instant":"2021-05-10T13:32:31.197Z","_label":"myorg","_organizationId":"http://localhost:8080/v1/orgs/myorg","_rev":3,"_subject":"http://localhost:8080/v1/anonymous","_uuid":"2393f414-8fff-4e79-b622-d7a887649952"}
+event:OrganizationDeprecated
+id:2bbcc600-b194-11eb-9673-bd8b74949729

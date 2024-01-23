@@ -1,0 +1,10 @@
+{
+  "description": "description",
+  "vocab": "https://schema.org/",
+  "apiMappings": [
+    {
+      "prefix": "my",
+      "namespace": "http://example.com/my"
+    }
+  ]
+}

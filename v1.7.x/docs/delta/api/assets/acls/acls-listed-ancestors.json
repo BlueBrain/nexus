@@ -1,0 +1,88 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/iam.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "http://localhost:8080/v1/acls/",
+      "@type": "AccessControlList",
+      "acl": [
+        {
+          "permissions": [
+            "acls/write"
+          ],
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/myrealm/groups/one",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "one"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_deprecated": false,
+      "_path": "/",
+      "_rev": 1,
+      "_self": "http://localhost:8080/v1/acls",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "http://localhost:8080/v1/acls/myorg",
+      "@type": "AccessControlList",
+      "acl": [
+        {
+          "permissions": [
+            "acls/write"
+          ],
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/myrealm/groups/two",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "two"
+          }
+        }
+      ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/alice",
+      "_deprecated": false,
+      "_path": "/myorg",
+      "_rev": 2,
+      "_self": "http://localhost:8080/v1/acls/myorg",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/alice"
+    },
+    {
+      "@id": "http://localhost:8080/v1/acls/myorg2",
+      "@type": "nxv:AccessControlList",
+      "acl": [
+        {
+          "permissions": [
+            "other"
+          ],
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/myrealm/groups/one",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "one"
+          }
+        }
+      ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_deprecated": false,
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/alice",
+      "_path": "/myorg2",
+      "_rev": 1,
+      "_self": "http://localhost:8080/v1/acls/myorg2",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/alice"
+    }
+  ]
+}

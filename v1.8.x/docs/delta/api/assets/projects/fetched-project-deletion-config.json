@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/project-deletion.json",
+  "@type": "ProjectDeletionConfig",
+  "_idleIntervalInSeconds": 2592000,
+  "_idleCheckPeriodInSeconds": 3600,
+  "_deleteDeprecatedProjects": true,
+  "_includedProjects": [
+    "some.+"
+  ],
+  "_excludedProjects": [
+    "retained.+"
+  ]
+}

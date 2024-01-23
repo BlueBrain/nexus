@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "tags": {
+      "@container": "@set"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/tags.json"
+}

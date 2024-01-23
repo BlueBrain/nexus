@@ -304,7 +304,14 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.9-release-notes.html#id-resolution" class="header">Id Resolution</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#user-permissions" class="header">User Permissions</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion-1-9-release-notes" class="header">Nexus Fusion 1.9 Release Notes</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#home-page" class="header">Home Page</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#data-explorer" class="header">Data Explorer</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#project-listing-page" class="header">Project Listing Page</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#resource-viewer" class="header">Resource Viewer</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#functional-improvements" class="header">Functional Improvements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-storage" class="header">Nexus Storage</a>
     <ul>
       <li><a href="../../docs/releases/v1.9-release-notes.html#automatic-file-detection" class="header">Automatic file detection</a></li>
@@ -397,7 +404,14 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.9-release-notes.html#id-resolution" class="header">Id Resolution</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#user-permissions" class="header">User Permissions</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion-1-9-release-notes" class="header">Nexus Fusion 1.9 Release Notes</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#home-page" class="header">Home Page</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#data-explorer" class="header">Data Explorer</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#project-listing-page" class="header">Project Listing Page</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#resource-viewer" class="header">Resource Viewer</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#functional-improvements" class="header">Functional Improvements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-storage" class="header">Nexus Storage</a>
     <ul>
       <li><a href="../../docs/releases/v1.9-release-notes.html#automatic-file-detection" class="header">Automatic file detection</a></li>
@@ -424,7 +438,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#v1-9-release-notes" name="v1-9-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.9 Release Notes</h1>
 <blockquote>
   <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.8.</p>
-  <p>With v1.9, Nexus Delta also changes its underlying runtime allowing to it to work properly, switching from <a href="https://monix.io/" title="Monix">Monix</a> which is not maintained anymore to <a href="https://typelevel.org/cats-effect/" title="Cats Effect">Cats Effect</a>.</p>
+  <p>With v1.9, Nexus Delta also changes its underlying runtime, allowing to it to work properly, switching from <a href="https://monix.io/" title="Monix">Monix</a> which is not maintained anymore to <a href="https://typelevel.org/cats-effect/" title="Cats Effect">Cats Effect</a>.</p>
 </blockquote>
 <p>//TODO adjust the end date</p>
 <p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2023-06-15..2023-12-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.8.</p>
@@ -433,21 +447,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h3>
 <h4><a href="#self-incoming-and-outgoing-links" name="self-incoming-and-outgoing-links" class="anchor"><span class="anchor-link"></span></a>self, incoming and outgoing links</h4>
 <p>Those three links are returned in the response of operations related to the different resources. Until 1.9, they were curied/shortened according to the base and the API mappings defined in the project configuration.</p>
-<p>This caused consistency problems as whenever the base or the API mapping were changing, those shortened links were not valid anymore:</p>
+<p>This caused consistency problems, as whenever the base or the API mapping was changing, those shortened links were not valid anymore:</p>
 <ul>
   <li>All data in views displaying metadata (which include those links) had to be indexed again ;</li>
-  <li>The change had also to be propagated to other external systems ;</li>
-  <li>The resources including download links to files had to be patched</li>
+  <li>The change also had to be propagated to other external systems ;</li>
+  <li>The resources, including download links to files, had to be patched</li>
 </ul>
-<p>Therefore since 1.9, <code>_self</code>, <code>_incoming</code> and <code>outgoing</code> links are not shortened anymore allowing them to remain stable in time even if the project configuration changes.</p>
+<p>Therefore, since 1.9, <code>_self</code>, <code>_incoming</code> and <code>outgoing</code> links are not shortened anymore, allowing them to remain stable in time even if the project configuration changes.</p>
 <h4><a href="#multi-fetch" name="multi-fetch" class="anchor"><span class="anchor-link"></span></a>Multi fetch</h4>
 <p>Multiple resources can now be retrieved within a single call with the multi-fetch operation.</p>
 <p><a href="../delta/api/multi-fetch.html">More information</a></p>
 <h4><a href="#resources-trial-and-resource-generation" name="resources-trial-and-resource-generation" class="anchor"><span class="anchor-link"></span></a>Resources trial and resource generation</h4>
-<p>Until 1.9, operations about resources were resulting in writes in the primary store and indexing in the knowledge graph. However, users may also want to first experiment/refine/polish/validate a resource and schema and only create/update the resource when they are happy with it.</p>
+<p>Until 1.9, operations about resources resulted in writes in the primary store and indexing in the knowledge graph. However, users may also want first to experiment/refine/polish/validate a resource and schema and only create/update the resource when they are happy with it.</p>
 <p><a href="../delta/api/trial.html#resource-generation">More information</a></p>
 <h4><a href="#payload-validation" name="payload-validation" class="anchor"><span class="anchor-link"></span></a>Payload validation</h4>
-<p>It is now forbidden for JSON payloads to contain fields beginning with underscore (_). This can be disabled be setting <code>app.resources.decoding-option</code> to <code>lenient</code>, however it is not recommended as specification of this data in payloads can have unexpected consequences in both data and the user-interface</p>
+<p>It is now forbidden for JSON payloads to contain fields beginning with underscore (_). This can be disabled by setting <code>app.resources.decoding-option</code> to <code>lenient</code>; however, it is not recommended as the specification of this data in payloads can have unexpected consequences to both the data and the user interface.</p>
 <p>Listings by types can now be controlled with the <code>typeOperator</code> query parameter. Possible values are <code>or</code> and <code>and</code>, which will match any and all types, respectively.</p>
 <h4><a href="#aggregations" name="aggregations" class="anchor"><span class="anchor-link"></span></a>Aggregations</h4>
 <p>It is now possible to aggregate resources by <code>@type</code> or <code>project</code>.</p>
@@ -464,11 +478,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <p><a href="../delta/api/resources-api.html#change-schema">More information about the dedicated endpoint</a></p>
 <h4><a href="#tagging-at-creation-update" name="tagging-at-creation-update" class="anchor"><span class="anchor-link"></span></a>Tagging at creation/update</h4>
-<p>Create and update operations on resources accept now an optional tag allowing to tag the resulting resource in the same call.</p>
+<p>Create and update operations on resources now accept an optional tag, allowing the resulting resource to be tagged in the same call.</p>
 <p><a href="../delta/api/resources-api.html">More information</a></p>
 <h4><a href="#no-new-revision-on-a-resource-if-no-change-is-detected" name="no-new-revision-on-a-resource-if-no-change-is-detected" class="anchor"><span class="anchor-link"></span></a>No new revision on a resource if no change is detected</h4>
-<p>During update and refresh operations if no change is detected, no new revision will be created and the last existing revision will be returned.</p>
-<p>This was introduced to prevent users to create a large number of revisions for resources when no change is actually introduced.</p>
+<p>During update and refresh operations, if no change is detected, no new revision will be created and the last existing revision will be returned.</p>
+<p>This was introduced to prevent users from creating a large number of revisions for resources when no change is actually introduced.</p>
 <p><a href="../delta/api/resources-api.html">More information</a></p>
 <h4><a href="#undeprecate-resources" name="undeprecate-resources" class="anchor"><span class="anchor-link"></span></a>Undeprecate resources</h4>
 <p>Previously deprecated resources can now be undeprecated.</p>
@@ -486,20 +500,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#compressing-requests-to-elasticsearch" name="compressing-requests-to-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Compressing requests to Elasticsearch</h4>
 <p>The different requests to Elasticsearch are now compressed by default allowing to reduce the I/Os especially during indexing.</p>
 <h3><a href="#composite-views" name="composite-views" class="anchor"><span class="anchor-link"></span></a>Composite views</h3>
-<p>New features enhance performance of indexing of composite views, as well as authentication changes for views which incorporate projects on remote Delta instances.</p>
+<p>New features enhance the performance of indexing of composite views, as well as authentication changes for views which incorporate projects on remote Delta instances.</p>
 <h4><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h4>
 <p>Construct queries to the intermediate space can now be batched.</p>
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
 <h4><a href="#partial-reindexing" name="partial-reindexing" class="anchor"><span class="anchor-link"></span></a>Partial reindexing</h4>
-<p>When a composite view is updated, a diff is performed and only the necessary spaces are reindexed.</p>
-<p>For example, if a source is added/updated/removed, all the spaces (intermediate space and projection spaces) get reindexed. However if a projection is added/updated/removed, now only the space related to this projection is reindexed which reduces the number of operations and consequently speed up the indexing.</p>
+<p>A diff is performed when a composite view is updated, and only the necessary spaces are reindexed.</p>
+<p>For example, if a source is added/updated/removed, all the spaces (intermediate space and projection spaces) get reindexed. However, if a projection is added/updated/removed, now only the space related to this projection is reindexed, which reduces the number of operations and consequently speed up the indexing.</p>
 <p>Preserving the intermediate space also reduces the fragmentation of the Blazegraph journal.</p>
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
 <h4><a href="#remote-authentication" name="remote-authentication" class="anchor"><span class="anchor-link"></span></a>Remote authentication</h4>
-<p>Rather than storing an auth token in the composite view, it is now expected to specify an authentication method in the Delta configuration</p>
+<p>Rather than storing an auth token in the composite view, it is now expected to specify an authentication method in the Delta configuration.</p>
 <p><a href="../getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration">More information</a></p>
 <h4><a href="#remove-the-resourcetag-field-in-projections-of-composite-views" name="remove-the-resourcetag-field-in-projections-of-composite-views" class="anchor"><span class="anchor-link"></span></a>Remove the resourceTag field in projections of composite views</h4>
-<p>This field was never used so as there is no plan for it, it is now removed.</p>
+<p>This field was never used, so as there is no plan for it, it has now been removed.</p>
 <h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Views</h3>
 <p>The Elasticsearch mapping of an Elasticsearch View can be retrieved.</p>
 <p><a href="../delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping">More information</a></p>
@@ -516,7 +530,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Tarball archives are no longer supported due to unnecessary restrictions. ZIP is now the only allowed format and clients should send <code>application/zip</code> in the <code>Accept</code> header when creating archives.</p>
 <h3><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h3>
 <h4><a href="#support-deletion-of-empty-organizations" name="support-deletion-of-empty-organizations" class="anchor"><span class="anchor-link"></span></a>Support deletion of empty organizations</h4>
-<p>Previously it was only possible to deprecate organizations at a specific revision. Now organizations containing no projects can be deleted by specifying a prune parameter: <code>DELETE /v1/org/{label}?prune=true</code> </p>
+<p>Previously, it was only possible to deprecate organizations at a specific revision. Now, organizations containing no projects can be deleted by specifying a prune parameter: <code>DELETE /v1/org/{label}?prune=true</code></p>
 <p><a href="../delta/api/orgs-api.html#delete">More information</a></p>
 <h4><a href="#undeprecate-organizations" name="undeprecate-organizations" class="anchor"><span class="anchor-link"></span></a>Undeprecate organizations</h4>
 <p>Previously deprecated organizations can now be undeprecated.</p>
@@ -549,16 +563,54 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Remote contexts used during the JSON-LD resolution for a resource are now indexed in the Graph analytics views and can be found via the <a href="v1.9-release-notes.html#search-endpoint-for-graph-analytics-views">search endpoint</a></p>
 <p><a href="../delta/api/graph-analytics-api.html#document-structure">More information</a></p>
 <h3><a href="#id-resolution" name="id-resolution" class="anchor"><span class="anchor-link"></span></a>Id Resolution</h3>
-<p>It is now possible to perform ID resolution by providing only the identifier of a resource. </p>
+<p>It is now possible to perform ID resolution by providing only the identifier of a resource.</p>
 <p><a href="../delta/api/id-resolution.html">More information</a></p>
 <h3><a href="#user-permissions" name="user-permissions" class="anchor"><span class="anchor-link"></span></a>User Permissions</h3>
-<p>It is now possible to query whether the current logged in user has a specific permission in a specific context.</p>
+<p>It is now possible to query whether the currently logged-in user has specific permission in a specific context.</p>
 <p><a href="../delta/api/user-permissions-api.html">More information</a></p>
-<h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
-<p>TODO</p>
+<h2><a href="#nexus-fusion-1-9-release-notes" name="nexus-fusion-1-9-release-notes" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion 1.9 Release Notes</h2>
+<p>The 1.9 release of Nexus Fusion focuses on enhancing user interaction, resource management, and overall application efficiency. This update introduces new features and key improvements across various sections of the application.</p>
+<h3><a href="#home-page" name="home-page" class="anchor"><span class="anchor-link"></span></a>Home Page</h3>
+<ul>
+  <li><strong>Global User Interface Improvements:</strong></li>
+  <li>Improved header menu behavior while scrolling.</li>
+  <li>Enhanced uniformity in UI elements.</li>
+</ul>
+<h3><a href="#data-explorer" name="data-explorer" class="anchor"><span class="anchor-link"></span></a>Data Explorer</h3>
+<ul>
+  <li>Built beta version of data explorer.</li>
+  <li>Multi-type filter selection in the &ldquo;My Data&rdquo; section.</li>
+  <li>New filtering and navigation features.</li>
+  <li>Fullscreen mode for Graph Flow.</li>
+  <li>Navigation has been improved with back and forward buttons.</li>
+</ul>
+<h3><a href="#project-listing-page" name="project-listing-page" class="anchor"><span class="anchor-link"></span></a>Project Listing Page</h3>
+<ul>
+  <li><strong>Resource Management and Display:</strong></li>
+  <li>Display of resources missing paths and containing specific values.</li>
+  <li>Clearer resource counts and enhanced popover information.</li>
+  <li>Introduction of Data Cart logic.</li>
+  <li>Improved ACL checks and permissions retrieval.</li>
+</ul>
+<h3><a href="#resource-viewer" name="resource-viewer" class="anchor"><span class="anchor-link"></span></a>Resource Viewer</h3>
+<ul>
+  <li>ID resolution in resource viewer/editor.</li>
+  <li>ID resolution via the URL input of the browser.</li>
+  <li><strong>Code Editor Enhancements:</strong></li>
+  <li>URL copying feature in Code Editor.</li>
+  <li>Typo corrections and layout adjustments.</li>
+  <li>Tagging resources and splitting resource history.</li>
+</ul>
+<h3><a href="#functional-improvements" name="functional-improvements" class="anchor"><span class="anchor-link"></span></a>Functional Improvements</h3>
+<ul>
+  <li>Advanced search and filter capabilities.</li>
+  <li>New resource tagging features.</li>
+  <li>Enhanced error handling and feedback mechanisms.</li>
+  <li>Bulk request resources from the backend to reduce the number of network requests.</li>
+</ul>
 <h2><a href="#nexus-storage" name="nexus-storage" class="anchor"><span class="anchor-link"></span></a>Nexus Storage</h2>
 <h3><a href="#automatic-file-detection" name="automatic-file-detection" class="anchor"><span class="anchor-link"></span></a>Automatic file detection</h3>
-<p>The Nexus storage app also benefits from the changes about automatic file detection.</p>
+<p>The Nexus storage app also benefits from the changes in automatic file detection.</p>
 <p><a href="../getting-started/running-nexus/configuration/index.html#file-configuration">More information</a></p>
 <h3><a href="#removing-delta-callback-to-validate-the-caller-identity" name="removing-delta-callback-to-validate-the-caller-identity" class="anchor"><span class="anchor-link"></span></a>Removing Delta callback to validate the caller identity</h3>
 <p>This callback has been replaced by a local validation of the token.</p>
