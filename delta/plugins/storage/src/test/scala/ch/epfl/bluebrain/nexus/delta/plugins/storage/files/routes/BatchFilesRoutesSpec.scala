@@ -4,16 +4,15 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.data.NonEmptyList
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchFilesMock.BatchFilesCopyFilesCalled
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{CopyRejection, FileNotFound, WrappedStorageRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, FileFixtures, FileResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, FileResource, contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
@@ -25,15 +24,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
-import io.circe.syntax.KeyOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import org.scalatest.Assertion
 
 import scala.collection.mutable.ListBuffer
@@ -52,57 +51,45 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
 
     "succeed for source files looked up by latest" in {
       val sourceProj    = genProject()
-      val sourceFileIds = genFilesIdsInProject(sourceProj.ref)
+      val sourceFileIds = genResourceRefsInProject()
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds)
     }
 
     "succeed for source files looked up by tag" in {
       val sourceProj    = genProject()
-      val sourceFileIds = NonEmptyList.of(genFileIdWithTag(sourceProj.ref), genFileIdWithTag(sourceProj.ref))
+      val sourceFileIds = NonEmptyList.of(genResourceRefWithTag(), genResourceRefWithTag())
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds)
     }
 
     "succeed for source files looked up by rev" in {
       val sourceProj    = genProject()
-      val sourceFileIds = NonEmptyList.of(genFileIdWithRev(sourceProj.ref), genFileIdWithRev(sourceProj.ref))
+      val sourceFileIds = NonEmptyList.of(genResourceRefWithRev(), genResourceRefWithRev())
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds)
     }
 
     "succeed with a specific destination storage" in {
       val sourceProj    = genProject()
-      val sourceFileIds = genFilesIdsInProject(sourceProj.ref)
+      val sourceFileIds                = genResourceRefsInProject()
       val destStorageId = IdSegment(genString())
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds, destStorageId = Some(destStorageId))
     }
 
     "succeed with a user tag applied to destination files" in {
       val sourceProj    = genProject()
-      val sourceFileIds = genFilesIdsInProject(sourceProj.ref)
+      val sourceFileIds                = genResourceRefsInProject()
       val destTag       = UserTag.unsafe(genString())
       testBulkCopySucceedsForStubbedFiles(sourceProj, sourceFileIds, destTag = Some(destTag))
     }
 
     "return 403 for a user without read permission on the source project" in {
       val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
-      val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
+      val sourceFileIds                = genResourceRefsInProject()
 
       val route   = mkRoute(BatchFilesMock.unimplemented, sourceProj, user, permissions = Set())
       val payload = BatchFilesRoutesSpec.mkBulkCopyPayload(sourceProj.ref, sourceFileIds)
 
       callBulkCopyEndpoint(route, destProj.ref, payload, user) {
         response.shouldBeForbidden
-      }
-    }
-
-    "return 400 if tag and rev are present simultaneously for a source file" in {
-      val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
-
-      val route              = mkRoute(BatchFilesMock.unimplemented, sourceProj, user, permissions = Set())
-      val invalidFilePayload = BatchFilesRoutesSpec.mkSourceFilePayload(genString(), Some(3), Some(genString()))
-      val payload            = Json.obj("sourceProjectRef" := sourceProj.ref, "files" := List(invalidFilePayload))
-
-      callBulkCopyEndpoint(route, destProj.ref, payload, user) {
-        response.status shouldBe StatusCodes.BadRequest
       }
     }
 
@@ -116,7 +103,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
 
       forAll(errors) { error =>
         val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
-        val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
+        val sourceFileIds                = genResourceRefsInProject()
         val events                       = ListBuffer.empty[BatchFilesCopyFilesCalled]
         val batchFiles                   = BatchFilesMock.withError(error, events)
 
@@ -144,7 +131,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
 
       forAll(fileRejections) { case (error, expectedStatus, expectedJson) =>
         val (sourceProj, destProj, user) = (genProject(), genProject(), genUser(realm))
-        val sourceFileIds                = genFilesIdsInProject(sourceProj.ref)
+        val sourceFileIds                = genResourceRefsInProject()
         val events                       = ListBuffer.empty[BatchFilesCopyFilesCalled]
         val batchFiles                   = BatchFilesMock.withError(error, events)
 
@@ -197,17 +184,17 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
   }
 
   def testBulkCopySucceedsForStubbedFiles(
-      sourceProj: Project,
-      sourceFileIds: NonEmptyList[FileId],
-      destStorageId: Option[IdSegment] = None,
-      destTag: Option[UserTag] = None
+                                           sourceProj: Project,
+                                           sourceFileIds: NonEmptyList[ResourceRef],
+                                           destStorageId: Option[IdSegment] = None,
+                                           destTag: Option[UserTag] = None
   ): Assertion = {
     val (destProj, user)    = (genProject(), genUser(realm))
-    val sourceFileResources = sourceFileIds.map(f =>
-      genFileResource(f, destProj.context, Some(f.toResourceRef(_ => IO.pure(sourceProj.context)).accepted))
+    val createdFileResources = sourceFileIds.map(f =>
+      genFileResource(genResourceRef(), destProj.ref, Some(f))
     )
     val events              = ListBuffer.empty[BatchFilesCopyFilesCalled]
-    val stubbedBatchFiles   = BatchFilesMock.withStubbedCopyFiles(sourceFileResources, events)
+    val stubbedBatchFiles   = BatchFilesMock.withStubbedCopyFiles(createdFileResources, events)
 
     val route   = mkRoute(stubbedBatchFiles, sourceProj, user, Set(files.permissions.read))
     val payload = BatchFilesRoutesSpec.mkBulkCopyPayload(sourceProj.ref, sourceFileIds)
@@ -224,7 +211,7 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
           destTag
         )
       events.toList shouldBe List(expectedBatchFilesCall)
-      response.asJson shouldBe expectedBulkCopyJson(sourceFileResources)
+      response.asJson.spaces2SortKeys shouldBe expectedBulkCopyJson(createdFileResources).spaces2SortKeys
     }
   }
 
@@ -249,22 +236,10 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
       )
       .accepted
       .mapObject(_.remove("@context"))
-      .deepMerge(res.value.sourceFile.fold(Json.obj())(s => Json.obj("_sourceFile" := s.original.toString)))
+      .deepMerge(res.value.sourceFile.fold(Json.obj())(s => Json.obj("_sourceFile" := s.toString)))
 }
 
 object BatchFilesRoutesSpec {
-  def mkBulkCopyPayload(sourceProj: ProjectRef, sourceFileIds: NonEmptyList[FileId]): Json =
-    Json.obj("sourceProjectRef" := sourceProj.toString, "files" := mkSourceFilesPayload(sourceFileIds))
-
-  def mkSourceFilesPayload(sourceFileIds: NonEmptyList[FileId]): NonEmptyList[Json]        =
-    sourceFileIds.map(id => mkSourceFilePayloadFromIdSegmentRef(id.id))
-
-  def mkSourceFilePayloadFromIdSegmentRef(id: IdSegmentRef): Json = id match {
-    case IdSegmentRef.Latest(value)        => mkSourceFilePayload(value.asString, None, None)
-    case IdSegmentRef.Revision(value, rev) => mkSourceFilePayload(value.asString, Some(rev), None)
-    case IdSegmentRef.Tag(value, tag)      => mkSourceFilePayload(value.asString, None, Some(tag.value))
-  }
-
-  def mkSourceFilePayload(id: String, rev: Option[Int], tag: Option[String]): Json =
-    Json.obj("sourceFileId" := id, "sourceRev" := rev, "sourceTag" := tag)
+  def mkBulkCopyPayload(sourceProj: ProjectRef, sourceFileIds: NonEmptyList[ResourceRef]): Json =
+    Json.obj("sourceProject" := sourceProj.toString, "files" := sourceFileIds.map(_.asJson))
 }

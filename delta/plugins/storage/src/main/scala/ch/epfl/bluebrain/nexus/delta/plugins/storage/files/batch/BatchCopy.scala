@@ -51,14 +51,14 @@ object BatchCopy {
 
     private def copyToRemoteStorage(source: CopyFileSource, dest: RemoteDiskStorage)(implicit c: Caller) =
       for {
-        remoteCopyDetails <- source.files.traverse(fetchRemoteCopyDetails(dest, _))
+        remoteCopyDetails <- source.files.traverse(r => fetchRemoteCopyDetails(dest, FileId(r, source.project)))
         _                 <- validateFilesForStorage(dest, remoteCopyDetails.map(_.sourceAttributes.bytes))
         attributes        <- remoteDiskCopy.copyFiles(dest, remoteCopyDetails)
       } yield attributes
 
     private def copyToDiskStorage(source: CopyFileSource, dest: DiskStorage)(implicit c: Caller) =
       for {
-        diskCopyDetails <- source.files.traverse(fetchDiskCopyDetails(dest, _))
+        diskCopyDetails <- source.files.traverse(r => fetchDiskCopyDetails(dest, FileId(r, source.project)))
         _               <- validateFilesForStorage(dest, diskCopyDetails.map(_.sourceAttributes.bytes))
         attributes      <- diskCopy.copyFiles(dest, diskCopyDetails)
       } yield attributes

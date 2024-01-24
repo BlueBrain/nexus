@@ -9,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchCopyMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection.TotalCopySizeTooLarge
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{Project, ProjectContext}
@@ -53,7 +52,7 @@ class BatchFilesSuite
     val source                 = genCopyFileSource(sourceProj.ref)
 
     batchFiles.copyFiles(source, destination).map { obtained =>
-      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes, source.files, sourceProj)
+      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes, source.files)
       val expectedResources    = expectedCommands.map(genFileResourceFromCmd)
       val expectedCommandCalls = expectedCommands.toList.map(FileCommandEvaluated)
       val expectedEvents       = activeStorageFetchedAndBatchCopyCalled(source) ++ expectedCommandCalls
@@ -68,7 +67,7 @@ class BatchFilesSuite
     val fetchFileStorage                   = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
     val sourceProj                         = genProject()
     val (byRevFile, byTagFile, latestFile) =
-      (genFileIdWithRev(sourceProj.ref), genFileIdWithTag(sourceProj.ref), genFileId(sourceProj.ref))
+      (genResourceRefWithRev(), genResourceRefWithTag(), genResourceRef())
     val source                             = CopyFileSource(sourceProj.ref, NonEmptyList.of(byTagFile, byRevFile, latestFile))
     val attr                               = source.files.as(attributes())
     val batchCopy                          = BatchCopyMock.withStubbedCopyFiles(events, attr)
@@ -77,12 +76,7 @@ class BatchFilesSuite
     implicit val c: Caller     = Caller(genUser(), Set())
 
     batchFiles.copyFiles(source, destination).map { obtained =>
-      def expectedIri(fileId: FileId): IriOrBNode.Iri = sourceProj.context.base.iri / fileId.id.value.asString
-
-      val expectedByTag       = ResourceRef.Tag(expectedIri(byTagFile), byTagFile.id.asTag.value.tag)
-      val expectedByRev       = ResourceRef.Revision(expectedIri(byRevFile), byRevFile.id.asRev.value.rev)
-      val expectedLatest      = ResourceRef.Latest(expectedIri(latestFile))
-      val expectedSourceFiles = NonEmptyList.of(expectedByTag, expectedByRev, expectedLatest)
+      val expectedSourceFiles = NonEmptyList.of(byTagFile, byRevFile, latestFile)
 
       assertEquals(obtained.map(_.value.sourceFile.value), expectedSourceFiles)
     }
@@ -141,8 +135,7 @@ class BatchFilesSuite
 
   def createCommandsFromFileAttributes(
       stubbedDestAttributes: NonEmptyList[FileAttributes],
-      sourceFiles: NonEmptyList[FileId],
-      sourceProj: Project
+      sourceFiles: NonEmptyList[ResourceRef]
   )(implicit
       c: Caller
   ): NonEmptyList[CreateFile] = stubbedDestAttributes.zip(sourceFiles).map { case (destAttr, source) =>
@@ -154,7 +147,7 @@ class BatchFilesSuite
       destAttr,
       c.subject,
       destination.tag,
-      Some(source.toResourceRef(_ => IO.pure(sourceProj.context)).accepted)
+      Some(source)
     )
   }
 }

@@ -88,8 +88,8 @@ class BatchCopySpec extends BaseIntegrationSpec {
   def genTextFileInput(): FileInput = FileInput(genId(), genString(), ContentTypes.`text/plain(UTF-8)`, genString())
 
   def mkPayload(sourceProjRef: String, sourceFiles: List[FileInput]): Json = {
-    val sourcePayloads = sourceFiles.map(f => Json.obj("sourceFileId" := f.fileId))
-    Json.obj("sourceProjectRef" := sourceProjRef, "files" := sourcePayloads)
+    val sourcePayloads = sourceFiles.map(sourceFileId(_, sourceProjRef))
+    Json.obj("sourceProject" := sourceProjRef, "files" := sourcePayloads)
   }
 
   def uploadFile(file: FileInput, storage: StorageDetails): IO[Assertion] =
@@ -108,13 +108,13 @@ class BatchCopySpec extends BaseIntegrationSpec {
       response             <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
                                 (json, expectCreated(json, response))
                               }
-      expectedSourceFileIds = sourceFiles.map(expectedSourceFileId(_, sourceProjRef))
+      expectedSourceFileIds = sourceFiles.map(sourceFileId(_, sourceProjRef))
       _                    <- checkFileResourcesExist(destProjRef, expectedSourceFileIds.zip(response.ids))
       assertions           <- checkFileContentsAreCopiedCorrectly(destProjRef, sourceFiles, response)
     } yield assertions.head
   }
 
-  def expectedSourceFileId(input: FileInput, sourceProjRef: String): String =
+  def sourceFileId(input: FileInput, sourceProjRef: String): String =
     s"http://delta:8080/v1/resources/$sourceProjRef/_/${input.fileId}"
 
   def checkFileContentsAreCopiedCorrectly(destProjRef: String, sourceFiles: List[FileInput], response: Response) =

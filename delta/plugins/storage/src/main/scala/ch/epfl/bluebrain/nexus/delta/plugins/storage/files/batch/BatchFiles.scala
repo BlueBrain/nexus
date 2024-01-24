@@ -49,8 +49,7 @@ object BatchFiles {
         destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
                                            CopyRejection(source.project, dest.project, destStorage.id, e)
                                          }
-        sourceIris                    <- source.files.traverse(_.toResourceRef(fetchContext.onRead))
-        destAttrAndSourceIris          = destFilesAttributes.zip(sourceIris)
+        destAttrAndSourceIris          = destFilesAttributes.zip(source.files)
         fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destAttrAndSourceIris)
       } yield fileResources
     }.span("copyFiles")
