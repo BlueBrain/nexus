@@ -45,6 +45,7 @@ object ScopedEntityDefinition {
       stateMachine: StateMachine[S, Command, E],
       eventSerializer: Serializer[Id, E],
       stateSerializer: Serializer[Id, S],
+      extractDependencies: S => Option[Set[DependsOn]],
       onUniqueViolation: (Id, Command) => Rejection
   )(implicit get: Get[Id], put: Put[Id]): ScopedEntityDefinition[Id, S, Command, E, Rejection] =
     ScopedEntityDefinition(
@@ -53,7 +54,7 @@ object ScopedEntityDefinition {
       eventSerializer,
       stateSerializer,
       Tagger(_ => None, _ => None),
-      _ => None,
+      extractDependencies,
       onUniqueViolation
     )
 

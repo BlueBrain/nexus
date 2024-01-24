@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
@@ -116,29 +115,4 @@ object BlazegraphViewCommand {
     */
   final case class UndeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
       extends BlazegraphViewCommand
-
-  /**
-    * Command for adding a tag to a Blazegraph view.
-    *
-    * @param id
-    *   the view id
-    * @param project
-    *   a reference to the parent project
-    * @param targetRev
-    *   the revision that is being aliased with the provided ''tag''
-    * @param tag
-    *   the tag label
-    * @param rev
-    *   the last known revision of the view
-    * @param subject
-    *   the identity associated with this command
-    */
-  final case class TagBlazegraphView(
-      id: Iri,
-      project: ProjectRef,
-      targetRev: Int,
-      tag: UserTag,
-      rev: Int,
-      subject: Subject
-  ) extends BlazegraphViewCommand
 }

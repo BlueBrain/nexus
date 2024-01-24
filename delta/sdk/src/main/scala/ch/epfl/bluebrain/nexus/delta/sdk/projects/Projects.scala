@@ -309,6 +309,7 @@ object Projects {
       StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion, clock)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
+      _ => None,
       onUniqueViolation = (id: ProjectRef, c: ProjectCommand) =>
         c match {
           case _: CreateProject => ProjectAlreadyExists(id)

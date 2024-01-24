@@ -466,6 +466,7 @@ object Storages {
       StateMachine(None, evaluate(access, fetchPermissions, config, clock)(_, _), next),
       StorageEvent.serializer,
       StorageState.serializer,
+      _ => None,
       onUniqueViolation = (id: Iri, c: StorageCommand) =>
         c match {
           case c: CreateStorage => ResourceAlreadyExists(id, c.project)

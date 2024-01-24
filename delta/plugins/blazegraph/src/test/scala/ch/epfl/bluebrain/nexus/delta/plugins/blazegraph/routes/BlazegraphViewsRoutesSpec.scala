@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -21,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -171,16 +169,8 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       }
     }
 
-    "tag a view" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/views/org/proj/indexing-view/tags?rev=2", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 3, 2, deprecated = false)
-      }
-    }
-
     "fail to deprecate a view without permission" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asReader ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=2") ~> asReader ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
@@ -193,9 +183,9 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
 
     "deprecate a view" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asWriter ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=2") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 4, 2, deprecated = true)
+        response.asJson shouldEqual indexingViewMetadata(indexingViewId, 3, 2, deprecated = true)
       }
     }
 
@@ -253,14 +243,12 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "fetch a view" in {
       Get("/v1/views/org/proj/indexing-view") ~> asReader ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual indexingView(4, 2, deprecated = true)
+        response.asJson shouldEqual indexingView(3, 2, deprecated = true)
       }
     }
-    "fetch a view by rev or tag" in {
+
+    "fetch a view by rev" in {
       val endpoints = List(
-        "/v1/views/org/proj/indexing-view?tag=mytag",
-        "/v1/resources/org/proj/_/indexing-view?tag=mytag",
-        "/v1/resources/org/proj/view/indexing-view?tag=mytag",
         "/v1/views/org/proj/indexing-view?rev=1",
         "/v1/resources/org/proj/_/indexing-view?rev=1",
         "/v1/resources/org/proj/view/indexing-view?rev=1"
@@ -271,8 +259,21 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
           response.asJson shouldEqual indexingView(1, 1, deprecated = false).mapObject(_.remove("resourceTag"))
         }
       }
-
     }
+
+    "reject fetching a view tag" in {
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view?tag=mytag",
+        "/v1/resources/org/proj/_/indexing-view?tag=mytag",
+        "/v1/resources/org/proj/view/indexing-view?tag=mytag"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asReader ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+        }
+      }
+    }
+
     "fetch a view source" in {
       val endpoints = List(
         "/v1/views/org/proj/indexing-view/source",
@@ -286,22 +287,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         }
       }
     }
-    "fetch the view tags" in {
-      val endpoints = List(
-        "/v1/views/org/proj/indexing-view/tags",
-        "/v1/resources/org/proj/_/indexing-view/tags",
-        "/v1/resources/org/proj/view/indexing-view/tags"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
-          response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual
-            json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
-              Vocabulary.contexts.tags
-            )
-        }
-      }
-    }
+
     "reject if provided rev and tag simultaneously" in {
       Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest

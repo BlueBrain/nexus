@@ -4,15 +4,14 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UndeprecateBlazegraphView, UpdateBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUndeprecated, BlazegraphViewUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReferences, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, UndeprecateBlazegraphView, UpdateBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReferences, PermissionIsNotDefined, ResourceAlreadyExists, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
@@ -61,7 +60,6 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
         uuid: UUID = uuid,
         value: BlazegraphViewValue = indexingValue,
         source: Json = source,
-        tags: Tags = Tags.empty,
         rev: Int = 1,
         indexingRev: Int = 1,
         deprecated: Boolean = false,
@@ -76,7 +74,6 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
         uuid,
         value,
         source,
-        tags,
         rev,
         indexingRev,
         deprecated,
@@ -153,36 +150,6 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateBlazegraphView(id, project, indexingValue, 1, source, subject)
         evaluate(invalidView, clock)(Some(current()), cmd).rejectedWith[PermissionIsNotDefined]
-      }
-    }
-
-    "evaluating the TagBlazegraphView command" should {
-      val tag = UserTag.unsafe("tag")
-      "emit an BlazegraphViewTagAdded" in {
-        val cmd      = TagBlazegraphView(id, project, 1, tag, 1, subject)
-        val expected = BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current()), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = TagBlazegraphView(id, project, 1, tag, 1, subject)
-        eval(None, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = TagBlazegraphView(id, project, 1, tag, 2, subject)
-        eval(Some(current()), cmd).rejectedWith[IncorrectRev]
-      }
-      "emit an BlazegraphViewTagAdded when view is deprecated" in {
-        val cmd      = TagBlazegraphView(id, project, 1, tag, 1, subject)
-        val expected = BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current(deprecated = true)), cmd).accepted shouldEqual expected
-      }
-      "raise a RevisionNotFound rejection for negative revision values" in {
-        val cmd = TagBlazegraphView(id, project, 0, tag, 1, subject)
-        eval(Some(current()), cmd).rejectedWith[RevisionNotFound]
-      }
-      "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        val cmd = TagBlazegraphView(id, project, 2, tag, 1, subject)
-        eval(Some(current()), cmd).rejectedWith[RevisionNotFound]
       }
     }
 
@@ -301,7 +268,7 @@ class BlazegraphViewsStmSpec extends CatsEffectSpec with Fixtures {
         next(
           Some(current()),
           BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1, tag, 2, epoch, subject)
-        ).value shouldEqual current(tags = Tags(tag -> 1), rev = 2, updatedBy = subject)
+        ).value shouldEqual current(rev = 2, updatedBy = subject)
       }
     }
 

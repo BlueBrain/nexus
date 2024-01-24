@@ -9,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewSta
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindTypedPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -43,7 +42,6 @@ class IndexingViewDefSuite extends NexusSuite {
   private val id               = nxv + "indexing-view"
   private val viewRef          = ViewRef(projectRef, id)
   private val subject: Subject = Anonymous
-  private val tag              = UserTag.unsafe("mytag")
   private val indexingRev      = 1
   private val currentRev       = 1
 
@@ -65,7 +63,6 @@ class IndexingViewDefSuite extends NexusSuite {
     uuid,
     v,
     Json.obj("blazegraph" -> Json.fromString("value")),
-    Tags(tag              -> 3),
     rev = 1,
     indexingRev = indexingRev,
     deprecated = false,
