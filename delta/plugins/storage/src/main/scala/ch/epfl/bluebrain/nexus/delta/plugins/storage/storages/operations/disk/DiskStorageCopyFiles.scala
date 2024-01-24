@@ -3,20 +3,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, TransactionalFileCopier}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.computeLocation
 import fs2.io.file.Path
 
 import java.nio.file
+import java.util.UUID
 
 trait DiskStorageCopyFiles {
   def copyFiles(destStorage: DiskStorage, details: NonEmptyList[DiskCopyDetails]): IO[NonEmptyList[FileAttributes]]
 }
 
 object DiskStorageCopyFiles {
-  def mk(copier: TransactionalFileCopier): DiskStorageCopyFiles = new DiskStorageCopyFiles {
+  def mk(copier: TransactionalFileCopier, uuidf: UUIDF): DiskStorageCopyFiles = new DiskStorageCopyFiles {
 
     def copyFiles(destStorage: DiskStorage, details: NonEmptyList[DiskCopyDetails]): IO[NonEmptyList[FileAttributes]] =
       details
@@ -32,23 +33,25 @@ object DiskStorageCopyFiles {
     private def mkCopyDetailsAndDestAttributes(destStorage: DiskStorage, copyFile: DiskCopyDetails) =
       for {
         sourcePath                   <- absoluteDiskPathFromAttributes(copyFile.sourceAttributes)
-        (destPath, destRelativePath) <- computeDestLocation(destStorage, copyFile)
-        destAttr                      = mkDestAttributes(copyFile, destPath, destRelativePath)
+        uuid                         <- uuidf()
+        (destPath, destRelativePath) <- computeDestLocation(uuid, destStorage, copyFile)
+        destAttr                      = mkDestAttributes(uuid, copyFile, destPath, destRelativePath)
         copyDetails                  <- absoluteDiskPathFromAttributes(destAttr).map { dest =>
                                           CopyBetween(Path.fromNioPath(sourcePath), Path.fromNioPath(dest))
                                         }
       } yield (copyDetails, destAttr)
 
-    private def computeDestLocation(destStorage: DiskStorage, cd: DiskCopyDetails) =
-      computeLocation(destStorage.project, destStorage.value, cd.destinationDesc.uuid, cd.destinationDesc.filename)
+    private def computeDestLocation(uuid: UUID, destStorage: DiskStorage, cd: DiskCopyDetails) =
+      computeLocation(destStorage.project, destStorage.value, uuid, cd.sourceAttributes.filename)
 
-    private def mkDestAttributes(cd: DiskCopyDetails, destPath: file.Path, destRelativePath: file.Path) =
+    private def mkDestAttributes(uuid: UUID, cd: DiskCopyDetails, destPath: file.Path, destRelativePath: file.Path) =
       FileAttributes(
-        uuid = cd.destinationDesc.uuid,
+        uuid = uuid,
         location = Uri(destPath.toUri.toString),
         path = Uri.Path(destRelativePath.toString),
-        filename = cd.destinationDesc.filename,
+        filename = cd.sourceAttributes.filename,
         mediaType = cd.sourceAttributes.mediaType,
+        keywords = cd.sourceAttributes.keywords,
         bytes = cd.sourceAttributes.bytes,
         digest = cd.sourceAttributes.digest,
         origin = cd.sourceAttributes.origin

@@ -53,7 +53,6 @@ final case class FileState(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
-    metadata: Option[FileUserMetadata],
     tags: Tags,
     rev: Int,
     deprecated: Boolean,
@@ -75,7 +74,7 @@ final case class FileState(
     */
   def types: Set[Iri] = Set(nxvFile)
 
-  private def file: File = File(id, project, storage, storageType, attributes, metadata, tags)
+  private def file: File = File(id, project, storage, storageType, attributes, tags)
 
   def toResource: FileResource =
     ResourceF(

@@ -9,15 +9,13 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeExcep
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.parser
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,14 +42,19 @@ sealed trait FormDataExtractor {
       entity: HttpEntity,
       maxFileSize: Long,
       storageAvailableSpace: Option[Long]
-  ): IO[FileInformation]
+  ): IO[UploadedFileInformation]
 }
 
-case class FileInformation(metadata: Option[FileUserMetadata], description: FileDescription, contents: BodyPartEntity)
+case class UploadedFileInformation(
+    filename: String,
+    keywords: Map[Label, String],
+    suppliedContentType: ContentType,
+    contents: BodyPartEntity
+)
 
 object FormDataExtractor {
 
-  private val fieldName: String = "file"
+  private val FileFieldName: String = "file"
 
   private val defaultContentType: ContentType.Binary = ContentTypes.`application/octet-stream`
 
@@ -71,7 +74,7 @@ object FormDataExtractor {
 
   def apply(
       mediaTypeDetector: MediaTypeDetectorConfig
-  )(implicit uuidF: UUIDF, as: ActorSystem): FormDataExtractor =
+  )(implicit as: ActorSystem): FormDataExtractor =
     new FormDataExtractor {
       implicit val ec: ExecutionContext = as.getDispatcher
 
@@ -80,7 +83,7 @@ object FormDataExtractor {
           entity: HttpEntity,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[FileInformation] = {
+      ): IO[UploadedFileInformation] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         for {
           formData <- unmarshall(entity, sizeLimit)
@@ -111,7 +114,7 @@ object FormDataExtractor {
           formData: FormData,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[Option[FileInformation]] = IO
+      ): IO[Option[UploadedFileInformation]] = IO
         .fromFuture(
           IO(
             formData.parts
@@ -128,32 +131,34 @@ object FormDataExtractor {
             WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
         }
 
-      private def extractFile(part: FormData.BodyPart): Future[Option[FileInformation]] = part match {
-        case part if part.name == fieldName =>
+      private def extractFile(part: FormData.BodyPart): Future[Option[UploadedFileInformation]] = part match {
+        case part if part.name == FileFieldName =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
 
-          (for {
-            metadata    <- extractUserMetadata(part)
-            description <- FileDescription(filename, contentType)
+          val result = for {
+            keywords <- extractKeywords(part)
           } yield {
-            Some(FileInformation(metadata, description, part.entity))
-          }).unsafeToFuture()
-        case part                           =>
+            Some(UploadedFileInformation(filename, keywords, contentType, part.entity))
+          }
+
+          Future.fromTry(result.toTry)
+        case part                               =>
           part.entity.discardBytes().future.as(None)
       }
 
-      private def extractUserMetadata(part: Multipart.FormData.BodyPart) =
-        part.dispositionParams.get("metadata") match {
+      private def extractKeywords(part: Multipart.FormData.BodyPart): Either[InvalidUserMetadata, Map[Label, String]] =
+        part.dispositionParams.get("keywords") match {
           case Some(value) =>
-            IO.fromEither(parser.parse(value).flatMap(_.as[FileUserMetadata]))
-              .map(Some(_))
-              .adaptError(err => InvalidUserMetadata(err.getMessage))
-          case None        => IO.none
+            parser
+              .parse(value)
+              .flatMap(_.as[Map[Label, String]])
+              .leftMap(err => InvalidUserMetadata(err.getMessage))
+          case None        => Right(Map.empty)
         }
 
-      private def detectContentType(filename: String, contentTypeFromAkka: ContentType) = {
-        val bodyDefinedContentType = Option.when(contentTypeFromAkka != defaultContentType)(contentTypeFromAkka)
+      private def detectContentType(filename: String, contentTypeFromRequest: ContentType) = {
+        val bodyDefinedContentType = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
 
         val extensionOpt = FileUtils.extension(filename)
 
@@ -166,7 +171,10 @@ object FormDataExtractor {
           Try(MediaTypes.forExtension(e)).map(contentType).toOption
         }
 
-        bodyDefinedContentType.orElse(detectFromConfig).orElse(detectAkkaFromExtension).getOrElse(contentTypeFromAkka)
+        bodyDefinedContentType
+          .orElse(detectFromConfig)
+          .orElse(detectAkkaFromExtension)
+          .getOrElse(contentTypeFromRequest)
       }
 
       private def contentType(mediaType: MediaType) = ContentType(mediaType, () => HttpCharsets.`UTF-8`)

@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
@@ -662,7 +661,7 @@ class FilesRoutesSpec
       updatedBy: Subject = callerWriter.subject
   )(implicit baseUri: BaseUri): Json =
     FilesRoutesSpec
-      .fileMetadata(project, id, attributes, None, storage, storageType, rev, deprecated, createdBy, updatedBy)
+      .fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
 
   private def nxvBase(id: String): String = (nxv + id).toString
 
@@ -673,7 +672,6 @@ object FilesRoutesSpec extends CirceLiteral {
       project: ProjectRef,
       id: Iri,
       attributes: FileAttributes,
-      userMetadata: Option[FileUserMetadata],
       storage: ResourceRef.Revision,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
@@ -682,18 +680,18 @@ object FilesRoutesSpec extends CirceLiteral {
       updatedBy: Subject
   )(implicit baseUri: BaseUri): Json = {
     val self               = ResourceUris("files", project, id).accessUri
-    val keywordsJson: Json = userMetadata match {
-      case Some(meta) =>
+    val keywordsJson: Json = attributes.keywords.isEmpty match {
+      case false =>
         Json.obj(
           "keywords" -> JsonObject
             .fromIterable(
-              meta.keywords.map { case (k, v) =>
+              attributes.keywords.map { case (k, v) =>
                 k.value -> v.asJson
               }
             )
             .toJson
         )
-      case None       => Json.obj()
+      case true  => Json.obj()
     }
 
     val mainJson = json"""

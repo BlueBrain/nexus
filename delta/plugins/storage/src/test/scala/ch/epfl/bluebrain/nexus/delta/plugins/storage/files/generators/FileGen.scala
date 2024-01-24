@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
@@ -48,11 +47,11 @@ trait FileGen { self: Generators with FileFixtures =>
 
   def genFileIdWithTag(projRef: ProjectRef): FileId = FileId(genString(), UserTag.unsafe(genString()), projRef)
 
-  def genAttributesAndMetadata(): NonEmptyList[(FileAttributes, Option[FileUserMetadata])] = {
+  def genAttributes(): NonEmptyList[FileAttributes] = {
     val proj = genProject()
     genFilesIdsInProject(proj.ref)
       .map(genFileResource(_, proj.context))
-      .map(res => res.value.attributes -> res.value.userMetadata)
+      .map(res => res.value.attributes)
   }
 
   def genCopyFileSource(): CopyFileSource                                             = genCopyFileSource(genProjectRef())
@@ -63,46 +62,44 @@ trait FileGen { self: Generators with FileFixtures =>
   def genOption[A](genA: => A): Option[A]                                             = if (Random.nextInt(2) % 2 == 0) Some(genA) else None
 
   def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
-    genFileResourceWithStorage(fileId, context, genRevision(), Some(genUserMetadata()), 1L)
+    genFileResourceWithStorage(fileId, context, genRevision(), genKeywords(), 1L)
 
   def genFileResourceWithStorage(
       fileId: FileId,
       context: ProjectContext,
       storageRef: ResourceRef.Revision,
-      userMetadata: Option[FileUserMetadata],
+      keywords: Map[Label, String],
       fileSize: Long
   ): FileResource =
     genFileResourceWithIri(
       fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(throw new Exception(s"Bad file $fileId")),
       fileId.project,
       storageRef,
-      attributes(genString(), size = fileSize),
-      userMetadata
+      attributes(genString(), size = fileSize, keywords = keywords)
     )
 
   def genFileResourceAndStorage(
       fileId: FileId,
       context: ProjectContext,
       storageVal: StorageValue,
-      userMetadata: Option[FileUserMetadata],
+      keywords: Map[Label, String],
       fileSize: Long = 1L
   ): (FileResource, StorageResource) = {
     val storageRes = StorageGen.resourceFor(genIri(), fileId.project, storageVal)
     val storageRef = ResourceRef.Revision(storageRes.id, storageRes.id, storageRes.rev)
-    (genFileResourceWithStorage(fileId, context, storageRef, userMetadata, fileSize), storageRes)
+    (genFileResourceWithStorage(fileId, context, storageRef, keywords, fileSize), storageRes)
   }
 
   def genFileResourceWithIri(
       iri: Iri,
       projRef: ProjectRef,
       storageRef: ResourceRef.Revision,
-      attr: FileAttributes,
-      metadata: Option[FileUserMetadata]
+      attr: FileAttributes
   ): FileResource =
-    FileGen.resourceFor(iri, projRef, storageRef, attr, metadata)
+    FileGen.resourceFor(iri, projRef, storageRef, attr)
 
   def genFileResourceFromCmd(cmd: CreateFile): FileResource                  =
-    genFileResourceWithIri(cmd.id, cmd.project, cmd.storage, cmd.attributes, cmd.userMetadata)
+    genFileResourceWithIri(cmd.id, cmd.project, cmd.storage, cmd.attributes)
   def genIri(): Iri                                                          = Iri.unsafe(genString())
   def genStorage(proj: ProjectRef, storageValue: StorageValue): StorageState =
     StorageGen.storageState(genIri(), proj, storageValue)
@@ -119,7 +116,6 @@ object FileGen {
       project: ProjectRef,
       storage: ResourceRef.Revision,
       attributes: FileAttributes,
-      metadata: Option[FileUserMetadata] = None,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -133,7 +129,6 @@ object FileGen {
       storage,
       storageType,
       attributes,
-      metadata,
       tags,
       rev,
       deprecated,
@@ -149,7 +144,6 @@ object FileGen {
       project: ProjectRef,
       storage: ResourceRef.Revision,
       attributes: FileAttributes,
-      metadata: Option[FileUserMetadata] = None,
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -162,7 +156,6 @@ object FileGen {
       project,
       storage,
       attributes,
-      metadata,
       storageType,
       rev,
       deprecated,
@@ -182,7 +175,8 @@ object FileGen {
       size: Long,
       id: UUID,
       projRef: ProjectRef,
-      path: AbsolutePath
+      path: AbsolutePath,
+      keywords: Map[Label, String]
   ): FileAttributes = {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
@@ -191,6 +185,7 @@ object FileGen {
       Uri.Path(s"${projRef.toString}/$uuidPathSegment/$filename"),
       filename,
       Some(`text/plain(UTF-8)`),
+      keywords,
       size,
       digest,
       Client

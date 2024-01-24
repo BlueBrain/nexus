@@ -92,7 +92,6 @@ object FileEvent {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      metadata: Option[FileUserMetadata],
       rev: Int,
       instant: Instant,
       subject: Subject,

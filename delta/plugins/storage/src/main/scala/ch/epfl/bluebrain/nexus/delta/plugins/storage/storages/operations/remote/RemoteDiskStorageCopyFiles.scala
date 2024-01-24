@@ -35,15 +35,20 @@ object RemoteDiskStorageCopyFiles {
     }
   }
 
-  private def mkDestAttributes(cd: RemoteDiskCopyDetails, relativeDestPath: Path, absoluteDestPath: Uri) = {
-    val destDesc   = cd.destinationDesc
-    val sourceAttr = cd.sourceAttributes
+  private def mkDestAttributes(
+      cd: RemoteDiskCopyDetails,
+      relativeDestPath: Path,
+      absoluteDestPath: Uri
+  ): FileAttributes = {
+    val sourceAttr = cd.sourceMetadata
+    val bob        = cd.sourceUserSuppliedMetadata
     FileAttributes(
-      uuid = destDesc.uuid,
+      uuid = cd.destUuid,
       location = absoluteDestPath,
       path = relativeDestPath,
-      filename = destDesc.filename,
-      mediaType = destDesc.mediaType,
+      filename = bob.filename,
+      mediaType = bob.mediaType,
+      keywords = bob.keywords,
       bytes = sourceAttr.bytes,
       digest = sourceAttr.digest,
       origin = sourceAttr.origin
@@ -52,9 +57,9 @@ object RemoteDiskStorageCopyFiles {
 
   private def remoteDiskCopyPaths(destStorage: RemoteDiskStorage, copyDetails: NonEmptyList[RemoteDiskCopyDetails]) =
     copyDetails.map { cd =>
-      val destDesc        = cd.destinationDesc
-      val destinationPath = Uri.Path(intermediateFolders(destStorage.project, destDesc.uuid, destDesc.filename))
-      val sourcePath      = cd.sourceAttributes.path
+      val destinationPath =
+        Uri.Path(intermediateFolders(destStorage.project, cd.destUuid, cd.sourceUserSuppliedMetadata.filename))
+      val sourcePath      = cd.sourcePath
       RemoteDiskCopyPaths(cd.sourceBucket, sourcePath, destinationPath)
     }
 }

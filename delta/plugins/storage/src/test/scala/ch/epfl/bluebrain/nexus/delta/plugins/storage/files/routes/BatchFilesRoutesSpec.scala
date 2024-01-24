@@ -237,7 +237,6 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
         res.value.project,
         res.id,
         res.value.attributes,
-        res.value.userMetadata,
         res.value.storage,
         res.value.storageType,
         res.rev,

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -40,12 +41,39 @@ final case class FileAttributes(
     path: Path,
     filename: String,
     mediaType: Option[ContentType],
+    // TODO: Remove default after ??? migration
+    keywords: Map[Label, String] = Map.empty,
     bytes: Long,
     digest: Digest,
     origin: FileAttributesOrigin
-)
+) extends LimitedFileAttributes
+
+trait LimitedFileAttributes {
+  def location: Uri
+  def path: Path
+  def filename: String
+  def mediaType: Option[ContentType]
+  def keywords: Map[Label, String]
+  def bytes: Long
+  def digest: Digest
+  def origin: FileAttributesOrigin
+}
 
 object FileAttributes {
+
+  def from(userSuppliedMetadata: FileDescription, metadata: FileStorageMetadata): FileAttributes = {
+    FileAttributes(
+      metadata.uuid,
+      metadata.location,
+      metadata.path,
+      userSuppliedMetadata.filename,
+      userSuppliedMetadata.mediaType,
+      userSuppliedMetadata.keywords,
+      metadata.bytes,
+      metadata.digest,
+      metadata.origin
+    )
+  }
 
   /**
     * Enumeration of all possible inputs that generated the file attributes
@@ -69,7 +97,8 @@ object FileAttributes {
   }
 
   @nowarn("cat=unused")
-  implicit private val circeConfig: Configuration = Configuration.default.copy(transformMemberNames = k => s"_$k")
+  implicit private val circeConfig: Configuration =
+    Configuration.default.withDefaults.copy(transformMemberNames = k => s"_$k")
 
   implicit def fileAttributesEncoder(implicit
       storageType: StorageType,

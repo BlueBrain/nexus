@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart}
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -51,10 +50,11 @@ trait FileFixtures extends Generators {
       filename: String = "file.txt",
       size: Long = 12,
       id: UUID = uuid,
-      projRef: ProjectRef = projectRef
-  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path)
+      projRef: ProjectRef = projectRef,
+      keywords: Map[Label, String] = Map.empty
+  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path, keywords)
 
-  def genUserMetadata(): FileUserMetadata = FileUserMetadata(Map(Label.unsafe(genString()) -> genString()))
+  def genKeywords(): Map[Label, String] = Map(Label.unsafe(genString()) -> genString())
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart

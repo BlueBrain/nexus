@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
@@ -143,13 +142,12 @@ class FilesSpec(docker: RemoteStorageDocker)
         project: ProjectRef,
         storage: ResourceRef.Revision,
         attributes: FileAttributes,
-        metadata: Option[FileUserMetadata] = None,
         storageType: StorageType = StorageType.DiskStorage,
         rev: Int = 1,
         deprecated: Boolean = false,
         tags: Tags = Tags.empty
     ): FileResource =
-      FileGen.resourceFor(id, project, storage, attributes, metadata, storageType, rev, deprecated, tags, bob, bob)
+      FileGen.resourceFor(id, project, storage, attributes, storageType, rev, deprecated, tags, bob, bob)
 
     "creating a file" should {
 

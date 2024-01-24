@@ -7,8 +7,10 @@ import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
@@ -19,13 +21,31 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.Future
 
-class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem) extends LinkFile {
+class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem, uuidf: UUIDF)
+    extends LinkFile {
 
   import as.dispatcher
 
   private val fileNotFoundException = new IllegalArgumentException("File not found")
 
-  override def apply(key: Uri.Path, description: FileDescription): IO[FileAttributes] = {
+  override def apply(key: Uri.Path, filename: String): IO[FileStorageMetadata] = {
+
+    for {
+      uuid                              <- uuidf()
+      (contentLength, digest, location) <- storeFile(key)
+    } yield {
+      FileStorageMetadata(
+        uuid,
+        contentLength,
+        digest,
+        origin = Storage,
+        location,
+        key
+      )
+    }
+  }
+
+  private def storeFile(key: Uri.Path): IO[(Long, Digest.ComputedDigest, Uri)] = {
     val attributes    = S3Attributes.settings(storage.value.alpakkaSettings(config))
     val location: Uri = storage.value.address(storage.value.bucket) / key
     IO.fromFuture(
@@ -36,16 +56,7 @@ class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit 
           .flatMap {
             case Some((source, meta)) =>
               source.runWith(SaveFile.digestSink(storage.value.algorithm)).map { dig =>
-                FileAttributes(
-                  description.uuid,
-                  location,
-                  key,
-                  description.filename,
-                  description.mediaType,
-                  meta.contentLength,
-                  dig,
-                  origin = Storage
-                )
+                (meta.contentLength, dig, location)
               }
             case None                 => Future.failed(fileNotFoundException)
           }
@@ -56,5 +67,4 @@ class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit 
       case err                     => FetchFileRejection.UnexpectedFetchError(key.toString, err.getMessage)
     }
   }
-
 }

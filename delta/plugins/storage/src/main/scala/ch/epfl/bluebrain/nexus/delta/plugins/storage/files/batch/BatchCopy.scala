@@ -4,9 +4,9 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FetchFileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage}
@@ -26,7 +26,7 @@ import shapeless.syntax.typeable.typeableOps
 trait BatchCopy {
   def copyFiles(source: CopyFileSource, destStorage: Storage)(implicit
       c: Caller
-  ): IO[NonEmptyList[(FileAttributes, Option[FileUserMetadata])]]
+  ): IO[NonEmptyList[FileAttributes]]
 }
 
 object BatchCopy {
@@ -41,7 +41,7 @@ object BatchCopy {
 
     override def copyFiles(source: CopyFileSource, destStorage: Storage)(implicit
         c: Caller
-    ): IO[NonEmptyList[(FileAttributes, Option[FileUserMetadata])]] =
+    ): IO[NonEmptyList[FileAttributes]] =
       destStorage match {
         case disk: Storage.DiskStorage         => copyToDiskStorage(source, disk)
         case remote: Storage.RemoteDiskStorage => copyToRemoteStorage(source, remote)
@@ -51,18 +51,22 @@ object BatchCopy {
     private def copyToRemoteStorage(source: CopyFileSource, dest: RemoteDiskStorage)(implicit c: Caller) =
       for {
         remoteCopyDetails <- source.files.traverse(fetchRemoteCopyDetails(dest, _))
-        _                 <- validateFilesForStorage(dest, remoteCopyDetails.map(_.sourceAttributes.bytes))
+        _                 <- validateFilesForStorage(dest, remoteCopyDetails.map(_.sourceMetadata.bytes))
         attributes        <- remoteDiskCopy.copyFiles(dest, remoteCopyDetails)
-      } yield attributes.zip(remoteCopyDetails.map(_.sourceMetadata))
+      } yield {
+        attributes
+      }
 
     private def copyToDiskStorage(source: CopyFileSource, dest: DiskStorage)(implicit
         c: Caller
-    ): IO[NonEmptyList[(FileAttributes, Option[FileUserMetadata])]] =
+    ): IO[NonEmptyList[FileAttributes]] =
       for {
         diskCopyDetails <- source.files.traverse(fetchDiskCopyDetails(dest, _))
         _               <- validateFilesForStorage(dest, diskCopyDetails.map(_.sourceAttributes.bytes))
-        attributes      <- diskCopy.copyFiles(dest, diskCopyDetails)
-      } yield attributes.zip(diskCopyDetails.map(_.sourceMetadata))
+        destAttributes  <- diskCopy.copyFiles(dest, diskCopyDetails)
+      } yield {
+        destAttributes
+      }
 
     private def validateFilesForStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = {
       val maxSize = destStorage.storageValue.maxFileSize
@@ -81,12 +85,13 @@ object BatchCopy {
                        .getOrElse(IO.unit)
       } yield ()
 
-    private def fetchDiskCopyDetails(destStorage: DiskStorage, fileId: FileId)(implicit c: Caller) =
+    private def fetchDiskCopyDetails(destStorage: DiskStorage, fileId: FileId)(implicit
+        c: Caller
+    ): IO[DiskCopyDetails] =
       for {
         (file, sourceStorage) <- fetchFileAndValidateStorage(fileId)
-        destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
         _                     <- validateDiskStorage(destStorage, sourceStorage)
-      } yield DiskCopyDetails(destStorage, destinationDesc, file.attributes, file.userMetadata)
+      } yield DiskCopyDetails(destStorage, file.attributes)
 
     private def validateDiskStorage(destStorage: DiskStorage, sourceStorage: Storage) =
       sourceStorage
@@ -97,9 +102,16 @@ object BatchCopy {
     private def fetchRemoteCopyDetails(destStorage: RemoteDiskStorage, fileId: FileId)(implicit c: Caller) =
       for {
         (file, sourceStorage) <- fetchFileAndValidateStorage(fileId)
-        destinationDesc       <- FileDescription(file.attributes.filename, file.attributes.mediaType)
         sourceBucket          <- validateRemoteStorage(destStorage, sourceStorage)
-      } yield RemoteDiskCopyDetails(destStorage, destinationDesc, sourceBucket, file.attributes, file.userMetadata)
+        uuid                  <- uuidF()
+      } yield RemoteDiskCopyDetails(
+        uuid,
+        destStorage,
+        file.attributes.path,
+        sourceBucket,
+        FileMetadata.from(file.attributes),
+        FileDescription.from(file)
+      )
 
     private def validateRemoteStorage(destStorage: RemoteDiskStorage, sourceStorage: Storage) =
       sourceStorage

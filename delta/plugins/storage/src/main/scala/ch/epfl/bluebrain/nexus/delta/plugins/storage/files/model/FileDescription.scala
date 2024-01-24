@@ -1,28 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
-import java.util.UUID
-
-/**
-  * Holds some of the metadata information related to the file.
-  *
-  * @param uuid
-  *   the unique id that identifies this file.
-  * @param filename
-  *   the original filename of the file
-  * @param mediaType
-  *   the media type of the file
-  */
-final case class FileDescription(uuid: UUID, filename: String, mediaType: Option[ContentType])
+case class FileDescription(filename: String, keywords: Map[Label, String], mediaType: Option[ContentType])
 
 object FileDescription {
+  def from(file: File): FileDescription = {
+    from(file.attributes)
+  }
 
-  final def apply(filename: String, mediaType: Option[ContentType])(implicit uuidF: UUIDF): IO[FileDescription] =
-    uuidF().map(FileDescription(_, filename, mediaType))
+  def from(fileAttributes: FileAttributes): FileDescription = {
+    FileDescription(fileAttributes.filename, fileAttributes.keywords, fileAttributes.mediaType)
+  }
 
-  final def apply(filename: String, mediaType: ContentType)(implicit uuidF: UUIDF): IO[FileDescription] =
-    apply(filename, Some(mediaType))
+  def from(info: UploadedFileInformation): FileDescription = {
+    FileDescription(info.filename, info.keywords, info.suppliedContentType)
+  }
+
+  def apply(filename: String, keywords: Map[Label, String], mediaType: ContentType): FileDescription =
+    FileDescription(filename, keywords, Some(mediaType))
 }

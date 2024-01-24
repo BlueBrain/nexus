@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
@@ -36,6 +35,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val fileId     = nxv + "file"
   private val digest     = ComputedDigest(DigestAlgorithm.default, "digest-value")
   private val uuid       = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  private val keywords   = Map(Label.unsafe("key") -> "value")
   private val attributes =
     FileAttributes(
       uuid,
@@ -43,14 +43,14 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Uri.Path("file.txt"),
       "file.txt",
       Some(`text/plain(UTF-8)`),
+      keywords,
       12,
       digest,
       Client
     )
-  private val metadata   = FileUserMetadata(Map(Label.unsafe("key") -> "value"))
-    
+
   // format: off
-  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), Some(metadata), 1, instant, subject, None)
+  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
   private val createdTagged = created.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
@@ -179,7 +179,6 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     storageRef,
     DiskStorageType,
     attributes,
-    Some(metadata),
     Tags(UserTag.unsafe("mytag") -> 3),
     5,
     false,

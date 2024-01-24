@@ -6,7 +6,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
@@ -47,10 +46,10 @@ object BatchFiles {
       for {
         pc                            <- fetchContext.onCreate(dest.project)
         (destStorageRef, destStorage) <- fetchFileStorage.fetchAndValidateActiveStorage(dest.storage, dest.project, pc)
-        destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
+        destMetadata                  <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
                                            CopyRejection(source.project, dest.project, destStorage.id, e)
                                          }
-        fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
+        fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destMetadata)
       } yield fileResources
     }.span("copyFiles")
 
@@ -59,9 +58,9 @@ object BatchFiles {
         dest: CopyFileDestination,
         destStorageRef: ResourceRef.Revision,
         destStorageTpe: StorageType,
-        destFilesAttributes: NonEmptyList[(FileAttributes, Option[FileUserMetadata])]
+        destFilesAttributes: NonEmptyList[FileAttributes]
     )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
-      destFilesAttributes.traverse { case (destFileAttributes, destFileMetadata) =>
+      destFilesAttributes.traverse { case destMetadata =>
         for {
           iri      <- generateId(pc)
           command   =
@@ -70,8 +69,7 @@ object BatchFiles {
               dest.project,
               destStorageRef,
               destStorageTpe,
-              destFileAttributes,
-              destFileMetadata,
+              destMetadata,
               c.subject,
               dest.tag
             )

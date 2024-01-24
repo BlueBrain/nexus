@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -13,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -40,7 +39,6 @@ final case class File(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
-    userMetadata: Option[FileUserMetadata],
     tags: Tags
 ) {
   def metadata: Metadata = Metadata(tags.tags)
@@ -59,14 +57,12 @@ object File {
         "_rev"       -> file.storage.rev.asJson
       )
       val v1                                = file.attributes.asJsonObject.add("_storage", storageJson)
-      file.userMetadata match {
-        case Some(metadata) =>
-          v1.add(
-            "keywords",
-            metadata.keywords.asJson
-          )
-        case None           => v1
-      }
+      if (file.attributes.keywords.nonEmpty) {
+        v1.add(
+          "keywords",
+          file.attributes.keywords.asJson
+        )
+      } else v1
     }
 
   implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =

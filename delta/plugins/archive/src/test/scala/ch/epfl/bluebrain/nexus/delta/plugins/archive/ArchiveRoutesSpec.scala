@@ -100,6 +100,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Uri.Path("file.txt"),
     "myfile",
     Some(`text/plain(UTF-8)`),
+    Map.empty,
     12L,
     ComputedDigest(DigestAlgorithm.default, "digest"),
     Client
@@ -303,7 +304,6 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
             projectRef,
             fileId,
             file.value.attributes,
-            file.value.userMetadata,
             storageRef,
             createdBy = subject,
             updatedBy = subject

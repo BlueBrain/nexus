@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
@@ -34,40 +34,37 @@ class DiskStorageSaveFileSpec
   private val file   = AbsolutePath(Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")).rightValue
 
   "A DiskStorage saving operations" should {
-    val iri     = iri"http://localhost/disk"
-    val project = ProjectRef.unsafe("org", "project")
-    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
-    val storage = DiskStorage(iri, project, value, Json.obj())
-    val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-    val content = "file content"
-    val entity  = HttpEntity(content)
+    val iri                   = iri"http://localhost/disk"
+    val project               = ProjectRef.unsafe("org", "project")
+    val value                 = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
+    val storage               = DiskStorage(iri, project, value, Json.obj())
+    val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+    implicit val uuidf: UUIDF = UUIDF.fixed(uuid)
+    val content               = "file content"
+    val entity                = HttpEntity(content)
 
     "save a file to a volume" in {
-      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
 
-      val attributes = storage.saveFile.apply(description, entity).accepted
+      val metadata = storage.saveFile.apply("myfile.txt", entity).accepted
 
       Files.readString(file.value) shouldEqual content
 
-      attributes shouldEqual
-        FileAttributes(
+      metadata shouldEqual
+        FileStorageMetadata(
           uuid,
-          s"file://$file",
-          Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
-          "myfile.txt",
-          Some(`text/plain(UTF-8)`),
           Files.size(file.value),
           ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest),
-          Client
+          Client,
+          s"file://$file",
+          Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
         )
 
-      consume(storage.fetchFile(attributes).accepted) shouldEqual content
+      consume(storage.fetchFile(metadata.location.path).accepted) shouldEqual content
 
     }
 
     "fail attempting to save the same file again" in {
-      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile.apply("myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 

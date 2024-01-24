@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.LimitedFileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 
 final case class DiskCopyDetails(
     destStorage: DiskStorage,
-    destinationDesc: FileDescription,
-    sourceAttributes: FileAttributes,
-    sourceMetadata: Option[FileUserMetadata]
+    sourceAttributes: LimitedFileAttributes
 )
