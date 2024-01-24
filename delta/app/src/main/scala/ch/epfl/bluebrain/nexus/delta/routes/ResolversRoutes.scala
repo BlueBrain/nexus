@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -80,9 +79,6 @@ final class ResolversRoutes(
     emit(io.map(_.value.source).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
   }
 
-  private def emitTags(io: IO[ResolverResource]): Route =
-    emit(io.map(_.value.tags).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
-
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
@@ -139,23 +135,6 @@ final class ResolversRoutes(
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(resolver) & authorizeRead) {
                     resolverRef =>
                       emitSource(resolvers.fetch(resolverRef, project))
-                  },
-                  // Tags
-                  (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    concat(
-                      // Fetch a resolver tags
-                      (get & idSegmentRef(resolver) & authorizeRead) { resolverRef =>
-                        emitTags(resolvers.fetch(resolverRef, project))
-                      },
-                      // Tag a resolver
-                      (post & parameter("rev".as[Int])) { rev =>
-                        authorizeWrite {
-                          entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emitMetadata(Created, resolvers.tag(resolver, project, tag, tagRev, rev).flatTap(index))
-                          }
-                        }
-                      }
-                    )
                   },
                   // Fetch a resource using a resolver
                   (get & idSegmentRef) { resourceIdRef =>
