@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
@@ -217,8 +216,7 @@ class ResolverSerializationSuite extends SerializationSuite {
       myId,
       projectRef,
       k,
-      Json.obj("resolver"          -> Json.fromString("value")),
-      Tags(UserTag.unsafe("mytag") -> 3),
+      Json.obj("resolver" -> Json.fromString("value")),
       rev = 1,
       deprecated = false,
       createdAt = instant,

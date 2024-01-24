@@ -11,19 +11,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DifferentResolverType, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DifferentResolverType, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
@@ -96,24 +95,6 @@ trait Resolvers {
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Int, resolverValue: ResolverValue)(implicit
       caller: Caller
-  ): IO[ResolverResource]
-
-  /**
-    * Add a tag to an existing resolver
-    *
-    * @param id
-    *   the resolver identifier to expand as the id of the resolver
-    * @param projectRef
-    *   the project where the resolver belongs
-    * @param tag
-    *   the tag name
-    * @param tagRev
-    *   the tag revision
-    * @param rev
-    *   the ResolverState revision of the resolver
-    */
-  def tag(id: IdSegment, projectRef: ProjectRef, tag: UserTag, tagRev: Int, rev: Int)(implicit
-      subject: Subject
   ): IO[ResolverResource]
 
   /**
@@ -219,7 +200,6 @@ object Resolvers {
           project = e.project,
           value = e.value,
           source = e.source,
-          tags = Tags.empty,
           rev = e.rev,
           deprecated = false,
           createdAt = e.instant,
@@ -240,7 +220,7 @@ object Resolvers {
     }
 
     def tagAdded(e: ResolverTagAdded): Option[ResolverState] = state.map { s =>
-      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def deprecated(e: ResolverDeprecated): Option[ResolverState] = state.map {
@@ -326,31 +306,6 @@ object Resolvers {
         )
     }
 
-    def addTag(c: TagResolver): IO[ResolverTagAdded] = state match {
-      // Resolver can't be found
-      case None                                               =>
-        IO.raiseError(ResolverNotFound(c.id, c.project))
-      // Invalid revision
-      case Some(s) if c.rev != s.rev                          =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      // Revision to tag is invalid
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
-        IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                            =>
-        clock.realTimeInstant.map { now =>
-          ResolverTagAdded(
-            id = c.id,
-            project = c.project,
-            tpe = s.value.tpe,
-            targetRev = c.targetRev,
-            tag = c.tag,
-            rev = s.rev + 1,
-            instant = now,
-            subject = c.subject
-          )
-        }
-    }
-
     def deprecate(c: DeprecateResolver): IO[ResolverDeprecated] = state match {
       // Resolver can't be found
       case None                      =>
@@ -376,7 +331,6 @@ object Resolvers {
     command match {
       case c: CreateResolver    => create(c)
       case c: UpdateResolver    => update(c)
-      case c: TagResolver       => addTag(c)
       case c: DeprecateResolver => deprecate(c)
     }
   }

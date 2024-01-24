@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverState, ResolverValue}
@@ -28,8 +27,7 @@ object ResolverGen {
       id,
       project,
       InProjectValue(Priority.unsafe(priority)),
-      Json.obj(),
-      Tags.empty
+      Json.obj()
     )
 
   /**
@@ -40,7 +38,6 @@ object ResolverGen {
       project: ProjectRef,
       value: ResolverValue,
       source: Json,
-      tags: Tags = Tags.empty,
       rev: Int = 1,
       subject: Subject = Anonymous,
       deprecated: Boolean = false
@@ -50,7 +47,6 @@ object ResolverGen {
       project,
       value,
       source,
-      tags,
       rev,
       deprecated,
       Instant.EPOCH,
