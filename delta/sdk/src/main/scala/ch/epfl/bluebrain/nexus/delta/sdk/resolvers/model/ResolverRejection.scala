@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
@@ -46,13 +46,12 @@ object ResolverRejection {
       extends ResolverRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Rejection returned when a subject intends to retrieve a resolver at a specific tag, but the provided tag does not
-    * exist.
-    *
-    * @param tag
-    *   the provided tag
+    * Rejection returned when attempting to fetch a resolver by tag, a feature no longer supporter
     */
-  final case class TagNotFound(tag: UserTag) extends ResolverRejection(s"Tag requested '$tag' not found.")
+  final case class FetchByTagNotSupported(tag: UserTag)
+      extends ResolverRejection(
+        s"Fetching resolvers by tag is no longer supported. Id ${tag.value} and tag ${tag.value}"
+      )
 
   /**
     * Rejection returned when attempting to create a resolver but the id already exists.
@@ -255,7 +254,6 @@ object ResolverRejection {
     HttpResponseFields {
       case RevisionNotFound(_, _)                => StatusCodes.NotFound
       case ResolverNotFound(_, _)                => StatusCodes.NotFound
-      case TagNotFound(_)                        => StatusCodes.NotFound
       case InvalidResolution(_, _, _)            => StatusCodes.NotFound
       case InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
       case ProjectContextRejection(rej)          => rej.status
