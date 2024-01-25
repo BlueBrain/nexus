@@ -683,7 +683,7 @@ object FilesRoutesSpec extends CirceLiteral {
     val keywordsJson: Json = attributes.keywords.isEmpty match {
       case false =>
         Json.obj(
-          "keywords" -> JsonObject
+          "_keywords" -> JsonObject
             .fromIterable(
               attributes.keywords.map { case (k, v) =>
                 k.value -> v.asJson
