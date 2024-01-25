@@ -351,6 +351,7 @@ object Resources {
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
       validateResource: ValidateResource,
+      detectChange: DetectChange,
       clock: Clock[IO]
   )(state: Option[ResourceState], cmd: ResourceCommand): IO[ResourceEvent] = {
 
@@ -432,10 +433,9 @@ object Resources {
         }
 
       for {
-        state         <- stateWhereResourceIsEditable(u)
-        stateJsonLd   <- IO.fromEither(state.toAssembly)
-        changeDetected = sys.env.get("DISABLE_CHANGE_DETECTION").contains("true") || stateJsonLd =!= u.jsonld
-        event         <- if (u.schemaOpt.isDefined || changeDetected) onChange(state) else fallbackToTag(state)
+        state          <- stateWhereResourceIsEditable(u)
+        changeDetected <- detectChange(u.jsonld, state)
+        event          <- if (u.schemaOpt.isDefined || changeDetected) onChange(state) else fallbackToTag(state)
       } yield event
     }
 
@@ -453,11 +453,11 @@ object Resources {
     def refresh(r: RefreshResource) = {
       for {
         state                      <- stateWhereResourceIsEditable(r)
-        stateJsonLd                <- IO.fromEither(state.toAssembly)
         _                          <- raiseWhenDifferentSchema(r, state)
         schemaClaim                 = SchemaClaim(r.project, r.schemaOpt.getOrElse(state.schema), r.caller)
         (schemaRev, schemaProject) <- validate(r.jsonld, schemaClaim, r.projectContext.enforceSchema)
-        _                          <- IO.raiseWhen(stateJsonLd === r.jsonld)(NoChangeDetected(state))
+        changeDetected             <- detectChange(r.jsonld, state)
+        _                          <- IO.raiseUnless(changeDetected)(NoChangeDetected(state))
         time                       <- clock.realTimeInstant
       } yield ResourceRefreshed(r.project, schemaRev, schemaProject, r.jsonld, state.rev + 1, time, r.subject)
     }
@@ -513,11 +513,12 @@ object Resources {
     */
   def definition(
       validateResource: ValidateResource,
+      detectChange: DetectChange,
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validateResource, clock)(_, _), next),
+      StateMachine(None, evaluate(validateResource, detectChange, clock)(_, _), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

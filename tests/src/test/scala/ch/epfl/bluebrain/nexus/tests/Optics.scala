@@ -103,6 +103,7 @@ object Optics {
 
   val `@id`   = root.`@id`.string
   val `@type` = root.`@type`.string
+  val context = root.`@context`.json
   val _uuid   = root._uuid.string
   val _rev    = root._rev.int
 
