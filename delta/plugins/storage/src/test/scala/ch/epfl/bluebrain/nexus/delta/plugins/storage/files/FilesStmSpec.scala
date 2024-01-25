@@ -50,10 +50,10 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
-        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, Some(myTag))
+        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, Some(myTag), None)
 
         evaluate(clock)(None, createCmd).accepted shouldEqual
-          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, Some(myTag))
+          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, Some(myTag), None)
       }
 
       "create a new event from a UpdateFile command" in {
@@ -121,7 +121,10 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
 
       "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(clock)(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
+        evaluate(clock)(
+          Some(current),
+          CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None, None)
+        )
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -179,7 +182,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     "producing next state" should {
 
       "from a new FileCreated event" in {
-        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, None)
+        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, None, None)
         val nextState = FileGen.state(id, projectRef, storageRef, attributes, createdBy = bob, updatedBy = bob)
 
         next(None, event).value shouldEqual nextState

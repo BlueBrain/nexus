@@ -13,6 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 final case class FileId(id: IdSegmentRef, project: ProjectRef) {
   def expandIri(fetchContext: ProjectRef => IO[ProjectContext]): IO[(Iri, ProjectContext)] =
     fetchContext(project).flatMap(pc => iriExpander(id.value, pc).map(iri => (iri, pc)))
+
+  def toResourceRef(fetchContext: ProjectRef => IO[ProjectContext]): IO[ResourceRef] =
+    fetchContext(project).flatMap(pc => iriExpander(id, pc))
 }
 
 object FileId {

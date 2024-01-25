@@ -49,7 +49,8 @@ object BatchFiles {
         destFilesAttributes           <- batchCopy.copyFiles(source, destStorage).adaptError { case e: CopyFileRejection =>
                                            CopyRejection(source.project, dest.project, destStorage.id, e)
                                          }
-        fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destFilesAttributes)
+        destAttrAndSourceIris          = destFilesAttributes.zip(source.files)
+        fileResources                 <- createFileResources(pc, dest, destStorageRef, destStorage.tpe, destAttrAndSourceIris)
       } yield fileResources
     }.span("copyFiles")
 
@@ -58,13 +59,22 @@ object BatchFiles {
         dest: CopyFileDestination,
         destStorageRef: ResourceRef.Revision,
         destStorageTpe: StorageType,
-        destFilesAttributes: NonEmptyList[FileAttributes]
+        destAttrAndSourceResourceRefs: NonEmptyList[(FileAttributes, ResourceRef)]
     )(implicit c: Caller): IO[NonEmptyList[FileResource]] =
-      destFilesAttributes.traverse { destFileAttributes =>
+      destAttrAndSourceResourceRefs.traverse { case (destFileAttributes, source) =>
         for {
           iri      <- generateId(pc)
           command   =
-            CreateFile(iri, dest.project, destStorageRef, destStorageTpe, destFileAttributes, c.subject, dest.tag)
+            CreateFile(
+              iri,
+              dest.project,
+              destStorageRef,
+              destStorageTpe,
+              destFileAttributes,
+              c.subject,
+              dest.tag,
+              Some(source)
+            )
           resource <- evalCreateCommand(command)
         } yield resource
       }

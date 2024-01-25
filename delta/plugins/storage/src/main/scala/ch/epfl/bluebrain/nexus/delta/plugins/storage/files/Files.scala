@@ -97,10 +97,10 @@ final class Files(
     for {
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag, None))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag, None))
     } yield res
   }.span("createFile")
 
@@ -126,10 +126,10 @@ final class Files(
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
-      _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
+      _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag, None))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, caller.subject, tag, None))
     } yield res
   }.span("createFile")
 
@@ -405,12 +405,12 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] =
     for {
-      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
+      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag, None))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- linkFile(storage, path, description, iri)
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag, None))
     } yield res
 
   private def linkFile(storage: Storage, path: Uri.Path, desc: FileDescription, fileId: Iri): IO[FileAttributes] =
@@ -597,7 +597,7 @@ object Files {
   ): Option[FileState] = {
     // format: off
     def created(e: FileCreated): Option[FileState] = Option.when(state.isEmpty) {
-      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, Tags(e.tag, e.rev), e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, e.sourceFile, Tags(e.tag, e.rev), e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
     }
 
     def updated(e: FileUpdated): Option[FileState] = state.map { s =>
@@ -641,7 +641,7 @@ object Files {
     def create(c: CreateFile) = state match {
       case None    =>
         clock.realTimeInstant.map(
-          FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag)
+          FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag, c.sourceFile)
         )
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))

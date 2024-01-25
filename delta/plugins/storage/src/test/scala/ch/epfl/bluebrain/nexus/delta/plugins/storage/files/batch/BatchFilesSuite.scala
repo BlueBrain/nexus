@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchFilesSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
@@ -21,11 +22,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDum
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import org.scalatest.OptionValues
 
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 
-class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators with FileFixtures with FileGen {
+class BatchFilesSuite
+    extends NexusSuite
+    with StorageFixtures
+    with Generators
+    with FileFixtures
+    with FileGen
+    with OptionValues {
 
   private val destProj: Project             = genProject()
   private val (destStorageRef, destStorage) = (genRevision(), genStorage(destProj.ref, diskVal))
@@ -38,12 +46,13 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val stubbedDestAttributes = genAttributes()
     val batchCopy             = BatchCopyMock.withStubbedCopyFiles(events, stubbedDestAttributes)
 
-    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, destFileUUId, fetchFileStorage, batchCopy)
+    val sourceProj             = genProject()
+    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, sourceProj, destFileUUId, fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
-    val source                 = genCopyFileSource()
+    val source                 = genCopyFileSource(sourceProj.ref)
 
     batchFiles.copyFiles(source, destination).map { obtained =>
-      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes)
+      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes, source.files)
       val expectedResources    = expectedCommands.map(genFileResourceFromCmd)
       val expectedCommandCalls = expectedCommands.toList.map(FileCommandEvaluated)
       val expectedEvents       = activeStorageFetchedAndBatchCopyCalled(source) ++ expectedCommandCalls
@@ -53,13 +62,34 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     }
   }
 
+  test("batch copying should return source file iris including tags and revisions") {
+    val events                             = ListBuffer.empty[Event]
+    val fetchFileStorage                   = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
+    val sourceProj                         = genProject()
+    val (byRevFile, byTagFile, latestFile) =
+      (genResourceRefWithRev(), genResourceRefWithTag(), genResourceRef())
+    val source                             = CopyFileSource(sourceProj.ref, NonEmptyList.of(byTagFile, byRevFile, latestFile))
+    val attr                               = source.files.as(attributes())
+    val batchCopy                          = BatchCopyMock.withStubbedCopyFiles(events, attr)
+
+    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, sourceProj, destFileUUId, fetchFileStorage, batchCopy)
+    implicit val c: Caller     = Caller(genUser(), Set())
+
+    batchFiles.copyFiles(source, destination).map { obtained =>
+      val expectedSourceFiles = NonEmptyList.of(byTagFile, byRevFile, latestFile)
+
+      assertEquals(obtained.map(_.value.sourceFile.value), expectedSourceFiles)
+    }
+  }
+
   test("copy rejections should be mapped to a file rejection") {
     val events           = ListBuffer.empty[Event]
     val fetchFileStorage = mockFetchFileStorage(destStorageRef, destStorage.storage, events)
     val error            = TotalCopySizeTooLarge(1L, 2L, genIri())
     val batchCopy        = BatchCopyMock.withError(error, events)
 
-    val batchFiles: BatchFiles = mkBatchFiles(events, destProj, UUID.randomUUID(), fetchFileStorage, batchCopy)
+    val batchFiles: BatchFiles =
+      mkBatchFiles(events, destProj, genProject(), UUID.randomUUID(), fetchFileStorage, batchCopy)
     implicit val c: Caller     = Caller(genUser(), Set())
     val source                 = genCopyFileSource()
     val expectedError          = CopyRejection(source.project, destProj.ref, destStorage.id, error)
@@ -83,6 +113,7 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
   def mkBatchFiles(
       events: ListBuffer[Event],
       proj: Project,
+      sourceProj: Project,
       fixedUuid: UUID,
       fetchFileStorage: FetchFileStorage,
       batchCopy: BatchCopy
@@ -91,7 +122,8 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val evalFileCmd: CreateFile => IO[FileResource] = cmd =>
       IO(events.addOne(FileCommandEvaluated(cmd))).as(genFileResourceFromCmd(cmd))
     val fetchContext: FetchContext[FileRejection]   =
-      FetchContextDummy(Map(proj.ref -> proj.context)).mapRejection(FileRejection.ProjectContextRejection)
+      FetchContextDummy(Map(proj.ref -> proj.context, sourceProj.ref -> sourceProj.context))
+        .mapRejection(FileRejection.ProjectContextRejection)
     BatchFiles.mk(fetchFileStorage, fetchContext, evalFileCmd, batchCopy)
   }
 
@@ -101,19 +133,23 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     List(expectedActiveStorageFetched, expectedBatchCopyCalled)
   }
 
-  def createCommandsFromFileAttributes(stubbedDestAttributes: NonEmptyList[FileAttributes])(implicit
+  def createCommandsFromFileAttributes(
+      stubbedDestAttributes: NonEmptyList[FileAttributes],
+      sourceFiles: NonEmptyList[ResourceRef]
+  )(implicit
       c: Caller
-  ): NonEmptyList[CreateFile] = stubbedDestAttributes.map(
+  ): NonEmptyList[CreateFile] = stubbedDestAttributes.zip(sourceFiles).map { case (destAttr, source) =>
     CreateFile(
       destProj.base.iri / destFileUUId.toString,
       destProj.ref,
       destStorageRef,
       destStorage.value.tpe,
-      _,
+      destAttr,
       c.subject,
-      destination.tag
+      destination.tag,
+      Some(source)
     )
-  )
+  }
 }
 
 object BatchFilesSuite {

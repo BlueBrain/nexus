@@ -6,14 +6,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.dropNullValues
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe.Codec
+import io.circe.{Codec, Encoder}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -52,6 +53,7 @@ final case class FileState(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
+    sourceFile: Option[ResourceRef],
     tags: Tags,
     rev: Int,
     deprecated: Boolean,
@@ -73,7 +75,7 @@ final case class FileState(
     */
   def types: Set[Iri] = Set(nxvFile)
 
-  private def file: File = File(id, project, storage, storageType, attributes, tags)
+  private def file: File = File(id, project, storage, storageType, attributes, tags, sourceFile)
 
   def toResource: FileResource =
     ResourceF(
@@ -103,7 +105,8 @@ object FileState {
       deriveConfiguredCodec[Digest]
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
       deriveConfiguredCodec[FileAttributes]
-    implicit val codec: Codec.AsObject[FileState]                    = deriveConfiguredCodec[FileState]
+    implicit val enc: Encoder.AsObject[FileState]                    = deriveConfiguredEncoder[FileState].mapJsonObject(dropNullValues)
+    implicit val codec: Codec.AsObject[FileState]                    = Codec.AsObject.from(deriveConfiguredDecoder[FileState], enc)
     Serializer.dropNullsInjectType()
   }
 }
