@@ -30,7 +30,6 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, 
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
-  @SuppressWarnings(Array("IsInstanceOf"))
   override def apply(filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
     for {
       uuid                     <- uuidf()
@@ -46,6 +45,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, 
     )
   }
 
+  @SuppressWarnings(Array("IsInstanceOf"))
   private def storeFile(entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
     IO.fromFuture(
       IO.delay(
