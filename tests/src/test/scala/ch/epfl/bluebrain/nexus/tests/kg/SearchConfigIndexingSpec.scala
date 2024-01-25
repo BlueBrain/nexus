@@ -877,8 +877,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
 
     "have the correct morphology mean length" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/morphology-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 1131.963147431612,
@@ -890,13 +891,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct soma radius" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/soma-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 5.975075244861534,
@@ -908,13 +910,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct axon length" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/axon-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 52.48914,
@@ -926,13 +929,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct axon Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/axon-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 0,
@@ -944,13 +948,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct apical dendrite length" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/apical-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 103.02,
@@ -962,13 +967,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct apical dendrite Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/apical-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 4,
@@ -980,12 +986,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct apical partition asymmetry index" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
+      val annotationId = "https://bbp.epfl.ch/data/apical-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+
       val expected =
         json"""
                 {
@@ -998,13 +1006,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct basal dendrite length" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/basal-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 64.86965469270945,
@@ -1016,13 +1025,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct basal dendrite Strahler orders" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/basal-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                 {
                  "value" : 3,
@@ -1034,13 +1044,14 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
 
     "have the correct basal dendrite partition asymmetry index" in {
-      val query    = queryField(neuronMorphologyId, "morphologyFeature")
-      val expected =
+      val annotationId = "https://bbp.epfl.ch/data/basal-dendrite-annotation"
+      val query        = queryField(annotationId, "featureSeries")
+      val expected     =
         json"""
                {
                  "value" : 0.21388888888888888,
@@ -1052,7 +1063,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
            """
 
       assertOneSource(query) { json =>
-        morphologyFeatureArrayOf(json) should be(arrayThatContains(expected))
+        featureSeriesArrayOf(json) should be(arrayThatContains(expected))
       }
     }
   }
@@ -1121,7 +1132,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private def isInstant(json: Json, field: String) =
     json.hcursor.downField(field).as[Instant].isRight
 
-  private def morphologyFeatureArrayOf(json: Json): Json = json.hcursor.downField("morphologyFeature").as[Json] match {
+  private def featureSeriesArrayOf(json: Json): Json = json.hcursor.downField("featureSeries").as[Json] match {
     case Left(failure) => throw new Exception(failure)
     case Right(json)   => json
   }

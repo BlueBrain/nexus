@@ -196,7 +196,9 @@ CONSTRUCT {
                                               :notation   ?preSynapticNotation    .
 
   ## Morphology features
-  ?alias :morphologyFeature    ?featureSeries    .
+  ?alias :compartment          ?featureCompartment .
+  ?alias :neuronMorphology     ?neuronMorphologyId .
+  ?alias :featureSeries        ?featureSeries    .
                                ?featureSeries    :value       ?featureValue         ;
                                                  :unit        ?featureUnit          ;
                                                  :label       ?featureLabel         ;
@@ -668,17 +670,15 @@ CONSTRUCT {
 
   # Morphology features
   OPTIONAL {
-    ?id a nsg:NeuronMorphology  ;
-          ^nsg:hasSource / ^nsg:hasTarget ?featureAnnotation    .
-    ?featureAnnotation   a   bmo:NeuronMorphologyFeatureAnnotation  .
+    ?id a bmo:NeuronMorphologyFeatureAnnotation .
 
     OPTIONAL {
-      ?featureAnnotation    bmo:compartment                    ?featureCompartment ;
+      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyId ;
+                            bmo:compartment                    ?featureCompartment ;
                             nsg:hasBody                        ?featureBody        .
-      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       .
-      FILTER (?featureLabel IN ("Soma Radius", "Total Length", "Total Weight", "Total Depth", "Section Strahler Orders", "Partition Asymmetry")) .
 
-      ?featureBody          schema:value / nsg:series          ?featureSeries      .
+      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       ;
+                            schema:value / nsg:series          ?featureSeries      .
       ?featureSeries        nsg:statistic                      ?featureStat        ;
                             schema:value                       ?featureValue       ;
                             schema:unitCode                    ?featureUnit
