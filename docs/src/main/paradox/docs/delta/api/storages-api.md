@@ -117,7 +117,7 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 ## Indexing
 
-All the API calls modifying a storage (creation, update, tagging, deprecation) can specify whether the storage should be indexed
+All the API calls modifying a storage (creation, update, deprecation) can specify whether the storage should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the storage will be indexed asynchronously
@@ -241,14 +241,11 @@ Response
 ## Fetch
 
 ```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}&tag={tag}
+GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -264,15 +261,12 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}/source?rev={rev}&tag={tag}
+GET /v1/storages/{org_label}/{project_label}/{storage_id}/source?rev={rev}
 ```
 
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -281,30 +275,6 @@ Request
 
 Response
 :   @@snip [fetched-source.json](assets/storages/fetched-source.json)
-
-## Fetch tags
-
-Retrieves all the tags available for the `{storage_id}`.
-
-```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}/tags?rev={rev}&tag={tag}
-```
-
-where ...
-
-- `{rev}`: Number - the targeted revision of the tags to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag of the tags to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
-
-**Example**
-
-Request
-:   @@snip [fetch-tags.sh](assets/storages/fetch-tags.sh)
-
-Response
-:   @@snip [fetched-tags.json](assets/tags.json)
-
 
 ## List
 
