@@ -137,7 +137,7 @@
     },
     "preSynapticPathway": { "type": "nested" },
     "postSynapticPathway": { "type": "nested" },
-    "morphologyFeature": {
+    "featureSeries": {
       "type": "nested",
       "properties": {
         "value": { "type": "double" }

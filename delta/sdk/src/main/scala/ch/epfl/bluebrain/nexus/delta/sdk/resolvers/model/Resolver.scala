@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -46,12 +46,6 @@ sealed trait Resolver extends Product with Serializable {
 
   /**
     * @return
-    *   the collection of tag aliases
-    */
-  def tags: Tags
-
-  /**
-    * @return
     *   The underlying resolver value
     */
   def value: ResolverValue
@@ -66,8 +60,7 @@ object Resolver {
       id: Iri,
       project: ProjectRef,
       value: InProjectValue,
-      source: Json,
-      tags: Tags
+      source: Json
   ) extends Resolver {
     override def priority: Priority = value.priority
   }
@@ -79,8 +72,7 @@ object Resolver {
       id: Iri,
       project: ProjectRef,
       value: CrossProjectValue,
-      source: Json,
-      tags: Tags
+      source: Json
   ) extends Resolver {
     override def priority: Priority = value.priority
   }

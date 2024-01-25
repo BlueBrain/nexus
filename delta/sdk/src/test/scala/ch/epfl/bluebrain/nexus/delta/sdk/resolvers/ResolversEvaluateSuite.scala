@@ -6,13 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{evaluate, ValidatePriority}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
@@ -243,52 +242,6 @@ class ResolversEvaluateSuite extends NexusSuite with ResolverStateMachineFixture
       alice.subject
     )
     eval(Some(crossProjectCurrent), command).assertEquals(expected)
-  }
-
-  private val tagCommand = TagResolver(ipId, project, 1, UserTag.unsafe("tag1"), 2, bob.subject)
-
-  test("Tag fails if the resolver does not exist") {
-    val expectedError = ResolverNotFound(tagCommand.id, tagCommand.project)
-    eval(None, tagCommand).interceptEquals(expectedError)
-  }
-
-  bothStates.foreach { state =>
-    test(s"Tag fails for an ${state.value.tpe} resolver if the provided revision is incorrect") {
-      val incorrectRev  = tagCommand.copy(rev = 5)
-      val expectedError = IncorrectRev(incorrectRev.rev, state.rev)
-      eval(Some(state), incorrectRev).interceptEquals(expectedError)
-    }
-  }
-
-  bothStates.foreach { state =>
-    test(s"Tag succeeds for the ${state.value.tpe} resolver") {
-      val expected = ResolverTagAdded(
-        tagCommand.id,
-        project,
-        state.value.tpe,
-        targetRev = tagCommand.targetRev,
-        tag = tagCommand.tag,
-        3,
-        epoch,
-        bob.subject
-      )
-      eval(Some(state), tagCommand).assertEquals(expected)
-    }
-
-    test(s"Tag succeeds for if the ${state.value.tpe} is deprecated") {
-      val deprecated = state.copy(deprecated = true)
-      val expected   = ResolverTagAdded(
-        tagCommand.id,
-        project,
-        state.value.tpe,
-        targetRev = tagCommand.targetRev,
-        tag = tagCommand.tag,
-        3,
-        epoch,
-        bob.subject
-      )
-      eval(Some(deprecated), tagCommand).assertEquals(expected)
-    }
   }
 
   private val deprecateCommand = DeprecateResolver(ipId, project, 2, bob.subject)

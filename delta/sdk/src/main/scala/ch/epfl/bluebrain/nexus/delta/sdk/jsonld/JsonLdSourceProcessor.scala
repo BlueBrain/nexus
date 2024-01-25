@@ -31,21 +31,22 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
   protected def getOrGenerateId(iri: Option[Iri], context: ProjectContext): IO[Iri] =
     iri.fold(uuidF().map(uuid => context.base.iri / uuid.toString))(IO.pure)
 
-  protected def expandSource(
-      context: ProjectContext,
-      source: Json
-  )(implicit rcr: RemoteContextResolution): IO[(ContextValue, ExplainResult[ExpandedJsonLd])] = {
-    implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(context.base.iri))
-    ExpandedJsonLd
-      .explain(source)
-      .flatMap {
-        case result if result.value.isEmpty && source.topContextValueOrEmpty.isEmpty =>
-          val ctx = defaultCtx(context)
-          ExpandedJsonLd.explain(source.addContext(ctx.contextObj)).map(ctx -> _)
-        case result                                                                  =>
-          IO.pure(source.topContextValueOrEmpty -> result)
-      }
-      .adaptError { case err: RdfError => InvalidJsonLdFormat(None, err) }
+  /**
+    * Expand the source document using the provided project context and remote context resolution.
+    *
+    * If the source does not provide a context, one will be injected from the project base and vocab.
+    */
+  protected def expandSource(projectContext: ProjectContext, source: Json)(implicit
+      rcr: RemoteContextResolution
+  ): IO[(ContextValue, ExplainResult[ExpandedJsonLd])] = {
+    implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(projectContext.base.iri))
+    val sourceContext                = source.topContextValueOrEmpty
+    if (sourceContext.isEmpty) {
+      val defaultContext = defaultCtx(projectContext)
+      ExpandedJsonLd.explain(source.addContext(defaultContext.contextObj)).map(defaultContext -> _)
+    } else {
+      ExpandedJsonLd.explain(source).map(sourceContext -> _)
+    }.adaptError { case err: RdfError => InvalidJsonLdFormat(None, err) }
   }
 
   protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[ExpandedJsonLd] =
