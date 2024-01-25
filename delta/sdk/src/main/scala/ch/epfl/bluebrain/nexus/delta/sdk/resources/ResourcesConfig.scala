@@ -10,8 +10,12 @@ import pureconfig.generic.semiauto.deriveReader
   *
   * @param eventLog
   *   configuration of the event log
+  * @param decodingOption
+  *   strict/lenient decoding of resources
+  * @param skipUpdateNoChange
+  *   do not create a new revision when the update does not introduce a change in the current resource state
   */
-final case class ResourcesConfig(eventLog: EventLogConfig, decodingOption: DecodingOption)
+final case class ResourcesConfig(eventLog: EventLogConfig, decodingOption: DecodingOption, skipUpdateNoChange: Boolean)
 
 object ResourcesConfig {
   implicit final val resourcesConfigReader: ConfigReader[ResourcesConfig] =

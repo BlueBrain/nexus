@@ -35,13 +35,14 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
     val caller  = Caller(subject, Set.empty)
     val tag     = UserTag.unsafe("mytag")
 
+    val detectChange   = DetectChange(enabled = true)
     val projectContext = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)
     val jsonld         = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
 
     val schema1 = nxv + "myschema"
 
     val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceEvent] =
-      evaluate(alwaysValidate, clock)
+      evaluate(alwaysValidate, detectChange, clock)
 
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {

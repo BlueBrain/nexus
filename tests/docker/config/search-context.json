@@ -36,6 +36,12 @@
   "postSynapticPathway": {
     "@container": "@set"
   },
+  "featureSeries": {
+    "@container": "@set"
+  },
+  "neuronMorphology": {
+    "@type": "@id"
+  },
   "project": {
     "@type": "@id"
   },
