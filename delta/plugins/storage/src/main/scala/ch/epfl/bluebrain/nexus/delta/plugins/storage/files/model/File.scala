@@ -51,7 +51,7 @@ object File {
 
   implicit def fileEncoder(implicit showLocation: ShowFileLocation): Encoder.AsObject[File] =
     Encoder.encodeJsonObject.contramapObject { file =>
-      val storageType: StorageType             = file.storageType
+      val storageType: StorageType                      = file.storageType
       val storageJson                                   = Json.obj(
         keywords.id  -> file.storage.iri.asJson,
         keywords.tpe -> storageType.iri.asJson,
