@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{DetectChange, Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
@@ -106,9 +106,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
     val resources = ResourcesImpl(
       validator,
+      DetectChange(enabled = true),
       fetchContext,
       resolverContextResolution,
-      ResourcesConfig(eventLogConfig, decodingOption),
+      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true),
       xas,
       clock
     )

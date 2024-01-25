@@ -76,7 +76,7 @@ class ResourcesImplSpec
   private val resourceResolution: ResourceResolution[Schema]                  =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
-  private val fetchContext = FetchContextDummy(
+  private val fetchContext  = FetchContextDummy(
     Map(
       project.ref           -> project.context.copy(apiMappings = allApiMappings),
       projectDeprecated.ref -> projectDeprecated.context
@@ -84,7 +84,8 @@ class ResourcesImplSpec
     Set(projectDeprecated.ref),
     ProjectContextRejection
   )
-  private val config       = ResourcesConfig(eventLogConfig, DecodingOption.Strict)
+  private val config        = ResourcesConfig(eventLogConfig, DecodingOption.Strict, skipUpdateNoChange = true)
+  private val detectChanges = DetectChange(enabled = config.skipUpdateNoChange)
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
@@ -93,6 +94,7 @@ class ResourcesImplSpec
 
   private lazy val resources: Resources = ResourcesImpl(
     ValidateResource(resourceResolution),
+    detectChanges,
     fetchContext,
     resolverContextResolution,
     config,
@@ -130,6 +132,7 @@ class ResourcesImplSpec
       ResourceGen.resourceFor(res, types = types, subject = subject)
 
     "creating a resource" should {
+
       "succeed with the id present on the payload" in {
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
@@ -206,7 +209,7 @@ class ResourcesImplSpec
       }
 
       "succeed with payload without @context" in {
-        val payload        = json"""{"name": "Alice"}"""
+        val payload        = json"""{ "@type": "Person", "name": "Alice"}"""
         val payloadWithCtx =
           payload.addContext(json"""{"@context": {"@vocab": "${nxv.base}","@base": "${nxv.base}"}}""")
         val schemaRev      = Revision(resourceSchema.iri, 1)
@@ -214,7 +217,7 @@ class ResourcesImplSpec
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(myId7, projectRef, schemas.resources, payload, None).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, subject = subject)
+          ResourceGen.resourceFor(expectedData, Set(nxv + "Person"), subject = subject)
       }
 
       "succeed with the id present on the payload and pointing to another resource in its context" in {

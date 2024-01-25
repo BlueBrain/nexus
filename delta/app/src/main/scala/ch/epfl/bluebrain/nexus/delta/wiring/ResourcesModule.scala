@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{DetectChange, Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -41,9 +41,12 @@ object ResourcesModule extends ModuleDef {
 
   make[ResourcesConfig].from { (config: AppConfig) => config.resources }
 
+  make[DetectChange].from { (config: ResourcesConfig) => DetectChange(config.skipUpdateNoChange) }
+
   make[Resources].from {
     (
         validate: ValidateResource,
+        detectChange: DetectChange,
         fetchContext: FetchContext[ContextRejection],
         config: ResourcesConfig,
         resolverContextResolution: ResolverContextResolution,
@@ -54,6 +57,7 @@ object ResourcesModule extends ModuleDef {
     ) =>
       ResourcesImpl(
         validate,
+        detectChange,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config,

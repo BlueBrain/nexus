@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import io.circe.Decoder.Result
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
-import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
-import pureconfig.{ConfigCursor, ConfigReader}
+import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 
 final case class NexusSource(value: Json) extends AnyVal
 
@@ -16,30 +16,20 @@ object NexusSource {
 
     final case object Lenient extends DecodingOption
 
-    implicit val decodingOptionConfigReader: ConfigReader[DecodingOption] = {
-      new ConfigReader[DecodingOption] {
-        private val stringReader = implicitly[ConfigReader[String]]
-        override def from(cur: ConfigCursor): ConfigReader.Result[DecodingOption] = {
-          stringReader.from(cur).flatMap {
-            case "strict"  => Right(Strict)
-            case "lenient" => Right(Lenient)
-            case other     =>
-              Left(
-                ConfigReaderFailures(
-                  ConvertFailure(
-                    CannotConvert(
-                      other,
-                      "DecodingOption",
-                      s"values can only be 'strict' or 'lenient'"
-                    ),
-                    cur
-                  )
-                )
-              )
-          }
-        }
+    implicit val decodingOptionConfigReader: ConfigReader[DecodingOption] =
+      ConfigReader.fromString {
+        case "strict"  => Right(Strict)
+        case "lenient" => Right(Lenient)
+        case other     =>
+          Left(
+            CannotConvert(
+              other,
+              "DecodingOption",
+              s"values can only be 'strict' or 'lenient'"
+            )
+          )
+
       }
-    }
   }
 
   private val strictDecoder = new Decoder[NexusSource] {
