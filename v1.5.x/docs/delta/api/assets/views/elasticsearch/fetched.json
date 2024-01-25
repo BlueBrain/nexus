@@ -1,0 +1,73 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproj/_/myview",
+  "@type": [
+    "ElasticSearchView",
+    "View"
+  ],
+  "includeDeprecated": true,
+  "includeMetadata": true,
+  "mapping": {
+    "dynamic": false,
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "bool": {
+        "type": "boolean"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "number": {
+        "type": "long"
+      }
+    }
+  },
+  "permission": "views/query",
+  "resourceSchemas": [],
+  "resourceTypes": [],
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "nexus": {
+          "filter": [
+            "trim",
+            "word_delimiter_nexus",
+            "lowercase"
+          ],
+          "tokenizer": "classic",
+          "type": "custom"
+        }
+      },
+      "filter": {
+        "word_delimiter_nexus": {
+          "split_on_numerics": false,
+          "type": "word_delimiter_graph"
+        }
+      }
+    },
+    "index": {
+      "number_of_shards": 1
+    }
+  },
+  "sourceAsText": true,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-05-12T09:54:28.171Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost:8080/v1/views/myorg/myproj/myview/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/myview/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 3,
+  "_self": "http://localhost:8080/v1/views/myorg/myproj/myview",
+  "_updatedAt": "2021-05-12T09:58:20.507Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "7e737b83-30a0-4ea3-b6c9-cd1ed481d743"
+}

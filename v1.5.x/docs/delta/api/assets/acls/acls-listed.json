@@ -1,0 +1,63 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "http://localhost:8080/v1/acls/myorg/myproj",
+      "@type": "AccessControlList",
+      "acl": [
+        {
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "identity": {
+            "@id": "http://localhost:8080/v1/realm/groups/two",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "two"
+          }
+        }
+      ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_deprecated": false,
+      "_path": "/myorg/myproj",
+      "_rev": 1,
+      "_self": "http://localhost:8080/v1/acls/myorg/myproj",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "http://localhost:8080/v1/acls/myorg/myproj2",
+      "@type": "AccessControlList",
+      "acl": [
+        {
+          "permissions": [
+            "read"
+          ],
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/myrealm/users/me",
+            "@type": "User",
+            "realm": "myrealm",
+            "subject": "me"
+          }
+        }
+      ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/alice",
+      "_deprecated": false,
+      "_path": "/myorg/myproj2",
+      "_rev": 2,
+      "_self": "http://localhost:8080/v1/acls/myorg/myproj2",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/alice"
+    }
+  ]
+}

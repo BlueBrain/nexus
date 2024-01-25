@@ -1,0 +1,1 @@
+nexus resources list --type Rating --size 5

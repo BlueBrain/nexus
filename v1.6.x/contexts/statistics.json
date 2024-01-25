@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "lastEventDateTime": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/lastEventDateTime",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "lastProcessedEventDateTime": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/lastProcessedEventDateTime",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "value": "https://bluebrain.github.io/nexus/vocabulary/value",
+    "sourceId": {
+      "@type": "@id"
+    },
+    "projectionId": {
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/statistics.json"
+}

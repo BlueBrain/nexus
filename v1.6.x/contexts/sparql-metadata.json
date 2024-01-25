@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "View": "https://bluebrain.github.io/nexus/vocabulary/View",
+    "SparqlView": "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
+    "AggregateSparqlView": "https://bluebrain.github.io/nexus/vocabulary/AggregateSparqlView",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/sparql-metadata.json"
+}

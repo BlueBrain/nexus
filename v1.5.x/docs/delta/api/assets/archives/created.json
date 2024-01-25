@@ -1,0 +1,17 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/archives-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/archives/myorg/myproj/myarchive",
+  "@type": "Archive",
+  "_self": "http://localhost:8080/v1/archives/myorg/myproj/myarchive",
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/archives.json",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "2021-05-17T14:54:42.939Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+  "_updatedAt": "2021-05-17T14:54:42.939Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+}

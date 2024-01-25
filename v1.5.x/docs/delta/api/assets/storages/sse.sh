@@ -1,0 +1,1 @@
+curl "http://localhost:8080/v1/storages/events"

@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/sparql.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
+  "@type" : [
+    "SparqlView",
+    "View"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-04-18T17:10:22.748Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/Bob",
+  "_deprecated": false,
+  "_self": "http://localhost:8080/v1/views/org/proj/nxv:myview",
+  "_incoming": "http://localhost:8080/v1/views/org/proj/nxv:myview/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/org/proj/nxv:myview/outgoing",
+  "_project": "http://localhost:8080/v1/projects/org/proj",
+  "_rev": 1,
+  "_updatedAt": "2021-04-18T17:10:22.748Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/Bob",
+  "includeDeprecated": false,
+  "includeMetadata": false,
+  "permission": "views/query",
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+  ],
+  "resourceTag": "v1.5",
+  "resourceTypes": [
+    "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+  ],
+  "_uuid": "61c74973-0f04-40f0-a694-7c8ed0fb090f"
+}

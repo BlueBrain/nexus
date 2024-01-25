@@ -1,0 +1,42 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/permissions.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/permissions",
+  "@type": "Permissions",
+  "permissions": [
+    "realms/write",
+    "replaced",
+    "projects/create",
+    "schemas/write",
+    "permissions/write",
+    "organizations/read",
+    "realms/read",
+    "resources/read",
+    "version/read",
+    "acls/read",
+    "projects/read",
+    "permissions/read",
+    "archives/write",
+    "organizations/create",
+    "views/query",
+    "storages/write",
+    "resolvers/write",
+    "resources/write",
+    "acls/write",
+    "files/write",
+    "events/read",
+    "organizations/write",
+    "projects/write",
+    "views/write"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json",
+  "_createdAt": "2021-05-10T13:48:58.246Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_rev": 3,
+  "_self": "http://localhost:8080/v1/permissions",
+  "_updatedAt": "2021-05-10T13:49:26.043Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
+}

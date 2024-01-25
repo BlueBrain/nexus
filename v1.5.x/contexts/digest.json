@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "value": "nxv:value",
+    "algorithm": "nxv:algorithm",
+    "UpdateDigest": "nxv:UpdateDigest"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/digest.json"
+}

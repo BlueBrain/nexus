@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/offset.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "sourceId": "http://music.com/source_albums",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "NoOffset"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_bands",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "NoOffset"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_songs",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "NoOffset"
+      }
+    }
+  ]
+}

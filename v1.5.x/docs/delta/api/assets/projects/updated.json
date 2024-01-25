@@ -1,0 +1,74 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/projects-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/projects/myorg/myproject",
+  "@type": "Project",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",
+  "_createdAt": "2021-05-10T15:43:36.567Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_effectiveApiMappings": [
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/",
+      "_prefix": "nxv"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "_prefix": "documents"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "_prefix": "defaultResolver"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+      "_prefix": "schema"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_prefix": "resource"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_prefix": "_"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/views.json",
+      "_prefix": "view"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/storages.json",
+      "_prefix": "storage"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/files.json",
+      "_prefix": "file"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
+      "_prefix": "resolver"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "_prefix": "graph"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/archives.json",
+      "_prefix": "archive"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "_prefix": "defaultStorage"
+    }
+  ],
+  "_label": "myproject",
+  "_organizationLabel": "myorg",
+  "_organizationUuid": "41f169b8-7ae4-4878-a7ff-6309cb54ae2f",
+  "_rev": 2,
+  "_self": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_updatedAt": "2021-05-10T15:45:20.769Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "813cfa79-75fc-48eb-b931-abb21edb082b"
+}

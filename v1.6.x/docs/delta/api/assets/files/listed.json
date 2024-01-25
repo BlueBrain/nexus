@@ -1,0 +1,96 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/c581fdd4-6151-4430-aa33-f97ab6aa0b38",
+      "@type": "File",
+      "_bytes": 8615,
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+      "_createdAt": "2021-05-12T07:28:30.472Z",
+      "_createdBy": "http://localhost:8080/v1/anonymous",
+      "_deprecated": false,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "057a3811ecfbeb99506c538d42474d1916f1d9b66965b9e9378a00eab1bb913a"
+      },
+      "_filename": "myfile.jpg",
+      "_incoming": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/incoming",
+      "_mediaType": "image/jpeg",
+      "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/outgoing",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+      "_rev": 1,
+      "_self": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38",
+      "_storage": {
+        "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+        "@type": "DiskStorage",
+        "_rev": 1
+      },
+      "_updatedAt": "2021-05-12T07:28:30.472Z",
+      "_updatedBy": "http://localhost:8080/v1/anonymous",
+      "_uuid": "9af35be9-b2f2-4734-9646-c3423a62685d"
+    },
+    {
+      "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5",
+      "@type": "File",
+      "_bytes": 1658857,
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+      "_createdAt": "2021-05-12T07:56:42.991Z",
+      "_createdBy": "http://localhost:8080/v1/anonymous",
+      "_deprecated": false,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "e88fd2d76dd7c1a144c68e89a38c972251623dacf4c898154aae4c3b03eb4a84"
+      },
+      "_filename": "myfile.png",
+      "_incoming": "http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5/incoming",
+      "_location": "file:///tmp/test/nexus/myorg/myproject/3/4/c/4/9/1/a/1/myfile.png",
+      "_mediaType": "image/png",
+      "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5/outgoing",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+      "_rev": 2,
+      "_self": "http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5",
+      "_storage": {
+        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
+        "@type": "RemoteDiskStorage",
+        "_rev": 1
+      },
+      "_updatedAt": "2021-05-12T07:56:48.380Z",
+      "_updatedBy": "http://localhost:8080/v1/anonymous",
+      "_uuid": "34c491a1-17ba-4726-bdf2-3b4e1e150750"
+    },
+    {
+      "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/mylink",
+      "@type": "File",
+      "_bytes": 1658857,
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+      "_createdAt": "2021-05-12T08:00:34.563Z",
+      "_createdBy": "http://localhost:8080/v1/anonymous",
+      "_deprecated": false,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "e88fd2d76dd7c1a144c68e89a38c972251623dacf4c898154aae4c3b03eb4a84"
+      },
+      "_filename": "myfile2.png",
+      "_incoming": "http://localhost:8080/v1/files/myorg/myproject/mylink/incoming",
+      "_location": "file:///tmp/test/nexus/myorg/myproject/6/6/0/4/9/9/d/9/myfile2.png",
+      "_mediaType": "image/png",
+      "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/mylink/outgoing",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+      "_rev": 2,
+      "_self": "http://localhost:8080/v1/files/myorg/myproject/mylink",
+      "_storage": {
+        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
+        "@type": "RemoteDiskStorage",
+        "_rev": 1
+      },
+      "_updatedAt": "2021-05-12T08:00:40.790Z",
+      "_updatedBy": "http://localhost:8080/v1/anonymous",
+      "_uuid": "660499d9-c522-4f90-beda-2d79e538ffce"
+    }
+  ]
+}

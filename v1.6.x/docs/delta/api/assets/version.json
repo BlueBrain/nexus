@@ -1,0 +1,16 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
+  "delta": "1.5.0",
+  "dependencies": {
+    "blazegraph": "2.1.5",
+    "cassandra": "3.11.7",
+    "elasticsearch": "7.4.0",
+    "remoteStorage": "1.4.1"
+  },
+  "plugins": {
+    "archive": "1.5.0",
+    "blazegraph": "1.5.0",
+    "composite-views": "1.5.0",
+    "elasticsearch": "1.5.0",
+    "storage": "1.5.0"
+  }

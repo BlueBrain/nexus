@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "_count": "https://bluebrain.github.io/nexus/vocabulary/count",
+    "_properties": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/properties",
+      "@container": "@set"
+    },
+    "_name": "https://bluebrain.github.io/nexus/vocabulary/name"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/properties.json"
+}

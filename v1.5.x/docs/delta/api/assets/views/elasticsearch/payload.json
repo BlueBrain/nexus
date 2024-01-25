@@ -1,0 +1,30 @@
+{
+  "@type": [
+    "ElasticSearchView"
+  ],
+  "mapping": {
+    "dynamic": false,
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "number": {
+        "type": "long"
+      },
+      "bool": {
+        "type": "boolean"
+      }
+    }
+  },
+  "includeMetadata": true,
+  "includeDeprecated": true,
+  "sourceAsText": true,
+  "resourceSchemas": [],
+  "resourceTypes": []
+}
