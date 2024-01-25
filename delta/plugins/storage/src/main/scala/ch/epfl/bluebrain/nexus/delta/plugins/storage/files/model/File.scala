@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import io.circe.generic.extras.Configuration
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -50,19 +51,18 @@ object File {
 
   implicit def fileEncoder(implicit showLocation: ShowFileLocation): Encoder.AsObject[File] =
     Encoder.encodeJsonObject.contramapObject { file =>
-      implicit val storageType: StorageType = file.storageType
-      val storageJson                       = Json.obj(
+      val storageType: StorageType             = file.storageType
+      val storageJson                                   = Json.obj(
         keywords.id  -> file.storage.iri.asJson,
         keywords.tpe -> storageType.iri.asJson,
         "_rev"       -> file.storage.rev.asJson
       )
-      val v1                                = file.attributes.asJsonObject.add("_storage", storageJson)
-      if (file.attributes.keywords.nonEmpty) {
-        v1.add(
-          "keywords",
-          file.attributes.keywords.asJson
-        )
-      } else v1
+      val attrEncoder: Encoder.AsObject[FileAttributes] = FileAttributes.createConfiguredEncoder(
+        Configuration.default,
+        removePath = true,
+        removeLocation = !showLocation.types.contains(storageType)
+      )
+      attrEncoder.encodeObject(file.attributes).add("_storage", storageJson)
     }
 
   implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =

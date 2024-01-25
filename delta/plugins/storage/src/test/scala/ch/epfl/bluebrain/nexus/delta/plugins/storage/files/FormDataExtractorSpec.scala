@@ -30,29 +30,28 @@ class FormDataExtractorSpec
     val KeyThatIsTooLong  =
       "this-key-is-too-long-to-be-a-label-lalalalalalalaalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalaalalalla"
 
-    def entityWithMetadata(metadata: JsonObject) = {
-      createEntity("file", NoContentType, Some("file.custom"), Some(metadata))
+    def entityWithKeywords(keywords: (String, Json)*) = {
+      createEntity("file", NoContentType, Some("file.custom"), keywords.toMap)
     }
 
     def createEntity(
         bodyPart: String,
         contentType: ContentType,
         filename: Option[String],
-        metadata: Option[JsonObject] = None
+        keywords: Map[String, Json] = Map.empty
     ) =
       Multipart
         .FormData(
           Multipart.FormData
-            .BodyPart(bodyPart, HttpEntity(contentType, content.getBytes), dispositionParameters(filename, metadata))
+            .BodyPart(bodyPart, HttpEntity(contentType, content.getBytes), dispositionParameters(filename, keywords))
         )
         .toEntity()
 
-    def dispositionParameters(filename: Option[String], metadata: Option[JsonObject]): Map[String, String] = {
-      Map.from(filename.map("filename" -> _) ++ metadata.map("metadata" -> _.toJson.noSpaces))
-    }
-
-    def metadataWithKeywords(keywords: (String, Json)*): JsonObject = {
-      JsonObject("keywords" := JsonObject.fromIterable(keywords))
+    def dispositionParameters(filename: Option[String], keywords: Map[String, Json]): Map[String, String] = {
+      Map.from(
+        filename.map("filename"                     -> _) ++
+          Option.when(keywords.nonEmpty)("keywords" -> JsonObject.fromMap(keywords).toJson.noSpaces)
+      )
     }
 
     "be extracted with the default content type" in {
@@ -100,13 +99,13 @@ class FormDataExtractorSpec
     }
 
     "be extracted with keywords" in {
-      val entity                                     = entityWithMetadata(metadataWithKeywords("key" := "value"))
+      val entity                                     = entityWithKeywords("key" := "value")
       val UploadedFileInformation(_, keywords, _, _) = extractor(iri, entity, 2000, None).accepted
       keywords shouldEqual Map(Label.unsafe("key") -> "value")
     }
 
     "fail to be extracted if the custom user metadata has invalid keywords" in {
-      val entity = entityWithMetadata(metadataWithKeywords(KeyThatIsTooLong := "value"))
+      val entity = entityWithKeywords(KeyThatIsTooLong := "value")
       extractor(iri, entity, 2000, None).rejectedWith[InvalidUserMetadata]
     }
 

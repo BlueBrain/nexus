@@ -16,6 +16,9 @@
     "filename": "file.txt",
     "location": "http://localhost/file.txt",
     "mediaType": "text/plain; charset=UTF-8",
+    "keywords": {
+      "key": "value"
+    },
     "origin": "Client",
     "path": "file.txt",
     "uuid": "8049ba90-7cc6-4de5-93a1-802c04200dcc"

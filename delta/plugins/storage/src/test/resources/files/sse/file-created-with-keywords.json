@@ -4,13 +4,15 @@
     "https://bluebrain.github.io/nexus/contexts/files.json"
   ],
   "@type": "FileCreated",
-  "tag": "mytag",
   "_attributes": {
     "_bytes": 12,
     "_digest": {
       "_value": ""
     },
     "_filename": "file.txt",
+    "_keywords": {
+      "key": "value"
+    },
     "_mediaType": "text/plain; charset=UTF-8",
     "_origin": "Client",
     "_uuid": "8049ba90-7cc6-4de5-93a1-802c04200dcc"

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileUserMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
@@ -297,14 +296,21 @@ object FileEvent {
     implicit val configuration: Configuration                        = Serializer.circeConfiguration
     implicit val digestCodec: Codec.AsObject[Digest]                 =
       deriveConfiguredCodec[Digest]
-    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] = {
-      deriveConfiguredCodec[FileAttributes]
-    }
-    implicit val userMetadataCodec: Codec.AsObject[FileUserMetadata] =
-      deriveConfiguredCodec[FileUserMetadata]
-    implicit val enc: Encoder.AsObject[FileEvent]                    = deriveConfiguredEncoder[FileEvent].mapJsonObject(_.dropNulls)
-    implicit val codec: Codec.AsObject[FileEvent]                    = Codec.AsObject.from(deriveConfiguredDecoder, enc)
+    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] = createFileAttributesCodec()
+
+    implicit val enc: Encoder.AsObject[FileEvent] = deriveConfiguredEncoder[FileEvent].mapJsonObject(_.dropNulls)
+    implicit val codec: Codec.AsObject[FileEvent] = Codec.AsObject.from(deriveConfiguredDecoder, enc)
     Serializer()
+  }
+
+  private def createFileAttributesCodec()(implicit
+      digestCodec: Codec.AsObject[Digest]
+  ): Codec.AsObject[FileAttributes] = {
+    @nowarn("cat=unused")
+    implicit val configuration: Configuration          = Serializer.circeConfiguration.withDefaults
+    implicit val enc: Encoder.AsObject[FileAttributes] =
+      FileAttributes.createConfiguredEncoder(Serializer.circeConfiguration.withDefaults)
+    Codec.AsObject.from[FileAttributes](deriveConfiguredDecoder, enc)
   }
 
   val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =
@@ -331,7 +337,7 @@ object FileEvent {
         )
     }
 
-  def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") showLocation: ShowFileLocation): SseEncoder[FileEvent] =
+  def sseEncoder(implicit base: BaseUri, showLocation: ShowFileLocation): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
       override val databaseDecoder: Decoder[FileEvent] = serializer.codec
 
@@ -341,10 +347,10 @@ object FileEvent {
 
       @nowarn("cat=unused")
       override val sseEncoder: Encoder.AsObject[FileEvent] = {
-        val context                                                      = ContextValue(Vocabulary.contexts.metadata, contexts.files)
-        val metadataKeys: Set[String]                                    =
+        val context                                         = ContextValue(Vocabulary.contexts.metadata, contexts.files)
+        val metadataKeys: Set[String]                       =
           Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
-        implicit val circeConfig: Configuration                          = Configuration.default
+        implicit val circeConfig: Configuration             = Configuration.default
           .withDiscriminator(keywords.tpe)
           .copy(transformMemberNames = {
             case "id"                                  => "_fileId"
@@ -352,10 +358,8 @@ object FileEvent {
             case field if metadataKeys.contains(field) => s"_$field"
             case other                                 => other
           })
-        implicit val subjectEncoder: Encoder[Subject]                    = IriEncoder.jsonEncoder[Subject]
-        implicit val projectRefEncoder: Encoder[ProjectRef]              = IriEncoder.jsonEncoder[ProjectRef]
-        implicit val userMetadataCodec: Codec.AsObject[FileUserMetadata] =
-          deriveConfiguredCodec[FileUserMetadata]
+        implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
+        implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
 
         Encoder.encodeJsonObject.contramapObject { event =>
           val storageAndType                    = event match {
@@ -364,6 +368,13 @@ object FileEvent {
             case _                    => None
           }
           implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
+
+          implicit val attributesEncoder: Encoder[FileAttributes] = FileAttributes.createConfiguredEncoder(
+            implicitly[Configuration],
+            underscoreFields = true,
+            removePath = true,
+            removeLocation = !showLocation.types.contains(storageType)
+          )
 
           val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
             Json.obj(

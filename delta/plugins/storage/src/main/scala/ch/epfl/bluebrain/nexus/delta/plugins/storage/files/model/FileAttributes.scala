@@ -4,8 +4,6 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentType, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Decoder, Encoder}
@@ -81,7 +79,8 @@ object FileAttributes {
   sealed trait FileAttributesOrigin
 
   object FileAttributesOrigin {
-    final case object Client  extends FileAttributesOrigin
+    final case object Client extends FileAttributesOrigin
+
     final case object Storage extends FileAttributesOrigin
 
     implicit val fileAttributesEncoder: Encoder[FileAttributesOrigin] = Encoder.encodeString.contramap {
@@ -96,17 +95,36 @@ object FileAttributes {
     }
   }
 
-  @nowarn("cat=unused")
-  implicit private val circeConfig: Configuration =
-    Configuration.default.withDefaults.copy(transformMemberNames = k => s"_$k")
-
-  implicit def fileAttributesEncoder(implicit
-      storageType: StorageType,
-      showLocation: ShowFileLocation
-  ): Encoder.AsObject[FileAttributes] =
-    Encoder.encodeJsonObject.contramapObject { attributes =>
-      val obj = deriveConfiguredEncoder[FileAttributes].encodeObject(attributes)
-      if (showLocation.types.contains(storageType)) obj.remove("_path")
-      else obj.removeAllKeys("_location", "_path")
+  def createConfiguredEncoder(
+      originalConfig: Configuration,
+      underscoreFields: Boolean = false,
+      removePath: Boolean = false,
+      removeLocation: Boolean = false
+  )(implicit @nowarn("cat=unused") digestEncoder: Encoder.AsObject[Digest]): Encoder.AsObject[FileAttributes] = {
+    @nowarn("cat=unused")
+    implicit val config: Configuration = underscoreFields match {
+      case true  => withUnderscoreFields(originalConfig)
+      case false => originalConfig
     }
+
+    object Key {
+      def unapply(key: String): Option[String] = {
+        if (underscoreFields && key.startsWith("_")) Some(key.drop(1))
+        else Some(key)
+      }
+    }
+
+    deriveConfiguredEncoder[FileAttributes].mapJsonObject { json =>
+      json.filter {
+        case (Key("location"), _)     => !removeLocation
+        case (Key("path"), _)         => !removePath
+        case (Key("keywords"), value) => !value.isEmpty()
+        case _                        => true
+      }
+    }
+  }
+
+  private def withUnderscoreFields(configuration: Configuration): Configuration = {
+    configuration.copy(transformMemberNames = key => s"_$key")
+  }
 }

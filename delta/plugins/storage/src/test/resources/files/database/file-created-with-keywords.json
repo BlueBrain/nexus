@@ -10,6 +10,9 @@
     "path" : "file.txt",
     "filename" : "file.txt",
     "mediaType" : "text/plain; charset=UTF-8",
+    "keywords": {
+      "key": "value"
+    },
     "bytes" : 12,
     "digest" : {
       "@type" : "NotComputedDigest"

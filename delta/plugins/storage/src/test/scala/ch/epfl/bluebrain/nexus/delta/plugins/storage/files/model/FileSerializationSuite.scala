@@ -43,15 +43,19 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Uri.Path("file.txt"),
       "file.txt",
       Some(`text/plain(UTF-8)`),
-      keywords,
+      Map.empty,
       12,
       digest,
       Client
     )
 
+  private val attributesWithKeywords = attributes.copy(keywords = keywords)
+
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val createdWithKeywords = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributesWithKeywords.copy(digest = NotComputedDigest), 1, instant, subject, None)
   private val createdTagged = created.copy(tag = Some(tag))
+  private val createdTaggedWithKeywords = createdWithKeywords.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
@@ -79,11 +83,25 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
+      "FileCreated with keywords",
+      createdWithKeywords,
+      loadEvents("files", "file-created-with-keywords.json"),
+      Created,
+      expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+    ),
+    (
       "FileCreated with tags",
       createdTagged,
       loadEvents("files", "file-created-tagged.json"),
       Created,
       expected(createdTagged, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+    ),
+    (
+      "FileCreated with tags and keywords",
+      createdTaggedWithKeywords,
+      loadEvents("files", "file-created-tagged-with-keywords.json"),
+      Created,
+      expected(createdTaggedWithKeywords, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
       "FileUpdated",
@@ -188,14 +206,25 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     subject
   )
 
-  private val jsonState = jsonContentOf("files/database/file-state.json")
+  private val stateWithKeywords = state.copy(attributes = attributesWithKeywords)
+
+  private val fileState             = jsonContentOf("files/database/file-state.json")
+  private val fileStateWithKeywords = jsonContentOf("files/database/file-state-with-keywords.json")
 
   test(s"Correctly serialize a FileState") {
-    assertEquals(FileState.serializer.codec(state), jsonState)
+    assertEquals(FileState.serializer.codec(state), fileState)
   }
 
-  test(s"Correctly deserialize a ResourceState") {
-    assertEquals(FileState.serializer.codec.decodeJson(jsonState), Right(state))
+  test(s"Correctly deserialize a FileState") {
+    assertEquals(FileState.serializer.codec.decodeJson(fileState), Right(state))
+  }
+
+  test(s"Correctly serialize a FileState with keywords") {
+    assertEquals(FileState.serializer.codec(stateWithKeywords), fileStateWithKeywords)
+  }
+
+  test(s"Correctly deserialize a FileState with keywords") {
+    assertEquals(FileState.serializer.codec.decodeJson(fileStateWithKeywords), Right(stateWithKeywords))
   }
 
 }
