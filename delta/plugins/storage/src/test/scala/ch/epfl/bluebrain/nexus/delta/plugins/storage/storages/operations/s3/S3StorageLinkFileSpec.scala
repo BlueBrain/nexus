@@ -44,13 +44,14 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
   }
   private val contentSize           = 12L
 
-  private val path     = Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
-  private val location = s"http://bucket3.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt"
+  private val path             = Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
+  private var location: String = _
 
   private var storageValue: S3StorageValue = _
   private var storage: S3Storage           = _
 
   override protected def beforeAll(): Unit = {
+    location = s"http://bucket3.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt"
     storageValue = S3StorageValue(
       default = false,
       algorithm = DigestAlgorithm.default,
