@@ -46,6 +46,19 @@ object EvaluationError {
   final case class EvaluationFailure[Command](command: Command, errorType: String, errorMessage: String)
       extends EvaluationError(s"'$command' failed with an error '$errorType' and a message $errorMessage")
 
+  /**
+    * Error when the tagged state can't be correctly computed during a tag operation
+    *
+    * @param command
+    *   the command that failed
+    * @param lastRev
+    *   the found revision for the computed state
+    */
+  final case class EvaluationTagFailure[Command](command: Command, lastRev: Option[Int])
+      extends EvaluationError(
+        s"'$command' could not compute the tagged state, the state could only be found until rev '$lastRev'"
+      )
+
   object EvaluationFailure {
 
     def apply[Command](command: Command, throwable: Throwable): EvaluationFailure[Command] =

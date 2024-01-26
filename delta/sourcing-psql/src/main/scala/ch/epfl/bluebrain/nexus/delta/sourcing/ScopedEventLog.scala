@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
@@ -20,6 +21,7 @@ import doobie.implicits._
 import doobie.postgres.sqlstate
 import fs2.Stream
 
+import java.sql.SQLException
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
@@ -225,14 +227,20 @@ object ScopedEventLog {
 
       override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] = {
 
-        def saveTag(event: E, state: S): IO[ConnectionIO[Unit]] =
-          tagger.tagWhen(event).fold(IO.pure(noop)) { case (tag, rev) =>
-            if (rev == state.rev)
-              IO.pure(stateStore.save(state, tag, Noop))
-            else
+        def newTaggedState(event: E, state: S): IO[Option[(UserTag, S)]] =
+          tagger.tagWhen(event) match {
+            case Some((tag, rev)) if rev == state.rev =>
+              IO.some(tag -> state)
+            case Some((tag, rev))                     =>
               stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
-                .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
+                .flatTap {
+                  case stateOpt if !stateOpt.exists(_.rev == rev) =>
+                    IO.raiseError(EvaluationTagFailure(command, stateOpt.map(_.rev)))
+                  case _                                          => IO.unit
+                }
+                .map(_.map(tag -> _))
+            case None                                 => IO.none
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
@@ -247,33 +255,37 @@ object ScopedEventLog {
 
         def persist(event: E, original: Option[S], newState: S): IO[Unit] = {
 
-          def queries(tagQuery: ConnectionIO[Unit], init: PartitionInit) =
+          def queries(newTaggedState: Option[(UserTag, S)], init: PartitionInit) =
             for {
               _ <- TombstoneStore.save(entityType, original, newState)
               _ <- eventStore.save(event, init)
               _ <- stateStore.save(newState, init)
-              _ <- tagQuery
+              _ <- newTaggedState.traverse { case (tag, taggedState) =>
+                     stateStore.save(taggedState, tag, Noop)
+                   }
               _ <- deleteTag(event, newState)
               _ <- updateDependencies(newState)
             } yield ()
 
           {
             for {
-              init     <- PartitionInit(event.project, xas.cache)
-              tagQuery <- saveTag(event, newState)
-              res      <- queries(tagQuery, init)
-                            .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                              onUniqueViolation(id, command)
-                            }
-                            .transact(xas.write)
-              _        <- init.updateCache(xas.cache)
+              init        <- PartitionInit(event.project, xas.cache)
+              taggedState <- newTaggedState(event, newState)
+              res         <- queries(taggedState, init).transact(xas.write)
+              _           <- init.updateCache(xas.cache)
             } yield res
+          }.recoverWith {
+            case sql: SQLException if isUniqueViolation(sql) =>
+              logger.error(sql)(
+                s"A unique constraint violation occurred when persisting an event for  '$id' in project '$ref' and rev ${event.rev}."
+              ) >>
+                IO.raiseError(onUniqueViolation(id, command))
+            case other                                       =>
+              logger.error(other)(
+                s"An error occurred when persisting an event for '$id' in project '$ref' and rev ${event.rev}."
+              ) >>
+                IO.raiseError(other)
           }
-            .flatMap {
-              IO.fromEither(_).onError { _ =>
-                logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}.")
-              }
-            }
         }
 
         for {
@@ -282,10 +294,14 @@ object ScopedEventLog {
           _             <- persist(result._1, originalState, result._2)
         } yield result
       }.adaptError {
-        case e: Rejection            => e
-        case e: EvaluationTimeout[_] => e
-        case e                       => EvaluationFailure(command, e)
+        case e: Rejection               => e
+        case e: EvaluationTimeout[_]    => e
+        case e: EvaluationTagFailure[_] => e
+        case e                          => EvaluationFailure(command, e)
       }
+
+      private def isUniqueViolation(sql: SQLException) =
+        sql.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value
 
       override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
         stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
