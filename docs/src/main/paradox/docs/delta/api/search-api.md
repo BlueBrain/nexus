@@ -7,8 +7,28 @@ Nexus provides global search functionality across all projects through the
 The search plugin is experimental and its functionality and API can change without notice.
 @@@
 
+The search plugin relies on @ref:[composite views](./views/composite-view-api.md):
+* An underlying composite view is created for every project in the Nexus deployment
+* Those views are identical and index data from their enclosing project in a single Elasticsearch projection.
+* The query endpoints filter the Elasticsearch projections from the underlying composite views and only returns results from
+  indices to which user has access to, i.e. has `views/query` permission.
+
 For instructions on how to configure global search in Nexus and how it works please visit the
 @ref:[Search configuration](../../getting-started/running-nexus/search-configuration.md) page.
+
+@@@ note { .tip title="Api Mapping" }
+
+The underlying composite views can queried to monitor their indexing progress, to query their intermediate namespaces, ...
+
+An API mapping `search` has been defined to make it easier:
+
+Example:
+```
+GET /v1/views/myorg/myproject/search/offset
+```
+Will allow to get the indexing progress for search for the `myorg/myproject` 
+
+@@@
 
 ## Query
 
@@ -19,9 +39,6 @@ POST /v1/search/query
 ... where `{payload}` is a 
 @link:[Elasticsearch query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html){ open=new }
 and the response is forwarded from the underlying Elasticsearch indices.
-
-The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from
-indices to which user has access to, i.e. has `views/query` permission.
 
 ## Query a suite
 
@@ -37,9 +54,6 @@ POST /v1/search/query/suite/{suiteName}
 * `{suiteName}` is the name of the suite
 * `{payload}` is a @link:[Elasticsearch query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html){ open=new }
 and the response is forwarded from the underlying Elasticsearch indices.
-
-The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from
-indices to which user has access to, i.e. has `views/query` permission.
 
 ## Configuration
 
