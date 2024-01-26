@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQ
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import io.circe.Json
 import io.circe.parser._
+import io.circe.syntax._
 import fs2._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AppendedClues, Assertion}
@@ -143,13 +144,13 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     )
   }
 
-  def uploadFileWithMetadata(
+  def uploadFileWithKeywords(
       requestPath: String,
       fileContents: String,
       contentType: ContentType,
       fileName: String,
       identity: Identity,
-      metadata: Json
+      keywords: Map[String, String]
   )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
 
     request[Json, String, (Json, HttpResponse)](
@@ -162,7 +163,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
           BodyPart.Strict(
             "file",
             HttpEntity(contentType, s.getBytes),
-            Map("filename" -> fileName, "metadata" -> metadata.noSpaces)
+            Map("filename" -> fileName, "keywords" -> keywords.asJson.noSpaces)
           )
         ).toEntity()
       },

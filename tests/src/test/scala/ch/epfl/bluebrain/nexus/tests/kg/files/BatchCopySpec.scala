@@ -136,7 +136,7 @@ class BatchCopySpec extends BaseIntegrationSpec {
       .parTraverse { case (id, FileInput(_, _, _, _, keywords)) =>
         deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          json.hcursor.downField("keywords").as[Map[String, String]].toOption match {
+          json.hcursor.downField("_keywords").as[Map[String, String]].toOption match {
             case Some(value) => value shouldEqual keywords
             case None        => fail("keywords missing")
           }

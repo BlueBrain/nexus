@@ -93,13 +93,13 @@ class FilesSpec extends BaseIntegrationSpec {
   private def givenAFileWithBrainRegion(brainRegion: String): String = {
     val id     = genString()
     val fullId = deltaClient
-      .uploadFileWithMetadata(
+      .uploadFileWithKeywords(
         s"/files/$org/$project/$id",
         "file content",
         ContentTypes.`text/plain(UTF-8)`,
         s"$id.json",
         Writer,
-        Json.obj("keywords" := Json.obj("brainRegion" := brainRegion))
+        Map("brainRegion" -> brainRegion)
       )
       .map { case (json, response) =>
         response.status shouldEqual StatusCodes.Created

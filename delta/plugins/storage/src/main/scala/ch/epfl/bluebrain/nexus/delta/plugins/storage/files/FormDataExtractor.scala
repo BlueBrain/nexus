@@ -147,7 +147,9 @@ object FormDataExtractor {
           part.entity.discardBytes().future.as(None)
       }
 
-      private def extractKeywords(part: Multipart.FormData.BodyPart): Either[InvalidUserMetadata, Map[Label, String]] =
+      private def extractKeywords(
+          part: Multipart.FormData.BodyPart
+      ): Either[InvalidUserMetadata, Map[Label, String]] = {
         part.dispositionParams.get("keywords") match {
           case Some(value) =>
             parser
@@ -156,6 +158,7 @@ object FormDataExtractor {
               .leftMap(err => InvalidUserMetadata(err.getMessage))
           case None        => Right(Map.empty)
         }
+      }
 
       private def detectContentType(filename: String, contentTypeFromRequest: ContentType) = {
         val bodyDefinedContentType = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)

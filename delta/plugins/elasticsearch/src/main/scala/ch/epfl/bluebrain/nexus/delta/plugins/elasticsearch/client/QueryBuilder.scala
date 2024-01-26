@@ -84,7 +84,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           range(nxv.updatedAt.prefix, params.updatedAt) ++
           params.tag.map(term(nxv.tags.prefix, _)) ++
           params.keywords.map { case (key, value) =>
-            term(s"keywords.$key", value)
+            term(s"_keywords.$key", value)
           },
         mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),
         withScore = params.q.isDefined

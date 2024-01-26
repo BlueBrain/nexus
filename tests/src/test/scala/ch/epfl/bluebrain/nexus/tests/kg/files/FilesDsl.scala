@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient}
 import io.circe.Json
-import io.circe.syntax._
 import org.apache.commons.codec.Charsets
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -49,13 +48,13 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
       keywords: Map[String, String]
   ): IO[(Json, HttpResponse)] = {
     val revString = rev.map(r => s"&rev=$r").getOrElse("")
-    deltaClient.uploadFileWithMetadata(
+    deltaClient.uploadFileWithKeywords(
       s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
       fileInput.contents,
       fileInput.ct,
       fileInput.filename,
       Coyote,
-      Json.obj("keywords" -> keywords.asJson)
+      keywords
     )
   }
 

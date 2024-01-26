@@ -182,7 +182,7 @@
         }
       }
     },
-    "keywords": {
+    "_keywords": {
       "type": "object",
       "dynamic": true
     },
