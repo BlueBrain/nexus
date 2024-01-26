@@ -1,35 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration._
 
 class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  lazy val fixture = doobieInject(PullRequest.eventStore(_, event1, event2, event3, event4, event5, event6))
 
-  private lazy val xas = doobie()
-
-  private lazy val store = ScopedEventStore[Iri, PullRequestEvent](
-    PullRequest.entityType,
-    PullRequestEvent.serializer,
-    QueryConfig(10, RefreshStrategy.Delay(500.millis)),
-    xas
-  )
+  override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
 
   private val project1 = ProjectRef.unsafe("org", "proj1")
   private val project2 = ProjectRef.unsafe("org", "proj2")
@@ -49,14 +36,9 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private val event6 = PullRequestCreated(id3, project3, Instant.EPOCH, Anonymous)
 
-  private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assertEquals(6)
+  private lazy val (xas, store) = fixture()
 
-  test("Save events") {
-    for {
-      _ <- List(event1, event2, event3, event4, event5, event6).traverse(store.unsafeSave).transact(xas.write)
-      _ <- assertCount
-    } yield ()
-  }
+  private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assertEquals(6)
 
   test("Fail when the PK already exists") {
     for {

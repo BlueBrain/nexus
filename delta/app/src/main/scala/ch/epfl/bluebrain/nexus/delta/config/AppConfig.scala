@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportConfig
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
@@ -47,7 +48,8 @@ final case class AppConfig(
     serviceAccount: ServiceAccountConfig,
     sse: SseConfig,
     projections: ProjectionConfig,
-    fusion: FusionConfig
+    fusion: FusionConfig,
+    `export`: ExportConfig
 )
 
 object AppConfig {
