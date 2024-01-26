@@ -99,7 +99,6 @@ object Vocabulary {
     val description       = schema + "description"
     val name              = schema + "name"
     val unitText          = schema + "unitText"
-    val keywords          = iri"https://schema.org/keywords"
     val value             = schema + "value"
     val Person            = schema + "Person"
     val QuantitativeValue = schema + "QuantitativeValue"

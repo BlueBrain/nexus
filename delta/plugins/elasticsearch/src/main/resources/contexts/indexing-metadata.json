@@ -18,6 +18,7 @@
     "_location": "https://bluebrain.github.io/nexus/vocabulary/location",
     "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
     "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
+    "_keywords": "https://bluebrain.github.io/nexus/vocabulary/keywords",
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "_storage": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/storage",

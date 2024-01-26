@@ -5,7 +5,6 @@
     "name": "http://schema.org/name",
     "label": "http://www.w3.org/2000/01/rdf-schema#label",
     "description": "http://schema.org/description",
-    "keywords": "https://schema.org/keywords",
     "@vocab": "https://bluebrain.github.io/nexus/keywords/"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"

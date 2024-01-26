@@ -48,7 +48,6 @@ class ElasticSearchViewsDirectivesSpec extends RouteHelpers with CirceMarshallin
   implicit val paramTypeOperatorCodec: Codec[ResourcesSearchParams.TypeOperator] =
     deriveConfiguredCodec[ResourcesSearchParams.TypeOperator]
   implicit val paramsCodec: Codec[ResourcesSearchParams]                         = deriveConfiguredCodec[ResourcesSearchParams]
-//  implicit val metadataCodec: Codec[FileUserMetadata]                            = deriveConfiguredCodec[FileUserMetadata]
 
   private val route: Route =
     get {

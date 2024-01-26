@@ -94,7 +94,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
               updatedAt,
               types,
               typeOperator,
-              fileUserMetadata,
+              keywords,
               schema,
               id,
               locate,
@@ -113,7 +113,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
             updatedAt,
             types,
             typeOperator,
-            fileUserMetadata,
+            keywords,
             schema,
             qq,
             tag
