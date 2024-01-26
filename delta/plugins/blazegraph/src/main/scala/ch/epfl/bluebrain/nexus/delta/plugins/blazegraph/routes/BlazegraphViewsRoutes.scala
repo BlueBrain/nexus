@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.{Directive0, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
@@ -164,36 +162,6 @@ class BlazegraphViewsRoutes(
                               .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
                           )
-                        }
-                      }
-                    )
-                  },
-                  (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    concat(
-                      // Fetch tags for a view
-                      (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
-                        emit(
-                          views
-                            .fetch(id, project)
-                            .map(_.value.tags)
-                            .attemptNarrow[BlazegraphViewRejection]
-                            .rejectOn[ViewNotFound]
-                        )
-                      },
-                      // Tag a view
-                      (post & parameter("rev".as[Int])) { rev =>
-                        authorizeFor(project, Write).apply {
-                          entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emit(
-                              Created,
-                              views
-                                .tag(id, project, tag, tagRev, rev)
-                                .flatTap(index(project, _, mode))
-                                .mapValue(_.metadata)
-                                .attemptNarrow[BlazegraphViewRejection]
-                                .rejectOn[ViewNotFound]
-                            )
-                          }
                         }
                       }
                     )

@@ -17,9 +17,6 @@
   "source": {
     "elastic": "value"
   },
-  "tags": {
-    "mytag": 3
-  },
   "updatedAt": "1970-01-01T00:00:00Z",
   "updatedBy": {
     "@type": "User",

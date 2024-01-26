@@ -27,12 +27,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -167,36 +165,6 @@ final class BlazegraphViews(
   }.span("updateBlazegraphView")
 
   /**
-    * Add a tag to an existing view.
-    *
-    * @param id
-    *   the id of the view
-    * @param project
-    *   the project to which the view belongs
-    * @param tag
-    *   the tag label
-    * @param tagRev
-    *   the target revision of the tag
-    * @param rev
-    *   the current revision of the view
-    */
-  def tag(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit subject: Subject): IO[ViewResource] = {
-    for {
-      pc  <- fetchContext.onModify(project)
-      iri <- expandIri(id, pc)
-      _   <- validateNotDefaultView(iri)
-      res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
-      _   <- createNamespace(res)
-    } yield res
-  }.span("tagBlazegraphView")
-
-  /**
     * Deprecate a view.
     *
     * @param id
@@ -281,10 +249,8 @@ final class BlazegraphViews(
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
-                   case Revision(_, rev) =>
-                     log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-                   case Tag(_, tag)      =>
-                     log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+                   case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
+                   case t: Tag           => IO.raiseError(FetchByTagNotSupported(t))
                  }
     } yield state
   }.span("fetchBlazegraphView")
@@ -394,7 +360,6 @@ object BlazegraphViews {
           e.uuid,
           e.value,
           e.source,
-          Tags.empty,
           e.rev,
           e.rev,
           deprecated = false,
@@ -422,7 +387,7 @@ object BlazegraphViews {
     }
 
     def tagAdded(e: BlazegraphViewTagAdded): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def deprecated(e: BlazegraphViewDeprecated): Option[BlazegraphViewState] = state.map { s =>
@@ -475,19 +440,6 @@ object BlazegraphViews {
         } yield BlazegraphViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
-    def tag(c: TagBlazegraphView) = state match {
-      case None                                               =>
-        IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev                          =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
-        IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                            =>
-        clock.realTimeInstant.map(
-          BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
-        )
-    }
-
     def deprecate(c: DeprecateBlazegraphView) = state match {
       case None                      =>
         IO.raiseError(ViewNotFound(c.id, c.project))
@@ -517,7 +469,6 @@ object BlazegraphViews {
     cmd match {
       case c: CreateBlazegraphView      => create(c)
       case c: UpdateBlazegraphView      => update(c)
-      case c: TagBlazegraphView         => tag(c)
       case c: DeprecateBlazegraphView   => deprecate(c)
       case c: UndeprecateBlazegraphView => undeprecate(c)
     }
@@ -530,7 +481,7 @@ object BlazegraphViews {
     BlazegraphViewEvent,
     BlazegraphViewRejection
   ] =
-    ScopedEntityDefinition(
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(
         None,
@@ -539,15 +490,6 @@ object BlazegraphViews {
       ),
       BlazegraphViewEvent.serializer,
       BlazegraphViewState.serializer,
-      Tagger[BlazegraphViewEvent](
-        {
-          case r: BlazegraphViewTagAdded => Some(r.tag -> r.targetRev)
-          case _                         => None
-        },
-        { _ =>
-          None
-        }
-      ),
       { s =>
         s.value match {
           case a: AggregateBlazegraphViewValue =>

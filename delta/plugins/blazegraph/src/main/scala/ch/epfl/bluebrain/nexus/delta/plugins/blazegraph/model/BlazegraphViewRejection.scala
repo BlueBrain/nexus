@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -110,6 +111,11 @@ object BlazegraphViewRejection {
   final case class IncorrectRev(provided: Int, expected: Int)
       extends BlazegraphViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
+      )
+
+  final case class FetchByTagNotSupported(tag: IdSegmentRef.Tag)
+      extends BlazegraphViewRejection(
+        s"Fetching blazegraph views by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
       )
 
   /**
@@ -265,6 +271,7 @@ object BlazegraphViewRejection {
       case ViewIsDefaultView            => StatusCodes.Forbidden
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
+      case _: FetchByTagNotSupported    => StatusCodes.BadRequest
       case _                            => StatusCodes.BadRequest
     }
 }

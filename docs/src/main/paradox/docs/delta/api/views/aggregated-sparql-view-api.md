@@ -115,37 +115,6 @@ Payload
 Response
 :   @@snip [updated.json](../assets/views/blazegraph/aggregate/updated.json)
 
-## Tag
-
-Links a view's revision to a specific name.
-
-Tagging a view is considered to be an update as well.
-
-```
-POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-... where
-
-- `{previous_rev}`: Number - the last known revision for the resolver.
-- `{name}`: String - label given to the view at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [tag.sh](../assets/views/blazegraph/tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [tagged.json](../assets/views/blazegraph/aggregate/tagged.json)
-
-
 ## Deprecate
 
 Locks the view, so no further operations can be performed. It also stops the indexing process and delete the associated namespace.
@@ -170,14 +139,12 @@ Response
 ## Fetch
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
+GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
 ```
 
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-  `{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -190,13 +157,11 @@ Response
 ## Fetch original payload
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
+GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-  `{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -205,26 +170,6 @@ Request
 
 Response
 :   @@snip [payload.json](../assets/views/blazegraph/aggregate/payload.json)
-
-## Fetch tags
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
-```
-where ...
-
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
-
-**Example**
-
-Request
-:   @@snip [fetchTags.sh](../assets/views/blazegraph/tags.sh)
-
-Response
-:   @@snip [tags.json](../assets/tags.json)
 
 ## SPARQL query
 

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -51,7 +51,6 @@ final case class BlazegraphViewState(
     uuid: UUID,
     value: BlazegraphViewValue,
     source: Json,
-    tags: Tags,
     rev: Int,
     indexingRev: Int,
     deprecated: Boolean,
@@ -91,12 +90,11 @@ final case class BlazegraphViewState(
         includeMetadata,
         includeDeprecated,
         permission,
-        tags,
         source,
         indexingRev
       )
     case AggregateBlazegraphViewValue(name, description, views) =>
-      AggregateBlazegraphView(id, name, description, project, views, tags, source)
+      AggregateBlazegraphView(id, name, description, project, views, source)
   }
 
   def toResource: ViewResource =

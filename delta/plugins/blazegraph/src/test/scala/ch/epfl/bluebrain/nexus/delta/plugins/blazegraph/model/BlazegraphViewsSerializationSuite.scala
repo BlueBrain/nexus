@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
@@ -117,7 +116,6 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
       uuid,
       value,
       Json.obj("elastic" -> Json.fromString("value")),
-      Tags(tag           -> 3),
       rev = 1,
       indexingRev = 1,
       deprecated = false,

@@ -19,12 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import io.circe.syntax._
 import org.scalatest.Assertion
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
@@ -241,62 +240,9 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
     }
 
-    "tagging a view" should {
-      "tag a view" in {
-        views.tag(aggregateViewId, projectRef, tag, tagRev = 1, 2).accepted shouldEqual resourceFor(
-          aggregateViewId,
-          projectRef,
-          aggregateValue,
-          uuid,
-          aggregateSource,
-          3,
-          tags = Tags(tag -> 1),
-          createdBy = bob,
-          updatedBy = bob
-        )
-      }
-
-      "reject when view doesn't exits" in {
-        views.tag(doesntExistId, projectRef, tag, tagRev = 1, 2).rejected shouldEqual ViewNotFound(
-          doesntExistId,
-          projectRef
-        )
-      }
-
-      "reject when target revision doesn't exist" in {
-        views.tag(indexingViewId, projectRef, tag, tagRev = 42, 2).rejected shouldEqual RevisionNotFound(
-          42,
-          2
-        )
-      }
-
-      "reject when incorrect revision is provided" in {
-        views.tag(indexingViewId, projectRef, tag, tagRev = 1, 1).rejected shouldEqual IncorrectRev(
-          1,
-          2
-        )
-      }
-
-      "succeed when view is deprecated" in {
-        views.tag(indexingViewId2, projectRef, tag, tagRev = 1, 2).accepted shouldEqual resourceFor(
-          indexingViewId2,
-          projectRef,
-          indexingValue,
-          uuid,
-          indexingSource.deepMerge(Json.obj("@id" -> indexingViewId2.asJson)),
-          3,
-          tags = Tags(tag -> 1),
-          createdBy = bob,
-          updatedBy = bob,
-          deprecated = true
-        )
-      }
-
-    }
-
     "deprecating a view" should {
       "deprecate the view" in {
-        views.deprecate(aggregateViewId, projectRef, 3).accepted should be(deprecated)
+        views.deprecate(aggregateViewId, projectRef, 2).accepted should be(deprecated)
         views.fetch(aggregateViewId, projectRef).accepted should be(deprecated)
       }
 
@@ -356,19 +302,6 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
       }
 
-      "fetch a view by tag" in {
-        views.fetch(IdSegmentRef(aggregateViewId, tag), projectRef).accepted shouldEqual resourceFor(
-          aggregateViewId,
-          projectRef,
-          aggregateValue,
-          uuid,
-          aggregateSource,
-          1,
-          createdBy = bob,
-          updatedBy = bob
-        )
-      }
-
       "fetch a view by rev" in {
         views.fetch(IdSegmentRef(indexingViewId, 1), projectRef).accepted shouldEqual resourceFor(
           indexingViewId,
@@ -381,9 +314,9 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
         )
       }
 
-      "reject when the tag does not exist" in {
-        val notFound = UserTag.unsafe("notfound")
-        views.fetch(IdSegmentRef(aggregateViewId, notFound), projectRef).rejected shouldEqual TagNotFound(notFound)
+      "reject when fetching a view by tag" in {
+        val id = IdSegmentRef.Tag(aggregateViewId, tag)
+        views.fetch(id, projectRef).rejected shouldEqual FetchByTagNotSupported(id)
       }
 
       "reject when the revision does not exit" in {
@@ -403,10 +336,6 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
       "updating" in {
         views.update(defaultViewId, projectRef, 1, indexingSource).rejected shouldEqual ViewIsDefaultView
-      }
-
-      "tagging" in {
-        views.tag(defaultViewId, projectRef, tag, tagRev = 1, 1).rejected shouldEqual ViewIsDefaultView
       }
     }
 

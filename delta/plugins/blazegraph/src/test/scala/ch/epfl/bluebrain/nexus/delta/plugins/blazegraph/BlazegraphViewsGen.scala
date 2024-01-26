@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
@@ -21,7 +20,6 @@ object BlazegraphViewsGen {
       rev: Int = 1,
       indexingRev: Int = 1,
       deprecated: Boolean = false,
-      tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): ViewResource =
@@ -31,7 +29,6 @@ object BlazegraphViewsGen {
       uuid,
       value,
       source,
-      tags,
       rev,
       indexingRev,
       deprecated,
