@@ -1,5 +1,6 @@
 {
   "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/keywords/",
     "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
     "_fileId": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/fileId",
