@@ -50,7 +50,6 @@ object Exporter {
         _              <- exportToFile(q, exportFile)
         end            <- clock.realTimeInstant
         exportSuccess   = targetDirectory / s"$start.success"
-        _               = println(exportFile)
         _              <- Files[IO].createFile(exportSuccess)
         _              <-
           logger.info(
