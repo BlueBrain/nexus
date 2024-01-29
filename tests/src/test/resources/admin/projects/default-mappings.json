@@ -50,5 +50,9 @@
   {
     "_namespace": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
     "_prefix": "defaultStorage"
+  },
+  {
+    "_namespace": "https://bluebrain.github.io/nexus/vocabulary/searchView",
+    "_prefix": "search"
   }
 ]

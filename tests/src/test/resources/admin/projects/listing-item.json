@@ -75,6 +75,10 @@
     {
       "_prefix": "person-{{projId}}",
       "_namespace": "https://shapes-registry.org/commons/person"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/searchView",
+      "_prefix": "search"
     }
   ],
   "_label": "{{projId}}",
