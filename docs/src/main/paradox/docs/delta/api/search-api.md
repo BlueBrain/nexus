@@ -8,6 +8,7 @@ The search plugin is experimental and its functionality and API can change witho
 @@@
 
 The search plugin relies on @ref:[composite views](./views/composite-view-api.md):
+
 * An underlying composite view is created for every project in the Nexus deployment
 * Those views are identical and index data from their enclosing project in a single Elasticsearch projection.
 * The query endpoints filter the Elasticsearch projections from the underlying composite views and only returns results from
