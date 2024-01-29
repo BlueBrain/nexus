@@ -63,6 +63,16 @@ class FilesSpec extends BaseIntegrationSpec {
       queryForFilesWithBrainRegion("hippocampus").accepted shouldBe empty
       queryForFilesWithKeywords("nonExistentKey" -> "value").accepted shouldBe empty
     }
+
+    "allow a file to be found via full text search" in {
+      val cerebellumId = givenAFileWithBrainRegion("cerebellum")
+      val cortexId     = givenAFileWithBrainRegion("cortex")
+
+      val results = queryForFilesWithFreeText("cerebellum").accepted
+
+      exactly(1, results) should have(`@id`(cerebellumId))
+      no(results) should have(`@id`(cortexId))
+    }
   }
 
   private def assertListingTotal(id: String, expectedTotal: Int) =
@@ -79,6 +89,14 @@ class FilesSpec extends BaseIntegrationSpec {
 
   private def queryForFilesWithBrainRegion(brainRegion: String): IO[List[Json]] = {
     queryForFilesWithKeywords("brainRegion" -> brainRegion)
+  }
+
+  private def queryForFilesWithFreeText(text: String): IO[List[Json]] = {
+    deltaClient
+      .getJson[Json](s"/files/$projectRef?q=$text", Writer)
+      .map { json =>
+        json.hcursor.downField("_results").as[List[Json]].rightValue
+      }
   }
 
   private def queryForFilesWithKeywords(keywords: (String, String)*): IO[List[Json]] = {
