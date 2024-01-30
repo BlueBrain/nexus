@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.file.TempDirectory
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import fs2.io.file.Files
+import fs2.io.file.{Files, Path}
 import io.circe.{parser, DecodingFailure, JsonObject}
 import munit.{AnyFixture, Location}
 
@@ -55,25 +55,37 @@ class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fi
   private def orderingValue(obj: JsonObject) =
     obj("ordering").flatMap(_.asNumber.flatMap(_.toInt))
 
-  private def assertExport(result: Exporter.ExportResult, expectedOrdering: List[Int])(implicit location: Location) =
+  private def readJsonLines(path: Path) = Files[IO]
+    .readUtf8Lines(path)
+    .evalMap { line =>
+      IO.fromEither(parseAsObject(line))
+    }
+    .compile
+    .toList
+
+  private def readSuccess(path: Path) = Files[IO]
+    .readUtf8(path)
+    .evalMap { content =>
+      IO.fromEither(parser.decode[ExportEventQuery](content))
+    }
+    .compile
+    .lastOrError
+
+  private def assertExport(result: Exporter.ExportResult, query: ExportEventQuery, expectedOrdering: List[Int])(implicit
+      location: Location
+  ) =
     for {
-      exportContent <- Files[IO]
-                         .readUtf8Lines(result.json)
-                         .evalMap { line =>
-                           IO.fromEither(parseAsObject(line))
-                         }
-                         .compile
-                         .toList
+      exportContent <- readJsonLines(result.json)
       orderingValues = exportContent.mapFilter(orderingValue)
       _              = assertEquals(orderingValues, expectedOrdering)
-      _             <- Files[IO].exists(result.success)
+      _             <- readSuccess(result.success).assertEquals(query)
     } yield ()
 
   test(s"Export all events for $project1 and $project3") {
     val query = ExportEventQuery(Label.unsafe("export1"), NonEmptyList.of(project1, project3), Offset.start)
     for {
       result <- exporter.events(query)
-      _      <- assertExport(result, List(1, 2, 3, 4, 6))
+      _      <- assertExport(result, query, List(1, 2, 3, 4, 6))
     } yield ()
   }
 
@@ -81,7 +93,7 @@ class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fi
     val query = ExportEventQuery(Label.unsafe("export2"), NonEmptyList.of(project1, project3), Offset.at(2L))
     for {
       result <- exporter.events(query)
-      _      <- assertExport(result, List(3, 4, 6))
+      _      <- assertExport(result, query, List(3, 4, 6))
     } yield ()
   }
 }
