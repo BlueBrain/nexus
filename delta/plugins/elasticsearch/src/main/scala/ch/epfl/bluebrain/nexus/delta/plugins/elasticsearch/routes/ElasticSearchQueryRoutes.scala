@@ -33,7 +33,7 @@ class ElasticSearchQueryRoutes(
     paginationConfig: PaginationConfig,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    fetchContext: FetchContext[ElasticSearchQueryError]
+    fetchContext: FetchContext
 ) extends AuthDirectives(identities, aclCheck)
     with ElasticSearchViewsDirectives {
 

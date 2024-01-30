@@ -12,10 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -111,7 +112,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       (_, _) => IO.pure { StorageStatEntry(10L, 100L) }
 
     lazy val storages: Storages = Storages(
-      fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+      fetchContext,
       ResolverContextResolution(rcr),
       IO.pure(allowedPerms),
       (_, _) => IO.unit,
@@ -122,7 +123,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     ).accepted
 
     lazy val files: Files = Files(
-      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      fetchContext,
       aclCheck,
       storages,
       storageStatistics,
@@ -246,11 +247,11 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.create(None, projectRef, entity(), None).rejectedWith[ProjectContextRejection]
+        files.create(None, projectRef, entity(), None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        files.create(Some(diskId), deprecatedProject.ref, entity(), None).rejectedWith[ProjectContextRejection]
+        files.create(Some(diskId), deprecatedProject.ref, entity(), None).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -305,13 +306,13 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.createLink(None, projectRef, None, None, Uri.Path.Empty, None).rejectedWith[ProjectContextRejection]
+        files.createLink(None, projectRef, None, None, Uri.Path.Empty, None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
         files
           .createLink(Some(remoteId), deprecatedProject.ref, None, None, Uri.Path.Empty, None)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -334,13 +335,13 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.update(FileId(file1, projectRef), None, 2, entity(), None).rejectedWith[ProjectContextRejection]
+        files.update(FileId(file1, projectRef), None, 2, entity(), None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
         files
           .update(FileId(file1, deprecatedProject.ref), None, 2, entity(), None)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -405,13 +406,13 @@ class FilesSpec(docker: RemoteStorageDocker)
 
         files
           .updateLink(FileId(file1, projectRef), None, None, None, Uri.Path.Empty, 2, None)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
         files
           .updateLink(FileId(file1, deprecatedProject.ref), None, None, None, Uri.Path.Empty, 2, None)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -430,11 +431,11 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.tag(FileId(rdId, projectRef), tag, tagRev = 2, 4).rejectedWith[ProjectContextRejection]
+        files.tag(FileId(rdId, projectRef), tag, tagRev = 2, 4).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        files.tag(FileId(rdId, deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectContextRejection]
+        files.tag(FileId(rdId, deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -475,11 +476,11 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.deprecate(FileId(file1, projectRef), 1).rejectedWith[ProjectContextRejection]
+        files.deprecate(FileId(file1, projectRef), 1).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        files.deprecate(FileId(file1, deprecatedProject.ref), 1).rejectedWith[ProjectContextRejection]
+        files.deprecate(FileId(file1, deprecatedProject.ref), 1).rejectedWith[ProjectIsDeprecated]
       }
 
       "allow tagging after deprecation" in {
@@ -520,11 +521,11 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project does not exist" in {
         val wrongProject = ProjectRef(org, Label.unsafe("other"))
-        files.deprecate(FileId(nxv + "id", wrongProject), 1).rejectedWith[ProjectContextRejection]
+        files.deprecate(FileId(nxv + "id", wrongProject), 1).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        files.undeprecate(FileId(nxv + "id", deprecatedProject.ref), 2).rejectedWith[ProjectContextRejection]
+        files.undeprecate(FileId(nxv + "id", deprecatedProject.ref), 2).rejectedWith[ProjectIsDeprecated]
       }
 
     }
@@ -567,7 +568,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetch(FileId(rdId, projectRef)).rejectedWith[ProjectContextRejection]
+        files.fetch(FileId(rdId, projectRef)).rejectedWith[ProjectNotFound]
       }
 
     }
@@ -618,7 +619,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetchContent(FileId(rdId, projectRef)).rejectedWith[ProjectContextRejection]
+        files.fetchContent(FileId(rdId, projectRef)).rejectedWith[ProjectNotFound]
       }
 
     }

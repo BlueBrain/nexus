@@ -7,9 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchDefaultViewsResetter}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -28,9 +27,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -92,7 +90,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViews].fromEffect {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         contextResolution: ResolverContextResolution,
         validateElasticSearchView: ValidateElasticSearchView,
         config: ElasticSearchViewsConfig,
@@ -103,7 +101,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ElasticSearchViews(
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         contextResolution,
         validateElasticSearchView,
         config.eventLog,
@@ -236,7 +234,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
         esConfig: ElasticSearchViewsConfig,
-        fetchContext: FetchContext[ContextRejection]
+        fetchContext: FetchContext
     ) =>
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchQueryRoutes(
@@ -250,7 +248,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         esConfig.pagination,
         cr,
         ordering,
-        fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
+        fetchContext
       )
   }
 

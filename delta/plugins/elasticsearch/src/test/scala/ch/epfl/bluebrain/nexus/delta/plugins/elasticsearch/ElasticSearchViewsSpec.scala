@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDefaultView, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
@@ -125,10 +126,9 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
     val viewPipelineId  = iri"http://localhost/indexing-pipeline"
     val viewId2         = iri"http://localhost/${genString()}"
 
-    val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+    val fetchContext = FetchContextDummy(
       Map(project.ref -> project.context, listProject.ref -> listProject.context),
-      Set(deprecatedProjectRef),
-      ProjectContextRejection
+      Set(deprecatedProjectRef)
     )
 
     lazy val views: ElasticSearchViews = ElasticSearchViews(
@@ -265,7 +265,7 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       "the referenced project is deprecated" in {
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(id, deprecatedProjectRef, source).rejectedWith[ProjectContextRejection]
+        views.create(id, deprecatedProjectRef, source).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -337,12 +337,12 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       "the project of the target view is not found" in {
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.update(id, unknownProjectRef, 1, source).rejectedWith[ProjectContextRejection]
+        views.update(id, unknownProjectRef, 1, source).rejectedWith[ProjectNotFound]
       }
       "the referenced project is deprecated" in {
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.update(id, deprecatedProjectRef, 1, source).rejectedWith[ProjectContextRejection]
+        views.update(id, deprecatedProjectRef, 1, source).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -372,11 +372,11 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
       "the project of the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
-        views.tag(id, unknownProjectRef, tag, 1, 2).rejectedWith[ProjectContextRejection]
+        views.tag(id, unknownProjectRef, tag, 1, 2).rejectedWith[ProjectNotFound]
       }
       "the referenced project is deprecated" in {
         val id = iri"http://localhost/${genString()}"
-        views.tag(id, deprecatedProjectRef, tag, 1, 2).rejectedWith[ProjectContextRejection]
+        views.tag(id, deprecatedProjectRef, tag, 1, 2).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -399,11 +399,11 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
       "the project of the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
-        views.deprecate(id, unknownProjectRef, 2).rejectedWith[ProjectContextRejection]
+        views.deprecate(id, unknownProjectRef, 2).rejectedWith[ProjectNotFound]
       }
       "the referenced project is deprecated" in {
         val id = iri"http://localhost/${genString()}"
-        views.deprecate(id, deprecatedProjectRef, 2).rejectedWith[ProjectContextRejection]
+        views.deprecate(id, deprecatedProjectRef, 2).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -433,12 +433,12 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
       "the project of the target view is not found" in {
         givenAView { view =>
-          views.undeprecate(view, unknownProjectRef, 2).assertRejectedWith[ProjectContextRejection]
+          views.undeprecate(view, unknownProjectRef, 2).assertRejectedWith[ProjectNotFound]
         }
       }
       "the referenced project is deprecated" in {
         val id = iri"http://localhost/${genString()}"
-        views.undeprecate(id, deprecatedProjectRef, 2).rejectedWith[ProjectContextRejection]
+        views.undeprecate(id, deprecatedProjectRef, 2).rejectedWith[ProjectIsDeprecated]
       }
     }
 

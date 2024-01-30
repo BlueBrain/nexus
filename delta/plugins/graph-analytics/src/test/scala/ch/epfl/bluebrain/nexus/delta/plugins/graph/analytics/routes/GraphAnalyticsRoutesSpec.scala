@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, permissions, GraphAnalytics}
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -52,9 +50,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
   private val aclCheck = AclSimpleCheck().accepted
   private val project  = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
 
-  private def projectNotFound(projectRef: ProjectRef) = ProjectContextRejection(
-    ContextRejection(ProjectNotFound(projectRef).asInstanceOf[ProjectRejection])
-  )
+  private def projectNotFound(projectRef: ProjectRef) = ProjectNotFound(projectRef).asInstanceOf[ProjectRejection]
 
   private val graphAnalytics = new GraphAnalytics {
 

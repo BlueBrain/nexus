@@ -9,7 +9,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
@@ -43,11 +42,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
   private val indexingViewId  = nxv + "indexing-view"
   private val aggregateViewId = nxv + "aggregate-view"
 
-  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
-    Map(project.ref -> project.context),
-    Set(deprecatedProject.ref),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(deprecatedProject.ref))
 
   implicit private val f: FusionConfig = fusionConfig
 

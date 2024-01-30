@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -40,19 +39,12 @@ object GraphAnalyticsRejection {
   final case class InvalidPropertyType(id: String)
       extends GraphAnalyticsRejection(s"Property type '$id' cannot be expanded to an Iri.")
 
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends GraphAnalyticsRejection("Something went wrong while interacting with another module.")
-
   implicit val graphAnalyticsRejectionEncoder: Encoder.AsObject[GraphAnalyticsRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedElasticSearchRejection(rejection) => rejection.asJsonObject
-        case ProjectContextRejection(rejection)       => rejection.asJsonObject
         case _                                        => obj
       }
     }
@@ -63,7 +55,6 @@ object GraphAnalyticsRejection {
   implicit val graphAnalyticsRejectionHttpResponseFields: HttpResponseFields[GraphAnalyticsRejection] =
     HttpResponseFields {
       case WrappedElasticSearchRejection(rej) => rej.status
-      case ProjectContextRejection(rej)       => rej.status
       case _                                  => StatusCodes.BadRequest
     }
 }

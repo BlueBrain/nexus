@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Resourc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.expandResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -73,7 +72,7 @@ object ResourcesTrial {
   def apply(
       fetchResource: (IdSegmentRef, ProjectRef) => IO[ResourceState],
       validateResource: ValidateResource,
-      fetchContext: FetchContext[ProjectContextRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       clock: Clock[IO]
   )(implicit api: JsonLdApi, uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {

@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
@@ -81,8 +82,7 @@ class ResourcesImplSpec
       project.ref           -> project.context.copy(apiMappings = allApiMappings),
       projectDeprecated.ref -> projectDeprecated.context
     ),
-    Set(projectDeprecated.ref),
-    ProjectContextRejection
+    Set(projectDeprecated.ref)
   )
   private val config        = ResourcesConfig(eventLogConfig, DecodingOption.Strict, skipUpdateNoChange = true)
   private val detectChanges = DetectChange(enabled = config.skipUpdateNoChange)
@@ -306,17 +306,17 @@ class ResourcesImplSpec
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        resources.create(projectRef, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
+        resources.create(projectRef, schemas.resources, source, None).rejectedWith[ProjectNotFound]
 
-        resources.create(myId, projectRef, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
+        resources.create(myId, projectRef, schemas.resources, source, None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        resources.create(projectDeprecated.ref, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
+        resources.create(projectDeprecated.ref, schemas.resources, source, None).rejectedWith[ProjectIsDeprecated]
 
         resources
           .create(myId, projectDeprecated.ref, schemas.resources, source, None)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectIsDeprecated]
       }
 
       "reject if part of the context can't be resolved" in {
@@ -415,11 +415,11 @@ class ResourcesImplSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.update(myId, projectRef, None, 2, source, None).rejectedWith[ProjectContextRejection]
+        resources.update(myId, projectRef, None, 2, source, None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        resources.update(myId, projectDeprecated.ref, None, 2, source, None).rejectedWith[ProjectContextRejection]
+        resources.update(myId, projectDeprecated.ref, None, 2, source, None).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -469,11 +469,11 @@ class ResourcesImplSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.refresh(idRefresh, projectRef, None).rejectedWith[ProjectContextRejection]
+        resources.refresh(idRefresh, projectRef, None).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        resources.refresh(idRefresh, projectDeprecated.ref, None).rejectedWith[ProjectContextRejection]
+        resources.refresh(idRefresh, projectDeprecated.ref, None).rejectedWith[ProjectIsDeprecated]
       }
 
       "reject if deprecated" in {
@@ -512,7 +512,7 @@ class ResourcesImplSpec
       "reject if the project doesn't exist" in {
         resources
           .updateAttachedSchema(id, nonExistentProject, schema3.id)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectNotFound]
       }
 
       "succeed" in {
@@ -578,11 +578,11 @@ class ResourcesImplSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.tag(myId, projectRef, None, tag, 2, 1).rejectedWith[ProjectContextRejection]
+        resources.tag(myId, projectRef, None, tag, 2, 1).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        resources.tag(myId, projectDeprecated.ref, None, tag, 2, 1).rejectedWith[ProjectContextRejection]
+        resources.tag(myId, projectDeprecated.ref, None, tag, 2, 1).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -626,12 +626,12 @@ class ResourcesImplSpec
       "reject if project does not exist" in {
         givenAResource { id =>
           val wrongProject = ProjectRef(org, Label.unsafe("other"))
-          resources.deprecate(id, wrongProject, None, 1).assertRejectedWith[ProjectContextRejection]
+          resources.deprecate(id, wrongProject, None, 1).assertRejectedWith[ProjectNotFound]
         }
       }
 
       "reject if project is deprecated" in {
-        resources.deprecate(nxv + "id", projectDeprecated.ref, None, 1).assertRejectedWith[ProjectContextRejection]
+        resources.deprecate(nxv + "id", projectDeprecated.ref, None, 1).assertRejectedWith[ProjectIsDeprecated]
       }
 
     }
@@ -686,7 +686,7 @@ class ResourcesImplSpec
           val wrongProject = ProjectRef(Label.unsafe(genString()), Label.unsafe(genString()))
           resources
             .undeprecate(id, wrongProject, None, 2)
-            .assertRejectedWith[ProjectContextRejection]
+            .assertRejectedWith[ProjectNotFound]
         }
       }
 
@@ -748,7 +748,7 @@ class ResourcesImplSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.fetch(myId, projectRef, None).rejectedWith[ProjectContextRejection]
+        resources.fetch(myId, projectRef, None).rejectedWith[ProjectNotFound]
       }
 
       "fail fetching if resource does not exist on deprecated project" in {

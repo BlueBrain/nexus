@@ -44,7 +44,7 @@ import java.util.UUID
   */
 final class ElasticSearchViews private (
     log: ElasticsearchLog,
-    fetchContext: FetchContext[ElasticSearchViewRejection],
+    fetchContext: FetchContext,
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
     defaultElasticsearchMapping: DefaultMapping,
     defaultElasticsearchSettings: DefaultSettings,
@@ -449,7 +449,7 @@ object ElasticSearchViews {
     IndexLabel.fromView(prefix, uuid, indexingRev)
 
   def apply(
-      fetchContext: FetchContext[ElasticSearchViewRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateElasticSearchView,
       eventLogConfig: EventLogConfig,

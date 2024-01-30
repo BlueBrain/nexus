@@ -8,8 +8,7 @@ import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -44,7 +43,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
   private val responseQueryProjection  = NTriples("queryProjection", BNode.random)
   private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
-  private val fetchContext    = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private lazy val views: CompositeViews = CompositeViews(

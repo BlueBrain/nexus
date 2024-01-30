@@ -14,10 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -68,10 +69,9 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
   private val inProjectPrio    = Priority.unsafe(42)
   private val crossProjectPrio = Priority.unsafe(43)
 
-  private val fetchContext = FetchContextDummy[ResolverRejection](
+  private val fetchContext = FetchContextDummy(
     Map(project.ref -> project.context, deprecatedProject.ref -> deprecatedProject.context),
-    Set(deprecatedProject.ref),
-    ProjectContextRejection
+    Set(deprecatedProject.ref)
   )
 
   private lazy val resolvers: Resolvers = ResolversImpl(
@@ -247,12 +247,12 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           val payload = sourceWithoutId(value)
           resolvers
             .create(id, unknownProjectRef, payload)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectNotFound]
 
           val payloadWithId = sourceFrom(id, value)
           resolvers
             .create(unknownProjectRef, payloadWithId)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectNotFound]
         }
       }
 
@@ -266,12 +266,12 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           val payload = sourceWithoutId(value)
           resolvers
             .create(id, deprecatedProjectRef, payload)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectIsDeprecated]
 
           val payloadWithId = sourceFrom(id, value)
           resolvers
             .create(deprecatedProjectRef, payloadWithId)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectIsDeprecated]
         }
       }
 
@@ -399,7 +399,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           val payload = sourceWithoutId(value)
           resolvers
             .update(id, unknownProjectRef, 2, payload)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectNotFound]
         }
       }
 
@@ -413,7 +413,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           val payload = sourceWithoutId(value)
           resolvers
             .update(id, deprecatedProjectRef, 2, payload)
-            .rejectedWith[ProjectContextRejection]
+            .rejectedWith[ProjectIsDeprecated]
         }
       }
 
@@ -487,7 +487,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, unknownProjectRef, 3).rejectedWith[ProjectContextRejection]
+          resolvers.deprecate(id, unknownProjectRef, 3).rejectedWith[ProjectNotFound]
         }
       }
 
@@ -498,7 +498,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, deprecatedProjectRef, 3).rejectedWith[ProjectContextRejection]
+          resolvers.deprecate(id, deprecatedProjectRef, 3).rejectedWith[ProjectIsDeprecated]
         }
       }
 

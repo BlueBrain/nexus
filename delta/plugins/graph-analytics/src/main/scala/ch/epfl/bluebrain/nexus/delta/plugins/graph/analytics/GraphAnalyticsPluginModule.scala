@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -12,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -31,8 +29,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
   make[GraphAnalytics]
-    .from { (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
-      GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
+    .from { (client: ElasticSearchClient, fetchContext: FetchContext, config: GraphAnalyticsConfig) =>
+      GraphAnalytics(client, fetchContext, config.prefix, config.termAggregations)
     }
 
   make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>

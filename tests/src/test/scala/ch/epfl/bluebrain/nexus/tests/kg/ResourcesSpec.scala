@@ -8,7 +8,7 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
-import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
@@ -191,6 +191,14 @@ class ResourcesSpec extends BaseIntegrationSpec {
   }
 
   "Fetching a resource" should {
+
+    "fail to fetch when the project does not exist" in {
+      deltaClient.get[Json](s"/resources/xxx/xxx/_/xxx", ServiceAccount) { (json, response) =>
+        response.status shouldEqual StatusCodes.NotFound
+        json should have(`@type`("ProjectNotFound"))
+      }
+    }
+
     "fail to fetch the resource when the user does not have access" in {
       deltaClient.get[Json](s"/resources/$projectForcedSchema/test-schema/test-resource:1", Anonymous) {
         (_, response) =>

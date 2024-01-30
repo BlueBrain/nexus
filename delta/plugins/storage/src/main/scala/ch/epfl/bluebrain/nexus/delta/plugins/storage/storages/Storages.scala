@@ -41,7 +41,7 @@ import java.time.Instant
   */
 final class Storages private (
     log: StorageLog,
-    fetchContext: FetchContext[StorageFetchRejection],
+    fetchContext: FetchContext,
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
     serviceAccount: ServiceAccount
 ) extends FetchStorage {
@@ -478,7 +478,7 @@ object Storages {
     * Constructs a Storages instance
     */
   def apply(
-      fetchContext: FetchContext[StorageFetchRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       fetchPermissions: IO[Set[Permission]],
       access: StorageAccess,

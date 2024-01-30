@@ -16,11 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{DetectChange, Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
@@ -46,7 +44,7 @@ object ResourcesModule extends ModuleDef {
     (
         validate: ValidateResource,
         detectChange: DetectChange,
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         config: ResourcesConfig,
         resolverContextResolution: ResolverContextResolution,
         api: JsonLdApi,
@@ -57,7 +55,7 @@ object ResourcesModule extends ModuleDef {
       ResourcesImpl(
         validate,
         detectChange,
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         resolverContextResolution,
         config,
         xas,

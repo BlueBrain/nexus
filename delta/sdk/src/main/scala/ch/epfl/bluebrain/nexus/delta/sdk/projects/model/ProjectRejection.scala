@@ -53,12 +53,6 @@ object ProjectRejection {
   final case class ProjectNotFound(projectRef: ProjectRef) extends NotFound(s"Project '$projectRef' not found.")
 
   /**
-    * Signals that the current project is expected to be deleted but it isn't
-    */
-  final case class ProjectNotDeleted(projectRef: ProjectRef)
-      extends ProjectRejection(s"Project '$projectRef' is not marked for deletion")
-
-  /**
     * Signals that a project cannot be created because one with the same identifier already exists.
     */
   final case class ProjectAlreadyExists(projectRef: ProjectRef)

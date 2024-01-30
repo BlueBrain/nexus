@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.Fetch
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolverResolution, ProjectContextRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResourceResolutionReport}
@@ -61,9 +61,7 @@ class MultiResolutionSuite extends NexusSuite with Fixtures {
   def fetchProject: ProjectRef => IO[ProjectContext] =
     FetchContextDummy(
       Map(projectRef -> ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false))
-    )
-      .mapRejection(ProjectContextRejection)
-      .onRead
+    ).onRead
 
   private val resolverId = nxv + "in-project"
 

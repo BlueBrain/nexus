@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
@@ -80,7 +78,6 @@ class FetchContextSuite extends NexusSuite {
   test("Fail getting a context for a project marked as deleted on read") {
     fetchContext(quotasResources = true, quotasEvents = true)
       .onRead(deletedProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
@@ -93,21 +90,18 @@ class FetchContextSuite extends NexusSuite {
   test("Fail getting a context for an active project on create if quota for resources is not reached") {
     fetchContext(quotasResources = true, quotasEvents = false)
       .onCreate(activeProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(QuotaResourcesReached(activeProject, 0))
   }
 
   test("Fail getting a context for a deprecated project on create") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onCreate(deprecatedProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on create") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onCreate(deletedProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
@@ -126,21 +120,18 @@ class FetchContextSuite extends NexusSuite {
   test("Fail getting a context for an active project on create if event quotas is reached") {
     fetchContext(quotasResources = false, quotasEvents = true)
       .onModify(activeProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(QuotaEventsReached(activeProject, 0))
   }
 
   test("Fail getting a context for a deprecated project on modify") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onModify(deprecatedProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on modify") {
     fetchContext(quotasResources = false, quotasEvents = false)
       .onModify(deletedProject)
-      .adaptError { case c: ContextRejection => c.value }
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 

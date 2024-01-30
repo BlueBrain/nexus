@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
@@ -100,12 +99,6 @@ object ArchiveRejection {
   final case object BlankArchiveId extends ArchiveRejection(s"Archive identifier cannot be blank.")
 
   /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends ArchiveRejection("Something went wrong while interacting with another module.")
-
-  /**
     * Rejection returned when attempting to create an Archive where the passed id does not match the id on the source
     * json document.
     *
@@ -168,7 +161,6 @@ object ArchiveRejection {
       r match {
         case InvalidResourceCollection(duplicates, invalids, longIds) =>
           obj.add("duplicates", duplicates.asJson).add("invalids", invalids.asJson).add("longIds", longIds.asJson)
-        case ProjectContextRejection(rejection)                       => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                              => obj.add("rdf", rdf.asJson)
         case _: ArchiveNotFound                                       => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                        => obj
@@ -184,7 +176,6 @@ object ArchiveRejection {
       case InvalidResourceCollection(_, _, _) => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest
-      case ProjectContextRejection(rejection) => rejection.status
       case UnexpectedArchiveId(_, _)          => StatusCodes.BadRequest
       case DecodingFailed(_)                  => StatusCodes.BadRequest
       case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest

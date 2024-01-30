@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -100,10 +100,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
 
   private val perms        = allowedPerms.toSet
   private val aclCheck     = AclSimpleCheck().accepted
-  private val fetchContext = FetchContextDummy[StorageFetchRejection](
-    Map(project.ref -> project.context),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context))
 
   private val storageStatistics: StoragesStatistics =
     (storage, project) =>

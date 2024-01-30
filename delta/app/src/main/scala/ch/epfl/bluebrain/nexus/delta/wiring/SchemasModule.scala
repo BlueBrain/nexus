@@ -19,11 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -44,7 +42,7 @@ object SchemasModule extends ModuleDef {
 
   make[Schemas].from {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         schemaImports: SchemaImports,
         api: JsonLdApi,
         validate: ValidateSchema,
@@ -55,7 +53,7 @@ object SchemasModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       SchemasImpl(
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         schemaImports,
         resolverContextResolution,
         validate,

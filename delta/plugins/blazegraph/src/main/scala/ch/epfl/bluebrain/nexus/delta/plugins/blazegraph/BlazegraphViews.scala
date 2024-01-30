@@ -43,7 +43,7 @@ import java.util.UUID
   */
 final class BlazegraphViews(
     log: BlazegraphLog,
-    fetchContext: FetchContext[BlazegraphViewRejection],
+    fetchContext: FetchContext,
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
     createNamespace: ViewResource => IO[Unit],
     prefix: String
@@ -508,7 +508,7 @@ object BlazegraphViews {
     * Constructs a [[BlazegraphViews]] instance.
     */
   def apply(
-      fetchContext: FetchContext[BlazegraphViewRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateBlazegraphView,
       client: BlazegraphClient,
@@ -533,7 +533,7 @@ object BlazegraphViews {
   }
 
   private[blazegraph] def apply(
-      fetchContext: FetchContext[BlazegraphViewRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateBlazegraphView,
       createNamespace: ViewResource => IO[Unit],

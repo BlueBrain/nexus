@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccoun
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -51,11 +52,7 @@ private class StoragesSpec
 
     val tag = UserTag.unsafe("tag")
 
-    val fetchContext = FetchContextDummy[StorageFetchRejection](
-      Map(project.ref -> project.context),
-      Set(deprecatedProject.ref),
-      ProjectContextRejection
-    )
+    val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(deprecatedProject.ref))
 
     lazy val storages = Storages(
       fetchContext,
@@ -105,11 +102,11 @@ private class StoragesSpec
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        storages.create(projectRef, s3FieldsJson).rejectedWith[ProjectContextRejection]
+        storages.create(projectRef, s3FieldsJson).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        storages.create(deprecatedProject.ref, s3FieldsJson).rejectedWith[ProjectContextRejection]
+        storages.create(deprecatedProject.ref, s3FieldsJson).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -128,11 +125,11 @@ private class StoragesSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.update(dId, projectRef, 2, diskFieldsJson).rejectedWith[ProjectContextRejection]
+        storages.update(dId, projectRef, 2, diskFieldsJson).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        storages.update(dId, deprecatedProject.ref, 2, diskFieldsJson).rejectedWith[ProjectContextRejection]
+        storages.update(dId, deprecatedProject.ref, 2, diskFieldsJson).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -165,11 +162,11 @@ private class StoragesSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.deprecate(s3Id, projectRef, 3).rejectedWith[ProjectContextRejection]
+        storages.deprecate(s3Id, projectRef, 3).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        storages.deprecate(s3Id, deprecatedProject.ref, 1).rejectedWith[ProjectContextRejection]
+        storages.deprecate(s3Id, deprecatedProject.ref, 1).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -214,11 +211,11 @@ private class StoragesSpec
 
       "reject if project does not exist" in {
         val nonExistingProject = ProjectRef(org, Label.unsafe("other"))
-        storages.undeprecate(nxv + "id", nonExistingProject, 1).rejectedWith[ProjectContextRejection]
+        storages.undeprecate(nxv + "id", nonExistingProject, 1).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        storages.undeprecate(nxv + "id", deprecatedProject.ref, 1).rejectedWith[ProjectContextRejection]
+        storages.undeprecate(nxv + "id", deprecatedProject.ref, 1).rejectedWith[ProjectIsDeprecated]
       }
 
     }
@@ -267,7 +264,7 @@ private class StoragesSpec
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        storages.fetch(rdId, projectRef).rejectedWith[ProjectContextRejection]
+        storages.fetch(rdId, projectRef).rejectedWith[ProjectNotFound]
       }
     }
 

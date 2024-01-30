@@ -21,9 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -115,7 +114,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     excludeDeprecated = false
   )
 
-  private val fetchContext    = FetchContextDummy[ResolverRejection](List(project, project2), ProjectContextRejection)
+  private val fetchContext    = FetchContextDummy(List(project, project2))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private lazy val multiResolution = MultiResolution(fetchContext, resolverResolution)

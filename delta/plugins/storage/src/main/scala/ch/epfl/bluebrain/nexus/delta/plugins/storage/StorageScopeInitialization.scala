@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
@@ -50,9 +50,8 @@ class StorageScopeInitialization(
       .create(defaultStorageId, project, defaultValue)
       .void
       .handleErrorWith {
-        case _: ResourceAlreadyExists   => IO.unit // nothing to do, storage already exits
-        case _: ProjectContextRejection => IO.unit // project or org are likely deprecated
-        case rej                        =>
+        case _: ResourceAlreadyExists => IO.unit // nothing to do, storage already exits
+        case rej                      =>
           val str =
             s"Failed to create the default DiskStorage for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))

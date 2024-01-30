@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -115,12 +114,6 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
       )
-
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends ElasticSearchViewRejection("Something went wrong while interacting with another module.")
 
   /**
     * Signals a rejection caused by an attempt to create or update an ElasticSearch view with a permission that is not
@@ -256,7 +249,6 @@ object ElasticSearchViewRejection {
       r match {
         case WrappedElasticSearchClientError(rejection)          =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
-        case ProjectContextRejection(rejection)                  => rejection.asJsonObject
         case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                         => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
@@ -279,7 +271,6 @@ object ElasticSearchViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ViewIsDefaultView                      => StatusCodes.Forbidden
-      case ProjectContextRejection(rej)           => rej.status
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

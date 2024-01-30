@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -49,16 +49,12 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
-  implicit private val fetchContextRejection: FetchContext[ElasticSearchViewRejection] =
-    FetchContextDummy[ElasticSearchViewRejection](
-      Map(project.value.ref -> project.value.context),
-      ElasticSearchViewRejection.ProjectContextRejection
-    )
+  implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
 
-  private val groupDirectives = DeltaSchemeDirectives(fetchContextRejection)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
-    fetchContextRejection,
+    fetchContext,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),

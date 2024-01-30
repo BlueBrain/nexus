@@ -31,7 +31,7 @@ trait BatchFiles {
 object BatchFiles {
   def mk(
       fetchFileStorage: FetchFileStorage,
-      fetchContext: FetchContext[FileRejection],
+      fetchContext: FetchContext,
       evalFileCommand: CreateFile => IO[FileResource],
       batchCopy: BatchCopy
   )(implicit uuidF: UUIDF): BatchFiles = new BatchFiles {

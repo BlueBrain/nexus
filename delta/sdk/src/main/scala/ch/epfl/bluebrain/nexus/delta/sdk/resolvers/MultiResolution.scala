@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
@@ -89,7 +89,7 @@ object MultiResolution {
     *   a resource resolution instance
     */
   def apply(
-      fetchContext: FetchContext[ResolverRejection],
+      fetchContext: FetchContext,
       resourceResolution: ResolverResolution[JsonLdContent[_, _]]
   ): MultiResolution =
     new MultiResolution(fetchContext.onRead, resourceResolution)

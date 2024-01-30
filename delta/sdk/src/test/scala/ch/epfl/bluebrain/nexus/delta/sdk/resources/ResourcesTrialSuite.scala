@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, ProjectContextRejection, ReservedResourceId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, ReservedResourceId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
@@ -48,11 +48,8 @@ class ResourcesTrialSuite extends NexusSuite with ValidateResourceFixture {
   private val projBase       = nxv.base
   private val project        = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
   private val projectRef     = project.ref
-  private val fetchContext   = FetchContextDummy(
-    Map(projectRef -> project.context.copy(apiMappings = allApiMappings)),
-    Set.empty,
-    ProjectContextRejection
-  )
+  private val fetchContext   =
+    FetchContextDummy(Map(projectRef -> project.context.copy(apiMappings = allApiMappings)), Set.empty)
 
   private val id             = nxv + "id"
   private val source         = NexusSource(jsonContentOf("resources/resource.json", "id" -> id))

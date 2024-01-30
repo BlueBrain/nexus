@@ -12,9 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesTrial, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import distage.ModuleDef
@@ -29,7 +27,7 @@ object ResourcesTrialModule extends ModuleDef {
     (
         resources: Resources,
         validate: ValidateResource,
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         contextResolution: ResolverContextResolution,
         api: JsonLdApi,
         clock: Clock[IO],
@@ -38,7 +36,7 @@ object ResourcesTrialModule extends ModuleDef {
       ResourcesTrial(
         resources.fetchState(_, _, None),
         validate,
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         contextResolution,
         clock
       )(api, uuidF)

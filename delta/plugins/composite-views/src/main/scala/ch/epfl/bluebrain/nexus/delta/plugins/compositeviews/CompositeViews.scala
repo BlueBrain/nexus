@@ -42,7 +42,7 @@ import io.circe.Json
   */
 final class CompositeViews private (
     log: CompositeViewsLog,
-    fetchContext: FetchContext[CompositeViewRejection],
+    fetchContext: FetchContext,
     sourceDecoder: CompositeViewFieldsJsonLdSourceDecoder
 ) {
 
@@ -522,7 +522,7 @@ object CompositeViews {
     )
 
   def apply(
-      fetchContext: FetchContext[CompositeViewRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateCompositeView,
       config: CompositeViewsConfig,

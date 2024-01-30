@@ -29,7 +29,7 @@ import io.circe.Json
 
 final class ResolversImpl private (
     log: ResolversLog,
-    fetchContext: FetchContext[ResolverRejection],
+    fetchContext: FetchContext,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
 
@@ -154,7 +154,7 @@ object ResolversImpl {
     * Constructs a Resolver instance
     */
   def apply(
-      fetchContext: FetchContext[ResolverRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       config: ResolversConfig,
       xas: Transactors,

@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -228,12 +227,6 @@ object ResourceRejection {
   final case object NoSchemaProvided extends ResourceRejection(s"A schema is required but was not provided.")
 
   /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends ResourceFetchRejection("Something went wrong while interacting with another module.")
-
-  /**
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
@@ -250,7 +243,6 @@ object ResourceRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ProjectContextRejection(rejection)          => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                 => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)     =>
@@ -271,7 +263,6 @@ object ResourceRejection {
       case ResourceNotFound(_, _)          => StatusCodes.NotFound
       case TagNotFound(_)                  => StatusCodes.NotFound
       case InvalidSchemaRejection(_, _, _) => StatusCodes.NotFound
-      case ProjectContextRejection(rej)    => rej.status
       case ResourceAlreadyExists(_, _)     => StatusCodes.Conflict
       case IncorrectRev(_, _)              => StatusCodes.Conflict
       case _                               => StatusCodes.BadRequest

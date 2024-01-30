@@ -11,9 +11,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -113,7 +113,7 @@ class FilesRoutesSpec
   private val aclCheck = AclSimpleCheck().accepted
 
   lazy val storages: Storages                              = Storages(
-    fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+    fetchContext,
     ResolverContextResolution(rcr),
     IO.pure(allowedPerms.toSet),
     (_, _) => IO.unit,
@@ -124,7 +124,7 @@ class FilesRoutesSpec
   ).accepted
   lazy val files: Files                                    =
     Files(
-      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      fetchContext,
       aclCheck,
       storages,
       storagesStatistics,

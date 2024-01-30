@@ -7,9 +7,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection, ElasticSearchViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -178,10 +178,7 @@ class ElasticSearchViewsQuerySuite
 
   private val allResources = List(bbp, epfl, trace, cell)
 
-  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
-    List(project1, project2),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project1, project2))
 
   private lazy val views = ElasticSearchViews(
     fetchContext,

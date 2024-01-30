@@ -12,7 +12,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError.InvalidPath
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -149,7 +148,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
                             }
                         )
       archives        =
-        Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas, clock)
+        Archives(fetchContext, archiveDownload, archivesConfig, xas, clock)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
       r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck).routes)
     } yield r

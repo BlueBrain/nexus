@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQueryResponse, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -117,10 +117,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
   private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
-  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
-    List(project1, project2),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project1, project2))
 
   private def namedGraph(ntriples: NTriples): Uri = ntriples.rootNode.asIri.value.toUri.rightValue
 

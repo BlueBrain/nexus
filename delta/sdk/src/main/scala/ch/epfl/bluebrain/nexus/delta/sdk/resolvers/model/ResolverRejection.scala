@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
@@ -218,12 +217,6 @@ object ResolverRejection {
     */
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends ResolverRejection("Something went wrong while interacting with another module.")
-
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResolverRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -236,7 +229,6 @@ object ResolverRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ProjectContextRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidResolution(_, _, report)            => obj.addContext(contexts.resolvers).add("report", report.asJson)
@@ -256,7 +248,6 @@ object ResolverRejection {
       case ResolverNotFound(_, _)                => StatusCodes.NotFound
       case InvalidResolution(_, _, _)            => StatusCodes.NotFound
       case InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
-      case ProjectContextRejection(rej)          => rej.status
       case ResourceAlreadyExists(_, _)           => StatusCodes.Conflict
       case IncorrectRev(_, _)                    => StatusCodes.Conflict
       case _                                     => StatusCodes.BadRequest

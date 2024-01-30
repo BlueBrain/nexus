@@ -5,8 +5,6 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{aggregations, searchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -25,15 +23,11 @@ class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
 
-  implicit private val fetchContextError: FetchContext[ElasticSearchQueryError] =
-    FetchContextDummy[ElasticSearchQueryError](
-      Map(project.value.ref -> project.value.context),
-      ProjectContextRejection
-    )
+  implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
 
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
 
-  private val groupDirectives = DeltaSchemeDirectives(fetchContextError)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private lazy val defaultViewsQuery = new DummyDefaultViewsQuery
 

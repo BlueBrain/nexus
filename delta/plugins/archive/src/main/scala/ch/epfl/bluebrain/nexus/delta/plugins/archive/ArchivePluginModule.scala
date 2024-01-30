@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import com.typesafe.config.Config
@@ -42,13 +40,13 @@ object ArchivePluginModule extends ModuleDef {
       ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr)
   }
 
-  make[FileSelf].from { (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
-    FileSelf(fetchContext.mapRejection(ProjectContextRejection))(baseUri)
+  make[FileSelf].from { (fetchContext: FetchContext, baseUri: BaseUri) =>
+    FileSelf(fetchContext)(baseUri)
   }
 
   make[Archives].from {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         archiveDownload: ArchiveDownload,
         cfg: ArchivePluginConfig,
         xas: Transactors,
@@ -57,7 +55,7 @@ object ArchivePluginModule extends ModuleDef {
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[IO]
     ) =>
-      Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas, clock)(
+      Archives(fetchContext, archiveDownload, cfg, xas, clock)(
         api,
         uuidF,
         rcr

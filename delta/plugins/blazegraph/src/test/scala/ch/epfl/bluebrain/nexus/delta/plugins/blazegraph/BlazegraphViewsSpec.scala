@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -75,11 +76,7 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
     val doesntExistId = nxv + "doesntexist"
 
-    val fetchContext = FetchContextDummy[BlazegraphViewRejection](
-      Map(project.ref -> project.context),
-      Set(deprecatedProject.ref),
-      ProjectContextRejection
-    )
+    val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(deprecatedProject.ref))
 
     lazy val views: BlazegraphViews = BlazegraphViews(
       fetchContext,
@@ -131,13 +128,13 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
         val nonExistent = ProjectGen.project("org", "nonexistent").ref
         views
           .create(indexingViewId, nonExistent, indexingValue)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectNotFound]
       }
 
       "reject when the project is deprecated" in {
         views
           .create(indexingViewId, deprecatedProject.ref, indexingValue)
-          .rejectedWith[ProjectContextRejection]
+          .rejectedWith[ProjectIsDeprecated]
       }
 
       "reject when view already exists" in {

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
@@ -31,7 +30,7 @@ class SearchScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val fetchContext               = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val fetchContext               = FetchContextDummy(List(project))
   private lazy val views: CompositeViews = CompositeViews(
     fetchContext,
     ResolverContextResolution(rcr),

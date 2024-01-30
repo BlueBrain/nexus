@@ -5,8 +5,8 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveNotFound, ProjectContextRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveRejection, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -22,13 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.literal._
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
-import io.circe.literal._
 
 class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with RemoteContextResolutionFixture {
 
@@ -46,10 +46,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val fetchContext = FetchContextDummy[ArchiveRejection](
-    List(project),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project))
 
   private val cfg      = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
   private val download = new ArchiveDownload {

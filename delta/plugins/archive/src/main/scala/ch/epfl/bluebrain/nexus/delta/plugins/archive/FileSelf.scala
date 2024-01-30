@@ -81,7 +81,7 @@ object FileSelf {
     }
   }
 
-  def apply(fetchContext: FetchContext[_])(implicit baseUri: BaseUri): FileSelf = {
+  def apply(fetchContext: FetchContext)(implicit baseUri: BaseUri): FileSelf = {
 
     val filePrefixIri = baseUri.iriEndpoint / "files" / ""
 
