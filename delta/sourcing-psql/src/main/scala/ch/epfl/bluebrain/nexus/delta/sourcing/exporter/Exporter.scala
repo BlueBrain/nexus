@@ -11,6 +11,8 @@ import doobie.Fragments
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import fs2.io.file.{Files, Path}
+import fs2.Stream
+import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 
@@ -44,13 +46,13 @@ object Exporter {
       val exportIO = for {
         start          <- clock.realTimeInstant
         _              <- logger.info(s"Starting export for projects ${query.projects} from offset ${query.offset}")
-        targetDirectory = rootDirectory / query.id.value
+        targetDirectory = rootDirectory / query.output.value
         _              <- Files[IO].createDirectory(targetDirectory)
         exportFile      = targetDirectory / s"$start.json"
         _              <- exportToFile(q, exportFile)
         end            <- clock.realTimeInstant
         exportSuccess   = targetDirectory / s"$start.success"
-        _              <- Files[IO].createFile(exportSuccess)
+        _              <- writeSuccessFile(query, exportSuccess)
         _              <-
           logger.info(
             s"Export for projects ${query.projects} from offset' ${query.offset}' after ${end.getEpochSecond - start.getEpochSecond} seconds."
@@ -68,6 +70,9 @@ object Exporter {
         .through(Files[IO].writeUtf8(targetFile))
         .compile
         .drain
+
+    private def writeSuccessFile(query: ExportEventQuery, targetFile: Path) =
+      Stream(query.asJson.toString()).through(Files[IO].writeUtf8(targetFile)).compile.drain
 
     private def asJson(query: Fragment) =
       sql"""(select row_to_json(t) from ($query) t)"""

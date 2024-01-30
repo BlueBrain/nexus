@@ -13,9 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.Exporter
 import izumi.distage.model.definition.{Id, ModuleDef}
 
-/**
-  * Version module wiring config.
-  */
 // $COVERAGE-OFF$
 object ExportModule extends ModuleDef {
 
