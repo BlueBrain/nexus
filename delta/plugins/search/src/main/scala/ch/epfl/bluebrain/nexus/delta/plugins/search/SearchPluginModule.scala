@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaulMappings, SearchConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import com.typesafe.config.Config
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
@@ -47,6 +48,8 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
       suitesCtx <- ContextValue.fromFile("contexts/suites.json")
     } yield RemoteContextResolution.fixed(contexts.suites -> suitesCtx)
   )
+
+  many[ApiMappings].add(defaulMappings)
 
   make[SearchRoutes].from {
     (
