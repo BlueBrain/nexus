@@ -8,11 +8,16 @@ assignees: ''
 ---
 
 **Motivation**
-A clear and concise description of the reason for the change.
+A clear and concise description of the reason for the change. Try to describe why this is good for the user, what problem it solves for them, or any other motiviation
 
 **Acceptance criteria**
 1. When user selects...
 2. When performing this api call...
+
+This section should be about results in domain terms, not implementation details.
+
+**Implementation notes**
+Add any technical details which might be helpful here. Which classes will need to change? What things do you need to know about which might not be obvious?
 
 **API changes**
 Example request/response if applicable.
