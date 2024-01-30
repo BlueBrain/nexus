@@ -44,7 +44,7 @@ class ExportRoutesSpec extends BaseRouteSpec {
 
   "The export route" should {
     val query =
-      json"""{ "id": "export-test", "projects": ["org/proj", "org/proj2"], "offset": {"@type": "At", "value": 2}  }"""
+      json"""{ "output": "export-test", "projects": ["org/proj", "org/proj2"], "offset": {"@type": "At", "value": 2}  }"""
     "fail triggering the export the 'export/run' permission" in {
       Post("/v1/export/events", query.toEntity) ~> routes ~> check {
         response.shouldBeForbidden
