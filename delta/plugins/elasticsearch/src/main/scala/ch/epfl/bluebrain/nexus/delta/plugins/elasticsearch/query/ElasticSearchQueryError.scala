@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.KeyOps
 import io.circe.{Encoder, JsonObject}
@@ -20,12 +19,6 @@ import io.circe.{Encoder, JsonObject}
 sealed abstract class ElasticSearchQueryError(val reason: String) extends Rejection
 
 object ElasticSearchQueryError {
-
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends ElasticSearchQueryError("Something went wrong while interacting with another module.")
 
   /**
     * Error returned when interacting with the elasticserch client
@@ -64,7 +57,6 @@ object ElasticSearchQueryError {
       case ElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case InvalidResourceId(_)            => StatusCodes.BadRequest
       case DefaultViewNotFound(_)          => StatusCodes.NotFound
-      case ProjectContextRejection(rej)    => rej.status
     }
 
 }

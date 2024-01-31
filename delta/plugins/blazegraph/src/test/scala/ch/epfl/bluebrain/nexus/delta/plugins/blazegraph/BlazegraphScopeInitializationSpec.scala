@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -40,10 +40,7 @@ class BlazegraphScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
-    List(project),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project))
 
   private lazy val views: BlazegraphViews = BlazegraphViews(
     fetchContext,

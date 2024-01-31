@@ -58,7 +58,7 @@ object DefaultSearchRequest {
         pagination: Pagination,
         sort: SortList,
         schema: IdSegment
-    )(fetchContext: FetchContext[ElasticSearchQueryError]): IO[ProjectSearch] =
+    )(fetchContext: FetchContext): IO[ProjectSearch] =
       fetchContext
         .onRead(ref)
         .flatMap { context =>
@@ -74,7 +74,7 @@ object DefaultSearchRequest {
 
     /** An apply method that uses default values for pagination and sorting */
     def apply(ref: ProjectRef, params: ResourcesSearchParams, schema: IdSegment)(
-        fetchContext: FetchContext[ElasticSearchQueryError]
+        fetchContext: FetchContext
     ): IO[ProjectSearch] =
       apply(ref, params, Pagination.OnePage, SortList.empty, schema)(fetchContext)
   }
@@ -89,7 +89,7 @@ object DefaultSearchRequest {
 
   object OrgSearch {
     def apply(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
-        fetchContext: FetchContext[ElasticSearchQueryError]
+        fetchContext: FetchContext
     ): Either[Rejection, OrgSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
@@ -110,7 +110,7 @@ object DefaultSearchRequest {
 
   object RootSearch {
     def apply(params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
-        fetchContext: FetchContext[ElasticSearchQueryError]
+        fetchContext: FetchContext
     ): Either[Rejection, RootSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
@@ -123,7 +123,7 @@ object DefaultSearchRequest {
 
   private def expandResourceRef(
       segment: IdSegment,
-      fetchContext: FetchContext[ElasticSearchQueryError]
+      fetchContext: FetchContext
   ): Either[Rejection, ResourceRef] =
     expandResourceRef(segment, fetchContext.defaultApiMappings, ProjectBase(iri""))
 

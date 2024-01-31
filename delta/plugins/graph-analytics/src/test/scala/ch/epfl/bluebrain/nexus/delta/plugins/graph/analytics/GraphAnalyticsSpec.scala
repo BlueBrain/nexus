@@ -7,9 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -44,10 +43,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   private val project      = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
-  private val fetchContext = FetchContextDummy[GraphAnalyticsRejection](
-    List(project),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project))
 
   private lazy val endpoint                       = docker.esHostConfig.endpoint
   private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000, emptyResults)

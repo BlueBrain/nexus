@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{propertiesAggQuery, relationshipsAggQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -38,7 +38,7 @@ object GraphAnalytics {
 
   final def apply(
       client: ElasticSearchClient,
-      fetchContext: FetchContext[GraphAnalyticsRejection],
+      fetchContext: FetchContext,
       prefix: String,
       config: TermAggregationsConfig
   ): GraphAnalytics =

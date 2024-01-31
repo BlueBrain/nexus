@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -40,10 +40,7 @@ class ElasticSearchScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
-    List(project),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project))
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
     fetchContext,

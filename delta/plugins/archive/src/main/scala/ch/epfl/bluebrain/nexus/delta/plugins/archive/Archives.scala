@@ -41,7 +41,7 @@ import io.circe.Json
   */
 class Archives(
     log: ArchiveLog,
-    fetchContext: FetchContext[ArchiveRejection],
+    fetchContext: FetchContext,
     archiveDownload: ArchiveDownload,
     sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
     config: EphemeralLogConfig
@@ -179,7 +179,7 @@ object Archives {
     * Constructs a new [[Archives]] module instance.
     */
   final def apply(
-      fetchContext: FetchContext[ArchiveRejection],
+      fetchContext: FetchContext,
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       xas: Transactors,

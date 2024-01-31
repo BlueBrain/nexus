@@ -90,7 +90,7 @@ final class DeltaSchemeDirectives(
 
 object DeltaSchemeDirectives extends QueryParamsUnmarshalling {
 
-  def apply(fetchContext: FetchContext[_]): DeltaSchemeDirectives =
+  def apply(fetchContext: FetchContext): DeltaSchemeDirectives =
     new DeltaSchemeDirectives((ref: ProjectRef) => fetchContext.onRead(ref))
 
 }

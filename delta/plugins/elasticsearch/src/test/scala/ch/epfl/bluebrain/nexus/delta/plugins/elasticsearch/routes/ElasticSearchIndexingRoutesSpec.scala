@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidResourceId, ViewNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchIndexingRoutes.FetchIndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -37,11 +37,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
-  implicit private val fetchContextRejection: FetchContext[ElasticSearchViewRejection] =
-    FetchContextDummy[ElasticSearchViewRejection](
-      Map(project.value.ref -> project.value.context),
-      ElasticSearchViewRejection.ProjectContextRejection
-    )
+  implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
 
   private val myId         = nxv + "myid"
   private val indexingView = ActiveViewDef(
@@ -70,7 +66,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
-    fetchContextRejection,
+    fetchContext,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),

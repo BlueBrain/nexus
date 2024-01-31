@@ -40,7 +40,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -70,7 +69,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[Storages]
     .fromEffect {
       (
-          fetchContext: FetchContext[ContextRejection],
+          fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
           remoteDiskStorageClient: RemoteDiskStorageClient,
           permissions: Permissions,
@@ -85,7 +84,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
         Storages(
-          fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+          fetchContext,
           contextResolution,
           permissions.fetchPermissionSet,
           StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
@@ -163,7 +162,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           cfg: StoragePluginConfig,
           storageTypeConfig: StorageTypeConfig,
           aclCheck: AclCheck,
-          fetchContext: FetchContext[ContextRejection],
+          fetchContext: FetchContext,
           storages: Storages,
           supervisor: Supervisor,
           storagesStatistics: StoragesStatistics,
@@ -176,7 +175,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         IO
           .delay(
             Files(
-              fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+              fetchContext,
               aclCheck,
               storages,
               storagesStatistics,
@@ -216,7 +215,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[BatchFiles].from {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         files: Files,
         filesLog: FilesLog,
         batchCopy: BatchCopy,
@@ -224,7 +223,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       BatchFiles.mk(
         files,
-        fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+        fetchContext,
         FilesLog.eval(filesLog),
         batchCopy
       )(uuidF)

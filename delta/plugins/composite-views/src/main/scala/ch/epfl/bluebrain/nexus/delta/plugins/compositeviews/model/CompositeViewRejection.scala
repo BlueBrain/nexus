@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -254,12 +253,6 @@ object CompositeViewRejection {
   final case object BlankCompositeViewId extends CompositeViewRejection(s"Composite view identifier cannot be blank.")
 
   /**
-    * Signals a rejection caused when interacting with other APIs when fetching a view
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends CompositeViewRejection("Something went wrong while interacting with another module.")
-
-  /**
     * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
     * exist.
     *
@@ -321,7 +314,6 @@ object CompositeViewRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case ProjectContextRejection(rejection)                  => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)             =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case WrappedElasticSearchClientError(rejection)          =>
@@ -349,7 +341,6 @@ object CompositeViewRejection {
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case ProjectContextRejection(rej)           => rej.status
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

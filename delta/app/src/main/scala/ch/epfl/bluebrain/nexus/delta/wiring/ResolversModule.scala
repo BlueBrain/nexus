@@ -19,10 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -37,7 +35,7 @@ object ResolversModule extends ModuleDef {
 
   make[Resolvers].from {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         resolverContextResolution: ResolverContextResolution,
         config: AppConfig,
         xas: Transactors,
@@ -46,7 +44,7 @@ object ResolversModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResolversImpl(
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         resolverContextResolution,
         config.resolvers,
         xas,
@@ -57,12 +55,12 @@ object ResolversModule extends ModuleDef {
   make[MultiResolution].from {
     (
         aclCheck: AclCheck,
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         resolvers: Resolvers,
         shifts: ResourceShifts
     ) =>
       MultiResolution(
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         ResolverResolution(aclCheck, resolvers, shifts, excludeDeprecated = false)
       )
   }

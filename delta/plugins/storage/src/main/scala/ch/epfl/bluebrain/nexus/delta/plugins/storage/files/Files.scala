@@ -57,7 +57,7 @@ final class Files(
     formDataExtractor: FormDataExtractor,
     log: FilesLog,
     aclCheck: AclCheck,
-    fetchContext: FetchContext[FileRejection],
+    fetchContext: FetchContext,
     storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
@@ -752,7 +752,7 @@ object Files {
     * Constructs a Files instance
     */
   def apply(
-      fetchContext: FetchContext[FileRejection],
+      fetchContext: FetchContext,
       aclCheck: AclCheck,
       storages: FetchStorage,
       storagesStatistics: StoragesStatistics,

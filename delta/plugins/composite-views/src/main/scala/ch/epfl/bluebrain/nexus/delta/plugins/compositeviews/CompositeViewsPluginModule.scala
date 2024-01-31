@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.{CompositeViewsIndexingRoutes, CompositeViewsRoutes, CompositeViewsRoutesHandler}
@@ -31,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -117,7 +115,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViews].fromEffect {
     (
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         contextResolution: ResolverContextResolution,
         validate: ValidateCompositeView,
         config: CompositeViewsConfig,
@@ -127,7 +125,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO]
     ) =>
       CompositeViews(
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         contextResolution,
         validate,
         config,

@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -53,9 +53,8 @@ class ElasticSearchScopeInitialization(
       .create(defaultViewId, project, defaultValue)
       .void
       .handleErrorWith {
-        case _: ResourceAlreadyExists   => IO.unit // nothing to do, view already exits
-        case _: ProjectContextRejection => IO.unit // project or org are likely deprecated
-        case rej                        =>
+        case _: ResourceAlreadyExists => IO.unit // nothing to do, view already exits
+        case rej                      =>
           val str =
             s"Failed to create the default ElasticSearchView for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))

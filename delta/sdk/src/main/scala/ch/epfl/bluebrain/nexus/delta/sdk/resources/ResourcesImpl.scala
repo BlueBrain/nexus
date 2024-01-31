@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.{logger, ResourcesLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -28,7 +28,7 @@ import io.circe.Json
 
 final class ResourcesImpl private (
     log: ResourcesLog,
-    fetchContext: FetchContext[ProjectContextRejection],
+    fetchContext: FetchContext,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 ) extends Resources {
 
@@ -224,7 +224,7 @@ object ResourcesImpl {
   final def apply(
       validateResource: ValidateResource,
       detectChange: DetectChange,
-      fetchContext: FetchContext[ProjectContextRejection],
+      fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors,

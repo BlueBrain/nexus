@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -245,12 +244,6 @@ object FileRejection {
         Some(rejection.loggedDetails)
       )
 
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: FetchContext.ContextRejection)
-      extends FileRejection("Something went wrong while interacting with another module.")
-
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
 
@@ -271,7 +264,6 @@ object FileRejection {
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case CopyRejection(_, _, _, rejection)         =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case ProjectContextRejection(rejection)        => rejection.asJsonObject
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                         => obj
@@ -291,7 +283,6 @@ object FileRejection {
       case FileTooLarge(_, _)                                              => (StatusCodes.PayloadTooLarge, Seq.empty)
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
-      case ProjectContextRejection(rej)                                    => (rej.status, rej.headers)
       // If this happens it signifies a system problem rather than the user having made a mistake
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)

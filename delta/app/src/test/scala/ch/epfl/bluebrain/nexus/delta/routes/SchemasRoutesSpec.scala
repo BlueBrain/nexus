@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
@@ -74,7 +73,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
   private lazy val aclCheck = AclSimpleCheck().accepted
 
-  private val fetchContext    = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val fetchContext    = FetchContextDummy(List(project.value))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private val config = SchemasConfig(eventLogConfig)

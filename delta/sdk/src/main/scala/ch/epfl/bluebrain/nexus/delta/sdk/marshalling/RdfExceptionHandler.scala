@@ -16,7 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{AuthTokenError, IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -35,6 +38,9 @@ object RdfExceptionHandler {
     ExceptionHandler {
       case err: IdentityError             => discardEntityAndForceEmit(err)
       case err: PermissionsRejection      => discardEntityAndForceEmit(err)
+      case err: OrganizationRejection     => discardEntityAndForceEmit(err)
+      case err: ProjectRejection          => discardEntityAndForceEmit(err)
+      case err: QuotaRejection            => discardEntityAndForceEmit(err)
       case err: AuthTokenError            => discardEntityAndForceEmit(err)
       case err: AuthorizationFailed       => discardEntityAndForceEmit(err: ServiceError)
       case err: RdfError                  => discardEntityAndForceEmit(err)

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewIsNotDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -44,10 +44,9 @@ class CompositeViewsSpec
 
     val projectRef = project.ref
 
-    val fetchContext = FetchContextDummy[CompositeViewRejection](
+    val fetchContext = FetchContextDummy(
       Map(project.ref -> project.context, listProject.ref -> listProject.context),
-      Set(deprecatedProject.ref),
-      ProjectContextRejection
+      Set(deprecatedProject.ref)
     )
 
     lazy val compositeViews = CompositeViews(
@@ -176,7 +175,7 @@ class CompositeViewsSpec
       "project does not exist" in {
         val nonexistentProject = ProjectRef.unsafe("org", genString())
         givenADeprecatedView { view =>
-          compositeViews.undeprecate(view, nonexistentProject, 1).assertRejectedWith[ProjectContextRejection]
+          compositeViews.undeprecate(view, nonexistentProject, 1).assertRejectedWith[ProjectRejection.ProjectNotFound]
         }
       }
     }

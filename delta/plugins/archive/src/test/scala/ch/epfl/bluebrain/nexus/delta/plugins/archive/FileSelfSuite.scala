@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -29,7 +28,7 @@ class FileSelfSuite extends NexusSuite {
   private val org                      = "epfl"
   private val projectObj               = ProjectGen.project(org, project)
   private val projectRef               = projectObj.ref
-  private val fileSelf                 = FileSelf(FetchContextDummy(List(projectObj)).mapRejection(ProjectContextRejection))
+  private val fileSelf                 = FileSelf(FetchContextDummy(List(projectObj)))
 
   test("An expanded self should be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/${encode(expandedResourceId)}"

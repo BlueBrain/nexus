@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectHealer, ProjectsHealth}
@@ -98,9 +97,8 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext[ContextRejection]].fromEffect {
-    (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-      IO.pure(FetchContext(organizations, projects, quotas))
+  make[FetchContext].fromEffect { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+    IO.pure(FetchContext(organizations, projects, quotas))
   }
 
   make[ProjectDeletionCoordinator].fromEffect {
@@ -124,9 +122,7 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext[ContextRejection]) =>
-    DeltaSchemeDirectives(fetchContext)
-  }
+  make[DeltaSchemeDirectives].from { (fetchContext: FetchContext) => DeltaSchemeDirectives(fetchContext) }
 
   make[ProjectsRoutes].from {
     (

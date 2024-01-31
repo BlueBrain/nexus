@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -187,18 +186,6 @@ object SchemaRejection {
       )
 
   /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends SchemaFetchRejection("Something went wrong while interacting with another module.")
-
-  /**
-    * Signals a rejection caused when interacting with the resolvers resolution API
-    */
-  final case class WrappedResolverResolutionRejection(rejection: ResolverResolutionRejection)
-      extends SchemaRejection(rejection.reason)
-
-  /**
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
@@ -216,7 +203,6 @@ object SchemaRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ProjectContextRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                                      => obj.add("rdf", rdf.asJson)
         case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
@@ -243,12 +229,11 @@ object SchemaRejection {
 
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)       => StatusCodes.NotFound
-      case TagNotFound(_)               => StatusCodes.NotFound
-      case SchemaNotFound(_, _)         => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
-      case IncorrectRev(_, _)           => StatusCodes.Conflict
-      case ProjectContextRejection(rej) => rej.status
-      case _                            => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)      => StatusCodes.NotFound
+      case TagNotFound(_)              => StatusCodes.NotFound
+      case SchemaNotFound(_, _)        => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _) => StatusCodes.Conflict
+      case IncorrectRev(_, _)          => StatusCodes.Conflict
+      case _                           => StatusCodes.BadRequest
     }
 }

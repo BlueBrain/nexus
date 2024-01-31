@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, Unexpe
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -117,12 +116,6 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(
         s"Fetching blazegraph views by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
       )
-
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends BlazegraphViewRejection("Something went wrong while interacting with another module.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
@@ -245,7 +238,6 @@ object BlazegraphViewRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case ProjectContextRejection(rejection)                  => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)             =>
           obj
             .add(keywords.tpe, "SparqlClientError".asJson)
@@ -264,14 +256,13 @@ object BlazegraphViewRejection {
 
   implicit val blazegraphViewHttpResponseFields: HttpResponseFields[BlazegraphViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)       => StatusCodes.NotFound
-      case TagNotFound(_)               => StatusCodes.NotFound
-      case ViewNotFound(_, _)           => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
-      case ViewIsDefaultView            => StatusCodes.Forbidden
-      case IncorrectRev(_, _)           => StatusCodes.Conflict
-      case ProjectContextRejection(rej) => rej.status
-      case _: FetchByTagNotSupported    => StatusCodes.BadRequest
-      case _                            => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)      => StatusCodes.NotFound
+      case TagNotFound(_)              => StatusCodes.NotFound
+      case ViewNotFound(_, _)          => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _) => StatusCodes.Conflict
+      case ViewIsDefaultView           => StatusCodes.Forbidden
+      case IncorrectRev(_, _)          => StatusCodes.Conflict
+      case _: FetchByTagNotSupported   => StatusCodes.BadRequest
+      case _                           => StatusCodes.BadRequest
     }
 }

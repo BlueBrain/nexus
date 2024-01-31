@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -140,10 +139,6 @@ object StorageRejection {
 
   /**
     * Signals an attempt to update a storage to a different storage type
-    *
-    * @param id
-    * @param found
-    * @param expected
     */
   final case class DifferentStorageType(id: Iri, found: StorageType, expected: StorageType)
       extends StorageRejection(s"Storage '$id' is of type '$found' and can't be updated to be a '$expected' .")
@@ -198,12 +193,6 @@ object StorageRejection {
         s"The provided permissions '${permissions.mkString(",")}' are not defined in the collection of allowed permissions."
       )
 
-  /**
-    * Signals a rejection caused when interacting with other APIs when fetching a resource
-    */
-  final case class ProjectContextRejection(rejection: ContextRejection)
-      extends StorageFetchRejection("Something went wrong while interacting with another module.")
-
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -216,12 +205,11 @@ object StorageRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case StorageNotAccessible(_, details)   => obj.add("details", details.asJson)
-        case ProjectContextRejection(rejection) => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, rdf)        => obj.add("rdf", rdf.asJson)
-        case IncorrectRev(provided, expected)   => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _: StorageNotFound                 => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                  => obj
+        case StorageNotAccessible(_, details) => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, rdf)      => obj.add("rdf", rdf.asJson)
+        case IncorrectRev(provided, expected) => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: StorageNotFound               => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                => obj
       }
     }
 
@@ -230,15 +218,14 @@ object StorageRejection {
 
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)       => StatusCodes.NotFound
-      case StorageNotFound(_, _)        => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)    => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
-      case IncorrectRev(_, _)           => StatusCodes.Conflict
-      case ProjectContextRejection(rej) => rej.status
-      case FetchByTagNotSupported(_)    => StatusCodes.BadRequest
-      case StorageNotAccessible(_, _)   => StatusCodes.BadRequest
-      case _                            => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)      => StatusCodes.NotFound
+      case StorageNotFound(_, _)       => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)   => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _) => StatusCodes.Conflict
+      case IncorrectRev(_, _)          => StatusCodes.Conflict
+      case FetchByTagNotSupported(_)   => StatusCodes.BadRequest
+      case StorageNotAccessible(_, _)  => StatusCodes.BadRequest
+      case _                           => StatusCodes.BadRequest
     }
 
 }

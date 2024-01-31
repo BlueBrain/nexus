@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
@@ -40,10 +40,7 @@ class StorageScopeInitializationSpec
   private val project =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = nxv.base, mappings = am)
 
-  private val fetchContext = FetchContextDummy[StorageFetchRejection](
-    List(project),
-    ProjectContextRejection
-  )
+  private val fetchContext = FetchContextDummy(List(project))
 
   "A StorageScopeInitialization" should {
     lazy val storages = Storages(

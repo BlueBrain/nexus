@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.BatchCopyMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CreateFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.CopyRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCommand}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileStorage, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -90,8 +90,7 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     implicit val uuidF: UUIDF                       = UUIDF.fixed(fixedUuid)
     val evalFileCmd: CreateFile => IO[FileResource] = cmd =>
       IO(events.addOne(FileCommandEvaluated(cmd))).as(genFileResourceFromCmd(cmd))
-    val fetchContext: FetchContext[FileRejection]   =
-      FetchContextDummy(Map(proj.ref -> proj.context)).mapRejection(FileRejection.ProjectContextRejection)
+    val fetchContext: FetchContext                  = FetchContextDummy(Map(proj.ref -> proj.context))
     BatchFiles.mk(fetchFileStorage, fetchContext, evalFileCmd, batchCopy)
   }
 

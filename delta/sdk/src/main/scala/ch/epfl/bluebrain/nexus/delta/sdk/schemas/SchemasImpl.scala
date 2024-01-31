@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{ProjectContextRejection, RevisionNotFound, SchemaNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -29,7 +29,7 @@ import io.circe.Json
 
 final class SchemasImpl private (
     log: SchemasLog,
-    fetchContext: FetchContext[ProjectContextRejection],
+    fetchContext: FetchContext,
     schemaImports: SchemaImports,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
 ) extends Schemas {
@@ -173,7 +173,7 @@ object SchemasImpl {
     * Constructs a [[Schemas]] instance.
     */
   final def apply(
-      fetchContext: FetchContext[ProjectContextRejection],
+      fetchContext: FetchContext,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       validate: ValidateSchema,

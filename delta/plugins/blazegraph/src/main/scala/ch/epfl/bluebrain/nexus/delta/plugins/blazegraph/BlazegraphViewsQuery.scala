@@ -101,7 +101,7 @@ object BlazegraphViewsQuery {
 
   final def apply(
       aclCheck: AclCheck,
-      fetchContext: FetchContext[BlazegraphViewRejection],
+      fetchContext: FetchContext,
       views: BlazegraphViews,
       client: SparqlQueryClient,
       logSlowQueries: BlazegraphSlowQueryLogger,

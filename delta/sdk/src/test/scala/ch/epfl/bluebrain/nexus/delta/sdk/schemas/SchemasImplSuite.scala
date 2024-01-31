@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
@@ -70,8 +71,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   private val schemaUpdated     = SchemaGen.schema(mySchema, project.ref, sourceUpdated)
   private val tag               = UserTag.unsafe("tag")
 
-  private val fetchContext =
-    FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref), ProjectContextRejection)
+  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref))
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas =
@@ -128,11 +128,11 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Creating a schema fails if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
-    schemas.create(projectRef, sourceNoId).intercept[ProjectContextRejection]
+    schemas.create(projectRef, sourceNoId).intercept[ProjectNotFound]
   }
 
   test("Creating a schema fails if project is deprecated") {
-    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
+    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectIsDeprecated]
   }
 
   test("Updating a schema succeeds") {
@@ -164,11 +164,11 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Updating a schema fails if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
-    schemas.update(mySchema, projectRef, 2, source).intercept[ProjectContextRejection]
+    schemas.update(mySchema, projectRef, 2, source).intercept[ProjectNotFound]
   }
 
   test("Updating a schema fails if project is deprecated") {
-    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
+    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectIsDeprecated]
   }
 
   private val schema4 = SchemaGen.schema(mySchema4, project.ref, schemaSourceWithId(mySchema4))
@@ -193,11 +193,11 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Refreshing a schema fails if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
-    schemas.refresh(mySchema4, projectRef).intercept[ProjectContextRejection]
+    schemas.refresh(mySchema4, projectRef).intercept[ProjectNotFound]
   }
 
   test("Refreshing a schema fails if project is deprecated") {
-    schemas.refresh(mySchema4, projectDeprecated.ref).intercept[ProjectContextRejection]
+    schemas.refresh(mySchema4, projectDeprecated.ref).intercept[ProjectIsDeprecated]
   }
 
   test("Tagging a schema succeeds") {
@@ -228,11 +228,11 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Tagging a schema fails  if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
-    schemas.tag(mySchema, projectRef, tag, 2, 1).intercept[ProjectContextRejection]
+    schemas.tag(mySchema, projectRef, tag, 2, 1).intercept[ProjectNotFound]
   }
 
   test("Tagging a schema fails  if project is deprecated") {
-    schemas.tag(mySchema, projectDeprecated.ref, tag, 2, 2).intercept[ProjectContextRejection]
+    schemas.tag(mySchema, projectDeprecated.ref, tag, 2, 2).intercept[ProjectIsDeprecated]
   }
 
   test("Deprecating a schema succeeds") {
@@ -255,11 +255,11 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   test("Deprecating a schema fails if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-    schemas.deprecate(mySchema, projectRef, 1).intercept[ProjectContextRejection]
+    schemas.deprecate(mySchema, projectRef, 1).intercept[ProjectNotFound]
   }
 
   test("Deprecating a schema fails if project is deprecated") {
-    schemas.deprecate(mySchema, projectDeprecated.ref, 1).intercept[ProjectContextRejection]
+    schemas.deprecate(mySchema, projectDeprecated.ref, 1).intercept[ProjectIsDeprecated]
   }
 
   test("Undeprecating a deprecated schema succeeds") {
@@ -292,13 +292,13 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   test("Undeprecating a schema fails if project does not exist") {
     givenADeprecatedSchema { schema =>
       val nonExistentProject = ProjectRef(org, Label.unsafe("other"))
-      schemas.undeprecate(schema.id, nonExistentProject, 1).intercept[ProjectContextRejection].void
+      schemas.undeprecate(schema.id, nonExistentProject, 1).intercept[ProjectNotFound].void
     }
   }
 
   test("Undeprecating a schema fails if project is deprecated") {
     givenADeprecatedSchema { schema =>
-      schemas.undeprecate(schema.id, projectDeprecated.ref, 1).intercept[ProjectContextRejection].void
+      schemas.undeprecate(schema.id, projectDeprecated.ref, 1).intercept[ProjectIsDeprecated].void
     }
   }
 
@@ -339,7 +339,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Fetching a schema fails  if project does not exist") {
     val projectRef = ProjectRef(org, Label.unsafe("other"))
-    schemas.fetch(mySchema, projectRef).intercept[ProjectContextRejection]
+    schemas.fetch(mySchema, projectRef).intercept[ProjectNotFound]
   }
 
   test("Deleting a schema tag succeeds") {

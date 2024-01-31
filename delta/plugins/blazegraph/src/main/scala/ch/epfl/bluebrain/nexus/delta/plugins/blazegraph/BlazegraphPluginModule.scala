@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent, DefaultProperties}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
@@ -26,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -128,7 +126,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphViews]
     .fromEffect {
       (
-          fetchContext: FetchContext[ContextRejection],
+          fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
           validate: ValidateBlazegraphView,
           client: BlazegraphClient @Id("blazegraph-indexing-client"),
@@ -139,7 +137,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF
       ) =>
         BlazegraphViews(
-          fetchContext.mapRejection(ProjectContextRejection),
+          fetchContext,
           contextResolution,
           validate,
           client,
@@ -173,7 +171,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphViewsQuery].fromEffect {
     (
         aclCheck: AclCheck,
-        fetchContext: FetchContext[ContextRejection],
+        fetchContext: FetchContext,
         views: BlazegraphViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
         slowQueryLogger: BlazegraphSlowQueryLogger,
@@ -182,7 +180,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     ) =>
       BlazegraphViewsQuery(
         aclCheck,
-        fetchContext.mapRejection(ProjectContextRejection),
+        fetchContext,
         views,
         client,
         slowQueryLogger,

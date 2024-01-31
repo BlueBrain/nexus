@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ViewAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -35,9 +35,8 @@ final class SearchScopeInitialization(
       .create(defaultViewId, project, SearchViewFactory(defaults, config))
       .void
       .handleErrorWith {
-        case _: ViewAlreadyExists       => IO.unit
-        case _: ProjectContextRejection => IO.unit
-        case rej                        =>
+        case _: ViewAlreadyExists => IO.unit
+        case rej                  =>
           val str =
             s"Failed to create the search view for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))

@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -50,9 +50,8 @@ class BlazegraphScopeInitialization(
       .create(defaultViewId, project, defaultValue)
       .void
       .handleErrorWith {
-        case _: ResourceAlreadyExists   => IO.unit // nothing to do, view already exits
-        case _: ProjectContextRejection => IO.unit // project or org are likely deprecated
-        case rej                        =>
+        case _: ResourceAlreadyExists => IO.unit // nothing to do, view already exits
+        case rej                      =>
           val str =
             s"Failed to create the default SparqlView for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
