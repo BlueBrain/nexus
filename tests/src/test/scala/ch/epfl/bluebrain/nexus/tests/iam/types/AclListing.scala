@@ -157,6 +157,13 @@ object Permission {
     val list: List[Permission] = Read :: Nil
   }
 
+  object Export {
+    val name            = "export"
+    val Run: Permission = Permission(name, "run")
+
+    val list: List[Permission] = Run :: Nil
+  }
+
   val minimalPermissions: Set[Permission] =
     (Version.list ++
       Acls.list ++
@@ -172,6 +179,7 @@ object Permission {
       Views.list ++
       Storages.list ++
       Quotas.list ++
+      Export.list ++
       Supervision.list).toSet
 
   val adminPermissions: Set[Permission] =

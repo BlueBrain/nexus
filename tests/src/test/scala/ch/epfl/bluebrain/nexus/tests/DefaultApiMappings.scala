@@ -14,7 +14,8 @@ object DefaultApiMappings {
     "storage"         -> "https://bluebrain.github.io/nexus/schemas/storages.json",
     "defaultStorage"  -> "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
     "file"            -> "https://bluebrain.github.io/nexus/schemas/files.json",
-    "archive"         -> "https://bluebrain.github.io/nexus/schemas/archives.json"
+    "archive"         -> "https://bluebrain.github.io/nexus/schemas/archives.json",
+    "search"          -> "https://bluebrain.github.io/nexus/vocabulary/searchView"
   )
 
 }

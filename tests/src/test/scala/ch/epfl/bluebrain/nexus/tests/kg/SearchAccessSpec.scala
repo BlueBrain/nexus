@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
@@ -11,12 +11,12 @@ import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
 class SearchAccessSpec extends BaseIntegrationSpec {
 
-  private val orgId   = genId()
-  private val projId1 = genId()
-  private val projId2 = genId()
-  private val id1     = s"$orgId/$projId1"
-  private val id2     = s"$orgId/$projId2"
-  val projects        = List(id1, id2)
+  private val orgId    = genId()
+  private val projId1  = genId()
+  private val projId2  = genId()
+  private val project1 = s"$orgId/$projId1"
+  private val project2 = s"$orgId/$projId2"
+  private val projects = List(project1, project2)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -26,8 +26,8 @@ class SearchAccessSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
 
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProject(orgId, projId1, ProjectPayload.generateBbp(id1), authenticated = Rick)
-      _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generateBbp(id2), authenticated = Rick)
+      _ <- adminDsl.createProject(orgId, projId1, ProjectPayload.generateBbp(project1), authenticated = Rick)
+      _ <- adminDsl.createProject(orgId, projId2, ProjectPayload.generateBbp(project2), authenticated = Rick)
 
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
@@ -47,7 +47,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
         _ <- deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
                response.status shouldEqual StatusCodes.OK
                val sources = getEsSource(body)
-               _projects.getAll(sources).toSet shouldEqual Set(id1, id2)
+               _projects.getAll(sources).toSet shouldEqual Set(project1, project2)
              }
       } yield succeed
     }
@@ -58,7 +58,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
         _ <- deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
                response.status shouldEqual StatusCodes.OK
                val sources = getEsSource(body)
-               _projects.getAll(sources).toSet shouldEqual Set(id1)
+               _projects.getAll(sources).toSet shouldEqual Set(project1)
              }
 
       } yield succeed
@@ -71,6 +71,16 @@ class SearchAccessSpec extends BaseIntegrationSpec {
       deltaClient.get[Json]("/search/config", Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
         body shouldEqual jsonContentOf("kg/search/config.json")
+      }
+    }
+  }
+
+  "Api Mapping" should {
+    "be defined" in {
+      val searchViewId = "https://bluebrain.github.io/nexus/vocabulary/searchView"
+      deltaClient.get[Json](s"/views/$project1/search", Rick) { (body, response) =>
+        response.status shouldEqual StatusCodes.OK
+        Optics.`@id`.getOption(body).value shouldEqual searchViewId
       }
     }
   }
@@ -94,6 +104,6 @@ class SearchAccessSpec extends BaseIntegrationSpec {
   private def deleteRickPermissionsOnProj2() =
     for {
       _ <- aclDsl.deletePermission(s"/$orgId", Rick, Views.Query)
-      _ <- aclDsl.deletePermission(s"/$id2", Rick, Views.Query)
+      _ <- aclDsl.deletePermission(s"/$project2", Rick, Views.Query)
     } yield succeed
 }
