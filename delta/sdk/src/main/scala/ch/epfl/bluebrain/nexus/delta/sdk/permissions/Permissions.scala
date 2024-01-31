@@ -176,6 +176,10 @@ object Permissions {
     final val read: Permission = Permission.unsafe("events/read")
   }
 
+  object exporter {
+    final val run: Permission = Permission.unsafe("export/run")
+  }
+
   /**
     * Generic version permissions.
     */

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import munit.catseffect.IOFixture
 import munit.{catseffect, Location}
 import org.postgresql.util.PSQLException
 
@@ -35,6 +36,25 @@ object Doobie {
   trait Fixture { self: NexusSuite =>
     val doobie: catseffect.IOFixture[Transactors] =
       ResourceSuiteLocalFixture("doobie", resource(PostgresUser, PostgresPassword))
+
+    def doobieInject[A](f: Transactors => IO[A]): IOFixture[(Transactors, A)] =
+      ResourceSuiteLocalFixture(
+        s"doobie",
+        resource().evalMap { xas =>
+          f(xas).map(xas -> _)
+        }
+      )
+
+    def doobieInject[A, B](f1: Transactors => IO[A], f2: Transactors => IO[B]): IOFixture[(Transactors, A, B)] =
+      ResourceSuiteLocalFixture(
+        s"doobie",
+        resource().evalMap { xas =>
+          for {
+            a <- f1(xas)
+            b <- f2(xas)
+          } yield (xas, a, b)
+        }
+      )
 
     /**
       * Init the partition in the events and states table for the given projects

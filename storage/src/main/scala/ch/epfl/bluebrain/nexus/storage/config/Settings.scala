@@ -7,7 +7,6 @@ import pureconfig.ConvertHelpers._
 import pureconfig._
 import pureconfig.generic.auto._
 
-import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
 /**
@@ -22,10 +21,8 @@ class Settings(config: Config) extends Extension {
 
   @nowarn("cat=unused")
   val appConfig: AppConfig = {
-    implicit val uriConverter: ConfigConvert[Uri]   =
+    implicit val uriConverter: ConfigConvert[Uri] =
       ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
-    implicit val pathConverter: ConfigConvert[Path] =
-      ConfigConvert.viaString[Path](catchReadError(s => Paths.get(s)), _.toString)
     ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
   }
 
