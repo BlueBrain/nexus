@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidKeywords, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -106,7 +106,7 @@ class FormDataExtractorSpec
 
     "fail to be extracted if the custom user metadata has invalid keywords" in {
       val entity = entityWithKeywords(KeyThatIsTooLong := "value")
-      extractor(iri, entity, 2000, None).rejectedWith[InvalidUserMetadata]
+      extractor(iri, entity, 2000, None).rejectedWith[InvalidKeywords]
     }
 
     "fail to be extracted if no file part exists found" in {

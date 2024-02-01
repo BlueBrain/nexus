@@ -154,11 +154,11 @@ object FileRejection {
       extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
 
   /**
-    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that has user
-    * metadata which cannot be parsed
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that has keywords
+    * which cannot be parsed
     */
-  final case class InvalidUserMetadata(err: String)
-      extends FileRejection(s"File payload contained user metadata which could not be parsed: $err")
+  final case class InvalidKeywords(err: String)
+      extends FileRejection(s"File payload contained keywords which could not be parsed: $err")
 
   /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not

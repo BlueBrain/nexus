@@ -13,7 +13,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, InvalidUserMetadata, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidKeywords, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.parser
@@ -149,13 +149,13 @@ object FormDataExtractor {
 
       private def extractKeywords(
           part: Multipart.FormData.BodyPart
-      ): Either[InvalidUserMetadata, Map[Label, String]] = {
+      ): Either[InvalidKeywords, Map[Label, String]] = {
         part.dispositionParams.get("keywords") match {
           case Some(value) =>
             parser
               .parse(value)
               .flatMap(_.as[Map[Label, String]])
-              .leftMap(err => InvalidUserMetadata(err.getMessage))
+              .leftMap(err => InvalidKeywords(err.getMessage))
           case None        => Right(Map.empty)
         }
       }
