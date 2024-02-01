@@ -4,9 +4,9 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, SearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, SearchRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -42,10 +42,10 @@ class SearchRoutes(
               (extractQueryParams & entity(as[JsonObject])) { (qp, payload) =>
                 concat(
                   pathEndOrSingleSlash {
-                    emit(search.query(payload, qp))
+                    emit(search.query(payload, qp).attemptNarrow[SearchRejection])
                   },
                   (pathPrefix("suite") & label & pathEndOrSingleSlash) { suite =>
-                    emit(search.query(suite, payload, qp))
+                    emit(search.query(suite, payload, qp).attemptNarrow[SearchRejection])
                   }
                 )
               }
