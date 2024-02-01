@@ -183,8 +183,7 @@
       }
     },
     "_keywords": {
-      "type": "object",
-      "dynamic": true
+      "type": "flattened"
     },
     "_storage": {
       "properties": {
