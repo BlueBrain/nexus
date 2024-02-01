@@ -43,7 +43,7 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     val source                 = genCopyFileSource()
 
     batchFiles.copyFiles(source, destination).map { obtained =>
-      val expectedCommands     = createCommandsFromFileAttributes(stubbedDestAttributes)
+      val expectedCommands     = createCommandsFromFileAttributesAndMetadata(stubbedDestAttributes)
       val expectedResources    = expectedCommands.map(genFileResourceFromCmd)
       val expectedCommandCalls = expectedCommands.toList.map(FileCommandEvaluated)
       val expectedEvents       = activeStorageFetchedAndBatchCopyCalled(source) ++ expectedCommandCalls
@@ -100,19 +100,21 @@ class BatchFilesSuite extends NexusSuite with StorageFixtures with Generators wi
     List(expectedActiveStorageFetched, expectedBatchCopyCalled)
   }
 
-  def createCommandsFromFileAttributes(stubbedDestAttributes: NonEmptyList[FileAttributes])(implicit
+  def createCommandsFromFileAttributesAndMetadata(
+      stubbedDestAttributes: NonEmptyList[FileAttributes]
+  )(implicit
       c: Caller
-  ): NonEmptyList[CreateFile] = stubbedDestAttributes.map(
+  ): NonEmptyList[CreateFile] = stubbedDestAttributes.map { case attr =>
     CreateFile(
       destProj.base.iri / destFileUUId.toString,
       destProj.ref,
       destStorageRef,
       destStorage.value.tpe,
-      _,
+      attr,
       c.subject,
       destination.tag
     )
-  )
+  }
 }
 
 object BatchFilesSuite {

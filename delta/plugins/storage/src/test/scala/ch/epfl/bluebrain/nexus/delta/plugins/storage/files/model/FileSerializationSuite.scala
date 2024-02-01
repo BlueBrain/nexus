@@ -35,6 +35,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val fileId     = nxv + "file"
   private val digest     = ComputedDigest(DigestAlgorithm.default, "digest-value")
   private val uuid       = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  private val keywords   = Map(Label.unsafe("key") -> "value")
   private val attributes =
     FileAttributes(
       uuid,
@@ -42,14 +43,19 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Uri.Path("file.txt"),
       "file.txt",
       Some(`text/plain(UTF-8)`),
+      Map.empty,
       12,
       digest,
       Client
     )
-    
+
+  private val attributesWithKeywords = attributes.copy(keywords = keywords)
+
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val createdWithKeywords = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributesWithKeywords.copy(digest = NotComputedDigest), 1, instant, subject, None)
   private val createdTagged = created.copy(tag = Some(tag))
+  private val createdTaggedWithKeywords = createdWithKeywords.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
@@ -70,18 +76,35 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
 
   private val filesMapping = List(
     (
+      "FileCreated",
       created,
       loadEvents("files", "file-created.json"),
       Created,
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
+      "FileCreated with keywords",
+      createdWithKeywords,
+      loadEvents("files", "file-created-with-keywords.json"),
+      Created,
+      expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+    ),
+    (
+      "FileCreated with tags",
       createdTagged,
       loadEvents("files", "file-created-tagged.json"),
       Created,
       expected(createdTagged, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
+      "FileCreated with tags and keywords",
+      createdTaggedWithKeywords,
+      loadEvents("files", "file-created-tagged-with-keywords.json"),
+      Created,
+      expected(createdTaggedWithKeywords, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+    ),
+    (
+      "FileUpdated",
       updated,
       loadEvents("files", "file-updated.json"),
       Updated,
@@ -94,6 +117,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       )
     ),
     (
+      "FileAttributesUpdated",
       updatedAttr,
       loadEvents("files", "file-attributes-created-updated.json"),
       Updated,
@@ -106,24 +130,28 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       )
     ),
     (
+      "FileTagAdded",
       tagged,
       loadEvents("files", "file-tag-added.json"),
       Tagged,
       expected(tagged, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileTagDeleted",
       tagDeleted,
       loadEvents("files", "file-tag-deleted.json"),
       TagDeleted,
       expected(tagDeleted, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileDeprecated",
       deprecated,
       loadEvents("files", "file-deprecated.json"),
       Deprecated,
       expected(deprecated, Json.Null, Json.Null, Json.Null, Json.Null)
     ),
     (
+      "FileUndeprecated",
       undeprecated,
       loadEvents("files", "file-undeprecated.json"),
       Undeprecated,
@@ -131,22 +159,22 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     )
   )
 
-  filesMapping.foreach { case (event, (database, sse), action, expectedExtraFields) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+  filesMapping.foreach { case (name, event, (database, sse), action, expectedExtraFields) =>
+    test(s"Correctly serialize $name") {
       assertEquals(FileEvent.serializer.codec(event), database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize $name") {
       assertEquals(FileEvent.serializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize $name as an SSE") {
       FileEvent.sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode $name to metric") {
       FileEvent.fileEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,
@@ -178,14 +206,25 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     subject
   )
 
-  private val jsonState = jsonContentOf("files/database/file-state.json")
+  private val stateWithKeywords = state.copy(attributes = attributesWithKeywords)
+
+  private val fileState             = jsonContentOf("files/database/file-state.json")
+  private val fileStateWithKeywords = jsonContentOf("files/database/file-state-with-keywords.json")
 
   test(s"Correctly serialize a FileState") {
-    assertEquals(FileState.serializer.codec(state), jsonState)
+    assertEquals(FileState.serializer.codec(state), fileState)
   }
 
-  test(s"Correctly deserialize a ResourceState") {
-    assertEquals(FileState.serializer.codec.decodeJson(jsonState), Right(state))
+  test(s"Correctly deserialize a FileState") {
+    assertEquals(FileState.serializer.codec.decodeJson(fileState), Right(state))
+  }
+
+  test(s"Correctly serialize a FileState with keywords") {
+    assertEquals(FileState.serializer.codec(stateWithKeywords), fileStateWithKeywords)
+  }
+
+  test(s"Correctly deserialize a FileState with keywords") {
+    assertEquals(FileState.serializer.codec.decodeJson(fileStateWithKeywords), Right(stateWithKeywords))
   }
 
 }

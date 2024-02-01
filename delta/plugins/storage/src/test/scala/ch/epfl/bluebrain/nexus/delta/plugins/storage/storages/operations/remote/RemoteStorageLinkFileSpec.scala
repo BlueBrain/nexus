@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -45,10 +45,11 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
   private val remoteDiskStorageClient               =
     new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
-  private val iri      = iri"http://localhost/remote"
-  private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-  private val project  = ProjectRef.unsafe("org", "project")
-  private val filename = "file-2.txt"
+  private val iri                   = iri"http://localhost/remote"
+  private val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  implicit private val uuidf: UUIDF = UUIDF.fixed(uuid)
+  private val project               = ProjectRef.unsafe("org", "project")
+  private val filename              = "file-2.txt"
 
   private var storageValue: RemoteDiskStorageValue = _
   private var storage: RemoteDiskStorage           = _
@@ -68,27 +69,23 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
   }
 
   "RemoteDiskStorage linking operations" should {
-    val attributes  = FileAttributes(
-      uuid,
-      s"file:///app/${RemoteStorageDocker.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/file-2.txt",
-      Uri.Path("org/project/8/0/4/9/b/a/9/0/file-2.txt"),
-      "file-2.txt",
-      Some(`text/plain(UTF-8)`),
-      12,
-      NotComputedDigest,
-      Storage
-    )
-    val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.linkFile(remoteDiskStorageClient).apply(Uri.Path("my/file-2.txt"), description).accepted shouldEqual
-        attributes
+      storage.linkFile(remoteDiskStorageClient).apply(Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
+        FileStorageMetadata(
+          uuid,
+          12,
+          NotComputedDigest,
+          Storage,
+          s"file:///app/${RemoteStorageDocker.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/file-2.txt",
+          Uri.Path("org/project/8/0/4/9/b/a/9/0/file-2.txt")
+        )
     }
 
     "fail linking a file that does not exist" in {
       storage
         .linkFile(remoteDiskStorageClient)
-        .apply(Uri.Path("my/file-40.txt"), description)
+        .apply(Uri.Path("my/file-40.txt"), filename)
         .rejectedWith[FileNotFound]
     }
   }

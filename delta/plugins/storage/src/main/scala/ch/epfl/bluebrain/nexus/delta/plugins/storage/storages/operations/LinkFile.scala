@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection
@@ -19,7 +20,7 @@ trait LinkFile {
     * @param description
     *   the file description
     */
-  def apply(sourcePath: Uri.Path, description: FileDescription): IO[FileAttributes]
+  def apply(sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
 }
 
 object LinkFile {
@@ -28,7 +29,8 @@ object LinkFile {
     * Construct a [[LinkFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem
+      as: ActorSystem,
+      uuidf: UUIDF
   ): LinkFile =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)

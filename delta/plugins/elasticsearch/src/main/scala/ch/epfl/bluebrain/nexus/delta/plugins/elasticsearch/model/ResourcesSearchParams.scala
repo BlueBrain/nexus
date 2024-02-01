@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 
 /**
   * Search parameters for any generic resource type.
@@ -49,6 +49,7 @@ final case class ResourcesSearchParams(
     updatedAt: TimeRange = TimeRange.Anytime,
     types: List[Type] = List.empty,
     typeOperator: TypeOperator = TypeOperator.Or,
+    keywords: Map[Label, String] = Map.empty,
     schema: Option[ResourceRef] = None,
     q: Option[String] = None,
     tag: Option[UserTag] = None

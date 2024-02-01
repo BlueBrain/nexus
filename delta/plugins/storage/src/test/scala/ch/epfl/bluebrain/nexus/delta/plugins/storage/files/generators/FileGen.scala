@@ -49,7 +49,9 @@ trait FileGen { self: Generators with FileFixtures =>
 
   def genAttributes(): NonEmptyList[FileAttributes] = {
     val proj = genProject()
-    genFilesIdsInProject(proj.ref).map(genFileResource(_, proj.context)).map(_.value.attributes)
+    genFilesIdsInProject(proj.ref)
+      .map(genFileResource(_, proj.context))
+      .map(res => res.value.attributes)
   }
 
   def genCopyFileSource(): CopyFileSource                                             = genCopyFileSource(genProjectRef())
@@ -60,30 +62,32 @@ trait FileGen { self: Generators with FileFixtures =>
   def genOption[A](genA: => A): Option[A]                                             = if (Random.nextInt(2) % 2 == 0) Some(genA) else None
 
   def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
-    genFileResourceWithStorage(fileId, context, genRevision(), 1L)
+    genFileResourceWithStorage(fileId, context, genRevision(), genKeywords(), 1L)
 
   def genFileResourceWithStorage(
       fileId: FileId,
       context: ProjectContext,
       storageRef: ResourceRef.Revision,
+      keywords: Map[Label, String],
       fileSize: Long
   ): FileResource =
     genFileResourceWithIri(
       fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(throw new Exception(s"Bad file $fileId")),
       fileId.project,
       storageRef,
-      attributes(genString(), size = fileSize)
+      attributes(genString(), size = fileSize, keywords = keywords)
     )
 
   def genFileResourceAndStorage(
       fileId: FileId,
       context: ProjectContext,
       storageVal: StorageValue,
+      keywords: Map[Label, String],
       fileSize: Long = 1L
   ): (FileResource, StorageResource) = {
     val storageRes = StorageGen.resourceFor(genIri(), fileId.project, storageVal)
     val storageRef = ResourceRef.Revision(storageRes.id, storageRes.id, storageRes.rev)
-    (genFileResourceWithStorage(fileId, context, storageRef, fileSize), storageRes)
+    (genFileResourceWithStorage(fileId, context, storageRef, keywords, fileSize), storageRes)
   }
 
   def genFileResourceWithIri(
@@ -147,7 +151,18 @@ object FileGen {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): FileResource =
-    state(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy).toResource
+    state(
+      id,
+      project,
+      storage,
+      attributes,
+      storageType,
+      rev,
+      deprecated,
+      tags,
+      createdBy,
+      updatedBy
+    ).toResource
 
   def mkTempDir(prefix: String) =
     AbsolutePath(JavaFiles.createTempDirectory(prefix)).fold(e => throw new Exception(e), identity)
@@ -160,7 +175,8 @@ object FileGen {
       size: Long,
       id: UUID,
       projRef: ProjectRef,
-      path: AbsolutePath
+      path: AbsolutePath,
+      keywords: Map[Label, String]
   ): FileAttributes = {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
@@ -169,6 +185,7 @@ object FileGen {
       Uri.Path(s"${projRef.toString}/$uuidPathSegment/$filename"),
       filename,
       Some(`text/plain(UTF-8)`),
+      keywords,
       size,
       digest,
       Client

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import doobie.{Get, Put}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
 import scala.util.matching.Regex
 
@@ -64,6 +64,9 @@ object Label {
 
   implicit val labelGet: Get[Label] = Get[String].temap(Label(_).leftMap(_.getMessage))
   implicit val labelPut: Put[Label] = Put[String].contramap(_.value)
+
+  implicit val labelKeyDecoder: KeyDecoder[Label] = KeyDecoder.instance(Label(_).toOption)
+  implicit val labelKeyEncoder: KeyEncoder[Label] = KeyEncoder.instance(_.value)
 
   implicit final val labelEncoder: Encoder[Label] =
     Encoder.encodeString.contramap(_.value)

@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handleBars
-import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handlebarsExpander
 import fs2.text
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject}
@@ -54,10 +53,8 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
       resourcePath: String,
       attributes: (String, Any)*
   ): IO[String] = {
-    resourceAsTextFrom(resourcePath).map {
-      case text if attributes.isEmpty => text
-      case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
-    }
+    resourceAsTextFrom(resourcePath)
+      .map(handlebarsExpander.expand(_, attributes.toMap))
   }
 
   /**
@@ -124,7 +121,7 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
 }
 
 object ClasspathResourceLoader {
-  private[utils] val handleBars = new Handlebars().`with`(EscapingStrategy.NOOP)
+  private val handlebarsExpander = new HandlebarsExpander
 
   /**
     * Creates a resource loader using the standard ClassLoader

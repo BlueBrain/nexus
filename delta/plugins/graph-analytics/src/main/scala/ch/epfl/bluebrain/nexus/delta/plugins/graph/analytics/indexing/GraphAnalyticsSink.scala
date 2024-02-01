@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -77,7 +77,7 @@ final class GraphAnalyticsSink(
           case Noop                     => acc
           case UpdateByQuery(id, types) => acc.update(id, types)
           case g: Index                 =>
-            val bulkAction = ElasticSearchBulk.Index(index, documentId(success), g.asJson)
+            val bulkAction = ElasticSearchAction.Index(index, documentId(success), g.asJson)
             acc.add(bulkAction).update(g.id, g.types)
         }
       //TODO: handle correctly the deletion of individual resources when the feature is implemented
@@ -95,8 +95,8 @@ object GraphAnalyticsSink {
   private val empty = Acc(List.empty, Map.empty)
 
   // Accumulator of operations to push to Elasticsearch
-  final private case class Acc(bulk: List[ElasticSearchBulk], updates: Map[Iri, Set[Iri]]) {
-    def add(index: ElasticSearchBulk): Acc    = copy(bulk = index :: bulk)
+  final private case class Acc(bulk: List[ElasticSearchAction], updates: Map[Iri, Set[Iri]]) {
+    def add(index: ElasticSearchAction): Acc  = copy(bulk = index :: bulk)
     def update(id: Iri, types: Set[Iri]): Acc = copy(updates = updates + (id -> types))
   }
 

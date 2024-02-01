@@ -73,7 +73,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -99,8 +99,8 @@ final class Files(
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
+      metadata              <- saveFileToStorage(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -128,8 +128,8 @@ final class Files(
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, attributes, caller.subject, tag))
+      metadata              <- saveFileToStorage(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -221,7 +221,7 @@ final class Files(
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
+      attributes            <- saveFileToStorage(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateFile")
@@ -258,9 +258,22 @@ final class Files(
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
-      description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- linkFile(storage, path, description, iri)
-      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
+      metadata              <- linkFile(storage, path, resolvedFilename, iri)
+      res                   <- eval(
+                                 UpdateFile(
+                                   iri,
+                                   id.project,
+                                   storageRef,
+                                   storage.tpe,
+                                   FileAttributes.from(
+                                     FileDescription(resolvedFilename, Map.empty, mediaType),
+                                     metadata
+                                   ),
+                                   rev,
+                                   caller.subject,
+                                   tag
+                                 )
+                               )
     } yield res
   }.span("updateLink")
 
@@ -408,17 +421,32 @@ final class Files(
       _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
-      description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- linkFile(storage, path, description, iri)
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag))
+      fileMetadata          <- linkFile(storage, path, resolvedFilename, iri)
+      res                   <- eval(
+                                 CreateFile(
+                                   iri,
+                                   ref,
+                                   storageRef,
+                                   storage.tpe,
+                                   FileAttributes
+                                     .from(FileDescription(resolvedFilename, Map.empty, mediaType), fileMetadata),
+                                   caller.subject,
+                                   tag
+                                 )
+                               )
     } yield res
 
-  private def linkFile(storage: Storage, path: Uri.Path, desc: FileDescription, fileId: Iri): IO[FileAttributes] =
+  private def linkFile(
+      storage: Storage,
+      path: Uri.Path,
+      filename: String,
+      fileId: Iri
+  ): IO[FileStorageMetadata]                           =
     LinkFile(storage, remoteDiskStorageClient, config)
-      .apply(path, desc)
+      .apply(path, filename)
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
-  private def eval(cmd: FileCommand): IO[FileResource]                                                           = FilesLog.eval(log)(cmd)
+  private def eval(cmd: FileCommand): IO[FileResource] = FilesLog.eval(log)(cmd)
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
@@ -445,24 +473,34 @@ final class Files(
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
-  private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileAttributes] =
+  private def saveFileToStorage(
+      iri: Iri,
+      entity: HttpEntity,
+      storage: Storage
+  ): IO[FileAttributes] =
     for {
-      (description, source) <- extractFormData(iri, storage, entity)
-      attributes            <- saveFile(iri, storage, description, source)
-    } yield attributes
+      info                <- extractFormData(iri, storage, entity)
+      userSuppliedMetadata = FileDescription.from(info)
+      fileMetadata        <- saveFile(iri, storage, userSuppliedMetadata, info.contents)
+    } yield FileAttributes.from(userSuppliedMetadata, fileMetadata)
 
-  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[(FileDescription, BodyPartEntity)] =
+  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedFileInformation] =
     for {
       storageAvailableSpace <- storagesStatistics.getStorageAvailableSpace(storage)
-      (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
-    } yield (description, source)
+      fi                    <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
+    } yield fi
 
-  private def saveFile(iri: Iri, storage: Storage, description: FileDescription, source: BodyPartEntity) =
+  private def saveFile(
+      iri: Iri,
+      storage: Storage,
+      metadata: FileDescription,
+      source: BodyPartEntity
+  ): IO[FileStorageMetadata]                                                    =
     SaveFile(storage, remoteDiskStorageClient, config)
-      .apply(description, source)
+      .apply(metadata.filename, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
-  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri]                          =
+  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
     Storages.expandIri(segment, pc).adaptError { case s: StorageRejection =>
       WrappedStorageRejection(s)
     }

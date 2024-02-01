@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -30,10 +30,10 @@ class EventMetricsDeletionTaskSuite
     val task = new EventMetricsDeletionTask(client, prefix)
 
     val operations = List(
-      ElasticSearchBulk.Index(index, "1", json"""{ "project": "$projectToDelete", "number": 1 }"""),
-      ElasticSearchBulk.Index(index, "2", json"""{ "project": "$anotherProject","number" : 2 }"""),
-      ElasticSearchBulk.Index(index, "3", json"""{ "project": "$projectToDelete", "number" : 3 }"""),
-      ElasticSearchBulk.Index(index, "4", json"""{ "project": "$anotherProject", "number" : 4 }""")
+      ElasticSearchAction.Index(index, "1", json"""{ "project": "$projectToDelete", "number": 1 }"""),
+      ElasticSearchAction.Index(index, "2", json"""{ "project": "$anotherProject","number" : 2 }"""),
+      ElasticSearchAction.Index(index, "3", json"""{ "project": "$projectToDelete", "number" : 3 }"""),
+      ElasticSearchAction.Index(index, "4", json"""{ "project": "$anotherProject", "number" : 4 }""")
     )
 
     def countMetrics(project: ProjectRef) =

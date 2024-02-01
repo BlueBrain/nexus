@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -98,12 +98,16 @@ object FileState {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration                        = Serializer.circeConfiguration
-    implicit val digestCodec: Codec.AsObject[Digest]                 =
+    implicit val configuration: Configuration        = Serializer.circeConfiguration.withDefaults
+    implicit val digestCodec: Codec.AsObject[Digest] =
       deriveConfiguredCodec[Digest]
-    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
-      deriveConfiguredCodec[FileAttributes]
-    implicit val codec: Codec.AsObject[FileState]                    = deriveConfiguredCodec[FileState]
+    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] = {
+      val enc = FileAttributes.createConfiguredEncoder(configuration)
+
+      Codec.AsObject.from(deriveConfiguredDecoder[FileAttributes], enc)
+    }
+
+    implicit val codec: Codec.AsObject[FileState] = deriveConfiguredCodec[FileState]
     Serializer.dropNullsInjectType()
   }
 }
