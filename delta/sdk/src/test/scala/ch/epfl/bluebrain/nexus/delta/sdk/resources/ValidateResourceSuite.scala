@@ -81,7 +81,7 @@ class ValidateResourceSuite extends NexusSuite {
 
   private def assertResult(result: ValidationResult, expectedProject: ProjectRef, expectedSchema: ResourceRef.Revision)(
       implicit loc: Location
-  ) = {
+  ): Unit = {
     assertEquals(result.project, expectedProject)
     assertEquals(result.schema, expectedSchema)
   }
@@ -90,7 +90,7 @@ class ValidateResourceSuite extends NexusSuite {
     val id = nxv + "valid"
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, schemaRef, caller)
+      schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       result     <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
     } yield {
       assertResult(result, project, schemaRef)
@@ -101,7 +101,7 @@ class ValidateResourceSuite extends NexusSuite {
     val id = nxv + "valid"
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, unconstrained, caller)
+      schemaClaim = SchemaClaim.onCreate(project, unconstrained, caller)
       result     <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
     } yield {
       assertResult(result, project, unconstrained)
@@ -112,7 +112,7 @@ class ValidateResourceSuite extends NexusSuite {
     val id = contexts.base / "fail"
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, schemaRef, caller)
+      schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
                       .interceptEquals(ReservedResourceId(id))
     } yield ()
@@ -122,7 +122,7 @@ class ValidateResourceSuite extends NexusSuite {
     val id = nxv + "valid"
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, unconstrained, caller)
+      schemaClaim = SchemaClaim.onCreate(project, unconstrained, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(SchemaIsMandatory(project))
     } yield ()
   }
@@ -142,7 +142,7 @@ class ValidateResourceSuite extends NexusSuite {
     )
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, unknownSchema, caller)
+      schemaClaim = SchemaClaim.onCreate(project, unknownSchema, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(expectedError)
     } yield ()
   }
@@ -151,7 +151,7 @@ class ValidateResourceSuite extends NexusSuite {
     val id = nxv + "valid"
     for {
       jsonLd     <- jsonLdWithId(id)
-      schemaClaim = SchemaClaim(project, deprecatedSchemaRef, caller)
+      schemaClaim = SchemaClaim.onCreate(project, deprecatedSchemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(
                       SchemaIsDeprecated(deprecatedSchemaId)
                     )
@@ -163,7 +163,7 @@ class ValidateResourceSuite extends NexusSuite {
     for {
       source     <- sourceWithId(id).map(_.removeKeys("name"))
       jsonLd     <- jsonLdWithId(id, source)
-      schemaClaim = SchemaClaim(project, schemaRef, caller)
+      schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).intercept[InvalidResource]
     } yield ()
   }

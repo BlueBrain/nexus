@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.DefinedSchemaClaim
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.Json
@@ -19,11 +20,15 @@ trait ValidateResourceFixture {
   def alwaysValidate: ValidateResource = new ValidateResource {
     override def apply(jsonld: JsonLdAssembly, schema: SchemaClaim, enforceSchema: Boolean): IO[ValidationResult] =
       IO.pure(
-        Validated(
-          schema.project,
-          ResourceRef.Revision(schema.schemaRef.iri, defaultSchemaRevision),
-          defaultReport
-        )
+        schema match {
+          case defined: DefinedSchemaClaim =>
+            Validated(
+              schema.project,
+              ResourceRef.Revision(defined.schemaRef.iri, defaultSchemaRevision),
+              defaultReport
+            )
+          case other                       => NoValidation(other.project)
+        }
       )
 
     override def apply(

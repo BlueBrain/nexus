@@ -3,17 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.SubmitOnDefinedSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated, SchemaIsMandatory}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 /**
   * Allows to validate the resource:
@@ -58,24 +59,18 @@ object ValidateResource {
           jsonld: JsonLdAssembly,
           schemaClaim: SchemaClaim,
           enforceSchema: Boolean
-      ): IO[ValidationResult] =
-        if (isUnconstrained(schemaClaim))
-          IO.raiseWhen(enforceSchema)(SchemaIsMandatory(schemaClaim.project)) >>
-            assertNotReservedId(jsonld.id) >>
-            IO.pure(NoValidation(schemaClaim.project))
-        else
-          for {
-            schema <- resolveSchema(schemaClaim)
-            result <- apply(jsonld, schema)
-          } yield result
+      ): IO[ValidationResult] = {
+        val submitOnDefinedSchema: SubmitOnDefinedSchema = resolveSchema(_, _, _).flatMap(apply(jsonld, _))
+        assertNotReservedId(jsonld.id) >> schemaClaim.validate(enforceSchema)(submitOnDefinedSchema)
+      }
 
-      def apply(jsonld: JsonLdAssembly, schema: ResourceF[Schema]): IO[ValidationResult] =
+      def apply(jsonld: JsonLdAssembly, schema: ResourceF[Schema]): IO[ValidationResult] = {
+        val schemaRef = ResourceRef.Revision(schema.id, schema.rev)
         for {
-          _        <- assertNotReservedId(jsonld.id)
-          schemaRef = ResourceRef.Revision(schema.id, schema.rev)
-          report   <- shaclValidate(jsonld, schemaRef, schema)
-          _        <- IO.raiseWhen(!report.isValid())(InvalidResource(jsonld.id, schemaRef, report, jsonld.expanded))
+          report <- shaclValidate(jsonld, schemaRef, schema)
+          _      <- IO.raiseWhen(!report.isValid())(InvalidResource(jsonld.id, schemaRef, report, jsonld.expanded))
         } yield Validated(schema.value.project, ResourceRef.Revision(schema.id, schema.rev), report)
+      }
 
       private def shaclValidate(
           jsonld: JsonLdAssembly,
@@ -91,12 +86,6 @@ object ValidateResource {
           ResourceShaclEngineRejection(jsonld.id, schemaRef, e.getMessage)
         }
 
-      private def isUnconstrained(schemaClaim: SchemaClaim): Boolean =
-        schemaClaim.schemaRef == Latest(schemas.resources) || schemaClaim.schemaRef == ResourceRef.Revision(
-          schemas.resources,
-          1
-        )
-
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {
         IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))
       }
@@ -105,11 +94,11 @@ object ValidateResource {
         IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))
       }
 
-      private def resolveSchema(schemaClaim: SchemaClaim) = {
+      private def resolveSchema(project: ProjectRef, schema: ResourceRef, caller: Caller) = {
         resourceResolution
-          .resolve(schemaClaim.schemaRef, schemaClaim.project)(schemaClaim.caller)
+          .resolve(schema, project)(caller)
           .flatMap { result =>
-            val invalidSchema = result.leftMap(InvalidSchemaRejection(schemaClaim.schemaRef, schemaClaim.project, _))
+            val invalidSchema = result.leftMap(InvalidSchemaRejection(schema, project, _))
             IO.fromEither(invalidSchema)
           }
           .flatTap(schema => assertNotDeprecated(schema))

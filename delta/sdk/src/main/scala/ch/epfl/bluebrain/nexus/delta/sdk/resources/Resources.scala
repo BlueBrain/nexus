@@ -369,7 +369,7 @@ object Resources {
       state match {
         case None =>
           // format: off
-          val schemaClaim = SchemaClaim(c.project, c.schema, c.caller)
+          val schemaClaim = SchemaClaim.onCreate(c.project, c.schema, c.caller)
           for {
             (schemaRev, schemaProject) <- validate(c.jsonld, schemaClaim, c.projectContext.enforceSchema)
             now                          <- clock.realTimeInstant
@@ -418,7 +418,7 @@ object Resources {
     def update(u: UpdateResource) = {
 
       def onChange(state: ResourceState) = {
-        val schemaClaim = SchemaClaim(u.project, u.schemaOpt.getOrElse(ResourceRef.Latest(state.schema.iri)), u.caller)
+        val schemaClaim = SchemaClaim.onUpdate(u.project, u.schemaOpt, ResourceRef.Latest(state.schema.iri), u.caller)
         for {
           (schemaRev, schemaProject) <- validate(u.jsonld, schemaClaim, u.projectContext.enforceSchema)
           time                       <- clock.realTimeInstant
@@ -443,7 +443,7 @@ object Resources {
       for {
         state                      <- stateWhereResourceIsEditable(u)
         stateJsonLd                <- IO.fromEither(state.toAssembly)
-        schemaClaim                 = SchemaClaim(u.project, u.schemaRef, u.caller)
+        schemaClaim                 = SchemaClaim.onUpdate(u.project, u.schemaRef, state.schema, u.caller)
         (schemaRev, schemaProject) <- validate(stateJsonLd, schemaClaim, u.projectContext.enforceSchema)
         types                       = state.expanded.getTypes.getOrElse(Set.empty)
         time                       <- clock.realTimeInstant
@@ -454,7 +454,7 @@ object Resources {
       for {
         state                      <- stateWhereResourceIsEditable(r)
         _                          <- raiseWhenDifferentSchema(r, state)
-        schemaClaim                 = SchemaClaim(r.project, r.schemaOpt.getOrElse(state.schema), r.caller)
+        schemaClaim                 = SchemaClaim.onUpdate(r.project, r.schemaOpt, state.schema, r.caller)
         (schemaRev, schemaProject) <- validate(r.jsonld, schemaClaim, r.projectContext.enforceSchema)
         changeDetected             <- detectChange(r.jsonld, state)
         _                          <- IO.raiseUnless(changeDetected)(NoChangeDetected(state))
