@@ -233,7 +233,7 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <-
-        ioTryOrRdfError(RDFWriter.create().lang(DOT).source(collapseGraphs).context(ctx).asString(), DOT.getName)
+        tryExpensiveIO(RDFWriter.create().lang(DOT).source(collapseGraphs).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
 
   /**

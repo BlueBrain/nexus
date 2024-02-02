@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.{ioTryOrRdfError, tryOrRdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.{tryExpensiveIO, tryOrRdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandling
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
@@ -35,10 +35,10 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
       ctx: ContextValue
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject] =
     for {
-      obj          <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
-      ctxObj       <- ioTryOrRdfError(JsonUtils.fromString(ctx.toString), "building context")
+      obj          <- tryExpensiveIO(JsonUtils.fromString(input.noSpaces), "building input")
+      ctxObj       <- tryExpensiveIO(JsonUtils.fromString(ctx.toString), "building context")
       options      <- documentLoader(input, ctx.contextObj.asJson).map(toOpts)
-      compacted    <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
+      compacted    <- tryExpensiveIO(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
     } yield compactedObj
 
@@ -51,10 +51,10 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
       input: Json
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[ExplainResult[Seq[JsonObject]]] =
     for {
-      obj            <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
+      obj            <- tryExpensiveIO(JsonUtils.fromString(input.noSpaces), "building input")
       remoteContexts <- remoteContexts(input)
       options         = toOpts(documentLoader(remoteContexts))
-      expanded       <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
+      expanded       <- tryExpensiveIO(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
       expandedSeqObj <- IO.fromEither(toSeqJsonObjectOrErr(expanded))
     } yield ExplainResult(remoteContexts, expandedSeqObj)
 
@@ -63,10 +63,10 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
       frame: Json
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject] =
     for {
-      obj       <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
-      ff        <- ioTryOrRdfError(JsonUtils.fromString(frame.noSpaces), "building frame")
+      obj       <- tryExpensiveIO(JsonUtils.fromString(input.noSpaces), "building input")
+      ff        <- tryExpensiveIO(JsonUtils.fromString(frame.noSpaces), "building frame")
       options   <- documentLoader(input, frame).map(toOpts)
-      framed    <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
+      framed    <- tryExpensiveIO(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
       framedObj <- IO.fromEither(toJsonObjectOrErr(framed))
     } yield framedObj
 
@@ -188,8 +188,8 @@ object JsonLdJavaApi {
       JsonLdApiConfig(strict = false, extraChecks = false, errorHandling = ErrorHandling.NoWarning)
     )
 
-  private[rdf] def ioTryOrRdfError[A](value: => A, stage: String): IO[A] =
-    IO.fromEither(tryOrRdfError(value, stage))
+  private[rdf] def tryExpensiveIO[A](value: => A, stage: String): IO[A] =
+    IO.cede *> IO.fromEither(tryOrRdfError(value, stage)).guarantee(IO.cede)
 
   private[rdf] def tryOrRdfError[A](value: => A, stage: String): Either[RdfError, A] =
     Try(value).toEither.leftMap {
