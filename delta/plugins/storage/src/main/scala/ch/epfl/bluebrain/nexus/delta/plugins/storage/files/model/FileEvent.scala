@@ -296,11 +296,21 @@ object FileEvent {
     implicit val configuration: Configuration                        = Serializer.circeConfiguration
     implicit val digestCodec: Codec.AsObject[Digest]                 =
       deriveConfiguredCodec[Digest]
-    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
-      deriveConfiguredCodec[FileAttributes]
-    implicit val enc: Encoder.AsObject[FileEvent]                    = deriveConfiguredEncoder[FileEvent].mapJsonObject(_.dropNulls)
-    implicit val codec: Codec.AsObject[FileEvent]                    = Codec.AsObject.from(deriveConfiguredDecoder, enc)
+    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] = createFileAttributesCodec()
+
+    implicit val enc: Encoder.AsObject[FileEvent] = deriveConfiguredEncoder[FileEvent].mapJsonObject(_.dropNulls)
+    implicit val codec: Codec.AsObject[FileEvent] = Codec.AsObject.from(deriveConfiguredDecoder, enc)
     Serializer()
+  }
+
+  private def createFileAttributesCodec()(implicit
+      digestCodec: Codec.AsObject[Digest]
+  ): Codec.AsObject[FileAttributes] = {
+    @nowarn("cat=unused")
+    implicit val configuration: Configuration          = Serializer.circeConfiguration.withDefaults
+    implicit val enc: Encoder.AsObject[FileAttributes] =
+      FileAttributes.createConfiguredEncoder(Serializer.circeConfiguration.withDefaults)
+    Codec.AsObject.from[FileAttributes](deriveConfiguredDecoder, enc)
   }
 
   val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =
@@ -327,7 +337,7 @@ object FileEvent {
         )
     }
 
-  def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") showLocation: ShowFileLocation): SseEncoder[FileEvent] =
+  def sseEncoder(implicit base: BaseUri, showLocation: ShowFileLocation): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
       override val databaseDecoder: Decoder[FileEvent] = serializer.codec
 
@@ -358,6 +368,13 @@ object FileEvent {
             case _                    => None
           }
           implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
+
+          implicit val attributesEncoder: Encoder[FileAttributes] = FileAttributes.createConfiguredEncoder(
+            implicitly[Configuration],
+            underscoreFields = true,
+            removePath = true,
+            removeLocation = !showLocation.types.contains(storageType)
+          )
 
           val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
             Json.obj(

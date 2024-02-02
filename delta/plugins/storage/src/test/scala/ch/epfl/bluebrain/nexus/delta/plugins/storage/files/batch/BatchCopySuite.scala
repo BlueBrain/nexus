@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.BatchCopySuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, LimitedFileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FetchFileResource, FileFixtures, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
@@ -39,11 +40,13 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
   private val sourceFileId     = genFileId(sourceProj.ref)
   private val source           = CopyFileSource(sourceProj.ref, NonEmptyList.of(sourceFileId))
   private val storageStatEntry = StorageStatEntry(files = 10L, spaceUsed = 5L)
-  private val stubbedFileAttr  = NonEmptyList.of(attributes(genString()))
+  private val keywords         = genKeywords()
+  private val stubbedFileAttr  = attributes(genString(), keywords = keywords)
 
   test("successfully perform disk copy") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, keywords)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy                = mkBatchCopy(
@@ -51,23 +54,28 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       fetchStorage = stubbedFetchStorage(sourceStorage, events),
       aclCheck = aclCheck,
       stats = stubbedStorageStats(storageStatEntry, events),
-      diskCopy = stubbedDiskCopy(stubbedFileAttr, events)
+      diskCopy = stubbedDiskCopy(NonEmptyList.of(stubbedFileAttr), events)
     )
     val destStorage: DiskStorage = genDiskStorage()
 
     batchCopy.copyFiles(source, destStorage)(caller(user)).map { obtained =>
       val obtainedEvents = events.toList
-      assertEquals(obtained, stubbedFileAttr)
+      assertEquals(obtained, NonEmptyList.of(stubbedFileAttr))
       sourceFileWasFetched(obtainedEvents, sourceFileId)
       sourceStorageWasFetched(obtainedEvents, sourceFileRes.value.storage, sourceProj.ref)
       destinationDiskStorageStatsWereFetched(obtainedEvents, destStorage)
-      diskCopyWasPerformed(obtainedEvents, destStorage, sourceFileRes.value.attributes)
+      diskCopyWasPerformed(
+        obtainedEvents,
+        destStorage,
+        sourceFileRes.value.attributes
+      )
     }
   }
 
   test("successfully perform remote disk copy") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, remoteVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, remoteVal, keywords)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy                      = mkBatchCopy(
@@ -75,17 +83,21 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       fetchStorage = stubbedFetchStorage(sourceStorage, events),
       aclCheck = aclCheck,
       stats = stubbedStorageStats(storageStatEntry, events),
-      remoteCopy = stubbedRemoteCopy(stubbedFileAttr, events)
+      remoteCopy = stubbedRemoteCopy(NonEmptyList.of(stubbedFileAttr), events)
     )
     val destStorage: RemoteDiskStorage = genRemoteStorage()
 
     batchCopy.copyFiles(source, destStorage)(caller(user)).map { obtained =>
       val obtainedEvents = events.toList
-      assertEquals(obtained, stubbedFileAttr)
+      assertEquals(obtained, NonEmptyList.of(stubbedFileAttr))
       sourceFileWasFetched(obtainedEvents, sourceFileId)
       sourceStorageWasFetched(obtainedEvents, sourceFileRes.value.storage, sourceProj.ref)
       destinationRemoteStorageStatsWereNotFetched(obtainedEvents)
-      remoteDiskCopyWasPerformed(obtainedEvents, destStorage, sourceFileRes.value.attributes)
+      remoteDiskCopyWasPerformed(
+        obtainedEvents,
+        destStorage,
+        sourceFileRes.value.attributes
+      )
     }
   }
 
@@ -98,7 +110,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if a source storage is different to destination storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, keywords)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy     = mkBatchCopy(
@@ -117,7 +130,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if user does not have read access on a source file's storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, keywords)
     val user                           = genUser()
     val aclCheck                       = AclSimpleCheck((user, AclAddress.fromProject(sourceProj.ref), Set())).accepted
 
@@ -136,7 +150,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
 
   test("fail if a single source file exceeds max size for destination storage") {
     val events                         = ListBuffer.empty[Event]
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, 1000L)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, keywords, 1000L)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy   = mkBatchCopy(
@@ -160,7 +175,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
     val capacity                       = 10L
     val statEntry                      = StorageStatEntry(files = 10L, spaceUsed = 1L)
     val spaceLeft                      = capacity - statEntry.spaceUsed
-    val (sourceFileRes, sourceStorage) = genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, fileSize)
+    val (sourceFileRes, sourceStorage) =
+      genFileResourceAndStorage(sourceFileId, sourceProj.context, diskVal, keywords, fileSize)
     val (user, aclCheck)               = userAuthorizedOnProjectStorage(sourceStorage.value)
 
     val batchCopy = mkBatchCopy(
@@ -217,9 +233,12 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
     assertEquals(obtained, None)
   }
 
-  private def diskCopyWasPerformed(events: List[Event], storage: DiskStorage, sourceAttr: FileAttributes) = {
-    val expectedDesc            = FileDescription(sourceFileDescUuid, sourceAttr.filename, sourceAttr.mediaType)
-    val expectedDiskCopyDetails = DiskCopyDetails(storage, expectedDesc, sourceAttr)
+  private def diskCopyWasPerformed(
+      events: List[Event],
+      storage: DiskStorage,
+      sourceAttr: LimitedFileAttributes
+  ) = {
+    val expectedDiskCopyDetails = DiskCopyDetails(storage, sourceAttr)
     val obtained                = events.collectFirst { case f: DiskCopyCalled => f }
     assertEquals(obtained, Some(DiskCopyCalled(storage, NonEmptyList.of(expectedDiskCopyDetails))))
   }
@@ -229,8 +248,15 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
       storage: RemoteDiskStorage,
       sourceAttr: FileAttributes
   ) = {
-    val expectedDesc        = FileDescription(sourceFileDescUuid, sourceAttr.filename, sourceAttr.mediaType)
-    val expectedCopyDetails = RemoteDiskCopyDetails(storage, expectedDesc, storage.value.folder, sourceAttr)
+    val expectedCopyDetails =
+      RemoteDiskCopyDetails(
+        sourceFileDescUuid,
+        storage,
+        sourceAttr.path,
+        storage.value.folder,
+        FileMetadata.from(sourceAttr),
+        FileDescription.from(sourceAttr)
+      )
     val obtained            = events.collectFirst { case f: RemoteCopyCalled => f }
     assertEquals(obtained, Some(RemoteCopyCalled(storage, NonEmptyList.of(expectedCopyDetails))))
   }

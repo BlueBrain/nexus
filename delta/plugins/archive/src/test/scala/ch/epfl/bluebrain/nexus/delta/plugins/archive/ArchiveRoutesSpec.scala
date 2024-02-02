@@ -100,6 +100,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Uri.Path("file.txt"),
     "myfile",
     Some(`text/plain(UTF-8)`),
+    Map.empty,
     12L,
     ComputedDigest(DigestAlgorithm.default, "digest"),
     Client
@@ -307,7 +308,6 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
             createdBy = subject,
             updatedBy = subject
           )
-          .accepted
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }

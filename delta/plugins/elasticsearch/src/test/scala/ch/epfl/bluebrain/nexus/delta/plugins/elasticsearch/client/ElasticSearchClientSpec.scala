@@ -107,12 +107,12 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     "run bulk operation" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchBulk.Delete(index, "2"),
-        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : "value1" }"""),
-        ElasticSearchBulk.Delete(index, "2"),
-        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2"),
+        ElasticSearchAction.Index(index, "2", json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2"),
+        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       eventually {
@@ -124,12 +124,12 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     "run bulk operation with errors" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchBulk.Delete(index, "2"),
-        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 27 }"""),
-        ElasticSearchBulk.Delete(index, "3"),
-        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchBulk.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2"),
+        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 27 }"""),
+        ElasticSearchAction.Delete(index, "3"),
+        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       val result     = esClient.bulk(operations).accepted
       result match {
@@ -148,7 +148,7 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
       val doc   = json"""{ "field1" : 1 }"""
 
-      val operations = List(ElasticSearchBulk.Index(index, "1", doc))
+      val operations = List(ElasticSearchAction.Index(index, "1", doc))
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
       esClient.getSource[Json](index, "1").accepted shouldEqual doc
@@ -159,9 +159,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchBulk.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -176,9 +176,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchBulk.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -189,9 +189,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
       val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
@@ -210,9 +210,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
@@ -228,9 +228,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     "aggregate" in {
       val index       = IndexLabel(genString()).rightValue
       val operations  = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "_project": "proj1", "@type" : "Person" }"""),
-        ElasticSearchBulk.Index(index, "2", json"""{ "_project": "proj2", "@type" : "Person" }"""),
-        ElasticSearchBulk.Index(index, "3", json"""{ "_project": "proj3", "@type" : "Dog" }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "_project": "proj1", "@type" : "Person" }"""),
+        ElasticSearchAction.Index(index, "2", json"""{ "_project": "proj2", "@type" : "Person" }"""),
+        ElasticSearchAction.Index(index, "3", json"""{ "_project": "proj3", "@type" : "Dog" }""")
       )
       val params      = ResourcesSearchParams()
       val expectedAgg = jsonContentOf("elasticsearch-agg-results.json").asObject.get
@@ -255,9 +255,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Create(index, "2", json"""{ "field1" : 3 }"""),
-        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "2", json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
 
       {

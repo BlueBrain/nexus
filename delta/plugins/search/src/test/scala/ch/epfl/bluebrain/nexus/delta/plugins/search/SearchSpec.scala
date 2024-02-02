@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
@@ -152,11 +152,11 @@ class SearchSpec
     val allDocuments      = project1Documents ++ project2Documents
 
     "index documents" in {
-      val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
+      val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchAction]) { (bulk, p) =>
         val index   = projectionIndex(p.projection, p.view.uuid, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
-          ElasticSearchBulk.Index(index, idx.toString, json)
+          ElasticSearchAction.Index(index, idx.toString, json)
         }
         bulk ++ newBulk
       }

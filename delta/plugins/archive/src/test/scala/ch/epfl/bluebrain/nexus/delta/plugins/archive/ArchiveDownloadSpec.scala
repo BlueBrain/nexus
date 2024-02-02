@@ -84,6 +84,7 @@ class ArchiveDownloadSpec
       Uri.Path("file.txt"),
       filename,
       Some(`text/plain(UTF-8)`),
+      Map.empty,
       bytes,
       Digest.NotComputedDigest,
       Client

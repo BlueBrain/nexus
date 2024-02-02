@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.{And, Or}
@@ -149,7 +149,7 @@ class DefaultViewSearchSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       bulk <- allResources.traverse { r =>
                 r.asDocument.map { d =>
                   // We create a unique id across all indices
-                  ElasticSearchBulk.Index(defaultIndex, genString(), d)
+                  ElasticSearchAction.Index(defaultIndex, genString(), d)
                 }
               }
       _    <- client.bulk(bulk)

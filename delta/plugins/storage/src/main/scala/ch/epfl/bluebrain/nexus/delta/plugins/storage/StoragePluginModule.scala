@@ -196,7 +196,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
 
-  make[DiskStorageCopyFiles].from { copier: TransactionalFileCopier => DiskStorageCopyFiles.mk(copier) }
+  make[DiskStorageCopyFiles].from { (copier: TransactionalFileCopier, uuidf: UUIDF) =>
+    DiskStorageCopyFiles.mk(copier, uuidf)
+  }
 
   make[RemoteDiskStorageCopyFiles].from { client: RemoteDiskStorageClient => RemoteDiskStorageCopyFiles.mk(client) }
 

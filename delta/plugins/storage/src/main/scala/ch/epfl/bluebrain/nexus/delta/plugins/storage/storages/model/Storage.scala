@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -79,7 +80,7 @@ object Storage {
     def fetchFile: FetchFile =
       DiskStorageFetchFile
 
-    def saveFile(implicit as: ActorSystem): SaveFile =
+    def saveFile(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
       new DiskStorageSaveFile(this)
   }
 
@@ -99,10 +100,10 @@ object Storage {
     def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem): FetchFile =
       new S3StorageFetchFile(value, config)
 
-    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem): SaveFile =
+    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
       new S3StorageSaveFile(this, config)
 
-    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem): LinkFile =
+    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem, uuidf: UUIDF): LinkFile =
       new S3StorageLinkFile(this, config)
 
   }
@@ -122,10 +123,10 @@ object Storage {
     def fetchFile(client: RemoteDiskStorageClient): FetchFile =
       new RemoteDiskStorageFetchFile(value, client)
 
-    def saveFile(client: RemoteDiskStorageClient): SaveFile =
+    def saveFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF): SaveFile =
       new RemoteDiskStorageSaveFile(this, client)
 
-    def linkFile(client: RemoteDiskStorageClient): LinkFile =
+    def linkFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF): LinkFile =
       new RemoteDiskStorageLinkFile(this, client)
 
     def fetchComputedAttributes(client: RemoteDiskStorageClient): FetchAttributes =
