@@ -244,7 +244,6 @@ class BatchFilesRoutesSpec extends BaseRouteSpec with StorageFixtures with FileF
         res.createdBy,
         res.updatedBy
       )
-      .accepted
       .mapObject(_.remove("@context"))
 }
 

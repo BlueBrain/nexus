@@ -182,6 +182,9 @@
         }
       }
     },
+    "_keywords": {
+      "type": "flattened"
+    },
     "_storage": {
       "properties": {
         "_rev": {

@@ -4,9 +4,10 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction.{Delete, Index}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
@@ -49,20 +50,20 @@ final class ElasticSearchSink private (
     KamonMetricComponent(ElasticSearchViews.entityType.value)
 
   override def apply(elements: Chunk[Elem[Json]]): IO[Chunk[Elem[Unit]]] = {
-    val bulk = elements.foldLeft(Vector.empty[ElasticSearchBulk]) {
-      case (acc, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
+    val actions = elements.foldLeft(Vector.empty[ElasticSearchAction]) {
+      case (actions, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {
-          acc :+ ElasticSearchBulk.Delete(index, documentId(successElem))
+          actions :+ Delete(index, documentId(successElem))
         } else
-          acc :+ ElasticSearchBulk.Index(index, documentId(successElem), json)
-      case (acc, droppedElem: Elem.DroppedElem)                          =>
-        acc :+ ElasticSearchBulk.Delete(index, documentId(droppedElem))
-      case (acc, _: Elem.FailedElem)                                     => acc
+          actions :+ Index(index, documentId(successElem), json)
+      case (actions, droppedElem: Elem.DroppedElem)                          =>
+        actions :+ Delete(index, documentId(droppedElem))
+      case (actions, _: Elem.FailedElem)                                     => actions
     }
 
-    if (bulk.nonEmpty) {
+    if (actions.nonEmpty) {
       client
-        .bulk(bulk, refresh)
+        .bulk(actions, refresh)
         .map(ElasticSearchSink.markElems(_, elements, documentId))
     } else {
       IO.pure(elements.map(_.void))

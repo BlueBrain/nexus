@@ -4,9 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -48,10 +49,11 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
   private val remoteDiskStorageClient               =
     new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
-  private val iri      = iri"http://localhost/remote"
-  private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-  private val project  = ProjectRef.unsafe("org", "project")
-  private val filename = "myfile.txt"
+  private val iri                   = iri"http://localhost/remote"
+  private val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  implicit private val uuidf: UUIDF = UUIDF.fixed(uuid)
+  private val project               = ProjectRef.unsafe("org", "project")
+  private val filename              = "myfile.txt"
 
   private var storageValue: RemoteDiskStorageValue = _
   private var storage: RemoteDiskStorage           = _
@@ -74,44 +76,43 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
     val content = "file content"
     val entity  = HttpEntity(content)
 
-    val attributes = FileAttributes(
-      uuid,
-      s"file:///app/${RemoteStorageDocker.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt",
-      Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
-      "myfile.txt",
-      Some(`text/plain(UTF-8)`),
-      12,
-      ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest),
-      Client
-    )
+    val bytes    = 12L
+    val digest   = ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest)
+    val location = s"file:///app/${RemoteStorageDocker.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt"
+    val path     = Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
 
     "save a file to a folder" in {
-      val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile(remoteDiskStorageClient).apply(description, entity).accepted shouldEqual attributes
+      storage.saveFile(remoteDiskStorageClient).apply(filename, entity).accepted shouldEqual FileStorageMetadata(
+        uuid,
+        bytes,
+        digest,
+        Client,
+        location,
+        path
+      )
     }
 
     "fetch a file from a folder" in {
-      val sourceFetched = storage.fetchFile(remoteDiskStorageClient).apply(attributes).accepted
+      val sourceFetched = storage.fetchFile(remoteDiskStorageClient).apply(path).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fetch a file attributes" in eventually {
-      val computedAttributes = storage.fetchComputedAttributes(remoteDiskStorageClient).apply(attributes).accepted
-      computedAttributes.digest shouldEqual attributes.digest
-      computedAttributes.bytes shouldEqual attributes.bytes
-      computedAttributes.mediaType shouldEqual attributes.mediaType.value
+      val computedAttributes = storage.fetchComputedAttributes(remoteDiskStorageClient).apply(path).accepted
+      computedAttributes.digest shouldEqual digest
+      computedAttributes.bytes shouldEqual bytes
+      computedAttributes.mediaType shouldEqual `text/plain(UTF-8)`
     }
 
     "fail fetching a file that does not exist" in {
       storage
         .fetchFile(remoteDiskStorageClient)
-        .apply(attributes.copy(path = Uri.Path("other.txt")))
+        .apply(Uri.Path("other.txt"))
         .rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
-      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile(remoteDiskStorageClient).apply(description, entity).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile(remoteDiskStorageClient).apply(filename, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

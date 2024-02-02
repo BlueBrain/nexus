@@ -211,7 +211,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param refresh
     *   the value for the `refresh` Elasticsearch parameter
     */
-  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): IO[BulkResponse] = {
+  def bulk(ops: Seq[ElasticSearchAction], refresh: Refresh = Refresh.False): IO[BulkResponse] = {
     if (ops.isEmpty) IO.pure(BulkResponse.Success)
     else {
       val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))

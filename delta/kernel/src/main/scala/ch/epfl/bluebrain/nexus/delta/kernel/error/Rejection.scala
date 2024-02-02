@@ -12,3 +12,11 @@ abstract class Rejection extends Exception with Product with Serializable { self
   def reason: String
 
 }
+
+object NotARejection {
+  def unapply(throwable: Throwable): Option[Throwable] =
+    throwable match {
+      case _: Rejection => None
+      case other        => Some(other)
+    }
+}

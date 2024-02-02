@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.Generators
 
 import java.util.{Base64, UUID}
 
-trait FileFixtures {
+trait FileFixtures extends Generators {
 
   val uuid                  = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                 = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
@@ -49,8 +50,11 @@ trait FileFixtures {
       filename: String = "file.txt",
       size: Long = 12,
       id: UUID = uuid,
-      projRef: ProjectRef = projectRef
-  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path)
+      projRef: ProjectRef = projectRef,
+      keywords: Map[Label, String] = Map.empty
+  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path, keywords)
+
+  def genKeywords(): Map[Label, String] = Map(Label.unsafe(genString()) -> genString())
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart

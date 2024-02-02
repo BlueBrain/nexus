@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.Ir
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import io.circe.parser
 
 trait ElasticSearchViewsDirectives extends UriDirectives {
 
@@ -28,6 +29,18 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
 
   private def types(implicit um: FromStringUnmarshaller[Type]): Directive1[List[Type]] =
     parameter("type".as[Type].*).map(_.toList.reverse)
+
+  implicit val keywordsFromStringUnmarshaller: FromStringUnmarshaller[Map[Label, String]] = Unmarshaller.strict {
+    string =>
+      parser.parse(string).flatMap(_.as[Map[Label, String]]) match {
+        case Left(e)      => throw e
+        case Right(value) => value
+      }
+  }
+
+  private def keywords: Directive1[Map[Label, String]] = {
+    parameter("keywords".as[Map[Label, String]].withDefault(Map.empty[Label, String]))
+  }
 
   private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[TypeOperator] = {
     parameter("typeOperator".as[TypeOperator].?[TypeOperator](Or))
@@ -68,7 +81,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive1[ResourcesSearchParams] = {
-    (searchParams & createdAt & updatedAt & types & typeOperator & schema & id & locate & parameter("q".?) & tagParam)
+    (searchParams & createdAt & updatedAt & types & typeOperator & keywords & schema & id & locate & parameter(
+      "q".?
+    ) & tagParam)
       .tmap {
         case (
               deprecated,
@@ -79,6 +94,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
               updatedAt,
               types,
               typeOperator,
+              keywords,
               schema,
               id,
               locate,
@@ -97,6 +113,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
             updatedAt,
             types,
             typeOperator,
+            keywords,
             schema,
             qq,
             tag
@@ -111,7 +128,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
 
-    (searchParams & createdAt & updatedAt & types & typeOperator & schema & id & locate & parameter("q".?) & tagParam)
+    (searchParams & createdAt & updatedAt & types & typeOperator & keywords & schema & id & locate & parameter(
+      "q".?
+    ) & tagParam)
       .tmap {
         case (
               deprecated,
@@ -122,6 +141,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
               updatedAt,
               types,
               typeOperator,
+              keywords,
               schema,
               id,
               locate,
@@ -140,6 +160,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
             updatedAt,
             types,
             typeOperator,
+            keywords,
             schema,
             qq,
             tag

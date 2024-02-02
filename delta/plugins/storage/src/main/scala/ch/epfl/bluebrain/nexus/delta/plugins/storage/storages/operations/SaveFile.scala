@@ -5,8 +5,9 @@ import akka.http.scaladsl.model.BodyPartEntity
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -25,7 +26,7 @@ trait SaveFile {
     * @param entity
     *   the entity with the file content
     */
-  def apply(description: FileDescription, entity: BodyPartEntity): IO[FileAttributes]
+  def apply(filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]
 }
 
 object SaveFile {
@@ -34,7 +35,8 @@ object SaveFile {
     * Construct a [[SaveFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem
+      as: ActorSystem,
+      uuidf: UUIDF
   ): SaveFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.saveFile

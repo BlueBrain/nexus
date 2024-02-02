@@ -41,6 +41,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     path = Uri.Path("my/file.txt"),
     filename = "myfile.txt",
     mediaType = mediaType,
+    keywords = Map(Label.unsafe("key") -> "value"),
     bytes = 10,
     dig,
     Client
@@ -121,7 +122,10 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
 
       "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(clock)(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
+        evaluate(clock)(
+          Some(current),
+          CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None)
+        )
           .rejectedWith[ResourceAlreadyExists]
       }
 
