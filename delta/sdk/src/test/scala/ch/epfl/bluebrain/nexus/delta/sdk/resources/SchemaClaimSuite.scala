@@ -38,7 +38,7 @@ class SchemaClaimSuite extends NexusSuite {
     claim.validate(enforceSchema = true)(submitOnDefinedSchema).assertEquals(noValidation) >>
       claim.validate(enforceSchema = true)(submitOnDefinedSchema).assertEquals(noValidation)
 
-  private def failOrNoValidation(claim: SchemaClaim)(implicit location: Location) =
+  private def failWhenEnforceSchema(claim: SchemaClaim)(implicit location: Location) =
     claim.validate(enforceSchema = true)(submitOnDefinedSchema).interceptEquals(schemaIsMandatory) >>
       claim.validate(enforceSchema = false)(submitOnDefinedSchema).assertEquals(noValidation)
 
@@ -49,7 +49,7 @@ class SchemaClaimSuite extends NexusSuite {
 
   test("Create unconstrained fails or skip validation") {
     val claim = SchemaClaim.onCreate(project, unconstrained, caller)
-    failOrNoValidation(claim)
+    failWhenEnforceSchema(claim)
   }
 
   test("Update to a defined schema runs validation") {
@@ -59,7 +59,7 @@ class SchemaClaimSuite extends NexusSuite {
 
   test("Update to unconstrained fails or skip validation") {
     val claim = SchemaClaim.onUpdate(project, unconstrained, definedSchema, caller)
-    failOrNoValidation(claim)
+    failWhenEnforceSchema(claim)
   }
 
   test("Keeping unconstrained skips validation") {

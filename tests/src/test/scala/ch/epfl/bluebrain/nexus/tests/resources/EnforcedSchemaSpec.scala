@@ -20,6 +20,8 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
   private val testSchema = "https://dev.nexus.test.com/test-schema"
   private val newSchema  = "https://dev.nexus.test.com/new-schema"
 
+  private val sameSchema = "_"
+
   private val enforcedSchemaPayload =
     ProjectPayload.generateWithCustomBase(project, "https://dev.nexus.test.com/", enforceSchema = true)
 
@@ -59,7 +61,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
     } yield id
   }
 
-  private def expectMandatorySchema(json: Json, response: HttpResponse) = {
+  private def failOnMissingSchema(json: Json, response: HttpResponse) = {
     response.status shouldEqual StatusCodes.BadRequest
     json should have(`@type`("SchemaIsMandatory"))
   }
@@ -80,9 +82,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
     "fail if no schema is provided" in {
       for {
         payload <- SimpleResource.sourcePayload("xxx", 5)
-        _       <- deltaClient.post[Json](s"/resources/$project/_/", payload, Rick) {
-                     expectMandatorySchema
-                   }
+        _       <- deltaClient.post[Json](s"/resources/$project/_/", payload, Rick) { failOnMissingSchema }
       } yield succeed
     }
 
@@ -102,7 +102,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
       for {
         id             <- createValidatedResource
         updatedPayload <- SimpleResource.sourcePayload(id, 5)
-        _              <- updateResource(id, unconstrainedSchema, updatedPayload) { expectMandatorySchema }
+        _              <- updateResource(id, unconstrainedSchema, updatedPayload) { failOnMissingSchema }
       } yield succeed
     }
 
@@ -110,7 +110,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
       for {
         id             <- createValidatedResource
         updatedPayload <- SimpleResource.sourcePayload(id, 5)
-        _              <- updateResource(id, "_", updatedPayload) { expectRevAndSchema(2, testSchema) }
+        _              <- updateResource(id, sameSchema, updatedPayload) { expectRevAndSchema(2, testSchema) }
       } yield succeed
     }
 
@@ -125,7 +125,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
     "fail to update the schema to unconstrained with the update-schema endpoint" in {
       for {
         id <- createValidatedResource
-        _  <- updateResourceSchema(id, unconstrainedSchema) { expectMandatorySchema }
+        _  <- updateResourceSchema(id, unconstrainedSchema) { failOnMissingSchema }
       } yield succeed
     }
 
@@ -150,7 +150,7 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
       for {
         id             <- createUnconstrainedResource
         updatedPayload <- SimpleResource.sourcePayload(id, 5)
-        _              <- updateResource(id, "_", updatedPayload) { expectRevAndSchema(2, unconstrainedSchema) }
+        _              <- updateResource(id, sameSchema, updatedPayload) { expectRevAndSchema(2, unconstrainedSchema) }
       } yield succeed
     }
 
@@ -159,8 +159,8 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
         id             <- createUnconstrainedResource
         updatedPayload <- SimpleResource.sourcePayload(id, 5)
         _              <- updateResource(id, newSchema, updatedPayload) { expectRevAndSchema(2, newSchema) }
-        _              <- updateResource(id, unconstrainedSchema, updatedPayload, rev = 2) { expectMandatorySchema }
-        _              <- updateResourceSchema(id, unconstrainedSchema) { expectMandatorySchema }
+        _              <- updateResource(id, unconstrainedSchema, updatedPayload, rev = 2) { failOnMissingSchema }
+        _              <- updateResourceSchema(id, unconstrainedSchema) { failOnMissingSchema }
       } yield succeed
     }
 
