@@ -34,7 +34,7 @@ sealed trait SchemaClaim {
       case UpdateToUnconstrained(project)            =>
         onUnconstrained(project, enforceSchema)
       case KeepUnconstrained(project)                =>
-        IO.whenA().pure(NoValidation(project))
+        IO.pure(NoValidation(project))
     }
 
   def project: ProjectRef
