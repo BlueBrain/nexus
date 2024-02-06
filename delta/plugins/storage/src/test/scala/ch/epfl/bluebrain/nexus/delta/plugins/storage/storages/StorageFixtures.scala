@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
 import software.amazon.awssdk.regions.Region
 
@@ -42,7 +42,7 @@ trait StorageFixtures extends CirceLiteral {
   val diskValUpdate     = diskFieldsUpdate.toValue(config).get
   val s3Fields          = S3StorageFields(Some("s3name"), Some("s3description"), default = true, "mybucket", Some("http://localhost"), Some(Region.EU_WEST_1), Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).get
-  val remoteFields      = RemoteDiskStorageFields(Some("remoteName"), Some("remoteDescription"), default = true, Some(BaseUri.withoutPrefix("http://localhost")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
+  val remoteFields      = RemoteDiskStorageFields(Some("remoteName"), Some("remoteDescription"), default = true, Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
   val remoteVal         = remoteFields.toValue(config).get
   // format: on
 

@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -39,8 +38,8 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
     case (id, s3: S3StorageValue)             =>
       IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
     case (id, remote: RemoteDiskStorageValue) =>
-      IO.whenA(remote.endpoint != remoteFields.endpoint.value)(
-        IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
+      IO.whenA(remote.folder != remoteFields.folder)(
+        IO.raiseError(StorageNotAccessible(id, "Folder does not exist"))
       )
   }
 
@@ -107,7 +106,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         val inaccessibleDiskVal   =
           diskFields.copy(volume = Some(AbsolutePath(Files.createTempDirectory("other")).rightValue))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
-        val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
+        val inaccessibleRemoteVal = remoteFields.copy(folder = Label.unsafe("xxx"))
         val diskCurrent           = storageState(dId, project, diskVal)
         val s3Current             = storageState(s3Id, project, s3Val)
         val remoteCurrent         = storageState(rdId, project, remoteVal)

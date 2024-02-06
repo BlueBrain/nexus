@@ -13,6 +13,5 @@ class RemoteDiskStorageFetchFile(value: RemoteDiskStorageValue, client: RemoteDi
   override def apply(attributes: FileAttributes): IO[AkkaSource] =
     apply(attributes.path)
 
-  override def apply(path: Uri.Path): IO[AkkaSource] =
-    client.getFile(value.folder, path)(value.endpoint)
+  override def apply(path: Uri.Path): IO[AkkaSource] = client.getFile(value.folder, path)
 }

@@ -27,7 +27,7 @@ object RemoteDiskStorageCopyFiles {
 
       val paths = remoteDiskCopyPaths(destStorage, copyDetails)
 
-      client.copyFiles(destStorage.value.folder, paths)(destStorage.value.endpoint).map { destPaths =>
+      client.copyFiles(destStorage.value.folder, paths).map { destPaths =>
         copyDetails.zip(paths).zip(destPaths).map { case ((copyDetails, remoteCopyPaths), absoluteDestPath) =>
           mkDestAttributes(copyDetails, remoteCopyPaths.destPath, absoluteDestPath)
         }

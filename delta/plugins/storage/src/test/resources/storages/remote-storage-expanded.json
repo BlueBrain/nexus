@@ -25,11 +25,6 @@
         "@value": "SHA-256"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/endpoint": [
-      {
-        "@value": "http://localhost"
-      }
-    ],
     "https://bluebrain.github.io/nexus/vocabulary/folder": [
       {
         "@value": "myfolder"

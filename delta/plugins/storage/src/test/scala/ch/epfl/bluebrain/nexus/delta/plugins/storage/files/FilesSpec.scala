@@ -13,21 +13,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotCompu
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -40,7 +38,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{Assertion, DoNotDiscover}
@@ -48,7 +45,7 @@ import org.scalatest.{Assertion, DoNotDiscover}
 import java.net.URLDecoder
 
 @DoNotDiscover
-class FilesSpec(docker: RemoteStorageDocker)
+class FilesSpec(fixture: RemoteStorageClientFixtures)
     extends TestKit(ActorSystem("FilesSpec"))
     with CatsEffectSpec
     with DoobieScalaTestFixture
@@ -65,10 +62,8 @@ class FilesSpec(docker: RemoteStorageDocker)
 
   "The Files operations bundle" when {
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system)
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
-    val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
+    lazy val remoteDiskStorageClient                     = fixture.init
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
@@ -156,7 +151,7 @@ class FilesSpec(docker: RemoteStorageDocker)
         storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =
-          json"""{"@type": "RemoteDiskStorage", "endpoint": "${docker.hostConfig.endpoint}", "folder": "${RemoteStorageDocker.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
+          json"""{"@type": "RemoteDiskStorage", "endpoint": "${fixture.hostConfig.endpoint}", "folder": "${RemoteStorageClientFixtures.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
         storages.create(remoteId, projectRef, payload2).accepted
       }
 
