@@ -82,13 +82,5 @@ class StorageScopeInitializationSpec
       val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.rev shouldEqual 1L
     }
-
-    "be instantiated when enabled" in {
-      StorageScopeInitialization.when(enabled = true)(storages, sa, defaults) shouldBe defined
-    }
-
-    "be skipped when disabled" in {
-      StorageScopeInitialization.when(enabled = false)(storages, sa, defaults) shouldBe empty
-    }
   }
 }
