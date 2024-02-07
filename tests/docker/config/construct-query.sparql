@@ -78,10 +78,11 @@ CONSTRUCT {
 
   ## Generation
   ?alias  :generation      ?generation            .
-                           ?generation            :protocol        ?protocol                ;
-                                                  :startedAt       ?generationStartedAtTime ;
-                                                  :endedAt         ?generationEndedAtTime   .
-                                                                   ?protocol                :label      ?protocolName       ;
+                           ?generation            :protocol         ?protocol                ;
+                                                  :startedAt        ?generationStartedAtTime ;
+                                                  :endedAt          ?generationEndedAtTime   ;
+                                                  :followedWorkflow ?followedWorkflow        .
+                                                                    ?protocol               :label      ?protocolName       ;
                                                                                             :propertyID ?protocolPropertyId ;
                                                                                             :value      ?protocolValue      .
 
@@ -118,8 +119,8 @@ CONSTRUCT {
 
   ## Start / end / status
   ?alias  :startedAt         ?startedAt           ;
-       :endedAt              ?endedAt             ;
-       :status               ?status              .
+          :endedAt           ?endedAt             ;
+          :status            ?status              .
 
   ## Subject
   ?alias  :subjectAge        ?age                 .
@@ -204,7 +205,12 @@ CONSTRUCT {
                                                  :label       ?featureLabel         ;
                                                  :statistic   ?featureStat          ;
                                                  :compartment ?featureCompartment   .
-                                                          
+
+  ## EModels
+    ?alias :emodel                ?emodel  .
+                                  ?emodel  :score      ?emodelScore ;
+                                           :morphology ?emodelMorphologyId .
+                                                       ?emodelMorphologyId :name ?emodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -391,8 +397,9 @@ CONSTRUCT {
         ?protocolId  schema:value       ?protocolValue      .
       } .
     } .
-    OPTIONAL { ?generation  prov:startedAtTime  ?generationStartedAtTime . } .
-    OPTIONAL { ?generation  prov:endedAtTime    ?generationEndedAtTime   . } .
+    OPTIONAL { ?generation  prov:startedAtTime   ?generationStartedAtTime . } .
+    OPTIONAL { ?generation  prov:endedAtTime     ?generationEndedAtTime   . } .
+    OPTIONAL { ?generation  nsg:followedWorkflow ?followedWorkflow        . } .
   }
 
   # Image
@@ -685,4 +692,21 @@ CONSTRUCT {
 
     }.
   } .
+
+   # EModels
+   OPTIONAL {
+      ?id a nsg:EModel  ;
+          nsg:score ?emodelScore .
+
+      BIND(BNODE() AS ?emodel ) .
+
+      ?followedWorkflow schema:hasPart ?emodelConfig .
+
+      ?emodelConfig a bmo:EModelConfiguration   ;
+                    bmo:uses ?emodelMorphologyId    .
+
+                   # info about the morphology
+                   ?emodelMorphologyId  a nsg:NeuronMorphology         ;
+                                    schema:name ?emodelMorphologyName   .
+   }
 }

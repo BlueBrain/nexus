@@ -39,6 +39,9 @@
   "featureSeries": {
     "@container": "@set"
   },
+  "followedWorkflow": {
+    "@type": "@id"
+  },
   "neuronMorphology": {
     "@type": "@id"
   },
