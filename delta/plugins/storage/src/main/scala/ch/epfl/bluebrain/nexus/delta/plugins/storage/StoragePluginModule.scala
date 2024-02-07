@@ -305,12 +305,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         .getOrElse(Set.empty[RemoteStorageServiceDependency])
   }
 
-  make[StorageScopeInitialization].from {
-    (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
-      new StorageScopeInitialization(storages, serviceAccount, cfg.defaults)
+  many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
+    Option.when(cfg.enableDefaultCreation)(new StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet
   }
-
-  many[ScopeInitialization].ref[StorageScopeInitialization]
 
   many[ProjectDeletionTask].add { (storages: Storages) => StorageDeletionTask(storages) }
 
