@@ -1,5 +1,4 @@
 {
-  "id" : "https://bluebrain.github.io/nexus/vocabulary/TypeHierarchy",
   "mapping" : {
     "https://schema.org/Movie" : [
       "https://schema.org/CreativeWork",

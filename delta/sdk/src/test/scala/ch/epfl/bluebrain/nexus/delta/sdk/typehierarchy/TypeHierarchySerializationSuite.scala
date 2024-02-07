@@ -23,8 +23,8 @@ class TypeHierarchySerializationSuite extends SerializationSuite {
 
   private val typeHierarchyEventMapping = Map(
     // format: off
-    TypeHierarchyCreated(id, mapping, 1, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-created.json"),
-    TypeHierarchyUpdated(id, mapping, 2, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-updated.json"),
+    TypeHierarchyCreated(mapping, 1, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-created.json"),
+    TypeHierarchyUpdated(mapping, 2, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-updated.json"),
     // format: on
   )
 
@@ -39,7 +39,6 @@ class TypeHierarchySerializationSuite extends SerializationSuite {
   }
 
   private val state = TypeHierarchyState(
-    id,
     mapping,
     rev = 1,
     deprecated = false,
