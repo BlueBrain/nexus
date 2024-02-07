@@ -23,7 +23,6 @@
   "default" : true,
   "name": "remoteName",
   "description": "remoteDescription",
-  "endpoint" : "http://localhost",
   "folder" : "myfolder",
   "maxFileSize" : 52,
   "readPermission" : "remote/read",

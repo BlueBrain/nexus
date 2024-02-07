@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -287,11 +287,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         authTokenProvider: AuthTokenProvider,
         cfg: StorageTypeConfig
     ) =>
-      new RemoteDiskStorageClient(
-        client,
-        authTokenProvider,
-        cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
-      )(as.classicSystem)
+      RemoteDiskStorageClient(client, authTokenProvider, cfg.remoteDisk)(as.classicSystem)
   }
 
   many[ServiceDependency].addSet {
@@ -299,10 +295,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cfg: StorageTypeConfig,
         remoteStorageClient: RemoteDiskStorageClient
     ) =>
-      cfg.remoteDisk
-        .map(_.defaultEndpoint)
-        .map(endpoint => Set(new RemoteStorageServiceDependency(remoteStorageClient, endpoint)))
-        .getOrElse(Set.empty[RemoteStorageServiceDependency])
+      cfg.remoteDisk.fold(Set.empty[ServiceDependency]) { _ =>
+        Set(new RemoteStorageServiceDependency(remoteStorageClient))
+      }
   }
 
   many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>

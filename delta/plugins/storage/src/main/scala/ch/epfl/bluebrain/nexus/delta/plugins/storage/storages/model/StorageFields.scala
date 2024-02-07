@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Encoder, Json}
@@ -184,10 +183,6 @@ object StorageFields {
     *
     * @param default
     *   ''true'' if this store is the project's default, ''false'' otherwise
-    * @param endpoint
-    *   the endpoint for the remote storage
-    * @param credentials
-    *   the optional credentials to access the remote storage service
     * @param folder
     *   the rootFolder for this storage
     * @param readPermission
@@ -201,7 +196,6 @@ object StorageFields {
       name: Option[String],
       description: Option[String],
       default: Boolean,
-      endpoint: Option[BaseUri],
       folder: Label,
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -219,7 +213,6 @@ object StorageFields {
           description,
           default,
           cfg.digestAlgorithm,
-          endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),

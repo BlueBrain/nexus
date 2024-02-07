@@ -19,7 +19,7 @@ class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage, client: RemoteDiskSt
       uuid                                                        <- uuidf()
       destinationPath                                              = Uri.Path(intermediateFolders(storage.project, uuid, filename))
       RemoteDiskStorageFileAttributes(location, bytes, digest, _) <-
-        client.moveFile(storage.value.folder, sourcePath, destinationPath)(storage.value.endpoint)
+        client.moveFile(storage.value.folder, sourcePath, destinationPath)
     } yield {
       FileStorageMetadata(
         uuid = uuid,

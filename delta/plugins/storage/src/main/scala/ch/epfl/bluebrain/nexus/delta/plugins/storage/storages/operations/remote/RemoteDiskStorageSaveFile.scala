@@ -18,12 +18,11 @@ class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage, client: RemoteDiskSt
       filename: String,
       entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {
-
     for {
       uuid                                                        <- uuidf()
       path                                                         = Uri.Path(intermediateFolders(storage.project, uuid, filename))
       RemoteDiskStorageFileAttributes(location, bytes, digest, _) <-
-        client.createFile(storage.value.folder, path, entity)(storage.value.endpoint)
+        client.createFile(storage.value.folder, path, entity)
     } yield {
       FileStorageMetadata(
         uuid = uuid,
