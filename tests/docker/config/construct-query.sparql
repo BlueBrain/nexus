@@ -57,7 +57,7 @@ CONSTRUCT {
                                                   :idLabel     ?layerIdLabel .
 
   ## Contributors
-  ?alias  :contributors    ?contributorId              .
+  ?alias  :contributors    ?contributorId         .
                            ?contributorId         rdf:type     ?contributorType   ;
                                                   :label       ?contributorName   ;
                                                   :idLabel     ?contributorIdName ;
@@ -207,10 +207,10 @@ CONSTRUCT {
                                                  :compartment ?featureCompartment   .
 
   ## EModels
-    ?alias :emodel                ?emodel  .
-                                  ?emodel  :score      ?emodelScore ;
-                                           :morphology ?emodelMorphologyId .
-                                                       ?emodelMorphologyId :name ?emodelMorphologyName .
+  ?alias :emodel               ?emodel  .
+                               ?emodel  :score      ?emodelScore ;
+                                        :morphology ?emodelMorphologyId .
+                                                    ?emodelMorphologyId :name ?emodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -680,9 +680,10 @@ CONSTRUCT {
     ?id a bmo:NeuronMorphologyFeatureAnnotation .
 
     OPTIONAL {
-      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyId ;
+      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyIdTmp ;
                             bmo:compartment                    ?featureCompartment ;
                             nsg:hasBody                        ?featureBody        .
+      BIND(STR(?neuronMorphologyIdTmp) AS ?neuronMorphologyId) .
 
       ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       ;
                             schema:value / nsg:series          ?featureSeries      .
@@ -695,18 +696,20 @@ CONSTRUCT {
 
    # EModels
    OPTIONAL {
-      ?id a nsg:EModel  ;
-          nsg:score ?emodelScore .
+      ?id a nsg:EModel .
 
       BIND(BNODE() AS ?emodel ) .
 
-      ?followedWorkflow schema:hasPart ?emodelConfig .
+      OPTIONAL { ?id  nsg:score ?emodelScore   . } .
 
-      ?emodelConfig a bmo:EModelConfiguration   ;
-                    bmo:uses ?emodelMorphologyId    .
+      OPTIONAL {
+        ?followedWorkflow schema:hasPart ?emodelConfig .
 
-                   # info about the morphology
-                   ?emodelMorphologyId  a nsg:NeuronMorphology         ;
-                                    schema:name ?emodelMorphologyName   .
+        ?emodelConfig a bmo:EModelConfiguration   ;
+                      bmo:uses ?emodelMorphologyId    .
+                      # info about the morphology
+                      ?emodelMorphologyId  a nsg:NeuronMorphology            ;
+                                           schema:name ?emodelMorphologyName .
+      } .
    }
 }

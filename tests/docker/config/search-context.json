@@ -40,10 +40,8 @@
     "@container": "@set"
   },
   "followedWorkflow": {
-    "@type": "@id"
-  },
-  "neuronMorphology": {
-    "@type": "@id"
+    "@type": "@id",
+    "@id": "https://bluebrain.github.io/nexus/field/followedWorkflow"
   },
   "project": {
     "@type": "@id"
