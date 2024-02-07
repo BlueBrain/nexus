@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
+import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers
@@ -209,14 +209,5 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
         }
     } yield result
   }
-
-  def getUuids(orgId: String, projectId: String, identity: Identity): IO[(String, String)] =
-    for {
-      orgUuid     <- cl.getJson[Json](s"/orgs/$orgId", identity)
-      projectUuid <- cl.getJson[Json](s"/projects/$orgId/$projectId", identity)
-    } yield (
-      _uuid.getOption(orgUuid).value,
-      _uuid.getOption(projectUuid).value
-    )
 
 }

@@ -86,7 +86,7 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project)
         schemaRef      <- IO.fromEither(Resources.expandResourceRef(schema, projectContext))
         jsonld         <- sourceParser(project, projectContext, source.value)
-        schemaClaim     = SchemaClaim(project, schemaRef, caller)
+        schemaClaim     = SchemaClaim.onCreate(project, schemaRef, caller)
         validation     <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
@@ -115,7 +115,7 @@ object ResourcesTrial {
         schemaRefOpt   <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
         resource       <- fetchResource(id, project)
         jsonld         <- IO.fromEither(resource.toAssembly)
-        schemaClaim     = SchemaClaim(project, schemaRefOpt.getOrElse(resource.schema), caller)
+        schemaClaim     = SchemaClaim.onUpdate(project, schemaRefOpt, resource.schema, caller)
         report         <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
       } yield report
     }

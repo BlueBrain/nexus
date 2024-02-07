@@ -65,3 +65,17 @@ class StorageScopeInitialization(
 
   override def entityType: EntityType = Storages.entityType
 }
+
+object StorageScopeInitialization {
+
+  /**
+    * Conditionnally create a [[StorageScopeInitialization]]
+    */
+  def when(enabled: Boolean)(
+      storages: Storages,
+      serviceAccount: ServiceAccount,
+      defaults: Defaults
+  ): Option[StorageScopeInitialization] =
+    Option.when(enabled)(new StorageScopeInitialization(storages, serviceAccount, defaults))
+
+}
