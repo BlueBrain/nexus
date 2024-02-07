@@ -21,14 +21,14 @@ class TypeHierarchySerializationSuite extends SerializationSuite {
     iri"https://schema.org/Movie" -> Set(iri"https://schema.org/CreativeWork", iri"https://schema.org/Thing")
   )
 
-  private val orgsEventMapping = Map(
+  private val typeHierarchyEventMapping = Map(
     // format: off
     TypeHierarchyCreated(id, mapping, 1, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-created.json"),
     TypeHierarchyUpdated(id, mapping, 2, instant, subject) -> loadDatabaseEvents("type-hierarchy", "type-hierarchy-updated.json"),
     // format: on
   )
 
-  orgsEventMapping.foreach { case (event, database) =>
+  typeHierarchyEventMapping.foreach { case (event, database) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(TypeHierarchyEvent.serializer, event, database)
     }
@@ -51,11 +51,11 @@ class TypeHierarchySerializationSuite extends SerializationSuite {
 
   private val jsonState = jsonContentOf("type-hierarchy/type-hierarchy-state.json")
 
-  test(s"Correctly serialize an OrganizationState") {
+  test(s"Correctly serialize an TypeHierarchyState") {
     assertOutput(TypeHierarchyState.serializer, state, jsonState)
   }
 
-  test(s"Correctly deserialize an OrganizationState") {
+  test(s"Correctly deserialize an TypeHierarchyState") {
     assertEquals(TypeHierarchyState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
