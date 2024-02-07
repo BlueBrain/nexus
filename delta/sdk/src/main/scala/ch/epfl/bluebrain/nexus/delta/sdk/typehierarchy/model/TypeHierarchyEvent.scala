@@ -12,10 +12,13 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import java.time.Instant
 import scala.annotation.nowarn
 
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchy.typeHierarchyId
+
 /**
   * Enumeration of TypeHierarchy collection event types.
   */
 sealed trait TypeHierarchyEvent extends GlobalEvent {
+  def id: Iri = typeHierarchyId
   def mapping: TypeHierarchyMapping
 }
 
@@ -36,7 +39,6 @@ object TypeHierarchyEvent {
     *   the subject that created the event
     */
   final case class TypeHierarchyCreated(
-      id: Iri,
       mapping: TypeHierarchyMapping,
       rev: Int,
       instant: Instant,
@@ -58,7 +60,6 @@ object TypeHierarchyEvent {
     *   the subject that created the event
     */
   final case class TypeHierarchyUpdated(
-      id: Iri,
       mapping: TypeHierarchyMapping,
       rev: Int,
       instant: Instant,

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.TypeHierarchyResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchy.typeHierarchyId
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy.TypeHierarchyMapping
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -22,7 +23,6 @@ import scala.annotation.nowarn
   * Enumeration of type hierarchy states.
   */
 final case class TypeHierarchyState(
-    id: Iri,
     mapping: TypeHierarchyMapping,
     rev: Int,
     deprecated: Boolean,
@@ -31,6 +31,8 @@ final case class TypeHierarchyState(
     updatedAt: Instant,
     updatedBy: Subject
 ) extends GlobalState {
+
+  override def id: Iri                    = typeHierarchyId
   override def schema: ResourceRef        = Latest(schemas.typeHierarchy)
   override def types: Set[IriOrBNode.Iri] = Set(nxv.TypeHierarchy)
 

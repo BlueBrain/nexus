@@ -34,7 +34,7 @@ trait TypeHierarchy {
 object TypeHierarchy {
 
   final val entityType: EntityType = EntityType("type-hierarchy")
-  final val id: Iri                = nxv.TypeHierarchy
+  final val typeHierarchyId: Iri   = nxv.TypeHierarchy
 
   private type TypeHierarchyLog =
     GlobalEventLog[Iri, TypeHierarchyState, TypeHierarchyCommand, TypeHierarchyEvent, TypeHierarchyRejection]
@@ -50,13 +50,13 @@ object TypeHierarchy {
       eval(UpdateTypeHierarchy(mapping, rev, subject))
 
     override def fetch: IO[TypeHierarchyResource] =
-      log.stateOr(id, TypeHierarchyDoesNotExist).map(_.toResource)
+      log.stateOr(typeHierarchyId, TypeHierarchyDoesNotExist).map(_.toResource)
 
     override def fetch(rev: Int): IO[TypeHierarchyResource] =
-      log.stateOr(id, rev, TypeHierarchyDoesNotExist, RevisionNotFound).map(_.toResource)
+      log.stateOr(typeHierarchyId, rev, TypeHierarchyDoesNotExist, RevisionNotFound).map(_.toResource)
 
     private def eval(cmd: TypeHierarchyCommand): IO[TypeHierarchyResource] =
-      log.evaluate(id, cmd).map(_._2.toResource)
+      log.evaluate(typeHierarchyId, cmd).map(_._2.toResource)
   }
 
   private def evaluate(
@@ -65,7 +65,7 @@ object TypeHierarchy {
 
     def create(c: CreateTypeHierarchy) =
       state match {
-        case None => clock.realTimeInstant.map(TypeHierarchyCreated(id, c.mapping, 1, _, c.subject))
+        case None => clock.realTimeInstant.map(TypeHierarchyCreated(c.mapping, 1, _, c.subject))
         case _    => IO.raiseError(TypeHierarchyAlreadyExists)
       }
 
@@ -74,7 +74,7 @@ object TypeHierarchy {
         case None                      => IO.raiseError(TypeHierarchyDoesNotExist)
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s)                   =>
-          clock.realTimeInstant.map(TypeHierarchyUpdated(id, c.mapping, s.rev + 1, _, c.subject))
+          clock.realTimeInstant.map(TypeHierarchyUpdated(c.mapping, s.rev + 1, _, c.subject))
       }
 
     command match {
@@ -85,12 +85,12 @@ object TypeHierarchy {
 
   private def next(state: Option[TypeHierarchyState], ev: TypeHierarchyEvent): Option[TypeHierarchyState] =
     (state, ev) match {
-      case (None, TypeHierarchyCreated(id, mapping, _, instant, subject))     =>
-        Some(TypeHierarchyState(id, mapping, 1, deprecated = false, instant, subject, instant, subject))
-      case (Some(s), TypeHierarchyUpdated(_, mapping, rev, instant, subject)) =>
+      case (None, TypeHierarchyCreated(mapping, _, instant, subject))      =>
+        Some(TypeHierarchyState(mapping, 1, deprecated = false, instant, subject, instant, subject))
+      case (Some(s), TypeHierarchyUpdated(mapping, rev, instant, subject)) =>
         Some(s.copy(mapping = mapping, rev = rev, updatedAt = instant, updatedBy = subject))
-      case (Some(_), TypeHierarchyCreated(_, _, _, _, _))                     => None
-      case (None, _)                                                          => None
+      case (Some(_), TypeHierarchyCreated(_, _, _, _))                     => None
+      case (None, _)                                                       => None
     }
 
   def definition(
