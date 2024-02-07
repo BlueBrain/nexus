@@ -72,7 +72,6 @@ object TypeHierarchy {
     def update(c: UpdateTypeHierarchy) =
       state match {
         case None                      => IO.raiseError(TypeHierarchyDoesNotExist)
-        case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s)                   =>
           clock.realTimeInstant.map(TypeHierarchyUpdated(c.mapping, s.rev + 1, _, c.subject))
       }

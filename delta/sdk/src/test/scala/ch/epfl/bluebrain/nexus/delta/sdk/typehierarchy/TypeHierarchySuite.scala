@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, TypeHierarchyResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy.TypeHierarchyMapping
-import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyRejection.{IncorrectRev, RevisionNotFound, TypeHierarchyAlreadyExists, TypeHierarchyDoesNotExist}
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyRejection.{RevisionNotFound, TypeHierarchyAlreadyExists, TypeHierarchyDoesNotExist}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, TypeHierarchyResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -62,11 +62,6 @@ class TypeHierarchySuite extends NexusSuite with ConfigFixtures with FixedClock 
     typeHierarchy.create(mapping) >>
       typeHierarchy.update(updatedMapping, 1) >>
       typeHierarchy.fetch(2).map(_.value.mapping).assertEquals(updatedMapping)
-  }
-
-  test("Updating a type hierarchy should fail when the revision doesn't match") {
-    typeHierarchy.create(mapping) >>
-      typeHierarchy.update(updatedMapping, 2).interceptEquals(IncorrectRev(2, 1))
   }
 
   test("Creation should return the correct metadata") {
