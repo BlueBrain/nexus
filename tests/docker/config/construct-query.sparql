@@ -57,7 +57,7 @@ CONSTRUCT {
                                                   :idLabel     ?layerIdLabel .
 
   ## Contributors
-  ?alias  :contributors    ?contributorId              .
+  ?alias  :contributors    ?contributorId         .
                            ?contributorId         rdf:type     ?contributorType   ;
                                                   :label       ?contributorName   ;
                                                   :idLabel     ?contributorIdName ;
@@ -78,10 +78,11 @@ CONSTRUCT {
 
   ## Generation
   ?alias  :generation      ?generation            .
-                           ?generation            :protocol        ?protocol                ;
-                                                  :startedAt       ?generationStartedAtTime ;
-                                                  :endedAt         ?generationEndedAtTime   .
-                                                                   ?protocol                :label      ?protocolName       ;
+                           ?generation            :protocol         ?protocol                ;
+                                                  :startedAt        ?generationStartedAtTime ;
+                                                  :endedAt          ?generationEndedAtTime   ;
+                                                  :followedWorkflow ?followedWorkflow        .
+                                                                    ?protocol               :label      ?protocolName       ;
                                                                                             :propertyID ?protocolPropertyId ;
                                                                                             :value      ?protocolValue      .
 
@@ -118,8 +119,8 @@ CONSTRUCT {
 
   ## Start / end / status
   ?alias  :startedAt         ?startedAt           ;
-       :endedAt              ?endedAt             ;
-       :status               ?status              .
+          :endedAt           ?endedAt             ;
+          :status            ?status              .
 
   ## Subject
   ?alias  :subjectAge        ?age                 .
@@ -198,13 +199,20 @@ CONSTRUCT {
   ## Morphology features
   ?alias :compartment          ?featureCompartment .
   ?alias :neuronMorphology     ?neuronMorphologyId .
+                               ?neuronMorphologyId :name ?neuronMorphologyName .
+
   ?alias :featureSeries        ?featureSeries    .
                                ?featureSeries    :value       ?featureValue         ;
                                                  :unit        ?featureUnit          ;
                                                  :label       ?featureLabel         ;
                                                  :statistic   ?featureStat          ;
                                                  :compartment ?featureCompartment   .
-                                                          
+
+  ## EModels
+  ?alias :emodel               ?emodel  .
+                               ?emodel  :score            ?emodelScore ;
+                                        :neuronMorphology ?emodelMorphologyId .
+                                                          ?emodelMorphologyId :name ?emodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -391,8 +399,9 @@ CONSTRUCT {
         ?protocolId  schema:value       ?protocolValue      .
       } .
     } .
-    OPTIONAL { ?generation  prov:startedAtTime  ?generationStartedAtTime . } .
-    OPTIONAL { ?generation  prov:endedAtTime    ?generationEndedAtTime   . } .
+    OPTIONAL { ?generation  prov:startedAtTime   ?generationStartedAtTime . } .
+    OPTIONAL { ?generation  prov:endedAtTime     ?generationEndedAtTime   . } .
+    OPTIONAL { ?generation  nsg:followedWorkflow ?followedWorkflow        . } .
   }
 
   # Image
@@ -673,16 +682,36 @@ CONSTRUCT {
     ?id a bmo:NeuronMorphologyFeatureAnnotation .
 
     OPTIONAL {
-      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyId ;
-                            bmo:compartment                    ?featureCompartment ;
-                            nsg:hasBody                        ?featureBody        .
+      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyId   ;
+                            bmo:compartment                    ?featureCompartment   ;
+                            nsg:hasBody                        ?featureBody          .
+      ?neuronMorphologyId   schema:name                        ?neuronMorphologyName .
 
-      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       ;
-                            schema:value / nsg:series          ?featureSeries      .
-      ?featureSeries        nsg:statistic                      ?featureStat        ;
-                            schema:value                       ?featureValue       ;
+      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel         ;
+                            schema:value / nsg:series          ?featureSeries        .
+      ?featureSeries        nsg:statistic                      ?featureStat          ;
+                            schema:value                       ?featureValue         ;
                             schema:unitCode                    ?featureUnit
 
     }.
   } .
+
+   # EModels
+   OPTIONAL {
+      ?id a nsg:EModel .
+
+      BIND(BNODE() AS ?emodel ) .
+
+      OPTIONAL { ?id  nsg:score ?emodelScore   . } .
+
+      OPTIONAL {
+        ?followedWorkflow schema:hasPart ?emodelConfig .
+
+        ?emodelConfig a bmo:EModelConfiguration   ;
+                      bmo:uses ?emodelMorphologyId    .
+                      # info about the morphology
+                      ?emodelMorphologyId  a nsg:NeuronMorphology            ;
+                                           schema:name ?emodelMorphologyName .
+      } .
+   }
 }

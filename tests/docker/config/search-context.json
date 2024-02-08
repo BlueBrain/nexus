@@ -39,8 +39,9 @@
   "featureSeries": {
     "@container": "@set"
   },
-  "neuronMorphology": {
-    "@type": "@id"
+  "followedWorkflow": {
+    "@type": "@id",
+    "@id": "https://bluebrain.github.io/nexus/field/followedWorkflow"
   },
   "project": {
     "@type": "@id"

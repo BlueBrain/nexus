@@ -1,0 +1,36 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Entity",
+    "EModelWorkflow"
+  ],
+  "@id": "https://bbp.epfl.ch/data/emodel-workflow",
+  "generates": [
+    {
+      "@id": "https://bbp.epfl.ch/data/emodel",
+      "@type": "EModel"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/emodel-script",
+      "@type": "EModelScript"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/fitness-calculator-config",
+      "@type": "FitnessCalculatorConfiguration"
+    }
+  ],
+  "hasPart": [
+    {
+      "@id": "https://bbp.epfl.ch/data/extraction-targets-configuration",
+      "@type": "ExtractionTargetsConfiguration"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/extraction-targets-configuration",
+      "@type": "EModelPipelineSettings"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/emodel-configuration",
+      "@type": "EModelConfiguration"
+    }
+  ]
+}
