@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -57,6 +58,11 @@ package object sdk {
     * Type alias for a resolver specific resource.
     */
   type ResolverResource = ResourceF[Resolver]
+
+  /**
+    * Type alias for a type hierarchy specific resource.
+    */
+  type TypeHierarchyResource = ResourceF[TypeHierarchy]
 
   /**
     * Type alias for resolver resolution
