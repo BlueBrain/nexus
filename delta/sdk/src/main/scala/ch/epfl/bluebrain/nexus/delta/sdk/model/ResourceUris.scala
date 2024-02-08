@@ -172,6 +172,9 @@ object ResourceUris {
   def resolver(ref: ProjectRef, id: Iri): ResourceUris =
     apply("resolvers", ref, id)
 
+  def typeHierarchy: ResourceUris =
+    apply("type-hierarchy")
+
   /**
     * Resource uris for ephemeral resources that are scoped to a project.
     */

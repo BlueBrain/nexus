@@ -71,7 +71,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 {
   "@type": "RemoteDiskStorage",
   "default": "{default}",
-  "endpoint": "{endpoint}",
   "folder": "{folder}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -82,7 +81,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 ...where
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{endpoint}`: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-endpoint`.
 - `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).

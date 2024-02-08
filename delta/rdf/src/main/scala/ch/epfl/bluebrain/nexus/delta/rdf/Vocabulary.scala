@@ -189,6 +189,7 @@ object Vocabulary {
     val CrossProject      = nxv + "CrossProject"
     val Schema            = nxv + "Schema"
     val View              = nxv + "View"
+    val TypeHierarchy     = nxv + "TypeHierarchy"
   }
 
   /**
@@ -206,6 +207,7 @@ object Vocabulary {
     val realms        = schemas + "realms.json"
     val resources     = schemas + "unconstrained.json"
     val resolvers     = schemas + "resolvers.json"
+    val typeHierarchy = schemas + "type-hierarchy.json"
   }
 
   /**

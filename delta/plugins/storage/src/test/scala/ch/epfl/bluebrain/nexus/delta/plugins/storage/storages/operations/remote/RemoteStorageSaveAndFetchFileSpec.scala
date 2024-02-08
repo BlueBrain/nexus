@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -15,39 +16,26 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
-class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
+class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     extends TestKit(ActorSystem("RemoteStorageSaveAndFetchFileSpec"))
     with CatsEffectSpec
     with AkkaSourceHelpers
     with Eventually
     with BeforeAndAfterAll
-    with StorageFixtures
-    with ConfigFixtures {
+    with StorageFixtures {
 
-  implicit val ec: ExecutionContext                 = system.dispatcher
-  implicit private val httpConfig: HttpClientConfig = httpClientConfig
-  private val httpClient: HttpClient                = HttpClient()
-  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
-  private val remoteDiskStorageClient               =
-    new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
+  private lazy val remoteDiskStorageClient = fixture.init
 
   private val iri                   = iri"http://localhost/remote"
   private val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -55,30 +43,23 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
   private val project               = ProjectRef.unsafe("org", "project")
   private val filename              = "myfile.txt"
 
-  private var storageValue: RemoteDiskStorageValue = _
-  private var storage: RemoteDiskStorage           = _
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    storageValue = RemoteDiskStorageValue(
-      default = true,
-      DigestAlgorithm.default,
-      BaseUri(docker.hostConfig.endpoint).rightValue,
-      Label.unsafe(RemoteStorageDocker.BucketName),
-      read,
-      write,
-      10
-    )
-    storage = RemoteDiskStorage(iri, project, storageValue, Json.obj())
-  }
+  private val storageValue: RemoteDiskStorageValue = RemoteDiskStorageValue(
+    default = true,
+    DigestAlgorithm.default,
+    Label.unsafe(RemoteStorageClientFixtures.BucketName),
+    read,
+    write,
+    10
+  )
+  private val storage: RemoteDiskStorage           = RemoteDiskStorage(iri, project, storageValue, Json.obj())
 
   "RemoteDiskStorage operations" should {
     val content = "file content"
     val entity  = HttpEntity(content)
 
     val bytes    = 12L
-    val digest   = ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest)
-    val location = s"file:///app/${RemoteStorageDocker.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt"
+    val digest   = ComputedDigest(DigestAlgorithm.default, RemoteStorageClientFixtures.Digest)
+    val location = s"file:///app/${RemoteStorageClientFixtures.BucketName}/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt"
     val path     = Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
 
     "save a file to a folder" in {

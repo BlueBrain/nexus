@@ -6,7 +6,6 @@ import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
@@ -230,7 +229,6 @@ object StorageValue {
       description: Option[String] = None,
       default: Boolean,
       algorithm: DigestAlgorithm,
-      endpoint: BaseUri,
       folder: Label,
       readPermission: Permission,
       writePermission: Permission,
@@ -250,7 +248,6 @@ object StorageValue {
     def apply(
         default: Boolean,
         algorithm: DigestAlgorithm,
-        endpoint: BaseUri,
         folder: Label,
         readPermission: Permission,
         writePermission: Permission,
@@ -261,7 +258,6 @@ object StorageValue {
         None,
         default,
         algorithm,
-        endpoint,
         folder,
         readPermission,
         writePermission,
