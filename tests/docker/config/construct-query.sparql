@@ -199,6 +199,8 @@ CONSTRUCT {
   ## Morphology features
   ?alias :compartment          ?featureCompartment .
   ?alias :neuronMorphology     ?neuronMorphologyId .
+                               ?neuronMorphologyId :name ?neuronMorphologyName .
+
   ?alias :featureSeries        ?featureSeries    .
                                ?featureSeries    :value       ?featureValue         ;
                                                  :unit        ?featureUnit          ;
@@ -208,9 +210,9 @@ CONSTRUCT {
 
   ## EModels
   ?alias :emodel               ?emodel  .
-                               ?emodel  :score      ?emodelScore ;
-                                        :morphology ?emodelMorphologyId .
-                                                    ?emodelMorphologyId :name ?emodelMorphologyName .
+                               ?emodel  :score            ?emodelScore ;
+                                        :neuronMorphology ?emodelMorphologyId .
+                                                          ?emodelMorphologyId :name ?emodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -680,15 +682,15 @@ CONSTRUCT {
     ?id a bmo:NeuronMorphologyFeatureAnnotation .
 
     OPTIONAL {
-      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyIdTmp ;
-                            bmo:compartment                    ?featureCompartment ;
-                            nsg:hasBody                        ?featureBody        .
-      BIND(STR(?neuronMorphologyIdTmp) AS ?neuronMorphologyId) .
+      ?id                   nsg:hasTarget / nsg:hasSource      ?neuronMorphologyId   ;
+                            bmo:compartment                    ?featureCompartment   ;
+                            nsg:hasBody                        ?featureBody          .
+      ?neuronMorphologyId   schema:name                        ?neuronMorphologyName .
 
-      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel       ;
-                            schema:value / nsg:series          ?featureSeries      .
-      ?featureSeries        nsg:statistic                      ?featureStat        ;
-                            schema:value                       ?featureValue       ;
+      ?featureBody          nsg:isMeasurementOf / rdfs:label   ?featureLabel         ;
+                            schema:value / nsg:series          ?featureSeries        .
+      ?featureSeries        nsg:statistic                      ?featureStat          ;
+                            schema:value                       ?featureValue         ;
                             schema:unitCode                    ?featureUnit
 
     }.
