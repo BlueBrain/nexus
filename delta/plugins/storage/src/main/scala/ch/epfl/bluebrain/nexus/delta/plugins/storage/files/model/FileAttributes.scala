@@ -40,6 +40,7 @@ final case class FileAttributes(
     mediaType: Option[ContentType],
     // TODO: Remove default after ??? migration
     keywords: Map[Label, String] = Map.empty,
+    description: Option[String] = None,
     bytes: Long,
     digest: Digest,
     origin: FileAttributesOrigin
@@ -66,6 +67,7 @@ object FileAttributes {
       userSuppliedMetadata.filename,
       userSuppliedMetadata.mediaType,
       userSuppliedMetadata.keywords,
+      userSuppliedMetadata.description,
       metadata.bytes,
       metadata.digest,
       metadata.origin
@@ -96,34 +98,45 @@ object FileAttributes {
 
   def createConfiguredEncoder(
       originalConfig: Configuration,
-      underscoreFields: Boolean = false,
+      underscoreFieldsForMetadata: Boolean = false,
       removePath: Boolean = false,
       removeLocation: Boolean = false
   )(implicit @nowarn("cat=unused") digestEncoder: Encoder.AsObject[Digest]): Encoder.AsObject[FileAttributes] = {
     @nowarn("cat=unused")
-    implicit val config: Configuration = underscoreFields match {
-      case true  => withUnderscoreFields(originalConfig)
+    implicit val config: Configuration = underscoreFieldsForMetadata match {
+      case true  => withUnderscoreMetadataFields(originalConfig)
       case false => originalConfig
     }
 
     object Key {
       def unapply(key: String): Option[String] = {
-        if (underscoreFields && key.startsWith("_")) Some(key.drop(1))
+        if (underscoreFieldsForMetadata && key.startsWith("_")) Some(key.drop(1))
         else Some(key)
       }
     }
 
     deriveConfiguredEncoder[FileAttributes].mapJsonObject { json =>
       json.filter {
-        case (Key("location"), _)     => !removeLocation
-        case (Key("path"), _)         => !removePath
-        case (Key("keywords"), value) => !value.isEmpty()
-        case _                        => true
+        case (Key("location"), _)        => !removeLocation
+        case (Key("path"), _)            => !removePath
+        case (Key("keywords"), value)    => !value.isEmpty()
+        case (Key("description"), value) => !value.isNull
+        case _                           => true
       }
     }
   }
 
-  private def withUnderscoreFields(configuration: Configuration): Configuration = {
-    configuration.copy(transformMemberNames = key => s"_$key")
+  object NonMetadataKey {
+    private val keys = Set("description")
+    def unapply(key: String): Option[String] = {
+      Option.when(keys.contains(key))(key)
+    }
+  }
+
+  private def withUnderscoreMetadataFields(configuration: Configuration): Configuration = {
+    configuration.copy(transformMemberNames = {
+      case NonMetadataKey(key) => key
+      case metadataKey         => s"_$metadataKey"
+    })
   }
 }

@@ -24,7 +24,8 @@ import scala.util.Try
 sealed trait FormDataExtractor {
 
   /**
-    * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData
+    * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData. Any other part is
+    * discarded.
     *
     * @param id
     *   the file id
@@ -35,7 +36,7 @@ sealed trait FormDataExtractor {
     * @param storageAvailableSpace
     *   the remaining available space on the storage
     * @return
-    *   the file description plus the entity with the file content
+    *   the file metadata. plus the entity with the file content
     */
   def apply(
       id: Iri,
@@ -48,6 +49,7 @@ sealed trait FormDataExtractor {
 case class UploadedFileInformation(
     filename: String,
     keywords: Map[Label, String],
+    description: Option[String],
     suppliedContentType: ContentType,
     contents: BodyPartEntity
 )
@@ -135,11 +137,12 @@ object FormDataExtractor {
         case part if part.name == FileFieldName =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
+          val description = part.dispositionParams.get("description").filter(_.nonEmpty)
 
           val result = for {
             keywords <- extractKeywords(part)
           } yield {
-            Some(UploadedFileInformation(filename, keywords, contentType, part.entity))
+            Some(UploadedFileInformation(filename, keywords, description, contentType, part.entity))
           }
 
           Future.fromTry(result.toTry)

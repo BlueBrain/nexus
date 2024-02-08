@@ -41,7 +41,8 @@ class BatchCopySuite extends NexusSuite with StorageFixtures with Generators wit
   private val source           = CopyFileSource(sourceProj.ref, NonEmptyList.of(sourceFileId))
   private val storageStatEntry = StorageStatEntry(files = 10L, spaceUsed = 5L)
   private val keywords         = genKeywords()
-  private val stubbedFileAttr  = attributes(genString(), keywords = keywords)
+  private val description      = Some(genString())
+  private val stubbedFileAttr  = attributes(genString(), keywords = keywords, description = description)
 
   test("successfully perform disk copy") {
     val events                         = ListBuffer.empty[Event]

@@ -68,7 +68,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -94,8 +94,8 @@ final class Files(
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      metadata              <- saveFileToStorage(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, metadata, caller.subject, tag))
+      attributes            <- saveFileToStorage(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -261,7 +261,7 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes.from(
-                                     FileDescription(resolvedFilename, Map.empty, mediaType),
+                                     FileDescription(resolvedFilename, Map.empty, mediaType, description = None),
                                      metadata
                                    ),
                                    rev,
@@ -424,7 +424,7 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes
-                                     .from(FileDescription(resolvedFilename, Map.empty, mediaType), fileMetadata),
+                                     .from(FileDescription(resolvedFilename, Map.empty, mediaType, description = None), fileMetadata),
                                    caller.subject,
                                    tag
                                  )
@@ -474,10 +474,10 @@ final class Files(
       storage: Storage
   ): IO[FileAttributes] =
     for {
-      info                <- extractFormData(iri, storage, entity)
-      userSuppliedMetadata = FileDescription.from(info)
-      fileMetadata        <- saveFile(iri, storage, userSuppliedMetadata, info.contents)
-    } yield FileAttributes.from(userSuppliedMetadata, fileMetadata)
+      info            <- extractFormData(iri, storage, entity)
+      description      = FileDescription.from(info)
+      storageMetadata <- saveFile(iri, storage, description, info.contents)
+    } yield FileAttributes.from(description, storageMetadata)
 
   private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedFileInformation] =
     for {

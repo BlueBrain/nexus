@@ -13,6 +13,7 @@
     "keywords": {
       "key": "value"
     },
+    "description" : "A description",
     "bytes" : 12,
     "digest" : {
       "@type" : "NotComputedDigest"

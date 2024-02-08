@@ -42,6 +42,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
     filename = "myfile.txt",
     mediaType = mediaType,
     keywords = Map(Label.unsafe("key") -> "value"),
+    description = Some("A description"),
     bytes = 10,
     dig,
     Client

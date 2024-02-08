@@ -144,12 +144,13 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     )
   }
 
-  def uploadFileWithKeywords(
+  def uploadFileWithMetadata(
       requestPath: String,
       fileContents: String,
       contentType: ContentType,
       fileName: String,
       identity: Identity,
+      descrption: Option[String],
       keywords: Map[String, String]
   )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
 
@@ -163,7 +164,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
           BodyPart.Strict(
             "file",
             HttpEntity(contentType, s.getBytes),
-            Map("filename" -> fileName, "keywords" -> keywords.asJson.noSpaces)
+            Map(
+              "filename"    -> fileName,
+              "keywords"    -> keywords.asJson.noSpaces,
+              "description" -> descrption.getOrElse("")
+            )
           )
         ).toEntity()
       },

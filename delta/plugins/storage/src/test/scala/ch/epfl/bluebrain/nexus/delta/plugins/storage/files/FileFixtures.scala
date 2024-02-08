@@ -51,8 +51,9 @@ trait FileFixtures extends Generators {
       size: Long = 12,
       id: UUID = uuid,
       projRef: ProjectRef = projectRef,
-      keywords: Map[Label, String] = Map.empty
-  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path, keywords)
+      keywords: Map[Label, String] = Map.empty,
+      description: Option[String] = None
+  ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path, keywords, description)
 
   def genKeywords(): Map[Label, String] = Map(Label.unsafe(genString()) -> genString())
 

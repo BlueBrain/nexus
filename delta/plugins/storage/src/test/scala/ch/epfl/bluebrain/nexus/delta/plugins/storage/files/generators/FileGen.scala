@@ -176,7 +176,8 @@ object FileGen {
       id: UUID,
       projRef: ProjectRef,
       path: AbsolutePath,
-      keywords: Map[Label, String]
+      keywords: Map[Label, String],
+      description: Option[String]
   ): FileAttributes = {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
@@ -186,6 +187,7 @@ object FileGen {
       filename,
       Some(`text/plain(UTF-8)`),
       keywords,
+      description,
       size,
       digest,
       Client
