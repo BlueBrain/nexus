@@ -1,14 +1,22 @@
-package ch.epfl.bluebrain.nexus.testkit.remotestorage
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage
 
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.{BucketName, RemoteStorageHostConfig}
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import akka.actor.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures.{BucketName, RemoteStorageHostConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientImpl
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{Files, Path}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.DurationConverters.ScalaDurationOps
 
-trait RemoteStorageDocker extends BeforeAndAfterAll { this: Suite =>
+trait RemoteStorageClientFixtures extends BeforeAndAfterAll with ConfigFixtures { this: BaseSpec =>
 
   private val rwx             = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
   private val tmpFolder: Path = Files.createTempDirectory("root", rwx)
@@ -22,6 +30,14 @@ trait RemoteStorageDocker extends BeforeAndAfterAll { this: Suite =>
 
   def hostConfig: RemoteStorageHostConfig =
     RemoteStorageHostConfig(container.getHost, container.getMappedPort(8080))
+
+  def init(implicit as: ActorSystem): RemoteDiskStorageClient = {
+    implicit val httpConfig: HttpClientConfig = httpClientConfig
+    val httpClient: HttpClient                = HttpClient()
+    val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
+    val baseUri                               = BaseUri(hostConfig.endpoint).rightValue
+    new RemoteDiskStorageClientImpl(httpClient, authTokenProvider, baseUri, Credentials.Anonymous)
+  }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -48,7 +64,7 @@ trait RemoteStorageDocker extends BeforeAndAfterAll { this: Suite =>
   }
 }
 
-object RemoteStorageDocker {
+object RemoteStorageClientFixtures {
   val BucketName = "nexustest"
   val Content    = "file content"
   val Digest     = "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"

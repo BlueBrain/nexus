@@ -14,7 +14,7 @@ class RemoteDiskStorageAccess(client: RemoteDiskStorageClient) extends StorageAc
 
   override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[Unit] = {
     client
-      .exists(storage.folder)(storage.endpoint)
+      .exists(storage.folder)
       .adaptError { case err: HttpClientError =>
         StorageNotAccessible(
           id,

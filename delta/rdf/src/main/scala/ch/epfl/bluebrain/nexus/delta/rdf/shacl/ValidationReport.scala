@@ -57,5 +57,8 @@ object ValidationReport {
     } yield ValidationReport(conforms, targetedNodes, json)
   }
 
+  def unsafe(conforms: Boolean, targetedNodes: Int, json: Json): ValidationReport =
+    ValidationReport(conforms, targetedNodes, json)
+
   implicit val reportEncoder: Encoder[ValidationReport] = Encoder.instance(_.json)
 }

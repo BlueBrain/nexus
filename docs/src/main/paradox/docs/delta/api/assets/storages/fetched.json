@@ -9,7 +9,6 @@
     "RemoteDiskStorage"
   ],
   "default": false,
-  "endpoint": "http://localhost:8084/v1",
   "folder": "test-updated",
   "maxFileSize": 10737418240,
   "readPermission": "resources/read",

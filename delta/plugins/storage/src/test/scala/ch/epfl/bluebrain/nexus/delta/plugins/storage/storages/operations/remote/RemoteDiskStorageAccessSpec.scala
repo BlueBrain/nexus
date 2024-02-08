@@ -2,54 +2,39 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 @DoNotDiscover
-class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
+class RemoteDiskStorageAccessSpec(fixture: RemoteStorageClientFixtures)
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
     with CatsEffectSpec
     with Eventually
     with StorageFixtures
     with BeforeAndAfterAll
-    with ConfigFixtures {
+    with RemoteStorageClientFixtures {
 
-  implicit private val httpConfig: HttpClientConfig = httpClientConfig
-  private val httpClient: HttpClient                = HttpClient()
-  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
-  private val remoteDiskStorageClient               =
-    new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
+  private lazy val remoteDiskStorageClient = fixture.init
 
-  private val access = new RemoteDiskStorageAccess(remoteDiskStorageClient)
+  private lazy val access = new RemoteDiskStorageAccess(remoteDiskStorageClient)
 
-  private var storageValue: RemoteDiskStorageValue = _
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    storageValue = RemoteDiskStorageValue(
-      default = true,
-      DigestAlgorithm.default,
-      BaseUri(docker.hostConfig.endpoint).rightValue,
-      Label.unsafe(RemoteStorageDocker.BucketName),
-      read,
-      write,
-      10
-    )
-  }
+  private val storageValue: RemoteDiskStorageValue = RemoteDiskStorageValue(
+    default = true,
+    DigestAlgorithm.default,
+    Label.unsafe(RemoteStorageClientFixtures.BucketName),
+    read,
+    write,
+    10
+  )
 
   "A RemoteDiskStorage access operations" should {
     val iri = iri"http://localhost/remote-disk"

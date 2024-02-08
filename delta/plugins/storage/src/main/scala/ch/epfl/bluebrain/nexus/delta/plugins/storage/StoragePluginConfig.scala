@@ -10,6 +10,7 @@ import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 final case class StoragePluginConfig(
+    enableDefaultCreation: Boolean,
     storages: StoragesConfig,
     files: FilesConfig,
     defaults: Defaults

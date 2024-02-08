@@ -15,7 +15,7 @@ class RemoteStorageFetchAttributes(
     client: RemoteDiskStorageClient
 ) extends FetchAttributes {
   def apply(path: Uri.Path): IO[RemoteDiskStorageFileAttributes] =
-    client.getAttributes(value.folder, path)(value.endpoint).adaptError { case e: FetchFileRejection =>
+    client.getAttributes(value.folder, path).adaptError { case e: FetchFileRejection =>
       WrappedFetchRejection(e)
     }
 }
