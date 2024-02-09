@@ -52,6 +52,7 @@ trait LimitedFileAttributes {
   def filename: String
   def mediaType: Option[ContentType]
   def keywords: Map[Label, String]
+  def description: Option[String]
   def bytes: Long
   def digest: Digest
   def origin: FileAttributesOrigin
