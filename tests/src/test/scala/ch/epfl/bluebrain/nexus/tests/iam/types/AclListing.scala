@@ -187,7 +187,8 @@ object Permission {
       Storages.list ++
       Quotas.list ++
       Export.list ++
-      Supervision.list).toSet
+      Supervision.list ++
+      TypeHierarchy.list).toSet
 
   val adminPermissions: Set[Permission] =
     (Version.list ++
