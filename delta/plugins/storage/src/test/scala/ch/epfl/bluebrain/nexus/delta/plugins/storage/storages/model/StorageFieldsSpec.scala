@@ -86,7 +86,7 @@ class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixtu
             "credentials"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageFields(None, None, default = true, None, Label.unsafe("myfolder"), None, None, None)
+          RemoteDiskStorageFields(None, None, default = true, Label.unsafe("myfolder"), None, None, None)
       }
     }
   }

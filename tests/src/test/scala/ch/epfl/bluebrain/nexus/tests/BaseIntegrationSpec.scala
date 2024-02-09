@@ -28,6 +28,7 @@ import io.circe.Json
 import org.scalactic.source.Position
 import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
@@ -229,6 +230,16 @@ trait BaseIntegrationSpec
   private[tests] def expectOk[A] = expect(StatusCodes.OK)
 
   private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
+
+  private[tests] def `@type`(expectedType: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualType = Optics.`@type`.getOption(json)
+    HavePropertyMatchResult(
+      actualType.contains(expectedType),
+      "@type",
+      expectedType,
+      actualType.orNull
+    )
+  }
 }
 
 object BaseIntegrationSpec {

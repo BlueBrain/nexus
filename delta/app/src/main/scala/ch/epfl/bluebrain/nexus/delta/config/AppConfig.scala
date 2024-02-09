@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportConfig
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
@@ -45,6 +46,7 @@ final case class AppConfig(
     resolvers: ResolversConfig,
     resources: ResourcesConfig,
     schemas: SchemasConfig,
+    typeHierarchy: TypeHierarchyConfig,
     serviceAccount: ServiceAccountConfig,
     sse: SseConfig,
     projections: ProjectionConfig,

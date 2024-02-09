@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
-import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
 import io.circe.Json
@@ -66,7 +65,7 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <- deltaClient.delete[Json](s"/schemas/$project/${UrlUtils.encode(baseSchemaId)}?rev=1", Rick) { expectOk }
         _ <- deltaClient.post[Json](s"/schemas/$project", importingSchemaPayload, Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.BadRequest
-               `@type`.getOption(json) shouldEqual Some("InvalidSchemaResolution")
+               json should have(`@type`("InvalidSchemaResolution"))
                checkDeprecationError(json)
              }
       } yield succeed
@@ -175,7 +174,7 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <- deltaClient.get[Json](s"/resources/$project/$schemaId12Gears/$resourceId/validate", Rick) {
                (json, response) =>
                  response.status shouldEqual StatusCodes.BadRequest
-                 `@type`.getOption(json) shouldEqual Some("InvalidResource")
+                 json should have(`@type`("InvalidResource"))
                  json.hcursor.downField("details").downField("@type").as[String].toOption shouldEqual Some(
                    "sh:ValidationReport"
                  )

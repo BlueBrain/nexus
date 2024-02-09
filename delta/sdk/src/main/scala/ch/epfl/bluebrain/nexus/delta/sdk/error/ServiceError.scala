@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -60,10 +60,12 @@ object ServiceError {
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
 
   /**
-    * Signals when fetch a project context for a given project
+    * Signals that a feature is disabled.
+    *
+    * @param reason
+    *   the underlying cause for the failure
     */
-  final case class FetchContextFailed(project: ProjectRef)
-      extends ServiceError(s"Fetching the context for the project '$project' failed.")
+  final case class FeatureDisabled(override val reason: String) extends ServiceError(reason)
 
   final case class IndexingFailed(resource: ResourceF[Unit], errors: List[Throwable])
       extends ServiceError(errors.map(_.getMessage).mkString("* ", "\n* ", ""))
@@ -100,9 +102,9 @@ object ServiceError {
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
     HttpResponseFields {
       case AuthorizationFailed(_)       => StatusCodes.Forbidden
-      case FetchContextFailed(_)        => StatusCodes.InternalServerError
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
       case IndexingFailed(_, _)         => StatusCodes.InternalServerError
       case UnknownSseLabel(_)           => StatusCodes.InternalServerError
+      case FeatureDisabled(_)           => StatusCodes.InternalServerError
     }
 }

@@ -1,0 +1,22 @@
+{
+  "mapping" : {
+    "https://schema.org/Movie" : [
+      "https://schema.org/CreativeWork",
+      "https://schema.org/Thing"
+    ]
+  },
+  "rev" : 1,
+  "deprecated" : false,
+  "createdAt" : "1970-01-01T00:00:00Z",
+  "createdBy" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "updatedAt" : "1970-01-01T00:00:00Z",
+  "updatedBy" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  }
+}

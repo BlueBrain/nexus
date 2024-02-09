@@ -43,7 +43,6 @@ class RemoteStorageSpec extends StorageSpec {
       "kg/storages/remote-disk-response.json",
       replacements(
         Coyote,
-        "endpoint"    -> StoragesDsl.StorageServiceBaseUrl,
         "folder"      -> remoteFolder,
         "id"          -> id,
         "project"     -> project,

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.remotestorage
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage
 
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait

@@ -6,7 +6,6 @@
   "_algorithm" : "SHA-256",
   "name": "remoteName",
   "description": "remoteDescription",
-  "endpoint": "http://localhost",
   "folder": "myfolder",
   "readPermission": "remote/read",
   "writePermission": "remote/write",

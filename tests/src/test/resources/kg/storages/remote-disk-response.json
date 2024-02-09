@@ -10,7 +10,6 @@
   ],
   "default": false,
   "maxFileSize" : {{maxFileSize}},
-  "endpoint": "{{endpoint}}",
   "folder": "{{folder}}",
   "readPermission": "{{read}}",
   "writePermission": "{{write}}",

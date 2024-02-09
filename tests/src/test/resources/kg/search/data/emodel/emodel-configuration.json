@@ -1,0 +1,18 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Entity",
+    "EModelConfiguration"
+  ],
+  "@id": "https://bbp.epfl.ch/data/emodel-configuration",
+  "uses": [
+    {
+      "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+      "@type": "NeuronMorphology"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/subcellular-model-script",
+      "@type": "SubCellularModelScript"
+    }
+  ]
+}

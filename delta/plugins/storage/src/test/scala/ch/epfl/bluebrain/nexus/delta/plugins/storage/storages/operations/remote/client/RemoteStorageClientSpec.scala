@@ -5,89 +5,75 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures.BucketName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.BucketName
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 @DoNotDiscover
-class RemoteStorageClientSpec(docker: RemoteStorageDocker)
+class RemoteStorageClientSpec(fixture: RemoteStorageClientFixtures)
     extends TestKit(ActorSystem("RemoteStorageClientSpec"))
     with CatsEffectSpec
     with AkkaSourceHelpers
     with Eventually
     with BeforeAndAfterAll
-    with ConfigFixtures {
+    with RemoteStorageClientFixtures {
 
-  private var client: RemoteDiskStorageClient      = _
-  private var baseUri: BaseUri                     = _
-  private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.anonymousForTest
+  private lazy val client: RemoteDiskStorageClient = fixture.init
   private val bucket: Label                        = Label.unsafe(BucketName)
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    implicit val httpConfig: HttpClientConfig = httpClientConfig
-    implicit val httpClient: HttpClient       = HttpClient()
-
-    client = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
-    baseUri = BaseUri(docker.hostConfig.endpoint).rightValue
-  }
 
   "A RemoteStorage client" should {
 
-    val content    = RemoteStorageDocker.Content
+    val content    = RemoteStorageClientFixtures.Content
     val entity     = HttpEntity(content)
     val attributes = RemoteDiskStorageFileAttributes(
       location = s"file:///app/$BucketName/nexus/my/file.txt",
       bytes = 12,
-      digest = ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest),
+      digest = ComputedDigest(DigestAlgorithm.default, RemoteStorageClientFixtures.Digest),
       mediaType = `text/plain(UTF-8)`
     )
 
     "fetch the service description" in eventually {
-      client.serviceDescription(baseUri).accepted shouldEqual ServiceDescription(
+      client.serviceDescription.accepted shouldEqual ServiceDescription(
         Name.unsafe("remoteStorage"),
-        docker.storageVersion
+        fixture.storageVersion
       )
     }
 
     "check if a bucket exists" in {
-      client.exists(bucket)(baseUri).accepted
-      val error = client.exists(Label.unsafe("other"))(baseUri).rejectedWith[HttpClientStatusError]
+      client.exists(bucket).accepted
+      val error = client.exists(Label.unsafe("other")).rejectedWith[HttpClientStatusError]
       error.code == StatusCodes.NotFound
     }
 
     "create a file" in {
-      client.createFile(bucket, Uri.Path("my/file.txt"), entity)(baseUri).accepted shouldEqual attributes
+      client.createFile(bucket, Uri.Path("my/file.txt"), entity).accepted shouldEqual attributes
     }
 
     "get a file" in {
-      consume(client.getFile(bucket, Uri.Path("my/file.txt"))(baseUri).accepted) shouldEqual content
+      consume(client.getFile(bucket, Uri.Path("my/file.txt")).accepted) shouldEqual content
     }
 
     "fail to get a file that does not exist" in {
-      client.getFile(bucket, Uri.Path("my/file3.txt"))(baseUri).rejectedWith[FetchFileRejection.FileNotFound]
+      client.getFile(bucket, Uri.Path("my/file3.txt")).rejectedWith[FetchFileRejection.FileNotFound]
     }
 
     "get a file attributes" in eventually {
-      client.getAttributes(bucket, Uri.Path("my/file.txt"))(baseUri).accepted shouldEqual attributes
+      client.getAttributes(bucket, Uri.Path("my/file.txt")).accepted shouldEqual attributes
     }
 
     "move a file" in {
       client
-        .moveFile(bucket, Uri.Path("my/file-1.txt"), Uri.Path("other/file-1.txt"))(baseUri)
+        .moveFile(bucket, Uri.Path("my/file-1.txt"), Uri.Path("other/file-1.txt"))
         .accepted shouldEqual
         attributes.copy(
           location = s"file:///app/$BucketName/nexus/other/file-1.txt",
@@ -97,9 +83,8 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
     "fail to move a file that does not exist" in {
       client
-        .moveFile(bucket, Uri.Path("my/file.txt"), Uri.Path("other/file.txt"))(baseUri)
+        .moveFile(bucket, Uri.Path("my/file.txt"), Uri.Path("other/file.txt"))
         .rejectedWith[MoveFileRejection.FileNotFound]
-
     }
   }
 }
