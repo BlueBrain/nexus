@@ -200,7 +200,6 @@ object Permission {
       Schemas.list ++
       Views.list ++
       Storages.list ++
-      TypeHierarchy.list ++
       Quotas.list).toSet
 
 }
