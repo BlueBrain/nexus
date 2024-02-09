@@ -6,6 +6,7 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep}
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{CopyBetween, TransactionalFileCopier}
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
@@ -18,10 +19,10 @@ import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeD
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
 import ch.epfl.bluebrain.nexus.storage.files.{CopyFileOutput, ValidateFile}
 import ch.epfl.bluebrain.nexus.storage.routes.CopyFile
+import org.apache.commons.io.FileUtils
 
 import java.nio.file.StandardCopyOption._
 import java.nio.file.{Files, Path}
-import fs2.io.file.{Path => Fs2Path}
 import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
@@ -159,9 +160,6 @@ object Storages {
     type PathDoesNotExist = PathDoesNotExist.type
   }
 
-  /**
-    * An Disk implementation of Storage interface.
-    */
   final class DiskStorage(
       config: StorageConfig,
       contentTypeDetector: ContentTypeDetector,
@@ -174,18 +172,35 @@ object Storages {
       mt: Materializer
   ) extends Storages[AkkaSource] {
 
+    private val log                = Logger[DiskStorage]
+    private val linkWithAtomicMove = config.linkWithAtomicMove.getOrElse(true)
+
+    private def logUnsafe(msg: String): Unit = {
+      import cats.effect.unsafe.implicits.global
+      log.info(msg).unsafeRunSync()
+    }
+
     def exists(name: String): BucketExistence = {
       val path = basePath(config, name)
-      if (path.getParent.getParent != config.rootVolume) BucketDoesNotExist
-      else if (Files.isDirectory(path) && Files.isReadable(path)) BucketExists
-      else BucketDoesNotExist
+      logUnsafe(s"Checking bucket existence at path $path")
+      if (path.getParent.getParent != config.rootVolume) {
+        logUnsafe(s"Invalid bucket because the root volume is not two directories above $path")
+        BucketDoesNotExist
+      } else if (Files.isDirectory(path) && Files.isReadable(path)) BucketExists
+      else {
+        logUnsafe(s"Invalid bucket because $path is not a readable directory")
+        BucketDoesNotExist
+      }
     }
 
     def pathExists(name: String, path: Uri.Path): PathExistence = {
       val absPath = filePath(config, name, path)
       if (Files.exists(absPath) && Files.isReadable(absPath) && descendantOf(absPath, basePath(config, name)))
         PathExists
-      else PathDoesNotExist
+      else {
+        logUnsafe(s"Invalid absolute path $absPath for bucket $name and relative path $path")
+        PathDoesNotExist
+      }
     }
 
     def createFile(
@@ -195,6 +210,7 @@ object Storages {
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): IO[FileAttributes] =
       for {
         validated  <- validateFile.forCreate(name, path)
+        _          <- log.info(s"Creating file in bucket $name at path $path")
         _          <- IO.blocking(Files.createDirectories(validated.absDestPath.getParent))
         msgDigest  <- IO.delay(MessageDigest.getInstance(digestConfig.algorithm))
         attributes <- streamFileContents(source, path, validated.absDestPath, msgDigest)
@@ -244,10 +260,11 @@ object Storages {
         val process = Process(config.fixerCommand :+ absPath)
 
         for {
+          _        <- log.info(s"Fixing permissions for file at $absPath")
           exitCode <- IO.blocking(process ! logger)
           _        <- IO.raiseUnless(exitCode == 0)(PermissionsFixingFailed(absPath, logger.toString))
         } yield ()
-      } else IO.unit
+      } else log.info(s"Not changing permissions for file at $path")
 
     private def computeSizeAndMoveFile(
         absSourcePath: Path,
@@ -256,11 +273,25 @@ object Storages {
     ): IO[FileAttributes] =
       for {
         computedSize <- size(absSourcePath)
-        _            <- IO.blocking(Files.createDirectories(absDestPath.getParent))
-        _            <- IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))
+        msg           = if (linkWithAtomicMove) "atomic move" else "copy and delete"
+        _            <- log.info(s"Performing link with $msg from $absSourcePath to $absDestPath")
+        _            <- if (linkWithAtomicMove) doMove(absSourcePath, absDestPath)
+                        else doCopyAndDelete(absSourcePath, absDestPath, isDir)
         _            <- IO.delay(cache.asyncComputePut(absDestPath, digestConfig.algorithm))
         mediaType    <- IO.blocking(contentTypeDetector(absDestPath, isDir))
       } yield FileAttributes(absDestPath.toAkkaUri, computedSize, Digest.empty, mediaType)
+
+    private def doMove(absSourcePath: Path, absDestPath: Path): IO[Unit] =
+      IO.blocking(Files.createDirectories(absDestPath.getParent)) >>
+        IO.blocking(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE)).void
+
+    private def doCopyAndDelete(absSourcePath: Path, absDestPath: Path, isDir: Boolean): IO[Unit] =
+      if (isDir)
+        IO.blocking(FileUtils.copyDirectory(absSourcePath.toFile, absDestPath.toFile)) >>
+          IO.blocking(FileUtils.deleteDirectory(absSourcePath.toFile))
+      else
+        copyFiles.copyAll(NonEmptyList.of(CopyBetween.mk(absSourcePath, absDestPath))) >>
+          IO.blocking(Files.delete(absSourcePath))
 
     private def size(absPath: Path): IO[Long] =
       if (Files.isDirectory(absPath)) {
@@ -279,8 +310,7 @@ object Storages {
           files.traverse(f =>
             EitherT(validateFile.forCopyWithinProtectedDir(f.sourceBucket, destBucket, f.source, f.destination))
           )
-        copyBetween =
-          validated.map(v => CopyBetween(Fs2Path.fromNioPath(v.absSourcePath), Fs2Path.fromNioPath(v.absDestPath)))
+        copyBetween = validated.map(v => CopyBetween.mk(v.absSourcePath, v.absDestPath))
         _          <- EitherT.right[Rejection](copyFiles.copyAll(copyBetween))
       } yield files.zip(validated).map { case (raw, valid) =>
         CopyFileOutput(raw.source, raw.destination, valid.absSourcePath, valid.absDestPath)
@@ -293,7 +323,10 @@ object Storages {
       val absPath = filePath(config, name, path)
       if (Files.isRegularFile(absPath)) Right(fileSource(absPath) -> Some(absPath.getFileName.toString))
       else if (Files.isDirectory(absPath)) Right(folderSource(absPath) -> None)
-      else Left(PathNotFound(name, path))
+      else {
+        logUnsafe(s"Invalid absolute path $absPath for bucket $name and relative path $path")
+        Left(PathNotFound(name, path))
+      }
     }
 
     def getAttributes(

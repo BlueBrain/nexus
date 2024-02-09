@@ -89,7 +89,8 @@ object AppConfig {
       extraPrefixes: List[Path],
       protectedDirectory: Path,
       fixerEnabled: Boolean,
-      fixerCommand: Vector[String]
+      fixerCommand: Vector[String],
+      linkWithAtomicMove: Option[Boolean]
   )
 
   /**

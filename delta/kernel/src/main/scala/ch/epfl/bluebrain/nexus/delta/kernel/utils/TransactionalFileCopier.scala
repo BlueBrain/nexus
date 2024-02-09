@@ -6,12 +6,16 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import fs2.io.file.{CopyFlag, CopyFlags, Files, Path}
+import java.nio.file.{Path => JPath}
 
 trait TransactionalFileCopier {
   def copyAll(files: NonEmptyList[CopyBetween]): IO[Unit]
 }
 
 final case class CopyBetween(source: Path, destination: Path)
+object CopyBetween {
+  def mk(source: JPath, dest: JPath) = CopyBetween(Path.fromNioPath(source), Path.fromNioPath(dest))
+}
 
 final case class CopyOperationFailed(failingCopy: CopyBetween, e: Throwable) extends Rejection {
   override def reason: String =
