@@ -436,37 +436,6 @@ Payload
 Response
 :   @@snip [updated.json](../assets/views/composite/updated.json)
 
-## Tag
-
-Links a view revision to a specific name.
-
-Tagging a view is considered to be an update as well.
-
-```
-POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-
-... where
-
-- `{previous_rev}`: is the last known revision number for the resource.
-- `{name}`: String - label given to the view at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [tag.sh](../assets/views/composite/tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [tagged.json](../assets/views/composite/tagged.json)
-
 ## Deprecate
 
 Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes all the underlying Elasticsearch indices and Blazegraph namespaces.
@@ -516,14 +485,12 @@ Response
 ## Fetch
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
+GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
 ```
 
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-  `{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -539,14 +506,12 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
+GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}
 ```
 
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-  `{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -555,28 +520,6 @@ Request
 
 Response
 :   @@snip [fetched.json](../assets/views/composite/payload.json)
-
-
-## Fetch tags
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
-```
-
-where ...
-
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
-
-**Example**
-
-Request
-:   @@snip [fetch_tags.sh](../assets/views/composite/tags.sh)
-
-Response
-:   @@snip [tags.json](../assets/tags.json)
 
 ## Search Documents in projection(s)
 

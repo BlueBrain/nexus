@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -134,14 +134,6 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       }
     }
 
-    "tag a view" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post(s"/v1/views/myorg/myproj/$uuid/tags?rev=2", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual viewMetadata(3, false)
-      }
-    }
-
     "fail to fetch a view without permission" in {
       Get(s"/v1/views/myorg/myproj/$uuid") ~> routes ~> check {
         response.shouldBeForbidden
@@ -151,14 +143,12 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fetch a view" in {
       Get(s"/v1/views/myorg/myproj/$uuid") ~> asReader ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(view(3, false, "2 minutes"))
+        response.asJson should equalIgnoreArrayOrder(view(2, false, "2 minutes"))
       }
     }
 
-    "fetch a view by rev or tag" in {
+    "fetch a view by rev" in {
       val endpoints = List(
-        s"/v1/views/myorg/myproj/$uuid?tag=mytag",
-        s"/v1/resources/myorg/myproj/_/$uuid?tag=mytag",
         s"/v1/views/myorg/myproj/$uuid?rev=1",
         s"/v1/resources/myorg/myproj/_/$uuid?rev=1"
       )
@@ -179,19 +169,6 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         Get(endpoint) ~> asReader ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual viewSourceUpdated.removeAllKeys("token")
-        }
-      }
-    }
-
-    "fetch the view tags" in {
-      val endpoints = List(s"/v1/views/myorg/myproj/$uuid/tags", s"/v1/resources/myorg/myproj/_/$uuid/tags")
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
-          response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual
-            json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
-              Vocabulary.contexts.tags
-            )
         }
       }
     }
@@ -258,15 +235,15 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "deprecate a view" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=2") ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual viewMetadata(4, true)
+        response.asJson shouldEqual viewMetadata(3, true)
       }
     }
 
     "fail to undeprecate a view without permission" in {
       givenADeprecatedView { view =>
-        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asReader ~> routes ~> check {
           response.shouldBeForbidden
         }
       }

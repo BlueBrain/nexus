@@ -332,7 +332,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
-          "routes/errors/tag-not-found.json",
+          "routes/errors/fetch-by-tag-not-supported.json",
           "tag" -> "myother",
           "id"  -> "myid2"
         )
