@@ -74,7 +74,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
             val newJsonLd      = jsonld.copy(source = newSource)
             eval(
               Some(current),
-              UpdateResource(projectRef, schemaOptCmd, newJsonLd, 1, caller, None)
+              UpdateResource(projectRef, schemaOptCmd, newJsonLd, 1, caller, Some(tag))
             ).accepted shouldEqual
               ResourceUpdated(
                 projectRef,
