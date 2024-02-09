@@ -1,6 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, JsonObject}
 
 sealed abstract class TypeHierarchyRejection(val reason: String) extends Rejection
 
@@ -44,5 +51,18 @@ object TypeHierarchyRejection {
     * Signals the type hierarchy already exists.
     */
   final case object TypeHierarchyAlreadyExists extends TypeHierarchyRejection(s"Type hierarchy already exists.")
+
+  implicit val typeHierarchyRejectionEncoder: Encoder.AsObject[TypeHierarchyRejection] =
+    Encoder.AsObject.instance(r => JsonObject.singleton("reason", r.reason.asJson))
+
+  implicit val typeHierarchyRejectionJsonLdEncoder: JsonLdEncoder[TypeHierarchyRejection] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit val typeHierarchyRejectionHttpFields: HttpResponseFields[TypeHierarchyRejection] =
+    HttpResponseFields {
+      case TypeHierarchyDoesNotExist  => StatusCodes.NotFound
+      case TypeHierarchyAlreadyExists => StatusCodes.Conflict
+      case _                          => StatusCodes.BadRequest
+    }
 
 }

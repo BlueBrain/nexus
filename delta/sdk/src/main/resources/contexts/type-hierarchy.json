@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "mapping": "https://bluebrain.github.io/nexus/vocabulary/mapping"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/type-hierarchy.json"
+}

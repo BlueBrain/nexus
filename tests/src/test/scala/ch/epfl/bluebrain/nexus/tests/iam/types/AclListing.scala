@@ -157,6 +157,13 @@ object Permission {
     val list: List[Permission] = Read :: Nil
   }
 
+  object TypeHierarchy {
+    val name              = "typehierarchy"
+    val Write: Permission = Permission(name, "write")
+
+    val list: List[Permission] = Write :: Nil
+  }
+
   object Export {
     val name            = "export"
     val Run: Permission = Permission(name, "run")
@@ -193,6 +200,7 @@ object Permission {
       Schemas.list ++
       Views.list ++
       Storages.list ++
+      TypeHierarchy.list ++
       Quotas.list).toSet
 
 }
