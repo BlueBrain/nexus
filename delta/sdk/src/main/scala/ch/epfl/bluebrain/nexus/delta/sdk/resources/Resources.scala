@@ -454,8 +454,8 @@ object Resources {
         state                      <- stateWhereResourceIsEditable(r)
         _                          <- raiseWhenDifferentSchema(r, state)
         (schemaRev, schemaProject) <- validate(r.jsonld, r.schemaOpt.getOrElse(state.schema), state.project, r.caller)
-        changeDetected <- detectChange(r.jsonld, state)
-        _ <- IO.raiseUnless(changeDetected)(NoChangeDetected(state))
+        changeDetected             <- detectChange(r.jsonld, state)
+        _                          <- IO.raiseUnless(changeDetected)(NoChangeDetected(state))
         time                       <- clock.realTimeInstant
       } yield ResourceRefreshed(r.project, schemaRev, schemaProject, r.jsonld, state.rev + 1, time, r.subject)
     }
