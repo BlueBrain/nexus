@@ -143,36 +143,6 @@ class ElasticSearchViewSTMSpec extends CatsEffectSpec {
       }
     }
 
-    "evaluating the TagElasticSearchView command" should {
-      val tag = UserTag.unsafe("tag")
-      "emit an ElasticSearchViewTagAdded" in {
-        val cmd      = TagElasticSearchView(id, project, 1, tag, 1, subject)
-        val expected = ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current()), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1, tag, 1, subject)
-        eval(None, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1, tag, 2, subject)
-        eval(Some(current()), cmd).rejectedWith[IncorrectRev]
-      }
-      "tag a deprecated view" in {
-        val cmd      = TagElasticSearchView(id, project, 1, tag, 1, subject)
-        val expected = ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current(deprecated = true)), cmd).accepted shouldEqual expected
-      }
-      "raise a RevisionNotFound rejection for negative revision values" in {
-        val cmd = TagElasticSearchView(id, project, 0, tag, 1, subject)
-        eval(Some(current()), cmd).rejectedWith[RevisionNotFound]
-      }
-      "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        val cmd = TagElasticSearchView(id, project, 2, tag, 1, subject)
-        eval(Some(current()), cmd).rejectedWith[RevisionNotFound]
-      }
-    }
-
     "evaluating the DeprecateElasticSearchView command" should {
       "emit an ElasticSearchViewDeprecated" in {
         val cmd      = DeprecateElasticSearchView(id, project, 1, subject)
