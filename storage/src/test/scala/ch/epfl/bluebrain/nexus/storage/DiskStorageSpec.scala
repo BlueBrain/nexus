@@ -47,13 +47,17 @@ class DiskStorageSpec
 
   val rootPath            = Files.createTempDirectory("storage-test")
   val scratchPath         = Files.createTempDirectory("scratch")
-  val sConfig             = StorageConfig(rootPath, List(scratchPath), Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"))
+  val sConfig             =
+    StorageConfig(rootPath, List(scratchPath), Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"), None)
   val dConfig             = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
   val contentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
   val cache               = mock[AttributesCache]
   val validateFile        = ValidateFile.mk(sConfig)
   val copyFiles           = TransactionalFileCopier.mk()
-  val storage             = new DiskStorage(sConfig, contentTypeDetector, dConfig, cache, validateFile, copyFiles)
+  val storage             = mkDiskStorage(sConfig)
+
+  private def mkDiskStorage(cfg: StorageConfig) =
+    new DiskStorage(cfg, contentTypeDetector, dConfig, cache, validateFile, copyFiles)
 
   override def afterAll(): Unit = {
     Directory(rootPath.toFile).deleteRecursively()
@@ -167,15 +171,7 @@ class DiskStorageSpec
 
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
         val falseBinary  = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
-        val badStorage   =
-          new DiskStorage(
-            sConfig.copy(fixerCommand = Vector(falseBinary)),
-            contentTypeDetector,
-            dConfig,
-            cache,
-            validateFile,
-            copyFiles
-          )
+        val badStorage   = mkDiskStorage(sConfig.copy(fixerCommand = Vector(falseBinary)))
         val file         = "some/folder/my !file.txt"
         val absoluteFile = baseRootPath.resolve(Paths.get(file))
         Files.createDirectories(absoluteFile.getParent)
@@ -262,72 +258,105 @@ class DiskStorageSpec
         result shouldEqual PathInvalid(name, Uri.Path(absoluteDir.toString))
       }
 
-      "pass on file specified using a relative path" in new AbsoluteDirectoryCreated {
-        val file         = "some/folder/my !file.txt"
-        val absoluteFile = baseRootPath.resolve(Paths.get(file.toString))
-        Files.createDirectories(absoluteFile.getParent)
+      val linkingOptions: List[Option[Boolean]] = List(Option(true), Option(false), None)
 
-        val content = "some content"
-        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+      "pass on file specified using a relative path" in {
+        forAll(linkingOptions) { linkWithAtomicMove =>
+          val diskStorage = mkDiskStorage(sConfig.copy(linkWithAtomicMove = linkWithAtomicMove))
+          new AbsoluteDirectoryCreated {
+            val file         = "some/folder/my !file.txt"
+            val absoluteFile = baseRootPath.resolve(Paths.get(file.toString))
+            Files.createDirectories(absoluteFile.getParent)
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
-          FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
-        Files.exists(absoluteFile) shouldEqual false
-        Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
+            val content = "some content"
+            Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+
+            diskStorage.moveFile(name, Uri.Path(file), Uri.Path("some/other path.txt")).accepted.rightValue shouldEqual
+              FileAttributes(
+                s"file://${basePath.resolve("some/other%20path.txt")}",
+                12L,
+                Digest.empty,
+                `text/plain(UTF-8)`
+              )
+            Files.exists(absoluteFile) shouldEqual false
+            Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
+          }
+        }
       }
 
-      "pass on file specified using an absolute path" in new AbsoluteDirectoryCreated {
-        val file         = "some/folder/my !file.txt"
-        val absoluteFile = scratchPath.resolve(Paths.get(file))
-        Files.createDirectories(absoluteFile.getParent)
+      "pass on file specified using an absolute path" in {
+        forAll(linkingOptions) { linkWithAtomicMove =>
+          val diskStorage = mkDiskStorage(sConfig.copy(linkWithAtomicMove = linkWithAtomicMove))
+          new AbsoluteDirectoryCreated {
+            val file         = "some/folder/my !file.txt"
+            val absoluteFile = scratchPath.resolve(Paths.get(file))
+            Files.createDirectories(absoluteFile.getParent)
 
-        val content = "some content"
-        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+            val content = "some content"
+            Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage
-          .moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt"))
-          .accepted
-          .rightValue shouldEqual
-          FileAttributes(s"file://${basePath.resolve("some/other%20path.txt")}", 12L, Digest.empty, `text/plain(UTF-8)`)
+            diskStorage
+              .moveFile(name, Uri.Path(absoluteFile.toString), Uri.Path("some/other path.txt"))
+              .accepted
+              .rightValue shouldEqual
+              FileAttributes(
+                s"file://${basePath.resolve("some/other%20path.txt")}",
+                12L,
+                Digest.empty,
+                `text/plain(UTF-8)`
+              )
 
-        Files.exists(absoluteFile) shouldEqual false
-        Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
+            Files.exists(absoluteFile) shouldEqual false
+            Files.exists(basePath.resolve("some/other path.txt")) shouldEqual true
+          }
+        }
       }
 
-      "pass on directory specified with a relative path" in new AbsoluteDirectoryCreated {
-        val dir         = "some/folder"
-        val absoluteDir = baseRootPath.resolve(Paths.get(dir.toString))
-        Files.createDirectories(absoluteDir)
+      "pass on directory specified with a relative path" in {
+        forAll(linkingOptions) { linkWithAtomicMove =>
+          val diskStorage = mkDiskStorage(sConfig.copy(linkWithAtomicMove = linkWithAtomicMove))
+          new AbsoluteDirectoryCreated {
+            val dir         = "some/folder"
+            val absoluteDir = baseRootPath.resolve(Paths.get(dir.toString))
+            Files.createDirectories(absoluteDir)
 
-        val absoluteFile = absoluteDir.resolve(Paths.get("my !file.txt"))
-        val content      = "some content"
-        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+            val absoluteFile = absoluteDir.resolve(Paths.get("my !file.txt"))
+            val content      = "some content"
+            Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted.rightValue
-        val resolvedDir = basePath.resolve("some/other")
-        result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
-        Files.exists(absoluteDir) shouldEqual false
-        Files.exists(absoluteFile) shouldEqual false
-        Files.exists(resolvedDir) shouldEqual true
-        Files.exists(basePath.resolve("some/other/my !file.txt")) shouldEqual true
+            val result      = diskStorage.moveFile(name, Uri.Path(dir), Uri.Path("some/other")).accepted.rightValue
+            val resolvedDir = basePath.resolve("some/other")
+            result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
+            Files.exists(absoluteDir) shouldEqual false
+            Files.exists(absoluteFile) shouldEqual false
+            Files.exists(resolvedDir) shouldEqual true
+            Files.exists(basePath.resolve("some/other/my !file.txt")) shouldEqual true
+          }
+        }
       }
 
-      "pass on directory specified with an absolute path" in new AbsoluteDirectoryCreated {
-        val dir         = "some/folder"
-        val absoluteDir = scratchPath.resolve(Paths.get(dir.toString))
-        Files.createDirectories(absoluteDir)
+      "pass on directory specified with an absolute path" in {
+        forAll(linkingOptions) { linkWithAtomicMove =>
+          val diskStorage = mkDiskStorage(sConfig.copy(linkWithAtomicMove = linkWithAtomicMove))
+          new AbsoluteDirectoryCreated {
+            val dir         = "some/folder"
+            val absoluteDir = scratchPath.resolve(Paths.get(dir.toString))
+            Files.createDirectories(absoluteDir)
 
-        val absoluteFile = absoluteDir.resolve(Paths.get("my !file.txt"))
-        val content      = "some content"
-        Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
+            val absoluteFile = absoluteDir.resolve(Paths.get("my !file.txt"))
+            val content      = "some content"
+            Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        val result      = storage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted.rightValue
-        val resolvedDir = basePath.resolve("some/other")
-        result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
-        Files.exists(absoluteDir) shouldEqual false
-        Files.exists(absoluteFile) shouldEqual false
-        Files.exists(resolvedDir) shouldEqual true
-        Files.exists(basePath.resolve("some/other/my !file.txt")) shouldEqual true
+            val result      =
+              diskStorage.moveFile(name, Uri.Path(absoluteDir.toString), Uri.Path("some/other")).accepted.rightValue
+            val resolvedDir = basePath.resolve("some/other")
+            result shouldEqual FileAttributes(s"file://$resolvedDir", 12L, Digest.empty, `application/x-tar`)
+            Files.exists(absoluteDir) shouldEqual false
+            Files.exists(absoluteFile) shouldEqual false
+            Files.exists(resolvedDir) shouldEqual true
+            Files.exists(basePath.resolve("some/other/my !file.txt")) shouldEqual true
+          }
+        }
       }
     }
 

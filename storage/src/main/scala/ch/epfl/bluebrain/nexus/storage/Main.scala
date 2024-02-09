@@ -83,6 +83,8 @@ object Main extends IOApp {
       logger.warning("The application has been configured with anonymous, the caller will not be verified !")
     }
 
+    logger.info(s"==== Full configuration is $appConfig ====")
+
     val routes: Route = Routes(storages)
 
     val httpBinding: Future[Http.ServerBinding] = {

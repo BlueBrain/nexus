@@ -21,6 +21,7 @@ val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
 val apacheCompressVersion   = "1.25.0"
+val apacheIOVersion         = "2.15.1"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
 val betterMonadicForVersion = "0.3.1"
@@ -74,6 +75,7 @@ lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alp
 lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
 lazy val alpakkaS3          = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
 lazy val apacheCompress     = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
+lazy val apacheIO           = "commons-io"                    % "commons-io"               % apacheIOVersion
 lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
 lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
 lazy val byteBuddyAgent     = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
@@ -756,6 +758,7 @@ lazy val storage = project
     Docker / packageName               := "nexus-storage",
     libraryDependencies               ++= Seq(
       apacheCompress,
+      apacheIO,
       akkaHttp,
       akkaHttpCirce,
       akkaStream,
