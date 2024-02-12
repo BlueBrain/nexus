@@ -9,7 +9,8 @@ final case class FileInput(
     ct: ContentType,
     contents: String,
     keywords: Map[String, String],
-    description: String
+    description: String,
+    name: String
 )
 
 object FileInput {
@@ -24,7 +25,8 @@ object FileInput {
       ContentTypes.`text/plain(UTF-8)`,
       emptyFileContent,
       Map("brainRegion" -> "cortex"),
-      "A cortex file"
+      "A cortex file",
+      "Ctx 1"
     )
   val jsonFileNoContentType          =
     FileInput(
@@ -33,7 +35,8 @@ object FileInput {
       ContentTypes.NoContentType,
       jsonFileContent,
       Map("brainRegion" -> "cerebellum"),
-      "A cerebellum file"
+      "A cerebellum file",
+      "Crb 2"
     )
   val updatedJsonFileWithContentType =
     jsonFileNoContentType.copy(contents = updatedJsonFileContent, ct = ContentTypes.`application/json`)
@@ -43,7 +46,8 @@ object FileInput {
     ContentTypes.NoContentType,
     "text file",
     Map("brainRegion" -> "hippocampus"),
-    "A hippocampus file"
+    "A hippocampus file",
+    "Hpc 3"
   )
   val textFileWithContentType        =
     FileInput(
@@ -52,7 +56,8 @@ object FileInput {
       ContentTypes.`application/octet-stream`,
       "text file",
       Map("brainRegion" -> "hippocampus"),
-      "A cerebellum file"
+      "A cerebellum file",
+      "Crb 4"
     )
 
   val customBinaryContent =

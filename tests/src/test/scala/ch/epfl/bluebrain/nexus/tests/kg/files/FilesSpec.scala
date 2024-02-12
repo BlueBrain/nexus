@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.keywords
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{description => descriptionField, keywords, name => nameField}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.`@id`
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
@@ -85,6 +84,16 @@ class FilesSpec extends BaseIntegrationSpec {
       exactly(1, results) should have(`@id`(coolId))
       no(results) should have(`@id`(warmId))
     }
+
+    "allow a file to be found via the name" in {
+      val faxId  = givenAFileWithName("File o fax")
+      val fishId = givenAFileWithName("File et o fish")
+
+      val results = queryForFilesWithFreeText("fish").accepted
+
+      exactly(1, results) should have(`@id`(fishId))
+      no(results) should have(`@id`(faxId))
+    }
   }
 
   private def assertListingTotal(id: String, expectedTotal: Int) =
@@ -130,11 +139,37 @@ class FilesSpec extends BaseIntegrationSpec {
         s"$id.json",
         Writer,
         None,
+        None,
         Map("brainRegion" -> brainRegion)
       )
       .map { case (json, response) =>
         response.status shouldEqual StatusCodes.Created
         json should have(keywords("brainRegion" -> brainRegion))
+        extractId(json)
+      }
+      .accepted
+
+    eventually { assertFileIsInListing(id) }
+
+    fullId
+  }
+
+  private def givenAFileWithName(name: String): String = {
+    val id     = genString()
+    val fullId = deltaClient
+      .uploadFileWithMetadata(
+        s"/files/$org/$project/$id",
+        "file content",
+        ContentTypes.`text/plain(UTF-8)`,
+        s"$id.json",
+        Writer,
+        None,
+        Some(name),
+        Map.empty
+      )
+      .map { case (json, response) =>
+        response.status shouldEqual StatusCodes.Created
+        json should have(nameField(name))
         extractId(json)
       }
       .accepted
@@ -154,11 +189,12 @@ class FilesSpec extends BaseIntegrationSpec {
         s"$id.json",
         Writer,
         Some(description),
+        None,
         Map.empty
       )
       .map { case (json, response) =>
         response.status shouldEqual StatusCodes.Created
-        json should have(FileMatchers.description(description))
+        json should have(descriptionField(description))
         extractId(json)
       }
       .accepted

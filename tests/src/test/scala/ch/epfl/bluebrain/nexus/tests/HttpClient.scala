@@ -150,7 +150,8 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       contentType: ContentType,
       fileName: String,
       identity: Identity,
-      descrption: Option[String],
+      description: Option[String],
+      name: Option[String],
       keywords: Map[String, String]
   )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
 
@@ -165,9 +166,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
             "file",
             HttpEntity(contentType, s.getBytes),
             Map(
-              "filename"    -> fileName,
-              "keywords"    -> keywords.asJson.noSpaces,
-              "description" -> descrption.getOrElse("")
+              "filename"        -> fileName,
+              "keywords"        -> keywords.asJson.noSpaces,
+              "description"     -> description.getOrElse(""),
+              "descriptiveName" -> name.getOrElse("")
             )
           )
         ).toEntity()

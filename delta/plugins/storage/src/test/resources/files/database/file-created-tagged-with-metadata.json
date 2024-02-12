@@ -16,6 +16,7 @@
       "@type" : "NotComputedDigest"
     },
     "description" : "A description",
+    "name" : "A name",
     "keywords": {
       "key": "value"
     }

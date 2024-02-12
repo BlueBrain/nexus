@@ -8,7 +8,8 @@ case class FileDescription(
     filename: String,
     keywords: Map[Label, String],
     mediaType: Option[ContentType],
-    description: Option[String]
+    description: Option[String],
+    name: Option[String]
 )
 
 object FileDescription {
@@ -21,11 +22,12 @@ object FileDescription {
       fileAttributes.filename,
       fileAttributes.keywords,
       fileAttributes.mediaType,
-      fileAttributes.description
+      fileAttributes.description,
+      fileAttributes.name
     )
   }
 
   def from(info: UploadedFileInformation): FileDescription = {
-    FileDescription(info.filename, info.keywords, Some(info.suppliedContentType), info.description)
+    FileDescription(info.filename, info.keywords, Some(info.suppliedContentType), info.description, info.name)
   }
 }

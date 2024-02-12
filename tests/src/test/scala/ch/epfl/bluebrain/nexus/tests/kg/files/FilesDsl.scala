@@ -46,7 +46,8 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
       storage: String,
       rev: Option[Int],
       keywords: Map[String, String],
-      description: Option[String]
+      description: Option[String],
+      name: Option[String]
   ): IO[(Json, HttpResponse)] = {
     val revString = rev.map(r => s"&rev=$r").getOrElse("")
     deltaClient.uploadFileWithMetadata(
@@ -56,6 +57,7 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
       fileInput.filename,
       Coyote,
       description,
+      name,
       keywords
     )
   }

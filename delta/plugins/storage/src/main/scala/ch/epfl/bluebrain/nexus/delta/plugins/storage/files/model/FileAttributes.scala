@@ -41,6 +41,7 @@ final case class FileAttributes(
     // TODO: Remove default after ??? migration
     keywords: Map[Label, String] = Map.empty,
     description: Option[String] = None,
+    name: Option[String],
     bytes: Long,
     digest: Digest,
     origin: FileAttributesOrigin
@@ -53,6 +54,7 @@ trait LimitedFileAttributes {
   def mediaType: Option[ContentType]
   def keywords: Map[Label, String]
   def description: Option[String]
+  def name: Option[String]
   def bytes: Long
   def digest: Digest
   def origin: FileAttributesOrigin
@@ -60,18 +62,19 @@ trait LimitedFileAttributes {
 
 object FileAttributes {
 
-  def from(userSuppliedMetadata: FileDescription, metadata: FileStorageMetadata): FileAttributes = {
+  def from(description: FileDescription, storageMetadata: FileStorageMetadata): FileAttributes = {
     FileAttributes(
-      metadata.uuid,
-      metadata.location,
-      metadata.path,
-      userSuppliedMetadata.filename,
-      userSuppliedMetadata.mediaType,
-      userSuppliedMetadata.keywords,
-      userSuppliedMetadata.description,
-      metadata.bytes,
-      metadata.digest,
-      metadata.origin
+      storageMetadata.uuid,
+      storageMetadata.location,
+      storageMetadata.path,
+      description.filename,
+      description.mediaType,
+      description.keywords,
+      description.description,
+      description.name,
+      storageMetadata.bytes,
+      storageMetadata.digest,
+      storageMetadata.origin
     )
   }
 
@@ -122,13 +125,14 @@ object FileAttributes {
         case (Key("path"), _)            => !removePath
         case (Key("keywords"), value)    => !value.isEmpty()
         case (Key("description"), value) => !value.isNull
+        case (Key("name"), value)        => !value.isNull
         case _                           => true
       }
     }
   }
 
   object NonMetadataKey {
-    private val keys = Set("description")
+    private val keys = Set("description", "name")
     def unapply(key: String): Option[String] = {
       Option.when(keys.contains(key))(key)
     }

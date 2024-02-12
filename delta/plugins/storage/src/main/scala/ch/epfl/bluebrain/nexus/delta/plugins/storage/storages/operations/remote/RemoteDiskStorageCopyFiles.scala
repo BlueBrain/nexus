@@ -40,16 +40,17 @@ object RemoteDiskStorageCopyFiles {
       relativeDestPath: Path,
       absoluteDestPath: Uri
   ): FileAttributes = {
-    val sourceFileMetadata         = cd.sourceMetadata
-    val sourceUserSuppliedMetadata = cd.sourceUserSuppliedMetadata
+    val sourceFileMetadata    = cd.sourceMetadata
+    val sourceFileDescription = cd.sourceUserSuppliedMetadata
     FileAttributes(
       uuid = cd.destUuid,
       location = absoluteDestPath,
       path = relativeDestPath,
-      filename = sourceUserSuppliedMetadata.filename,
-      mediaType = sourceUserSuppliedMetadata.mediaType,
-      keywords = sourceUserSuppliedMetadata.keywords,
-      description = sourceUserSuppliedMetadata.description,
+      filename = sourceFileDescription.filename,
+      mediaType = sourceFileDescription.mediaType,
+      keywords = sourceFileDescription.keywords,
+      description = sourceFileDescription.description,
+      name = sourceFileDescription.name,
       bytes = sourceFileMetadata.bytes,
       digest = sourceFileMetadata.digest,
       origin = sourceFileMetadata.origin

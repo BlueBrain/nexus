@@ -86,6 +86,7 @@ class ArchiveDownloadSpec
       Some(`text/plain(UTF-8)`),
       Map.empty,
       None,
+      None,
       bytes,
       Digest.NotComputedDigest,
       Client

@@ -102,6 +102,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Some(`text/plain(UTF-8)`),
     Map.empty,
     None,
+    None,
     12L,
     ComputedDigest(DigestAlgorithm.default, "digest"),
     Client

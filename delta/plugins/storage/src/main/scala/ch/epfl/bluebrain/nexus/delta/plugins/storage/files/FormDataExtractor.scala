@@ -50,6 +50,7 @@ case class UploadedFileInformation(
     filename: String,
     keywords: Map[Label, String],
     description: Option[String],
+    name: Option[String],
     suppliedContentType: ContentType,
     contents: BodyPartEntity
 )
@@ -138,11 +139,12 @@ object FormDataExtractor {
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
           val description = part.dispositionParams.get("description").filter(_.nonEmpty)
+          val name        = part.dispositionParams.get("descriptiveName").filter(_.nonEmpty)
 
           val result = for {
             keywords <- extractKeywords(part)
           } yield {
-            Some(UploadedFileInformation(filename, keywords, description, contentType, part.entity))
+            Some(UploadedFileInformation(filename, keywords, description, name, contentType, part.entity))
           }
 
           Future.fromTry(result.toTry)

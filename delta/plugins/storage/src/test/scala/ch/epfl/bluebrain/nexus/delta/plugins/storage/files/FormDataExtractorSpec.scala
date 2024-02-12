@@ -38,12 +38,17 @@ class FormDataExtractorSpec
       createEntity("file", NoContentType, Some("file.custom"), description = Some(description))
     }
 
+    def entityWithName(name: String) = {
+      createEntity("file", NoContentType, Some("file.custom"), name = Some(name))
+    }
+
     def createEntity(
         bodyPart: String,
         contentType: ContentType,
         filename: Option[String],
         keywords: Map[String, Json] = Map.empty,
-        description: Option[String] = None
+        description: Option[String] = None,
+        name: Option[String] = None
     ) =
       Multipart
         .FormData(
@@ -51,7 +56,7 @@ class FormDataExtractorSpec
             .BodyPart(
               bodyPart,
               HttpEntity(contentType, content.getBytes),
-              dispositionParameters(filename, keywords, description)
+              dispositionParameters(filename, keywords, description, name)
             )
         )
         .toEntity()
@@ -59,34 +64,34 @@ class FormDataExtractorSpec
     def dispositionParameters(
         filename: Option[String],
         keywords: Map[String, Json],
-        description: Option[String]
+        description: Option[String],
+        name: Option[String]
     ): Map[String, String] = {
       Map.from(
         filename.map("filename"                     -> _) ++
           Option.when(keywords.nonEmpty)("keywords" -> JsonObject.fromMap(keywords).toJson.noSpaces) ++
-          description.map("description" -> _)
+          description.map("description" -> _) ++
+          name.map("descriptiveName" -> _)
       )
     }
 
     "be extracted with the default content type" in {
       val entity = createEntity("file", NoContentType, Some("filename"))
 
-      val UploadedFileInformation(filename, keywords, _, contentType, contents) =
+      val UploadedFileInformation(filename, _, _, _, contentType, contents) =
         extractor(iri, entity, 179, None).accepted
 
       filename shouldEqual "filename"
-      keywords shouldEqual Map.empty
       contentType shouldEqual `application/octet-stream`
       consume(contents.dataBytes) shouldEqual content
     }
 
     "be extracted with the custom media type from the config" in {
-      val entity                                                                = createEntity("file", NoContentType, Some("file.custom"))
-      val UploadedFileInformation(filename, keywords, _, contentType, contents) =
+      val entity                                                            = createEntity("file", NoContentType, Some("file.custom"))
+      val UploadedFileInformation(filename, _, _, _, contentType, contents) =
         extractor(iri, entity, 2000, None).accepted
 
       filename shouldEqual "file.custom"
-      keywords shouldEqual Map.empty
       contentType shouldEqual customContentType
       consume(contents.dataBytes) shouldEqual content
     }
@@ -94,33 +99,37 @@ class FormDataExtractorSpec
     "be extracted with the akka detection from the extension" in {
       val entity = createEntity("file", NoContentType, Some("file.txt"))
 
-      val UploadedFileInformation(filename, keywords, _, contentType, contents) =
+      val UploadedFileInformation(filename, _, _, _, contentType, contents) =
         extractor(iri, entity, 179, None).accepted
       filename shouldEqual "file.txt"
-      keywords shouldEqual Map.empty
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
     }
 
     "be extracted with the provided content type header" in {
-      val entity                                                                = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
-      val UploadedFileInformation(filename, keywords, _, contentType, contents) =
+      val entity                                                            = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
+      val UploadedFileInformation(filename, _, _, _, contentType, contents) =
         extractor(iri, entity, 2000, None).accepted
       filename shouldEqual "file.custom"
-      keywords shouldEqual Map.empty
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
     }
 
     "be extracted with a description" in {
-      val entity                                           = entityWithDescription("this file is cool")
-      val UploadedFileInformation(_, _, description, _, _) = extractor(iri, entity, 2000, None).accepted
+      val entity                                              = entityWithDescription("this file is cool")
+      val UploadedFileInformation(_, _, description, _, _, _) = extractor(iri, entity, 2000, None).accepted
       description shouldEqual Some("this file is cool")
     }
 
+    "be extracted with a name" in {
+      val entity                                       = entityWithName("File One")
+      val UploadedFileInformation(_, _, _, name, _, _) = extractor(iri, entity, 2000, None).accepted
+      name shouldEqual Some("File One")
+    }
+
     "be extracted with keywords" in {
-      val entity                                        = entityWithKeywords("key" := "value")
-      val UploadedFileInformation(_, keywords, _, _, _) = extractor(iri, entity, 2000, None).accepted
+      val entity                                           = entityWithKeywords("key" := "value")
+      val UploadedFileInformation(_, keywords, _, _, _, _) = extractor(iri, entity, 2000, None).accepted
       keywords shouldEqual Map(Label.unsafe("key") -> "value")
     }
 

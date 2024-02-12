@@ -14,6 +14,7 @@
       "key": "value"
     },
     "description" : "A description",
+    "name" : "A name",
     "bytes" : 12,
     "digest" : {
       "@type" : "NotComputedDigest"

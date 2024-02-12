@@ -68,7 +68,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, None, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -261,7 +261,7 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes.from(
-                                     FileDescription(resolvedFilename, Map.empty, mediaType, description = None),
+                                     FileDescription(resolvedFilename, Map.empty, mediaType, description = None, name = None),
                                      metadata
                                    ),
                                    rev,
@@ -416,7 +416,7 @@ final class Files(
       _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
-      fileMetadata          <- linkFile(storage, path, resolvedFilename, iri)
+      storageMetadata       <- linkFile(storage, path, resolvedFilename, iri)
       res                   <- eval(
                                  CreateFile(
                                    iri,
@@ -424,7 +424,10 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes
-                                     .from(FileDescription(resolvedFilename, Map.empty, mediaType, description = None), fileMetadata),
+                                     .from(
+                                       FileDescription(resolvedFilename, Map.empty, mediaType, description = None, name = None),
+                                       storageMetadata
+                                     ),
                                    caller.subject,
                                    tag
                                  )

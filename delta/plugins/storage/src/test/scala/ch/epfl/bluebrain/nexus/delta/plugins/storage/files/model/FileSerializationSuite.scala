@@ -37,6 +37,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val uuid        = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
   private val keywords    = Map(Label.unsafe("key") -> "value")
   private val description = "A description"
+  private val name        = "A name"
   private val attributes  =
     FileAttributes(
       uuid,
@@ -46,12 +47,14 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Some(`text/plain(UTF-8)`),
       Map.empty,
       None,
+      None,
       12,
       digest,
       Client
     )
 
-  private val attributesWithMetadata = attributes.copy(keywords = keywords, description = Some(description))
+  private val attributesWithMetadata =
+    attributes.copy(keywords = keywords, description = Some(description), name = Some(name))
 
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
@@ -87,7 +90,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     (
       "FileCreated with metadata",
       createdWithMetadata,
-      loadEvents("files", "file-created-with-keywords.json"),
+      loadEvents("files", "file-created-with-metadata.json"),
       Created,
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
@@ -101,7 +104,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     (
       "FileCreated with tags and keywords",
       createdTaggedWithMetadata,
-      loadEvents("files", "file-created-tagged-with-keywords.json"),
+      loadEvents("files", "file-created-tagged-with-metadata.json"),
       Created,
       expected(createdTaggedWithMetadata, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
@@ -211,7 +214,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val stateWithMetadata = state.copy(attributes = attributesWithMetadata)
 
   private val fileState             = jsonContentOf("files/database/file-state.json")
-  private val fileStateWithMetadata = jsonContentOf("files/database/file-state-with-keywords.json")
+  private val fileStateWithMetadata = jsonContentOf("files/database/file-state-with-metadata.json")
 
   test(s"Correctly serialize a FileState") {
     assertEquals(FileState.serializer.codec(state), fileState)

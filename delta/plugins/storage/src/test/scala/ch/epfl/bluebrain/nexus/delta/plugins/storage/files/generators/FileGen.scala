@@ -62,20 +62,22 @@ trait FileGen { self: Generators with FileFixtures =>
   def genOption[A](genA: => A): Option[A]                                             = if (Random.nextInt(2) % 2 == 0) Some(genA) else None
 
   def genFileResource(fileId: FileId, context: ProjectContext): FileResource =
-    genFileResourceWithStorage(fileId, context, genRevision(), genKeywords(), 1L)
+    genFileResourceWithStorage(fileId, context, genRevision(), genKeywords(), genString(), genString(), 1L)
 
   def genFileResourceWithStorage(
       fileId: FileId,
       context: ProjectContext,
       storageRef: ResourceRef.Revision,
       keywords: Map[Label, String],
+      description: String,
+      name: String,
       fileSize: Long
   ): FileResource =
     genFileResourceWithIri(
       fileId.id.value.toIri(context.apiMappings, context.base).getOrElse(throw new Exception(s"Bad file $fileId")),
       fileId.project,
       storageRef,
-      attributes(genString(), size = fileSize, keywords = keywords)
+      attributes(genString(), size = fileSize, keywords = keywords, description = Some(description), name = Some(name))
     )
 
   def genFileResourceAndStorage(
@@ -83,11 +85,13 @@ trait FileGen { self: Generators with FileFixtures =>
       context: ProjectContext,
       storageVal: StorageValue,
       keywords: Map[Label, String],
+      description: String,
+      name: String,
       fileSize: Long = 1L
   ): (FileResource, StorageResource) = {
     val storageRes = StorageGen.resourceFor(genIri(), fileId.project, storageVal)
     val storageRef = ResourceRef.Revision(storageRes.id, storageRes.id, storageRes.rev)
-    (genFileResourceWithStorage(fileId, context, storageRef, keywords, fileSize), storageRes)
+    (genFileResourceWithStorage(fileId, context, storageRef, keywords, description, name, fileSize), storageRes)
   }
 
   def genFileResourceWithIri(
@@ -177,7 +181,8 @@ object FileGen {
       projRef: ProjectRef,
       path: AbsolutePath,
       keywords: Map[Label, String],
-      description: Option[String]
+      description: Option[String],
+      name: Option[String]
   ): FileAttributes = {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
@@ -188,6 +193,7 @@ object FileGen {
       Some(`text/plain(UTF-8)`),
       keywords,
       description,
+      name,
       size,
       digest,
       Client
