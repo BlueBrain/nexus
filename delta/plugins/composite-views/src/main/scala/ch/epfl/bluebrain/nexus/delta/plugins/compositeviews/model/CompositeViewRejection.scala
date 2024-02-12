@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -128,6 +128,11 @@ object CompositeViewRejection {
   final case class IncorrectRev(provided: Int, expected: Int)
       extends CompositeViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
+      )
+
+  final case class FetchByTagNotSupported(tag: IdSegmentRef.Tag)
+      extends CompositeViewRejection(
+        s"Fetching composite views by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
       )
 
   /**

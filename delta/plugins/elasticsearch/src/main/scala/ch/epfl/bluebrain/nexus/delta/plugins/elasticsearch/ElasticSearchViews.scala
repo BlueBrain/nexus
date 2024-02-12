@@ -26,12 +26,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -209,36 +207,6 @@ final class ElasticSearchViews private (
   }.span("updateElasticSearchView")
 
   /**
-    * Applies a tag to an existing ElasticSearchView revision.
-    *
-    * @param id
-    *   the view identifier
-    * @param project
-    *   the view parent project
-    * @param tag
-    *   the tag to apply
-    * @param tagRev
-    *   the target revision of the tag
-    * @param rev
-    *   the current view revision
-    * @param subject
-    *   the subject that initiated the action
-    */
-  def tag(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit subject: Subject): IO[ViewResource] = {
-    for {
-      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
-      _        <- validateNotDefaultView(iri)
-      res      <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
-    } yield res
-  }.span("tagElasticSearchView")
-
-  /**
     * Deprecates an existing ElasticSearchView. View deprecation implies blocking any query capabilities and in case of
     * an IndexingElasticSearchView the corresponding index is deleted.
     *
@@ -336,7 +304,7 @@ final class ElasticSearchViews private (
     id match {
       case Latest(_)        => log.stateOr(project, iri, notFound)
       case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-      case Tag(_, tag)      => log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+      case t: Tag           => IO.raiseError(FetchByTagNotSupported(t))
     }
   }
 
@@ -545,16 +513,6 @@ object ElasticSearchViews {
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
-    def tag(c: TagElasticSearchView) = state match {
-      case None                                               => IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                            =>
-        clock.realTimeInstant.map(
-          ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
-        )
-    }
-
     def deprecate(c: DeprecateElasticSearchView) = state match {
       case None                      => IO.raiseError(ViewNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
@@ -578,7 +536,6 @@ object ElasticSearchViews {
     cmd match {
       case c: CreateElasticSearchView      => create(c)
       case c: UpdateElasticSearchView      => update(c)
-      case c: TagElasticSearchView         => tag(c)
       case c: DeprecateElasticSearchView   => deprecate(c)
       case c: UndeprecateElasticSearchView => undeprecate(c)
     }
@@ -594,7 +551,7 @@ object ElasticSearchViews {
     ElasticSearchViewEvent,
     ElasticSearchViewRejection
   ] =
-    ScopedEntityDefinition(
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(
         None,
@@ -603,15 +560,6 @@ object ElasticSearchViews {
       ),
       ElasticSearchViewEvent.serializer,
       ElasticSearchViewState.serializer,
-      Tagger[ElasticSearchViewEvent](
-        {
-          case r: ElasticSearchViewTagAdded => Some(r.tag -> r.targetRev)
-          case _                            => None
-        },
-        { _ =>
-          None
-        }
-      ),
       { s =>
         s.value match {
           case a: AggregateElasticSearchViewValue =>

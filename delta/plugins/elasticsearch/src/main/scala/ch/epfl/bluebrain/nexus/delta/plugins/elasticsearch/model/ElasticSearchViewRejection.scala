@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -113,6 +114,11 @@ object ElasticSearchViewRejection {
   final case class IncorrectRev(provided: Int, expected: Int)
       extends ElasticSearchViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
+      )
+
+  final case class FetchByTagNotSupported(tag: IdSegmentRef.Tag)
+      extends ElasticSearchViewRejection(
+        s"Fetching ElasticSearch views by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
       )
 
   /**

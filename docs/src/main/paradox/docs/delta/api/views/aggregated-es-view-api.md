@@ -111,37 +111,6 @@ Payload
 Response
 :   @@snip [updated.json](../assets/views/elasticsearch/updated-aggregate.json)
 
-## Tag
-
-Links a view revision to a specific name.
-
-Tagging a view is considered to be an update as well.
-
-```
-POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-
-... where
-
-- `{previous_rev}`: is the last known revision number for the resource.
-- `{name}`: String - label given to the view at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [tag.sh](../assets/views/elasticsearch/tag-aggregate.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [tagged.json](../assets/views/elasticsearch/tagged-aggregate.json)
-
 ## Deprecate
 
 Locks the view, so no further operations can be performed.
@@ -207,29 +176,6 @@ Request
 
 Response
 :   @@snip [fetched.json](../assets/views/elasticsearch/payload-aggregate.json)
-
-
-## Fetch tags
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
-```
-
-where ...
-
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
-
-**Example**
-
-Request
-:   @@snip [fetch_tags.sh](../assets/views/elasticsearch/tags-aggregate.sh)
-
-Response
-:   @@snip [tags.json](../assets/tags.json)
-
 
 ## Search Documents
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -263,24 +263,11 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       }
     }
 
-    "tag a view" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/views/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual elasticSearchViewMetadata(myId2, rev = 2)
-      }
-    }
-
     "fail to fetch a view without resources/read permission" in {
-      val endpoints = List(
-        "/v1/views/myorg/myproject/myid2",
-        "/v1/views/myorg/myproject/myid2/tags"
-      )
-      forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-          Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.shouldBeForbidden
-          }
+      val endpoint = "/v1/views/myorg/myproject/myid2"
+      forAll(List("", "?rev=1")) { suffix =>
+        Get(s"$endpoint$suffix") ~> routes ~> check {
+          response.shouldBeForbidden
         }
       }
     }
@@ -307,11 +294,9 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         "/v1/resources/myorg/myproject/view/myid2"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual elasticSearchView(myId2)
-          }
+        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual elasticSearchView(myId2)
         }
       }
     }
@@ -330,36 +315,27 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         }
       }
     }
-    "fetch a view original payload by rev or tag" in {
+    "fetch a view original payload by rev" in {
       val endpoints = List(
         "/v1/views/myorg/myproject/myid2/source",
         s"/v1/views/myorg/myproject/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual payloadNoId
-          }
+        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual payloadNoId
         }
-      }
-    }
-
-    "fetch the view tags" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
-      }
-      Get("/v1/views/myorg/myproject/myid2/tags") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }
     }
 
     "return not found if tag not found" in {
       Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("routes/errors/tag-not-found.json", "tag" -> "myother")
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "routes/errors/fetch-by-tag-not-supported.json",
+          "tag" -> "myother",
+          "id"  -> "myid2"
+        )
       }
     }
 

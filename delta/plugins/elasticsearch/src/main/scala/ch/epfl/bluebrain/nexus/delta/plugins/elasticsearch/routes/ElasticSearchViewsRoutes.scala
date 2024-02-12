@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.{Json, JsonObject}
 
 /**
@@ -162,36 +161,6 @@ final class ElasticSearchViewsRoutes(
                         .rejectOn[ViewNotFound]
                     )
                   }
-                },
-                (pathPrefix("tags") & pathEndOrSingleSlash) {
-                  concat(
-                    // Fetch an elasticsearch view tags
-                    (get & idSegmentRef(id) & authorizeFor(project, Read)) { id =>
-                      emit(
-                        views
-                          .fetch(id, project)
-                          .map(_.value.tags)
-                          .attemptNarrow[ElasticSearchViewRejection]
-                          .rejectOn[ViewNotFound]
-                      )
-                    },
-                    // Tag an elasticsearch view
-                    (post & parameter("rev".as[Int])) { rev =>
-                      authorizeFor(project, Write).apply {
-                        entity(as[Tag]) { case Tag(tagRev, tag) =>
-                          emit(
-                            Created,
-                            views
-                              .tag(id, project, tag, tagRev, rev)
-                              .flatTap(index(project, _, mode))
-                              .mapValue(_.metadata)
-                              .attemptNarrow[ElasticSearchViewRejection]
-                              .rejectWhen(decodingFailedOrViewNotFound)
-                          )
-                        }
-                      }
-                    }
-                  )
                 }
               )
             }

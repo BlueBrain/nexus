@@ -346,64 +346,30 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       }
     }
 
-    "tag a view" when {
-      val tag = UserTag.unsafe("mytag")
-      "using a correct revision" in {
-        views.tag(viewId, projectRef, tag, 1, 2).accepted
-      }
-
-      "the view is deprecated" in {
-        val id     = iri"http://localhost/${genString()}"
-        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(id, projectRef, source).accepted
-        views.deprecate(id, projectRef, 1).accepted
-        views.tag(id, projectRef, tag, 1, 2).accepted
-      }
-    }
-
-    "fail to tag a view" when {
-      val tag = UserTag.unsafe("mytag")
-      "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
-        views.tag(viewId, projectRef, tag, 1, 100).rejectedWith[IncorrectRev]
-      }
-      "the target view is not found" in {
-        val id = iri"http://localhost/${genString()}"
-        views.tag(id, projectRef, tag, 1, 2).rejectedWith[ViewNotFound]
-      }
-      "the project of the target view is not found" in {
-        val id = iri"http://localhost/${genString()}"
-        views.tag(id, unknownProjectRef, tag, 1, 2).rejectedWith[ProjectNotFound]
-      }
-      "the referenced project is deprecated" in {
-        val id = iri"http://localhost/${genString()}"
-        views.tag(id, deprecatedProjectRef, tag, 1, 2).rejectedWith[ProjectIsDeprecated]
-      }
-    }
-
     "deprecate a view" when {
       "using the correct revision" in {
-        views.deprecate(viewId, projectRef, 3).accepted
+        views.deprecate(viewId, projectRef, 2).accepted
       }
     }
 
     "fail to deprecate a view" when {
       "the view is already deprecated" in {
-        views.deprecate(viewId, projectRef, 4).rejectedWith[ViewIsDeprecated]
+        views.deprecate(viewId, projectRef, 3).rejectedWith[ViewIsDeprecated]
       }
       "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
         views.deprecate(viewId, projectRef, 100).rejectedWith[IncorrectRev]
       }
       "the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
-        views.deprecate(id, projectRef, 2).rejectedWith[ViewNotFound]
+        views.deprecate(id, projectRef, 1).rejectedWith[ViewNotFound]
       }
       "the project of the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
-        views.deprecate(id, unknownProjectRef, 2).rejectedWith[ProjectNotFound]
+        views.deprecate(id, unknownProjectRef, 1).rejectedWith[ProjectNotFound]
       }
       "the referenced project is deprecated" in {
         val id = iri"http://localhost/${genString()}"
-        views.deprecate(id, deprecatedProjectRef, 2).rejectedWith[ProjectIsDeprecated]
+        views.deprecate(id, deprecatedProjectRef, 1).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -479,27 +445,6 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
           source = source
         )
       }
-      "a tag is provided" in {
-        val tag           = UserTag.unsafe("mytag")
-        val id            = iri"http://localhost/${genString()}"
-        val source        = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(id, projectRef, source).accepted
-        val updatedSource = json"""{"@type": "ElasticSearchView", "resourceTag": "mytag", "mapping": $mapping}"""
-        views.update(id, projectRef, 1, updatedSource).accepted
-        views.tag(id, projectRef, tag, 1, 2).accepted
-        views.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resourceFor(
-          id = id,
-          value = IndexingElasticSearchViewValue(
-            resourceTag = None,
-            IndexingElasticSearchViewValue.defaultPipeline,
-            mapping = Some(mapping),
-            settings = None,
-            context = None,
-            permission = queryPermissions
-          ),
-          source = source
-        )
-      }
     }
 
     "fail to fetch a view" when {
@@ -513,12 +458,12 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         views.create(id, projectRef, source).accepted
         views.fetch(IdSegmentRef(id, 2), projectRef).rejectedWith[RevisionNotFound]
       }
-      "the tag does not exist" in {
+      "attempting any lookup by tag" in {
         val tag    = UserTag.unsafe("mytag")
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted
-        views.fetch(IdSegmentRef(id, tag), projectRef).rejectedWith[TagNotFound]
+        views.fetch(IdSegmentRef(id, tag), projectRef).rejectedWith[FetchByTagNotSupported]
       }
     }
 
@@ -531,10 +476,6 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
       "updating" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.update(defaultViewId, projectRef, 1, source).rejectedWith[ViewIsDefaultView]
-      }
-
-      "tagging" in {
-        views.tag(defaultViewId, projectRef, UserTag.unsafe("tag"), 1, 1).rejectedWith[ViewIsDefaultView]
       }
     }
 

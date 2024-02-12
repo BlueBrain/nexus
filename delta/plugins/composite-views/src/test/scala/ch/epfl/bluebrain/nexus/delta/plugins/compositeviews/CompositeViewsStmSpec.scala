@@ -88,28 +88,6 @@ class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
       }
     }
 
-    "evaluating the TagCompositeView command" should {
-      val tag = UserTag.unsafe("tag")
-      val cmd = TagCompositeView(id, project.ref, 1, tag, 1, subject)
-      "emit an CompositeViewTagAdded" in {
-        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current()), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        eval(None, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        eval(Some(current()), cmd.copy(rev = 2)).rejectedWith[IncorrectRev]
-      }
-      "emit an CompositeViewTagAdded when deprecated" in {
-        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
-        eval(Some(current(deprecated = true)), cmd).accepted shouldEqual expected
-      }
-      "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        eval(Some(current()), cmd.copy(targetRev = 2)).rejectedWith[RevisionNotFound]
-      }
-    }
-
     "evaluating the DeprecateCompositeView command" should {
       val cmd = DeprecateCompositeView(id, project.ref, 1, subject)
       "emit an CompositeViewDeprecated" in {
