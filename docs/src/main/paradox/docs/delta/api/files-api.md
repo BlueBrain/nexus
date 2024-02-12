@@ -51,11 +51,15 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
-The json payload:
+The request body:
 
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
-the `prefix` defined on the resource's project (`{project_label}`).
+The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
+
+This part can contain the following disposition parameters:
+- `filename`: the filename which will be used in the back-end file system 
+- `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+- `description`: a string that describes the file. will be indexed in the full-text search.
+- `descriptiveName`: a string which is a descriptive name for the file. will be indexed in the full-text search.
 
 **Example**
 
@@ -79,7 +83,13 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tag
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
-Note that if the payload contains an @id different from the `{file_id}`, the request will fail.
+The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
+
+This part can contain the following disposition parameters:
+- `filename`: the filename which will be used in the back-end file system
+- `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+- `description`: a string that describes the file. will be indexed in the full-text search.
+- `descriptiveName`: a string which is a descriptive name for the file. will be indexed in the full-text search.
 
 **Example**
 
