@@ -19,6 +19,13 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
+## 1.9.1 (12.02.2024)
+
+This is a patch release that address a bug in Delta during the update of resources:
+
+From 1.9.0 during update operations, @ref:[Delta does not create a new revision of a resource if no change is detected](v1.9-release-notes.md#no-new-revision-on-a-resource-if-no-change-is-detected).
+When the resource was large or contained too many blank nodes, the complexity increased too much and this could cause CPU starvation.
+
 ## 1.9.0 (18.12.2023)
 
 ### Breaking changes
