@@ -39,7 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import io.circe.syntax.EncoderOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 import org.scalatest._
 
@@ -688,6 +688,8 @@ object FilesRoutesSpec extends CirceLiteral {
         )
       case true  => Json.obj()
     }
+    val descriptionJson    = attributes.description.map(desc => Json.obj("description" := desc))
+    val nameJson           = attributes.name.map(name => Json.obj("name" := name))
 
     val mainJson = json"""
       {
@@ -725,6 +727,7 @@ object FilesRoutesSpec extends CirceLiteral {
       }
     """
 
-    mainJson deepMerge (keywordsJson)
+    (List(mainJson, keywordsJson) ++ nameJson ++ descriptionJson)
+      .reduce(_.deepMerge(_))
   }
 }
