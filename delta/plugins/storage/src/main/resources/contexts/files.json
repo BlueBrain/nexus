@@ -22,7 +22,8 @@
     "_keywords": "https://bluebrain.github.io/nexus/vocabulary/keywords",
     "_location": "https://bluebrain.github.io/nexus/vocabulary/location",
     "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
-    "description": "https://bluebrain.github.io/nexus/vocabulary/description",
+    "description": "http://schema.org/description",
+    "name": "http://schema.org/name",
     "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "_storage": {
