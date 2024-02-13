@@ -241,6 +241,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-9-1-12-02-2024-" class="header">1.9.1 (12.02.2024)</a></li>
     <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
@@ -299,6 +300,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-9-1-12-02-2024-" class="header">1.9.1 (12.02.2024)</a></li>
     <li><a href="../../docs/releases/index.html#1-9-0-18-12-2023-" class="header">1.9.0 (18.12.2023)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
@@ -346,6 +348,9 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
+<h2><a href="#1-9-1-12-02-2024-" name="1-9-1-12-02-2024-" class="anchor"><span class="anchor-link"></span></a>1.9.1 (12.02.2024)</h2>
+<p>This is a patch release that address a bug in Delta during the update of resources:</p>
+<p>From 1.9.0 during update operations, <a href="v1.9-release-notes.html#no-new-revision-on-a-resource-if-no-change-is-detected">Delta does not create a new revision of a resource if no change is detected</a>. When the resource was large or contained too many blank nodes, the complexity increased too much and this could cause CPU starvation.</p>
 <h2><a href="#1-9-0-18-12-2023-" name="1-9-0-18-12-2023-" class="anchor"><span class="anchor-link"></span></a>1.9.0 (18.12.2023)</h2>
 <h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
 <ul>

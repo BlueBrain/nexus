@@ -365,7 +365,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
-  &quot;endpoint&quot;: &quot;{endpoint}&quot;,
   &quot;folder&quot;: &quot;{folder}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
@@ -375,7 +374,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>&hellip;where</p>
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
-  <li><code>{endpoint}</code>: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-endpoint</code>.</li>
   <li><code>{folder}</code>: String - the storage service bucket where files using this storage are going to be saved.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-write-permission</code> (<code>files/write</code>).</li>
@@ -667,7 +665,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;RemoteDiskStorage&quot;
   ],
   &quot;default&quot;: false,
-  &quot;endpoint&quot;: &quot;http://localhost:8084/v1&quot;,
   &quot;folder&quot;: &quot;test-updated&quot;,
   &quot;maxFileSize&quot;: 10737418240,
   &quot;readPermission&quot;: &quot;resources/read&quot;,

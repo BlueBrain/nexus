@@ -292,13 +292,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h1>
 <p>Nexus provides global search functionality across all projects through the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src" title="search plugin" target="_blank" rel="noopener noreferrer">search plugin</a>.</p><div class="callout warning "><div class="callout-title">Warning</div>
 <p>The search plugin is experimental and its functionality and API can change without notice.</p></div>
-<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p>
+<p>The search plugin relies on <a href="views/composite-view-api.html">composite views</a>:</p>
+<ul>
+  <li>An underlying composite view is created for every project in the Nexus deployment</li>
+  <li>Those views are identical and index data from their enclosing project in a single Elasticsearch projection.</li>
+  <li>The query endpoints filter the Elasticsearch projections from the underlying composite views and only returns results from  indices to which user has access to, i.e. has <code>views/query</code> permission.</li>
+</ul>
+<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p><div class="callout note tip"><div class="callout-title">Api Mapping</div>
+<p>The underlying composite views can queried to monitor their indexing progress, to query their intermediate namespaces, &hellip;</p>
+<p>An API mapping <code>search</code> has been defined to make it easier:</p>
+<p>Example:</p>
+<pre><code>GET /v1/views/myorg/myproject/search/offset
+</code></pre>
+<p>Will allow to get the indexing progress for search for the <code>myorg/myproject</code> </p></div>
 <h2><a href="#query" name="query" class="anchor"><span class="anchor-link"></span></a>Query</h2>
 <pre><code>POST /v1/search/query
 {payload}
 </code></pre>
 <p>&hellip; where <code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</p>
-<p>The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
 <h2><a href="#query-a-suite" name="query-a-suite" class="anchor"><span class="anchor-link"></span></a>Query a suite</h2>
 <p>Nexus Delta allows to configure multiple search suites under <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/search/src/main/resources/search.conf" title="`plugins.search.suites`"><code>plugins.search.suites</code></a>. Each suite is composed of one or more projects. When querying using a suite, the query is only performed on the underlying Elasticsearch indices of the projects in the suite.</p>
 <pre><code>POST /v1/search/query/suite/{suiteName}
@@ -309,7 +320,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{suiteName}</code> is the name of the suite</li>
   <li><code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</li>
 </ul>
-<p>The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
 <pre><code>GET /v1/search/config
 </code></pre>
