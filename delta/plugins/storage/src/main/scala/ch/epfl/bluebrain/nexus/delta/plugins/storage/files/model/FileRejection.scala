@@ -135,18 +135,6 @@ object FileRejection {
   final case class FileIsNotDeprecated(id: Iri) extends FileRejection(s"File '$id' is not deprecated.")
 
   /**
-    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
-    * filename.
-    *
-    * @param id
-    *   the file identifier
-    */
-  final case class InvalidFileLink(id: Iri)
-      extends FileRejection(
-        s"Linking a file '$id' cannot be performed without a 'filename' or a 'path' that does not end with a filename."
-      )
-
-  /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
     * contain a ''file'' fieldName
     */
