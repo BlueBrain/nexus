@@ -880,6 +880,12 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
   }
 
+  "Passing an unknown suffix on the resource endpoint" should {
+    "return not found" in {
+      deltaClient.put[Json](s"/resources/$project2/_/test-resource:id/xxx", Json.Null, Rick) { expectNotFound }
+    }
+  }
+
   private def givenAResourceWithSchemaAndTag(projectRef: String, schema: Option[String], tag: Option[String])(
       assertion: String => Assertion
   ): Assertion = {

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
+import akka.http.scaladsl.model.{IllegalRequestException, StatusCodes}
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server._
 import cats.effect.IO
@@ -176,7 +177,6 @@ final class ResourcesRoutes(
                       },
                       (pathPrefix("update-schema") & put & pathEndOrSingleSlash) {
                         authorizeFor(project, Write).apply {
-
                           emit(
                             IO.fromOption(schemaOpt)(NoSchemaProvided)
                               .flatMap { schema =>
@@ -187,7 +187,6 @@ final class ResourcesRoutes(
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
                           )
-
                         }
                       },
                       (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
@@ -284,6 +283,12 @@ final class ResourcesRoutes(
                                 .rejectOn[ResourceNotFound]
                             )
                           }
+                        )
+                      },
+                      pathPrefix(Segment) { operation =>
+                        throw IllegalRequestException(
+                          StatusCodes.NotFound,
+                          s"'$operation' is not a valid operation on resources."
                         )
                       }
                     )

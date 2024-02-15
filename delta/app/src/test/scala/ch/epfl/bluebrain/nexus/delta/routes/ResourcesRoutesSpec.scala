@@ -750,6 +750,12 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
         }
       }
     }
+
+    "return not found for an unknown `xxx` suffix" in {
+      Get(s"/v1/resources/myorg/myproject/myschema/id/xxx") ~> asReader ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
   }
 
   private def resourceMetadata(
