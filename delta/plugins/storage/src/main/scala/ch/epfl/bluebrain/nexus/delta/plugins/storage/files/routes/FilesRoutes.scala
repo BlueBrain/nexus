@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
+import akka.http.scaladsl.model.MediaTypes.{`application/json`, `multipart/form-data`}
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Accept
@@ -84,7 +85,7 @@ final class FilesRoutes(
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
-                    entity(as[LinkFile]) { case LinkFile(path, description) =>
+                    (contentType(`application/json`) & entity(as[LinkFile])) { case LinkFile(path, description) =>
                       emit(
                         Created,
                         files
@@ -94,7 +95,7 @@ final class FilesRoutes(
                       )
                     },
                     // Create a file without id segment
-                    extractRequestEntity { entity =>
+                    (contentType(`multipart/form-data`) & extractRequestEntity) { entity =>
                       emit(
                         Created,
                         files.create(storage, project, entity, tag).index(mode).attemptNarrow[FileRejection]

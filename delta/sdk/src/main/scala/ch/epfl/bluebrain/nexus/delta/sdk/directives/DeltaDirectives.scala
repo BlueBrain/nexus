@@ -114,6 +114,16 @@ trait DeltaDirectives extends UriDirectives {
       }
     }
 
+  def contentType(mediaType: MediaType): Directive0 = {
+    headerValueByName("Content-Type").flatMap { contentType =>
+      if (contentType == mediaType.value) {
+        pass
+      } else {
+        reject()
+      }
+    }
+  }
+
   /**
     * If the `Accept` header is set to `text/html`, redirect to the matching resource page in fusion if the feature is
     * enabled
