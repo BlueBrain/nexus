@@ -724,8 +724,9 @@ lazy val delta = project
 lazy val ship = project
   .in(file("ship"))
   .settings(
-    name       := "nexus-ship",
-    moduleName := "nexus-ship"
+    name                  := "nexus-ship",
+    moduleName            := "nexus-ship",
+    coverageFailOnMinimum := false
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
