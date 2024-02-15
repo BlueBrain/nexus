@@ -724,20 +724,20 @@ lazy val delta = project
 lazy val ship = project
   .in(file("ship"))
   .settings(
-    name                  := "nexus-ship",
-    moduleName            := "nexus-ship",
-    coverageFailOnMinimum := false
+    name       := "nexus-ship",
+    moduleName := "nexus-ship"
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(
-    libraryDependencies ++= Seq(declineEffect),
+    libraryDependencies  ++= Seq(declineEffect),
     addCompilerPlugin(betterMonadicFor),
-    run / fork           := true,
-    buildInfoKeys        := Seq[BuildInfoKey](version),
-    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.ship",
-    Docker / packageName := "nexus-ship"
+    run / fork            := true,
+    buildInfoKeys         := Seq[BuildInfoKey](version),
+    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.ship",
+    Docker / packageName  := "nexus-ship",
+    coverageFailOnMinimum := false
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
