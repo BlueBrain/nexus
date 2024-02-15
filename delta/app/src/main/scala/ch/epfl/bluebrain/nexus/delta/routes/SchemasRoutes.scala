@@ -88,7 +88,7 @@ final class SchemasRoutes(
             def index(schema: SchemaResource): IO[Unit] = indexAction(schema.value.project, schema, mode)
             concat(
               // Create a schema without id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+              (pathEndOrSingleSlash & post & noParameter("rev") & entity(as[Json])) { source =>
                 authorizeFor(ref, Write).apply {
                   emitMetadata(Created, schemas.create(ref, source).flatTap(index))
                 }
@@ -100,7 +100,7 @@ final class SchemasRoutes(
                       // Create or update a schema
                       put {
                         authorizeFor(ref, Write).apply {
-                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                          (parameter("rev".as[Int].?) & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a schema with id segment
                               emitMetadata(Created, schemas.create(id, ref, source).flatTap(index))

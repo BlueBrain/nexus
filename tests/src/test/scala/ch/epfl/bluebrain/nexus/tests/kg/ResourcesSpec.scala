@@ -881,8 +881,24 @@ class ResourcesSpec extends BaseIntegrationSpec {
   }
 
   "Passing an unknown suffix on the resource endpoint" should {
-    "return not found" in {
-      deltaClient.put[Json](s"/resources/$project2/_/test-resource:id/xxx", Json.Null, Rick) { expectNotFound }
+
+    val endpoint = s"/resources/$project2/_/test-resource:id/xxx"
+
+    "return not found for a post" in {
+      deltaClient.post[Json](endpoint, Json.Null, Rick) { expectNotFound }
+    }
+
+    "return not found for a put" in {
+      deltaClient.put[Json](endpoint, Json.Null, Rick) { expectNotFound }
+    }
+
+    // TODO remove after removing the generic endpoint for deprecation
+    "return not found for a delete" ignore {
+      deltaClient.delete[Json](endpoint, Rick) { expectNotFound }
+    }
+
+    "return not found for a get" in {
+      deltaClient.get[Json](endpoint, Rick) { expectNotFound }
     }
   }
 

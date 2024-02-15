@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
-import akka.http.scaladsl.model.{EntityStreamSizeException, IllegalRequestException, StatusCodes}
-import akka.http.scaladsl.server.ExceptionHandler
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import akka.http.scaladsl.model.{EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.ExceptionHandler
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -45,7 +45,6 @@ object RdfExceptionHandler {
       case err: AuthorizationFailed       => discardEntityAndForceEmit(err: ServiceError)
       case err: RdfError                  => discardEntityAndForceEmit(err)
       case err: EntityStreamSizeException => discardEntityAndForceEmit(err)
-      case err: IllegalRequestException   => discardEntityAndForceEmit(err)
       case err: Throwable                 =>
         onComplete(logger.error(err)(s"An exception was thrown while evaluating a Route'").unsafeToFuture()) { _ =>
           discardEntityAndForceEmit(UnexpectedError)
@@ -78,18 +77,6 @@ object RdfExceptionHandler {
 
   implicit private val entityStreamSizeExceptionHttpFields: HttpResponseFields[EntityStreamSizeException] =
     HttpResponseFields(_ => StatusCodes.PayloadTooLarge)
-
-  implicit private val illegalRequestExceptionEncoder: Encoder[IllegalRequestException] =
-    Encoder.AsObject.instance { r =>
-      val tpe = "IllegalRequest"
-      JsonObject(keywords.tpe := tpe, "reason" := r.info.formatPretty)
-    }
-
-  implicit private val illegalRequestExceptionJsonLdEncoder: JsonLdEncoder[IllegalRequestException] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-
-  implicit private val illegalRequestExceptionnHttpFields: HttpResponseFields[IllegalRequestException] =
-    HttpResponseFields(_.status)
 
   final private case object UnexpectedError
   private type UnexpectedError = UnexpectedError.type
