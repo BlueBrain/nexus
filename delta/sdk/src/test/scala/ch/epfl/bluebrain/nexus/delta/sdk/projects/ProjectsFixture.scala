@@ -41,7 +41,7 @@ trait ProjectsFixture { self: CatsEffectSuite =>
     ResourceSuiteLocalFixture(
       "projects",
       Doobie.resource().map { xas =>
-        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, inits, apiMappings, config, xas, clock))
+        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, inits, apiMappings, config.eventLog, xas, clock))
       }
     )
   }

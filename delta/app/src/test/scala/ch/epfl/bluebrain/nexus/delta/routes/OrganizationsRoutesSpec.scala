@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsConfig, OrganizationsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
@@ -29,9 +29,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
-  private val config = OrganizationsConfig(eventLogConfig, pagination)
-
-  private lazy val orgs                            = OrganizationsImpl(ScopeInitializer.noop, config, xas, clock)
+  private lazy val orgs                            = OrganizationsImpl(ScopeInitializer.noop, eventLogConfig, xas, clock)
   private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 
   private val superUser                      = User("superUser", Label.unsafe(genString()))
