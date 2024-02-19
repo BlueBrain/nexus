@@ -26,6 +26,7 @@
 * @ref:[Graph Analytics](graph-analytics-api.md)
 * @ref:[Jira integration](jira.md)
 * @ref:[Supervision](supervision-api.md)
+* @ref:[Type Hierarchy](type-hierarchy-api.md)
 
 @@@
 
