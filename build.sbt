@@ -33,6 +33,7 @@ val circeVersion            = "0.14.6"
 val circeOpticsVersion      = "0.15.0"
 val circeExtrasVersions     = "0.14.3"
 val classgraphVersion       = "4.8.165"
+val declineVersion          = "2.4.1"
 val distageVersion          = "1.2.5"
 val doobieVersion           = "1.0.0-RC5"
 val fs2Version              = "3.9.4"
@@ -92,6 +93,7 @@ lazy val circeOptics        = "io.circe"                     %% "circe-optics"  
 lazy val circeParser        = "io.circe"                     %% "circe-parser"             % circeVersion
 lazy val classgraph         = "io.github.classgraph"          % "classgraph"               % classgraphVersion
 lazy val distageCore        = "io.7mind.izumi"               %% "distage-core"             % distageVersion
+lazy val declineEffect      = "com.monovore"                 %% "decline-effect"           % declineVersion
 lazy val doobiePostgres     = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
 lazy val doobie             = Seq(
   doobiePostgres,
@@ -719,6 +721,25 @@ lazy val delta = project
   .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcingPsql, rdf, sdk, app, plugins)
 
+lazy val ship = project
+  .in(file("ship"))
+  .settings(
+    name       := "nexus-ship",
+    moduleName := "nexus-ship"
+  )
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
+  .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
+  .settings(
+    libraryDependencies  ++= Seq(declineEffect),
+    addCompilerPlugin(betterMonadicFor),
+    run / fork            := true,
+    buildInfoKeys         := Seq[BuildInfoKey](version),
+    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.ship",
+    Docker / packageName  := "nexus-ship",
+    coverageFailOnMinimum := false
+  )
+
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val storage = project
@@ -1061,4 +1082,6 @@ addCommandAlias("app-unit-tests", runTestsCommandsForModules(List("app")))
 addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("app")))
 addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
 addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
+addCommandAlias("ship-unit-tests", runTestsCommandsForModules(List("ship")))
+addCommandAlias("ship-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("ship")))
 addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))

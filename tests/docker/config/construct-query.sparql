@@ -700,7 +700,7 @@ CONSTRUCT {
    OPTIONAL {
       ?id a nsg:EModel .
 
-      BIND(BNODE() AS ?emodel ) .
+      BIND(BNODE(CONCAT(STR(?id), '/emodel')) as ?emodel ) .
 
       OPTIONAL { ?id  nsg:score ?emodelScore   . } .
 
