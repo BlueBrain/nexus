@@ -37,8 +37,16 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
   "type hierarchy" should {
 
     "not be created without permissions" in {
-      deltaClient.post[Json]("/type-hierarchy", mapping, Anonymous) { (_, response) =>
+      deltaClient.post[Json]("/type-hierarchy", mapping, Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.Forbidden
+        json shouldEqual authorizationFailed("POST")
+      }
+    }
+
+    "not be created if it already exists" in {
+      deltaClient.post[Json]("/type-hierarchy", mapping, typehierarchy.Writer) { (error, response) =>
+        response.status shouldEqual StatusCodes.Conflict
+        error shouldEqual typeHierarchyAlreadyExists
       }
     }
 
@@ -50,11 +58,20 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
       }
     }
 
+    "not be fetched with invalid revision" in {
+      val rev = typeHierarchyRevisionRef.get.accepted
+      deltaClient.get[Json](s"/type-hierarchy?rev=${rev + 1}", Anonymous) { (json, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
+        json shouldEqual revisionNotFound(rev + 1, rev)
+      }
+    }
+
     "not be updated without permissions" in {
       val rev = typeHierarchyRevisionRef.get.accepted
 
-      deltaClient.put[Json](s"/type-hierarchy?rev=$rev", mapping, Anonymous) { (_, response) =>
+      deltaClient.put[Json](s"/type-hierarchy?rev=$rev", mapping, Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.Forbidden
+        json shouldEqual authorizationFailed("PUT", Some(rev))
       }
     }
 
@@ -68,5 +85,31 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
     }
 
   }
+
+  def revisionNotFound(requestedRev: Int, latestRev: Int): Json =
+    json"""{
+             "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+             "reason":"Revision requested '$requestedRev' not found, last known revision is '$latestRev'."
+           }"""
+
+  def authorizationFailed(method: String, rev: Option[Int] = None): Json =
+    json"""
+          {
+            "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+            "@type" : "AuthorizationFailed",
+            "reason" : "The supplied authentication is not authorized to access this resource.",
+            "details" : "Permission 'typehierarchy/write' is missing on '/'.\\nIncoming request was 'http://localhost:8080/v1/type-hierarchy${rev
+      .map(r => s"?rev=$r")
+      .getOrElse("")}' ('$method')."
+          }
+        """
+
+  def typeHierarchyAlreadyExists: Json =
+    json"""
+          {
+            "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+            "reason" : "Type hierarchy already exists."
+          }
+        """
 
 }

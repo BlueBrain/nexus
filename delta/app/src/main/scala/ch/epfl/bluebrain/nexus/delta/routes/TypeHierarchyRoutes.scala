@@ -33,6 +33,10 @@ final class TypeHierarchyRoutes(
       extractCaller { implicit caller =>
         pathPrefix("type-hierarchy") {
           concat(
+            // Fetch using the revision
+            (get & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
+              emit(typeHierarchy.fetch(rev).attemptNarrow[TypeHierarchyRejection])
+            },
             // Fetch the type hierarchy
             (get & pathEndOrSingleSlash) {
               emit(typeHierarchy.fetch.attemptNarrow[TypeHierarchyRejection])
