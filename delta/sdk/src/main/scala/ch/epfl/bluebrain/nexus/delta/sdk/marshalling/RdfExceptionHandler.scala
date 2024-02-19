@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{EntityStreamSizeException, StatusCodes}
-import akka.http.scaladsl.server.ExceptionHandler
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.ExceptionHandler
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
