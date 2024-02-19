@@ -1,6 +1,6 @@
 # Type hierarchy
 
-The type hierarchy is a signleton entity that defines a mapping between concrete types and their abstract types.
+The type hierarchy is a singleton entity that defines a mapping between concrete types and their abstract types.
 
 @@@ note { .tip title="Authorization notes" }
 
