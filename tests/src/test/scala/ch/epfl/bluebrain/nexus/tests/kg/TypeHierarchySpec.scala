@@ -8,6 +8,9 @@ import ch.epfl.bluebrain.nexus.tests.Identity.{typehierarchy, Anonymous}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.TypeHierarchy
 import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
+import org.scalatest.Assertion
+
+import java.time.Instant
 
 class TypeHierarchySpec extends BaseIntegrationSpec {
 
@@ -33,6 +36,7 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
   }
 
   private val typeHierarchyRevisionRef = Ref.unsafe[IO, Int](0)
+  private def currentRev: Int          = typeHierarchyRevisionRef.get.accepted
 
   "type hierarchy" should {
 
@@ -55,11 +59,12 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         typeHierarchyRevisionRef.set(json.hcursor.get[Int]("_rev").rightValue).accepted
         json.hcursor.get[Json]("mapping").rightValue shouldEqual mapping.hcursor.get[Json]("mapping").rightValue
+        assertMetadata(json, rev = currentRev)
       }
     }
 
     "not be fetched with invalid revision" in {
-      val rev = typeHierarchyRevisionRef.get.accepted
+      val rev = currentRev
       deltaClient.get[Json](s"/type-hierarchy?rev=${rev + 1}", Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual revisionNotFound(rev + 1, rev)
@@ -67,8 +72,7 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
     }
 
     "not be updated without permissions" in {
-      val rev = typeHierarchyRevisionRef.get.accepted
-
+      val rev = currentRev
       deltaClient.put[Json](s"/type-hierarchy?rev=$rev", mapping, Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.Forbidden
         json shouldEqual authorizationFailed("PUT", Some(rev))
@@ -76,14 +80,25 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
     }
 
     "be updated with write permissions" in {
-      val rev = typeHierarchyRevisionRef.get.accepted
-
+      val rev = currentRev
       deltaClient.put[Json](s"/type-hierarchy?rev=$rev", mapping, typehierarchy.Writer) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json.hcursor.get[Int]("_rev").rightValue shouldEqual (rev + 1)
+        assertMetadata(json, rev = rev + 1)
       }
     }
 
+  }
+
+  def assertMetadata(json: Json, rev: Int): Assertion = {
+    json.hcursor.get[Instant]("_createdAt").toOption should not be empty
+    json.hcursor.get[Instant]("_updatedAt").toOption should not be empty
+    json.hcursor.get[String]("_createdBy").toOption should not be empty
+    json.hcursor.get[String]("_updatedBy").toOption should not be empty
+    json.hcursor.get[String]("_self").toOption should not be empty
+    json.hcursor.get[String]("_constrainedBy").toOption should not be empty
+    json.hcursor.get[Boolean]("_deprecated").rightValue shouldEqual false
+    json.hcursor.get[Int]("_rev").rightValue shouldEqual rev
   }
 
   def revisionNotFound(requestedRev: Int, latestRev: Int): Json =
