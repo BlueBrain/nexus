@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
@@ -16,6 +16,7 @@ import pureconfig.generic.auto._
 import pureconfig.{ConfigConvert, ConfigReader}
 
 import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Configuration for the Storages module.
@@ -195,7 +196,7 @@ object StoragesConfig {
     *   flag to decide whether or not to show the absolute location of the files in the metadata response
     * @param defaultMaxFileSize
     *   the default maximum allowed file size (in bytes) for uploaded files
-    * @param digestComputation
+    * @param digestComputationRetryDelay
     *   retry configuration for the digest computation task
     */
   final case class RemoteDiskStorageConfig(
@@ -206,7 +207,7 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long,
-      digestComputation: RetryStrategyConfig
+      digestComputationRetryDelay: FiniteDuration
   ) extends StorageTypeEntryConfig
 
   implicit private val uriConverter: ConfigConvert[Uri] =
