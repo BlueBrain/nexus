@@ -1,0 +1,9 @@
+{
+  "mapping": {
+    "https://schema.org/VideoGame": [
+      "https://schema.org/SoftwareApplication",
+      "https://schema.org/CreativeWork",
+      "https://schema.org/Thing"
+    ]
+  }
+}

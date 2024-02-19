@@ -78,7 +78,6 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
 
     "succeed to create the type hierarchy with write permissions" in {
       Post("/v1/type-hierarchy", jsonMapping.toEntity) ~> as(typeHierarchyWriter) ~> routes ~> check {
-        println(response.asJson)
         status shouldEqual StatusCodes.Created
       }
     }
