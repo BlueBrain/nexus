@@ -72,12 +72,14 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
     "fail to create the type hierarchy without permissions" in {
       Post("/v1/type-hierarchy", jsonMapping.toEntity) ~> routes ~> check {
         response.shouldBeForbidden
+        typeHierarchyRef.get.accepted shouldEqual None
       }
     }
 
     "succeed to create the type hierarchy with write permissions" in {
       Post("/v1/type-hierarchy", jsonMapping.toEntity) ~> as(typeHierarchyWriter) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
+        typeHierarchyRef.get.accepted shouldEqual Some(typeHierarchyResource(rev = 1))
       }
     }
 
@@ -85,6 +87,7 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
       givenATypeHierarchyExists {
         Get("/v1/type-hierarchy") ~> routes ~> check {
           status shouldEqual StatusCodes.OK
+          typeHierarchyRef.get.accepted shouldEqual Some(typeHierarchyResource(rev = 1))
         }
       }
     }
@@ -93,6 +96,7 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
       givenATypeHierarchyExists {
         Put("/v1/type-hierarchy?rev=1", jsonMapping.toEntity) ~> routes ~> check {
           response.shouldBeForbidden
+          typeHierarchyRef.get.accepted shouldEqual Some(typeHierarchyResource(rev = 1))
         }
       }
     }
@@ -101,6 +105,7 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
       givenATypeHierarchyExists {
         Put("/v1/type-hierarchy?rev=1", jsonMapping.toEntity) ~> as(typeHierarchyWriter) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
+          typeHierarchyRef.get.accepted shouldEqual Some(typeHierarchyResource(rev = 2))
         }
       }
     }
