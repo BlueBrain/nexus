@@ -187,6 +187,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(VersionModule)
   include(QuotasModule)
   include(EventsModule)
+  include(ExportModule)
   include(StreamModule)
   include(SupervisionModule)
   include(TypeHierarchyModule)

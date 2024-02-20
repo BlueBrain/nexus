@@ -76,7 +76,7 @@ class CompositeViewsIndexingRoutes(
                 )
               },
               // Fetch composite indexing description
-              (get & pathPrefix("description") & pathEndOrSingleSlash) {
+              (pathPrefix("description") & pathEndOrSingleSlash & get) {
                 authorizeFor(project, Read).apply {
                   emit(
                     fetchView(id, project)
@@ -87,7 +87,7 @@ class CompositeViewsIndexingRoutes(
                 }
               },
               // Fetch composite view statistics
-              (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
+              (pathPrefix("statistics") & pathEndOrSingleSlash & get) {
                 authorizeFor(project, Read).apply {
                   emit(
                     fetchView(id, project)

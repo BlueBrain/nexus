@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.{Json, JsonObject}
 
 /**
@@ -58,9 +57,6 @@ class CompositeViewsRoutes(
   private def emitFetch(io: IO[ViewResource]) =
     emit(io.attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
 
-  private def emitTags(io: IO[ViewResource]) =
-    emit(io.map(_.value.tags).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
-
   private def emitSource(io: IO[ViewResource]) =
     emit(io.map(_.value.source).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
 
@@ -76,7 +72,7 @@ class CompositeViewsRoutes(
         projectRef { implicit project =>
           concat(
             //Create a view without id segment
-            (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
+            (pathEndOrSingleSlash & post & entity(as[Json]) & noParameter("rev")) { source =>
               authorizeFor(project, Write).apply {
                 emitMetadata(Created, views.create(project, source))
               }
@@ -120,22 +116,6 @@ class CompositeViewsRoutes(
                   authorizeFor(project, Write).apply {
                     emitMetadata(views.undeprecate(viewId, project, rev))
                   }
-                },
-                (pathPrefix("tags") & pathEndOrSingleSlash) {
-                  concat(
-                    // Fetch tags for a view
-                    (get & idSegmentRef(viewId) & authorizeFor(project, Read)) { id =>
-                      emitTags(views.fetch(id, project))
-                    },
-                    // Tag a view
-                    (post & parameter("rev".as[Int])) { rev =>
-                      authorizeFor(project, Write).apply {
-                        entity(as[Tag]) { case Tag(tagRev, tag) =>
-                          emitMetadata(Created, views.tag(viewId, project, tag, tagRev, rev))
-                        }
-                      }
-                    }
-                  )
                 },
                 // Fetch a view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(viewId)) { id =>

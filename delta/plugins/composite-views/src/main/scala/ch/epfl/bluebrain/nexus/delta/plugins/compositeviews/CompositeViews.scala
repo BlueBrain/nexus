@@ -27,11 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -163,36 +161,6 @@ final class CompositeViews private (
   }.span("updateCompositeView")
 
   /**
-    * Applies a tag to an existing composite revision.
-    *
-    * @param id
-    *   the view identifier
-    * @param project
-    *   the view parent project
-    * @param tag
-    *   the tag to apply
-    * @param tagRev
-    *   the target revision of the tag
-    * @param rev
-    *   the current view revision
-    * @param subject
-    *   the subject that initiated the action
-    */
-  def tag(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit subject: Subject): IO[ViewResource] = {
-    for {
-      pc  <- fetchContext.onModify(project)
-      iri <- expandIri(id, pc)
-      res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject))
-    } yield res
-  }.span("tagCompositeView")
-
-  /**
     * Deprecates an existing composite view.
     *
     * @param id
@@ -278,10 +246,8 @@ final class CompositeViews private (
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
-                   case Revision(_, rev) =>
-                     log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-                   case Tag(_, tag)      =>
-                     log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+                   case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
+                   case t: Tag           => IO.raiseError(FetchByTagNotSupported(t))
                  }
     } yield state
   }.span("fetchCompositeView")
@@ -445,19 +411,6 @@ object CompositeViews {
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
-    def tag(c: TagCompositeView) = state match {
-      case None                                               =>
-        IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev                          =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
-        IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                            =>
-        clock.realTimeInstant.map(
-          CompositeViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
-        )
-    }
-
     def deprecate(c: DeprecateCompositeView) = state match {
       case None                      =>
         IO.raiseError(ViewNotFound(c.id, c.project))
@@ -483,7 +436,6 @@ object CompositeViews {
     cmd match {
       case c: CreateCompositeView      => create(c)
       case c: UpdateCompositeView      => update(c)
-      case c: TagCompositeView         => tag(c)
       case c: DeprecateCompositeView   => deprecate(c)
       case c: UndeprecateCompositeView => undeprecate(c)
     }
@@ -492,20 +444,11 @@ object CompositeViews {
   def definition(validate: ValidateCompositeView, clock: Clock[IO])(implicit
       uuidF: UUIDF
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
-    ScopedEntityDefinition(
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(None, evaluate(validate, clock)(_, _), next),
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
-      Tagger[CompositeViewEvent](
-        {
-          case r: CompositeViewTagAdded => Some(r.tag -> r.targetRev)
-          case _                        => None
-        },
-        { _ =>
-          None
-        }
-      ),
       state =>
         Some(
           state.value.sources.value.foldLeft(Set.empty[DependsOn]) {

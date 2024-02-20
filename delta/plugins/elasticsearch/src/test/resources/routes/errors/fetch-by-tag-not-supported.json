@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "FetchByTagNotSupported",
+  "reason" : "Fetching ElasticSearch views by tag is no longer supported. Id {{id}} and tag {{tag}}"
+}

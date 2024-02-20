@@ -79,7 +79,7 @@ final class FilesRoutes(
             }
 
             concat(
-              (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
+              (pathEndOrSingleSlash & post & noParameter("rev") & parameter(
                 "storage".as[IdSegment].?
               ) & indexingMode & tagParam) { (storage, mode, tag) =>
                 operationName(s"$prefixSegment/files/{org}/{project}") {

@@ -51,43 +51,41 @@ class EventsRoutes(
       extractCaller { implicit caller =>
         lastEventId { offset =>
           concat(
-            get {
-              concat(
-                // SSE for all events with a given selector
-                (resolveSelector & pathPrefix("events") & pathEndOrSingleSlash) { selector =>
-                  concat(
-                    authorizeFor(AclAddress.Root, events.read).apply {
-                      emit(sseEventLog.streamBy(selector, offset))
-                    },
-                    (head & authorizeFor(AclAddress.Root, events.read)) {
-                      complete(OK)
-                    }
-                  )
-                },
-                // SSE for events with a given selector within a given organization
-                (resolveSelector & label & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
-                  concat(
-                    authorizeFor(org, events.read).apply {
-                      emit(sseEventLog.streamBy(selector, org, offset).attemptNarrow[OrganizationRejection])
-                    },
-                    (head & authorizeFor(org, events.read)) {
-                      complete(OK)
-                    }
-                  )
-                },
-                // SSE for events with a given selector within a given project
-                (resolveSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) { (selector, project) =>
-                  concat(
-                    authorizeFor(project, events.read).apply {
-                      emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
-                    },
-                    (head & authorizeFor(project, events.read)) {
-                      complete(OK)
-                    }
-                  )
-                }
-              )
-            }
+            concat(
+              // SSE for all events with a given selector
+              (resolveSelector & pathPrefix("events") & pathEndOrSingleSlash & get) { selector =>
+                concat(
+                  authorizeFor(AclAddress.Root, events.read).apply {
+                    emit(sseEventLog.streamBy(selector, offset))
+                  },
+                  (head & authorizeFor(AclAddress.Root, events.read)) {
+                    complete(OK)
+                  }
+                )
+              },
+              // SSE for events with a given selector within a given organization
+              (resolveSelector & label & pathPrefix("events") & pathEndOrSingleSlash & get) { (selector, org) =>
+                concat(
+                  authorizeFor(org, events.read).apply {
+                    emit(sseEventLog.streamBy(selector, org, offset).attemptNarrow[OrganizationRejection])
+                  },
+                  (head & authorizeFor(org, events.read)) {
+                    complete(OK)
+                  }
+                )
+              },
+              // SSE for events with a given selector within a given project
+              (resolveSelector & projectRef & pathPrefix("events") & pathEndOrSingleSlash) { (selector, project) =>
+                concat(
+                  (get & authorizeFor(project, events.read)).apply {
+                    emit(sseEventLog.streamBy(selector, project, offset).attemptNarrow[ProjectRejection])
+                  },
+                  (head & authorizeFor(project, events.read)) {
+                    complete(OK)
+                  }
+                )
+              }
+            )
           )
         }
       }

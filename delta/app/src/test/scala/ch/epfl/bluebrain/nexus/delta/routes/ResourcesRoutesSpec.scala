@@ -750,6 +750,18 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
         }
       }
     }
+
+    "return not found for an unknown `xxx` suffix" in {
+      val methods = List(Get, Put, Post, Delete)
+      givenAResource { id =>
+        forAll(methods) { method =>
+          method(s"/v1/resources/myorg/myproject/myschema/${UrlUtils.encode(id)}/xxx") ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.NotFound
+            response.asJson.hcursor.get[String]("@type").toOption should contain("ResourceNotFound")
+          }
+        }
+      }
+    }
   }
 
   private def resourceMetadata(

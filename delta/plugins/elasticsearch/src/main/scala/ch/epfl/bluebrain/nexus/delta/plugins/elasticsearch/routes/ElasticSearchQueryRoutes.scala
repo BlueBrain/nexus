@@ -64,7 +64,7 @@ class ElasticSearchQueryRoutes(
           },
           projectRef { project =>
             projectContext(project) { implicit pc =>
-              (searchParametersInProject & paginated) { (params, sort, page) =>
+              (get & searchParametersInProject & paginated) { (params, sort, page) =>
                 concat(
                   // List/aggregate all resources inside a project
                   pathEndOrSingleSlash {

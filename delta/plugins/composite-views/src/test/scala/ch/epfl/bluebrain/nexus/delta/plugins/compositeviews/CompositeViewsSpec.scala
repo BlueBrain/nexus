@@ -72,7 +72,6 @@ class CompositeViewsSpec
         createdBy: Subject = alice.subject,
         updatedAt: Instant = Instant.EPOCH,
         updatedBy: Subject = alice.subject,
-        tags: Tags = Tags.empty,
         source: Json
     ): ViewResource = CompositeViewsGen.resourceFor(
       projectRef,
@@ -85,7 +84,6 @@ class CompositeViewsSpec
       createdBy = createdBy,
       updatedAt = updatedAt,
       updatedBy = updatedBy,
-      tags = tags,
       source = source
     )
 
@@ -180,40 +178,13 @@ class CompositeViewsSpec
       }
     }
 
-    "tag a view" when {
-      val tag = UserTag.unsafe("mytag")
-      "view is not deprecated" in {
-        compositeViews.tag(viewId, projectRef, tag, 1, 2).accepted
-      }
-
-      "view is deprecated" in {
-        compositeViews.tag(otherViewId, projectRef, tag, 1, 3).accepted
-      }
-    }
-
-    "reject tagging a view" when {
-      "incorrect revision is provided" in {
-        val tag = UserTag.unsafe("mytag2")
-        compositeViews.tag(viewId, projectRef, tag, 1, 2).rejectedWith[IncorrectRev]
-      }
-      "view is deprecated" in {
-        val tag = UserTag.unsafe("mytag3")
-        compositeViews.tag(otherViewId, projectRef, tag, 1, 2).rejectedWith[IncorrectRev]
-      }
-      "target view is not found" in {
-        val tag = UserTag.unsafe("mytag3")
-        compositeViews.tag(iri"http://example.com/wrong", projectRef, tag, 1, 2).rejectedWith[ViewNotFound]
-      }
-    }
-
     "fetch a view" when {
       "no tag or rev is provided" in {
         compositeViews.fetch(viewId, projectRef).accepted shouldEqual resourceFor(
           viewId,
           updatedValue,
           source = viewSourceUpdated.removeAllKeys("token"),
-          rev = 3,
-          tags = Tags(UserTag.unsafe("mytag") -> 1)
+          rev = 2
         )
       }
       "rev is provided" in {
@@ -222,11 +193,6 @@ class CompositeViewsSpec
           viewValue,
           source = viewSource.removeAllKeys("token")
         )
-      }
-      "tag is provided" in {
-        val tag = UserTag.unsafe("mytag")
-        compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).accepted shouldEqual
-          resourceFor(viewId, viewValue, source = viewSource.removeAllKeys("token"))
       }
     }
 
@@ -238,9 +204,9 @@ class CompositeViewsSpec
         compositeViews.fetch(IdSegmentRef(viewId, 42), projectRef).rejectedWith[RevisionNotFound]
       }
 
-      "tag doesn't exist" in {
-        val tag = UserTag.unsafe("wrongtag")
-        compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
+      "attempting any lookup by tag" in {
+        val tag = UserTag.unsafe("mytag")
+        compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[FetchByTagNotSupported]
       }
     }
 
