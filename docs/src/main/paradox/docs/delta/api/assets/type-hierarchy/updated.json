@@ -1,0 +1,24 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/type-hierarchy.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/TypeHierarchy",
+  "@type": "TypeHierarchy",
+  "mapping": {
+    "https://schema.org/VideoGame": [
+      "https://schema.org/SoftwareApplication",
+      "https://schema.org/CreativeWork",
+      "https://schema.org/Thing"
+    ]
+  },
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/type-hierarchy.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/realms/knntwmnuxprsqrio/users/jane-doe",
+  "_deprecated": false,
+  "_rev": 2,
+  "_self": "http://localhost/v1/type-hierarchy",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/realms/knntwmnuxprsqrio/users/jane-doe"
+}
+

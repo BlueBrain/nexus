@@ -218,8 +218,18 @@ object Permissions {
     final val read: Permission = Permission.unsafe("quotas/read")
   }
 
+  /**
+    * Supervision permissions.
+    */
   object supervision {
     final val read: Permission = Permission.unsafe("supervision/read")
+  }
+
+  /**
+    * Type hierarchy permissions.
+    */
+  object typehierarchy {
+    final val write: Permission = Permission.unsafe("typehierarchy/write")
   }
 
   private[delta] def next(
