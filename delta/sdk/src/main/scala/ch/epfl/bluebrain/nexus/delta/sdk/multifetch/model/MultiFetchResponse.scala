@@ -93,7 +93,7 @@ object MultiFetchResponse {
           val source                             = content.source
           repr match {
             case SourceJson          => IO.pure(source.asJson)
-            case AnnotatedSourceJson => AnnotatedSource(value, source)
+            case AnnotatedSourceJson => IO.pure(AnnotatedSource(value, source))
             case CompactedJsonLd     => value.toCompactedJsonLd.map { v => v.json }
             case ExpandedJsonLd      => value.toExpandedJsonLd.map { v => v.json }
             case NTriples            => value.toNTriples.map { v => v.value.asJson }

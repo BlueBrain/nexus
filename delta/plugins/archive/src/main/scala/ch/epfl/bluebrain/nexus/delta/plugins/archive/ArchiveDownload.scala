@@ -242,9 +242,8 @@ object ArchiveDownload {
         repr match {
           case SourceJson          => IO.pure(ByteString(prettyPrintSource(value.source)))
           case AnnotatedSourceJson =>
-            AnnotatedSource(value.resource, value.source).map { json =>
-              ByteString(prettyPrintSource(json))
-            }
+            val annotatedSource = AnnotatedSource(value.resource, value.source)
+            IO.pure(ByteString(prettyPrintSource(annotatedSource)))
           case CompactedJsonLd     => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
           case ExpandedJsonLd      => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
           case NTriples            => value.resource.toNTriples.map(v => ByteString(v.value))

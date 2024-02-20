@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -210,7 +209,7 @@ final class ResourcesRoutes(
                                 emit(
                                   resources
                                     .fetch(resourceRef, project, schemaOpt)
-                                    .flatMap(asSourceWithMetadata)
+                                    .map(asSourceWithMetadata)
                                     .attemptNarrow[ResourceRejection]
                                 )
                               } else {
@@ -320,9 +319,7 @@ object ResourcesRoutes {
 
   def asSourceWithMetadata(
       resource: ResourceF[Resource]
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[Json] =
-    AnnotatedSource(resource, resource.value.source).adaptError { case e: RdfError =>
-      InvalidJsonLdFormat(Some(resource.id), e)
-    }
+  )(implicit baseUri: BaseUri): Json =
+    AnnotatedSource(resource, resource.value.source)
 
 }
