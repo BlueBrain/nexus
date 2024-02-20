@@ -113,19 +113,19 @@ Example
 $ curl http://localhost/v1/version | jq
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
-  "delta": "1.9.0",
+  "delta": "1.10.0",
   "dependencies": {
     "blazegraph": "2.1.6-SNAPSHOT",
-    "elasticsearch": "8.11.1",
+    "elasticsearch": "8.12.1",
     "postgres": "15.6"
   },
   "environment": "dev",
   "plugins": {
-    "archive": "1.9.0",
-    "blazegraph": "1.9.0",
-    "composite-views": "1.9.0",
-    "elasticsearch": "1.9.0",
-    "storage": "1.9.0"
+    "archive": "1.10.0",
+    "blazegraph": "1.10.0",
+    "composite-views": "1.10.0",
+    "elasticsearch": "1.10.0",
+    "storage": "1.10.0"
   }
 }
 ```

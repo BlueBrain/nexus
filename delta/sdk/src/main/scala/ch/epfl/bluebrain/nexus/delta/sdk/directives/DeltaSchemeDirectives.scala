@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1}
@@ -53,11 +54,13 @@ final class DeltaSchemeDirectives(
     replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId)
 
   private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
-    ((get | delete) & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
-      .tflatMap { case (projectRef, id) =>
+    (pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment) & extractMethod)
+      .tflatMap { case (projectRef, id, method) =>
         mapRequestContext { ctx =>
-          val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id
-          ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+          if (method == HttpMethods.GET || method == HttpMethods.DELETE) {
+            val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id
+            ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+          } else ctx
         }
       }
       .or(pass)

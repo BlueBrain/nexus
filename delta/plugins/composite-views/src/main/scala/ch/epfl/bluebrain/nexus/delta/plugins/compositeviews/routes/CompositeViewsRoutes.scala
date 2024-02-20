@@ -72,7 +72,7 @@ class CompositeViewsRoutes(
         projectRef { implicit project =>
           concat(
             //Create a view without id segment
-            (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
+            (pathEndOrSingleSlash & post & entity(as[Json]) & noParameter("rev")) { source =>
               authorizeFor(project, Write).apply {
                 emitMetadata(Created, views.create(project, source))
               }
