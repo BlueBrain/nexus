@@ -28,7 +28,7 @@ object EventProcessor {
 
   private val logger = Logger[EventProcessor.type]
 
-  def run(processors: List[EventProcessor[_]], eventStream: Stream[IO, InputEvent]): IO[Offset] = {
+  def run(eventStream: Stream[IO, InputEvent], processors: EventProcessor[_]*): IO[Offset] = {
     val processorsMap = processors.foldLeft(Map.empty[EntityType, EventProcessor[_]]) { (acc, processor) =>
       acc + (processor.resourceType -> processor)
     }

@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -23,6 +24,8 @@ final class OrganizationProvider(orgs: Organizations, serviceAccount: ServiceAcc
         case _: OrganizationAlreadyExists => logger.info(s"Organization '$label' already exists.")
       }
     }.void
+
+  def fetchActiveOrganization(label: Label): IO[Organization] = orgs.fetchActiveOrganization(label)
 }
 
 object OrganizationProvider {

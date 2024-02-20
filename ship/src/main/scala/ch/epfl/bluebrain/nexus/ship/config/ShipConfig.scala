@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, EventLogConfig}
-import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
+import com.typesafe.config.Config
 import fs2.io.file.Path
-import pureconfig.error.ConfigReaderException
+import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
-import pureconfig.{ConfigReader, ConfigSource}
 
 final case class ShipConfig(
+    baseUri: BaseUri,
     database: DatabaseConfig,
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
@@ -19,23 +19,16 @@ final case class ShipConfig(
 
 object ShipConfig {
 
-  private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
-  private val resolverOptions = ConfigResolveOptions.defaults()
-
   implicit final val shipConfigReader: ConfigReader[ShipConfig] =
     deriveReader[ShipConfig]
 
-  def load(externalConfigPath: Option[Path]): IO[ShipConfig] =
+  def merge(externalConfigPath: Option[Path]): IO[(ShipConfig, Config)] =
     for {
-      externalConfig <- IO.blocking(externalConfigPath.fold(ConfigFactory.empty()) { path =>
-                          ConfigFactory.parseFile(path.toNioPath.toFile, parseOptions)
-                        })
-      defaultConfig  <- IO.blocking(ConfigFactory.parseResources("default.conf", parseOptions))
-      merged          = (externalConfig, defaultConfig)
-                          .foldLeft(ConfigFactory.defaultOverrides())(_ withFallback _)
-                          .withFallback(ConfigFactory.load())
-                          .resolve(resolverOptions)
-      config         <-
-        IO.fromEither(ConfigSource.fromConfig(merged).at("ship").load[ShipConfig].leftMap(ConfigReaderException(_)))
-    } yield config
+      externalConfig <- Configs.parseFile(externalConfigPath.map(_.toNioPath.toFile))
+      defaultConfig  <- Configs.parseResource("default.conf")
+      result         <- Configs.merge[ShipConfig]("ship", externalConfig, defaultConfig)
+    } yield result
+
+  def load(externalConfigPath: Option[Path]): IO[ShipConfig] =
+    merge(externalConfigPath).map(_._1)
 }
