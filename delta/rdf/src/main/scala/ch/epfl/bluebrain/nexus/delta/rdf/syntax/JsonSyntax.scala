@@ -251,7 +251,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Removes the metadata keys from the current json.
     */
-  def removeMetadataKeys: Json = JsonUtils.removeMetadataKeys(json)
+  def removeMetadataKeys(): Json = JsonUtils.removeMetadataKeys(json)
 
   /**
     * Removes the provided key value pairs from everywhere on the json.
