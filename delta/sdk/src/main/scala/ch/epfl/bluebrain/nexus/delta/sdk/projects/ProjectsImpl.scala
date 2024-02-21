@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -112,7 +113,7 @@ object ProjectsImpl {
       validateDeletion: ValidateProjectDeletion,
       scopeInitializer: ScopeInitializer,
       defaultApiMappings: ApiMappings,
-      config: ProjectsConfig,
+      config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
   )(implicit
@@ -120,7 +121,7 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config.eventLog, xas),
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config, xas),
       scopeInitializer,
       defaultApiMappings
     )

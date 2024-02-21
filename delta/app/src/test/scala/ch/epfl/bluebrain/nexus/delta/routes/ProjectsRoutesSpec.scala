@@ -105,7 +105,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   )
 
   private lazy val projects     =
-    ProjectsImpl(fetchOrg, _ => IO.unit, ScopeInitializer.noop, defaultApiMappings, projectsConfig, xas, clock)
+    ProjectsImpl(fetchOrg, _ => IO.unit, ScopeInitializer.noop, defaultApiMappings, eventLogConfig, xas, clock)
   private lazy val provisioning =
     ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
   private lazy val routes       = Route.seal(

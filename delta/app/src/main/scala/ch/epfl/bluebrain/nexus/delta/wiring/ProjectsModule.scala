@@ -67,7 +67,7 @@ object ProjectsModule extends ModuleDef {
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializer,
           mappings.merge,
-          config.projects,
+          config.projects.eventLog,
           xas,
           clock
         )(baseUri, uuidF)

@@ -34,7 +34,7 @@ object OrganizationsModule extends ModuleDef {
     ) =>
       OrganizationsImpl(
         scopeInitializer,
-        config.organizations,
+        config.organizations.eventLog,
         xas,
         clock
       )(uuidF)
