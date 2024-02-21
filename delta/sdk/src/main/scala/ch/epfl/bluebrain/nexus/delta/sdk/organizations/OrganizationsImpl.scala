@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationComman
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
@@ -85,14 +86,14 @@ object OrganizationsImpl {
 
   def apply(
       scopeInitializer: ScopeInitializer,
-      config: OrganizationsConfig,
+      config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
   )(implicit
       uuidf: UUIDF
   ): Organizations =
     new OrganizationsImpl(
-      GlobalEventLog(Organizations.definition(clock), config.eventLog, xas),
+      GlobalEventLog(Organizations.definition(clock), config, xas),
       scopeInitializer
     )
 

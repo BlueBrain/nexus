@@ -2,8 +2,8 @@ name: Delta Plugins unit tests
 on:
   pull_request:
     paths:
-      - 'ship/**'
       - 'delta/kernel/**'
+      - 'delta/plugins/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'delta/sourcing-psql/**'

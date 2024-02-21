@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -11,10 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.InvalidProjectLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -53,14 +53,12 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
     )
   )
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
-
   private lazy val projects = ProjectsImpl(
     fetchOrg,
     _ => IO.unit,
     ScopeInitializer.noop,
     ApiMappings.empty,
-    config,
+    eventLogConfig,
     xas,
     clock
   )

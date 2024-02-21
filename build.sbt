@@ -845,7 +845,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, delta, storage, tests)
+  .aggregate(docs, delta, ship, storage, tests)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,

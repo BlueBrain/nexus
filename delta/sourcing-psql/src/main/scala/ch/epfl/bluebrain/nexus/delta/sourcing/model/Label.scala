@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import doobie.{Get, Put}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
+import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 
 import scala.util.matching.Regex
 
@@ -78,4 +80,7 @@ object Label {
     (cursor: ExpandedJsonLdCursor) =>
       cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
 
+  implicit val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(str =>
+    Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage))
+  )
 }
