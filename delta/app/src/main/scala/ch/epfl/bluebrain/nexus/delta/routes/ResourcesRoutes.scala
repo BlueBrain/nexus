@@ -203,7 +203,7 @@ final class ResourcesRoutes(
                       (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(resource) & varyAcceptHeaders) {
                         resourceRef =>
                           authorizeFor(project, Read).apply {
-                            parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
+                            annotateSource { annotate =>
                               implicit val source: Printer = sourcePrinter
                               if (annotate) {
                                 emit(

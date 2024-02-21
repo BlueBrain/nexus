@@ -107,6 +107,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
+    * Extracts the annotate param as a boolean with a default false value
+    */
+  def annotateSource: Directive1[Boolean] = parameter("annotate".as[Boolean].withDefault(false))
+
+  /**
     * This directive passes when the query parameter specified is not present
     *
     * @param name
