@@ -169,6 +169,12 @@ class JsonUtilsSpec extends BaseSpec with Fixtures {
       jobj"""{"k": "v"}""".addIfExists("k2", Some("v2")) shouldEqual jobj"""{"k": "v", "k2": "v2"}"""
       jobj"""{"k": "v"}""".addIfExists[String]("k2", None) shouldEqual jobj"""{"k": "v"}"""
     }
+
+    "remove metadata keys" in {
+      val json     = json"""{ "k1": "v1",  "k2": { "_nested": "v2" }, "_m1": "v3", "_m2": "v4" }"""
+      val expected = json"""{ "k1": "v1",  "k2": { "_nested": "v2" } }"""
+      JsonUtils.removeMetadataKeys(json) shouldEqual expected
+    }
   }
 
   "A Json cursor" should {

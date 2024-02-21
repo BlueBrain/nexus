@@ -613,20 +613,18 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     }
 
     "fetch a resource original payload with metadata using tags and revisions" in {
-      val mySchema = "myschema"
+      val mySchema = UrlUtils.encode(schemas.resources.toString)
       val myTag    = "myTag"
-      givenAResourceWithSchemaAndTag(mySchema.some, myTag.some) { id =>
+      givenAResourceWithTag(myTag) { id =>
         val endpoints = List(
           s"/v1/resources/myorg/myproject/$mySchema/$id/source?rev=1&annotate=true",
           s"/v1/resources/myorg/myproject/_/$id/source?rev=1&annotate=true",
           s"/v1/resources/myorg/myproject/$mySchema/$id/source?tag=$myTag&annotate=true"
         )
-        val meta      = standardWriterMetadata(id, schema = schema1.id)
-
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual simplePayload(id).deepMerge(meta)
+            response.asJson shouldEqual payloadWithMetadata(id)
             response.headers should contain(varyHeader)
           }
         }
