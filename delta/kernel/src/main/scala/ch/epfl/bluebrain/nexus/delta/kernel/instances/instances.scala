@@ -1,3 +1,3 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 package object instances extends ContentTypeInstances

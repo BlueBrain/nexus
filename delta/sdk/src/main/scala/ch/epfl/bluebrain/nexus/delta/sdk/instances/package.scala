@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import ch.epfl.bluebrain.nexus.delta.kernel.instances.ContentTypeInstances
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 
 package object instances
@@ -11,3 +12,4 @@ package object instances
     with UriInstances
     with SecretInstances
     with MediaTypeInstances
+    with ContentTypeInstances

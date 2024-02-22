@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files.model
 
-import akka.http.scaladsl.model.{ContentType, ContentTypes}
+import akka.http.scaladsl.model.MediaType.NotCompressible
+import akka.http.scaladsl.model.{ContentType, ContentTypes, MediaType}
 
 final case class FileInput(
     fileId: String,
@@ -39,6 +40,15 @@ object FileInput {
       "attachment3",
       "attachment2",
       ContentTypes.`application/octet-stream`,
+      "text file",
+      Map("brainRegion" -> "hippocampus")
+    )
+
+  val customBinaryContent =
+    FileInput(
+      "custom-binary",
+      "custom-binary",
+      ContentType.Binary(MediaType.applicationBinary("obj", NotCompressible)),
       "text file",
       Map("brainRegion" -> "hippocampus")
     )
