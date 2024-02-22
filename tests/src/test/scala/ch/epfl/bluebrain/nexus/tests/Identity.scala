@@ -102,7 +102,11 @@ object Identity extends Generators {
     val Writer = UserCredentials(genString(), genString(), testRealm)
   }
 
+  object typehierarchy {
+    val Writer = UserCredentials(genString(), genString(), testRealm)
+  }
+
   lazy val allUsers =
-    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: files.Writer :: Nil
+    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: files.Writer :: typehierarchy.Writer :: Nil
 
 }

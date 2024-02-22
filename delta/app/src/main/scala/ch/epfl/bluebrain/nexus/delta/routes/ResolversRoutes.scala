@@ -137,16 +137,16 @@ final class ResolversRoutes(
                       emitSource(resolvers.fetch(resolverRef, project))
                   },
                   // Fetch a resource using a resolver
-                  (get & idSegmentRef) { resourceIdRef =>
+                  idSegmentRef.apply { resourceIdRef =>
                     concat(
-                      pathEndOrSingleSlash {
+                      (pathEndOrSingleSlash & get) {
                         parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
                           val outputType =
                             if (showReport) ResolvedResourceOutputType.Report else ResolvedResourceOutputType.JsonLd
                           resolveResource(resourceIdRef, project, resolutionType(resolver), outputType)
                         }
                       },
-                      (pathPrefix("source") & pathEndOrSingleSlash) {
+                      (pathPrefix("source") & pathEndOrSingleSlash & get) {
                         resolveResource(
                           resourceIdRef,
                           project,

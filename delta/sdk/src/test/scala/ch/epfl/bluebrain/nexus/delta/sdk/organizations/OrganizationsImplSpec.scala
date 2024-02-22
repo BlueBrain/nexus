@@ -26,8 +26,6 @@ class OrganizationsImplSpec
     with CancelAfterFailure
     with ConfigFixtures {
 
-  private val config = OrganizationsConfig(eventLogConfig, pagination)
-
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
@@ -48,7 +46,7 @@ class OrganizationsImplSpec
       IO.unit
   }
 
-  private lazy val orgs = OrganizationsImpl(ScopeInitializer.noop, config, xas, clock)
+  private lazy val orgs = OrganizationsImpl(ScopeInitializer.noop, eventLogConfig, xas, clock)
 
   "Organizations implementation" should {
 
@@ -109,7 +107,7 @@ class OrganizationsImplSpec
 
     "run the initializer upon organization creation" in {
       val initializerWasExecuted = Ref.unsafe[IO, Boolean](false)
-      val orgs                   = OrganizationsImpl(orgInitializer(initializerWasExecuted), config, xas, clock)
+      val orgs                   = OrganizationsImpl(orgInitializer(initializerWasExecuted), eventLogConfig, xas, clock)
 
       orgs.create(Label.unsafe(genString()), description).accepted
       initializerWasExecuted.get.accepted shouldEqual true

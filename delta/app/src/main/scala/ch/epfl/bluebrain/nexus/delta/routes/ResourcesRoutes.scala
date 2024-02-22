@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -67,7 +66,7 @@ final class ResourcesRoutes(
           projectRef.apply { project =>
             concat(
               // Create a resource without schema nor id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
+              (pathEndOrSingleSlash & post & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
                 (source, mode, tag) =>
                   authorizeFor(project, Write).apply {
                     emit(
@@ -84,9 +83,9 @@ final class ResourcesRoutes(
                 val schemaOpt = underscoreToOption(schema)
                 concat(
                   // Create a resource with schema but without id segment
-                  (post & pathEndOrSingleSlash & noParameter("rev") & tagParam) { tag =>
-                    authorizeFor(project, Write).apply {
-                      entity(as[NexusSource]) { source =>
+                  (pathEndOrSingleSlash & post & noParameter("rev") & entity(as[NexusSource]) & tagParam) {
+                    (source, tag) =>
+                      authorizeFor(project, Write).apply {
                         emit(
                           Created,
                           resources
@@ -97,7 +96,6 @@ final class ResourcesRoutes(
                             .rejectWhen(wrongJsonOrNotFound)
                         )
                       }
-                    }
                   },
                   idSegment { resource =>
                     concat(
@@ -132,7 +130,7 @@ final class ResourcesRoutes(
                             }
                           },
                           // Deprecate a resource
-                          (delete & parameter("rev".as[Int])) { rev =>
+                          (pathEndOrSingleSlash & delete & parameter("rev".as[Int])) { rev =>
                             authorizeFor(project, Write).apply {
                               emit(
                                 resources
@@ -145,7 +143,7 @@ final class ResourcesRoutes(
                             }
                           },
                           // Fetch a resource
-                          (get & idSegmentRef(resource) & varyAcceptHeaders) { resourceRef =>
+                          (pathEndOrSingleSlash & get & idSegmentRef(resource) & varyAcceptHeaders) { resourceRef =>
                             emitOrFusionRedirect(
                               project,
                               resourceRef,
@@ -176,7 +174,6 @@ final class ResourcesRoutes(
                       },
                       (pathPrefix("update-schema") & put & pathEndOrSingleSlash) {
                         authorizeFor(project, Write).apply {
-
                           emit(
                             IO.fromOption(schemaOpt)(NoSchemaProvided)
                               .flatMap { schema =>
@@ -187,7 +184,6 @@ final class ResourcesRoutes(
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
                           )
-
                         }
                       },
                       (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
@@ -213,7 +209,7 @@ final class ResourcesRoutes(
                                 emit(
                                   resources
                                     .fetch(resourceRef, project, schemaOpt)
-                                    .flatMap(asSourceWithMetadata)
+                                    .map(asSourceWithMetadata)
                                     .attemptNarrow[ResourceRejection]
                                 )
                               } else {
@@ -323,9 +319,7 @@ object ResourcesRoutes {
 
   def asSourceWithMetadata(
       resource: ResourceF[Resource]
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[Json] =
-    AnnotatedSource(resource, resource.value.source).adaptError { case e: RdfError =>
-      InvalidJsonLdFormat(Some(resource.id), e)
-    }
+  )(implicit baseUri: BaseUri): Json =
+    AnnotatedSource(resource, resource.value.source)
 
 }

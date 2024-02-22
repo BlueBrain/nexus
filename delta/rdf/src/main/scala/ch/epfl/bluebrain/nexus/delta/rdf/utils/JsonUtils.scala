@@ -49,6 +49,17 @@ trait JsonUtils {
   }
 
   /**
+    * Remove metadata keys (starting with `_`) from the json
+    */
+  def removeMetadataKeys(json: Json): Json = {
+    json.arrayOrObject(
+      json,
+      arr => Json.fromValues(arr),
+      obj => Json.fromJsonObject(obj.filterKeys(!_.startsWith("_")))
+    )
+  }
+
+  /**
     * Extract all the values found from the passed ''keys''
     *
     * @param json

@@ -244,6 +244,7 @@ object Vocabulary {
     val supervision           = contexts + "supervision.json"
     val suites                = contexts + "suites.json"
     val tags                  = contexts + "tags.json"
+    val typeHierarchy         = contexts + "type-hierarchy.json"
     val validation            = contexts + "validation.json"
     val version               = contexts + "version.json"
 

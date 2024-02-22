@@ -5,9 +5,14 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
       "project": "org/proj1",
       "value": {
-        "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+        "@context": [
+          {
+            "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+          },
+          "https://bluebrain.github.io/nexus/contexts/metadata.json"
+        ],
         "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
-        "@type": "https://bluebrain.github.io/nexus/vocabulary/Custom",
+        "@type": "Custom",
         "bool": false,
         "name": "Alex",
         "number": 24,

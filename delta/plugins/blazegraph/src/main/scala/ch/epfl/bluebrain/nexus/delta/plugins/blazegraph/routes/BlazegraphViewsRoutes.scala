@@ -64,7 +64,7 @@ class BlazegraphViewsRoutes(
           projectRef { implicit project =>
             // Create a view without id segment
             concat(
-              (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
+              (pathEndOrSingleSlash & post & entity(as[Json]) & noParameter("rev") & indexingMode) { (source, mode) =>
                 authorizeFor(project, Write).apply {
                   emit(
                     Created,
@@ -139,7 +139,7 @@ class BlazegraphViewsRoutes(
                     )
                   },
                   // Undeprecate a blazegraph view
-                  (put & pathPrefix("undeprecate") & parameter("rev".as[Int]) &
+                  (pathPrefix("undeprecate") & put & parameter("rev".as[Int]) &
                     authorizeFor(project, Write) & pathEndOrSingleSlash) { rev =>
                     emit(
                       views
@@ -207,7 +207,7 @@ class BlazegraphViewsRoutes(
 
   private def incomingOutgoing(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     concat(
-      (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & extractUri) { (pagination, uri) =>
+      (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & get & extractUri) { (pagination, uri) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
@@ -215,7 +215,7 @@ class BlazegraphViewsRoutes(
           emit(viewsQuery.incoming(id, ref, pagination).attemptNarrow[BlazegraphViewRejection])
         }
       },
-      (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
+      (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & get & extractUri & parameter(
         "includeExternalLinks".as[Boolean] ? true
       )) { (pagination, uri, includeExternal) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =

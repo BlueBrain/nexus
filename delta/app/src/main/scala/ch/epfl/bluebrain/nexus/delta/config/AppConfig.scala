@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.config
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -20,9 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportConfig
-import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
+import com.typesafe.config.Config
+import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
-import pureconfig.{ConfigReader, ConfigSource}
 
 import java.io.{File, InputStreamReader}
 import java.nio.charset.StandardCharsets.UTF_8
@@ -56,9 +57,6 @@ final case class AppConfig(
 
 object AppConfig {
 
-  private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
-  private val resolverOptions = ConfigResolveOptions.defaults()
-
   /**
     * Loads the application in two steps, wrapping the error type:
     *
@@ -85,30 +83,13 @@ object AppConfig {
       pluginsConfigPaths: List[String] = List.empty,
       accClassLoader: ClassLoader = getClass.getClassLoader
   ): IO[(AppConfig, Config)] = {
-
-    // Merge configs according to their order
-    def merge(configs: Config*) = IO.fromEither {
-      val merged = configs
-        .foldLeft(ConfigFactory.defaultOverrides())(_ withFallback _)
-        .withFallback(ConfigFactory.load())
-        .resolve(resolverOptions)
-      ConfigSource.fromConfig(merged).at("app").load[AppConfig].map(_ -> merged).leftMap(AppConfigError(_))
-    }
-
     for {
-      externalConfig            <- IO.blocking(externalConfigPath.fold(ConfigFactory.empty()) { p =>
-                                     ConfigFactory.parseFile(new File(p), parseOptions)
-                                   })
-      defaultConfig             <- IO.blocking(ConfigFactory.parseResources("default.conf", parseOptions))
-      pluginConfigs             <- IO.blocking {
-                                     pluginsConfigPaths.map { string =>
-                                       ConfigFactory.parseReader(
-                                         new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
-                                         parseOptions
-                                       )
-                                     }
+      externalConfig            <- Configs.parseFile(externalConfigPath.map(new File(_)))
+      defaultConfig             <- Configs.parseResource("default.conf")
+      pluginConfigs             <- pluginsConfigPaths.traverse { path =>
+                                     Configs.parseReader(new InputStreamReader(accClassLoader.getResourceAsStream(path), UTF_8))
                                    }
-      (appConfig, mergedConfig) <- merge(externalConfig :: defaultConfig :: pluginConfigs: _*)
+      (appConfig, mergedConfig) <- Configs.merge[AppConfig]("app", externalConfig :: defaultConfig :: pluginConfigs: _*)
     } yield (appConfig, mergedConfig)
   }
 

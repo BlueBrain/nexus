@@ -53,8 +53,6 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
 
   private val order = ResourceF.sortBy[Project]("_label").value
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
-
   private def fetchOrg: FetchOrganization = {
     case `org1`          => IO.pure(Organization(org1, orgUuid, None))
     case `org2`          => IO.pure(Organization(org2, orgUuid, None))
@@ -82,7 +80,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
   }
 
   private lazy val projects =
-    ProjectsImpl(fetchOrg, validateDeletion, ScopeInitializer.noop, defaultApiMappings, config, xas, clock)
+    ProjectsImpl(fetchOrg, validateDeletion, ScopeInitializer.noop, defaultApiMappings, eventLogConfig, xas, clock)
 
   "The Projects operations bundle" should {
     "create a project" in {
@@ -274,7 +272,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
       val projectRef             = ProjectRef.unsafe("org", genString())
       val initializerWasExecuted = Ref.unsafe[IO, Boolean](false)
       // format: off
-      val projects = ProjectsImpl(fetchOrg, validateDeletion, projectInitializer(initializerWasExecuted), defaultApiMappings, config, xas, clock)
+      val projects = ProjectsImpl(fetchOrg, validateDeletion, projectInitializer(initializerWasExecuted), defaultApiMappings, eventLogConfig, xas, clock)
       // format: on
 
       projects.create(projectRef, payload)(Identity.Anonymous).accepted
