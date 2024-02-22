@@ -22,8 +22,8 @@ trait ContentTypeInstances {
     )
 
   /**
-    * When parsing a custom binary media type, it assumes that it is compressible which is traduced by a performance hit
-    * when we compress responses
+    * When parsing a custom binary media type, akka assumes that it is compressible which is traduced by a performance hit
+    * when we compress responses so we revert this
     */
   private def markBinaryAsNonCompressible(contentType: ContentType) =
     contentType match {
