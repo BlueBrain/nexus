@@ -44,9 +44,7 @@ object File {
     */
   final case class FileAttributes(location: Uri, bytes: Long, digest: Digest, mediaType: ContentType)
   object FileAttributes {
-    @nowarn("cat=unused")
-    implicit private val encMediaType: Encoder[ContentType] =
-      Encoder.encodeString.contramap(_.value)
+    import ch.epfl.bluebrain.nexus.delta.kernel.instances._
 
     @nowarn("cat=unused")
     implicit final private val uriDecoder: Decoder[Uri] =
@@ -55,10 +53,6 @@ object File {
     @nowarn("cat=unused")
     implicit final private val uriEncoder: Encoder[Uri] =
       Encoder.encodeString.contramap(_.toString())
-
-    @nowarn("cat=unused")
-    implicit private val decMediaType: Decoder[ContentType] =
-      Decoder.decodeString.emap(ContentType.parse(_).left.map(_.mkString("\n")))
 
     implicit val fileAttrEncoder: Encoder[FileAttributes] =
       deriveConfiguredEncoder[FileAttributes].mapJson(addContext(_, resourceCtxIri))

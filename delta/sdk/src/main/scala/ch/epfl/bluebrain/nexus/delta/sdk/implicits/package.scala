@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import ch.epfl.bluebrain.nexus.delta.kernel.instances.ContentTypeInstances
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax, KamonSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
@@ -18,6 +19,7 @@ package object implicits
     with IdentityInstances
     with IriInstances
     with ProjectRefInstances
+    with ContentTypeInstances
     with JsonSyntax
     with IriSyntax
     with IriEncodingSyntax
