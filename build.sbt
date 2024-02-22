@@ -20,7 +20,7 @@ val akkaHttpCirceVersion    = "1.39.2"
 val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
-val apacheCompressVersion   = "1.25.0"
+val apacheCompressVersion   = "1.26.0"
 val apacheIOVersion         = "2.15.1"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
@@ -46,7 +46,7 @@ val kamonVersion            = "2.7.0"
 val kanelaAgentVersion      = "1.0.18"
 val kindProjectorVersion    = "0.13.2"
 val log4catsVersion         = "2.6.0"
-val logbackVersion          = "1.4.14"
+val logbackVersion          = "1.5.0"
 val magnoliaVersion         = "1.1.8"
 val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M11"
@@ -881,17 +881,16 @@ lazy val shared = Seq(
 lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
     kamonAkkaHttp,
-    "io.kamon"        %% "kamon-akka"           % kamonVersion,
-    "io.kamon"        %% "kamon-core"           % kamonVersion,
-    "io.kamon"        %% "kamon-executors"      % kamonVersion,
-    "io.kamon"        %% "kamon-jaeger"         % kamonVersion,
-    "io.jaegertracing" % "jaeger-thrift"        % "1.6.0", // included jaeger-thrift causes a NoSuchMethod error
-    "io.kamon"        %% "kamon-jdbc"           % kamonVersion,
-    "io.kamon"        %% "kamon-logback"        % kamonVersion,
-    "io.kamon"        %% "kamon-prometheus"     % kamonVersion,
-    "io.kamon"        %% "kamon-scala-future"   % kamonVersion,
-    "io.kamon"        %% "kamon-status-page"    % kamonVersion,
-    "io.kamon"        %% "kamon-system-metrics" % kamonVersion
+    "io.kamon" %% "kamon-akka"           % kamonVersion,
+    "io.kamon" %% "kamon-core"           % kamonVersion,
+    "io.kamon" %% "kamon-executors"      % kamonVersion,
+    "io.kamon" %% "kamon-jaeger"         % kamonVersion,
+    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
+    "io.kamon" %% "kamon-logback"        % kamonVersion,
+    "io.kamon" %% "kamon-prometheus"     % kamonVersion,
+    "io.kamon" %% "kamon-scala-future"   % kamonVersion,
+    "io.kamon" %% "kamon-status-page"    % kamonVersion,
+    "io.kamon" %% "kamon-system-metrics" % kamonVersion
   ),
   javaAgents           += kanelaAgent
 )

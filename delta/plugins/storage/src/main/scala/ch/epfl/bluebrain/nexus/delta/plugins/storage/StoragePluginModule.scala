@@ -6,7 +6,7 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
@@ -156,43 +156,40 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
   }
 
-  make[Files]
-    .fromEffect {
-      (
-          cfg: StoragePluginConfig,
-          storageTypeConfig: StorageTypeConfig,
-          aclCheck: AclCheck,
-          fetchContext: FetchContext,
-          storages: Storages,
-          supervisor: Supervisor,
-          storagesStatistics: StoragesStatistics,
-          xas: Transactors,
-          clock: Clock[IO],
-          uuidF: UUIDF,
-          as: ActorSystem[Nothing],
-          remoteDiskStorageClient: RemoteDiskStorageClient
-      ) =>
-        IO
-          .delay(
-            Files(
-              fetchContext,
-              aclCheck,
-              storages,
-              storagesStatistics,
-              xas,
-              storageTypeConfig,
-              cfg.files,
-              remoteDiskStorageClient,
-              clock
-            )(
-              uuidF,
-              as
-            )
-          )
-          .flatTap { files =>
-            Files.startDigestStream(files, supervisor, storageTypeConfig)
-          }
-    }
+  make[Files].from {
+    (
+        cfg: StoragePluginConfig,
+        storageTypeConfig: StorageTypeConfig,
+        aclCheck: AclCheck,
+        fetchContext: FetchContext,
+        storages: Storages,
+        storagesStatistics: StoragesStatistics,
+        xas: Transactors,
+        clock: Clock[IO],
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        remoteDiskStorageClient: RemoteDiskStorageClient
+    ) =>
+      Files(
+        fetchContext,
+        aclCheck,
+        storages,
+        storagesStatistics,
+        xas,
+        storageTypeConfig,
+        cfg.files,
+        remoteDiskStorageClient,
+        clock
+      )(
+        uuidF,
+        as
+      )
+  }
+
+  make[FileAttributesUpdateStream].fromEffect {
+    (files: Files, storages: Storages, storageTypeConfig: StorageTypeConfig, supervisor: Supervisor) =>
+      FileAttributesUpdateStream.start(files, storages, storageTypeConfig.remoteDisk, supervisor)
+  }
 
   make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
 
