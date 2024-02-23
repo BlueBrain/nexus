@@ -58,8 +58,9 @@ The body should be a multipart form, to allow file upload. The form should conta
 This part can contain the following disposition parameters:
 - `filename`: the filename which will be used in the back-end file system 
 - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
-- `description`: a string that describes the file. will be indexed in the full-text search.
-- `descriptiveName`: a string which is a descriptive name for the file. will be indexed in the full-text search.
+- `metadata`: a JSON object containing the following one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
 
 **Example**
 
@@ -88,8 +89,9 @@ The body should be a multipart form, to allow file upload. The form should conta
 This part can contain the following disposition parameters:
 - `filename`: the filename which will be used in the back-end file system
 - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
-- `description`: a string that describes the file. will be indexed in the full-text search.
-- `descriptiveName`: a string which is a descriptive name for the file. will be indexed in the full-text search.
+- `metadata`: a JSON object containing the following one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
 
 **Example**
 
