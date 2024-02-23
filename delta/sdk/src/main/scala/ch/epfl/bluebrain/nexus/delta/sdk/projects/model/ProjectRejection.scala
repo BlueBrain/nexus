@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,9 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectIsReferenced.ReferencesByProject
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
@@ -57,12 +54,6 @@ object ProjectRejection {
     */
   final case class ProjectAlreadyExists(projectRef: ProjectRef)
       extends ProjectRejection(s"Project '$projectRef' already exists.")
-
-  /**
-    * Signals a rejection caused when interacting with the organizations API
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends ProjectRejection(rejection.reason)
 
   /**
     * Signals an attempt to update/deprecate a project that is already deprecated.
@@ -130,22 +121,18 @@ object ProjectRejection {
   final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
       extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
 
-  implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
   implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
-        case ProjectIsReferenced(_, references)      => default.add("referencedBy", references.asJson)
-        case IncorrectRev(provided, expected)        =>
+        case ProjectInitializationFailed(rejection) => default.add("details", rejection.reason.asJson)
+        case ProjectIsReferenced(_, references)     => default.add("referencedBy", references.asJson)
+        case IncorrectRev(provided, expected)       =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case ProjectAlreadyExists(projectRef)        =>
+        case ProjectAlreadyExists(projectRef)       =>
           default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
-        case _                                       => default
+        case _                                      => default
 
       }
     }
@@ -155,13 +142,12 @@ object ProjectRejection {
 
   implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =
     HttpResponseFields {
-      case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
-      case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
-      case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
-      case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ProjectRejection.ProjectInitializationFailed(_)    => StatusCodes.InternalServerError
-      case _                                                  => StatusCodes.BadRequest
+      case ProjectRejection.RevisionNotFound(_, _)         => StatusCodes.NotFound
+      case ProjectRejection.ProjectNotFound(_)             => StatusCodes.NotFound
+      case ProjectRejection.ProjectAlreadyExists(_)        => StatusCodes.Conflict
+      case ProjectRejection.IncorrectRev(_, _)             => StatusCodes.Conflict
+      case ProjectRejection.ProjectInitializationFailed(_) => StatusCodes.InternalServerError
+      case _                                               => StatusCodes.BadRequest
     }
 
 }

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationNonEmpty, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
@@ -31,7 +30,7 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
   private def fetchOrg: FetchOrganization = {
     case `org1` => IO.pure(Organization(org1, UUID.randomUUID(), None))
     case `org2` => IO.pure(Organization(org2, UUID.randomUUID(), None))
-    case other  => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case other  => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, deletionConfig)

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
@@ -37,7 +36,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
 
   private def fetchOrg: FetchOrganization = {
     case `usersOrg` => IO.pure(Organization(usersOrg, orgUuid, None))
-    case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case other      => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val provisioningConfig = AutomaticProvisioningConfig(

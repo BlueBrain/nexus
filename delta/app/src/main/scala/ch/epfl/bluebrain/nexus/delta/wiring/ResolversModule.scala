@@ -46,7 +46,7 @@ object ResolversModule extends ModuleDef {
       ResolversImpl(
         fetchContext,
         resolverContextResolution,
-        config.resolvers,
+        config.resolvers.eventLog,
         xas,
         clock
       )(api, uuidF)

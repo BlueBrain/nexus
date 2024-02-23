@@ -8,6 +8,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -26,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProj
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
@@ -87,12 +87,10 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         case _                          => IO.none
       }
 
-  private val defaults = Defaults("resolverName", "resolverDescription")
-
   private lazy val resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
-    ResolversConfig(eventLogConfig, defaults),
+    eventLogConfig,
     xas,
     clock
   )

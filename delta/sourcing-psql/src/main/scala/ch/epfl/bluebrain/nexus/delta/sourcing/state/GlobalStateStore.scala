@@ -102,11 +102,7 @@ object GlobalStateStore {
     override def delete(id: Id): ConnectionIO[Unit] =
       sql"""DELETE FROM global_states WHERE type = $tpe AND id = $id""".stripMargin.update.run.void
 
-    override def get(id: Id): IO[Option[S]] =
-      sql"""SELECT value FROM global_states WHERE type = $tpe AND id = $id"""
-        .query[S]
-        .option
-        .transact(xas.read)
+    override def get(id: Id): IO[Option[S]] = GlobalStateGet[Id, S](tpe, id).transact(xas.read)
 
     private def states(offset: Offset, strategy: RefreshStrategy): Stream[IO, S] =
       StreamingQuery[(S, Long)](

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -40,7 +40,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
 
   private def fetchOrg: FetchOrganization = {
     case `org` => IO.pure(Organization(org, orgUuid, None))
-    case other => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case other => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val deletionEnabled  = deletionConfig

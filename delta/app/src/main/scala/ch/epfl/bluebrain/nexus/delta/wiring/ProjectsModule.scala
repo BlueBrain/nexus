@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
@@ -18,11 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectHealer, ProjectsHealth}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -49,7 +46,6 @@ object ProjectsModule extends ModuleDef {
   make[Projects].fromEffect {
     (
         config: AppConfig,
-        organizations: Organizations,
         scopeInitializer: ScopeInitializer,
         mappings: ApiMappingsCollection,
         xas: Transactors,
@@ -59,11 +55,7 @@ object ProjectsModule extends ModuleDef {
     ) =>
       IO.pure(
         ProjectsImpl(
-          organizations
-            .fetchActiveOrganization(_)
-            .adaptError { case e: OrganizationRejection =>
-              WrappedOrganizationRejection(e)
-            },
+          FetchActiveOrganization(_, xas),
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializer,
           mappings.merge,
@@ -97,8 +89,8 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext].fromEffect { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-    IO.pure(FetchContext(organizations, projects, quotas))
+  make[FetchContext].from { (mappings: ApiMappingsCollection, xas: Transactors, quotas: Quotas) =>
+    FetchContext(mappings.merge, xas, quotas)
   }
 
   make[ProjectDeletionCoordinator].fromEffect {

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -56,8 +56,8 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
   private def fetchOrg: FetchOrganization = {
     case `org1`          => IO.pure(Organization(org1, orgUuid, None))
     case `org2`          => IO.pure(Organization(org2, orgUuid, None))
-    case `orgDeprecated` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated)))
-    case other           => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case `orgDeprecated` => IO.raiseError(OrganizationIsDeprecated(orgDeprecated))
+    case other           => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val ref: ProjectRef        = ProjectRef.unsafe("org", "proj")
@@ -110,8 +110,9 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     "not create a project if its organization is deprecated" in {
       val ref = ProjectRef.unsafe("orgDeprecated", "proj")
 
-      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual
-        WrappedOrganizationRejection(OrganizationIsDeprecated(ref.organization))
+      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual OrganizationIsDeprecated(
+        ref.organization
+      )
     }
 
     "not update a project if it doesn't exists" in {

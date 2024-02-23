@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{Create
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{FetchByTagNotSupported, PriorityAlreadyExists, ResolverNotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import doobie.implicits._
 import io.circe.Json
@@ -156,7 +157,7 @@ object ResolversImpl {
   def apply(
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
-      config: ResolversConfig,
+      config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
   )(implicit
@@ -175,7 +176,7 @@ object ResolversImpl {
     }
 
     new ResolversImpl(
-      ScopedEventLog(Resolvers.definition(priorityAlreadyExists, clock), config.eventLog, xas),
+      ScopedEventLog(Resolvers.definition(priorityAlreadyExists, clock), config, xas),
       fetchContext,
       new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](
         contexts.resolvers,

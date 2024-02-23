@@ -202,11 +202,6 @@ object ScopedStateStore {
     override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
 
-    private def getValue(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Option[S]] =
-      sql"""SELECT value FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag"""
-        .query[S]
-        .option
-
     private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
       sql"""SELECT id FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id LIMIT 1"""
         .query[Iri]
@@ -214,13 +209,13 @@ object ScopedStateStore {
         .map(_.isDefined)
 
     override def get(ref: ProjectRef, id: Id): IO[S] =
-      getValue(ref, id, Latest).transact(xas.read).flatMap { s =>
+      ScopedStateGet.latest[Id, S](tpe, ref, id).transact(xas.read).flatMap { s =>
         IO.fromOption(s)(UnknownState)
       }
 
     override def get(ref: ProjectRef, id: Id, tag: Tag): IO[S] = {
       for {
-        value  <- getValue(ref, id, tag)
+        value  <- ScopedStateGet[Id, S](tpe, ref, id, tag)
         exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
     }.transact(xas.read).flatMap { case (s, exists) =>

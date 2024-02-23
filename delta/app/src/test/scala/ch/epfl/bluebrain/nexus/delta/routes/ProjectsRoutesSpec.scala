@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConfig, ProjectProvisioning}
@@ -62,8 +61,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   private def fetchOrg: FetchOrganization = {
     case `org1`     => IO.pure(Organization(org1, orgUuid, None))
     case `usersOrg` => IO.pure(Organization(usersOrg, orgUuid, None))
-    case `org2`     => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2)))
-    case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case `org2`     => IO.raiseError(OrganizationIsDeprecated(org2))
+    case other      => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val provisioningConfig = AutomaticProvisioningConfig(

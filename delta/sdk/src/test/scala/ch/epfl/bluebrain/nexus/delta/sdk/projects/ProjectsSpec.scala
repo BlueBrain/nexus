@@ -52,8 +52,8 @@ class ProjectsSpec extends CatsEffectSpec {
     val subject                 = User("myuser", label)
     val orgs: FetchOrganization = {
       case `orgLabel` => IO.pure(org1.toResource.value)
-      case `org2abel` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2abel)))
-      case label      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
+      case `org2abel` => IO.raiseError(OrganizationIsDeprecated(org2abel))
+      case label      => IO.raiseError(OrganizationNotFound(label))
     }
 
     val ref              = ProjectRef(orgLabel, label)
@@ -159,8 +159,7 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(deprecatedState) -> UndeprecateProject(ref2, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual
-            WrappedOrganizationRejection(OrganizationIsDeprecated(ref2.organization))
+          eval(state, cmd).rejected shouldEqual OrganizationIsDeprecated(ref2.organization)
         }
       }
 
@@ -173,8 +172,7 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(deprecatedState) -> UndeprecateProject(orgNotFound, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual
-            WrappedOrganizationRejection(OrganizationNotFound(label))
+          eval(state, cmd).rejected shouldEqual OrganizationNotFound(label)
         }
       }
 

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -9,11 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -189,21 +187,6 @@ object Projects {
       case (_, _)                                                                                                => None
       // format: on
     }
-
-  private[delta] def evaluate(
-      orgs: Organizations,
-      validateDeletion: ValidateProjectDeletion,
-      clock: Clock[IO]
-  )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      base: BaseUri,
-      uuidF: UUIDF
-  ): IO[ProjectEvent] = {
-    val f: FetchOrganization = label =>
-      orgs
-        .fetchActiveOrganization(label)
-        .adaptError { case o: OrganizationRejection => WrappedOrganizationRejection(o) }
-    evaluate(f, validateDeletion, clock)(state, command)
-  }
 
   private[sdk] def evaluate(
       fetchAndValidateOrg: FetchOrganization,
