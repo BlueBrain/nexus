@@ -13,10 +13,12 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidKeywords, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidFileMetadata, InvalidKeywords, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.parser
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{parser, Decoder}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -138,13 +140,14 @@ object FormDataExtractor {
         case part if part.name == FileFieldName =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
-          val description = part.dispositionParams.get("description").filter(_.nonEmpty)
-          val name        = part.dispositionParams.get("descriptiveName").filter(_.nonEmpty)
 
           val result = for {
             keywords <- extractKeywords(part)
+            metadata <- extractMetadata(part)
           } yield {
-            Some(UploadedFileInformation(filename, keywords, description, name, contentType, part.entity))
+            Some(
+              UploadedFileInformation(filename, keywords, metadata.description, metadata.name, contentType, part.entity)
+            )
           }
 
           Future.fromTry(result.toTry)
@@ -162,6 +165,24 @@ object FormDataExtractor {
               .flatMap(_.as[Map[Label, String]])
               .leftMap(err => InvalidKeywords(err.getMessage))
           case None        => Right(Map.empty)
+        }
+      }
+
+      private case class FileUploadMetadata(name: Option[String], description: Option[String])
+      implicit private val fileUploadMetadataDecoder: Decoder[FileUploadMetadata] =
+        deriveDecoder[FileUploadMetadata]
+
+      private def extractMetadata(
+          part: Multipart.FormData.BodyPart
+      ): Either[FileRejection, FileUploadMetadata] = {
+        val metadata = part.dispositionParams.get("metadata").filter(_.nonEmpty)
+        metadata match {
+          case Some(value) =>
+            parser
+              .parse(value)
+              .flatMap(_.as[FileUploadMetadata])
+              .leftMap(err => InvalidFileMetadata(err.getMessage))
+          case None        => Right(FileUploadMetadata(None, None))
         }
       }
 

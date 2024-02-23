@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.syntax.KeyOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 
 class FormDataExtractorSpec
@@ -67,11 +67,16 @@ class FormDataExtractorSpec
         description: Option[String],
         name: Option[String]
     ): Map[String, String] = {
+
+      val metadata = JsonObject(
+        "name"        -> name.asJson,
+        "description" -> description.asJson
+      ).toJson
+
       Map.from(
         filename.map("filename"                     -> _) ++
           Option.when(keywords.nonEmpty)("keywords" -> JsonObject.fromMap(keywords).toJson.noSpaces) ++
-          description.map("description" -> _) ++
-          name.map("descriptiveName" -> _)
+          Option.when(!metadata.isEmpty())("metadata" -> metadata.noSpaces)
       )
     }
 
@@ -79,7 +84,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("filename"))
 
       val UploadedFileInformation(filename, _, _, _, contentType, contents) =
-        extractor(iri, entity, 179, None).accepted
+        extractor(iri, entity, 200, None).accepted
 
       filename shouldEqual "filename"
       contentType shouldEqual `application/octet-stream`
@@ -100,7 +105,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("file.txt"))
 
       val UploadedFileInformation(filename, _, _, _, contentType, contents) =
-        extractor(iri, entity, 179, None).accepted
+        extractor(iri, entity, 200, None).accepted
       filename shouldEqual "file.txt"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
