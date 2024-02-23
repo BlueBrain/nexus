@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidKeywords, InvalidMultipartFieldName}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidCustomMetadata, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -70,12 +70,12 @@ class FormDataExtractorSpec
 
       val metadata = JsonObject(
         "name"        -> name.asJson,
-        "description" -> description.asJson
+        "description" -> description.asJson,
+        "keywords"    -> JsonObject.fromMap(keywords).toJson
       ).toJson
 
       Map.from(
-        filename.map("filename"                     -> _) ++
-          Option.when(keywords.nonEmpty)("keywords" -> JsonObject.fromMap(keywords).toJson.noSpaces) ++
+        filename.map("filename"                       -> _) ++
           Option.when(!metadata.isEmpty())("metadata" -> metadata.noSpaces)
       )
     }
@@ -84,7 +84,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("filename"))
 
       val UploadedFileInformation(filename, _, _, _, contentType, contents) =
-        extractor(iri, entity, 200, None).accepted
+        extractor(iri, entity, 250, None).accepted
 
       filename shouldEqual "filename"
       contentType shouldEqual `application/octet-stream`
@@ -105,7 +105,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("file.txt"))
 
       val UploadedFileInformation(filename, _, _, _, contentType, contents) =
-        extractor(iri, entity, 200, None).accepted
+        extractor(iri, entity, 250, None).accepted
       filename shouldEqual "file.txt"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
@@ -140,12 +140,13 @@ class FormDataExtractorSpec
 
     "fail to be extracted if the custom user metadata has invalid keywords" in {
       val entity = entityWithKeywords(KeyThatIsTooLong := "value")
-      extractor(iri, entity, 2000, None).rejectedWith[InvalidKeywords]
+      val rej    = extractor(iri, entity, 2000, None).rejectedWith[InvalidCustomMetadata]
+      println(rej)
     }
 
     "fail to be extracted if no file part exists found" in {
       val entity = createEntity("other", NoContentType, None)
-      extractor(iri, entity, 179, None).rejectedWith[InvalidMultipartFieldName]
+      extractor(iri, entity, 250, None).rejectedWith[InvalidMultipartFieldName]
     }
 
     "fail to be extracted if payload size is too large" in {
