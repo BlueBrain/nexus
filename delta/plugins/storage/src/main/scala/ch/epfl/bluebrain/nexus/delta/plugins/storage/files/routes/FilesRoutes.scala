@@ -85,7 +85,7 @@ final class FilesRoutes(
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
-                    (contentType(`application/json`) & entity(as[LinkFile])) { case LinkFile(path, description) =>
+                    entity(as[LinkFile]) { case LinkFile(path, description) =>
                       emit(
                         Created,
                         files
