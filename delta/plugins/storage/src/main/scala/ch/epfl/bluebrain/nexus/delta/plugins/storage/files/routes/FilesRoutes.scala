@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
-import akka.http.scaladsl.model.MediaTypes.{`application/json`, `multipart/form-data`}
+import akka.http.scaladsl.model.MediaTypes.`multipart/form-data`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Accept
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileDescription, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, Files, schemas}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -285,7 +285,6 @@ object FilesRoutes {
   )
   final case class LinkFile(path: Path, fileDescription: FileDescription)
   object LinkFile {
-    import ch.epfl.bluebrain.nexus.delta.rdf.instances._
     @nowarn("cat=unused")
     implicit private val config: Configuration = Configuration.default.withStrictDecoding.withDefaults
     implicit val linkFileDecoder: Decoder[LinkFile] = {
