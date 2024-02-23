@@ -347,6 +347,23 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
   }
 
+  "A custom binary file" should {
+    "not be downloadable compressed" in {
+      for {
+        _ <- filesDsl.uploadFile(customBinaryContent, projectRef, storageId, None)(expectCreated)
+        _ <- deltaClient
+               .get[ByteString](s"/files/$projectRef/attachment:${customBinaryContent.fileId}", Coyote, gzipHeaders) {
+                 filesDsl.expectFileContentAndMetadata(
+                   customBinaryContent.filename,
+                   customBinaryContent.ct,
+                   customBinaryContent.contents,
+                   compressed = false // the response should not be compressed despite the gzip headers
+                 )
+               }
+      } yield succeed
+    }
+  }
+
   "Deprecating a storage" should {
 
     "deprecate a storage" in {

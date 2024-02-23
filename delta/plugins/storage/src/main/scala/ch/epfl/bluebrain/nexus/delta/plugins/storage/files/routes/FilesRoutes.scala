@@ -277,7 +277,6 @@ object FilesRoutes {
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)
   object LinkFile {
-    import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
     import ch.epfl.bluebrain.nexus.delta.rdf.instances._
     @nowarn("cat=unused")
     implicit private val config: Configuration      = Configuration.default.withStrictDecoding

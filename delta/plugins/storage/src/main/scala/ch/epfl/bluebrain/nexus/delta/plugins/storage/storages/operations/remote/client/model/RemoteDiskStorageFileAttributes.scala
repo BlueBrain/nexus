@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import io.circe.{Decoder, DecodingFailure}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -54,9 +54,6 @@ object RemoteDiskStorageFileAttributes {
             .toRight(DecodingFailure(s"wrong DigestAlgorithm '$algorithm'", hc.history))
       }.flatten
     }
-
-    implicit val contentTypeDecoder: Decoder[ContentType] =
-      Decoder.decodeString.emap(ContentType.parse(_).left.map(_.mkString("\n")))
 
     deriveConfiguredDecoder[RemoteDiskStorageFileAttributes]
   }

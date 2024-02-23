@@ -165,13 +165,20 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           RevisionNotFound(provided = 3, current = 1)
       }
 
-      "reject with DigestNotComputed" in {
+      "reject with DigestNotComputed with an update command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
         val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
         evaluate(clock)(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
-      "reject with DigestAlreadyComputed" in {
+      "reject with DigestNotComputed with an update attributes command" in {
+        val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, NotComputedDigest, 1, alice)
+        val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
+
+        evaluate(clock)(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
+      }
+
+      "reject with DigestAlreadyComputed with an update attributes command" in {
         val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
         val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
 
