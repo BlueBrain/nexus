@@ -297,7 +297,6 @@ object ScopedEventLog {
         case e: Rejection               => e
         case e: EvaluationTimeout[_]    => e
         case e: EvaluationTagFailure[_] => e
-        case e                          => EvaluationFailure(command, e)
       }
 
       private def isUniqueViolation(sql: SQLException) =

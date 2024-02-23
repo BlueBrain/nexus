@@ -104,15 +104,13 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     }
 
     "not create a project if it already exists" in {
-      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual ProjectAlreadyExists(ref)
+      projects.create(ref, payload).rejected shouldEqual ProjectAlreadyExists(ref)
     }
 
     "not create a project if its organization is deprecated" in {
       val ref = ProjectRef.unsafe("orgDeprecated", "proj")
 
-      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual OrganizationIsDeprecated(
-        ref.organization
-      )
+      projects.create(ref, payload).rejected shouldEqual OrganizationIsDeprecated(ref.organization)
     }
 
     "not update a project if it doesn't exists" in {

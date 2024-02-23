@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
-import doobie.Get
+import doobie.{Get, Put}
 import doobie.implicits._
 
 /**
@@ -54,6 +54,7 @@ object FetchContext {
 
   def apply(dam: ApiMappings, xas: Transactors, quotas: Quotas): FetchContext = {
     def fetchProject(ref: ProjectRef) = {
+      implicit val putId: Put[ProjectRef]      = ProjectState.serializer.putId
       implicit val getValue: Get[ProjectState] = ProjectState.serializer.getValue
       ScopedStateGet
         .latest[ProjectRef, ProjectState](Projects.entityType, ref, ref)

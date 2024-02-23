@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
@@ -142,7 +142,6 @@ object GlobalEventLog {
             .adaptError {
               case e: Rejection            => e
               case e: EvaluationTimeout[_] => e
-              case e: Throwable            => EvaluationFailure(command, e)
             }
             .flatTap { case (event, state) =>
               (eventStore.save(event) >> stateStore.save(state))

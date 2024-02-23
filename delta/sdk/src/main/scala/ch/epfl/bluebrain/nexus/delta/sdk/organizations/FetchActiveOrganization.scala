@@ -6,11 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, Orga
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateGet
-import doobie.Get
 import doobie.implicits._
+import doobie.{Get, Put}
 
 object FetchActiveOrganization {
 
+  implicit val getId: Put[Label]                = OrganizationState.serializer.putId
   implicit val getValue: Get[OrganizationState] = OrganizationState.serializer.getValue
 
   def apply(org: Label, xas: Transactors): IO[Organization] =
