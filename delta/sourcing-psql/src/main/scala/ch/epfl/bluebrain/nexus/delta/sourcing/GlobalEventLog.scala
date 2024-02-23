@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
@@ -14,7 +13,6 @@ import doobie.postgres.sqlstate
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
 
 /**
   * Event log for global entities that can be controlled through commands;
@@ -100,7 +98,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
 
 object GlobalEventLog {
 
-  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable: ClassTag](
+  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
       definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
@@ -114,7 +112,7 @@ object GlobalEventLog {
       xas
     )
 
-  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable: ClassTag](
+  def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
       eventStore: GlobalEventStore[Id, E],
       stateStore: GlobalStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E],
@@ -139,10 +137,6 @@ object GlobalEventLog {
         stateStore.get(id).flatMap { current =>
           stateMachine
             .evaluate(current, command, maxDuration)
-            .adaptError {
-              case e: Rejection            => e
-              case e: EvaluationTimeout[_] => e
-            }
             .flatTap { case (event, state) =>
               (eventStore.save(event) >> stateStore.save(state))
                 .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>

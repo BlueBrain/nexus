@@ -23,7 +23,6 @@ import fs2.Stream
 
 import java.sql.SQLException
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
 
 /**
   * Event log for project-scoped entities that can be controlled through commands;
@@ -166,7 +165,7 @@ object ScopedEventLog {
 
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
-  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable: ClassTag](
+  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
@@ -183,7 +182,7 @@ object ScopedEventLog {
       xas
     )
 
-  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable: ClassTag](
+  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
       entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
@@ -293,10 +292,6 @@ object ScopedEventLog {
           result        <- stateMachine.evaluate(originalState, command, maxDuration)
           _             <- persist(result._1, originalState, result._2)
         } yield result
-      }.adaptError {
-        case e: Rejection               => e
-        case e: EvaluationTimeout[_]    => e
-        case e: EvaluationTagFailure[_] => e
       }
 
       private def isUniqueViolation(sql: SQLException) =
