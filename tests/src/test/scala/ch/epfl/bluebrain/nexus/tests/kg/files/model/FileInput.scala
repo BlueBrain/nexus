@@ -66,6 +66,8 @@ object FileInput {
       "custom-binary",
       ContentType.Binary(MediaType.applicationBinary("obj", NotCompressible)),
       "text file",
-      Map("brainRegion" -> "hippocampus")
+      Map("brainRegion" -> "hippocampus"),
+      "A custom file",
+      "custom-binary"
     )
 }
