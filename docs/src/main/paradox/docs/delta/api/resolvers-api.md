@@ -370,14 +370,18 @@ If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from th
 project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&tag={tag}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&tag={tag}&annotate={annotate}
 ```
 where ...
 - `{resource_id}`: Iri - the @id value of the resource to be retrieved.
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+If `{annotate}` is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence.
+The context in the original payload is also amended with the metadata context.
 
 **Example**
 
