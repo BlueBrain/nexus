@@ -166,10 +166,14 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
             "file",
             HttpEntity(contentType, s.getBytes),
             Map(
-              "filename"        -> fileName,
-              "keywords"        -> keywords.asJson.noSpaces,
-              "description"     -> description.getOrElse(""),
-              "descriptiveName" -> name.getOrElse("")
+              "filename" -> fileName,
+              "metadata" -> Json
+                .obj(
+                  "name"        -> name.asJson,
+                  "description" -> description.asJson,
+                  "keywords"    -> keywords.asJson
+                )
+                .noSpaces
             )
           )
         ).toEntity()
