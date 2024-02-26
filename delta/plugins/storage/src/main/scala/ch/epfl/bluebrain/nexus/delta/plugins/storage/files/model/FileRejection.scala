@@ -227,7 +227,10 @@ object FileRejection {
     *   the rejection which occurred with the storage
     */
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
-      extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
+      extends FileRejection(
+        s"File '$id' could not be linked using storage '$storageId', ${rejection}",
+        Some(rejection.loggedDetails)
+      )
 
   final case class CopyRejection(
       sourceProj: ProjectRef,

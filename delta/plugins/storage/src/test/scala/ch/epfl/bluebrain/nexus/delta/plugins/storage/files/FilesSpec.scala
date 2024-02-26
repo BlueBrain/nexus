@@ -69,6 +69,17 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     FileDescription(filename, Some(contentType), FileCustomMetadata.empty)
   }
 
+  def descriptionWithName(filename: String, name: String): FileDescription =
+    FileDescription(filename, None, FileCustomMetadata(Some(name), None, None))
+
+  def descriptionWithMetadata(
+      filename: String,
+      name: String,
+      description: String,
+      keywords: Map[Label, String]
+  ): FileDescription =
+    FileDescription(filename, None, FileCustomMetadata(Some(name), Some(description), Some(keywords)))
+
   "The Files operations bundle" when {
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
@@ -287,6 +298,20 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
         result shouldEqual expected
         fileByTag.value.tags.tags should contain(tag)
+      }
+
+      "succeed with custom user provided metadata" in {
+        val (name, description, keywords) = (genString(), genString(), genKeywords())
+        val fileDescription               = descriptionWithMetadata("file-5.txt", name, description, keywords)
+
+        val path       = Uri.Path(s"my/file-5.txt")
+        val linkedFile = files
+          .createLink(fileId(genString()), Some(remoteId), fileDescription, path, None)
+          .accepted
+
+        linkedFile.value.attributes.name should contain(name)
+        linkedFile.value.attributes.description should contain(description)
+        linkedFile.value.attributes.keywords shouldEqual keywords
       }
 
       "reject if file id already exists" in {

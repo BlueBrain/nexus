@@ -46,7 +46,7 @@ trait RemoteStorageClientFixtures extends BeforeAndAfterAll with ConfigFixtures 
     val bucketNexus = Files.createDirectory(bucket.resolve("nexus"), rwx)
     val my          = Files.createDirectory(bucket.resolve("my"), rwx)
 
-    (1 to 4).map(idx => s"file-$idx.txt").foreach { fileName =>
+    (1 to 5).map(idx => s"file-$idx.txt").foreach { fileName =>
       val path = Files.createFile(my.resolve(fileName), rwx)
       path.toFile.setWritable(true, false)
       Files.writeString(path, "file content")
