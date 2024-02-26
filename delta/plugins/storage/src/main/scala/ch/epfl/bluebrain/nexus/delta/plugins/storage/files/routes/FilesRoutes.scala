@@ -9,7 +9,7 @@ import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileDescription, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -279,9 +278,7 @@ object FilesRoutes {
       path: Path,
       filename: Option[String],
       mediaType: Option[ContentType],
-      keywords: Map[Label, String] = Map.empty,
-      description: Option[String],
-      name: Option[String]
+      metadata: FileCustomMetadata
   )
   final case class LinkFile(path: Path, fileDescription: FileDescription)
   object LinkFile {
@@ -289,7 +286,7 @@ object FilesRoutes {
     implicit private val config: Configuration = Configuration.default.withStrictDecoding.withDefaults
     implicit val linkFileDecoder: Decoder[LinkFile] = {
       deriveConfiguredDecoder[LinkFileRequest]
-        .flatMap { case LinkFileRequest(path, filename, mediaType, keywords, description, name) =>
+        .flatMap { case LinkFileRequest(path, filename, mediaType, metadata) =>
           filename.orElse(path.lastSegment) match {
             case Some(derivedFilename) =>
               Decoder.const(
@@ -297,10 +294,8 @@ object FilesRoutes {
                   path,
                   FileDescription(
                     derivedFilename,
-                    keywords,
                     mediaType,
-                    description,
-                    name
+                    metadata
                   )
                 )
               )

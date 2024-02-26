@@ -69,9 +69,9 @@ object FileAttributes {
       storageMetadata.path,
       description.filename,
       description.mediaType,
-      description.keywords,
-      description.description,
-      description.name,
+      description.metadata.keywords.getOrElse(Map.empty),
+      description.metadata.description,
+      description.metadata.name,
       storageMetadata.bytes,
       storageMetadata.digest,
       storageMetadata.origin

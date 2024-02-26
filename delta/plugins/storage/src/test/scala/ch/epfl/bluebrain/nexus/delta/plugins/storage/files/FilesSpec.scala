@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileDescription, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
@@ -62,11 +62,11 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
   private val alice = User("Alice", realm)
 
   def description(filename: String): FileDescription = {
-    FileDescription(filename, Map.empty, None, None, None)
+    FileDescription(filename, None, FileCustomMetadata.empty)
   }
 
   def description(filename: String, contentType: ContentType): FileDescription = {
-    FileDescription(filename, Map.empty, Some(contentType), None, None)
+    FileDescription(filename, Some(contentType), FileCustomMetadata.empty)
   }
 
   "The Files operations bundle" when {

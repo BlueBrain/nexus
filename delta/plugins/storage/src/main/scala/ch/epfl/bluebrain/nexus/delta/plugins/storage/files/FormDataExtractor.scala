@@ -13,12 +13,11 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidCustomMetadata, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCustomMetadata, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{parser, Decoder}
+import io.circe.parser
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -156,14 +155,6 @@ object FormDataExtractor {
         case part                               =>
           part.entity.discardBytes().future.as(None)
       }
-
-      private case class FileCustomMetadata(
-          name: Option[String],
-          description: Option[String],
-          keywords: Option[Map[Label, String]]
-      )
-      implicit private val fileUploadMetadataDecoder: Decoder[FileCustomMetadata] =
-        deriveDecoder[FileCustomMetadata]
 
       private def extractMetadata(
           part: Multipart.FormData.BodyPart

@@ -48,9 +48,9 @@ object RemoteDiskStorageCopyFiles {
       path = relativeDestPath,
       filename = sourceFileDescription.filename,
       mediaType = sourceFileDescription.mediaType,
-      keywords = sourceFileDescription.keywords,
-      description = sourceFileDescription.description,
-      name = sourceFileDescription.name,
+      keywords = sourceFileDescription.metadata.keywords.getOrElse(Map.empty),
+      description = sourceFileDescription.metadata.description,
+      name = sourceFileDescription.metadata.name,
       bytes = sourceFileMetadata.bytes,
       digest = sourceFileMetadata.digest,
       origin = sourceFileMetadata.origin
