@@ -105,6 +105,10 @@ class RemoteStorageSpec extends StorageSpec {
     sb.toString
   }
 
+  case class CustomMetadata(name: String, description: String, keywords: Map[String, String])
+  private val customMetadata =
+    CustomMetadata("cool name", "good description", Map("key1" -> "value1", "key2" -> "value2"))
+
   "succeed many large files are in the archive, going over the time limit" ignore {
     val content = randomString(130000000)
     val payload = jsonContentOf("kg/archives/archive-many-large-files.json")
@@ -162,21 +166,19 @@ class RemoteStorageSpec extends StorageSpec {
       "mediaType" := mediaType
     )
 
-  def linkPayloadWithMetadata(
+  private def linkPayloadWithMetadata(
       filename: String,
       path: String,
-      name: String,
-      description: String,
-      keywords: Map[String, String]
+      md: CustomMetadata
   ) =
     Json.obj(
       "filename"  := filename,
       "path"      := path,
       "mediaType" := None,
       "metadata"  := Json.obj(
-        "name"        := name,
-        "description" := description,
-        "keywords"    := keywords
+        "name"        := md.name,
+        "description" := md.description,
+        "keywords"    := md.keywords
       )
     )
 
@@ -332,73 +334,36 @@ class RemoteStorageSpec extends StorageSpec {
   "Linking a file with custom metadata should" should {
 
     "succeed" in {
-      val filename    = s"${genString()}.txt"
-      val name        = "cool name"
-      val description = "good description"
-      val keywords    = Map("key1" -> "value1", "key2" -> "value2")
-      val payload     = linkPayloadWithMetadata(filename, filename, name, description, keywords)
+      val filename = s"${genString()}.txt"
+      val md       = customMetadata
+      val payload  = linkPayloadWithMetadata(filename, filename, md)
 
       for {
         _ <- createFileInStorageService(filename)
-        _ <- deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", payload, Coyote) {
-               (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient
-               .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
-                 response.status shouldEqual StatusCodes.OK
-                 json.hcursor.get[String]("name").toOption should contain(name)
-                 json.hcursor.get[String]("description").toOption should contain(description)
-                 json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(keywords)
-               }
+        _ <- linkFile(filename, payload)
+        _ <- assertCorrectCustomMetadata(filename, md)
       } yield succeed
     }
 
-    "succeed when updating" in {
-      val filename    = s"${genString()}.txt"
-      val filename2   = s"${genString()}.txt"
-      val name        = "cool name"
-      val description = "good description"
-      val keywords    = Map("key1" -> "value1", "key2" -> "value2")
+    "succeed when updating with metadata" in {
+      val filename  = s"${genString()}.txt"
+      val filename2 = s"${genString()}.txt"
+      val md        = customMetadata
 
       val simplePayload       = linkPayload(filename, filename, None)
-      val payloadWithMetadata = linkPayloadWithMetadata(filename2, filename2, name, description, keywords)
+      val payloadWithMetadata = linkPayloadWithMetadata(filename2, filename2, md)
 
       val setup = for {
         _ <- createFileInStorageService(filename)
         _ <- createFileInStorageService(filename2)
-        _ <- deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", simplePayload, Coyote) {
-               (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-             }
+        _ <- linkFile(filename, simplePayload)
       } yield succeed
 
       setup.accepted
+      eventually { assertFileRevision(filename, 2) }
+      updateFileLink(filename, payloadWithMetadata).accepted
 
-      eventually {
-        deltaClient
-          .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, _) =>
-            json.hcursor.get[Int]("_rev").toOption should contain(2)
-          }
-      }
-
-      deltaClient
-        .put[Json](s"/files/$projectRef/$filename?rev=2&storage=nxv:${storageId}2", payloadWithMetadata, Coyote) {
-          (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-        }
-        .accepted
-
-      eventually {
-        deltaClient
-          .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
-            response.status shouldEqual StatusCodes.OK
-            json.hcursor.get[String]("name").toOption should contain(name)
-            json.hcursor.get[String]("description").toOption should contain(description)
-            json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(keywords)
-          }
-          .accepted
-      }
+      eventually { assertCorrectCustomMetadata(filename, md) }
     }
 
   }
@@ -456,4 +421,34 @@ class RemoteStorageSpec extends StorageSpec {
     }
 
   }
+
+  private def linkFile(filename: String, payload: Json) =
+    deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", payload, Coyote) { (_, response) =>
+      response.status shouldEqual StatusCodes.Created
+    }
+
+  private def assertFileRevision(filename: String, expectedRev: Int) =
+    deltaClient
+      .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, _) =>
+        json.hcursor.get[Int]("_rev").toOption should contain(expectedRev)
+      }
+
+  private def updateFileLink(filename: String, payload: Json) =
+    deltaClient
+      .put[Json](s"/files/$projectRef/$filename?rev=2&storage=nxv:${storageId}2", payload, Coyote) { (_, response) =>
+        response.status shouldEqual StatusCodes.OK
+      }
+
+  private def assertCorrectCustomMetadata(
+      filename: String,
+      customMetadata: CustomMetadata
+  ) =
+    deltaClient
+      .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json.hcursor.get[String]("name").toOption should contain(customMetadata.name)
+        json.hcursor.get[String]("description").toOption should contain(customMetadata.description)
+        json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(customMetadata.keywords)
+      }
+
 }
