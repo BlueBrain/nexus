@@ -224,6 +224,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -911,10 +912,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#fetch-original-resource-payload-using-resolvers" name="fetch-original-resource-payload-using-resolvers" class="anchor"><span class="anchor-link"></span></a>Fetch original resource payload using resolvers</h2>
 <p>Fetches the original source payload of a resource using the provided resolver.</p>
 <p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}&amp;annotate={annotate}
 </code></pre>
-<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</p>
+<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted tag to be fetched. This field is optional. - <code>{annotate}</code>: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.</p>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p>If <code>{annotate}</code> is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence. The context in the original payload is also amended with the metadata context.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>

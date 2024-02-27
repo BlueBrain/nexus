@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Error Signaling · Blue Brain Nexus</title>
+<title>Type hierarchy · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Error Signaling
+Type hierarchy
 </span>
 </div>
 </div>
@@ -191,7 +191,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/index.html" class="page">API Reference</a>
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
-      <li><a href="../../../docs/delta/api/error-signaling.html" class="active page">Error Signaling</a></li>
+      <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
       <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
@@ -224,7 +224,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
-      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="active page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -238,6 +238,15 @@ BlueBrain/nexus
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/delta/api/type-hierarchy-api.html#type-hierarchy" class="header">Type hierarchy</a>
+  <ul>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#create-using-post" class="header">Create using POST</a></li>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#update" class="header">Update</a></li>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#fetch" class="header">Fetch</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -251,6 +260,24 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/delta/api/type-hierarchy-api.html#type-hierarchy" class="header">Type hierarchy</a>
+  <ul>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#create-using-post" class="header">Create using POST</a></li>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#update" class="header">Update</a></li>
+    <li><a href="../../../docs/delta/api/type-hierarchy-api.html#fetch" class="header">Fetch</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
@@ -261,29 +288,167 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#error-signaling" name="error-signaling" class="anchor"><span class="anchor-link"></span></a>Error Signaling</h1>
-<p>Nexus Delta makes use of the HTTP status codes to report the outcome of each API call. The status codes are complemented by a consistent response data model for reporting client and system level failures.</p>
+<h1><a href="#type-hierarchy" name="type-hierarchy" class="anchor"><span class="anchor-link"></span></a>Type hierarchy</h1>
+<p>The type hierarchy is a singleton entity that defines a mapping between concrete types and their abstract types.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying the type hierarchy, the caller must have <code>resources/read</code> permission at root level.</p>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
+<pre><code>POST /v1/type-hierarchy
+  {...}
+</code></pre>
+<p><strong>Example</strong></p>
 <dl>
-  <dt>Format</dt>
+  <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/error.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
-  &quot;@type&quot;: &quot;&lt;a machine readable unique identifier&gt;&quot;,
-  &quot;reason&quot;: &quot;&lt;a human readable description of the error&gt;&quot;
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/create.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
+     -H &quot;Content-Type: application/json&quot; \
+     &quot;http://localhost:8080/v1/type-hierarchy&quot; \
+     -d \
+&#39;{
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  }
+}&#39;</code></pre></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/payload.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  }
 }</code></pre></dd>
-  <dt>Example</dt>
+  <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/error-example.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
-  &quot;@type&quot;: &quot;IllegalFilterFormat&quot;,
-  &quot;reason&quot;: &quot;Unable to parse &#39;path&#39; as an uri&quot;,
-  &quot;field&quot;: &quot;DownField(filter)/DownField(path)&quot;
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/created.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/type-hierarchy.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/TypeHierarchy&quot;,
+  &quot;@type&quot;: &quot;TypeHierarchy&quot;,
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  },
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/type-hierarchy.json&quot;,
+  &quot;_createdAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost/v1/realms/qyjcmbqlkavvsbbo/users/jane-doe&quot;,
+  &quot;_deprecated&quot;: false,
+  &quot;_rev&quot;: 1,
+  &quot;_self&quot;: &quot;http://localhost/v1/type-hierarchy&quot;,
+  &quot;_updatedAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost/v1/realms/qyjcmbqlkavvsbbo/users/jane-doe&quot;
 }</code></pre></dd>
 </dl>
-<p>In addition to mandatory <code>@type</code> and <code>reason</code> fields, arbitrary fields may be present for extra information in certain scenarios.</p>
+<h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2>
+<p>This operation overrides the payload.</p>
+<p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
+<pre><code>PUT /v1/type-hierarchy?rev={previous_rev}
+  {...}
+</code></pre>
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/update.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+     -H &quot;Content-Type: application/json&quot; \
+     &quot;http://localhost:8080/v1/type-hierarchy?rev=1&quot; \
+     -d \
+&#39;{
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  }
+}&#39;</code></pre></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/payload.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  }
+}</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/updated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/type-hierarchy.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/TypeHierarchy&quot;,
+  &quot;@type&quot;: &quot;TypeHierarchy&quot;,
+  &quot;mapping&quot;: {
+    &quot;https://schema.org/VideoGame&quot;: [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  },
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/type-hierarchy.json&quot;,
+  &quot;_createdAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost/v1/realms/knntwmnuxprsqrio/users/jane-doe&quot;,
+  &quot;_deprecated&quot;: false,
+  &quot;_rev&quot;: 2,
+  &quot;_self&quot;: &quot;http://localhost/v1/type-hierarchy&quot;,
+  &quot;_updatedAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost/v1/realms/knntwmnuxprsqrio/users/jane-doe&quot;
+}
+</code></pre></dd>
+</dl>
+<h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
+<pre><code>GET /v1/type-hierarchy
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/fetch.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/type-hierarchy</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/type-hierarchy/fetched.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : [
+    &quot;https://bluebrain.github.io/nexus/contexts/type-hierarchy.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/TypeHierarchy&quot;,
+  &quot;@type&quot; : &quot;TypeHierarchy&quot;,
+  &quot;mapping&quot; : {
+    &quot;https://schema.org/VideoGame&quot; : [
+      &quot;https://schema.org/SoftwareApplication&quot;,
+      &quot;https://schema.org/CreativeWork&quot;,
+      &quot;https://schema.org/Thing&quot;
+    ]
+  },
+  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/type-hierarchy.json&quot;,
+  &quot;_createdAt&quot; : &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot; : &quot;http://localhost/v1/realms/sanwxierjnyajvxn/users/jane-doe&quot;,
+  &quot;_deprecated&quot; : false,
+  &quot;_rev&quot; : 1,
+  &quot;_self&quot; : &quot;http://localhost/v1/type-hierarchy&quot;,
+  &quot;_updatedAt&quot; : &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_updatedBy&quot; : &quot;http://localhost/v1/realms/sanwxierjnyajvxn/users/jane-doe&quot;
+}</code></pre></dd>
+</dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/error-signaling.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/type-hierarchy-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -299,7 +464,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/content-negotiation.html" title="Content Negotiation" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/supervision-api.html" title="Supervision" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -308,17 +473,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Content Negotiation
+Supervision
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/version.html" title="Version" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/metadata.html" title="Nexus Metadata" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Version
+Nexus Metadata
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

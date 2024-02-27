@@ -224,6 +224,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -334,6 +335,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>_bytes</code>: size of the file in bytes</li>
   <li><code>_digest</code>: algorithm and checksum used for file integrity</li>
   <li><code>_filename</code>: name of the file</li>
+  <li><code>_keywords</code>: list of keywords associated with the file and which can be used to search for the file</li>
   <li><code>_location</code>: path where the file is stored on the underlying storage</li>
   <li><code>_mediaType</code>: <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the type of the file</li>
   <li><code>_origin</code>: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service</li>
@@ -353,17 +355,16 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
 </code></pre>
 <p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
-<p>The json payload:</p>
-<ul>
-  <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
-  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
-</ul>
+<p>The request body:</p>
+<p>The body should be a multipart form, to allow file upload. The form should contain one part named <code>file</code>. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file&rsquo;s extension.</p>
+<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system - <code>metadata</code>: a JSON object containing the following one or more of the following fields:  - <code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.  - <code>description</code>: a string that describes the file. It will be indexed in the full-text search.  - <code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
      -F &quot;file=@/path/to/myfile.jpg;type=image/jpeg&quot; \
+     -F &#39;metadata=&quot;{\&quot;name\&quot;: \&quot;My File\&quot;}&quot;&#39; \
      &quot;http://localhost:8080/v1/files/myorg/myproject&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -374,6 +375,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/c581fdd4-6151-4430-aa33-f97ab6aa0b38&quot;,
   &quot;@type&quot;: &quot;File&quot;,
+  &quot;name&quot;: &quot;My File&quot;,
   &quot;_bytes&quot;: 8615,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-12T07:28:30.472Z&quot;,
@@ -406,13 +408,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
 </code></pre>
 <p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
-<p>Note that if the payload contains an @id different from the <code>{file_id}</code>, the request will fail.</p>
+<p>The body should be a multipart form, to allow file upload. The form should contain one part named <code>file</code>. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file&rsquo;s extension.</p>
+<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system - <code>metadata</code>: a JSON object containing one or more of the following fields:  - <code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.  - <code>description</code>: a string that describes the file. It will be indexed in the full-text search.  - <code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
      -F &quot;file=@/path/to/myfile.pdf;type=application/pdf&quot; \
+     -F &#39;metadata=&quot;{\&quot;name\&quot;: \&quot;My File\&quot;}&quot;&#39; \
      &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=remote&amp;tag=mytag&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -423,6 +427,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/myfile&quot;,
   &quot;@type&quot;: &quot;File&quot;,
+  &quot;name&quot;: &quot;My File&quot;,
   &quot;_bytes&quot;: 5963969,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-12T07:30:54.576Z&quot;,
@@ -457,7 +462,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   {
     &quot;path&quot;: &quot;{path}&quot;,
     &quot;filename&quot;: &quot;{filename}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: &quot;{metadata}&quot;
   }
 </code></pre>
 <ul>
@@ -466,6 +472,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
   <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.</li>
   <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
+  <li><code>{metadata}</code>: JSON Object - optional object containing one or more of the following fields:</li>
+  <li><code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.</li>
+  <li><code>description</code>: a string that describes the file. It will be indexed in the full-text search.</li>
+  <li><code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -477,14 +487,30 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
    &#39;{
       &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
       &quot;filename&quot;: &quot;myfile.png&quot;,
-      &quot;mediaType&quot;: &quot;image/png&quot;
+      &quot;mediaType&quot;: &quot;image/png&quot;,
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;My File&quot;,
+        &quot;description&quot;: &quot;a description of the file&quot;,
+        &quot;keywords&quot;: {
+          &quot;key1&quot;: &quot;value1&quot;,
+          &quot;key2&quot;: &quot;value2&quot;
+        }
+      }
    }&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
   &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
   &quot;filename&quot;: &quot;myfile.png&quot;,
-  &quot;mediaType&quot;: &quot;image/png&quot;
+  &quot;mediaType&quot;: &quot;image/png&quot;,
+  &quot;metadata&quot;: {
+    &quot;name&quot;: &quot;My File&quot;,
+    &quot;description&quot;: &quot;a description of the file&quot;,
+    &quot;keywords&quot;: {
+      &quot;key1&quot;: &quot;value1&quot;,
+      &quot;key2&quot;: &quot;value2&quot;
+    }
+  }
 }</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -495,6 +521,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,
   &quot;@type&quot;: &quot;File&quot;,
+  &quot;name&quot;: &quot;My File&quot;,
+  &quot;description&quot;: &quot;a description of the file&quot;,
   &quot;_bytes&quot;: 1658857,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-12T07:56:42.991Z&quot;,
@@ -505,6 +533,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   },
   &quot;_filename&quot;: &quot;myfile.png&quot;,
   &quot;_incoming&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5/incoming&quot;,
+  &quot;_keywords&quot;: {
+    &quot;key1&quot;: &quot;value1&quot;,
+    &quot;key2&quot;: &quot;value2&quot;
+  },
   &quot;_location&quot;: &quot;file:///tmp/test/nexus/myorg/myproject/3/4/c/4/9/1/a/1/myfile.png&quot;,
   &quot;_mediaType&quot;: &quot;image/png&quot;,
   &quot;_origin&quot;: &quot;Storage&quot;,
@@ -529,7 +561,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   {
     &quot;path&quot;: &quot;{path}&quot;,
     &quot;filename&quot;: &quot;{filename}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: &quot;{metadata}&quot;
   }
 </code></pre>
 <p>&hellip; where </p>
@@ -539,6 +572,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
   <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.</li>
   <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
+  <li><code>{metadata}</code>: JSON Object - optional object containing one or more of the following fields:</li>
+  <li><code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.</li>
+  <li><code>description</code>: a string that describes the file. It will be indexed in the full-text search.</li>
+  <li><code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -548,12 +585,28 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
    -H &quot;Content-Type: application/json&quot; \
    &quot;http://localhost:8080/v1/files/myorg/myproject/mylink?storage=remote&amp;tag=mytag&quot; -d \
    &#39;{
-      &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;
+      &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;,
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;My File&quot;,
+        &quot;description&quot;: &quot;a description of the file&quot;,
+        &quot;keywords&quot;: {
+          &quot;key1&quot;: &quot;value1&quot;,
+          &quot;key2&quot;: &quot;value2&quot;
+        }
+      }
    }&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;
+  &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;,
+  &quot;metadata&quot;: {
+    &quot;name&quot;: &quot;My File&quot;,
+    &quot;description&quot;: &quot;a description of the file&quot;,
+    &quot;keywords&quot;: {
+      &quot;key1&quot;: &quot;value1&quot;,
+      &quot;key2&quot;: &quot;value2&quot;
+    }
+  }
 }</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -564,6 +617,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,
   &quot;@type&quot;: &quot;File&quot;,
+  &quot;name&quot;: &quot;My File&quot;,
+  &quot;description&quot;: &quot;description of the file&quot;,
   &quot;_bytes&quot;: 1658857,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-12T08:00:34.563Z&quot;,
@@ -574,6 +629,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   },
   &quot;_filename&quot;: &quot;myfile2.png&quot;,
   &quot;_incoming&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink/incoming&quot;,
+  &quot;_keywords&quot;: {
+    &quot;key1&quot;: &quot;value1&quot;,
+    &quot;key2&quot;: &quot;value2&quot;
+  },
   &quot;_location&quot;: &quot;file:///tmp/test/nexus/myorg/myproject/6/6/0/4/9/9/d/9/myfile2.png&quot;,
   &quot;_origin&quot;: &quot;Storage&quot;,
   &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink/outgoing&quot;,

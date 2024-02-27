@@ -224,6 +224,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -260,6 +261,10 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#files" class="header">Files</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#custom-metadata" class="header">Custom metadata</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
@@ -269,6 +274,7 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#resolvers" class="header">Resolvers</a>
       <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#fetching-the-annotated-original-payload-of-a-resolved-resource-" class="header">Fetching the annotated original payload of a resolved resource.</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#global-search" class="header">Global search</a>
@@ -330,6 +336,10 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#files" class="header">Files</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#custom-metadata" class="header">Custom metadata</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
@@ -339,6 +349,7 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#resolvers" class="header">Resolvers</a>
       <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#fetching-the-annotated-original-payload-of-a-resolved-resource-" class="header">Fetching the annotated original payload of a resolved resource.</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#global-search" class="header">Global search</a>
@@ -406,6 +417,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views</h3>
 <h4><a href="#new-mapping-and-settings-for-the-default-elasticsearch-view" name="new-mapping-and-settings-for-the-default-elasticsearch-view" class="anchor"><span class="anchor-link"></span></a>New mapping and settings for the default Elasticsearch view</h4>
 <p>The default Elasticsearch view now uses a new mapping and settings which improves the ability to search for resources using the listing endpoints.</p>
+<h3><a href="#files" name="files" class="anchor"><span class="anchor-link"></span></a>Files</h3>
+<h4><a href="#custom-metadata" name="custom-metadata" class="anchor"><span class="anchor-link"></span></a>Custom metadata</h4>
+<p>It is now possible to add custom metadata when creating files. This metadata will be indexed for full-text search.</p>
+<p><a href="../delta/api/files-api.html#create-using-post">More information</a></p>
 <h3><a href="#storages" name="storages" class="anchor"><span class="anchor-link"></span></a>Storages</h3>
 <h4><a href="#disabling-default-storage" name="disabling-default-storage" class="anchor"><span class="anchor-link"></span></a>Disabling default storage</h4>
 <p>The creation of a default storage at project creation can now be disabled.</p>
@@ -419,6 +434,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Storages can no longer be tagged, looked up by tag or have their tags fetched.</li>
 </ul>
 <h3><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h3>
+<h4><a href="#fetching-the-annotated-original-payload-of-a-resolved-resource-" name="fetching-the-annotated-original-payload-of-a-resolved-resource-" class="anchor"><span class="anchor-link"></span></a>Fetching the annotated original payload of a resolved resource.</h4>
+<p>The annotate parameter has been introduced to the endpoint to get the original payload of a resolved resource.</p>
+<p><a href="../delta/api/resolvers-api.html#fetch-original-resource-payload-using-resolvers">More information</a></p>
 <h4><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h4>
 <ul>
   <li>The ability to tag a resolver has been removed. It is also no longer possible to fetch a resolver by tag.</li>
