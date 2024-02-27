@@ -220,7 +220,13 @@ class FilesRoutesSpec
       postJson("/v1/files/org/proj", payload) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("files/errors/file-link-no-filename.json")
+          json"""
+            {
+              "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+              "@type" : "InvalidFileLink",
+              "reason" : "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+            }
+              """
       }
     }
 

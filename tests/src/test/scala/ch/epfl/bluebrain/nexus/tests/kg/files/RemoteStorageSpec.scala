@@ -105,6 +105,10 @@ class RemoteStorageSpec extends StorageSpec {
     sb.toString
   }
 
+  case class CustomMetadata(name: String, description: String, keywords: Map[String, String])
+  private val customMetadata =
+    CustomMetadata("cool name", "good description", Map("key1" -> "value1", "key2" -> "value2"))
+
   "succeed many large files are in the archive, going over the time limit" ignore {
     val content = randomString(130000000)
     val payload = jsonContentOf("kg/archives/archive-many-large-files.json")
@@ -160,6 +164,22 @@ class RemoteStorageSpec extends StorageSpec {
       "filename"  := filename,
       "path"      := path,
       "mediaType" := mediaType
+    )
+
+  private def linkPayloadWithMetadata(
+      filename: String,
+      path: String,
+      md: CustomMetadata
+  ) =
+    Json.obj(
+      "filename"  := filename,
+      "path"      := path,
+      "mediaType" := None,
+      "metadata"  := Json.obj(
+        "name"        := md.name,
+        "description" := md.description,
+        "keywords"    := md.keywords
+      )
     )
 
   def linkFile(payload: Json)(fileId: String, filename: String, mediaType: Option[String]) = {
@@ -311,6 +331,43 @@ class RemoteStorageSpec extends StorageSpec {
 
   }
 
+  "Linking a file with custom metadata should" should {
+
+    "succeed" in {
+      val filename = s"${genString()}.txt"
+      val md       = customMetadata
+      val payload  = linkPayloadWithMetadata(filename, filename, md)
+
+      for {
+        _ <- createFileInStorageService(filename)
+        _ <- linkFile(filename, payload)
+        _ <- assertCorrectCustomMetadata(filename, md)
+      } yield succeed
+    }
+
+    "succeed when updating with metadata" in {
+      val filename  = s"${genString()}.txt"
+      val filename2 = s"${genString()}.txt"
+      val md        = customMetadata
+
+      val simplePayload       = linkPayload(filename, filename, None)
+      val payloadWithMetadata = linkPayloadWithMetadata(filename2, filename2, md)
+
+      val setup = for {
+        _ <- createFileInStorageService(filename)
+        _ <- createFileInStorageService(filename2)
+        _ <- linkFile(filename, simplePayload)
+      } yield succeed
+
+      setup.accepted
+      eventually { assertFileRevision(filename, 2) }
+      updateFileLink(filename, payloadWithMetadata).accepted
+
+      eventually { assertCorrectCustomMetadata(filename, md) }
+    }
+
+  }
+
   "The file-attributes-updated projection description" should {
     "exist" in {
       aclDsl.addPermission("/", Coyote, Supervision.Read).accepted
@@ -364,4 +421,34 @@ class RemoteStorageSpec extends StorageSpec {
     }
 
   }
+
+  private def linkFile(filename: String, payload: Json) =
+    deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", payload, Coyote) { (_, response) =>
+      response.status shouldEqual StatusCodes.Created
+    }
+
+  private def assertFileRevision(filename: String, expectedRev: Int) =
+    deltaClient
+      .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, _) =>
+        json.hcursor.get[Int]("_rev").toOption should contain(expectedRev)
+      }
+
+  private def updateFileLink(filename: String, payload: Json) =
+    deltaClient
+      .put[Json](s"/files/$projectRef/$filename?rev=2&storage=nxv:${storageId}2", payload, Coyote) { (_, response) =>
+        response.status shouldEqual StatusCodes.OK
+      }
+
+  private def assertCorrectCustomMetadata(
+      filename: String,
+      customMetadata: CustomMetadata
+  ) =
+    deltaClient
+      .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json.hcursor.get[String]("name").toOption should contain(customMetadata.name)
+        json.hcursor.get[String]("description").toOption should contain(customMetadata.description)
+        json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(customMetadata.keywords)
+      }
+
 }

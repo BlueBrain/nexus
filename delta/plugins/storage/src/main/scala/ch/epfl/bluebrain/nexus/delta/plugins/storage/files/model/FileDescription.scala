@@ -1,15 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
+import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
 case class FileDescription(
     filename: String,
-    keywords: Map[Label, String],
     mediaType: Option[ContentType],
-    description: Option[String],
-    name: Option[String]
+    metadata: Option[FileCustomMetadata]
 )
 
 object FileDescription {
@@ -17,17 +15,26 @@ object FileDescription {
     from(file.attributes)
   }
 
-  def from(fileAttributes: FileAttributes): FileDescription = {
+  def from(fileAttributes: FileAttributes): FileDescription =
     FileDescription(
       fileAttributes.filename,
-      fileAttributes.keywords,
       fileAttributes.mediaType,
-      fileAttributes.description,
-      fileAttributes.name
+      FileCustomMetadata(
+        fileAttributes.name,
+        fileAttributes.description,
+        Some(fileAttributes.keywords)
+      ).some
     )
-  }
 
-  def from(info: UploadedFileInformation): FileDescription = {
-    FileDescription(info.filename, info.keywords, Some(info.suppliedContentType), info.description, info.name)
-  }
+  def from(info: UploadedFileInformation): FileDescription =
+    FileDescription(
+      info.filename,
+      Some(info.suppliedContentType),
+      FileCustomMetadata(
+        info.name,
+        info.description,
+        Some(info.keywords)
+      ).some
+    )
+
 }

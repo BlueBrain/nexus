@@ -5,6 +5,7 @@
   ],
   "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/myfile",
   "@type": "File",
+  "name": "My File",
   "_bytes": 5963969,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_createdAt": "2021-05-12T07:30:54.576Z",

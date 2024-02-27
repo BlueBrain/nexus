@@ -140,8 +140,7 @@ class FormDataExtractorSpec
 
     "fail to be extracted if the custom user metadata has invalid keywords" in {
       val entity = entityWithKeywords(KeyThatIsTooLong := "value")
-      val rej    = extractor(iri, entity, 2000, None).rejectedWith[InvalidCustomMetadata]
-      println(rej)
+      extractor(iri, entity, 2000, None).rejectedWith[InvalidCustomMetadata]
     }
 
     "fail to be extracted if no file part exists found" in {
@@ -151,7 +150,6 @@ class FormDataExtractorSpec
 
     "fail to be extracted if payload size is too large" in {
       val entity = createEntity("other", `text/plain(UTF-8)`, None)
-
       extractor(iri, entity, 10, None).rejected shouldEqual FileTooLarge(10L, None)
     }
   }

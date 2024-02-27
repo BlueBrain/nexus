@@ -63,15 +63,16 @@ trait LimitedFileAttributes {
 object FileAttributes {
 
   def from(description: FileDescription, storageMetadata: FileStorageMetadata): FileAttributes = {
+    val customMetadata = description.metadata.getOrElse(FileCustomMetadata.empty)
     FileAttributes(
       storageMetadata.uuid,
       storageMetadata.location,
       storageMetadata.path,
       description.filename,
       description.mediaType,
-      description.keywords,
-      description.description,
-      description.name,
+      customMetadata.keywords.getOrElse(Map.empty),
+      customMetadata.description,
+      customMetadata.name,
       storageMetadata.bytes,
       storageMetadata.digest,
       storageMetadata.origin

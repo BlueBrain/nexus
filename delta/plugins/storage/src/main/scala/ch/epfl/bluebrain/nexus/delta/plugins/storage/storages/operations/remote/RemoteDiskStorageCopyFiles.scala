@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -42,15 +42,16 @@ object RemoteDiskStorageCopyFiles {
   ): FileAttributes = {
     val sourceFileMetadata    = cd.sourceMetadata
     val sourceFileDescription = cd.sourceUserSuppliedMetadata
+    val customMetadata        = sourceFileDescription.metadata.getOrElse(FileCustomMetadata.empty)
     FileAttributes(
       uuid = cd.destUuid,
       location = absoluteDestPath,
       path = relativeDestPath,
       filename = sourceFileDescription.filename,
       mediaType = sourceFileDescription.mediaType,
-      keywords = sourceFileDescription.keywords,
-      description = sourceFileDescription.description,
-      name = sourceFileDescription.name,
+      keywords = customMetadata.keywords.getOrElse(Map.empty),
+      description = customMetadata.description,
+      name = customMetadata.name,
       bytes = sourceFileMetadata.bytes,
       digest = sourceFileMetadata.digest,
       origin = sourceFileMetadata.origin
