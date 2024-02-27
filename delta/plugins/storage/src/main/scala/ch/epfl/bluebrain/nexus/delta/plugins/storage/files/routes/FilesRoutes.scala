@@ -11,7 +11,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.descriptionFromRequest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.fileDescriptionFromRequest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -85,12 +85,15 @@ final class FilesRoutes(
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
-                    entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
+                    entity(as[LinkFileRequest]) { linkRequest =>
                       emit(
                         Created,
-                        files
-                          .createLink(storage, project, descriptionFromRequest(l), l.path, tag)
-                          .index(mode)
+                        fileDescriptionFromRequest(linkRequest)
+                          .flatMap { desc =>
+                            files
+                              .createLink(storage, project, desc, linkRequest.path, tag)
+                              .index(mode)
+                          }
                           .attemptNarrow[FileRejection]
                       )
                     },
@@ -116,18 +119,21 @@ final class FilesRoutes(
                               case (rev, storage, tag) =>
                                 concat(
                                   // Update a Link
-                                  entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
+                                  entity(as[LinkFileRequest]) { linkRequest =>
                                     emit(
-                                      files
-                                        .updateLink(
-                                          fileId,
-                                          storage,
-                                          descriptionFromRequest(l),
-                                          l.path,
-                                          rev,
-                                          tag
-                                        )
-                                        .index(mode)
+                                      fileDescriptionFromRequest(linkRequest)
+                                        .flatMap { description =>
+                                          files
+                                            .updateLink(
+                                              fileId,
+                                              storage,
+                                              description,
+                                              linkRequest.path,
+                                              rev,
+                                              tag
+                                            )
+                                            .index(mode)
+                                        }
                                         .attemptNarrow[FileRejection]
                                     )
                                   },
@@ -145,13 +151,15 @@ final class FilesRoutes(
                             parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
                               concat(
                                 // Link a file with id segment
-                                entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
-                                  println(s"we are where with ${l.metadata}")
+                                entity(as[LinkFileRequest]) { linkRequest =>
                                   emit(
                                     Created,
-                                    files
-                                      .createLink(fileId, storage, descriptionFromRequest(l), l.path, tag)
-                                      .index(mode)
+                                    fileDescriptionFromRequest(linkRequest)
+                                      .flatMap { description =>
+                                        files
+                                          .createLink(fileId, storage, description, linkRequest.path, tag)
+                                          .index(mode)
+                                      }
                                       .attemptNarrow[FileRejection]
                                   )
                                 },
@@ -289,37 +297,16 @@ object FilesRoutes {
       mediaType: Option[ContentType],
       metadata: Option[FileCustomMetadata]
   )
+
   object LinkFileRequest {
     @nowarn("cat=unused")
-    implicit private val config: Configuration = Configuration.default
-    implicit val linkFileDecoder: Decoder[LinkFileRequest] = {
-      deriveConfiguredDecoder[LinkFileRequest]
-        .flatMap { case LinkFileRequest(path, filename, mediaType, metadata) =>
-          filename.orElse(path.lastSegment) match {
-            case Some(derivedFilename) =>
-              Decoder.const(
-                LinkFileRequest(
-                  path,
-                  Some(derivedFilename),
-                  mediaType,
-                  metadata
-                )
-              )
-            case None                  =>
-              Decoder.failedWithMessage(
-                "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
-              )
-          }
-        }
-    }
+    implicit private val config: Configuration             = Configuration.default
+    implicit val linkFileDecoder: Decoder[LinkFileRequest] = deriveConfiguredDecoder[LinkFileRequest]
 
-    def descriptionFromRequest(f: LinkFileRequest): FileDescription =
+    def fileDescriptionFromRequest(f: LinkFileRequest): IO[FileDescription] =
       f.filename.orElse(f.path.lastSegment) match {
-        case Some(value) => FileDescription(value, f.mediaType, f.metadata)
-        case None        =>
-          throw new Exception(
-            "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename"
-          )
+        case Some(value) => IO.pure(FileDescription(value, f.mediaType, f.metadata))
+        case None        => IO.raiseError(InvalidFileLink)
       }
   }
 }

@@ -228,8 +228,17 @@ object FileRejection {
     */
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
       extends FileRejection(
-        s"File '$id' could not be linked using storage '$storageId', ${rejection}",
+        s"File '$id' could not be linked using storage '$storageId'",
         Some(rejection.loggedDetails)
+      )
+
+  /**
+    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
+    * filename.
+    */
+  final case object InvalidFileLink
+      extends FileRejection(
+        s"Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
       )
 
   final case class CopyRejection(
