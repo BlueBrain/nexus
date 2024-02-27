@@ -52,7 +52,7 @@ val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M11"
 val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.3"
-val postgresJdbcVersion     = "42.7.1"
+val postgresJdbcVersion     = "42.7.2"
 val pureconfigVersion       = "0.17.5"
 val scalaTestVersion        = "3.2.18"
 val scalaXmlVersion         = "2.2.0"
@@ -885,7 +885,9 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,
-    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
+    //TODO: remove when there is a release of Kamon supporting PostgreSQL 42.7.2
+    // https: //github.com/kamon-io/Kamon/issues/1321
+    //"io.kamon" %% "kamon-jdbc"           % kamonVersion,
     "io.kamon" %% "kamon-logback"        % kamonVersion,
     "io.kamon" %% "kamon-prometheus"     % kamonVersion,
     "io.kamon" %% "kamon-scala-future"   % kamonVersion,
