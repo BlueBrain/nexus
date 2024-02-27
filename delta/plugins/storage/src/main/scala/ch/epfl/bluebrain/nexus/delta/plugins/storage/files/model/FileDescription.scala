@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
+import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 
 case class FileDescription(
     filename: String,
     mediaType: Option[ContentType],
-    metadata: FileCustomMetadata
+    metadata: Option[FileCustomMetadata]
 )
 
 object FileDescription {
@@ -22,7 +23,7 @@ object FileDescription {
         fileAttributes.name,
         fileAttributes.description,
         Some(fileAttributes.keywords)
-      )
+      ).some
     )
 
   def from(info: UploadedFileInformation): FileDescription =
@@ -33,7 +34,7 @@ object FileDescription {
         info.name,
         info.description,
         Some(info.keywords)
-      )
+      ).some
     )
 
 }

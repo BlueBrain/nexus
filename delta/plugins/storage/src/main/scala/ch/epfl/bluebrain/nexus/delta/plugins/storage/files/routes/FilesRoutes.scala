@@ -11,6 +11,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.descriptionFromRequest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -84,11 +85,11 @@ final class FilesRoutes(
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
-                    entity(as[LinkFile]) { case LinkFile(path, description) =>
+                    entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
                       emit(
                         Created,
                         files
-                          .createLink(storage, project, description, path, tag)
+                          .createLink(storage, project, descriptionFromRequest(l), l.path, tag)
                           .index(mode)
                           .attemptNarrow[FileRejection]
                       )
@@ -115,10 +116,17 @@ final class FilesRoutes(
                               case (rev, storage, tag) =>
                                 concat(
                                   // Update a Link
-                                  entity(as[LinkFile]) { case LinkFile(path, description) =>
+                                  entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
                                     emit(
                                       files
-                                        .updateLink(fileId, storage, description, path, rev, tag)
+                                        .updateLink(
+                                          fileId,
+                                          storage,
+                                          descriptionFromRequest(l),
+                                          l.path,
+                                          rev,
+                                          tag
+                                        )
                                         .index(mode)
                                         .attemptNarrow[FileRejection]
                                     )
@@ -137,11 +145,12 @@ final class FilesRoutes(
                             parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
                               concat(
                                 // Link a file with id segment
-                                entity(as[LinkFile]) { case LinkFile(path, description) =>
+                                entity(as[LinkFileRequest]) { case l: LinkFileRequest =>
+                                  println(s"we are where with ${l.metadata}")
                                   emit(
                                     Created,
                                     files
-                                      .createLink(fileId, storage, description, path, tag)
+                                      .createLink(fileId, storage, descriptionFromRequest(l), l.path, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
@@ -278,25 +287,22 @@ object FilesRoutes {
       path: Path,
       filename: Option[String],
       mediaType: Option[ContentType],
-      metadata: FileCustomMetadata
+      metadata: Option[FileCustomMetadata]
   )
-  final case class LinkFile(path: Path, fileDescription: FileDescription)
-  object LinkFile {
+  object LinkFileRequest {
     @nowarn("cat=unused")
-    implicit private val config: Configuration = Configuration.default.withStrictDecoding.withDefaults
-    implicit val linkFileDecoder: Decoder[LinkFile] = {
+    implicit private val config: Configuration = Configuration.default
+    implicit val linkFileDecoder: Decoder[LinkFileRequest] = {
       deriveConfiguredDecoder[LinkFileRequest]
         .flatMap { case LinkFileRequest(path, filename, mediaType, metadata) =>
           filename.orElse(path.lastSegment) match {
             case Some(derivedFilename) =>
               Decoder.const(
-                LinkFile(
+                LinkFileRequest(
                   path,
-                  FileDescription(
-                    derivedFilename,
-                    mediaType,
-                    metadata
-                  )
+                  Some(derivedFilename),
+                  mediaType,
+                  metadata
                 )
               )
             case None                  =>
@@ -306,5 +312,14 @@ object FilesRoutes {
           }
         }
     }
+
+    def descriptionFromRequest(f: LinkFileRequest): FileDescription =
+      f.filename.orElse(f.path.lastSegment) match {
+        case Some(value) => FileDescription(value, f.mediaType, f.metadata)
+        case None        =>
+          throw new Exception(
+            "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename"
+          )
+      }
   }
 }

@@ -162,6 +162,24 @@ class RemoteStorageSpec extends StorageSpec {
       "mediaType" := mediaType
     )
 
+  def linkPayloadWithMetadata(
+      filename: String,
+      path: String,
+      name: String,
+      description: String,
+      keywords: Map[String, String]
+  ) =
+    Json.obj(
+      "filename"  := filename,
+      "path"      := path,
+      "mediaType" := None,
+      "metadata"  := Json.obj(
+        "name"        := name,
+        "description" := description,
+        "keywords"    := keywords
+      )
+    )
+
   def linkFile(payload: Json)(fileId: String, filename: String, mediaType: Option[String]) = {
     val expected = jsonContentOf(
       "kg/files/remote-linked.json",
@@ -307,6 +325,34 @@ class RemoteStorageSpec extends StorageSpec {
         (_, response) =>
           response.status shouldEqual StatusCodes.BadRequest
       }
+    }
+
+  }
+
+  "Linking a file with custom metadata should" should {
+
+    val filename = s"${genString()}.txt"
+
+    "succeed" in {
+      val name        = "cool name"
+      val description = "good description"
+      val keywords    = Map("key1" -> "value1", "key2" -> "value2")
+      val payload     = linkPayloadWithMetadata(filename, filename, name, description, keywords)
+
+      for {
+        _ <- createFileInStorageService(filename)
+        _ <- deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", payload, Coyote) {
+               (_, response) =>
+                 response.status shouldEqual StatusCodes.Created
+             }
+        _ <- deltaClient
+               .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
+                 response.status shouldEqual StatusCodes.OK
+                 json.hcursor.get[String]("name").toOption should contain(name)
+                 json.hcursor.get[String]("description").toOption should contain(description)
+                 json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(keywords)
+               }
+      } yield succeed
     }
 
   }

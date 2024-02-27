@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.{ActorSystem, typed}
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.testkit.TestKit
 import cats.effect.IO
-import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
@@ -62,15 +61,15 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
   private val alice = User("Alice", realm)
 
   def description(filename: String): FileDescription = {
-    FileDescription(filename, None, FileCustomMetadata.empty)
+    FileDescription(filename, None, Some(FileCustomMetadata.empty))
   }
 
   def description(filename: String, contentType: ContentType): FileDescription = {
-    FileDescription(filename, Some(contentType), FileCustomMetadata.empty)
+    FileDescription(filename, Some(contentType), Some(FileCustomMetadata.empty))
   }
 
   def descriptionWithName(filename: String, name: String): FileDescription =
-    FileDescription(filename, None, FileCustomMetadata(Some(name), None, None))
+    FileDescription(filename, None, Some(FileCustomMetadata(Some(name), None, None)))
 
   def descriptionWithMetadata(
       filename: String,
@@ -78,7 +77,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       description: String,
       keywords: Map[Label, String]
   ): FileDescription =
-    FileDescription(filename, None, FileCustomMetadata(Some(name), Some(description), Some(keywords)))
+    FileDescription(filename, None, Some(FileCustomMetadata(Some(name), Some(description), Some(keywords))))
 
   "The Files operations bundle" when {
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
@@ -304,14 +303,15 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val (name, description, keywords) = (genString(), genString(), genKeywords())
         val fileDescription               = descriptionWithMetadata("file-5.txt", name, description, keywords)
 
-        val path       = Uri.Path(s"my/file-5.txt")
-        val linkedFile = files
-          .createLink(fileId(genString()), Some(remoteId), fileDescription, path, None)
-          .accepted
+        val id   = fileId(genString())
+        val path = Uri.Path(s"my/file-5.txt")
 
-        linkedFile.value.attributes.name should contain(name)
-        linkedFile.value.attributes.description should contain(description)
-        linkedFile.value.attributes.keywords shouldEqual keywords
+        files.createLink(id, Some(remoteId), fileDescription, path, None).accepted
+        val fetchedFile = files.fetch(id).accepted
+
+        fetchedFile.value.attributes.name should contain(name)
+        fetchedFile.value.attributes.description should contain(description)
+        fetchedFile.value.attributes.keywords shouldEqual keywords
       }
 
       "reject if file id already exists" in {
@@ -428,6 +428,25 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
         actual shouldEqual expected
         byTag shouldEqual expected
+      }
+
+      "succeed if also updating custom metadata" in {
+        val id   = fileId(genString())
+        val path = Uri.Path("my/file-6.txt")
+
+        val (name, desc, keywords) = (genString(), genString(), genKeywords())
+
+//        val originalFileDescription = description("file-6.txt")
+        val updatedFileDescription = descriptionWithMetadata("file-6.txt", name, desc, keywords)
+
+//        files.createLink(id, Some(remoteId), originalFileDescription, path, None).accepted
+//        IO.sleep(FiniteDuration.apply(10, "seconds")).accepted
+        files.updateLink(id, Some(remoteId), updatedFileDescription, path, 1, None).accepted
+        val fetchedFile = files.fetch(id).accepted
+
+        fetchedFile.value.attributes.name should contain(name)
+        fetchedFile.value.attributes.description should contain(desc)
+        fetchedFile.value.attributes.keywords shouldEqual keywords
       }
 
       "reject if file doesn't exists" in {
