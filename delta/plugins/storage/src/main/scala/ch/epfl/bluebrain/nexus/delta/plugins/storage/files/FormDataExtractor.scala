@@ -13,10 +13,12 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidKeywords, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidCustomMetadata, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.parser
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{parser, Decoder}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -24,7 +26,8 @@ import scala.util.Try
 sealed trait FormDataExtractor {
 
   /**
-    * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData
+    * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData. Any other part is
+    * discarded.
     *
     * @param id
     *   the file id
@@ -35,7 +38,7 @@ sealed trait FormDataExtractor {
     * @param storageAvailableSpace
     *   the remaining available space on the storage
     * @return
-    *   the file description plus the entity with the file content
+    *   the file metadata. plus the entity with the file content
     */
   def apply(
       id: Iri,
@@ -48,6 +51,8 @@ sealed trait FormDataExtractor {
 case class UploadedFileInformation(
     filename: String,
     keywords: Map[Label, String],
+    description: Option[String],
+    name: Option[String],
     suppliedContentType: ContentType,
     contents: BodyPartEntity
 )
@@ -136,10 +141,15 @@ object FormDataExtractor {
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
 
-          val result = for {
-            keywords <- extractKeywords(part)
-          } yield {
-            Some(UploadedFileInformation(filename, keywords, contentType, part.entity))
+          val result = extractMetadata(part).map { md =>
+            UploadedFileInformation(
+              filename,
+              md.keywords.getOrElse(Map.empty),
+              md.description,
+              md.name,
+              contentType,
+              part.entity
+            ).some
           }
 
           Future.fromTry(result.toTry)
@@ -147,16 +157,25 @@ object FormDataExtractor {
           part.entity.discardBytes().future.as(None)
       }
 
-      private def extractKeywords(
+      private case class FileCustomMetadata(
+          name: Option[String],
+          description: Option[String],
+          keywords: Option[Map[Label, String]]
+      )
+      implicit private val fileUploadMetadataDecoder: Decoder[FileCustomMetadata] =
+        deriveDecoder[FileCustomMetadata]
+
+      private def extractMetadata(
           part: Multipart.FormData.BodyPart
-      ): Either[InvalidKeywords, Map[Label, String]] = {
-        part.dispositionParams.get("keywords") match {
+      ): Either[FileRejection, FileCustomMetadata] = {
+        val metadata = part.dispositionParams.get("metadata").filter(_.nonEmpty)
+        metadata match {
           case Some(value) =>
             parser
               .parse(value)
-              .flatMap(_.as[Map[Label, String]])
-              .leftMap(err => InvalidKeywords(err.getMessage))
-          case None        => Right(Map.empty)
+              .flatMap(_.as[FileCustomMetadata])
+              .leftMap(err => InvalidCustomMetadata(err.getMessage))
+          case None        => Right(FileCustomMetadata(None, None, None))
         }
       }
 

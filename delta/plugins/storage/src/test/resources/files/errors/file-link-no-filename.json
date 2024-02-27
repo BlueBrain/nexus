@@ -1,0 +1,6 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "MalformedRequestContentRejection",
+  "reason" : "The request content was malformed.",
+  "details" : "DecodingFailure at : Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+}

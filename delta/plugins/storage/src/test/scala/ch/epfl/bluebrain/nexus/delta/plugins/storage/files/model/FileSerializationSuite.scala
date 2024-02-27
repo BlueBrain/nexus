@@ -31,12 +31,14 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val tag              = UserTag.unsafe("mytag")
   private val projectRef       = ProjectRef.unsafe("myorg", "myproj")
 
-  private val storageRef = ResourceRef.Revision(iri"$dId?rev=1", dId, 1)
-  private val fileId     = nxv + "file"
-  private val digest     = ComputedDigest(DigestAlgorithm.default, "digest-value")
-  private val uuid       = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-  private val keywords   = Map(Label.unsafe("key") -> "value")
-  private val attributes =
+  private val storageRef  = ResourceRef.Revision(iri"$dId?rev=1", dId, 1)
+  private val fileId      = nxv + "file"
+  private val digest      = ComputedDigest(DigestAlgorithm.default, "digest-value")
+  private val uuid        = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  private val keywords    = Map(Label.unsafe("key") -> "value")
+  private val description = "A description"
+  private val name        = "A name"
+  private val attributes  =
     FileAttributes(
       uuid,
       "http://localhost/file.txt",
@@ -44,18 +46,21 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       "file.txt",
       Some(`text/plain(UTF-8)`),
       Map.empty,
+      None,
+      None,
       12,
       digest,
       Client
     )
 
-  private val attributesWithKeywords = attributes.copy(keywords = keywords)
+  private val attributesWithMetadata =
+    attributes.copy(keywords = keywords, description = Some(description), name = Some(name))
 
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
-  private val createdWithKeywords = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributesWithKeywords.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val createdWithMetadata = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributesWithMetadata.copy(digest = NotComputedDigest), 1, instant, subject, None)
   private val createdTagged = created.copy(tag = Some(tag))
-  private val createdTaggedWithKeywords = createdWithKeywords.copy(tag = Some(tag))
+  private val createdTaggedWithMetadata = createdWithMetadata.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
@@ -83,9 +88,9 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
-      "FileCreated with keywords",
-      createdWithKeywords,
-      loadEvents("files", "file-created-with-keywords.json"),
+      "FileCreated with metadata",
+      createdWithMetadata,
+      loadEvents("files", "file-created-with-metadata.json"),
       Created,
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
@@ -98,10 +103,10 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     ),
     (
       "FileCreated with tags and keywords",
-      createdTaggedWithKeywords,
-      loadEvents("files", "file-created-tagged-with-keywords.json"),
+      createdTaggedWithMetadata,
+      loadEvents("files", "file-created-tagged-with-metadata.json"),
       Created,
-      expected(createdTaggedWithKeywords, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+      expected(createdTaggedWithMetadata, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
       "FileUpdated",
@@ -206,10 +211,10 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     subject
   )
 
-  private val stateWithKeywords = state.copy(attributes = attributesWithKeywords)
+  private val stateWithMetadata = state.copy(attributes = attributesWithMetadata)
 
   private val fileState             = jsonContentOf("files/database/file-state.json")
-  private val fileStateWithKeywords = jsonContentOf("files/database/file-state-with-keywords.json")
+  private val fileStateWithMetadata = jsonContentOf("files/database/file-state-with-metadata.json")
 
   test(s"Correctly serialize a FileState") {
     assertEquals(FileState.serializer.codec(state), fileState)
@@ -219,12 +224,12 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     assertEquals(FileState.serializer.codec.decodeJson(fileState), Right(state))
   }
 
-  test(s"Correctly serialize a FileState with keywords") {
-    assertEquals(FileState.serializer.codec(stateWithKeywords), fileStateWithKeywords)
+  test(s"Correctly serialize a FileState with metadata") {
+    assertEquals(FileState.serializer.codec(stateWithMetadata), fileStateWithMetadata)
   }
 
-  test(s"Correctly deserialize a FileState with keywords") {
-    assertEquals(FileState.serializer.codec.decodeJson(fileStateWithKeywords), Right(stateWithKeywords))
+  test(s"Correctly deserialize a FileState with metadata") {
+    assertEquals(FileState.serializer.codec.decodeJson(fileStateWithMetadata), Right(stateWithMetadata))
   }
 
 }

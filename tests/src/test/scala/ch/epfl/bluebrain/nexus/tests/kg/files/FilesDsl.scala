@@ -40,20 +40,24 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
     )
   }
 
-  def uploadFileWithKeywords(
+  def uploadFileWithMetadata(
       fileInput: FileInput,
       projRef: String,
       storage: String,
       rev: Option[Int],
-      keywords: Map[String, String]
+      keywords: Map[String, String],
+      description: Option[String],
+      name: Option[String]
   ): IO[(Json, HttpResponse)] = {
     val revString = rev.map(r => s"&rev=$r").getOrElse("")
-    deltaClient.uploadFileWithKeywords(
+    deltaClient.uploadFileWithMetadata(
       s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
       fileInput.contents,
       fileInput.ct,
       fileInput.filename,
       Coyote,
+      description,
+      name,
       keywords
     )
   }

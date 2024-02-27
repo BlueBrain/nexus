@@ -370,7 +370,7 @@ object FileEvent {
 
           implicit val attributesEncoder: Encoder[FileAttributes] = FileAttributes.createConfiguredEncoder(
             implicitly[Configuration],
-            underscoreFields = true,
+            underscoreFieldsForMetadata = true,
             removePath = true,
             removeLocation = !showLocation.types.contains(storageType)
           )

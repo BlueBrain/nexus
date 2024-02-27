@@ -187,7 +187,7 @@ object RdfRejectionHandler {
       val unsupported = rejection.contentType.fold("")(_.toString)
       val supported   = rejection.supported.mkString(" or ")
       val expected    = if (supported.isEmpty) "" else s" Expected: $supported"
-      jsonObj(rejection, s"The request's Content-Type$unsupported is not supported.$expected")
+      jsonObj(rejection, s"The request's Content-Type $unsupported is not supported.$expected")
     }
 
   implicit private[marshalling] val unsupportedReqCtSeqEncoder
@@ -196,7 +196,7 @@ object RdfRejectionHandler {
       val unsupported = rejections.find(_.contentType.isDefined).flatMap(_.contentType).fold("")(" [" + _ + "]")
       val supported   = rejections.flatMap(_.supported).mkString(" or ")
       val expected    = if (supported.isEmpty) "" else s" Expected: $supported"
-      jsonObj(rejections.head, s"The request's Content-Type$unsupported is not supported.$expected")
+      jsonObj(rejections.head, s"The request's Content-Type $unsupported is not supported.$expected")
     }
 
   implicit private val unsupportedReqCtResponseFields: HttpResponseFields[UnsupportedRequestContentTypeRejection] =

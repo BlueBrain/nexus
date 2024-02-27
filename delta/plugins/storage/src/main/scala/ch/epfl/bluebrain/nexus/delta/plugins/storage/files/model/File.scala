@@ -59,7 +59,7 @@ object File {
       )
       val attrEncoder: Encoder.AsObject[FileAttributes] = FileAttributes.createConfiguredEncoder(
         Configuration.default,
-        underscoreFields = true,
+        underscoreFieldsForMetadata = true,
         removePath = true,
         removeLocation = !showLocation.types.contains(storageType)
       )
