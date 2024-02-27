@@ -11,7 +11,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.fileDescriptionFromRequest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation

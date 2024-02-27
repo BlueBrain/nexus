@@ -331,9 +331,8 @@ class RemoteStorageSpec extends StorageSpec {
 
   "Linking a file with custom metadata should" should {
 
-    val filename = s"${genString()}.txt"
-
     "succeed" in {
+      val filename    = s"${genString()}.txt"
       val name        = "cool name"
       val description = "good description"
       val keywords    = Map("key1" -> "value1", "key2" -> "value2")
@@ -353,6 +352,53 @@ class RemoteStorageSpec extends StorageSpec {
                  json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(keywords)
                }
       } yield succeed
+    }
+
+    "succeed when updating" in {
+      val filename    = s"${genString()}.txt"
+      val filename2   = s"${genString()}.txt"
+      val name        = "cool name"
+      val description = "good description"
+      val keywords    = Map("key1" -> "value1", "key2" -> "value2")
+
+      val simplePayload       = linkPayload(filename, filename, None)
+      val payloadWithMetadata = linkPayloadWithMetadata(filename2, filename2, name, description, keywords)
+
+      val setup = for {
+        _ <- createFileInStorageService(filename)
+        _ <- createFileInStorageService(filename2)
+        _ <- deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", simplePayload, Coyote) {
+               (_, response) =>
+                 response.status shouldEqual StatusCodes.Created
+             }
+      } yield succeed
+
+      setup.accepted
+
+      eventually {
+        deltaClient
+          .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, _) =>
+            json.hcursor.get[Int]("_rev").toOption should contain(2)
+          }
+      }
+
+      deltaClient
+        .put[Json](s"/files/$projectRef/$filename?rev=2&storage=nxv:${storageId}2", payloadWithMetadata, Coyote) {
+          (_, response) =>
+            response.status shouldEqual StatusCodes.OK
+        }
+        .accepted
+
+      eventually {
+        deltaClient
+          .get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
+            response.status shouldEqual StatusCodes.OK
+            json.hcursor.get[String]("name").toOption should contain(name)
+            json.hcursor.get[String]("description").toOption should contain(description)
+            json.hcursor.get[Map[String, String]]("_keywords").toOption should contain(keywords)
+          }
+          .accepted
+      }
     }
 
   }

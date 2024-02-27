@@ -21,7 +21,7 @@ trait RemoteStorageClientFixtures extends BeforeAndAfterAll with ConfigFixtures 
   private val rwx             = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
   private val tmpFolder: Path = Files.createTempDirectory("root", rwx)
 
-  val storageVersion: String = "1.8.0-M12"
+  val storageVersion: String = "1.9.0"
 
   protected val container: RemoteStorageContainer =
     new RemoteStorageContainer(storageVersion, tmpFolder)

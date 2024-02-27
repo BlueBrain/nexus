@@ -436,17 +436,23 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
         val (name, desc, keywords) = (genString(), genString(), genKeywords())
 
-//        val originalFileDescription = description("file-6.txt")
-        val updatedFileDescription = descriptionWithMetadata("file-6.txt", name, desc, keywords)
+        val originalFileDescription = description("file-6.txt")
+        val updatedFileDescription  = descriptionWithMetadata("file-6.txt", name, desc, keywords)
 
-//        files.createLink(id, Some(remoteId), originalFileDescription, path, None).accepted
-//        IO.sleep(FiniteDuration.apply(10, "seconds")).accepted
-        files.updateLink(id, Some(remoteId), updatedFileDescription, path, 1, None).accepted
-        val fetchedFile = files.fetch(id).accepted
+        files.createLink(id, Some(remoteId), originalFileDescription, path, None).accepted
 
-        fetchedFile.value.attributes.name should contain(name)
-        fetchedFile.value.attributes.description should contain(desc)
-        fetchedFile.value.attributes.keywords shouldEqual keywords
+        val fetched = files.fetch(id).accepted
+        files.updateAttributes(fetched.id, projectRef).accepted
+        files.updateLink(id, Some(remoteId), updatedFileDescription, path, 2, None)
+
+        eventually {
+          files.fetch(id).map { fetched =>
+            fetched.value.attributes.name should contain(name)
+            fetched.value.attributes.description should contain(desc)
+            fetched.value.attributes.keywords shouldEqual keywords
+          }
+        }
+
       }
 
       "reject if file doesn't exists" in {
