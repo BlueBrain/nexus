@@ -12,8 +12,8 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "2.1.3"
-val scalaCompilerVersion   = "2.13.12"
+val scalacScapegoatVersion = "2.1.5"
+val scalaCompilerVersion   = "2.13.13"
 
 val akkaHttpVersion         = "10.2.10"
 val akkaHttpCirceVersion    = "1.39.2"
@@ -44,7 +44,7 @@ val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.6"
 val kamonVersion            = "2.7.0"
 val kanelaAgentVersion      = "1.0.18"
-val kindProjectorVersion    = "0.13.2"
+val kindProjectorVersion    = "0.13.3"
 val log4catsVersion         = "2.6.0"
 val logbackVersion          = "1.5.0"
 val magnoliaVersion         = "1.1.8"
