@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal, NotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticCommand, ArithmeticEvent, ArithmeticRejection, Total}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -92,7 +92,7 @@ class GlobalEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Raise an error and persist nothing") {
     val boom = Boom("fail")
     for {
-      _ <- eventLog.evaluate(id, boom).interceptEquals(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(id, boom).intercept[RuntimeException]
       _ <- eventStore.history(id).assert(plus2, plus3)
       _ <- eventLog.stateOr(id, NotFound).assertEquals(total2)
     } yield ()

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTagFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTagFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection._
@@ -177,7 +177,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Raise an error and persist nothing") {
     val boom = Boom(id, proj, "fail")
     for {
-      _ <- eventLog.evaluate(proj, id, boom).interceptEquals(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(proj, id, boom).intercept[RuntimeException]
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()

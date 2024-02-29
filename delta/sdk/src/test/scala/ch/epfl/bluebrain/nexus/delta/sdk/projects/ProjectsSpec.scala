@@ -5,8 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{evaluate, FetchOrganization}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.evaluate
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
@@ -23,14 +24,14 @@ class ProjectsSpec extends CatsEffectSpec {
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "The Projects state machine" when {
-    val epoch                   = Instant.EPOCH
-    val time2                   = Instant.ofEpochMilli(10L)
-    val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
-    val base                    = PrefixIri.unsafe(iri"http://example.com/base/")
-    val vocab                   = PrefixIri.unsafe(iri"http://example.com/vocab/")
-    val org1                    = OrganizationGen.state("org", 1)
-    val org2                    = OrganizationGen.state("org2", 1, deprecated = true)
-    val state                   = ProjectGen.state(
+    val epoch                         = Instant.EPOCH
+    val time2                         = Instant.ofEpochMilli(10L)
+    val am                            = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
+    val base                          = PrefixIri.unsafe(iri"http://example.com/base/")
+    val vocab                         = PrefixIri.unsafe(iri"http://example.com/vocab/")
+    val org1                          = OrganizationGen.state("org", 1)
+    val org2                          = OrganizationGen.state("org2", 1, deprecated = true)
+    val state                         = ProjectGen.state(
       "org",
       "proj",
       1,
@@ -41,19 +42,19 @@ class ProjectsSpec extends CatsEffectSpec {
       vocab = vocab.value,
       enforceSchema = true
     )
-    val deprecatedState         = state.copy(deprecated = true)
-    val label                   = state.label
-    val uuid                    = state.uuid
-    val orgLabel                = state.organizationLabel
-    val orgUuid                 = state.organizationUuid
-    val desc                    = state.description
-    val desc2                   = Some("desc2")
-    val org2abel                = org2.label
-    val subject                 = User("myuser", label)
-    val orgs: FetchOrganization = {
+    val deprecatedState               = state.copy(deprecated = true)
+    val label                         = state.label
+    val uuid                          = state.uuid
+    val orgLabel                      = state.organizationLabel
+    val orgUuid                       = state.organizationUuid
+    val desc                          = state.description
+    val desc2                         = Some("desc2")
+    val org2abel                      = org2.label
+    val subject                       = User("myuser", label)
+    val orgs: FetchActiveOrganization = {
       case `orgLabel` => IO.pure(org1.toResource.value)
-      case `org2abel` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2abel)))
-      case label      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
+      case `org2abel` => IO.raiseError(OrganizationIsDeprecated(org2abel))
+      case label      => IO.raiseError(OrganizationNotFound(label))
     }
 
     val ref              = ProjectRef(orgLabel, label)
@@ -159,8 +160,7 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(deprecatedState) -> UndeprecateProject(ref2, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual
-            WrappedOrganizationRejection(OrganizationIsDeprecated(ref2.organization))
+          eval(state, cmd).rejected shouldEqual OrganizationIsDeprecated(ref2.organization)
         }
       }
 
@@ -173,8 +173,7 @@ class ProjectsSpec extends CatsEffectSpec {
           Some(deprecatedState) -> UndeprecateProject(orgNotFound, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual
-            WrappedOrganizationRejection(OrganizationNotFound(label))
+          eval(state, cmd).rejected shouldEqual OrganizationNotFound(label)
         }
       }
 

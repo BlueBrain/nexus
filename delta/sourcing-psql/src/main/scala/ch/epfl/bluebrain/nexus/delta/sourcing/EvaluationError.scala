@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -35,18 +33,6 @@ object EvaluationError {
       extends EvaluationError(s"'$command' received a timeout after $timeoutAfter")
 
   /**
-    * Error occurring when the evaluation of a command raised an error
-    * @param command
-    *   the command that failed
-    * @param errorType
-    *   the type of error that was raised
-    * @param errorMessage
-    *   the type of error that was raised
-    */
-  final case class EvaluationFailure[Command](command: Command, errorType: String, errorMessage: String)
-      extends EvaluationError(s"'$command' failed with an error '$errorType' and a message $errorMessage")
-
-  /**
     * Error when the tagged state can't be correctly computed during a tag operation
     *
     * @param command
@@ -58,12 +44,5 @@ object EvaluationError {
       extends EvaluationError(
         s"'$command' could not compute the tagged state, the state could only be found until rev '$lastRev'"
       )
-
-  object EvaluationFailure {
-
-    def apply[Command](command: Command, throwable: Throwable): EvaluationFailure[Command] =
-      EvaluationFailure(command, ClassUtils.simpleName(throwable), throwable.getMessage)
-
-  }
 
 }

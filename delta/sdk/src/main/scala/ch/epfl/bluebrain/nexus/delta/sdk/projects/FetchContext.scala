@@ -1,14 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectState}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
+import doobie.implicits._
+import doobie.{Get, Put}
 
 /**
   * Define the rules to fetch project context for read and write operations
@@ -49,21 +52,28 @@ abstract class FetchContext { self =>
 
 object FetchContext {
 
-  /**
-    * Create a fetch context instance from an [[Organizations]], [[Projects]] and [[Quotas]] instances
-    */
-  def apply(organizations: Organizations, projects: Projects, quotas: Quotas): FetchContext =
+  def apply(dam: ApiMappings, xas: Transactors, quotas: Quotas): FetchContext = {
+    def fetchProject(ref: ProjectRef) = {
+      implicit val putId: Put[ProjectRef]      = ProjectState.serializer.putId
+      implicit val getValue: Get[ProjectState] = ProjectState.serializer.getValue
+      ScopedStateGet
+        .latest[ProjectRef, ProjectState](Projects.entityType, ref, ref)
+        .transact(xas.read)
+        .map(_.map(_.toResource(dam)))
+    }
+
     apply(
-      organizations.fetchActiveOrganization(_).void,
-      projects.defaultApiMappings,
-      projects.fetch,
+      FetchActiveOrganization(xas).apply(_).void,
+      dam,
+      fetchProject,
       quotas
     )
+  }
 
   def apply(
-      fetchActiveOrganization: Label => IO[Unit],
+      fetchActiveOrg: Label => IO[Unit],
       dam: ApiMappings,
-      fetchProject: ProjectRef => IO[ProjectResource],
+      fetchProject: ProjectRef => IO[Option[ProjectResource]],
       quotas: Quotas
   ): FetchContext =
     new FetchContext {
@@ -71,18 +81,18 @@ object FetchContext {
       override def defaultApiMappings: ApiMappings = dam
 
       override def onRead(ref: ProjectRef): IO[ProjectContext] =
-        fetchProject(ref).attemptNarrow[ProjectRejection].flatMap {
-          case Left(rejection)                                   => IO.raiseError(rejection)
-          case Right(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
-          case Right(project)                                    => IO.pure(project.value.context)
+        fetchProject(ref).flatMap {
+          case None                                             => IO.raiseError(ProjectNotFound(ref))
+          case Some(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
+          case Some(project)                                    => IO.pure(project.value.context)
         }
 
       private def onWrite(ref: ProjectRef) =
-        fetchProject(ref).attemptNarrow[ProjectRejection].flatMap {
-          case Left(rejection)                                   => IO.raiseError(rejection)
-          case Right(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
-          case Right(project) if project.deprecated              => IO.raiseError(ProjectIsDeprecated(ref))
-          case Right(project)                                    => IO.pure(project.value.context)
+        fetchProject(ref).flatMap {
+          case None                                             => IO.raiseError(ProjectNotFound(ref))
+          case Some(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
+          case Some(project) if project.deprecated              => IO.raiseError(ProjectIsDeprecated(ref))
+          case Some(project)                                    => IO.pure(project.value.context)
         }
 
       override def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext] =
@@ -90,7 +100,7 @@ object FetchContext {
 
       override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext] =
         for {
-          _       <- fetchActiveOrganization(ref.organization)
+          _       <- fetchActiveOrg(ref.organization)
           _       <- quotas.reachedForEvents(ref, subject)
           context <- onWrite(ref)
         } yield context

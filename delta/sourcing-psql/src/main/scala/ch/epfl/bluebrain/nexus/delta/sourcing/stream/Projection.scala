@@ -79,7 +79,7 @@ final class Projection private[stream] (
 
 object Projection {
 
-  val logger                                                              = Logger[Projection]
+  private val logger                                                      = Logger[Projection]
   private val persistInit: (List[FailedElem], Option[ProjectionProgress]) = (List.empty[FailedElem], None)
 
   def persist[A](

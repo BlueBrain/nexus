@@ -8,21 +8,21 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourceFor, sourceFrom, sourceWithoutId}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -44,8 +44,6 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
-
-  private val defaults = Defaults("resolverName", "resolverDescription")
 
   private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -77,7 +75,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
   private lazy val resolvers: Resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
-    ResolversConfig(eventLogConfig, defaults),
+    eventLogConfig,
     xas,
     clock
   )

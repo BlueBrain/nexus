@@ -4,6 +4,7 @@ import cats.effect.{Clock, ExitCode, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.ship.BuildInfo
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -65,8 +66,9 @@ object Main
                     // Provision organizations
                     _                <- orgProvider.create(config.organizations.values)
                     events            = eventStream(file)
+                    fetchActiveOrg    = FetchActiveOrganization(xas)
                     projectProcessor <-
-                      ProjectProcessor(orgProvider.fetchActiveOrganization, config.eventLog, xas)(config.baseUri)
+                      ProjectProcessor(fetchActiveOrg, config.eventLog, xas)(config.baseUri)
                     _                <- EventProcessor.run(events, projectProcessor)
                   } yield ()
                 }

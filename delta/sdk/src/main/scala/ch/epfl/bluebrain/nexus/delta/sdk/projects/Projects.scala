@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -9,15 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import fs2.Stream
@@ -156,8 +154,6 @@ trait Projects {
 
 object Projects {
 
-  type FetchOrganization = Label => IO[Organization]
-
   /**
     * The projects entity type.
     */
@@ -190,23 +186,8 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(
-      orgs: Organizations,
-      validateDeletion: ValidateProjectDeletion,
-      clock: Clock[IO]
-  )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      base: BaseUri,
-      uuidF: UUIDF
-  ): IO[ProjectEvent] = {
-    val f: FetchOrganization = label =>
-      orgs
-        .fetchActiveOrganization(label)
-        .adaptError { case o: OrganizationRejection => WrappedOrganizationRejection(o) }
-    evaluate(f, validateDeletion, clock)(state, command)
-  }
-
   private[sdk] def evaluate(
-      fetchAndValidateOrg: FetchOrganization,
+      fetchActiveOrg: FetchActiveOrganization,
       validateDeletion: ValidateProjectDeletion,
       clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit base: BaseUri, uuidF: UUIDF): IO[ProjectEvent] = {
@@ -214,7 +195,7 @@ object Projects {
     def create(c: CreateProject): IO[ProjectCreated] = state match {
       case None =>
         for {
-          org  <- fetchAndValidateOrg(c.ref.organization)
+          org  <- fetchActiveOrg(c.ref.organization)
           uuid <- uuidF()
           now  <- clock.realTimeInstant
         } yield ProjectCreated(c.ref, uuid, org.uuid, c.fields, now, c.subject)
@@ -232,7 +213,7 @@ object Projects {
         case Some(s) if s.markedForDeletion =>
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
-          fetchAndValidateOrg(c.ref.organization) >>
+          fetchActiveOrg(c.ref.organization) >>
             clock.realTimeInstant.map(
               ProjectUpdated(c.ref, s.uuid, s.organizationUuid, s.rev + 1, c.fields, _, c.subject)
             )
@@ -250,7 +231,7 @@ object Projects {
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
           // format: off
-          fetchAndValidateOrg(c.ref.organization) >>
+          fetchActiveOrg(c.ref.organization) >>
               clock.realTimeInstant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
@@ -267,7 +248,7 @@ object Projects {
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
           // format: off
-          fetchAndValidateOrg(c.ref.organization) >>
+          fetchActiveOrg(c.ref.organization) >>
             clock.realTimeInstant.map(ProjectUndeprecated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, _, c.subject))
         // format: on
       }
@@ -299,14 +280,14 @@ object Projects {
   /**
     * Entity definition for [[Projects]]
     */
-  def definition(fetchAndValidateOrg: FetchOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
+  def definition(fetchActiveOrg: FetchActiveOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
       implicit
       base: BaseUri,
       uuidF: UUIDF
   ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchAndValidateOrg, validateDeletion, clock)(_, _), next),
+      StateMachine(None, evaluate(fetchActiveOrg, validateDeletion, clock)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
       _ => None,

@@ -3,17 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationNonEmpty, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -28,10 +26,10 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
   private val org1 = Label.unsafe("org1")
   private val org2 = Label.unsafe("org2")
 
-  private def fetchOrg: FetchOrganization = {
+  private def fetchOrg: FetchActiveOrganization = {
     case `org1` => IO.pure(Organization(org1, UUID.randomUUID(), None))
     case `org2` => IO.pure(Organization(org2, UUID.randomUUID(), None))
-    case other  => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case other  => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, deletionConfig)

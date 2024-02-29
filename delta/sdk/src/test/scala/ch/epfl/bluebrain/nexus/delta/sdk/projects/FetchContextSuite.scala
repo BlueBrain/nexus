@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectIsMarkedForDeletion}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.Quota
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
@@ -34,16 +34,16 @@ class FetchContextSuite extends NexusSuite {
     ProjectGen.project(deprecatedProject.organization.value, deprecatedProject.project.value)
 
   private def fetchProject(ref: ProjectRef) = ref match {
-    case `activeProject`     => IO.pure(ProjectGen.resourceFor(activeProjectValue))
+    case `activeProject`     => IO.some(ProjectGen.resourceFor(activeProjectValue))
     case `deletedProject`    =>
-      IO.pure(
+      IO.some(
         ProjectGen.resourceFor(
           ProjectGen.project(deletedProject.organization.value, deletedProject.project.value),
           markedForDeletion = true
         )
       )
-    case `deprecatedProject` => IO.pure(ProjectGen.resourceFor(deprecatedProjectValue, deprecated = true))
-    case _                   => IO.raiseError(ProjectNotFound(ref))
+    case `deprecatedProject` => IO.some(ProjectGen.resourceFor(deprecatedProjectValue, deprecated = true))
+    case _                   => IO.none
   }
 
   private def quotas(resources: Boolean, events: Boolean) = new Quotas {

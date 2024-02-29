@@ -6,12 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
@@ -35,9 +34,9 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
 
   private val aclCheck: AclSimpleCheck = AclSimpleCheck().accepted
 
-  private def fetchOrg: FetchOrganization = {
+  private def fetchOrg: FetchActiveOrganization = {
     case `usersOrg` => IO.pure(Organization(usersOrg, orgUuid, None))
-    case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case other      => IO.raiseError(OrganizationNotFound(other))
   }
 
   private val provisioningConfig = AutomaticProvisioningConfig(
