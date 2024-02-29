@@ -7,10 +7,10 @@ import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
-
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -85,12 +84,15 @@ final class FilesRoutes(
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
-                    entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                    entity(as[LinkFileRequest]) { linkRequest =>
                       emit(
                         Created,
-                        files
-                          .createLink(storage, project, filename, mediaType, path, tag)
-                          .index(mode)
+                        fileDescriptionFromRequest(linkRequest)
+                          .flatMap { desc =>
+                            files
+                              .createLink(storage, project, desc, linkRequest.path, tag)
+                              .index(mode)
+                          }
                           .attemptNarrow[FileRejection]
                       )
                     },
@@ -116,11 +118,21 @@ final class FilesRoutes(
                               case (rev, storage, tag) =>
                                 concat(
                                   // Update a Link
-                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                  entity(as[LinkFileRequest]) { linkRequest =>
                                     emit(
-                                      files
-                                        .updateLink(fileId, storage, filename, mediaType, path, rev, tag)
-                                        .index(mode)
+                                      fileDescriptionFromRequest(linkRequest)
+                                        .flatMap { description =>
+                                          files
+                                            .updateLink(
+                                              fileId,
+                                              storage,
+                                              description,
+                                              linkRequest.path,
+                                              rev,
+                                              tag
+                                            )
+                                            .index(mode)
+                                        }
                                         .attemptNarrow[FileRejection]
                                     )
                                   },
@@ -138,12 +150,15 @@ final class FilesRoutes(
                             parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
                               concat(
                                 // Link a file with id segment
-                                entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                entity(as[LinkFileRequest]) { linkRequest =>
                                   emit(
                                     Created,
-                                    files
-                                      .createLink(fileId, storage, filename, mediaType, path, tag)
-                                      .index(mode)
+                                    fileDescriptionFromRequest(linkRequest)
+                                      .flatMap { description =>
+                                        files
+                                          .createLink(fileId, storage, description, linkRequest.path, tag)
+                                          .index(mode)
+                                      }
                                       .attemptNarrow[FileRejection]
                                   )
                                 },
@@ -275,11 +290,22 @@ object FilesRoutes {
       fusionConfig: FusionConfig
   ): Route = new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
 
-  final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)
-  object LinkFile {
-    import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+  final case class LinkFileRequest(
+      path: Path,
+      filename: Option[String],
+      mediaType: Option[ContentType],
+      metadata: Option[FileCustomMetadata]
+  )
+
+  object LinkFileRequest {
     @nowarn("cat=unused")
-    implicit private val config: Configuration      = Configuration.default.withStrictDecoding
-    implicit val linkFileDecoder: Decoder[LinkFile] = deriveConfiguredDecoder[LinkFile]
+    implicit private val config: Configuration             = Configuration.default
+    implicit val linkFileDecoder: Decoder[LinkFileRequest] = deriveConfiguredDecoder[LinkFileRequest]
+
+    def fileDescriptionFromRequest(f: LinkFileRequest): IO[FileDescription] =
+      f.filename.orElse(f.path.lastSegment) match {
+        case Some(value) => IO.pure(FileDescription(value, f.mediaType, f.metadata))
+        case None        => IO.raiseError(InvalidFileLink)
+      }
   }
 }

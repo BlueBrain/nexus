@@ -342,7 +342,8 @@ where ...
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
 
-If `{annotate}` is set, fields present in the metadata will override fields with the same name from the payload. The `@id` field is an exception to this rule
+If `{annotate}` is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence.
+The context in the original payload is also amended with the metadata context.
 
 **Example**
 

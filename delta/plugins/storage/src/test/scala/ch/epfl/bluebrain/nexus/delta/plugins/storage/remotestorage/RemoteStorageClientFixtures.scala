@@ -21,7 +21,7 @@ trait RemoteStorageClientFixtures extends BeforeAndAfterAll with ConfigFixtures 
   private val rwx             = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
   private val tmpFolder: Path = Files.createTempDirectory("root", rwx)
 
-  val storageVersion: String = "1.8.0-M12"
+  val storageVersion: String = "1.9.0"
 
   protected val container: RemoteStorageContainer =
     new RemoteStorageContainer(storageVersion, tmpFolder)
@@ -46,7 +46,7 @@ trait RemoteStorageClientFixtures extends BeforeAndAfterAll with ConfigFixtures 
     val bucketNexus = Files.createDirectory(bucket.resolve("nexus"), rwx)
     val my          = Files.createDirectory(bucket.resolve("my"), rwx)
 
-    (1 to 4).map(idx => s"file-$idx.txt").foreach { fileName =>
+    (1 to 6).map(idx => s"file-$idx.txt").foreach { fileName =>
       val path = Files.createFile(my.resolve(fileName), rwx)
       path.toFile.setWritable(true, false)
       Files.writeString(path, "file content")

@@ -13,7 +13,7 @@ object AnnotatedSource {
     * Merges the source with the metadata of [[ResourceF]]
     */
   def apply(resourceF: ResourceF[_], source: Json)(implicit baseUri: BaseUri): Json = {
-    val sourceWithoutMetadata = source.removeMetadataKeys
+    val sourceWithoutMetadata = source.removeMetadataKeys()
     val metadataJson          = resourceF.void.asJson
     metadataJson.deepMerge(sourceWithoutMetadata).addContext(contexts.metadata)
   }

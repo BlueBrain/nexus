@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -146,12 +146,13 @@ final class ResolversRoutes(
                           resolveResource(resourceIdRef, project, resolutionType(resolver), outputType)
                         }
                       },
-                      (pathPrefix("source") & pathEndOrSingleSlash & get) {
+                      (pathPrefix("source") & pathEndOrSingleSlash & get & annotateSource) { annotate =>
                         resolveResource(
                           resourceIdRef,
                           project,
                           resolutionType(resolver),
-                          ResolvedResourceOutputType.Source
+                          if (annotate) ResolvedResourceOutputType.AnnotatedSource
+                          else ResolvedResourceOutputType.Source
                         )
                       }
                     )
@@ -169,15 +170,17 @@ final class ResolversRoutes(
       project: ProjectRef,
       resolutionType: ResolutionType,
       output: ResolvedResourceOutputType
-  )(implicit
-      caller: Caller
-  ): Route =
+  )(implicit baseUri: BaseUri, caller: Caller): Route =
     authorizeFor(project, Permissions.resources.read).apply {
       def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
         output match {
-          case ResolvedResourceOutputType.Report => emit(io.map(_.report).attemptNarrow[ResolverRejection])
-          case ResolvedResourceOutputType.JsonLd => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
-          case ResolvedResourceOutputType.Source => emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.Report          => emit(io.map(_.report).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.JsonLd          => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.Source          =>
+            emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
+          case ResolvedResourceOutputType.AnnotatedSource =>
+            val annotatedSourceIO = io.map { r => AnnotatedSource(r.value.resource, r.value.source) }
+            emit(annotatedSourceIO.attemptNarrow[ResolverRejection])
         }
       }
 
@@ -203,9 +206,10 @@ object ResolutionType {
 
 sealed trait ResolvedResourceOutputType
 object ResolvedResourceOutputType {
-  case object Report extends ResolvedResourceOutputType
-  case object JsonLd extends ResolvedResourceOutputType
-  case object Source extends ResolvedResourceOutputType
+  case object Report          extends ResolvedResourceOutputType
+  case object JsonLd          extends ResolvedResourceOutputType
+  case object Source          extends ResolvedResourceOutputType
+  case object AnnotatedSource extends ResolvedResourceOutputType
 }
 
 object ResolversRoutes {

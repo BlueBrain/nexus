@@ -22,6 +22,7 @@ When using the endpoints described on this page, the responses will contain glob
 - `_bytes`: size of the file in bytes
 - `_digest`: algorithm and checksum used for file integrity
 - `_filename`: name of the file
+- `_keywords`: list of keywords associated with the file and which can be used to search for the file
 - `_location`: path where the file is stored on the underlying storage
 - `_mediaType`: @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the type of the file
 - `_origin`: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service
@@ -51,11 +52,16 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
-The json payload:
+The request body:
 
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
-the `prefix` defined on the resource's project (`{project_label}`).
+The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
+
+This part can contain the following disposition parameters:
+- `filename`: the filename which will be used in the back-end file system 
+- `metadata`: a JSON object containing the following one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
+  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
@@ -79,7 +85,14 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tag
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
-Note that if the payload contains an @id different from the `{file_id}`, the request will fail.
+The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
+
+This part can contain the following disposition parameters:
+- `filename`: the filename which will be used in the back-end file system
+- `metadata`: a JSON object containing one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
+  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
@@ -98,7 +111,8 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
   {
     "path": "{path}",
     "filename": "{filename}",
-    "mediaType": "{mediaType}"
+    "mediaType": "{mediaType}",
+    "metadata": "{metadata}"
   }
 ```
 
@@ -108,6 +122,10 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
+- `{metadata}`: JSON Object - optional object containing one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
+  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
@@ -131,7 +149,8 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tag
   {
     "path": "{path}",
     "filename": "{filename}",
-    "mediaType": "{mediaType}"
+    "mediaType": "{mediaType}",
+    "metadata": "{metadata}"
   }
 ```
 
@@ -143,6 +162,10 @@ When not specified, the default storage of the project is used.
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
+- `{metadata}`: JSON Object - optional object containing one or more of the following fields:
+  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+  - `description`: a string that describes the file. It will be indexed in the full-text search.
+  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 

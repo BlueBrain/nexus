@@ -36,6 +36,8 @@ class FileAttributesUpdateStreamSuite extends NexusSuite with StorageFixtures {
     filename = "myfile.txt",
     mediaType = mediaType,
     keywords = Map(Label.unsafe("key") -> "value"),
+    None,
+    None,
     bytes = 10,
     NotComputedDigest,
     Client

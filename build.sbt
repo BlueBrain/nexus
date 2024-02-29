@@ -12,8 +12,8 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "2.1.3"
-val scalaCompilerVersion   = "2.13.12"
+val scalacScapegoatVersion = "2.1.5"
+val scalaCompilerVersion   = "2.13.13"
 
 val akkaHttpVersion         = "10.2.10"
 val akkaHttpCirceVersion    = "1.39.2"
@@ -44,7 +44,7 @@ val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.6"
 val kamonVersion            = "2.7.0"
 val kanelaAgentVersion      = "1.0.18"
-val kindProjectorVersion    = "0.13.2"
+val kindProjectorVersion    = "0.13.3"
 val log4catsVersion         = "2.6.0"
 val logbackVersion          = "1.5.0"
 val magnoliaVersion         = "1.1.8"
@@ -52,7 +52,7 @@ val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M11"
 val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.3"
-val postgresJdbcVersion     = "42.7.1"
+val postgresJdbcVersion     = "42.7.2"
 val pureconfigVersion       = "0.17.5"
 val scalaTestVersion        = "3.2.18"
 val scalaXmlVersion         = "2.2.0"
@@ -885,7 +885,9 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,
-    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
+    //TODO: remove when there is a release of Kamon supporting PostgreSQL 42.7.2
+    // https: //github.com/kamon-io/Kamon/issues/1321
+    //"io.kamon" %% "kamon-jdbc"           % kamonVersion,
     "io.kamon" %% "kamon-logback"        % kamonVersion,
     "io.kamon" %% "kamon-prometheus"     % kamonVersion,
     "io.kamon" %% "kamon-scala-future"   % kamonVersion,

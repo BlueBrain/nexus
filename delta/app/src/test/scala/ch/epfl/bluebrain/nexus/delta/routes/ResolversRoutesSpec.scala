@@ -595,6 +595,26 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         }
       }
 
+      "succeed as a resource and return the original payload" in {
+        // First we resolve with a in-project resolver, the second one with a cross-project resolver
+        forAll(List(project, project2)) { p =>
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source") ~> asAlice ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual resourceFR.value.source
+          }
+        }
+      }
+
+      "succeed as a resource and return the annotated original payload" in {
+        // First we resolve with a in-project resolver, the second one with a cross-project resolver
+        forAll(List(project, project2)) { p =>
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source?annotate=true") ~> asAlice ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual resourceResolved
+          }
+        }
+      }
+
       "succeed as a resource and return the resolution report" in {
         Get(s"/v1/resolvers/${project.ref}/_/$idResourceEncoded?showReport=true") ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK

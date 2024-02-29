@@ -50,6 +50,8 @@ object DiskStorageCopyFiles {
         location = Uri(destPath.toUri.toString),
         path = Uri.Path(destRelativePath.toString),
         filename = cd.sourceAttributes.filename,
+        description = cd.sourceAttributes.description,
+        name = cd.sourceAttributes.name,
         mediaType = cd.sourceAttributes.mediaType,
         keywords = cd.sourceAttributes.keywords,
         bytes = cd.sourceAttributes.bytes,

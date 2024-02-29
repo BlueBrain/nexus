@@ -135,18 +135,6 @@ object FileRejection {
   final case class FileIsNotDeprecated(id: Iri) extends FileRejection(s"File '$id' is not deprecated.")
 
   /**
-    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
-    * filename.
-    *
-    * @param id
-    *   the file identifier
-    */
-  final case class InvalidFileLink(id: Iri)
-      extends FileRejection(
-        s"Linking a file '$id' cannot be performed without a 'filename' or a 'path' that does not end with a filename."
-      )
-
-  /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
     * contain a ''file'' fieldName
     */
@@ -154,11 +142,11 @@ object FileRejection {
       extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
 
   /**
-    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that has keywords
-    * which cannot be parsed
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that contains
+    * invalid metadata
     */
-  final case class InvalidKeywords(err: String)
-      extends FileRejection(s"File payload contained keywords which could not be parsed: $err")
+  final case class InvalidCustomMetadata(err: String)
+      extends FileRejection(s"File payload contained metadata which could not be parsed: $err")
 
   /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
@@ -239,7 +227,19 @@ object FileRejection {
     *   the rejection which occurred with the storage
     */
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
-      extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
+      extends FileRejection(
+        s"File '$id' could not be linked using storage '$storageId'",
+        Some(rejection.loggedDetails)
+      )
+
+  /**
+    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
+    * filename.
+    */
+  final case object InvalidFileLink
+      extends FileRejection(
+        s"Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+      )
 
   final case class CopyRejection(
       sourceProj: ProjectRef,

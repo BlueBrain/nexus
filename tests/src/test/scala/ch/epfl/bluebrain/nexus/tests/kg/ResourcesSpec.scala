@@ -220,6 +220,14 @@ class ResourcesSpec extends BaseIntegrationSpec {
         }
     }
 
+    "fetch the original payload with metadata through a resolver" in {
+      val expected = resource1AnnotatedSource(1, 5).accepted
+      deltaClient.get[Json](s"/resolvers/$project1/_/test-resource:1/source?annotate=true", Morty) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
+    }
+
     "fetch the original payload with unexpanded id with metadata" in {
       val payload = SimpleResource.sourcePayload("42", 5).accepted
 

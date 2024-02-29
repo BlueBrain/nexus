@@ -77,6 +77,11 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
   def removeAllKeys(keys: String*): JsonObject = JsonUtils.removeAllKeys(obj.asJson, keys: _*).asObject.get
 
   /**
+    * Removes the metadata keys from the current json.
+    */
+  def removeMetadataKeys(): JsonObject = JsonUtils.removeMetadataKeys(obj.asJson).asObject.get
+
+  /**
     * Removes the provided key value pairs from everywhere on the json object.
     */
   def removeAll[A: Encoder](keyValues: (String, A)*): JsonObject =
@@ -246,7 +251,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Removes the metadata keys from the current json.
     */
-  def removeMetadataKeys: Json = JsonUtils.removeMetadataKeys(json)
+  def removeMetadataKeys(): Json = JsonUtils.removeMetadataKeys(json)
 
   /**
     * Removes the provided key value pairs from everywhere on the json.

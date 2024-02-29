@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{BodyPartEntity, ContentType, HttpEntity, Uri}
+import akka.http.scaladsl.model.{BodyPartEntity, HttpEntity, Uri}
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -68,7 +68,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, None, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -94,8 +94,8 @@ final class Files(
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      metadata              <- saveFileToStorage(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, metadata, caller.subject, tag))
+      attributes            <- saveFileToStorage(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -147,15 +147,14 @@ final class Files(
   def createLink(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
+      description: FileDescription,
       path: Uri.Path,
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       pc  <- fetchContext.onCreate(projectRef)
       iri <- generateId(pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
+      res <- createLink(iri, projectRef, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
 
@@ -180,14 +179,13 @@ final class Files(
   def createLink(
       id: FileId,
       storageId: Option[IdSegment],
-      filename: Option[String],
-      mediaType: Option[ContentType],
+      description: FileDescription,
       path: Uri.Path,
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc) <- id.expandIri(fetchContext.onCreate)
-      res       <- createLink(iri, id.project, pc, storageId, filename, mediaType, path, tag)
+      res       <- createLink(iri, id.project, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
 
@@ -242,8 +240,7 @@ final class Files(
   def updateLink(
       id: FileId,
       storageId: Option[IdSegment],
-      filename: Option[String],
-      mediaType: Option[ContentType],
+      description: FileDescription,
       path: Uri.Path,
       rev: Int,
       tag: Option[UserTag]
@@ -252,8 +249,7 @@ final class Files(
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
-      metadata              <- linkFile(storage, path, resolvedFilename, iri)
+      metadata              <- linkFile(storage, path, description.filename, iri)
       res                   <- eval(
                                  UpdateFile(
                                    iri,
@@ -261,7 +257,7 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes.from(
-                                     FileDescription(resolvedFilename, Map.empty, mediaType),
+                                     description,
                                      metadata
                                    ),
                                    rev,
@@ -407,16 +403,14 @@ final class Files(
       ref: ProjectRef,
       pc: ProjectContext,
       storageId: Option[IdSegment],
-      filename: Option[String],
-      mediaType: Option[ContentType],
+      description: FileDescription,
       path: Uri.Path,
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] =
     for {
       _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
-      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
-      fileMetadata          <- linkFile(storage, path, resolvedFilename, iri)
+      storageMetadata       <- linkFile(storage, path, description.filename, iri)
       res                   <- eval(
                                  CreateFile(
                                    iri,
@@ -424,7 +418,10 @@ final class Files(
                                    storageRef,
                                    storage.tpe,
                                    FileAttributes
-                                     .from(FileDescription(resolvedFilename, Map.empty, mediaType), fileMetadata),
+                                     .from(
+                                       description,
+                                       storageMetadata
+                                     ),
                                    caller.subject,
                                    tag
                                  )
@@ -474,10 +471,10 @@ final class Files(
       storage: Storage
   ): IO[FileAttributes] =
     for {
-      info                <- extractFormData(iri, storage, entity)
-      userSuppliedMetadata = FileDescription.from(info)
-      fileMetadata        <- saveFile(iri, storage, userSuppliedMetadata, info.contents)
-    } yield FileAttributes.from(userSuppliedMetadata, fileMetadata)
+      info            <- extractFormData(iri, storage, entity)
+      description      = FileDescription.from(info)
+      storageMetadata <- saveFile(iri, storage, description, info.contents)
+    } yield FileAttributes.from(description, storageMetadata)
 
   private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedFileInformation] =
     for {
