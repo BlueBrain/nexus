@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.http.scaladsl.model.ContentTypes.`application/json`
+
 class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     as: ActorSystem,
     materializer: Materializer,
@@ -165,13 +167,17 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
           BodyPart.Strict(
             "file",
             HttpEntity(contentType, s.getBytes),
-            Map(
-              "filename" -> fileName,
-              "metadata" -> Json
+            Map("filename" -> fileName)
+          ),
+          BodyPart.Strict(
+            "metadata",
+            HttpEntity(
+              `application/json`,
+              Json
                 .obj(
-                  "name"        -> name.asJson,
-                  "description" -> description.asJson,
-                  "keywords"    -> keywords.asJson
+                  "name"        := name,
+                  "description" := description,
+                  "keywords"    := keywords
                 )
                 .noSpaces
             )

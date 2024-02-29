@@ -292,7 +292,7 @@ class FilesRoutesSpec
 
     "fail to update a file without disk/write permission" in {
       givenAFile { id =>
-        putJson(s"/v1/files/org/proj/$id?rev=1", s3FieldsJson) ~> routes ~> check {
+        putFile(s"/v1/files/org/proj/$id?rev=1", entity()) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }

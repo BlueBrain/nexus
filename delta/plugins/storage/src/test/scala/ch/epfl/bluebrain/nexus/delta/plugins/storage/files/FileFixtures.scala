@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
+import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart}
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.Generators
+import io.circe.Json
+import io.circe.syntax.KeyOps
 
 import java.util.{Base64, UUID}
 
@@ -62,6 +64,17 @@ trait FileFixtures extends Generators {
     Multipart
       .FormData(
         Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, content), Map("filename" -> filename))
+      )
+      .toEntity()
+
+  def entityWithMetadata(filename: String = "file.txt"): MessageEntity =
+    Multipart
+      .FormData(
+        Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, content), Map("filename" -> filename)),
+        Multipart.FormData.BodyPart(
+          "metadata",
+          HttpEntity(`application/json`, Json.obj("name" := "hello", "description" := "some desc").noSpaces)
+        )
       )
       .toEntity()
 

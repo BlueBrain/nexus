@@ -87,14 +87,15 @@ final class Files(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      metadata: Option[FileCustomMetadata]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      attributes            <- saveFileToStorage(iri, entity, storage)
+      attributes            <- saveFileToStorage(iri, entity, storage, metadata)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
@@ -117,13 +118,14 @@ final class Files(
       id: FileId,
       storageId: Option[IdSegment],
       entity: HttpEntity,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      metadata: Option[FileCustomMetadata]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      metadata              <- saveFileToStorage(iri, entity, storage)
+      metadata              <- saveFileToStorage(iri, entity, storage, metadata)
       res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
@@ -135,10 +137,8 @@ final class Files(
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
+    * @param description
+    *   the file description
     * @param path
     *   the path where the file is located inside the storage
     * @param tag
@@ -208,13 +208,14 @@ final class Files(
       storageId: Option[IdSegment],
       rev: Int,
       entity: HttpEntity,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      metadata: Option[FileCustomMetadata]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- saveFileToStorage(iri, entity, storage)
+      attributes            <- saveFileToStorage(iri, entity, storage, metadata)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateFile")
@@ -468,11 +469,12 @@ final class Files(
   private def saveFileToStorage(
       iri: Iri,
       entity: HttpEntity,
-      storage: Storage
+      storage: Storage,
+      metadata: Option[FileCustomMetadata]
   ): IO[FileAttributes] =
     for {
       info            <- extractFormData(iri, storage, entity)
-      description      = FileDescription.from(info)
+      description      = FileDescription(info.filename, Some(info.suppliedContentType), metadata)
       storageMetadata <- saveFile(iri, storage, description, info.contents)
     } yield FileAttributes.from(description, storageMetadata)
 

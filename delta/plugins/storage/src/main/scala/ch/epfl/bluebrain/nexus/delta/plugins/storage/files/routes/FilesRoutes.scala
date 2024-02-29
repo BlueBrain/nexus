@@ -97,10 +97,10 @@ final class FilesRoutes(
                       )
                     },
                     // Create a file without id segment
-                    extractRequestEntity { entity =>
+                    (extractRequestEntity & formField("metadata".as[FileCustomMetadata].?)) { (entity, metadata) =>
                       emit(
                         Created,
-                        files.create(storage, project, entity, tag).index(mode).attemptNarrow[FileRejection]
+                        files.create(storage, project, entity, tag, metadata).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
@@ -137,13 +137,14 @@ final class FilesRoutes(
                                     )
                                   },
                                   // Update a file
-                                  extractRequestEntity { entity =>
-                                    emit(
-                                      files
-                                        .update(fileId, storage, rev, entity, tag)
-                                        .index(mode)
-                                        .attemptNarrow[FileRejection]
-                                    )
+                                  (extractRequestEntity & formField("metadata".as[FileCustomMetadata].?)) {
+                                    (entity, metadata) =>
+                                      emit(
+                                        files
+                                          .update(fileId, storage, rev, entity, tag, metadata)
+                                          .index(mode)
+                                          .attemptNarrow[FileRejection]
+                                      )
                                   }
                                 )
                             },
@@ -163,14 +164,15 @@ final class FilesRoutes(
                                   )
                                 },
                                 // Create a file with id segment
-                                extractRequestEntity { entity =>
-                                  emit(
-                                    Created,
-                                    files
-                                      .create(fileId, storage, entity, tag)
-                                      .index(mode)
-                                      .attemptNarrow[FileRejection]
-                                  )
+                                (extractRequestEntity & formField("metadata".as[FileCustomMetadata].?)) {
+                                  (entity, metadata) =>
+                                    emit(
+                                      Created,
+                                      files
+                                        .create(fileId, storage, entity, tag, metadata)
+                                        .index(mode)
+                                        .attemptNarrow[FileRejection]
+                                    )
                                 }
                               )
                             }
