@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
@@ -165,9 +166,13 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
           BodyPart.Strict(
             "file",
             HttpEntity(contentType, s.getBytes),
-            Map(
-              "filename" -> fileName,
-              "metadata" -> Json
+            Map("filename" -> fileName)
+          ),
+          BodyPart.Strict(
+            "metadata",
+            HttpEntity(
+              `application/json`,
+              Json
                 .obj(
                   "name"        -> name.asJson,
                   "description" -> description.asJson,

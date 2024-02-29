@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{BodyPartEntity, HttpEntity, Uri}
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -471,12 +471,18 @@ final class Files(
       storage: Storage
   ): IO[FileAttributes] =
     for {
-      info            <- extractFormData(iri, storage, entity)
-      description      = FileDescription.from(info)
-      storageMetadata <- saveFile(iri, storage, description, info.contents)
-    } yield FileAttributes.from(description, storageMetadata)
+      info <- extractFormData(iri, storage, entity)
+      attr <- info match {
+                case fileInfo: UploadedFileInformation =>
+                  saveFile(iri, storage, fileInfo).map { storageMetadata =>
+                    FileAttributes.from(fileInfo, storageMetadata)
+                  }
+                case _: UploadedMetadata               => IO.raiseError(new NotImplementedError())
+                case NoInformation                     => IO.raiseError(new NotImplementedError())
+              }
+    } yield attr
 
-  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedFileInformation] =
+  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedInformation] =
     for {
       storageAvailableSpace <- storagesStatistics.getStorageAvailableSpace(storage)
       fi                    <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
@@ -485,11 +491,10 @@ final class Files(
   private def saveFile(
       iri: Iri,
       storage: Storage,
-      metadata: FileDescription,
-      source: BodyPartEntity
+      info: UploadedFileInformation
   ): IO[FileStorageMetadata]                                                    =
     SaveFile(storage, remoteDiskStorageClient, config)
-      .apply(metadata.filename, source)
+      .apply(info.filename, info.contents)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
   private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =

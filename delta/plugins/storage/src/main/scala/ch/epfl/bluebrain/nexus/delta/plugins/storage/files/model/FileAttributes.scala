@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentType, Uri}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -78,6 +79,21 @@ object FileAttributes {
       storageMetadata.origin
     )
   }
+
+  def from(info: UploadedFileInformation, storageMetadata: FileStorageMetadata): FileAttributes =
+    FileAttributes(
+      storageMetadata.uuid,
+      storageMetadata.location,
+      storageMetadata.path,
+      info.filename,
+      Some(info.suppliedContentType),
+      info.keywords,
+      info.description,
+      info.name,
+      storageMetadata.bytes,
+      storageMetadata.digest,
+      storageMetadata.origin
+    )
 
   /**
     * Enumeration of all possible inputs that generated the file attributes
