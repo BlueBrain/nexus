@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{logger, ProjectsLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
@@ -109,7 +110,7 @@ object ProjectsImpl {
     * Constructs a [[Projects]] instance.
     */
   final def apply(
-      fetchAndValidateOrg: FetchOrganization,
+      fetchActiveOrg: FetchActiveOrganization,
       validateDeletion: ValidateProjectDeletion,
       scopeInitializer: ScopeInitializer,
       defaultApiMappings: ApiMappings,
@@ -121,7 +122,7 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion, clock), config, xas),
+      ScopedEventLog(Projects.definition(fetchActiveOrg, validateDeletion, clock), config, xas),
       scopeInitializer,
       defaultApiMappings
     )

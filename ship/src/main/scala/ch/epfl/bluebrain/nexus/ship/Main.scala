@@ -64,12 +64,12 @@ object Main
                   val orgProvider = OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
                   for {
                     // Provision organizations
-                    _                      <- orgProvider.create(config.organizations.values)
-                    events                  = eventStream(file)
-                    fetchActiveOrganization = FetchActiveOrganization(_, xas)
-                    projectProcessor       <-
-                      ProjectProcessor(fetchActiveOrganization, config.eventLog, xas)(config.baseUri)
-                    _                      <- EventProcessor.run(events, projectProcessor)
+                    _                <- orgProvider.create(config.organizations.values)
+                    events            = eventStream(file)
+                    fetchActiveOrg    = FetchActiveOrganization(xas)
+                    projectProcessor <-
+                      ProjectProcessor(fetchActiveOrg, config.eventLog, xas)(config.baseUri)
+                    _                <- EventProcessor.run(events, projectProcessor)
                   } yield ()
                 }
     } yield ()

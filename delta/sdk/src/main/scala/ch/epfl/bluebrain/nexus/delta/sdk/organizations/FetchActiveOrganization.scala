@@ -9,12 +9,18 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateGet
 import doobie.implicits._
 import doobie.{Get, Put}
 
+trait FetchActiveOrganization {
+
+  def apply(org: Label): IO[Organization]
+
+}
+
 object FetchActiveOrganization {
 
   implicit val getId: Put[Label]                = OrganizationState.serializer.putId
   implicit val getValue: Get[OrganizationState] = OrganizationState.serializer.getValue
 
-  def apply(org: Label, xas: Transactors): IO[Organization] =
+  def apply(xas: Transactors): FetchActiveOrganization = (org: Label) =>
     GlobalStateGet[Label, OrganizationState](Organizations.entityType, org)
       .transact(xas.read)
       .flatMap {

@@ -55,7 +55,7 @@ object ProjectsModule extends ModuleDef {
     ) =>
       IO.pure(
         ProjectsImpl(
-          FetchActiveOrganization(_, xas),
+          FetchActiveOrganization(xas),
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializer,
           mappings.merge,

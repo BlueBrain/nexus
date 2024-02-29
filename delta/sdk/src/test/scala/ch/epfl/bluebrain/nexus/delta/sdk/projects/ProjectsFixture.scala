@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{ScopeInitialization, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.{ScopeInitialization, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -17,7 +17,7 @@ import java.util.UUID
 trait ProjectsFixture { self: CatsEffectSuite =>
 
   protected def createProjectsFixture(
-      fetchOrgs: FetchOrganization,
+      fetchOrgs: FetchActiveOrganization,
       apiMappings: ApiMappings,
       config: ProjectsConfig,
       clock: Clock[IO]
@@ -28,7 +28,7 @@ trait ProjectsFixture { self: CatsEffectSuite =>
   }
 
   private def createProjectsFixture(
-      fetchOrgs: FetchOrganization,
+      fetchOrgs: FetchActiveOrganization,
       scopeInitializations: Set[ScopeInitialization],
       apiMappings: ApiMappings,
       config: ProjectsConfig,

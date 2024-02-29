@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -53,7 +53,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
 
   private val order = ResourceF.sortBy[Project]("_label").value
 
-  private def fetchOrg: FetchOrganization = {
+  private def fetchOrg: FetchActiveOrganization = {
     case `org1`          => IO.pure(Organization(org1, orgUuid, None))
     case `org2`          => IO.pure(Organization(org2, orgUuid, None))
     case `orgDeprecated` => IO.raiseError(OrganizationIsDeprecated(orgDeprecated))

@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Ac
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
@@ -38,7 +38,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
   private val org     = Label.unsafe("org")
   private val orgUuid = UUID.randomUUID()
 
-  private def fetchOrg: FetchOrganization = {
+  private def fetchOrg: FetchActiveOrganization = {
     case `org` => IO.pure(Organization(org, orgUuid, None))
     case other => IO.raiseError(OrganizationNotFound(other))
   }

@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
-import doobie.{Get, Put}
 import doobie.implicits._
+import doobie.{Get, Put}
 
 /**
   * Define the rules to fetch project context for read and write operations
@@ -63,7 +63,7 @@ object FetchContext {
     }
 
     apply(
-      FetchActiveOrganization(_, xas).void,
+      FetchActiveOrganization(xas).apply(_).void,
       dam,
       fetchProject,
       quotas
@@ -71,7 +71,7 @@ object FetchContext {
   }
 
   def apply(
-      fetchActiveOrganization: Label => IO[Unit],
+      fetchActiveOrg: Label => IO[Unit],
       dam: ApiMappings,
       fetchProject: ProjectRef => IO[Option[ProjectResource]],
       quotas: Quotas
@@ -100,7 +100,7 @@ object FetchContext {
 
       override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext] =
         for {
-          _       <- fetchActiveOrganization(ref.organization)
+          _       <- fetchActiveOrg(ref.organization)
           _       <- quotas.reachedForEvents(ref, subject)
           context <- onWrite(ref)
         } yield context

@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.NotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectEvent, ProjectFields, ProjectRejection}
@@ -59,7 +59,7 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
 object ProjectProcessor {
 
   private val logger      = Logger[ProjectProcessor]
-  def apply(fetchAndValidateOrg: FetchOrganization, config: EventLogConfig, xas: Transactors)(implicit
+  def apply(fetchActiveOrg: FetchActiveOrganization, config: EventLogConfig, xas: Transactors)(implicit
       base: BaseUri
   ): IO[ProjectProcessor] =
     for {
@@ -68,7 +68,7 @@ object ProjectProcessor {
     } yield {
       val disableDeletion: ValidateProjectDeletion = (p: ProjectRef) => IO.raiseError(ProjectDeletionIsNotAllowed(p))
       val projects                                 = ProjectsImpl(
-        fetchAndValidateOrg,
+        fetchActiveOrg,
         disableDeletion,
         ScopeInitializer.noop,
         ApiMappings.empty,
