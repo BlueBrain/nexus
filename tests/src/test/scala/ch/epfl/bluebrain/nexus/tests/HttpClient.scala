@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings, RawHeader}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
@@ -14,7 +14,7 @@ import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
+import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, metadataHeader, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import io.circe.Json
 import io.circe.parser._
@@ -155,6 +155,13 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       keywords: Map[String, String]
   )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
 
+    val metadata = Json
+      .obj(
+        "name"        -> name.asJson,
+        "description" -> description.asJson,
+        "keywords"    -> keywords.asJson
+      )
+
     request[Json, String, (Json, HttpResponse)](
       PUT,
       requestPath,
@@ -165,21 +172,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
           BodyPart.Strict(
             "file",
             HttpEntity(contentType, s.getBytes),
-            Map(
-              "filename" -> fileName,
-              "metadata" -> Json
-                .obj(
-                  "name"        -> name.asJson,
-                  "description" -> description.asJson,
-                  "keywords"    -> keywords.asJson
-                )
-                .noSpaces
-            )
+            Map("filename" -> fileName)
           )
         ).toEntity()
       },
       (json: Json, response: HttpResponse) => (json, response),
-      jsonHeaders
+      jsonHeaders :+ metadataHeader(metadata)
     )
   }
 
@@ -373,6 +371,8 @@ object HttpClient {
   val acceptZip: Seq[Accept] = Seq(Accept(MediaTypes.`application/zip`, MediaTypes.`application/json`))
 
   val jsonHeaders: Seq[HttpHeader] = Accept(MediaTypes.`application/json`) :: Nil
+
+  def metadataHeader(metadata: Json): HttpHeader = RawHeader("x-nxs-file-metadata", metadata.noSpaces)
 
   val rdfApplicationSqlQuery: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("sparql-query", `UTF-8`)

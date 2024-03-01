@@ -10,6 +10,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesHeaders.extractFileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
@@ -97,10 +98,10 @@ final class FilesRoutes(
                       )
                     },
                     // Create a file without id segment
-                    extractRequestEntity { entity =>
+                    (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                       emit(
                         Created,
-                        files.create(storage, project, entity, tag).index(mode).attemptNarrow[FileRejection]
+                        files.create(storage, project, entity, tag, metadata).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
@@ -137,10 +138,10 @@ final class FilesRoutes(
                                     )
                                   },
                                   // Update a file
-                                  extractRequestEntity { entity =>
+                                  (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                                     emit(
                                       files
-                                        .update(fileId, storage, rev, entity, tag)
+                                        .update(fileId, storage, rev, entity, tag, metadata)
                                         .index(mode)
                                         .attemptNarrow[FileRejection]
                                     )
@@ -163,11 +164,11 @@ final class FilesRoutes(
                                   )
                                 },
                                 // Create a file with id segment
-                                extractRequestEntity { entity =>
+                                (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                                   emit(
                                     Created,
                                     files
-                                      .create(fileId, storage, entity, tag)
+                                      .create(fileId, storage, entity, tag, metadata)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )

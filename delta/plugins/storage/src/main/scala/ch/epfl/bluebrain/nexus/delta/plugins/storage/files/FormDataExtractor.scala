@@ -13,11 +13,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidCustomMetadata, InvalidMultipartFieldName, WrappedAkkaRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCustomMetadata, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.parser
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -49,9 +46,6 @@ sealed trait FormDataExtractor {
 
 case class UploadedFileInformation(
     filename: String,
-    keywords: Map[Label, String],
-    description: Option[String],
-    name: Option[String],
     suppliedContentType: ContentType,
     contents: BodyPartEntity
 )
@@ -140,35 +134,30 @@ object FormDataExtractor {
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
 
-          val result = extractMetadata(part).map { md =>
+          Future(
             UploadedFileInformation(
               filename,
-              md.keywords.getOrElse(Map.empty),
-              md.description,
-              md.name,
               contentType,
               part.entity
             ).some
-          }
-
-          Future.fromTry(result.toTry)
+          )
         case part                               =>
           part.entity.discardBytes().future.as(None)
       }
 
-      private def extractMetadata(
-          part: Multipart.FormData.BodyPart
-      ): Either[FileRejection, FileCustomMetadata] = {
-        val metadata = part.dispositionParams.get("metadata").filter(_.nonEmpty)
-        metadata match {
-          case Some(value) =>
-            parser
-              .parse(value)
-              .flatMap(_.as[FileCustomMetadata])
-              .leftMap(err => InvalidCustomMetadata(err.getMessage))
-          case None        => Right(FileCustomMetadata(None, None, None))
-        }
-      }
+//      private def extractMetadata(
+//          part: Multipart.FormData.BodyPart
+//      ): Either[FileRejection, FileCustomMetadata] = {
+//        val metadata = part.dispositionParams.get("metadata").filter(_.nonEmpty)
+//        metadata match {
+//          case Some(value) =>
+//            parser
+//              .parse(value)
+//              .flatMap(_.as[FileCustomMetadata])
+//              .leftMap(err => InvalidCustomMetadata(err.getMessage))
+//          case None        => Right(FileCustomMetadata(None, None, None))
+//        }
+//      }
 
       private def detectContentType(filename: String, contentTypeFromRequest: ContentType) = {
         val bodyDefinedContentType = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
