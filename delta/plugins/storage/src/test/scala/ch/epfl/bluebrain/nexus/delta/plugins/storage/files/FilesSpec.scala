@@ -43,6 +43,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.{Assertion, DoNotDiscover}
 
 import java.net.URLDecoder
+import java.util.UUID
 
 @DoNotDiscover
 class FilesSpec(fixture: RemoteStorageClientFixtures)
@@ -180,6 +181,14 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         actual shouldEqual expected
       }
 
+      "succeed with the id passed and custom metadata" in {
+        val metadata = genCustomMetadata()
+        val id       = fileId(genString())
+
+        files.create(id, Some(diskId), entity(genString()), None, Some(metadata)).accepted
+        assertCorrectCustomMetadata(id, metadata)
+      }
+
       "succeed when the file has special characters" in {
         val specialFileName = "-._~:?#[ ]@!$&'()*,;="
 
@@ -213,6 +222,14 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
         actual shouldEqual expected
         fetched shouldEqual expected
+      }
+
+      "succeed with randomly generated id and custom metadata" in {
+        withUUIDF(UUID.randomUUID()) {
+          val metadata = genCustomMetadata()
+          val created  = files.create(None, projectRef, entity(genString()), None, Some(metadata)).accepted
+          assertCorrectCustomMetadata(fileIdIri(created.id), metadata)
+        }
       }
 
       "succeed and tag with randomly generated id" in {
@@ -347,6 +364,17 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "succeed" in {
         files.update(fileId("file1"), None, 1, entity(), None, None).accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes(), rev = 2, createdBy = bob, updatedBy = bob)
+      }
+
+      "succeed with custom metadata" in {
+        val metadata                    = genCustomMetadata()
+        val id                          = fileId(genString())
+        val (firstEntity, secondEntity) = (entity(genString()), randomEntity(genString(), 10))
+
+        files.create(id, Some(diskId), firstEntity, None, None).accepted
+        files.update(id, None, 1, secondEntity, None, Some(metadata)).accepted
+
+        assertCorrectCustomMetadata(id, metadata)
       }
 
       "reject if file doesn't exists" in {
@@ -719,6 +747,13 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       files.fetch(id).accepted.deprecated shouldEqual false
     def assertRemainsActive(id: FileId): Assertion     =
       assertActive(id)
+
+    def assertCorrectCustomMetadata(id: FileId, metadata: FileCustomMetadata): Assertion = {
+      val fetched = files.fetch(id).accepted
+      fetched.value.attributes.name shouldEqual metadata.name
+      fetched.value.attributes.description shouldEqual metadata.description
+      fetched.value.attributes.keywords shouldEqual metadata.keywords.get
+    }
   }
 
 }

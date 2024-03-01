@@ -6,7 +6,7 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -57,6 +57,9 @@ trait FileFixtures extends Generators {
   ): FileAttributes = FileGen.attributes(filename, size, id, projRef, path, keywords, description, name)
 
   def genKeywords(): Map[Label, String] = Map(Label.unsafe(genString()) -> genString())
+
+  def genCustomMetadata(): FileCustomMetadata =
+    FileCustomMetadata(Some(genString()), Some(genString()), Some(genKeywords()))
 
   def entity(filename: String = "file.txt"): MessageEntity =
     Multipart
