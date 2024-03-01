@@ -9,7 +9,7 @@ import java.time.Instant
 import scala.annotation.nowarn
 
 final case class InputEvent(
-    ordering: Offset,
+    ordering: Offset.At,
     `type`: EntityType,
     org: Label,
     project: Label,
@@ -24,8 +24,9 @@ object InputEvent {
   @nowarn("cat=unused")
   implicit final val elasticSearchViewValueEncoder: Decoder[InputEvent] = {
     import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
-    implicit val config: Configuration = Configuration.default
+    import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+    implicit val offsetDecoder: Decoder[Offset.At] = Decoder.decodeLong.map(Offset.At)
+    implicit val config: Configuration             = Configuration.default
     deriveConfiguredDecoder[InputEvent]
   }
 }

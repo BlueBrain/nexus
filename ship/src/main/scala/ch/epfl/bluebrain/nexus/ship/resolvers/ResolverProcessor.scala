@@ -71,7 +71,6 @@ object ResolverProcessor {
 
   def apply(
       fetchContext: FetchContext,
-      contextResolution: ResolverContextResolution,
       config: EventLogConfig,
       xas: Transactors
   )(implicit api: JsonLdApi): IO[ResolverProcessor] =
@@ -79,7 +78,8 @@ object ResolverProcessor {
       implicit val uuidF: UUIDF = FailingUUID
       val resolvers             = ResolversImpl(
         fetchContext,
-        contextResolution,
+        // We rely on the parsed values and not on the original value
+        ResolverContextResolution.never,
         config,
         xas,
         clock
