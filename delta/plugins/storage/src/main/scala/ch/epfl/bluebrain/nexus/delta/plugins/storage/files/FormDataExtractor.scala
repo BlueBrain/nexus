@@ -11,7 +11,6 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
@@ -23,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import io.circe.parser.parse
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 sealed trait FormDataExtractor {
@@ -137,7 +136,7 @@ object FormDataExtractor {
         .fromFuture(
           IO(
             formData.parts
-              .fold(NoInformation: UploadedInformation) { case (x, part) =>
+              .foldAsync(NoInformation: UploadedInformation) { case (x, part) =>
                 extractFile(part, x)
               }
               .toMat(Sink.headOption)(Keep.right)
@@ -154,26 +153,24 @@ object FormDataExtractor {
       private def extractFile(
           part: FormData.BodyPart,
           existingInfo: UploadedInformation
-      ): UploadedInformation = part match {
+      ): Future[UploadedInformation] = part match {
         case part if part.name == MetadataFieldName =>
           asJson(part.entity.dataBytes)
-            .unsafeRunSync()
-            .as[FileCustomMetadata]
-            .map { md =>
-              UploadedMetadata(
-                md.keywords.getOrElse(Map.empty),
-                md.description,
-                md.name
-              )
-            } match {
-            case Left(_)      => NoInformation
-            case Right(value) => value
-          }
+            .map(x => x.as[FileCustomMetadata].toOption)
+            .map {
+              case Some(md) =>
+                UploadedMetadata(
+                  md.keywords.getOrElse(Map.empty),
+                  md.description,
+                  md.name
+                )
+              case None     => NoInformation
+            }
         case part if part.name == FileFieldName     =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
 
-          existingInfo match {
+          val result = existingInfo match {
             case UploadedMetadata(keywords, description, name) =>
               UploadedFileInformation(
                 filename,
@@ -193,25 +190,26 @@ object FormDataExtractor {
                 part.entity
               )
           }
-        case _                                      => NoInformation
+          Future.successful(result)
+        case _                                      => Future.successful(NoInformation)
       }
 
-      private def consume(source: Source[ByteString, Any])(implicit materializer: Materializer): IO[String] =
-        IO.fromFuture(IO.delay(source.runFold("")(_ ++ _.utf8String)))
+      private def consume(source: Source[ByteString, Any])(implicit materializer: Materializer): Future[String] =
+        source.runFold("")(_ ++ _.utf8String)
 
       private def consume(source: Source[ByteString, Any], entries: Long)(implicit
           materializer: Materializer
-      ): IO[String] =
-        IO.fromFuture(IO.delay(source.take(entries).runFold("")(_ ++ _.utf8String)))
+      ): Future[String] =
+        source.take(entries).runFold("")(_ ++ _.utf8String)
 
       def asString(source: Source[ByteString, Any], entries: Option[Long])(implicit
           materializer: Materializer
-      ): IO[String] =
+      ): Future[String] =
         entries.fold(consume(source))(consume(source, _))
 
       def asJson(source: Source[ByteString, Any], entries: Option[Long] = None)(implicit
           materializer: Materializer
-      ): IO[Json] = {
+      ): Future[Json] = {
         val consumed = asString(source, entries)
         consumed.map { s =>
           parse(s) match {
