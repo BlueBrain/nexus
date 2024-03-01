@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 
 /**
   * Custom metadata for a file that can be specified by the user.
@@ -15,8 +15,8 @@ case class FileCustomMetadata(
 
 object FileCustomMetadata {
 
-  implicit val fileUploadMetadataDecoder: Decoder[FileCustomMetadata] =
-    deriveDecoder[FileCustomMetadata]
+  implicit val fileUploadMetadataDecoder: Codec[FileCustomMetadata] =
+    deriveCodec[FileCustomMetadata]
 
   val empty: FileCustomMetadata = FileCustomMetadata(None, None, None)
 
