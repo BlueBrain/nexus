@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus}
 import io.circe.Decoder
 
 class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extends EventProcessor[ResolverEvent] {
@@ -25,14 +25,14 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
 
   override def decoder: Decoder[ResolverEvent] = ResolverEvent.serializer.codec
 
-  override def evaluate(event: ResolverEvent): IO[Unit] = {
+  override def evaluate(event: ResolverEvent): IO[ImportStatus] = {
     for {
-      _ <- clock.setInstant(event.instant)
-      _ <- evaluateInternal(event)
-    } yield ()
+      _      <- clock.setInstant(event.instant)
+      result <- evaluateInternal(event)
+    } yield result
   }
 
-  private def evaluateInternal(event: ResolverEvent): IO[Unit] = {
+  private def evaluateInternal(event: ResolverEvent): IO[ImportStatus] = {
     val id                  = event.id
     implicit val s: Subject = event.subject
     val projectRef          = event.project
@@ -50,10 +50,14 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
       case _: ResolverDeprecated                    =>
         resolvers.deprecate(id, projectRef, cRev)
     }
-  }.recoverWith {
-    case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists")
-    case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided")
-  }.void
+  }.redeemWith(
+    {
+      case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists").as(ImportStatus.Dropped)
+      case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided").as(ImportStatus.Dropped)
+      case other                    => IO.raiseError(other)
+    },
+    _ => IO.pure(ImportStatus.Success)
+  )
 
   private def identities(value: ResolverValue) =
     value match {

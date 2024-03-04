@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, EventUUIDF}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, EventUUIDF, ImportStatus}
 import io.circe.Decoder
 
 final class ProjectProcessor private (projects: Projects, clock: EventClock, uuidF: EventUUIDF)
@@ -24,15 +24,15 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
 
   override def decoder: Decoder[ProjectEvent] = ProjectEvent.serializer.codec
 
-  override def evaluate(event: ProjectEvent): IO[Unit] = {
+  override def evaluate(event: ProjectEvent): IO[ImportStatus] = {
     for {
-      _ <- clock.setInstant(event.instant)
-      _ <- uuidF.setUUID(event.uuid)
-      _ <- evaluateInternal(event)
-    } yield ()
+      _      <- clock.setInstant(event.instant)
+      _      <- uuidF.setUUID(event.uuid)
+      result <- evaluateInternal(event)
+    } yield result
   }
 
-  private def evaluateInternal(event: ProjectEvent) = {
+  private def evaluateInternal(event: ProjectEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
     val projectRef          = event.project
     val cRev                = event.rev - 1
@@ -50,10 +50,14 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
       case _: ProjectMarkedForDeletion                                                               =>
         IO.raiseError(ProjectDeletionIsNotAllowed(projectRef))
     }
-  }.recoverWith {
-    case notFound: NotFound      => IO.raiseError(notFound)
-    case error: ProjectRejection => logger.warn(error)(error.reason)
-  }.void
+  }.redeemWith(
+    {
+      case notFound: NotFound      => IO.raiseError(notFound)
+      case error: ProjectRejection => logger.warn(error)(error.reason).as(ImportStatus.Dropped)
+      case other                   => IO.raiseError(other)
+    },
+    _ => IO.pure(ImportStatus.Success)
+  )
 }
 
 object ProjectProcessor {
