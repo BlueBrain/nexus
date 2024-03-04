@@ -23,7 +23,7 @@ trait EventProcessor[Event <: ScopedEvent] {
 
   def evaluate(event: InputEvent): IO[Unit] =
     IO.fromEither(decoder.decodeJson(event.value))
-      .onError(err => logger.error(err)(s"Error while attempting to resolve $resourceType at offset ${event.ordering}"))
+      .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
       .flatMap(evaluate)
 }
 

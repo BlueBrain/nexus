@@ -95,7 +95,6 @@ object Main
   private def eventStream(file: Path): Stream[IO, InputEvent] =
     Files[IO].readUtf8Lines(file).zipWithIndex.evalMap { case (line, index) =>
       IO.fromEither(decode[InputEvent](line)).onError { err =>
-        println(line)
         logger.error(err)(s"Error parsing to event at line $index")
       }
     }
