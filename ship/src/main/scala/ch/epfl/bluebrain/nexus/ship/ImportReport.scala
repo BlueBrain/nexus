@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
+import cats.Show
 import cats.kernel.Monoid
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -10,13 +11,13 @@ import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import java.time.Instant
 
 final case class ImportReport(offset: Offset, instant: Instant, progress: Map[EntityType, Count]) {
-  def + (event: InputEvent, status: ImportStatus): ImportReport = {
-    val entityType = event.`type`
+  def +(event: InputEvent, status: ImportStatus): ImportReport = {
+    val entityType  = event.`type`
     val newProgress = progress.updatedWith(entityType) {
       case Some(count) => Some(count |+| status.asCount)
-      case None => Some(status.asCount)
+      case None        => Some(status.asCount)
     }
-    copy(offset = event.ordering, instant = event.instant, progress= newProgress)
+    copy(offset = event.ordering, instant = event.instant, progress = newProgress)
   }
 
   def aggregatedCount: Count = {
@@ -38,5 +39,17 @@ object ImportReport {
       override def combine(x: Count, y: Count): Count = Count(x.success + y.success, x.dropped + y.dropped)
     }
 
+  }
+
+  implicit val showReport: Show[ImportReport] = (report: ImportReport) => {
+    val header  = s"Type\tSuccess\tDropped\n"
+    val details = report.progress.foldLeft(header) { case (acc, (entityType, count)) =>
+      acc ++ s"$entityType\t${count.success}\t${count.dropped}\n"
+    }
+
+    val aggregatedCount = report.aggregatedCount
+    val global          =
+      s"${aggregatedCount.success} events were imported up to offset ${report.offset} (${aggregatedCount.dropped} have been dropped)."
+    s"$global\n$details"
   }
 }

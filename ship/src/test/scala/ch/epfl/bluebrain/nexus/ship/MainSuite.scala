@@ -26,7 +26,7 @@ class MainSuite extends NexusSuite with MainSuite.Fixture {
       Offset.at(5418473L),
       Instant.parse("2023-08-22T15:05:13.654Z"),
       Map(
-        Projects.entityType -> Count(4L, 0L),
+        Projects.entityType  -> Count(4L, 0L),
         Resolvers.entityType -> Count(5L, 0L)
       )
     )

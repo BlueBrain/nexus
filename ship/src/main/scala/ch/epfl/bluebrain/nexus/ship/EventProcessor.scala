@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -35,35 +36,27 @@ object EventProcessor {
       acc + (processor.resourceType -> processor)
     }
     eventStream
-      .evalScan(ImportReport.start) { case(report, event) =>
+      .evalScan(ImportReport.start) { case (report, event) =>
         processorsMap.get(event.`type`) match {
           case Some(processor) =>
-            processor.evaluate(event)
+            processor
+              .evaluate(event)
               .map { status =>
                 report + (event, status)
               }
               .onError { err =>
-              logger.error(err)(
-                s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
-              )
-            }
+                logger.error(err)(
+                  s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
+                )
+              }
           case None            =>
             logger.warn(s"No processor is provided for '${event.`type`}', skipping...") >>
-            IO.pure(report + (event, ImportStatus.Dropped))
+              IO.pure(report + (event, ImportStatus.Dropped))
         }
       }
       .compile
       .lastOrError
-      .flatTap { report =>
-        val header = logger.info(s"Type\tSuccess\tDropped")
-        val detailedCount = report.progress.foldLeft(header) { case (acc, (entityType, count)) =>
-          acc >> logger.info(s"$entityType\t${count.success}\t${count.dropped}")
-        }
-
-        val aggregatedCount = report.aggregatedCount
-        logger.info(s"${aggregatedCount.success} events were imported up to offset ${report.offset} (${aggregatedCount.success} have been dropped).") >>
-          detailedCount
-      }
+      .flatTap { report => logger.info(report.show) }
   }
 
 }

@@ -26,8 +26,8 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
 
   override def evaluate(event: ProjectEvent): IO[ImportStatus] = {
     for {
-      _ <- clock.setInstant(event.instant)
-      _ <- uuidF.setUUID(event.uuid)
+      _      <- clock.setInstant(event.instant)
+      _      <- uuidF.setUUID(event.uuid)
       result <- evaluateInternal(event)
     } yield result
   }
@@ -52,9 +52,9 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
     }
   }.redeemWith(
     {
-      case notFound: NotFound => IO.raiseError(notFound)
+      case notFound: NotFound      => IO.raiseError(notFound)
       case error: ProjectRejection => logger.warn(error)(error.reason).as(ImportStatus.Dropped)
-      case other => IO.raiseError(other)
+      case other                   => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
   )

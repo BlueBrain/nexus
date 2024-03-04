@@ -67,8 +67,9 @@ object Main
     for {
       _      <- logger.info(s"Running the import with file $file, config $config and from offset $offset")
       config <- ShipConfig.load(config)
-      report      <- Transactors.init(config.database).use { xas =>
-                  val orgProvider    = OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
+      report <- Transactors.init(config.database).use { xas =>
+                  val orgProvider    =
+                    OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
                   val fetchContext   = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
                   val eventLogConfig = config.eventLog
                   val baseUri        = config.baseUri
@@ -79,7 +80,7 @@ object Main
                     fetchActiveOrg     = FetchActiveOrganization(xas)
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    report                 <- EventProcessor.run(events, projectProcessor, resolverProcessor)
+                    report            <- EventProcessor.run(events, projectProcessor, resolverProcessor)
                   } yield report
                 }
     } yield report
