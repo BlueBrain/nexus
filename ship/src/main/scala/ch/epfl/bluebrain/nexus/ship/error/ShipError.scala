@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.error
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
+// $COVERAGE-OFF$
 sealed abstract class ShipError(reason: String) extends Exception { self =>
   override def fillInStackTrace(): Throwable = self
 
@@ -14,3 +15,4 @@ object ShipError {
       extends ShipError(s"'$project' is not allowed during import.")
 
 }
+// $COVERAGE-ON$

@@ -731,12 +731,12 @@ lazy val ship = project
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(
-    libraryDependencies  ++= Seq(declineEffect),
+    libraryDependencies ++= Seq(declineEffect),
     addCompilerPlugin(betterMonadicFor),
-    run / fork            := true,
-    buildInfoKeys         := Seq[BuildInfoKey](version),
-    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.ship",
-    Docker / packageName  := "nexus-ship"
+    run / fork           := true,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.ship",
+    Docker / packageName := "nexus-ship"
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")

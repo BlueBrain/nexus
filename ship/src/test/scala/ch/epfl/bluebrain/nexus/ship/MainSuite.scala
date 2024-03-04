@@ -5,6 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
@@ -23,11 +24,12 @@ class MainSuite extends NexusSuite with MainSuite.Fixture {
 
   test("Run import") {
     val expected = ImportReport(
-      Offset.at(5418473L),
-      Instant.parse("2023-08-22T15:05:13.654Z"),
+      Offset.at(9999999L),
+      Instant.parse("2099-12-31T22:59:59.999Z"),
       Map(
-        Projects.entityType  -> Count(4L, 0L),
-        Resolvers.entityType -> Count(5L, 0L)
+        Projects.entityType  -> Count(5L, 0L),
+        Resolvers.entityType -> Count(5L, 0L),
+        EntityType("xxx")    -> Count(0L, 1L)
       )
     )
     for {

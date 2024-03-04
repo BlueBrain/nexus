@@ -19,10 +19,6 @@ final case class ImportReport(offset: Offset, instant: Instant, progress: Map[En
     }
     copy(offset = event.ordering, instant = event.instant, progress = newProgress)
   }
-
-  def aggregatedCount: Count = {
-    progress.values.reduceOption(_ |+| _).getOrElse(Count(0L, 0L))
-  }
 }
 
 object ImportReport {
@@ -47,7 +43,7 @@ object ImportReport {
       acc ++ s"$entityType\t${count.success}\t${count.dropped}\n"
     }
 
-    val aggregatedCount = report.aggregatedCount
+    val aggregatedCount = report.progress.values.reduceOption(_ |+| _).getOrElse(Count(0L, 0L))
     val global          =
       s"${aggregatedCount.success} events were imported up to offset ${report.offset} (${aggregatedCount.dropped} have been dropped)."
     s"$global\n$details"
