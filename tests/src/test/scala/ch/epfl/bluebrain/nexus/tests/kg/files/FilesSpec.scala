@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{description => descriptionField, keywords, name => nameField}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.`@id`
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import io.circe.Json
@@ -93,6 +95,52 @@ class FilesSpec extends BaseIntegrationSpec {
 
       exactly(1, results) should have(`@id`(fishId))
       no(results) should have(`@id`(faxId))
+    }
+  }
+
+  "Updating only custom metadata" should {
+
+    "fail without permission" in {
+      givenAFile { id =>
+        val md     = Json.obj(
+          "name" -> Json.fromString("new name")
+        )
+        val header = RawHeader("x-nxs-file-metadata", md.noSpaces) :: Nil
+
+        val rejectCustomMetadataUpdate = deltaClient
+          .putEmptyBody[Json](s"/files/$projectRef/$id?rev=1", Anonymous, header) { (_, response) =>
+            response.status shouldEqual StatusCodes.Forbidden
+          }
+        val assertFileNotUpdated       = deltaClient.get[Json](s"/files/$projectRef/$id", Writer) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json.hcursor.get[Int]("_rev").rightValue shouldEqual 1
+        }
+
+        (rejectCustomMetadataUpdate >> assertFileNotUpdated).accepted
+
+      }
+    }
+
+    "update the custom metadata of the file" in {
+      givenAFile { id =>
+        val updatedName = "new name"
+        val md          = Json.obj("name" := updatedName)
+        val header      = RawHeader("x-nxs-file-metadata", md.noSpaces) :: Nil
+
+        val updateCustomMetadata = deltaClient
+          .putEmptyBody[Json](s"/files/$projectRef/$id?rev=1", Writer, header) { (_, response) =>
+            response.status shouldEqual StatusCodes.OK
+          }
+
+        val assertMetadataUpdated = deltaClient.get[Json](s"/files/$projectRef/$id", Writer) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json.hcursor.get[Int]("_rev").rightValue shouldEqual 2
+          json should have(nameField(updatedName))
+        }
+
+        (updateCustomMetadata >> assertMetadataUpdated).accepted
+      }
+
     }
   }
 
