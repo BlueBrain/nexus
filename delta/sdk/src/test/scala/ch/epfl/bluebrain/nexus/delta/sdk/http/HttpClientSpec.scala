@@ -126,7 +126,7 @@ class HttpClientSpec
 object HttpClientSpec {
   final case class Value(name: String, rev: Int, deprecated: Boolean)
 
-  final case class Count(
+  private final case class Count(
       reqGetValue: AtomicInteger,
       reqStreamValues: AtomicInteger,
       reqClientError: AtomicInteger,
@@ -145,7 +145,7 @@ object HttpClientSpec {
       reqOtherError.set(0)
     }
   }
-  object Count {
+  private object Count {
     def apply(
         reqGetValue: Int = 0,
         reqStreamValues: Int = 0,

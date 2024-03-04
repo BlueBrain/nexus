@@ -736,8 +736,7 @@ lazy val ship = project
     run / fork            := true,
     buildInfoKeys         := Seq[BuildInfoKey](version),
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.ship",
-    Docker / packageName  := "nexus-ship",
-    coverageFailOnMinimum := false
+    Docker / packageName  := "nexus-ship"
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")

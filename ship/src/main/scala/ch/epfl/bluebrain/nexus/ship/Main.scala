@@ -59,7 +59,7 @@ object Main
       }
       .map(_.as(ExitCode.Success))
 
-  private[ship] def run(file: Path, config: Option[Path]): IO[Unit] = {
+  private[ship] def run(file: Path, config: Option[Path]): IO[ImportReport] = {
     val clock                         = Clock[IO]
     val uuidF                         = UUIDF.random
     // Resources may have been created with different configurations so we adopt the lenient one for the import
@@ -67,7 +67,7 @@ object Main
     for {
       _      <- logger.info(s"Running the import with file $file, config $config and from offset $offset")
       config <- ShipConfig.load(config)
-      _      <- Transactors.init(config.database).use { xas =>
+      report      <- Transactors.init(config.database).use { xas =>
                   val orgProvider    = OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
                   val fetchContext   = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
                   val eventLogConfig = config.eventLog
@@ -79,10 +79,10 @@ object Main
                     fetchActiveOrg     = FetchActiveOrganization(xas)
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    _                 <- EventProcessor.run(events, projectProcessor, resolverProcessor)
-                  } yield ()
+                    report                 <- EventProcessor.run(events, projectProcessor, resolverProcessor)
+                  } yield report
                 }
-    } yield ()
+    } yield report
   }
 
   private[ship] def showConfig(config: Option[Path]) =
