@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.IncorrectRev
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -50,8 +50,9 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
       case _: ResolverDeprecated                    =>
         resolvers.deprecate(id, projectRef, cRev)
     }
-  }.recoverWith { case i: IncorrectRev =>
-    logger.warn(i)("An incorrect revision as been provided")
+  }.recoverWith {
+    case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists")
+    case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided")
   }.void
 
   private def identities(value: ResolverValue) =
