@@ -52,16 +52,19 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
-The request body:
+**The request body:**
 
 The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
 
 This part can contain the following disposition parameters:
 - `filename`: the filename which will be used in the back-end file system 
-- `metadata`: a JSON object containing the following one or more of the following fields:
-  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
-  - `description`: a string that describes the file. It will be indexed in the full-text search.
-  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+
+**Headers:**
+
+- `x-nxs-file-metadata`: an optional JSON object containing one or more of the following fields:
+    - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+    - `description`: a string that describes the file. It will be indexed in the full-text search.
+    - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
@@ -85,14 +88,19 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tag
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
 
+**The request body:**
+
 The body should be a multipart form, to allow file upload. The form should contain one part named `file`. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file's extension.
 
 This part can contain the following disposition parameters:
 - `filename`: the filename which will be used in the back-end file system
-- `metadata`: a JSON object containing one or more of the following fields:
-  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
-  - `description`: a string that describes the file. It will be indexed in the full-text search.
-  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+
+**Headers:**
+
+- `x-nxs-file-metadata`: an optional JSON object containing one or more of the following fields:
+    - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+    - `description`: a string that describes the file. It will be indexed in the full-text search.
+    - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
@@ -190,6 +198,13 @@ PUT /v1/files/{org_label}/{project_label}/{resource_id}?rev={previous_rev}
 ```
 
 ... where `{previous_rev}` is the last known revision number for the resource.
+
+**Headers:**
+
+- `x-nxs-file-metadata`: an optional JSON object containing one or more of the following fields:
+    - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+    - `description`: a string that describes the file. It will be indexed in the full-text search.
+    - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 **Example**
 
