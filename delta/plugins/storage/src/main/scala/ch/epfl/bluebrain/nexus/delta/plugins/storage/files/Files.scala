@@ -222,6 +222,17 @@ final class Files(
     } yield res
   }.span("updateFile")
 
+  def updateMetadata(
+      id: FileId,
+      rev: Int,
+      metadata: FileCustomMetadata
+  )(implicit caller: Caller): IO[FileResource] = {
+    for {
+      (iri, _) <- id.expandIri(fetchContext.onModify)
+      res      <- eval(UpdateFileCustomMetadata(iri, id.project, metadata, rev, caller.subject))
+    } yield res
+  }.span("updateFileMetadata")
+
   /**
     * Update a new file linking it from an existing file in a storage
     *
@@ -570,6 +581,11 @@ object Files {
     def updatedAttributes(e: FileAttributesUpdated): Option[FileState] =  state.map { s =>
       s.copy(rev = e.rev, attributes = s.attributes.copy( mediaType = e.mediaType, bytes = e.bytes, digest = e.digest), updatedAt = e.instant, updatedBy = e.subject)
     }
+    
+    def updatedCustomMetadata(e: FileCustomMetadataUpdated): Option[FileState] = state.map { s =>
+      val newAttributes = FileAttributes.setCustomMetadata(s.attributes, e.metadata)
+      s.copy(rev = e.rev, attributes = newAttributes, updatedAt = e.instant, updatedBy = e.subject)
+    }
 
     def tagAdded(e: FileTagAdded): Option[FileState] = state.map { s =>
       s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
@@ -589,13 +605,14 @@ object Files {
     }
 
     event match {
-      case e: FileCreated           => created(e)
-      case e: FileUpdated           => updated(e)
-      case e: FileAttributesUpdated => updatedAttributes(e)
-      case e: FileTagAdded          => tagAdded(e)
-      case e: FileTagDeleted        => tagDeleted(e)
-      case e: FileDeprecated        => deprecated(e)
-      case e: FileUndeprecated      => undeprecated(e)
+      case e: FileCreated               => created(e)
+      case e: FileUpdated               => updated(e)
+      case e: FileAttributesUpdated     => updatedAttributes(e)
+      case e: FileCustomMetadataUpdated => updatedCustomMetadata(e)
+      case e: FileTagAdded              => tagAdded(e)
+      case e: FileTagDeleted            => tagDeleted(e)
+      case e: FileDeprecated            => deprecated(e)
+      case e: FileUndeprecated          => undeprecated(e)
     }
   }
 
@@ -631,6 +648,16 @@ object Files {
         clock.realTimeInstant
           .map(FileAttributesUpdated(c.id, c.project, s.storage, s.storageType, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
       // format: on
+    }
+
+    def updateCustomMetadata(c: UpdateFileCustomMetadata) = state match {
+      case None                      => IO.raiseError(FileNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s)                   =>
+        clock.realTimeInstant
+          .map(
+            FileCustomMetadataUpdated(c.id, c.project, s.storage, s.storageType, c.metadata, s.rev + 1, _, c.subject)
+          )
     }
 
     def tag(c: TagFile) = state match {
@@ -671,13 +698,14 @@ object Files {
     }
 
     cmd match {
-      case c: CreateFile           => create(c)
-      case c: UpdateFile           => update(c)
-      case c: UpdateFileAttributes => updateAttributes(c)
-      case c: TagFile              => tag(c)
-      case c: DeleteFileTag        => deleteTag(c)
-      case c: DeprecateFile        => deprecate(c)
-      case c: UndeprecateFile      => undeprecate(c)
+      case c: CreateFile               => create(c)
+      case c: UpdateFile               => update(c)
+      case c: UpdateFileAttributes     => updateAttributes(c)
+      case c: UpdateFileCustomMetadata => updateCustomMetadata(c)
+      case c: TagFile                  => tag(c)
+      case c: DeleteFileTag            => deleteTag(c)
+      case c: DeprecateFile            => deprecate(c)
+      case c: UndeprecateFile          => undeprecate(c)
     }
   }
 

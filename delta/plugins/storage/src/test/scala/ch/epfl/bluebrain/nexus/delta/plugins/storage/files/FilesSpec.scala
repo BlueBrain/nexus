@@ -399,6 +399,58 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       }
     }
 
+    "updating the custom metadata of a file" should {
+
+      "succeed" in {
+        val id       = fileId(genString())
+        val metadata = genCustomMetadata()
+        val file     = entity(genString())
+
+        files.create(id, Some(diskId), file, None, None).accepted
+        files.updateMetadata(id, 1, metadata).accepted
+
+        files.fetch(id).accepted.rev shouldEqual 2
+        assertCorrectCustomMetadata(id, metadata)
+      }
+
+      "reject if the wrong revision is specified" in {
+        val id       = fileId(genString())
+        val metadata = genCustomMetadata()
+        val file     = entity(genString())
+
+        files.create(id, Some(diskId), file, None, None).accepted
+        files
+          .updateMetadata(id, 2, metadata)
+          .rejected shouldEqual IncorrectRev(expected = 1, provided = 2)
+      }
+
+      "reject if file doesn't exists" in {
+        val nonExistentFile = fileIdIri(nxv + genString())
+
+        files
+          .updateMetadata(nonExistentFile, 1, genCustomMetadata())
+          .rejectedWith[FileNotFound]
+      }
+
+      "reject if project does not exist" in {
+        val nonexistentProject       = ProjectRef(org, Label.unsafe(genString()))
+        val fileInNonexistentProject = FileId(genString(), nonexistentProject)
+
+        files
+          .updateMetadata(fileInNonexistentProject, 1, genCustomMetadata())
+          .rejectedWith[ProjectNotFound]
+      }
+
+      "reject if project is deprecated" in {
+        val fileInDeprecatedProject = FileId(genString(), deprecatedProject.ref)
+
+        files
+          .updateMetadata(fileInDeprecatedProject, 1, genCustomMetadata())
+          .rejectedWith[ProjectIsDeprecated]
+      }
+
+    }
+
     "updating remote disk file attributes" should {
 
       "reject if digest is already computed" in {

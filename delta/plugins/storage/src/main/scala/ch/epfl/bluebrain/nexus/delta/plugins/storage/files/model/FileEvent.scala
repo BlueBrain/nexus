@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.JsonObjOps
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -128,6 +128,37 @@ object FileEvent {
       instant: Instant,
       subject: Subject,
       tag: Option[UserTag]
+  ) extends FileEvent
+
+  /**
+    * Event for the modification of the custom metadata of a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the remote storage used
+    * @param storageType
+    *   the type of storage
+    * @param metadata
+    *   the new custom metadata
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class FileCustomMetadataUpdated(
+      id: Iri,
+      project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
+      metadata: FileCustomMetadata,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
   ) extends FileEvent
 
   /**
@@ -322,13 +353,14 @@ object FileEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: FileCreated           => Created
-            case _: FileUpdated           => Updated
-            case _: FileAttributesUpdated => Updated
-            case _: FileTagAdded          => Tagged
-            case _: FileTagDeleted        => TagDeleted
-            case _: FileDeprecated        => Deprecated
-            case _: FileUndeprecated      => Undeprecated
+            case _: FileCreated               => Created
+            case _: FileUpdated               => Updated
+            case _: FileAttributesUpdated     => Updated
+            case _: FileCustomMetadataUpdated => Updated
+            case _: FileTagAdded              => Tagged
+            case _: FileTagDeleted            => TagDeleted
+            case _: FileDeprecated            => Deprecated
+            case _: FileUndeprecated          => Undeprecated
           },
           event.id,
           Set(nxvFile),
@@ -466,6 +498,8 @@ object FileEvent {
             fau.mediaType,
             Some(FileAttributesOrigin.Storage)
           )
+        case fcmu: FileCustomMetadataUpdated                =>
+          FileExtraFields(fcmu.storage.iri, fcmu.storageType, None, None, None, None)
         case fta: FileTagAdded                              =>
           FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None)
         case ftd: FileTagDeleted                            =>

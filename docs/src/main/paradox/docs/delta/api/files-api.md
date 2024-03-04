@@ -206,6 +206,12 @@ PUT /v1/files/{org_label}/{project_label}/{resource_id}?rev={previous_rev}
     - `description`: a string that describes the file. It will be indexed in the full-text search.
     - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
+@@@ note { .tip title="Metadata update" }
+
+If only the metadata is provided, then the updated is a metadata update and the file content is not changed.
+
+@@@
+
 **Example**
 
 Request
