@@ -209,12 +209,36 @@ class FilesRoutesSpec
       withUUIDF(UUID.randomUUID()) {
         val metadata = genCustomMetadata()
         val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
+        val file     = entity(genString())
 
-        postFileWithMetadata("/v1/files/org/proj", entity(), metadata.asJson) ~> asWriter ~> routes ~> check {
+        postFileWithMetadata("/v1/files/org/proj", file, metadata.asJson) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
           response.asJson should have(keywords(kw))
+        }
+      }
+    }
+
+    "fail to create a file with invalid metadata" in {
+      val invalidKey      = Label.unsafe("!@#$%^&")
+      val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
+      val id              = genString()
+
+      putFileWithMetadata(s"/v1/files/org/proj/$id", entity(), invalidMetadata.asJson) ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual
+          json"""
+              {
+                "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+                "@type" : "MalformedHeaderRejection",
+                "reason" : "The value of HTTP header 'x-nxs-file-metadata' was malformed.",
+                "details" : "DecodingFailure at .keywords.$invalidKey: Couldn't decode key."
+              }
+                """
+
+        Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
         }
       }
     }
@@ -357,6 +381,30 @@ class FilesRoutesSpec
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
           response.asJson should have(keywords(kw))
+        }
+      }
+    }
+
+    "fail to update a file with invalid metadata" in {
+      givenAFile { id =>
+        val invalidKey      = Label.unsafe("!@#$%^&")
+        val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
+
+        putFileWithMetadata(
+          s"/v1/files/org/proj/$id?rev=1",
+          entity(genString()),
+          invalidMetadata.asJson
+        ) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual
+            json"""
+              {
+                "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+                "@type" : "MalformedHeaderRejection",
+                "reason" : "The value of HTTP header 'x-nxs-file-metadata' was malformed.",
+                "details" : "DecodingFailure at .keywords.$invalidKey: Couldn't decode key."
+              }
+                """
         }
       }
     }

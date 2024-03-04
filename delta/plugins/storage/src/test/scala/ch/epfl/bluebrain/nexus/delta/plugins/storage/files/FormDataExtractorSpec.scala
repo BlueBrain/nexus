@@ -5,11 +5,11 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidCustomMetadata, InvalidMultipartFieldName}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 
 class FormDataExtractorSpec
@@ -26,12 +26,6 @@ class FormDataExtractorSpec
     val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
     val mediaTypeDetector = MediaTypeDetectorConfig(Map("custom" -> customMediaType))
     val extractor         = FormDataExtractor(mediaTypeDetector)
-    val KeyThatIsTooLong  =
-      "this-key-is-too-long-to-be-a-label-lalalalalalalaalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalalaalalalla"
-
-    def entityWithKeywords(keywords: (String, Json)*) = {
-      createEntity("file", NoContentType, Some("file.custom"), keywords.toMap)
-    }
 
     def createEntity(
         bodyPart: String,
@@ -109,11 +103,6 @@ class FormDataExtractorSpec
       filename shouldEqual "file.custom"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
-    }
-
-    "fail to be extracted if the custom user metadata has invalid keywords" in {
-      val entity = entityWithKeywords(KeyThatIsTooLong := "value")
-      extractor(iri, entity, 2000, None).rejectedWith[InvalidCustomMetadata]
     }
 
     "fail to be extracted if no file part exists found" in {
