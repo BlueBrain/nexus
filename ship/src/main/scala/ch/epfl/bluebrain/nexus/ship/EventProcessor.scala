@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.ship.EventProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import fs2.Stream
 import io.circe.Decoder
@@ -21,7 +22,9 @@ trait EventProcessor[Event <: ScopedEvent] {
   def evaluate(event: Event): IO[Unit]
 
   def evaluate(event: InputEvent): IO[Unit] =
-    IO.fromEither(decoder.decodeJson(event.value)).flatMap(evaluate)
+    IO.fromEither(decoder.decodeJson(event.value))
+      .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
+      .flatMap(evaluate)
 }
 
 object EventProcessor {
@@ -35,7 +38,12 @@ object EventProcessor {
     eventStream
       .evalTap { event =>
         processorsMap.get(event.`type`) match {
-          case Some(processor) => processor.evaluate(event)
+          case Some(processor) =>
+            processor.evaluate(event).onError { err =>
+              logger.error(err)(
+                s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
+              )
+            }
           case None            => logger.warn(s"No processor is provided for '${event.`type`}', skipping...")
         }
       }

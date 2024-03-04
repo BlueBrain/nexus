@@ -123,4 +123,9 @@ object ResolverContextResolution {
       rcr: RemoteContextResolution
   ): ResolverContextResolution =
     apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, resources, excludeDeprecated = false))
+
+  /**
+    * A [[ResolverContextResolution]] that never resolves
+    */
+  val never: ResolverContextResolution = apply(RemoteContextResolution.never)
 }
