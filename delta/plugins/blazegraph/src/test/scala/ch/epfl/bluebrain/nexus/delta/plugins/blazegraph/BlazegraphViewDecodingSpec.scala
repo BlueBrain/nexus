@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedBlazegraphViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewRejection, BlazegraphViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
@@ -31,8 +31,7 @@ class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
   implicit val config: Configuration = BlazegraphDecoderConfiguration.apply.accepted
-  private val decoder                =
-    new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
+  private val decoder                = new JsonLdSourceDecoder[BlazegraphViewValue](contexts.blazegraph, uuidF)
 
   "An IndexingBlazegraphValue" should {
 
@@ -82,7 +81,7 @@ class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
       "the provided id did not match the expected one" in {
         val id     = iri"http://localhost/expected"
         val source = json"""{"@id": "http://localhost/provided", "@type": "SparqlView"}"""
-        decoder(context, id, source).rejectedWith[UnexpectedBlazegraphViewId]
+        decoder(context, id, source).rejectedWith[UnexpectedId]
       }
       "there's no known type discriminator" in {
         val sources = List(

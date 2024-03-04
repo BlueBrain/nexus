@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -246,12 +247,11 @@ class ResourcesImplSpec
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
         resources.create(otherId, projectRef, schemas.resources, source, None).rejected shouldEqual
-          UnexpectedResourceId(id = otherId, payloadId = myId)
+          UnexpectedId(id = otherId, payloadId = myId)
       }
 
       "reject if the id is blank" in {
-        resources.create(projectRef, schemas.resources, sourceWithBlankId, None).rejected shouldEqual
-          BlankResourceId
+        resources.create(projectRef, schemas.resources, sourceWithBlankId, None).rejected shouldEqual BlankId
       }
 
       "reject with ReservedResourceId" in {

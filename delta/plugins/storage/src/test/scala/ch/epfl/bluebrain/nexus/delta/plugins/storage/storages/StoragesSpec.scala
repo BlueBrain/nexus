@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
@@ -91,8 +92,7 @@ private class StoragesSpec
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
         val payload = s3FieldsJson deepMerge Json.obj(keywords.id -> s3Id.asJson)
-        storages.create(otherId, projectRef, payload).rejected shouldEqual
-          UnexpectedStorageId(id = otherId, payloadId = s3Id)
+        storages.create(otherId, projectRef, payload).rejected shouldEqual UnexpectedId(id = otherId, payloadId = s3Id)
       }
 
       "reject if it already exists" in {

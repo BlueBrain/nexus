@@ -1,21 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphErrorParser
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -118,34 +115,10 @@ object BlazegraphViewRejection {
       )
 
   /**
-    * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
-    *
-    * @param error
-    *   the decoder error
+    * Rejection returned when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
     */
-  final case class DecodingFailed(error: JsonLdDecoderError) extends BlazegraphViewRejection(error.getMessage)
-
-  /**
-    * Signals an error converting the source Json document to a JsonLD document.
-    */
-  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
-      extends BlazegraphViewRejection(
-        s"The provided Blazegraph view JSON document ${id.fold("")(id => s"with id '$id' ")}cannot be interpreted as a JSON-LD document."
-      )
-
-  /**
-    * Rejection returned when attempting to create an BlazegraphView where the passed id does not match the id on the
-    * source json document.
-    *
-    * @param id
-    *   the view identifier
-    * @param sourceId
-    *   the view identifier in the source json document
-    */
-  final case class UnexpectedBlazegraphViewId(id: Iri, sourceId: Iri)
-      extends BlazegraphViewRejection(
-        s"The provided Blazegraph view '$id' does not match the id '$sourceId' in the source document."
-      )
+  // TODO Remove when the rejection workflow gets refactored / when view endpoints get separated
+  final case class BlazegraphDecodingRejection(error: JsonLdRejection) extends BlazegraphViewRejection(error.reason)
 
   /**
     * Signals a rejection caused by an attempt to create or update a Blazegraph view with a permission that is not
@@ -196,12 +169,6 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a Blazegraph view while providing an id that is blank.
-    */
-  final case object BlankBlazegraphViewId
-      extends BlazegraphViewRejection(s"Blazegraph view identifier cannot be blank.")
-
-  /**
     * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id
@@ -226,28 +193,20 @@ object BlazegraphViewRejection {
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
 
-  implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] = {
-    case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case BlankId                                           => BlankBlazegraphViewId
-  }
-
   implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedBlazegraphClientError(rejection)             =>
+        case WrappedBlazegraphClientError(rejection) =>
           obj
             .add(keywords.tpe, "SparqlClientError".asJson)
             .add("details", BlazegraphErrorParser.details(rejection).asJson)
-        case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidViewReferences(views)                        => obj.add("views", views.asJson)
-        case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                         => obj.add("rdf", rdf.asJson)
-        case _: ViewNotFound                                     => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                   => obj
+        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidViewReferences(views)            => obj.add("views", views.asJson)
+        case BlazegraphDecodingRejection(error)      => error.asJsonObject
+        case _: ViewNotFound                         => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                       => obj
       }
     }
 
@@ -256,13 +215,14 @@ object BlazegraphViewRejection {
 
   implicit val blazegraphViewHttpResponseFields: HttpResponseFields[BlazegraphViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)      => StatusCodes.NotFound
-      case TagNotFound(_)              => StatusCodes.NotFound
-      case ViewNotFound(_, _)          => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _) => StatusCodes.Conflict
-      case ViewIsDefaultView           => StatusCodes.Forbidden
-      case IncorrectRev(_, _)          => StatusCodes.Conflict
-      case _: FetchByTagNotSupported   => StatusCodes.BadRequest
-      case _                           => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)             => StatusCodes.NotFound
+      case TagNotFound(_)                     => StatusCodes.NotFound
+      case ViewNotFound(_, _)                 => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
+      case ViewIsDefaultView                  => StatusCodes.Forbidden
+      case IncorrectRev(_, _)                 => StatusCodes.Conflict
+      case BlazegraphDecodingRejection(error) => error.status
+      case _: FetchByTagNotSupported          => StatusCodes.BadRequest
+      case _                                  => StatusCodes.BadRequest
     }
 }

@@ -31,7 +31,7 @@ final class SchemasImpl private (
     log: SchemasLog,
     fetchContext: FetchContext,
     schemaImports: SchemaImports,
-    sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
+    sourceParser: JsonLdSourceResolvingParser
 ) extends Schemas {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -185,7 +185,7 @@ object SchemasImpl {
       uuidF: UUIDF
   ): Schemas = {
     val parser =
-      new JsonLdSourceResolvingParser[SchemaRejection](
+      new JsonLdSourceResolvingParser(
         List(contexts.shacl, contexts.schemasMetadata),
         contextResolution,
         uuidF

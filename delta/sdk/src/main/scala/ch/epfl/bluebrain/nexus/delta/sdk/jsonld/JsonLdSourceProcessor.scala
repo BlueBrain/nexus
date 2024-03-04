@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -69,13 +68,11 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
-  final class JsonLdSourceParser[R <: Throwable](
+  final private class JsonLdSourceParser(
       contextIri: Seq[Iri],
       override val uuidF: UUIDF
-  )(implicit
-      api: JsonLdApi,
-      rejectionMapper: Mapper[InvalidJsonLdRejection, R]
-  ) extends JsonLdSourceProcessor {
+  )(implicit api: JsonLdApi)
+      extends JsonLdSourceProcessor {
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
@@ -101,7 +98,7 @@ object JsonLdSourceProcessor {
         expanded         = originalExpanded.replaceId(iri)
         assembly        <- JsonLdAssembly(iri, source, expanded, ctx, result.remoteContexts)
       } yield assembly
-    }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
+    }
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload if
@@ -120,7 +117,7 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit
         rcr: RemoteContextResolution
-    ): IO[JsonLdAssembly]                                        = {
+    ): IO[JsonLdAssembly] = {
       for {
         _               <- validateIdNotBlank(source)
         (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
@@ -128,21 +125,21 @@ object JsonLdSourceProcessor {
         expanded        <- checkAndSetSameId(iri, originalExpanded)
         assembly        <- JsonLdAssembly(iri, source, expanded, ctx, result.remoteContexts)
       } yield assembly
-    }.adaptError { case r: InvalidJsonLdRejection => rejectionMapper.to(r) }
+    }
 
   }
 
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static and resolver-based contexts
     */
-  final class JsonLdSourceResolvingParser[R <: Throwable](
+  final class JsonLdSourceResolvingParser(
       contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit api: JsonLdApi, rejectionMapper: Mapper[InvalidJsonLdRejection, R])
+  )(implicit api: JsonLdApi)
       extends JsonLdSourceProcessor {
 
-    private val underlying = new JsonLdSourceParser[R](contextIri, uuidF)
+    private val underlying = new JsonLdSourceParser(contextIri, uuidF)
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
@@ -215,19 +212,17 @@ object JsonLdSourceProcessor {
   }
 
   object JsonLdSourceResolvingParser {
-    def apply[R <: Throwable](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
-        api: JsonLdApi,
-        rejectionMapper: Mapper[InvalidJsonLdRejection, R]
-    ): JsonLdSourceResolvingParser[R] =
+    def apply(contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
+        api: JsonLdApi
+    ): JsonLdSourceResolvingParser =
       new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
   }
 
   /**
     * Allows to parse the given json source and decode it into an ''A'' using static contexts
     */
-  final class JsonLdSourceDecoder[R <: Throwable, A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)(implicit
-      api: JsonLdApi,
-      rejectionMapper: Mapper[JsonLdRejection, R]
+  final class JsonLdSourceDecoder[A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)(implicit
+      api: JsonLdApi
   ) extends JsonLdSourceProcessor {
 
     /**
@@ -250,7 +245,7 @@ object JsonLdSourceProcessor {
         iri          <- getOrGenerateId(expanded.rootId.asIri, context)
         decodedValue <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
       } yield (iri, decodedValue)
-    }.adaptError { case r: JsonLdRejection => rejectionMapper.to(r) }
+    }
 
     /**
       * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the payload
@@ -266,28 +261,27 @@ object JsonLdSourceProcessor {
       */
     def apply(context: ProjectContext, iri: Iri, source: Json)(implicit
         rcr: RemoteContextResolution
-    ): IO[A]                                                                                              = {
+    ): IO[A] = {
       for {
         (_, result)     <- expandSource(context, source.addContext(contextIri))
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
         decodedValue    <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
       } yield decodedValue
-    }.adaptError { case r: JsonLdRejection => rejectionMapper.to(r) }
-
+    }
   }
 
   /**
     * Allows to parse the given json source and decode it into an ''A'' using static and resolver-based contexts
     */
-  final class JsonLdSourceResolvingDecoder[R <: Throwable, A: JsonLdDecoder](
+  final class JsonLdSourceResolvingDecoder[A: JsonLdDecoder](
       contextIri: Iri,
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit api: JsonLdApi, rejectionMapper: Mapper[JsonLdRejection, R])
+  )(implicit api: JsonLdApi)
       extends JsonLdSourceProcessor {
 
-    private val underlying = new JsonLdSourceDecoder[R, A](contextIri, uuidF)
+    private val underlying = new JsonLdSourceDecoder[A](contextIri, uuidF)
 
     /**
       * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the
