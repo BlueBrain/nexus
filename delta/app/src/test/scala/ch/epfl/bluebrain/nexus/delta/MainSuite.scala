@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
-import cats.effect.{IO, Resource}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
+import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
@@ -13,8 +14,8 @@ import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}
 import izumi.distage.model.plan.Roots
 import izumi.distage.planning.solver.PlanVerifier
-import munit.{AnyFixture, CatsEffectSuite}
 import munit.catseffect.IOFixture
+import munit.{AnyFixture, CatsEffectSuite}
 
 import java.nio.file.{Files, Paths}
 
@@ -68,62 +69,44 @@ object MainSuite {
   trait Fixture { self: CatsEffectSuite =>
 
     // Overload config via system properties
-    private def acquire(postgres: PostgresContainer, elastic: ElasticSearchContainer): IO[Unit] = IO.delay {
-      val resourceTypesFile = Files.createTempFile("resource-types", ".json")
-      Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
-      val mappingFile       = Files.createTempFile("mapping", ".json")
-      Files.writeString(mappingFile, "{}")
-      val queryFile         = Files.createTempFile("query", ".json")
-      Files.writeString(
-        queryFile,
-        """CONSTRUCT { {resource_id} <http://schema.org/name> ?name } WHERE { {resource_id} <http://localhost/name> ?name }"""
-      )
-      System.setProperty("app.defaults.database.access.host", postgres.getHost)
-      System.setProperty("app.defaults.database.access.port", postgres.getMappedPort(5432).toString)
-      System.setProperty("app.database.tables-autocreate", "true")
-      System.setProperty("app.defaults.database.access.username", PostgresUser)
-      System.setProperty("app.default.database.access.password", PostgresPassword)
-      System.setProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout", "false")
-      System.setProperty("plugins.elasticsearch.base", s"http://${elastic.getHost}:${elastic.getMappedPort(9200)}")
-      System.setProperty("plugins.elasticsearch.credentials.username", "elastic")
-      System.setProperty("plugins.elasticsearch.credentials.password", "password")
-      //TODO Investigate how to remove this property from the config
-      System.setProperty("plugins.elasticsearch.disable-metrics-projection", "true")
+    private def initConfig(postgres: PostgresContainer, elastic: ElasticSearchContainer): IO[Map[String, String]] =
+      IO.blocking {
+        val resourceTypesFile = Files.createTempFile("resource-types", ".json")
+        Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
+        val mappingFile       = Files.createTempFile("mapping", ".json")
+        Files.writeString(mappingFile, "{}")
+        val queryFile         = Files.createTempFile("query", ".json")
+        Files.writeString(
+          queryFile,
+          """CONSTRUCT { {resource_id} <http://schema.org/name> ?name } WHERE { {resource_id} <http://localhost/name> ?name }"""
+        )
 
-      System.setProperty("plugins.graph-analytics.enabled", "true")
-      System.setProperty("plugins.search.enabled", "true")
-      System.setProperty("plugins.search.indexing.resource-types", resourceTypesFile.toString)
-      System.setProperty("plugins.search.indexing.mapping", mappingFile.toString)
-      System.setProperty("plugins.search.indexing.query", queryFile.toString)
-
-      ConfigImpl.reloadSystemPropertiesConfig()
-    }
-
-    // Resetting system properties
-    private def release = IO.delay {
-      System.clearProperty("app.defaults.database.access.host")
-      System.clearProperty("app.defaults.database.access.port")
-      System.clearProperty("app.defaults.database.access.username")
-      System.clearProperty("app.defaults.database.access.password")
-      System.clearProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout")
-      System.clearProperty("plugins.elasticsearch.credentials.username")
-      System.clearProperty("plugins.elasticsearch.credentials.password")
-
-      System.clearProperty("plugins.graph-analytics.enabled")
-      System.clearProperty("plugins.search.enabled")
-
-      System.clearProperty("plugins.search.indexing.mapping")
-      System.clearProperty("plugins.search.indexing.query")
-      System.clearProperty("plugins.search.indexing.resource-types")
-      ConfigImpl.reloadSystemPropertiesConfig()
-    }
+        Map(
+          "app.defaults.database.access.host"                  -> postgres.getHost,
+          "app.defaults.database.access.port"                  -> postgres.getMappedPort(5432).toString,
+          "app.database.tables-autocreate"                     -> "true",
+          "app.defaults.database.access.username"              -> PostgresUser,
+          "app.default.database.access.password"               -> PostgresPassword,
+          "akka.actor.testkit.typed.throw-on-shutdown-timeout" -> "false",
+          "plugins.elasticsearch.base"                         -> s"http://${elastic.getHost}:${elastic.getMappedPort(9200)}",
+          "plugins.elasticsearch.credentials.username"         -> "elastic",
+          "plugins.elasticsearch.credentials.password"         -> "password",
+          //TODO Investigate how to remove this property from the config
+          "plugins.elasticsearch.disable-metrics-projection"   -> "true",
+          "plugins.graph-analytics.enabled"                    -> "true",
+          "plugins.search.enabled"                             -> "true",
+          "plugins.search.indexing.resource-types"             -> resourceTypesFile.toString,
+          "plugins.search.indexing.mapping"                    -> mappingFile.toString,
+          "plugins.search.indexing.query"                      -> queryFile.toString
+        )
+      }
 
     // Start the necessary containers
     private def resource() =
       for {
         postgres <- PostgresContainer.resource(PostgresUser, PostgresPassword)
         elastic  <- ElasticSearchContainer.resource()
-        _        <- Resource.make(acquire(postgres, elastic))(_ => release)
+        _        <- SystemPropertyOverride(initConfig(postgres, elastic))
       } yield ()
 
     val main: IOFixture[Unit] = ResourceSuiteLocalFixture("main", resource())
