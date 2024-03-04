@@ -29,11 +29,11 @@ class S3StorageSpec extends StorageSpec {
 
   val s3Config: S3Config = storageConfig.s3
 
-  private val bucket  = "nexustest"
+  private val bucket  = genId()
   private val logoKey = "some/path/to/nexus-logo.png"
 
-  val s3Endpoint: String       = s"http://delta.bbp:9000"
-  val s3BucketEndpoint: String = s"http://$bucket.delta.bbp:9000"
+  val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566" // s"http://localhost:4566"
+  val s3BucketEndpoint: String = s"http://$bucket.s3.localhost.localstack.cloud:4566" //s"http://localhost:4566/$bucket"
 
   private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
     case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))
@@ -41,7 +41,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   private val s3Client = S3Client.builder
-    .endpointOverride(new URI(s"http://${sys.props.getOrElse("minio-url", "localhost:9000")}"))
+    .endpointOverride(new URI(s3Endpoint))//s"http://${sys.props.getOrElse("minio-url", "localhost:9000")}"))
     .credentialsProvider(credentialsProvider)
     .region(Region.US_EAST_1)
     .build
@@ -108,13 +108,21 @@ class S3StorageSpec extends StorageSpec {
         .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
 
     for {
+      _ <- log("Creating first storage")
       _ <- storagesDsl.createStorage(payload, projectRef)
+      _ <- log("Created storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
+      _ <- log("checked storage meta")
       _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
+      _ <- log("Added perms")
       _ <- storagesDsl.createStorage(payload2, projectRef)
+      _ <- log("Created second storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
+      _ <- log("Checked second storage meta")
     } yield succeed
   }
+
+  def log(msg: String): IO[Unit] = IO.println(msg)
 
   "creating a s3 storage" should {
     "fail creating an S3Storage with an invalid bucket" in {

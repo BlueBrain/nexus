@@ -833,6 +833,7 @@ lazy val tests = project
       akkaSlf4j       % Test,
       alpakkaSse      % Test
     ),
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wunused:imports")) },
     Test / parallelExecution           := false,
     Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     // Scalate gets errors with layering with this project so we disable it

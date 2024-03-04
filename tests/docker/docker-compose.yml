@@ -1,4 +1,10 @@
 version: "3.3"
+networks:
+  ls:
+    ipam:
+      config:
+        # Specify the subnet range for IP address allocation
+        - subnet: 10.0.2.0/24
 services:
   delta:
     depends_on:
@@ -12,7 +18,7 @@ services:
         condition: service_started
       storage-service:
         condition: service_started
-      minio:
+      localstack:
         condition: service_started
     environment:
       - DELTA_PLUGINS
@@ -30,6 +36,11 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
+    networks:
+      - ls
 
   delta2:
     depends_on:
@@ -88,6 +99,9 @@ services:
       - --hostname-strict-backchannel=true
     ports:
       - 9090:8080
+    networks:
+      - ls
+
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
@@ -109,6 +123,9 @@ services:
       resources:
         limits:
           memory: 4G
+    networks:
+      - ls
+
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
@@ -118,12 +135,16 @@ services:
       - 9999:9999
     volumes:
       - ./config:/config
+    networks:
+      - ls
 
   postgres:
     image: library/postgres:15.6
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
+    networks:
+      - ls
 
   storage-service:
     container_name: "nexus-storage-service"
@@ -138,28 +159,49 @@ services:
       - 8090:8090
     volumes:
       - ./config:/config
-
-  minio:
-    image: minio/minio:RELEASE.2021-07-30T00-02-00Z
-    command: server /data
-    environment:
-      MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
-      MINIO_SECRET_KEY: "CHUTCHUT"
-      MINIO_DOMAIN: "delta.bbp"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
     networks:
-      default:
-        # We add this alias due to the deprecation of path-styles on S3:
-        # https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
-        aliases:
-          - delta.bbp
-          - nexustest.delta.bbp
-          - foobar.delta.bbp
+      - ls
+
+#  minio:
+#    image: minio/minio:RELEASE.2021-07-30T00-02-00Z
+#    command: server /data
+#    environment:
+#      MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
+#      MINIO_SECRET_KEY: "CHUTCHUT"
+#      MINIO_DOMAIN: "delta.bbp"
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+#      interval: 30s
+#      timeout: 20s
+#      retries: 3
+#    networks:
+#      default:
+#        # We add this alias due to the deprecation of path-styles on S3:
+#        # https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
+#        aliases:
+#          - delta.bbp
+#          - nexustest.delta.bbp
+#          - foobar.delta.bbp
+#    ports:
+#      - 9000:9000
+#    volumes:
+#      - /tmp/minio:/data
+
+
+  localstack:
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
+    image: localstack/localstack
     ports:
-      - 9000:9000
+      # Now only required if you need to access LocalStack from the host
+      - "127.0.0.1:4566:4566"
+      # Now only required if you need to access LocalStack from the host
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=${DEBUG:-0}
     volumes:
-      - /tmp/minio:/data
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      ls:
+        # Set the container IP address in the 10.0.2.0/24 subnet
+        ipv4_address: 10.0.2.20
