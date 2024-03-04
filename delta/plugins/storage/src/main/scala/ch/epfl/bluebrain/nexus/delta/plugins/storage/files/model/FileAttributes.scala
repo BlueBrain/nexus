@@ -79,6 +79,14 @@ object FileAttributes {
     )
   }
 
+  /** Set the metadata of the provided [[FileAttributes]] to the metadata provided in [[FileCustomMetadata]] */
+  def setCustomMetadata(attr: FileAttributes, newCustomMetadata: FileCustomMetadata): FileAttributes =
+    attr.copy(
+      keywords = newCustomMetadata.keywords.getOrElse(Map.empty),
+      description = newCustomMetadata.description,
+      name = newCustomMetadata.name
+    )
+
   /**
     * Enumeration of all possible inputs that generated the file attributes
     */

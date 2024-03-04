@@ -99,6 +99,28 @@ object FileCommand {
   ) extends FileCommand
 
   /**
+    * Command to update the custom metadata of a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param metadata
+    *   the custom metadata to update
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
+    */
+  final case class UpdateFileCustomMetadata(
+      id: Iri,
+      project: ProjectRef,
+      metadata: FileCustomMetadata,
+      rev: Int,
+      subject: Subject
+  ) extends FileCommand
+
+  /**
     * Command to update an asynchronously computed file attributes. This command gets issued when linking a file using a
     * ''RemoteDiskStorage''. Since the attributes cannot be computed synchronously, ''NotComputedDigest'' and wrong size
     * are returned

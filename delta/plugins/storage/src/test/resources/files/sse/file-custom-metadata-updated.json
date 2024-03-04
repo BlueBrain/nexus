@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/files.json"
+  ],
+  "@type": "FileCustomMetadataUpdated",
+  "metadata": {
+    "name": "A name",
+    "description": "A description",
+    "keywords": {
+      "key": "value"
+    }
+  },
+  "_fileId": "https://bluebrain.github.io/nexus/vocabulary/file",
+  "_instant": "1970-01-01T00:00:00Z",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/file",
+  "_rev": 3,
+  "_subject": "http://localhost/v1/realms/myrealm/users/username"
+}

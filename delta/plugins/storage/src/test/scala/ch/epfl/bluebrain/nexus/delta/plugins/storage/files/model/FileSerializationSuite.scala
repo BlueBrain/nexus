@@ -55,6 +55,8 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
 
   private val attributesWithMetadata =
     attributes.copy(keywords = keywords, description = Some(description), name = Some(name))
+  private val customMetadata         =
+    FileCustomMetadata(Some(name), Some(description), Some(keywords))
 
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
@@ -63,6 +65,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val createdTaggedWithMetadata = createdWithMetadata.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
+  private val updatedMetadata = FileCustomMetadataUpdated(fileId, projectRef, storageRef, DiskStorageType, customMetadata, 3, instant, subject)
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
   private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, DiskStorageType, tag, 4, instant, subject)
   private val deprecated = FileDeprecated(fileId, projectRef, storageRef, DiskStorageType, 5, instant, subject)
@@ -132,6 +135,19 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
         Json.fromInt(12),
         Json.fromString("text/plain; charset=UTF-8"),
         Json.fromString("Storage")
+      )
+    ),
+    (
+      "FileCustomMetadataUpdated",
+      updatedMetadata,
+      loadEvents("files", "file-custom-metadata-updated.json"),
+      Updated,
+      expected(
+        updatedMetadata,
+        Json.Null,
+        Json.Null,
+        Json.Null,
+        Json.Null
       )
     ),
     (
