@@ -385,7 +385,7 @@ class FilesRoutesSpec
       }
     }
 
-    "fail to update a file with invalid metadata" in {
+    "fail to update a file with invalid custom metadata" in {
       givenAFile { id =>
         val invalidKey      = Label.unsafe("!@#$%^&")
         val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
@@ -405,6 +405,68 @@ class FilesRoutesSpec
                 "details" : "DecodingFailure at .keywords.$invalidKey: Couldn't decode key."
               }
                 """
+        }
+      }
+    }
+
+    "fail to update custom metadata without permission" in {
+      givenAFile { id =>
+        val metadata = genCustomMetadata()
+        val headers  = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "update only custom metadata with no entity provided" in {
+      givenAFile { id =>
+        val metadata = genCustomMetadata()
+        val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
+
+        val headers = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson should have(description(metadata.description.get))
+          response.asJson should have(name(metadata.name.get))
+          response.asJson should have(keywords(kw))
+        }
+      }
+    }
+
+    "return an error when attempting to update custom metadata without providing it" in {
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual
+            json"""
+                {
+                  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+                  "@type" : "EmptyCustomMetadata",
+                  "reason" : "No metadata was provided"
+                }
+                  """
+        }
+      }
+    }
+
+    "return an error when attempting to update with invalid custom metadata" in {
+      givenAFile { id =>
+        val invalidKey      = Label.unsafe("!@#$%^&")
+        val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
+
+        val headers = RawHeader("x-nxs-file-metadata", invalidMetadata.asJson.noSpaces)
+        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual
+            json"""
+                  {
+                    "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+                    "@type" : "MalformedHeaderRejection",
+                    "reason" : "The value of HTTP header 'x-nxs-file-metadata' was malformed.",
+                    "details" : "DecodingFailure at .keywords.$invalidKey: Couldn't decode key."
+                  }
+                    """
         }
       }
     }

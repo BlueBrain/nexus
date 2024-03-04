@@ -138,13 +138,29 @@ final class FilesRoutes(
                                     )
                                   },
                                   // Update a file
-                                  (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
-                                    emit(
-                                      files
-                                        .update(fileId, storage, rev, entity, tag, metadata)
-                                        .index(mode)
-                                        .attemptNarrow[FileRejection]
-                                    )
+                                  (requestEntityPresent & extractRequestEntity & extractFileMetadata) {
+                                    (entity, metadata) =>
+                                      emit(
+                                        files
+                                          .update(fileId, storage, rev, entity, tag, metadata)
+                                          .index(mode)
+                                          .attemptNarrow[FileRejection]
+                                      )
+                                  },
+                                  // Update custom metadata
+                                  (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
+                                    case Some(FileCustomMetadata.empty) =>
+                                      emit(
+                                        IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
+                                      )
+                                    case Some(metadata)                 =>
+                                      emit(
+                                        files
+                                          .updateMetadata(fileId, rev, metadata)
+                                          .index(mode)
+                                          .attemptNarrow[FileRejection]
+                                      )
+                                    case None                           => reject
                                   }
                                 )
                             },
