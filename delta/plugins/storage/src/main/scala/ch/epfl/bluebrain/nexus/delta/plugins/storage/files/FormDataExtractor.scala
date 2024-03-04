@@ -145,20 +145,6 @@ object FormDataExtractor {
           part.entity.discardBytes().future.as(None)
       }
 
-//      private def extractMetadata(
-//          part: Multipart.FormData.BodyPart
-//      ): Either[FileRejection, FileCustomMetadata] = {
-//        val metadata = part.dispositionParams.get("metadata").filter(_.nonEmpty)
-//        metadata match {
-//          case Some(value) =>
-//            parser
-//              .parse(value)
-//              .flatMap(_.as[FileCustomMetadata])
-//              .leftMap(err => InvalidCustomMetadata(err.getMessage))
-//          case None        => Right(FileCustomMetadata(None, None, None))
-//        }
-//      }
-
       private def detectContentType(filename: String, contentTypeFromRequest: ContentType) = {
         val bodyDefinedContentType = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
 
