@@ -225,11 +225,12 @@ final class Files(
   def updateMetadata(
       id: FileId,
       rev: Int,
-      metadata: FileCustomMetadata
+      metadata: FileCustomMetadata,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, _) <- id.expandIri(fetchContext.onModify)
-      res      <- eval(UpdateFileCustomMetadata(iri, id.project, metadata, rev, caller.subject))
+      res      <- eval(UpdateFileCustomMetadata(iri, id.project, metadata, rev, caller.subject, tag))
     } yield res
   }.span("updateFileMetadata")
 
@@ -584,7 +585,7 @@ object Files {
     
     def updatedCustomMetadata(e: FileCustomMetadataUpdated): Option[FileState] = state.map { s =>
       val newAttributes = FileAttributes.setCustomMetadata(s.attributes, e.metadata)
-      s.copy(rev = e.rev, attributes = newAttributes, updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, attributes = newAttributes,tags = s.tags ++ Tags(e.tag, e.rev), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: FileTagAdded): Option[FileState] = state.map { s =>
@@ -656,7 +657,17 @@ object Files {
       case Some(s)                   =>
         clock.realTimeInstant
           .map(
-            FileCustomMetadataUpdated(c.id, c.project, s.storage, s.storageType, c.metadata, s.rev + 1, _, c.subject)
+            FileCustomMetadataUpdated(
+              c.id,
+              c.project,
+              s.storage,
+              s.storageType,
+              c.metadata,
+              s.rev + 1,
+              _,
+              c.subject,
+              c.tag
+            )
           )
     }
 

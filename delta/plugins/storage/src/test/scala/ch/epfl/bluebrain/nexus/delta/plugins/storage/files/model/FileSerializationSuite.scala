@@ -65,7 +65,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val createdTaggedWithMetadata = createdWithMetadata.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
-  private val updatedMetadata = FileCustomMetadataUpdated(fileId, projectRef, storageRef, DiskStorageType, customMetadata, 3, instant, subject)
+  private val updatedMetadata = FileCustomMetadataUpdated(fileId, projectRef, storageRef, DiskStorageType, customMetadata, 3, instant, subject, Some(tag))
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
   private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, DiskStorageType, tag, 4, instant, subject)
   private val deprecated = FileDeprecated(fileId, projectRef, storageRef, DiskStorageType, 5, instant, subject)

@@ -407,10 +407,24 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val file     = entity(genString())
 
         files.create(id, Some(diskId), file, None, None).accepted
-        files.updateMetadata(id, 1, metadata).accepted
+        files.updateMetadata(id, 1, metadata, None).accepted
 
         files.fetch(id).accepted.rev shouldEqual 2
         assertCorrectCustomMetadata(id, metadata)
+      }
+
+      "succeed with tag" in {
+        val id       = fileId(genString())
+        val metadata = genCustomMetadata()
+        val file     = entity(genString())
+
+        files.create(id, Some(diskId), file, None, None).accepted
+        files.updateMetadata(id, 1, metadata, Some(tag)).accepted
+        val updatedFile = files.fetch(id).accepted
+
+        updatedFile.rev shouldEqual 2
+        assertCorrectCustomMetadata(id, metadata)
+        updatedFile.value.tags.tags should contain(tag)
       }
 
       "reject if the wrong revision is specified" in {
@@ -420,7 +434,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
         files.create(id, Some(diskId), file, None, None).accepted
         files
-          .updateMetadata(id, 2, metadata)
+          .updateMetadata(id, 2, metadata, None)
           .rejected shouldEqual IncorrectRev(expected = 1, provided = 2)
       }
 
@@ -428,7 +442,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val nonExistentFile = fileIdIri(nxv + genString())
 
         files
-          .updateMetadata(nonExistentFile, 1, genCustomMetadata())
+          .updateMetadata(nonExistentFile, 1, genCustomMetadata(), None)
           .rejectedWith[FileNotFound]
       }
 
@@ -437,7 +451,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val fileInNonexistentProject = FileId(genString(), nonexistentProject)
 
         files
-          .updateMetadata(fileInNonexistentProject, 1, genCustomMetadata())
+          .updateMetadata(fileInNonexistentProject, 1, genCustomMetadata(), None)
           .rejectedWith[ProjectNotFound]
       }
 
@@ -445,7 +459,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val fileInDeprecatedProject = FileId(genString(), deprecatedProject.ref)
 
         files
-          .updateMetadata(fileInDeprecatedProject, 1, genCustomMetadata())
+          .updateMetadata(fileInDeprecatedProject, 1, genCustomMetadata(), None)
           .rejectedWith[ProjectIsDeprecated]
       }
 
