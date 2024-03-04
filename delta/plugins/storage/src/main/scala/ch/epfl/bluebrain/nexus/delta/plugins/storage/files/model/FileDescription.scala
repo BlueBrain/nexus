@@ -26,15 +26,17 @@ object FileDescription {
       ).some
     )
 
-  def from(info: UploadedFileInformation): FileDescription =
+  def from(info: UploadedFileInformation, metadata: Option[FileCustomMetadata]): FileDescription = {
+    val md = metadata.getOrElse(FileCustomMetadata.empty)
     FileDescription(
       info.filename,
       Some(info.suppliedContentType),
       FileCustomMetadata(
-        info.name,
-        info.description,
-        Some(info.keywords)
+        md.name,
+        md.description,
+        md.keywords
       ).some
     )
+  }
 
 }

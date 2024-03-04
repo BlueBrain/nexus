@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
+import akka.http.scaladsl.server.Directives.{optionalHeaderValueByName, provide, reject}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
@@ -29,9 +30,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import io.circe.{parser, Decoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 import scala.annotation.nowarn
@@ -97,10 +98,10 @@ final class FilesRoutes(
                       )
                     },
                     // Create a file without id segment
-                    extractRequestEntity { entity =>
+                    (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                       emit(
                         Created,
-                        files.create(storage, project, entity, tag).index(mode).attemptNarrow[FileRejection]
+                        files.create(storage, project, entity, tag, metadata).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
@@ -137,10 +138,10 @@ final class FilesRoutes(
                                     )
                                   },
                                   // Update a file
-                                  extractRequestEntity { entity =>
+                                  (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                                     emit(
                                       files
-                                        .update(fileId, storage, rev, entity, tag)
+                                        .update(fileId, storage, rev, entity, tag, metadata)
                                         .index(mode)
                                         .attemptNarrow[FileRejection]
                                     )
@@ -163,11 +164,11 @@ final class FilesRoutes(
                                   )
                                 },
                                 // Create a file with id segment
-                                extractRequestEntity { entity =>
+                                (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
                                   emit(
                                     Created,
                                     files
-                                      .create(fileId, storage, entity, tag)
+                                      .create(fileId, storage, entity, tag, metadata)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
@@ -289,6 +290,21 @@ object FilesRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route = new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
+
+  /**
+    * An akka directive to extract the optional [[FileCustomMetadata]] from a request. This metadata is extracted from
+    * the `x-nxs-file-metadata` header. In case the decoding fails, a [[MalformedHeaderRejection]] is returned.
+    */
+  def extractFileMetadata: Directive1[Option[FileCustomMetadata]] =
+    optionalHeaderValueByName("x-nxs-file-metadata").flatMap {
+      case Some(metadata) =>
+        val md = parser.parse(metadata).flatMap(_.as[FileCustomMetadata])
+        md match {
+          case Right(value) => provide(Some(value))
+          case Left(err)    => reject(MalformedHeaderRejection("x-nxs-file-metadata", err.getMessage))
+        }
+      case None           => provide(Some(FileCustomMetadata.empty))
+    }
 
   final case class LinkFileRequest(
       path: Path,
