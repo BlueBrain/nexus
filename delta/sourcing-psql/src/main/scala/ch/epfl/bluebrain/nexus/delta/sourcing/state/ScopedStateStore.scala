@@ -61,6 +61,12 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit]
 
   /**
+    * Returns the latest state from the write nodes to get a stronger consistency when the Postgres works in a
+    * replicated fashion
+    */
+  def getWrite(ref: ProjectRef, id: Id): IO[S]
+
+  /**
     * Returns the latest state
     */
   def get(ref: ProjectRef, id: Id): IO[S]
@@ -208,8 +214,12 @@ object ScopedStateStore {
         .option
         .map(_.isDefined)
 
-    override def get(ref: ProjectRef, id: Id): IO[S] =
-      ScopedStateGet.latest[Id, S](tpe, ref, id).transact(xas.read).flatMap { s =>
+    override def getWrite(ref: ProjectRef, id: Id): IO[S] = get(ref, id, xas.write)
+
+    override def get(ref: ProjectRef, id: Id): IO[S] = get(ref, id, xas.read)
+
+    private def get(ref: ProjectRef, id: Id, xa: Transactor[IO]) =
+      ScopedStateGet.latest[Id, S](tpe, ref, id).transact(xa).flatMap { s =>
         IO.fromOption(s)(UnknownState)
       }
 
