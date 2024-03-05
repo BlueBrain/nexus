@@ -140,7 +140,26 @@ class FilesSpec extends BaseIntegrationSpec {
 
         (updateCustomMetadata >> assertMetadataUpdated).accepted
       }
+    }
 
+    "update the custom metadata and tag at the same time" in {
+      givenAFile { id =>
+        val updatedName = "new name"
+        val md          = Json.obj("name" := updatedName)
+        val header      = RawHeader("x-nxs-file-metadata", md.noSpaces) :: Nil
+
+        val updateCustomMetadata = deltaClient
+          .putEmptyBody[Json](s"/files/$projectRef/$id?rev=1&tag=tag1", Writer, header) { expectOk }
+
+        val assertMetadataUpdated = deltaClient.get[Json](s"/files/$projectRef/$id?tag=tag1", Writer) {
+          (json, response) =>
+            response.status shouldEqual StatusCodes.OK
+            json.hcursor.get[Int]("_rev").rightValue shouldEqual 2
+            json should have(nameField(updatedName))
+        }
+
+        (updateCustomMetadata >> assertMetadataUpdated).accepted
+      }
     }
   }
 

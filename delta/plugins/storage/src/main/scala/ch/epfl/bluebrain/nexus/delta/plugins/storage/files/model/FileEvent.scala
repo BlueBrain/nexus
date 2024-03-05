@@ -158,7 +158,8 @@ object FileEvent {
       metadata: FileCustomMetadata,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileEvent
 
   /**

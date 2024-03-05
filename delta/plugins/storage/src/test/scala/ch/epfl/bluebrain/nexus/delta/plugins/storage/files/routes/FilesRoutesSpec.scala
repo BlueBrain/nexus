@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UT
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{HttpRequest, RequestEntity, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpRequest, MediaTypes, RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
@@ -430,6 +430,23 @@ class FilesRoutesSpec
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
           response.asJson should have(keywords(kw))
+        }
+      }
+    }
+
+    "allow tagging when updating custom metadata" in {
+      givenAFile { id =>
+        val metadata = genCustomMetadata()
+        val userTag  = UserTag.unsafe("mytag")
+
+        val headers = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        Put(s"/v1/files/org/proj/$id?rev=1&tag=${userTag.value}").withHeaders(headers) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          Get(s"/v1/files/org/proj/$id?tag=${userTag.value}") ~> Accept(
+            MediaTypes.`application/json`
+          ) ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+          }
         }
       }
     }
