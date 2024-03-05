@@ -585,7 +585,8 @@ object Files {
     
     def updatedCustomMetadata(e: FileCustomMetadataUpdated): Option[FileState] = state.map { s =>
       val newAttributes = FileAttributes.setCustomMetadata(s.attributes, e.metadata)
-      s.copy(rev = e.rev, attributes = newAttributes,tags = s.tags ++ Tags(e.tag, e.rev), updatedAt = e.instant, updatedBy = e.subject)
+      val newTags = s.tags ++ Tags(e.tag, e.rev)
+      s.copy(rev = e.rev, attributes = newAttributes, tags = newTags, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: FileTagAdded): Option[FileState] = state.map { s =>
@@ -733,10 +734,11 @@ object Files {
       FileState.serializer,
       Tagger[FileEvent](
         {
-          case f: FileCreated  => f.tag.map(t => t -> f.rev)
-          case f: FileUpdated  => f.tag.map(t => t -> f.rev)
-          case f: FileTagAdded => Some(f.tag -> f.targetRev)
-          case _               => None
+          case f: FileCreated               => f.tag.map(t => t -> f.rev)
+          case f: FileUpdated               => f.tag.map(t => t -> f.rev)
+          case f: FileTagAdded              => Some(f.tag -> f.targetRev)
+          case f: FileCustomMetadataUpdated => f.tag.map(t => t -> f.rev)
+          case _                            => None
         },
         {
           case f: FileTagDeleted => Some(f.tag)
