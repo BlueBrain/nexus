@@ -111,13 +111,16 @@ object FileCommand {
     *   the last known revision of the file
     * @param subject
     *   the identity associated to this command
+    * @param tag
+    *   an optional user-specified tag attached to the latest revision
     */
   final case class UpdateFileCustomMetadata(
       id: Iri,
       project: ProjectRef,
       metadata: FileCustomMetadata,
       rev: Int,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileCommand
 
   /**

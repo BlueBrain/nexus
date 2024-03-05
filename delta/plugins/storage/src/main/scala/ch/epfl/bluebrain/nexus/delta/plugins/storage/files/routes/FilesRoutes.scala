@@ -156,7 +156,7 @@ final class FilesRoutes(
                                     case Some(metadata)                 =>
                                       emit(
                                         files
-                                          .updateMetadata(fileId, rev, metadata)
+                                          .updateMetadata(fileId, rev, metadata, tag)
                                           .index(mode)
                                           .attemptNarrow[FileRejection]
                                       )

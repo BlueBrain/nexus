@@ -48,6 +48,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 ```
 
 ... where 
+
 - `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional.
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
@@ -84,6 +85,7 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tag
 ```
 
 ... where 
+
 - `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional. 
 When not specified, the default storage of the project is used.
 - `{tagName}` an optional label given to the file on its first revision.
