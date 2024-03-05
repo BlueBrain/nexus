@@ -8,12 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
@@ -68,13 +69,13 @@ class ResourcesImplSpec
   private val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
   private val schema3      = SchemaGen.schema(nxv + "myschema3", project.ref, schemaSource.removeKeys(keywords.id))
 
-  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchF[Schema] = {
     case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
     case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
     case _                                 => IO.none
   }
-  private val resourceResolution: ResourceResolution[Schema]                  =
+  private val resourceResolution: ResourceResolution[Schema]           =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
   private val fetchContext  = FetchContextDummy(

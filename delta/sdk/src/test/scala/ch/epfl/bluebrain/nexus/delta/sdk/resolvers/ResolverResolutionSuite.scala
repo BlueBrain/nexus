@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolutionSuite.ResourceExample
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.CrossProjectResolver
@@ -95,7 +95,7 @@ class ResolverResolutionSuite extends NexusSuite {
 
   def fetchResource(
       projectRef: ProjectRef
-  ): (ResourceRef, ProjectRef) => FetchResource[ResourceExample] =
+  ): (ResourceRef, ProjectRef) => FetchF[ResourceExample] =
     (_: ResourceRef, p: ProjectRef) =>
       p match {
         case `projectRef` => IO.pure(Some(resource))
