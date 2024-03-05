@@ -42,22 +42,22 @@ val handleBarsVersion       = "4.3.1"
 val hikariVersion           = "5.1.0"
 val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.6"
-val kamonVersion            = "2.7.0"
+val kamonVersion            = "2.7.1"
 val kanelaAgentVersion      = "1.0.18"
 val kindProjectorVersion    = "0.13.3"
 val log4catsVersion         = "2.6.0"
-val logbackVersion          = "1.5.0"
+val logbackVersion          = "1.5.3"
 val magnoliaVersion         = "1.1.8"
 val mockitoVersion          = "1.17.30"
 val munitVersion            = "1.0.0-M11"
 val munitCatsEffectVersion  = "2.0.0-M4"
 val nimbusJoseJwtVersion    = "9.37.3"
 val postgresJdbcVersion     = "42.7.2"
-val pureconfigVersion       = "0.17.5"
+val pureconfigVersion       = "0.17.6"
 val scalaTestVersion        = "3.2.18"
 val scalaXmlVersion         = "2.2.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
-val testContainersVersion   = "1.19.5"
+val testContainersVersion   = "1.19.6"
 
 lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 
@@ -884,9 +884,7 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,
-    //TODO: remove when there is a release of Kamon supporting PostgreSQL 42.7.2
-    // https: //github.com/kamon-io/Kamon/issues/1321
-    //"io.kamon" %% "kamon-jdbc"           % kamonVersion,
+    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
     "io.kamon" %% "kamon-logback"        % kamonVersion,
     "io.kamon" %% "kamon-prometheus"     % kamonVersion,
     "io.kamon" %% "kamon-scala-future"   % kamonVersion,
@@ -905,6 +903,7 @@ lazy val storageAssemblySettings = Seq(
     case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
     case PathList("javax", "annotation", xs @ _*)                        => MergeStrategy.first
+    case PathList("META-INF", "okio.kotlin_module")                      => MergeStrategy.first
     case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
     case x                                                               =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
