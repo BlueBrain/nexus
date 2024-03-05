@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -67,10 +66,10 @@ object SchemasModule extends ModuleDef {
     (
         aclCheck: AclCheck,
         resolvers: Resolvers,
-        resources: Resources,
-        schemas: Schemas
+        schemas: Schemas,
+        xas: Transactors
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)
+      SchemaImports(aclCheck, resolvers, schemas, xas)
   }
 
   make[SchemasRoutes].from {

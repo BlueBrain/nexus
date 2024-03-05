@@ -3,15 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 
 object ResourceResolution {
@@ -31,7 +33,7 @@ object ResourceResolution {
       checkAcls: (ProjectRef, Set[Identity]) => IO[Boolean],
       listResolvers: ProjectRef => IO[List[Resolver]],
       fetchResolver: (Iri, ProjectRef) => IO[Resolver],
-      fetch: (ResourceRef, ProjectRef) => FetchResource[R],
+      fetch: (ResourceRef, ProjectRef) => FetchF[R],
       excludeDeprecated: Boolean
   ): ResourceResolution[R] =
     new ResolverResolution(
@@ -60,7 +62,7 @@ object ResourceResolution {
   def apply[R](
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
+      fetchResource: (ResourceRef, ProjectRef) => FetchF[R],
       readPermission: Permission,
       excludeDeprecated: Boolean
   ): ResourceResolution[R] =
@@ -73,21 +75,21 @@ object ResourceResolution {
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
-    * @param resources
-    *   a resources instance
+    * @param xas
+    *   the transactors
     * @param excludeDeprecated
     *   to exclude deprecated resources from the resolution
     */
   def dataResource(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      resources: Resources,
+      xas: Transactors,
       excludeDeprecated: Boolean
   ): ResourceResolution[Resource] =
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) => resources.fetch(ref, project).redeem(_ => None, Some(_)),
+      FetchResource(xas).latest(_, _),
       Permissions.resources.read,
       excludeDeprecated
     )

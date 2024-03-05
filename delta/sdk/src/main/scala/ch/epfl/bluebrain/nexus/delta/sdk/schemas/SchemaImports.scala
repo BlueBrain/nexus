@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -12,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{Resolvers, ResourceResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.InvalidSchemaResolution
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 /**
@@ -99,18 +98,20 @@ object SchemaImports {
       aclCheck: AclCheck,
       resolvers: Resolvers,
       schemas: Schemas,
-      resources: Resources
+      xas: Transactors
   ): SchemaImports = {
-    def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
+    def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
       ResourceResolution
         .schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = true)
         .resolve(ref, projectRef)(caller)
         .map(_.map(_.value))
+
     def resolveResource(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
       ResourceResolution
-        .dataResource(aclCheck, resolvers, resources, excludeDeprecated = true)
+        .dataResource(aclCheck, resolvers, xas, excludeDeprecated = true)
         .resolve(ref, projectRef)(caller)
         .map(_.map(_.value))
+
     new SchemaImports(resolveSchema, resolveResource)
   }
 

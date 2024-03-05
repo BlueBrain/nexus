@@ -67,8 +67,8 @@ object ResourcesModule extends ModuleDef {
   }
 
   make[ResolverContextResolution].from {
-    (aclCheck: AclCheck, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
-      ResolverContextResolution(aclCheck, resolvers, resources, rcr)
+    (aclCheck: AclCheck, resolvers: Resolvers, rcr: RemoteContextResolution @Id("aggregate"), xas: Transactors) =>
+      ResolverContextResolution(aclCheck, resolvers, rcr, xas)
   }
 
   make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
