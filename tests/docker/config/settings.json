@@ -1,35 +1,46 @@
 {
   "analysis": {
     "analyzer": {
-      "search_nexus": {
+      "nexus": {
         "type": "custom",
         "tokenizer": "classic",
         "filter": [
           "trim",
+          "word_delimiter_nexus",
+          "lowercase"
+        ]
+      },
+      "path_hierarchy": {
+        "filter": [
+          "lowercase"
+        ],
+        "tokenizer": "path_hierarchy",
+        "type": "custom"
+      },
+      "autocomplete": {
+        "type": "custom",
+        "tokenizer": "autocomplete",
+        "filter": [
           "lowercase",
           "word_delimiter_nexus"
         ]
       },
-      "nexus": {
-        "type": "custom",
-        "tokenizer": "edge_ngram_nexus",
-        "filter": [
-          "lowercase",
-          "trim"
-        ]
+      "autocomplete_search": {
+        "tokenizer": "lowercase"
       }
     },
     "tokenizer": {
-      "edge_ngram_nexus": {
+      "autocomplete": {
         "type": "edge_ngram",
         "min_gram": 2,
-        "max_gram": 36,
+        "max_gram": 20,
         "token_chars": [
-          "letter",
-          "digit",
-          "custom"
-        ],
-        "custom_token_chars": "-"
+          "letter"
+        ]
+      },
+      "path_hierarchy": {
+        "reverse": true,
+        "type": "path_hierarchy"
       }
     },
     "filter": {
