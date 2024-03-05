@@ -1,18 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -75,17 +70,6 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver '$id' not found in project '$project'.")
 
   /**
-    * Rejection returned when attempting to create a resolver where the passed id does not match the id on the payload.
-    *
-    * @param id
-    *   the resolver identifier
-    * @param payloadId
-    *   the resolver identifier on the payload
-    */
-  final case class UnexpectedResolverId(id: Iri, payloadId: Iri)
-      extends ResolverRejection(s"Resolver '$id' does not match resolver id on payload '$payloadId'.")
-
-  /**
     * Rejection returned when attempting to interact with a resolver providing an id that cannot be resolved to an Iri.
     *
     * @param id
@@ -95,11 +79,6 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a resolver while providing an id that is blank.
-    */
-  final case object BlankResolverId extends ResolverRejection(s"Resolver identifier cannot be blank.")
-
-  /**
     * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
     *
     * @param id
@@ -107,19 +86,6 @@ object ResolverRejection {
     */
   final case class InvalidResolvedResourceId(id: String)
       extends ResolverRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
-
-  /**
-    * Rejection when attempting to decode an expanded JsonLD as a case class
-    * @param error
-    *   the decoder error
-    */
-  final case class DecodingFailed(error: JsonLdDecoderError) extends ResolverRejection(error.getMessage)
-
-  /**
-    * Signals an error converting the source Json to JsonLD
-    */
-  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
-      extends ResolverRejection(s"Resolver${id.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
 
   /**
     * Signals an error when there is another resolver with the provided priority already existing
@@ -217,19 +183,11 @@ object ResolverRejection {
     */
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
-  implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResolverRejection] = {
-    case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case BlankId                                           => BlankResolverId
-  }
-
   implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case InvalidJsonLdFormat(_, rdf)                => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidResolution(_, _, report)            => obj.addContext(contexts.resolvers).add("report", report.asJson)
         case InvalidResolverResolution(_, _, _, report) =>

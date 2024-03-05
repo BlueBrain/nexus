@@ -245,9 +245,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "fail if the id is blank" in {
       Post("/v1/resources/myorg/myproject/_/", payloadWithBlankId.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf(
-          "resources/errors/blank-id.json"
-        )
+        response.asJson.hcursor.get[String]("@type").toOption should contain("BlankId")
       }
     }
 

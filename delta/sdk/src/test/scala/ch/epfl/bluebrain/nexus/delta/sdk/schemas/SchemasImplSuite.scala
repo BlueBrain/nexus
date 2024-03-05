@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -113,7 +114,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Creating a schema fails with different ids on the payload and passed") {
     val otherId = nxv + "other"
-    schemas.create(otherId, projectRef, source).interceptEquals(UnexpectedSchemaId(id = otherId, payloadId = mySchema))
+    schemas.create(otherId, projectRef, source).interceptEquals(UnexpectedId(id = otherId, payloadId = mySchema))
   }
 
   test("Creating a schema fails if it already exists") {

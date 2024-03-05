@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.WrappedStorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -20,9 +20,9 @@ trait FetchStorage {
   final def fetch[R <: Throwable](
       resourceRef: ResourceRef,
       project: ProjectRef
-  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[StorageResource] =
+  ): IO[StorageResource] =
     fetch(IdSegmentRef(resourceRef), project).adaptError { case err: StorageFetchRejection =>
-      rejectionMapper.to(err)
+      WrappedStorageRejection(err)
     }
 
   /**

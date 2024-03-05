@@ -29,7 +29,7 @@ import io.circe.Json
 final class ResourcesImpl private (
     log: ResourcesLog,
     fetchContext: FetchContext,
-    sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
+    sourceParser: JsonLdSourceResolvingParser
 ) extends Resources {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -236,7 +236,7 @@ object ResourcesImpl {
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validateResource, detectChange, clock), config.eventLog, xas),
       fetchContext,
-      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+      JsonLdSourceResolvingParser(contextResolution, uuidF)
     )
 
 }

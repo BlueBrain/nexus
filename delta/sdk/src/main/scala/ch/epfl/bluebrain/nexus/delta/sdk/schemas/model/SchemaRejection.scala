@@ -1,18 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -78,11 +74,6 @@ object SchemaRejection {
       extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a schema while providing an id that is blank.
-    */
-  final case object BlankSchemaId extends SchemaRejection(s"Schema identifier cannot be blank.")
-
-  /**
     * Rejection returned when attempting to create a schema but the id already exists.
     *
     * @param id
@@ -92,17 +83,6 @@ object SchemaRejection {
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends SchemaRejection(s"Resource '$id' already exists in project '$project'.")
-
-  /**
-    * Rejection returned when attempting to create a schema where the passed id does not match the id on the payload.
-    *
-    * @param id
-    *   the schema identifier
-    * @param payloadId
-    *   the schema identifier on the payload
-    */
-  final case class UnexpectedSchemaId(id: Iri, payloadId: Iri)
-      extends SchemaRejection(s"Schema '$id' does not match schema id on payload '$payloadId'.")
 
   /**
     * Rejection returned when attempting to create/update a schema with a reserved id.
@@ -185,12 +165,6 @@ object SchemaRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the schema may have been updated since last seen."
       )
 
-  /**
-    * Signals an error converting the source Json to JsonLD
-    */
-  final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
-      extends SchemaRejection(s"Schema${idOpt.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
-
   implicit val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
     def importsAsJson(imports: Map[ResourceRef, ResourceResolutionReport]) =
       Json.fromValues(
@@ -204,7 +178,6 @@ object SchemaRejection {
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                                                      => obj.add("rdf", rdf.asJson)
         case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
         case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
           obj
@@ -220,12 +193,6 @@ object SchemaRejection {
 
   implicit final val schemasRejectionJsonLdEncoder: JsonLdEncoder[SchemaRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-
-  implicit val schemaJsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, SchemaRejection] = {
-    case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case BlankId                                           => BlankSchemaId
-  }
 
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
     HttpResponseFields {

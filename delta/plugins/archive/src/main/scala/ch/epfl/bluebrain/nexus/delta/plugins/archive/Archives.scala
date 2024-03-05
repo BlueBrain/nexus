@@ -43,7 +43,7 @@ class Archives(
     log: ArchiveLog,
     fetchContext: FetchContext,
     archiveDownload: ArchiveDownload,
-    sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
+    sourceDecoder: JsonLdSourceDecoder[ArchiveValue],
     config: EphemeralLogConfig
 )(implicit rcr: RemoteContextResolution) {
 
@@ -204,11 +204,8 @@ object Archives {
       onUniqueViolation = (id: Iri, c: CreateArchive) => ResourceAlreadyExists(id, c.project)
     )
 
-  private[archive] def sourceDecoder(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): JsonLdSourceDecoder[ArchiveRejection, ArchiveValue] =
-    new JsonLdSourceDecoder[ArchiveRejection, ArchiveValue](contexts.archives, uuidF)
+  private[archive] def sourceDecoder(implicit api: JsonLdApi, uuidF: UUIDF): JsonLdSourceDecoder[ArchiveValue] =
+    new JsonLdSourceDecoder[ArchiveValue](contexts.archives, uuidF)
 
   private[archive] def evaluate(clock: Clock[IO])(
       command: CreateArchive
