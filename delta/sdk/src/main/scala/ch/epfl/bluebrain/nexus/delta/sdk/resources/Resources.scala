@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -14,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, NoChangeDetected, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -255,13 +254,11 @@ trait Resources {
     * @param projectRef
     *   the project reference where the schema belongs
     */
-  def fetch[R <: Throwable](
+  def fetch(
       resourceRef: ResourceRef,
       projectRef: ProjectRef
-  )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[DataResource] =
-    fetch(IdSegmentRef(resourceRef), projectRef, None).adaptError { case e: ResourceFetchRejection =>
-      rejectionMapper.to(e)
-    }
+  ): IO[DataResource] =
+    fetch(IdSegmentRef(resourceRef), projectRef, None)
 }
 
 object Resources {

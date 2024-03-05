@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -19,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -47,15 +43,6 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(
         s"Revision requested '$provided' not found, last known revision is '$current'."
       )
-
-  /**
-    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
-    * exist.
-    *
-    * @param tag
-    *   the provided tag
-    */
-  final case class TagNotFound(tag: UserTag) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create an elastic search view but the id already exists.
@@ -170,20 +157,6 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when attempting to create an ElasticSearchView where the passed id does not match the id on the
-    * source json document.
-    *
-    * @param id
-    *   the view identifier
-    * @param sourceId
-    *   the view identifier in the source json document
-    */
-  final case class UnexpectedElasticSearchViewId(id: Iri, sourceId: Iri)
-      extends ElasticSearchViewRejection(
-        s"The provided ElasticSearch view '$id' does not match the id '$sourceId' in the source document."
-      )
-
-  /**
     * Rejection returned when attempting to interact with an ElasticSearchView while providing an id that cannot be
     * resolved to an Iri.
     *
@@ -194,26 +167,11 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create an ElasticSearchView while providing an id that is blank.
+    * Rejection returned when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
     */
-  final case object BlankElasticSearchViewId
-      extends ElasticSearchViewRejection(s"Elastic search view identifier cannot be blank.")
-
-  /**
-    * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
-    *
-    * @param error
-    *   the decoder error
-    */
-  final case class DecodingFailed(error: JsonLdDecoderError) extends ElasticSearchViewRejection(error.getMessage)
-
-  /**
-    * Signals an error converting the source Json document to a JsonLD document.
-    */
-  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
-      extends ElasticSearchViewRejection(
-        s"The provided ElasticSearch view JSON document${id.fold("")(id => s" with id '$id'")} cannot be interpreted as a JSON-LD document."
-      )
+  // TODO Remove when the rejection workflow gets refactored / when view endpoints get separated
+  final case class ElasticSearchDecodingRejection(error: JsonLdRejection)
+      extends ElasticSearchViewRejection(error.reason)
 
   /**
     * Signals a rejection caused when interacting with the elasticserch client
@@ -241,28 +199,20 @@ object ElasticSearchViewRejection {
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends ElasticSearchViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
 
-  implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
-    case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case JsonLdRejection.BlankId                           => BlankElasticSearchViewId
-  }
-
   implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedElasticSearchClientError(rejection)          =>
+        case WrappedElasticSearchClientError(rejection) =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
-        case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                         => obj.add("rdf", rdf.asJson)
-        case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidElasticSearchIndexPayload(details)           => obj.addIfExists("details", details)
-        case InvalidViewReferences(views)                        => obj.add("views", views.asJson)
-        case InvalidPipeline(error)                              => obj.add("details", error.reason.asJson)
-        case _: ViewNotFound                                     => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                   => obj
+        case ElasticSearchDecodingRejection(error)      => error.asJsonObject
+        case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
+        case InvalidViewReferences(views)               => obj.add("views", views.asJson)
+        case InvalidPipeline(error)                     => obj.add("details", error.reason.asJson)
+        case _: ViewNotFound                            => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                          => obj
       }
     }
 
@@ -272,12 +222,12 @@ object ElasticSearchViewRejection {
   implicit val elasticSearchViewRejectionHttpResponseFields: HttpResponseFields[ElasticSearchViewRejection] =
     HttpResponseFields {
       case RevisionNotFound(_, _)                 => StatusCodes.NotFound
-      case TagNotFound(_)                         => StatusCodes.NotFound
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ViewIsDefaultView                      => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case ElasticSearchDecodingRejection(error)  => error.status
       case _                                      => StatusCodes.BadRequest
     }
 

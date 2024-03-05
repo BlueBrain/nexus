@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Resourc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.expandResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -77,7 +78,7 @@ object ResourcesTrial {
       clock: Clock[IO]
   )(implicit api: JsonLdApi, uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
-    private val sourceParser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+    private val sourceParser = JsonLdSourceResolvingParser(contextResolution, uuidF)
 
     override def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
         caller: Caller
@@ -90,7 +91,7 @@ object ResourcesTrial {
         validation     <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
-    }.attemptNarrow[ResourceRejection].map { attempt =>
+    }.attemptNarrow[Rejection].map { attempt =>
       ResourceGenerationResult(None, attempt)
     }
 
@@ -103,7 +104,7 @@ object ResourcesTrial {
         validation     <- validateResource(jsonld, schema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
-    }.attemptNarrow[ResourceRejection].map { attempt =>
+    }.attemptNarrow[Rejection].map { attempt =>
       ResourceGenerationResult(Some(schema), attempt)
     }
 

@@ -42,7 +42,7 @@ import java.time.Instant
 final class Storages private (
     log: StorageLog,
     fetchContext: FetchContext,
-    sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
+    sourceDecoder: JsonLdSourceResolvingDecoder[StorageFields],
     serviceAccount: ServiceAccount
 ) extends FetchStorage {
 
@@ -494,7 +494,7 @@ object Storages {
 
     StorageDecoderConfiguration.apply
       .map { implicit config =>
-        new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
+        new JsonLdSourceResolvingDecoder[StorageFields](contexts.storages, contextResolution, uuidF)
       }
       .map { sourceDecoder =>
         new Storages(

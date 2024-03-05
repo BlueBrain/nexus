@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 //TODO remove when support for @json is added in json-ld library
 final class CompositeViewFieldsJsonLdSourceDecoder private (
-    decoder: JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields]
+    decoder: JsonLdSourceResolvingDecoder[CompositeViewFields]
 ) {
   def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
@@ -49,7 +49,7 @@ object CompositeViewFieldsJsonLdSourceDecoder {
     implicit val compositeViewFieldsJsonLdDecoder: JsonLdDecoder[CompositeViewFields] =
       CompositeViewFields.jsonLdDecoder(minIntervalRebuild)
     new CompositeViewFieldsJsonLdSourceDecoder(
-      new JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields](
+      new JsonLdSourceResolvingDecoder[CompositeViewFields](
         contexts.compositeViews,
         contextResolution,
         uuidF

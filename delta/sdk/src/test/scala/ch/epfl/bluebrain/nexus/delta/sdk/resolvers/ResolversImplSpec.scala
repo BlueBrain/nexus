@@ -13,13 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourceFor, sourceFrom, sourceWithoutId}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, UnexpectedResolverId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -195,7 +196,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
         ) { case (id, value) =>
           val payloadId = nxv + "resolver-fail"
           val payload   = sourceFrom(payloadId, value)
-          resolvers.create(id, projectRef, payload).assertRejectedEquals(UnexpectedResolverId(id, payloadId))
+          resolvers.create(id, projectRef, payload).assertRejectedEquals(UnexpectedId(id, payloadId))
         }
       }
 
@@ -383,7 +384,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
           val payload   = sourceFrom(payloadId, value)
           resolvers
             .update(id, projectRef, 2, payload)
-            .assertRejectedEquals(UnexpectedResolverId(id = id, payloadId = payloadId))
+            .assertRejectedEquals(UnexpectedId(id = id, payloadId = payloadId))
         }
       }
 
