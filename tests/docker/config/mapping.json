@@ -15,8 +15,8 @@
         "match": "^(label|name)$",
         "mapping": {
           "type": "text",
-          "analyzer": "nexus",
-          "search_analyzer": "search_nexus",
+          "analyzer": "autocomplete",
+          "search_analyzer": "autocomplete_search",
           "fields": {
             "keyword": {
               "type": "keyword"
@@ -30,8 +30,8 @@
         "match_mapping_type": "string",
         "mapping": {
           "type": "text",
-          "analyzer": "nexus",
-          "search_analyzer": "search_nexus",
+          "analyzer": "autocomplete",
+          "search_analyzer": "autocomplete_search",
           "fields": {
             "keyword": {
               "type": "keyword"
@@ -42,13 +42,31 @@
     }
   ],
   "properties": {
+    "@type": {
+      "type": "text",
+      "analyzer": "path_hierarchy",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "@id": {
+      "type": "text",
+      "analyzer": "path_hierarchy",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
     "brainRegion": {
       "type": "object"
     },
     "description": {
       "type": "text",
-      "analyzer": "nexus",
-      "search_analyzer": "search_nexus"
+      "analyzer": "autocomplete",
+      "search_analyzer": "autocomplete_search"
     },
     "distribution": {
       "properties": {
@@ -99,8 +117,26 @@
         "endedAt": { "type": "date" }
       }
     },
+    "createdBy": {
+      "type": "text",
+      "analyzer": "path_hierarchy",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
     "createdAt": {
       "type": "date"
+    },
+    "updatedBy": {
+      "type": "text",
+      "analyzer": "path_hierarchy",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
     },
     "updatedAt": {
       "type": "date"
