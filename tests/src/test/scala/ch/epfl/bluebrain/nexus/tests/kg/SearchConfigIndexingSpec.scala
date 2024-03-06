@@ -1068,17 +1068,31 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
           }
           """
 
-    val detailedCircuitId = "https://bbp.epfl.ch/data/detailed-circuit"
-
     "return the detailed circuit based on its name" in {
+      val detailedCircuitId = "https://bbp.epfl.ch/data/detailed-circuit"
 
       val prefix = "SSCx-HexO1"
       val search = s"${prefix}-Release-TC__ConnRewire"
 
       (prefix.length - 1 to search.length).toList.traverse { index =>
-        val s     = search.subSequence(0, index).toString
-        val query = fullTextQuery(s)
-        assertIds(query)(detailedCircuitId)
+        val s              = search.subSequence(0, index).toString
+        val query          = fullTextQuery(s)
+        val queryLowercase = fullTextQuery(s.toLowerCase)
+        assertIds(query)(detailedCircuitId) >> assertIds(queryLowercase)(detailedCircuitId)
+      }
+    }
+
+    "return the bouton density based on its name starting with digits" in {
+      val boutonDensityId = "https://bbp.epfl.ch/data/bouton-density"
+
+      val prefix = "1818-"
+      val search = s"${prefix}ReticularNeuron2_shrink"
+
+      (prefix.length - 1 to search.length).toList.traverse { index =>
+        val s              = search.subSequence(0, index).toString
+        val query          = fullTextQuery(s)
+        val queryLowercase = fullTextQuery(s.toLowerCase)
+        assertIds(query)(boutonDensityId) >> assertIds(queryLowercase)(boutonDensityId)
       }
     }
   }

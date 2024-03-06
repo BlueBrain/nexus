@@ -26,7 +26,11 @@
         ]
       },
       "autocomplete_search": {
-        "tokenizer": "lowercase"
+        "type": "custom",
+        "tokenizer": "classic",
+        "filter": [
+          "lowercase"
+        ]
       }
     },
     "tokenizer": {
