@@ -17,13 +17,14 @@ final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem)
   override def apply(id: Iri, storage: S3StorageValue): IO[Unit] = {
     val attributes = S3Attributes.settings(storage.alpakkaSettings(config))
 
+    (IO.println(s"Listing contents of bucket ${storage.bucket} with attributes $attributes") >>
     IO.fromFuture(
       IO.delay(
         S3.listBucket(storage.bucket, None)
           .withAttributes(attributes)
           .runWith(Sink.head)
       )
-    ).redeemWith(
+    ) <* IO.println(s"Did the listing bucket")).redeemWith(
       {
         case _: NoSuchElementException => IO.unit // // bucket is empty
         case err                       =>

@@ -33,7 +33,7 @@ class S3StorageSpec extends StorageSpec {
   private val logoKey = "some/path/to/nexus-logo.png"
 
   val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566" // s"http://localhost:4566"
-  val s3BucketEndpoint: String = s"http://$bucket.s3.localhost.localstack.cloud:4566" //s"http://localhost:4566/$bucket"
+  val s3BucketEndpoint: String = s"http://s3.localhost.localstack.cloud:4566/$bucket" //s"http://localhost:4566/$bucket"
 
   private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
     case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))

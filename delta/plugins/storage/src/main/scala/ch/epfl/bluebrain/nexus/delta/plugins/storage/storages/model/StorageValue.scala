@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
-import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import akka.stream.alpakka.s3.{AccessStyle, ApiVersion, MemoryBufferType}
+//import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -148,17 +148,18 @@ object StorageValue {
     override val tpe: StorageType       = StorageType.S3Storage
     override val capacity: Option[Long] = None
 
-    private val log = Logger[S3StorageValue]
+//    private val log = Logger[S3StorageValue]
 
     def log(msg: String): Unit = {
-      import cats.effect.unsafe.implicits.global
-      log.info(msg).unsafeRunSync()
+//      import cats.effect.unsafe.implicits.global
+//      log.info(msg).unsafeRunSync()
+      println(msg)
     }
 
     def address(bucket: String): Uri =
       endpoint match {
-        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
-        case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
+        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$host/$bucket")
+        case Some(e)                                => e / bucket //e.withHost(s"$bucket.${e.authority.host}")
         case None                                   => region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
 
@@ -187,22 +188,16 @@ object StorageValue {
       log(s"Region is $region, endpoint is $endpoint")
 
       val regionProvider: AwsRegionProvider = new AwsRegionProvider {
-        val getRegion: Region = region.getOrElse {
-          endpoint match {
-            case None                                                                 => Region.US_EAST_1
-            case Some(uri) if uri.authority.host.toString().contains("amazonaws.com") => Region.US_EAST_1
-            // why was this global?
-            case _                                                                    => Region.US_EAST_1
-          }
-        }
+        val getRegion: Region = region.getOrElse(Region.US_EAST_1)
       }
 
       val addr = address(bucket).toString()
 
-      log(s"Endpoint url is $addr")
+      log(s"Address to send to lib is $addr")
 
       s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
         .withEndpointUrl(addr)
+        .withAccessStyle(AccessStyle.PathAccessStyle)
     }
   }
 

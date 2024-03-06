@@ -125,6 +125,8 @@ lazy val scalaTest          = "org.scalatest"                %% "scalatest"     
 lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
 lazy val testContainers     = "org.testcontainers"            % "testcontainers"           % testContainersVersion
+lazy val testContainersScala = "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.41.3"
+lazy val testContainersScalaLocalStack = "com.dimafeng" %% "testcontainers-scala-localstack-v2" % "0.41.3"
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -250,7 +252,9 @@ lazy val testkit = project
       munit,
       munitCatsEffect,
       scalaTest,
-      testContainers
+      testContainers,
+      testContainersScala,
+      testContainersScalaLocalStack
     ) ++ doobie,
     addCompilerPlugin(kindProjector)
   )
