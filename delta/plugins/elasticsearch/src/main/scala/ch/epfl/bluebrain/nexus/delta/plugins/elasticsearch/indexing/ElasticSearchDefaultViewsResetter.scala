@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId,
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.implicits._
@@ -92,15 +93,15 @@ object ElasticSearchDefaultViewsResetter {
       override def resetDefaultViews: IO[Unit] =
         resetTrigger.flatMap { triggered =>
           IO.whenA(triggered) {
-            views.compile.toList
-              .flatMap { _.traverse { resetView } }
-              .flatMap { _ => logger.info("Completed resetting default elasticsearch views.") }
+            deleteDatabaseEntries >>
+              views.compile.toList
+                .flatMap { _.traverse { resetView } }
+                .flatMap { _ => logger.info("Completed resetting default elasticsearch views.") }
           }
         }
 
       override def resetView(view: ViewElement): IO[Unit] =
         deleteEsIndex(view) >>
-          deleteEventsStatesOffsets(view.project).transact(xas.write) >>
           createDefaultView(view.project)
 
       private def deleteEsIndex(view: ViewElement) =
@@ -109,12 +110,12 @@ object ElasticSearchDefaultViewsResetter {
           case _: DeprecatedViewDef      => IO.pure(true)
         }.void
 
-      private def deleteEventsStatesOffsets(project: ProjectRef): doobie.ConnectionIO[Unit] =
+      private def deleteDatabaseEntries: IO[Unit] =
         sql"""
-          DELETE FROM scoped_events WHERE type = 'elasticsearch' AND id = ${defaultViewId.toString} AND org = ${project.organization} AND project = ${project.project};
-          DELETE FROM scoped_states WHERE type = 'elasticsearch' AND id = ${defaultViewId.toString} AND org = ${project.organization} AND project = ${project.project};
-          DELETE FROM projection_offsets WHERE module = 'elasticsearch' AND resource_id = ${defaultViewId.toString} AND project = $project;
-        """.stripMargin.update.run.void
+          DELETE FROM scoped_events WHERE type = 'elasticsearch' AND id = $defaultViewId;
+          DELETE FROM scoped_states WHERE type = 'elasticsearch' AND id = $defaultViewId;
+          DELETE FROM projection_offsets WHERE module = 'elasticsearch' AND resource_id = $defaultViewId;
+        """.stripMargin.update.run.void.transact(xas.write)
 
       private def createDefaultView(project: ProjectRef): IO[Unit] =
         createView(defaultViewId, project, newViewValue)

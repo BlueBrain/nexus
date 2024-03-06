@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -46,57 +46,13 @@ class ElasticSearchDefaultViewsResetterSuite
   )
 
   private val customViewId = iri"https://other.id"
-  private val customView   = defaultView.copy(ref = ViewRef(project, iri"$customViewId"))
 
   private val existingDefaultView = ExistingView(defaultView)
   private val missingDefaultView  = MissingView(project3)
-  private val existingCustomView  = ExistingView(customView)
 
   // TODO: Find how to move this to beforeAll
   test("Setup: partitions should be created") {
     initPartitions(xas, project, project2)
-  }
-
-  test("The resetter should delete scoped events for an existing default view") {
-    insertViewEvent(defaultViewId, project) >>
-      assertIO(eventsCount, 1) >>
-      resetWithNoViewCreation.resetView(existingDefaultView) >>
-      assertIO(eventsCount, 0)
-  }
-
-  test("The resetter should delete scoped states for an existing default view") {
-    insertViewState(defaultViewId, project) >>
-      assertIO(statesCount, 1) >>
-      resetWithNoViewCreation.resetView(existingDefaultView) >>
-      assertIO(statesCount, 0)
-  }
-
-  test("The resetter should delete projection offsets for an existing default view") {
-    insertViewProjectionOffset(defaultViewId, project) >>
-      assertIO(projectionOffsetCount, 1) >>
-      resetWithNoViewCreation.resetView(existingDefaultView) >>
-      assertIO(projectionOffsetCount, 0)
-  }
-
-  test("The resetter should not delete a scoped event for an existing custom view") {
-    insertViewEvent(customViewId, project) >>
-      assertIO(eventsCount, 1) >>
-      resetWithNoViewCreation.resetView(existingCustomView) >>
-      assertIO(eventsCount, 1)
-  }
-
-  test("The resetter should not delete a scoped state for an existing custom view") {
-    insertViewState(customViewId, project) >>
-      assertIO(statesCount, 1) >>
-      resetWithNoViewCreation.resetView(existingCustomView) >>
-      assertIO(statesCount, 1)
-  }
-
-  test("The resetter should not delete projection offsets for a custom view") {
-    insertViewProjectionOffset(customViewId, project) >>
-      assertIO(projectionOffsetCount, 1) >>
-      resetWithNoViewCreation.resetView(existingCustomView) >>
-      assertIO(projectionOffsetCount, 1)
   }
 
   test("The resetter should create a new view") {
@@ -119,11 +75,18 @@ class ElasticSearchDefaultViewsResetterSuite
     for {
       createdViewRef      <- Ref.of[IO, Set[ViewRef]](Set.empty[ViewRef])
       _                   <- clearDB
-      _                   <- insertViewEvent(defaultViewId, project)
-      _                   <- insertViewEvent(defaultViewId, project2)
-      _                   <- assertIO(eventsCount, 2)
+      _                   <- insertView(defaultViewId, project)
+      _                   <- insertView(defaultViewId, project2)
+      _                   <- insertView(customViewId, project)
+      expectedViews        = Set(project -> defaultViewId, project2 -> defaultViewId, project -> customViewId)
+      _                   <- assertIO(eventsId, expectedViews)
+      _                   <- assertIO(statesId, expectedViews)
+      _                   <- assertIO(projectionOffsetIds, expectedViews)
       _                   <- resetWithViewCreation(createdViewRef).resetDefaultViews
-      _                   <- assertIO(eventsCount, 0)
+      remainingCustom      = Set(project -> customViewId)
+      _                   <- assertIO(eventsId, remainingCustom)
+      _                   <- assertIO(statesId, remainingCustom)
+      _                   <- assertIO(projectionOffsetIds, remainingCustom)
       expectedCreatedViews = Set(project, project2, project3).map(ViewRef(_, defaultViewId))
       _                   <- assertIO(createdViewRef.get, expectedCreatedViews)
     } yield ()
@@ -146,15 +109,6 @@ class ElasticSearchDefaultViewsResetterSuite
   private val viewElem3  = missingDefaultView
   private val viewStream = Stream(viewElem1, viewElem2, viewElem3)
 
-  private def resetWithNoViewCreation = ElasticSearchDefaultViewsResetter(
-    viewStream,
-    _ => IO(true),
-    (_, _, _) => IO.unit,
-    defaultViewValue,
-    IO(true),
-    xas
-  )
-
   private def resetWithViewCreation(created: Ref[IO, Set[ViewRef]]) =
     ElasticSearchDefaultViewsResetter(
       viewStream,
@@ -175,6 +129,9 @@ class ElasticSearchDefaultViewsResetterSuite
       xas
     )
 
+  private def insertView(id: Iri, projectRef: ProjectRef) =
+    insertViewEvent(id, projectRef) >> insertViewState(id, projectRef) >> insertViewProjectionOffset(id, projectRef)
+
   private def insertViewEvent(id: Iri, projectRef: ProjectRef) =
     sql"""
        INSERT INTO scoped_events (type, org, project, id, rev, value, instant)
@@ -187,33 +144,37 @@ class ElasticSearchDefaultViewsResetterSuite
        VALUES ('elasticsearch', ${projectRef.organization}, ${projectRef.project}, $id, 'tag', 5, '{"nb": 1}', false, CURRENT_TIMESTAMP);
      """.stripMargin.update.run.transact(xas.write)
 
-  private def insertViewProjectionOffset(id: Iri, projectRef: ProjectRef) =
+  private def insertViewProjectionOffset(id: Iri, projectRef: ProjectRef) = {
+    val projectionName = s"${projectRef}_$id"
     sql"""
        INSERT INTO projection_offsets (name, module, project, resource_id, ordering, processed, discarded, failed, created_at, updated_at)
-       VALUES ('default', 'elasticsearch', $projectRef, $id, 123, 2, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+       VALUES ($projectionName, 'elasticsearch', $projectRef, $id, 123, 2, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
      """.stripMargin.update.run.transact(xas.write)
+  }
 
   private def clearDB =
     sql"""
          DELETE FROM scoped_events; DELETE FROM scoped_states; DELETE FROM projection_offsets;
        """.stripMargin.update.run.transact(xas.write)
 
-  private def eventsCount =
-    sql"""SELECT count(*) FROM scoped_events;""".stripMargin
-      .query[Int]
-      .unique
+  private def eventsId: IO[Set[(ProjectRef, Iri)]] =
+    sql"""SELECT org, project, id FROM scoped_events;""".stripMargin
+      .query[(Label, Label, Iri)]
+      .map { case (org, proj, id) => ProjectRef(org, proj) -> id }
+      .to[Set]
       .transact(xas.read)
 
-  private def statesCount =
-    sql"""SELECT count(*) FROM scoped_states;""".stripMargin
-      .query[Int]
-      .unique
+  private def statesId: IO[Set[(ProjectRef, Iri)]] =
+    sql"""SELECT org, project, id FROM scoped_states;""".stripMargin
+      .query[(Label, Label, Iri)]
+      .map { case (org, proj, id) => ProjectRef(org, proj) -> id }
+      .to[Set]
       .transact(xas.read)
 
-  private def projectionOffsetCount =
-    sql"""SELECT count(*) FROM projection_offsets;""".stripMargin
-      .query[Int]
-      .unique
+  private def projectionOffsetIds: IO[Set[(ProjectRef, Iri)]] =
+    sql"""SELECT project, resource_id FROM projection_offsets;""".stripMargin
+      .query[(ProjectRef, Iri)]
+      .to[Set]
       .transact(xas.read)
 
 }
