@@ -134,7 +134,7 @@ object GlobalEventLog {
         }
 
       override def evaluate(id: Id, command: Command): IO[(E, S)] =
-        stateStore.get(id).flatMap { current =>
+        stateStore.getWrite(id).flatMap { current =>
           stateMachine
             .evaluate(current, command, maxDuration)
             .flatTap { case (event, state) =>
@@ -148,7 +148,7 @@ object GlobalEventLog {
         }
 
       override def dryRun(id: Id, command: Command): IO[(E, S)] =
-        stateStore.get(id).flatMap { current =>
+        stateStore.getWrite(id).flatMap { current =>
           stateMachine.evaluate(current, command, maxDuration)
         }
 
