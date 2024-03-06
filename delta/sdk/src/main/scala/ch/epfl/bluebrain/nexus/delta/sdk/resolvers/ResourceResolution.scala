@@ -89,7 +89,7 @@ object ResourceResolution {
     apply(
       aclCheck,
       resolvers,
-      FetchResource(xas).latest(_, _),
+      FetchResource(xas).fetch(_, _),
       Permissions.resources.read,
       excludeDeprecated
     )
