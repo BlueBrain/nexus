@@ -33,10 +33,13 @@
       "autocomplete": {
         "type": "edge_ngram",
         "min_gram": 2,
-        "max_gram": 20,
+        "max_gram": 36,
         "token_chars": [
-          "letter"
-        ]
+          "letter",
+          "digit",
+          "custom"
+        ],
+        "custom_token_chars": "-_"
       },
       "path_hierarchy": {
         "reverse": true,

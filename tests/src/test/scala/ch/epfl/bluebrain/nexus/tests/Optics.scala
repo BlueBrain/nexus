@@ -112,6 +112,7 @@ object Optics {
   val hits       = root.hits.hits
   val totalHits  = root.hits.total.value.int
   val hitsSource = hits.each._source.json
+  def hitsIds    = hits.each._source.`@id`.string
 
   val location = root._location.string
 
