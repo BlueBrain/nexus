@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   implicit private val cfg: Configuration = StorageDecoderConfiguration.apply.accepted
-  val sourceDecoder                       = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)
+  val sourceDecoder                       = new JsonLdSourceDecoder[StorageFields](contexts.storages, UUIDF.random)
 
   "StorageFields" when {
     val pc = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)

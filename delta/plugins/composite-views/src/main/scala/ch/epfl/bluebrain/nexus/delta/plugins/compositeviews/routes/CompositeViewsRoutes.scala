@@ -46,10 +46,14 @@ class CompositeViewsRoutes(
     with ElasticSearchViewsDirectives
     with BlazegraphViewsDirectives {
 
+  private val rejectPredicateOnWrite: PartialFunction[CompositeViewRejection, Boolean] = {
+    case _: ViewNotFound | _: CompositeVieDecodingRejection => true
+  }
+
   private def emitMetadata(statusCode: StatusCode, io: IO[ViewResource]): Route =
     emit(
       statusCode,
-      io.mapValue(_.metadata).attemptNarrow[CompositeViewRejection].rejectWhen(decodingFailedOrViewNotFound)
+      io.mapValue(_.metadata).attemptNarrow[CompositeViewRejection].rejectWhen(rejectPredicateOnWrite)
     )
 
   private def emitMetadata(io: IO[ViewResource]): Route = emitMetadata(OK, io)

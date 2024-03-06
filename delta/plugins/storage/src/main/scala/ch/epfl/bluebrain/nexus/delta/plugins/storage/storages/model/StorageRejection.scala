@@ -1,17 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -72,11 +68,6 @@ object StorageRejection {
       extends StorageFetchRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a storage while providing an id that is blank.
-    */
-  final case object BlankStorageId extends StorageRejection(s"Storage identifier cannot be blank.")
-
-  /**
     * Rejection returned when attempting to create a storage but the id already exists.
     *
     * @param id
@@ -106,36 +97,12 @@ object StorageRejection {
       extends StorageRejection(s"Storage '$id' not accessible.")
 
   /**
-    * Rejection returned when attempting to create a storage where the passed id does not match the id on the payload.
-    *
-    * @param id
-    *   the storage identifier
-    * @param payloadId
-    *   the storage identifier on the payload
-    */
-  final case class UnexpectedStorageId(id: Iri, payloadId: Iri)
-      extends StorageRejection(s"Storage '$id' does not match storage id on payload '$payloadId'.")
-
-  /**
-    * Rejection when attempting to decode an expanded JsonLD as a case class
-    * @param error
-    *   the decoder error
-    */
-  final case class DecodingFailed(error: JsonLdDecoderError) extends StorageRejection(error.getMessage)
-
-  /**
     * Signals an error creating/updating a storage with a wrong maxFileSize
     */
   final case class InvalidMaxFileSize(id: Iri, value: Long, maxAllowed: Long)
       extends StorageRejection(
         s"'maxFileSize' field on storage '$id' has wrong range. Found '$value'. Allowed range [1,$maxAllowed]."
       )
-
-  /**
-    * Signals an error converting the source Json to JsonLD
-    */
-  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
-      extends StorageRejection(s"Storage ${id.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
 
   /**
     * Signals an attempt to update a storage to a different storage type
@@ -193,20 +160,12 @@ object StorageRejection {
         s"The provided permissions '${permissions.mkString(",")}' are not defined in the collection of allowed permissions."
       )
 
-  implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
-    case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case JsonLdRejection.BlankId                           => BlankStorageId
-  }
-
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
         case StorageNotAccessible(_, details) => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)      => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected) => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: StorageNotFound               => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                => obj

@@ -31,7 +31,7 @@ import io.circe.Json
 final class ResolversImpl private (
     log: ResolversLog,
     fetchContext: FetchContext,
-    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverValue]
 ) extends Resolvers {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -178,7 +178,7 @@ object ResolversImpl {
     new ResolversImpl(
       ScopedEventLog(Resolvers.definition(priorityAlreadyExists, clock), config, xas),
       fetchContext,
-      new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](
+      new JsonLdSourceResolvingDecoder[ResolverValue](
         contexts.resolvers,
         contextResolution,
         uuidF

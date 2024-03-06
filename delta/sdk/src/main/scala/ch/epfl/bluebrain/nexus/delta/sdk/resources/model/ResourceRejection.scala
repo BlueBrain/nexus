@@ -1,19 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -79,11 +75,6 @@ object ResourceRejection {
       extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a resource while providing an id that is blank.
-    */
-  final case object BlankResourceId extends ResourceRejection(s"Resource identifier cannot be blank.")
-
-  /**
     * Rejection returned when attempting to create/update a resource with a reserved id.
     */
   final case class ReservedResourceId(id: Iri)
@@ -112,17 +103,6 @@ object ResourceRejection {
       extends ResourceFetchRejection(
         s"No changes were detected when attempting to update resource '${currentState.id}' in project '${currentState.project}'."
       )
-
-  /**
-    * Rejection returned when attempting to create a resource where the passed id does not match the id on the payload.
-    *
-    * @param id
-    *   the resource identifier
-    * @param payloadId
-    *   the resource identifier on the payload
-    */
-  final case class UnexpectedResourceId(id: Iri, payloadId: Iri)
-      extends ResourceRejection(s"Resource '$id' does not match resource id on payload '$payloadId'.")
 
   /**
     * Rejection returned when attempting to create/update a resource where the payload does not satisfy the SHACL schema
@@ -226,25 +206,12 @@ object ResourceRejection {
     */
   final case object NoSchemaProvided extends ResourceRejection(s"A schema is required but was not provided.")
 
-  /**
-    * Signals an error converting the source Json to JsonLD
-    */
-  final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
-      extends ResourceRejection(s"Resource${idOpt.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
-
-  implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
-    case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
-    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case BlankId                                           => BlankResourceId
-  }
-
   implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                 => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)     =>
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
         case InvalidSchemaRejection(_, _, report)        =>

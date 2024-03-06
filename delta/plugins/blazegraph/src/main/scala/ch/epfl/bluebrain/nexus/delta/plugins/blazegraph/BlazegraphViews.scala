@@ -44,7 +44,7 @@ import java.util.UUID
 final class BlazegraphViews(
     log: BlazegraphLog,
     fetchContext: FetchContext,
-    sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
+    sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewValue],
     createNamespace: ViewResource => IO[Unit],
     prefix: String
 ) {
@@ -549,7 +549,7 @@ object BlazegraphViews {
 
     BlazegraphDecoderConfiguration.apply
       .map { implicit config =>
-        new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
+        new JsonLdSourceResolvingDecoder[BlazegraphViewValue](
           contexts.blazegraph,
           contextResolution,
           uuidF

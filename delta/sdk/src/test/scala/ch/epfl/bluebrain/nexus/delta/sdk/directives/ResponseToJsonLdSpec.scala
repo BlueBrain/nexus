@@ -9,7 +9,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.JsonSyntax
@@ -17,9 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.BlankResourceId
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcatenation {
 
@@ -37,10 +38,6 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
       IO.pure(Left(error))
     )
   }
-
-  private val expectedBlankIdErrorResponse = jsonContentOf(
-    "directives/blank-id.json"
-  )
 
   private val FileContents = "hello"
 
@@ -81,10 +78,12 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
     }
 
     "Return an error from a file content IO" in {
-      request ~> emit(responseWithSourceError[ResourceRejection](BlankResourceId)) ~> check {
-        status shouldEqual StatusCodes.BadRequest // BlankResourceId is supposed to result in BadRequest
+      val error = ResourceNotFound(nxv + "xxx", ProjectRef.unsafe("org", "proj"))
+      request ~> emit(responseWithSourceError[ResourceRejection](error)) ~> check {
+        status shouldEqual StatusCodes.NotFound
         contentType.mediaType shouldEqual `application/ld+json`
-        response.asJson shouldEqual expectedBlankIdErrorResponse
+        response.asJsonObject.apply("@type").flatMap(_.asString).value shouldEqual "ResourceNotFound"
+
       }
     }
   }

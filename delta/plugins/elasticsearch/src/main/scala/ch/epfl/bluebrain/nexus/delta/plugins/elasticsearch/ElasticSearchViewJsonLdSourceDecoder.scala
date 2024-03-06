@@ -6,7 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewRejection, ElasticSearchViewType, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewType, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
@@ -37,7 +37,7 @@ import scala.annotation.nowarn
   */
 //TODO remove when support for @json is added in json-ld library
 class ElasticSearchViewJsonLdSourceDecoder private (
-    decoder: JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields]
+    decoder: JsonLdSourceResolvingDecoder[ElasticSearchViewFields]
 ) {
 
   def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
@@ -202,7 +202,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
     ElasticSearchDecoderConfiguration.apply.map { implicit config =>
       new ElasticSearchViewJsonLdSourceDecoder(
-        new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
+        new JsonLdSourceResolvingDecoder[ElasticSearchViewFields](
           contexts.elasticsearch,
           contextResolution,
           uuidF

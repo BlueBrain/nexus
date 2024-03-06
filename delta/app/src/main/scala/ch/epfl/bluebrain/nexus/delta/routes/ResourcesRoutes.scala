@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, NoSchemaProvided, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import io.circe.{Json, Printer}
@@ -93,7 +93,6 @@ final class ResourcesRoutes(
                             .flatTap(index(project, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
-                            .rejectWhen(wrongJsonOrNotFound)
                         )
                       }
                   },
@@ -114,7 +113,6 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
-                                      .rejectWhen(wrongJsonOrNotFound)
                                   )
                                 case (Some(rev), source, tag) =>
                                   // Update a resource
@@ -124,7 +122,7 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
-                                      .rejectWhen(wrongJsonOrNotFound)
+                                      .rejectOn[ResourceNotFound]
                                   )
                               }
                             }
@@ -138,7 +136,7 @@ final class ResourcesRoutes(
                                   .flatTap(index(project, _, mode))
                                   .map(_.void)
                                   .attemptNarrow[ResourceRejection]
-                                  .rejectWhen(wrongJsonOrNotFound)
+                                  .rejectOn[ResourceNotFound]
                               )
                             }
                           },
@@ -152,7 +150,7 @@ final class ResourcesRoutes(
                                   resources
                                     .fetch(resourceRef, project, schemaOpt)
                                     .attemptNarrow[ResourceRejection]
-                                    .rejectWhen(wrongJsonOrNotFound)
+                                    .rejectOn[ResourceNotFound]
                                 )
                               }
                             )
@@ -168,7 +166,7 @@ final class ResourcesRoutes(
                               .flatTap(index(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
-                              .rejectWhen(wrongJsonOrNotFound)
+                              .rejectOn[ResourceNotFound]
                           )
                         }
                       },
@@ -182,7 +180,7 @@ final class ResourcesRoutes(
                                   .flatTap(index(project, _, mode))
                               }
                               .attemptNarrow[ResourceRejection]
-                              .rejectWhen(wrongJsonOrNotFound)
+                              .rejectOn[ResourceNotFound]
                           )
                         }
                       },
@@ -195,7 +193,7 @@ final class ResourcesRoutes(
                               .flatTap(index(project, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
-                              .rejectWhen(wrongJsonOrNotFound)
+                              .rejectOn[ResourceNotFound]
                           )
                         }
                       },
@@ -218,7 +216,7 @@ final class ResourcesRoutes(
                                     .fetch(resourceRef, project, schemaOpt)
                                     .map(_.value.source)
                                     .attemptNarrow[ResourceRejection]
-                                    .rejectWhen(wrongJsonOrNotFound)
+                                    .rejectOn[ResourceNotFound]
                                 )
                               }
                             }
@@ -247,7 +245,7 @@ final class ResourcesRoutes(
                                   .fetch(resourceRef, project, schemaOpt)
                                   .map(_.value.tags)
                                   .attemptNarrow[ResourceRejection]
-                                  .rejectWhen(wrongJsonOrNotFound)
+                                  .rejectOn[ResourceNotFound]
                               )
                           },
                           // Tag a resource
@@ -261,7 +259,7 @@ final class ResourcesRoutes(
                                     .flatTap(index(project, _, mode))
                                     .map(_.void)
                                     .attemptNarrow[ResourceRejection]
-                                    .rejectWhen(wrongJsonOrNotFound)
+                                    .rejectOn[ResourceNotFound]
                                 )
                               }
                             }
@@ -291,11 +289,6 @@ final class ResourcesRoutes(
         }
       }
     }
-
-  private val wrongJsonOrNotFound: PartialFunction[ResourceRejection, Boolean] = {
-    case _: ResourceNotFound | _: InvalidSchemaRejection | _: InvalidJsonLdFormat => true
-  }
-
 }
 
 object ResourcesRoutes {

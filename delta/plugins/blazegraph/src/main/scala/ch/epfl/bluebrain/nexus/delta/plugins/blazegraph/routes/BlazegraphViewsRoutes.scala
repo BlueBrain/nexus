@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive0, Route}
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -20,12 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.Json
+import io.circe.{Json, Printer}
 
 /**
   * The Blazegraph views routes
@@ -57,6 +60,34 @@ class BlazegraphViewsRoutes(
     with RdfMarshalling
     with BlazegraphViewsDirectives {
 
+  private val rejectPredicateOnWrite: PartialFunction[BlazegraphViewRejection, Boolean] = {
+    case _: ViewNotFound | _: BlazegraphDecodingRejection => true
+  }
+
+  private def emitMetadataOrReject(statusCode: StatusCode, io: IO[ViewResource]): Route = {
+    emit(
+      statusCode,
+      io.mapValue(_.metadata)
+        .adaptError {
+          case d: DecodingFailed      => BlazegraphDecodingRejection(d)
+          case i: InvalidJsonLdFormat => BlazegraphDecodingRejection(i)
+          case other                  => other
+        }
+        .attemptNarrow[BlazegraphViewRejection]
+        .rejectWhen(rejectPredicateOnWrite)
+    )
+  }
+
+  private def emitMetadataOrReject(io: IO[ViewResource]): Route = emitMetadataOrReject(StatusCodes.OK, io)
+
+  private def emitFetch(io: IO[ViewResource]): Route =
+    emit(io.attemptNarrow[BlazegraphViewRejection].rejectOn[ViewNotFound])
+
+  private def emitSource(io: IO[ViewResource]): Route = {
+    implicit val source: Printer = sourcePrinter
+    emit(io.map(_.value.source).attemptNarrow[BlazegraphViewRejection].rejectOn[ViewNotFound])
+  }
+
   def routes: Route =
     concat(
       pathPrefix("views") {
@@ -66,14 +97,9 @@ class BlazegraphViewsRoutes(
             concat(
               (pathEndOrSingleSlash & post & entity(as[Json]) & noParameter("rev") & indexingMode) { (source, mode) =>
                 authorizeFor(project, Write).apply {
-                  emit(
+                  emitMetadataOrReject(
                     Created,
-                    views
-                      .create(project, source)
-                      .flatTap(index(project, _, mode))
-                      .mapValue(_.metadata)
-                      .attemptNarrow[BlazegraphViewRejection]
-                      .rejectWhen(decodingFailedOrViewNotFound)
+                    views.create(project, source).flatTap(index(project, _, mode))
                   )
                 }
               },
@@ -86,24 +112,14 @@ class BlazegraphViewsRoutes(
                           (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a view with id segment
-                              emit(
+                              emitMetadataOrReject(
                                 Created,
-                                views
-                                  .create(id, project, source)
-                                  .flatTap(index(project, _, mode))
-                                  .mapValue(_.metadata)
-                                  .attemptNarrow[BlazegraphViewRejection]
-                                  .rejectWhen(decodingFailedOrViewNotFound)
+                                views.create(id, project, source).flatTap(index(project, _, mode))
                               )
                             case (Some(rev), source) =>
                               // Update a view
-                              emit(
-                                views
-                                  .update(id, project, rev, source)
-                                  .flatTap(index(project, _, mode))
-                                  .mapValue(_.metadata)
-                                  .attemptNarrow[BlazegraphViewRejection]
-                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              emitMetadataOrReject(
+                                views.update(id, project, rev, source)
                               )
                           }
                         }
@@ -111,13 +127,8 @@ class BlazegraphViewsRoutes(
                       (delete & parameter("rev".as[Int])) { rev =>
                         // Deprecate a view
                         authorizeFor(project, Write).apply {
-                          emit(
-                            views
-                              .deprecate(id, project, rev)
-                              .flatTap(index(project, _, mode))
-                              .mapValue(_.metadata)
-                              .attemptNarrow[BlazegraphViewRejection]
-                              .rejectOn[ViewNotFound]
+                          emitMetadataOrReject(
+                            views.deprecate(id, project, rev).flatTap(index(project, _, mode))
                           )
                         }
                       },
@@ -127,12 +138,7 @@ class BlazegraphViewsRoutes(
                           project,
                           id,
                           authorizeFor(project, Read).apply {
-                            emit(
-                              views
-                                .fetch(id, project)
-                                .attemptNarrow[BlazegraphViewRejection]
-                                .rejectOn[ViewNotFound]
-                            )
+                            emitFetch(views.fetch(id, project))
                           }
                         )
                       }
@@ -141,13 +147,8 @@ class BlazegraphViewsRoutes(
                   // Undeprecate a blazegraph view
                   (pathPrefix("undeprecate") & put & parameter("rev".as[Int]) &
                     authorizeFor(project, Write) & pathEndOrSingleSlash) { rev =>
-                    emit(
-                      views
-                        .undeprecate(id, project, rev)
-                        .flatTap(index(project, _, mode))
-                        .mapValue(_.metadata)
-                        .attemptNarrow[BlazegraphViewRejection]
-                        .rejectOn[ViewNotFound]
+                    emitMetadataOrReject(
+                      views.undeprecate(id, project, rev).flatTap(index(project, _, mode))
                     )
                   },
                   // Query a blazegraph view
@@ -169,13 +170,7 @@ class BlazegraphViewsRoutes(
                   // Fetch a view original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                     authorizeFor(project, Read).apply {
-                      emit(
-                        views
-                          .fetch(id, project)
-                          .map(_.value.source)
-                          .attemptNarrow[BlazegraphViewRejection]
-                          .rejectOn[ViewNotFound]
-                      )
+                      emitSource(views.fetch(id, project))
                     }
                   },
                   //Incoming/outgoing links for views
