@@ -8,9 +8,9 @@ import munit.catseffect.IOFixture
 object ActorSystemSetup {
 
   def resource(): Resource[IO, ActorSystem] =
-    Resource.make(IO.delay(ActorSystem()))((as: ActorSystem) => IO.delay(as.terminate()).void)
+    Resource.make(IO.delay(ActorSystem()))(as => IO.delay(as.terminate()).void)
 
-  trait Fixture {  self: CatsEffectSuite =>
+  trait Fixture { self: CatsEffectSuite =>
     val actorSystem: IOFixture[ActorSystem] = ResourceSuiteLocalFixture("actorsystem", resource())
   }
 }

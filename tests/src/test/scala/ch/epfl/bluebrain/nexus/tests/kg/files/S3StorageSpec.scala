@@ -32,8 +32,8 @@ class S3StorageSpec extends StorageSpec {
   private val bucket  = genId()
   private val logoKey = "some/path/to/nexus-logo.png"
 
-  val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566" // s"http://localhost:4566"
-  val s3BucketEndpoint: String = s"http://s3.localhost.localstack.cloud:4566/$bucket" //s"http://localhost:4566/$bucket"
+  val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566"
+  val s3BucketEndpoint: String = s"http://$bucket.s3.localhost.localstack.cloud:4566"
 
   private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
     case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))
@@ -41,7 +41,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   private val s3Client = S3Client.builder
-    .endpointOverride(new URI(s3Endpoint))//s"http://${sys.props.getOrElse("minio-url", "localhost:9000")}"))
+    .endpointOverride(new URI(s3Endpoint))
     .credentialsProvider(credentialsProvider)
     .region(Region.US_EAST_1)
     .build
@@ -112,13 +112,11 @@ class S3StorageSpec extends StorageSpec {
       _ <- storagesDsl.createStorage(payload, projectRef)
       _ <- log("Created storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
-      _ <- log("checked storage meta")
       _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _ <- log("Added perms")
+      _ <- log("Creating first storage")
       _ <- storagesDsl.createStorage(payload2, projectRef)
       _ <- log("Created second storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
-      _ <- log("Checked second storage meta")
     } yield succeed
   }
 

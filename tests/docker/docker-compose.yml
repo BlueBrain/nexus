@@ -162,32 +162,6 @@ services:
     networks:
       - ls
 
-#  minio:
-#    image: minio/minio:RELEASE.2021-07-30T00-02-00Z
-#    command: server /data
-#    environment:
-#      MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
-#      MINIO_SECRET_KEY: "CHUTCHUT"
-#      MINIO_DOMAIN: "delta.bbp"
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-#      interval: 30s
-#      timeout: 20s
-#      retries: 3
-#    networks:
-#      default:
-#        # We add this alias due to the deprecation of path-styles on S3:
-#        # https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
-#        aliases:
-#          - delta.bbp
-#          - nexustest.delta.bbp
-#          - foobar.delta.bbp
-#    ports:
-#      - 9000:9000
-#    volumes:
-#      - /tmp/minio:/data
-
-
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
     image: localstack/localstack

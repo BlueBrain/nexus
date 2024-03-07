@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class MinioSpec extends Suites with MinioDocker {
   override val nestedSuites: IndexedSeq[Suite] = Vector(
-//    new S3StorageAccessSpec(this),
+    new S3StorageAccessSpec(this),
     new S3StorageSaveAndFetchFileSpec(this),
     new S3StorageLinkFileSpec(this)
   )
@@ -26,10 +26,9 @@ object MinioSpec {
   )(implicit config: StorageTypeConfig, system: ActorSystem): IO[Unit] = {
     implicit val attributes = S3Attributes.settings(value.alpakkaSettings(config))
 
-    IO.println(s"Creating bucket....") >>
     IO.fromFuture(IO.delay(S3.checkIfBucketExists(value.bucket))).flatMap {
-      case BucketAccess.NotExists => IO.println(s"Didn't exist, creating....") >> IO.delay(S3.makeBucket(value.bucket)).void
-      case _                      => IO.println(s"Did exist, doing nothing")
+      case BucketAccess.NotExists => IO.delay(S3.makeBucket(value.bucket)).void
+      case _                      => IO.unit
     }
   }
 
