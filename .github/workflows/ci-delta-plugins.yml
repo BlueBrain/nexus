@@ -14,7 +14,7 @@ on:
 jobs:
   run:
     if: github.event_name == 'pull_request'
-    runs-on: it
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
