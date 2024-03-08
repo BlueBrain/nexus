@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, ScopedSchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
@@ -173,13 +173,10 @@ object SchemasImpl {
     * Constructs a [[Schemas]] instance.
     */
   final def apply(
+      scopedLog: ScopedSchemaLog,
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
-      contextResolution: ResolverContextResolution,
-      validate: ValidateSchema,
-      config: SchemasConfig,
-      xas: Transactors,
-      clock: Clock[IO]
+      contextResolution: ResolverContextResolution
   )(implicit
       api: JsonLdApi,
       uuidF: UUIDF
@@ -191,7 +188,7 @@ object SchemasImpl {
         uuidF
       )
     new SchemasImpl(
-      ScopedEventLog(Schemas.definition(validate, clock), config.eventLog, xas),
+      scopedLog,
       fetchContext,
       schemaImports,
       parser

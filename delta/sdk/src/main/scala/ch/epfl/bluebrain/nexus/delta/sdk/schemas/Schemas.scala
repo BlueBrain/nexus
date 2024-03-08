@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 
 /**
@@ -375,13 +375,16 @@ object Schemas {
     }
   }
 
+  type ScopedSchemaDefinition = ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+  type ScopedSchemaLog        = ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+
   /**
     * Entity definition for [[Schemas]]
     */
   def definition(
       validate: ValidateSchema,
       clock: Clock[IO]
-  ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
+  ): ScopedSchemaDefinition =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(validate, clock), next),

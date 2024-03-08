@@ -96,10 +96,10 @@ class ResourcesImplSpec
   )
 
   private val resourceDef = Resources.definition(ValidateResource(resourceResolution), detectChanges, clock)
-  private val scopedLog   = ScopedEventLog(resourceDef, eventLogConfig, xas)
+  private val resourceLog = ScopedEventLog(resourceDef, eventLogConfig, xas)
 
   private lazy val resources: Resources = ResourcesImpl(
-    scopedLog,
+    resourceLog,
     fetchContext,
     resolverContextResolution
   )

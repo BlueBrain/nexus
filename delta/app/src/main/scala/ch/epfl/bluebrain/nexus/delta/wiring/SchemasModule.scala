@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -22,10 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{ScopedSchemaDefinition, ScopedSchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
@@ -40,26 +40,28 @@ object SchemasModule extends ModuleDef {
 
   }
 
+  make[ScopedSchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
+    Schemas.definition(validateSchema, clock)
+  }
+
+  make[ScopedSchemaLog].from { (scopedDefinition: ScopedSchemaDefinition, config: SchemasConfig, xas: Transactors) =>
+    ScopedEventLog(scopedDefinition, config.eventLog, xas)
+  }
+
   make[Schemas].from {
     (
+        scopedLog: ScopedSchemaLog,
         fetchContext: FetchContext,
         schemaImports: SchemaImports,
         api: JsonLdApi,
-        validate: ValidateSchema,
         resolverContextResolution: ResolverContextResolution,
-        config: AppConfig,
-        xas: Transactors,
-        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
+        scopedLog,
         fetchContext,
         schemaImports,
-        resolverContextResolution,
-        validate,
-        config.schemas,
-        xas,
-        clock
+        resolverContextResolution
       )(api, uuidF)
   }
 

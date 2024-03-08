@@ -23,8 +23,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl, ValidateSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasConfig, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
@@ -78,12 +79,15 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
   private val config = SchemasConfig(eventLogConfig)
 
+  private val schemaDef = Schemas.definition(ValidateSchema.apply, clock)
+  private val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
+
   private lazy val routes =
     Route.seal(
       SchemasRoutes(
         identities,
         aclCheck,
-        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas, clock),
+        SchemasImpl(schemaLog, fetchContext, schemaImports, resolverContextResolution),
         groupDirectives,
         IndexingAction.noop
       )
