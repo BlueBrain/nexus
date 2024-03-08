@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -10,15 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef, ScopedResourceLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.{logger, ResourcesLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -165,16 +164,10 @@ final class ResourcesImpl private (
     for {
       (iri, pc)    <- expandWithContext(fetchContext.onRead, projectRef, id.value)
       schemaRefOpt <- IO.fromEither(expandResourceRef(schemaOpt, pc))
-      state        <- stateOrNotFound(id, iri, projectRef)
+      state        <- FetchResource(log).stateOrNotFound(id, iri, projectRef)
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound(iri, projectRef))
     } yield state
   }.span("fetchResource")
-
-  private def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] = id match {
-    case Latest(_)        => log.stateOr(ref, iri, notFound(iri, ref))
-    case Revision(_, rev) => log.stateOr(ref, iri, rev, notFound(iri, ref), RevisionNotFound)
-    case Tag(_, tag)      => log.stateOr(ref, iri, tag, notFound(iri, ref), TagNotFound(tag))
-  }
 
   private def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
 
@@ -210,31 +203,23 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
-    * @param validateResource
-    *   how to validate resource
+    * @param scopedLog
+    *   the scoped resource log
     * @param fetchContext
     *   to fetch the project context
     * @param contextResolution
     *   the context resolver
-    * @param config
-    *   the resources config
-    * @param xas
-    *   the database context
     */
   final def apply(
-      validateResource: ValidateResource,
-      detectChange: DetectChange,
+      scopedLog: ScopedResourceLog,
       fetchContext: FetchContext,
-      contextResolution: ResolverContextResolution,
-      config: ResourcesConfig,
-      xas: Transactors,
-      clock: Clock[IO]
+      contextResolution: ResolverContextResolution
   )(implicit
       api: JsonLdApi,
       uuidF: UUIDF = UUIDF.random
   ): Resources =
     new ResourcesImpl(
-      ScopedEventLog(Resources.definition(validateResource, detectChange, clock), config.eventLog, xas),
+      scopedLog,
       fetchContext,
       JsonLdSourceResolvingParser(contextResolution, uuidF)
     )

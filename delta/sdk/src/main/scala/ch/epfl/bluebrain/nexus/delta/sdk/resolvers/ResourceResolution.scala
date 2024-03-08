@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 
 object ResourceResolution {
@@ -75,21 +74,21 @@ object ResourceResolution {
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
-    * @param xas
-    *   the transactors
+    * @param fetchResource
+    *   how to fetch a resource
     * @param excludeDeprecated
     *   to exclude deprecated resources from the resolution
     */
   def dataResource(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      xas: Transactors,
+      fetchResource: FetchResource,
       excludeDeprecated: Boolean
   ): ResourceResolution[Resource] =
     apply(
       aclCheck,
       resolvers,
-      FetchResource(xas).fetch(_, _),
+      fetchResource.fetch _,
       Permissions.resources.read,
       excludeDeprecated
     )

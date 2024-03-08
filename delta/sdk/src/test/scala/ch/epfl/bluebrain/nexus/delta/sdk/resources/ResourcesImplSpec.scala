@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, DataResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -94,14 +95,13 @@ class ResourcesImplSpec
     (r, p, _) => resources.fetch(r, p).attempt.map(_.left.map(_ => ResourceResolutionReport()))
   )
 
+  private val resourceDef = Resources.definition(ValidateResource(resourceResolution), detectChanges, clock)
+  private val scopedLog   = ScopedEventLog(resourceDef, eventLogConfig, xas)
+
   private lazy val resources: Resources = ResourcesImpl(
-    ValidateResource(resourceResolution),
-    detectChanges,
+    scopedLog,
     fetchContext,
-    resolverContextResolution,
-    config,
-    xas,
-    clock
+    resolverContextResolution
   )
 
   private val simpleSourcePaylod = (id: IdSegment) => json"""{ "@id": "$id", "some": "content" }"""

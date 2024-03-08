@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -101,14 +102,17 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
+    val resourceDef = Resources.definition(validator, DetectChange(enabled = true), clock)
+    val scopedLog   = ScopedEventLog(
+      resourceDef,
+      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true).eventLog,
+      xas
+    )
+
     val resources = ResourcesImpl(
-      validator,
-      DetectChange(enabled = true),
+      scopedLog,
       fetchContext,
-      resolverContextResolution,
-      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true),
-      xas,
-      clock
+      resolverContextResolution
     )
     (
       Route.seal(

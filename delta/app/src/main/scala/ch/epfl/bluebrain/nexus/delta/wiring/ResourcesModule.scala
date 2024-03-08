@@ -19,18 +19,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{ScopedResourceDefinition, ScopedResourceLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{DetectChange, Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
   * Resources wiring
   */
 object ResourcesModule extends ModuleDef {
+  make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
+    ResourceResolution.schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = false)
+  }
+
   make[ValidateResource].from {
     (resourceResolution: ResourceResolution[Schema], rcr: RemoteContextResolution @Id("aggregate")) =>
       ValidateResource(resourceResolution)(rcr)
@@ -40,26 +45,32 @@ object ResourcesModule extends ModuleDef {
 
   make[DetectChange].from { (config: ResourcesConfig) => DetectChange(config.skipUpdateNoChange) }
 
+  make[ScopedResourceDefinition].from {
+    (validateResource: ValidateResource, detectChange: DetectChange, clock: Clock[IO]) =>
+      Resources.definition(validateResource, detectChange, clock)
+  }
+
+  make[ScopedResourceLog].from {
+    (scopedDefinition: ScopedResourceDefinition, config: ResourcesConfig, xas: Transactors) =>
+      ScopedEventLog(scopedDefinition, config.eventLog, xas)
+  }
+
+  make[FetchResource].from { (scopedLog: ScopedResourceLog) =>
+    FetchResource(scopedLog)
+  }
+
   make[Resources].from {
     (
-        validate: ValidateResource,
-        detectChange: DetectChange,
+        scopedLog: ScopedResourceLog,
         fetchContext: FetchContext,
-        config: ResourcesConfig,
         resolverContextResolution: ResolverContextResolution,
         api: JsonLdApi,
-        xas: Transactors,
-        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
-        validate,
-        detectChange,
+        scopedLog,
         fetchContext,
-        resolverContextResolution,
-        config,
-        xas,
-        clock
+        resolverContextResolution
       )(
         api,
         uuidF
@@ -67,12 +78,13 @@ object ResourcesModule extends ModuleDef {
   }
 
   make[ResolverContextResolution].from {
-    (aclCheck: AclCheck, resolvers: Resolvers, rcr: RemoteContextResolution @Id("aggregate"), xas: Transactors) =>
-      ResolverContextResolution(aclCheck, resolvers, rcr, xas)
-  }
-
-  make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
-    ResourceResolution.schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = false)
+    (
+        aclCheck: AclCheck,
+        resolvers: Resolvers,
+        rcr: RemoteContextResolution @Id("aggregate"),
+        fetchResource: FetchResource
+    ) =>
+      ResolverContextResolution(aclCheck, resolvers, rcr, fetchResource)
   }
 
   make[ResourcesRoutes].from {

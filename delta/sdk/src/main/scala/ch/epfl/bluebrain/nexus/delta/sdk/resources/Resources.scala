@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 
 /**
@@ -505,6 +505,11 @@ object Resources {
     }
   }
 
+  type ScopedResourceDefinition =
+    ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
+  type ScopedResourceLog        =
+    ScopedEventLog[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
+
   /**
     * Entity definition for [[Resources]]
     */
@@ -512,7 +517,7 @@ object Resources {
       validateResource: ValidateResource,
       detectChange: DetectChange,
       clock: Clock[IO]
-  ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
+  ): ScopedResourceDefinition =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(validateResource, detectChange, clock)(_, _), next),
