@@ -57,7 +57,7 @@ val pureconfigVersion          = "0.17.6"
 val scalaTestVersion           = "3.2.18"
 val scalaXmlVersion            = "2.2.0"
 val topBraidVersion            = "1.3.2" // 1.4.1 fails to validate some test schemas
-val testContainersVersion      = "1.19.5"
+val testContainersVersion      = "1.19.6"
 val testContainersScalaVersion = "0.41.3"
 
 lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
@@ -126,7 +126,7 @@ lazy val scalaTest                     = "org.scalatest"                %% "scal
 lazy val scalaXml                      = "org.scala-lang.modules"       %% "scala-xml"                          % scalaXmlVersion
 lazy val topBraidShacl                 = "org.topbraid"                  % "shacl"                              % topBraidVersion
 lazy val testContainers                = "org.testcontainers"            % "testcontainers"                     % testContainersVersion
-lazy val testContainersScala           = "com.dimafeng"                 %% "testcontainers-scala-scalatest"     % testContainersScalaVersion
+lazy val testContainersScala           = "com.dimafeng"                 %% "testcontainers-scala-munit"         % testContainersScalaVersion
 lazy val testContainersScalaLocalStack = "com.dimafeng"                 %% "testcontainers-scala-localstack-v2" % testContainersScalaVersion
 
 val javaSpecificationVersion = SettingKey[String](
