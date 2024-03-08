@@ -12,14 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, SchemaLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaLog, entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -145,13 +144,7 @@ final class SchemasImpl private (
     for {
       pc    <- fetchContext.onRead(projectRef)
       iri   <- expandIri(id.value, pc)
-      state <- id match {
-                 case Latest(_)        => log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-                 case Revision(_, rev) =>
-                   log.stateOr(projectRef, iri, rev, SchemaNotFound(iri, projectRef), RevisionNotFound)
-                 case Tag(_, tag)      =>
-                   log.stateOr(projectRef, iri, tag, SchemaNotFound(iri, projectRef), TagNotFound(tag))
-               }
+      state <- FetchSchema(log).stateOrNotFound(id, iri, projectRef)
     } yield state.toResource
   }.span("fetchSchema")
 
