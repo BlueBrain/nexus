@@ -505,9 +505,9 @@ object Resources {
     }
   }
 
-  type ScopedResourceDefinition =
+  type ResourceDefinition =
     ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
-  type ScopedResourceLog        =
+  type ResourceLog        =
     ScopedEventLog[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
   /**
@@ -517,7 +517,7 @@ object Resources {
       validateResource: ValidateResource,
       detectChange: DetectChange,
       clock: Clock[IO]
-  ): ScopedResourceDefinition =
+  ): ResourceDefinition =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(validateResource, detectChange, clock)(_, _), next),

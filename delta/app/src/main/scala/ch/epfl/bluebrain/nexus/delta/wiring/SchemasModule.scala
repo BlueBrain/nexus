@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{ScopedSchemaDefinition, ScopedSchemaLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -40,17 +40,21 @@ object SchemasModule extends ModuleDef {
 
   }
 
-  make[ScopedSchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
+  make[SchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
     Schemas.definition(validateSchema, clock)
   }
 
-  make[ScopedSchemaLog].from { (scopedDefinition: ScopedSchemaDefinition, config: SchemasConfig, xas: Transactors) =>
+  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: SchemasConfig, xas: Transactors) =>
     ScopedEventLog(scopedDefinition, config.eventLog, xas)
+  }
+
+  make[FetchSchema].from { (schemaLog: SchemaLog) =>
+    FetchSchema(schemaLog)
   }
 
   make[Schemas].from {
     (
-        scopedLog: ScopedSchemaLog,
+        schemaLog: SchemaLog,
         fetchContext: FetchContext,
         schemaImports: SchemaImports,
         api: JsonLdApi,
@@ -58,7 +62,7 @@ object SchemasModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       SchemasImpl(
-        scopedLog,
+        schemaLog,
         fetchContext,
         schemaImports,
         resolverContextResolution
@@ -69,10 +73,10 @@ object SchemasModule extends ModuleDef {
     (
         aclCheck: AclCheck,
         resolvers: Resolvers,
-        schemas: Schemas,
+        fetchSchema: FetchSchema,
         fetchResource: FetchResource
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, fetchResource)
+      SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
   }
 
   make[SchemasRoutes].from {

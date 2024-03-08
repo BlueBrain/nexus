@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ScopedResourceLog
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -22,7 +22,7 @@ trait FetchResource {
 
 object FetchResource {
 
-  def apply(log: ScopedResourceLog): FetchResource = {
+  def apply(log: ResourceLog): FetchResource = {
 
     def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
 

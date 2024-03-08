@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{Deprecati
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 
@@ -100,21 +100,21 @@ object ResourceResolution {
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
-    * @param schemas
-    *   a schemas instance
+    * @param fetchSchema
+    *   how to fetch a schema
     * @param excludeDeprecated
     *   to exclude deprecated resources from the resolution
     */
   def schemaResource(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      schemas: Schemas,
+      fetchSchema: FetchSchema,
       excludeDeprecated: Boolean
   ): ResourceResolution[Schema] =
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) => schemas.fetch(ref, project).redeem(_ => None, Some(_)),
+      fetchSchema.fetch _,
       Permissions.schemas.read,
       excludeDeprecated
     )

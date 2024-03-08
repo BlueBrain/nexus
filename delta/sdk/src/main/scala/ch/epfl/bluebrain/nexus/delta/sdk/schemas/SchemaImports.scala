@@ -97,12 +97,12 @@ object SchemaImports {
   final def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      schemas: Schemas,
+      fetchSchema: FetchSchema,
       fetchResource: FetchResource
   ): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
       ResourceResolution
-        .schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = true)
+        .schemaResource(aclCheck, resolvers, fetchSchema, excludeDeprecated = true)
         .resolve(ref, projectRef)(caller)
         .map(_.map(_.value))
 

@@ -375,8 +375,8 @@ object Schemas {
     }
   }
 
-  type ScopedSchemaDefinition = ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
-  type ScopedSchemaLog        = ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+  type SchemaDefinition = ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
+  type SchemaLog        = ScopedEventLog[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
 
   /**
     * Entity definition for [[Schemas]]
@@ -384,7 +384,7 @@ object Schemas {
   def definition(
       validate: ValidateSchema,
       clock: Clock[IO]
-  ): ScopedSchemaDefinition =
+  ): SchemaDefinition =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(validate, clock), next),

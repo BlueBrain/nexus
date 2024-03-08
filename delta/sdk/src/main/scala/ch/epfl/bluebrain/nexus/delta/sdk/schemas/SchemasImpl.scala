@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, ScopedSchemaLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
@@ -173,7 +173,7 @@ object SchemasImpl {
     * Constructs a [[Schemas]] instance.
     */
   final def apply(
-      scopedLog: ScopedSchemaLog,
+      scopedLog: SchemaLog,
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution
