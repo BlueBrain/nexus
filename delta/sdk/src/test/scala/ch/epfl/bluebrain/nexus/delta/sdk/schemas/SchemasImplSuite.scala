@@ -76,8 +76,8 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   private val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref))
   private val config       = SchemasConfig(eventLogConfig)
 
-  private val schemaDef = Schemas.definition(ValidateSchema.apply, clock)
-  private val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
+  private val schemaDef      = Schemas.definition(ValidateSchema.apply, clock)
+  private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
 
   private lazy val schemas: Schemas =
     SchemasImpl(schemaLog, fetchContext, schemaImports, resolverContextResolution)

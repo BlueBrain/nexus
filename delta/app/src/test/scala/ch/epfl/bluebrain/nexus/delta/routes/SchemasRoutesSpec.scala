@@ -80,7 +80,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
   private val config = SchemasConfig(eventLogConfig)
 
   private val schemaDef = Schemas.definition(ValidateSchema.apply, clock)
-  private val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
+  private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
 
   private lazy val routes =
     Route.seal(

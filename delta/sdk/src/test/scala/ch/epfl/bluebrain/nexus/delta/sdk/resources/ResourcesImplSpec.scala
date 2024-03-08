@@ -95,8 +95,8 @@ class ResourcesImplSpec
     (r, p, _) => resources.fetch(r, p).attempt.map(_.left.map(_ => ResourceResolutionReport()))
   )
 
-  private val resourceDef = Resources.definition(ValidateResource(resourceResolution), detectChanges, clock)
-  private val resourceLog = ScopedEventLog(resourceDef, eventLogConfig, xas)
+  private val resourceDef      = Resources.definition(ValidateResource(resourceResolution), detectChanges, clock)
+  private lazy val resourceLog = ScopedEventLog(resourceDef, eventLogConfig, xas)
 
   private lazy val resources: Resources = ResourcesImpl(
     resourceLog,
