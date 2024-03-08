@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -22,8 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -44,8 +45,8 @@ object SchemasModule extends ModuleDef {
     Schemas.definition(validateSchema, clock)
   }
 
-  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: SchemasConfig, xas: Transactors) =>
-    ScopedEventLog(scopedDefinition, config.eventLog, xas)
+  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: AppConfig, xas: Transactors) =>
+    ScopedEventLog(scopedDefinition, config.schemas.eventLog, xas)
   }
 
   make[FetchSchema].from { (schemaLog: SchemaLog) =>
