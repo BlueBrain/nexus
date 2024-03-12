@@ -354,17 +354,31 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
 </code></pre>
-<p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
-<p>The request body:</p>
+<p>&hellip; where </p>
+<ul>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used.</li>
+  <li><code>{tagName}</code> an optional label given to the file on its first revision.</li>
+</ul>
+<p><strong>The request body:</strong></p>
 <p>The body should be a multipart form, to allow file upload. The form should contain one part named <code>file</code>. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file&rsquo;s extension.</p>
-<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system - <code>metadata</code>: a JSON object containing the following one or more of the following fields:  - <code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.  - <code>description</code>: a string that describes the file. It will be indexed in the full-text search.  - <code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</p>
+<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system </p>
+<p><strong>Headers:</strong></p>
+<ul>
+  <li><code>x-nxs-file-metadata</code>: an optional JSON object containing one or more of the following fields:
+    <ul>
+      <li><code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.</li>
+      <li><code>description</code>: a string that describes the file. It will be indexed in the full-text search.</li>
+      <li><code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</li>
+    </ul>
+  </li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
      -F &quot;file=@/path/to/myfile.jpg;type=image/jpeg&quot; \
-     -F &#39;metadata=&quot;{\&quot;name\&quot;: \&quot;My File\&quot;}&quot;&#39; \
+     -H &#39;x-nxs-file-metadata: {&quot;name&quot;: &quot;My File&quot;}&#39; \
      &quot;http://localhost:8080/v1/files/myorg/myproject&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -407,16 +421,31 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
 <pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
 </code></pre>
-<p>&hellip; where - <code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used. - <code>{tagName}</code> an optional label given to the file on its first revision.</p>
+<p>&hellip; where </p>
+<ul>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional. When not specified, the default storage of the project is used.</li>
+  <li><code>{tagName}</code> an optional label given to the file on its first revision.</li>
+</ul>
+<p><strong>The request body:</strong></p>
 <p>The body should be a multipart form, to allow file upload. The form should contain one part named <code>file</code>. This part can be given a content-type header, which will be used if specified. If not specified, the content-type will be inferred from the file&rsquo;s extension.</p>
-<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system - <code>metadata</code>: a JSON object containing one or more of the following fields:  - <code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.  - <code>description</code>: a string that describes the file. It will be indexed in the full-text search.  - <code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</p>
+<p>This part can contain the following disposition parameters: - <code>filename</code>: the filename which will be used in the back-end file system</p>
+<p><strong>Headers:</strong></p>
+<ul>
+  <li><code>x-nxs-file-metadata</code>: an optional JSON object containing one or more of the following fields:
+    <ul>
+      <li><code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.</li>
+      <li><code>description</code>: a string that describes the file. It will be indexed in the full-text search.</li>
+      <li><code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</li>
+    </ul>
+  </li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
      -F &quot;file=@/path/to/myfile.pdf;type=application/pdf&quot; \
-     -F &#39;metadata=&quot;{\&quot;name\&quot;: \&quot;My File\&quot;}&quot;&#39; \
+     -H &#39;x-nxs-file-metadata: {&quot;name&quot;: &quot;My File&quot;}&#39; \
      &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=remote&amp;tag=mytag&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -655,12 +684,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>PUT /v1/files/{org_label}/{project_label}/{resource_id}?rev={previous_rev}
 </code></pre>
 <p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p><strong>Headers:</strong></p>
+<ul>
+  <li><code>x-nxs-file-metadata</code>: an optional JSON object containing one or more of the following fields:
+    <ul>
+      <li><code>name</code>: a string which is a descriptive name for the file. It will be indexed in the full-text search.</li>
+      <li><code>description</code>: a string that describes the file. It will be indexed in the full-text search.</li>
+      <li><code>keywords</code>: a JSON object with <code>Label</code> keys and <code>string</code> values. These keywords will be indexed and can be used to search for the file.</li>
+    </ul>
+  </li>
+</ul><div class="callout note tip"><div class="callout-title">Metadata update</div>
+<p>If only the metadata is provided, then the updated is a metadata update and the file content is not changed.</p></div>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/update.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
    -F &quot;file=@/path/to/myfile2.pdf;type=application/pdf&quot; \
+   -H &#39;x-nxs-file-metadata: {&quot;name&quot;: &quot;My File&quot;}&#39; \
    &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?rev=1&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -671,6 +712,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/myfile&quot;,
   &quot;@type&quot;: &quot;File&quot;,
+  &quot;name&quot;: &quot;My File&quot;,
   &quot;_bytes&quot;: 13896460,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-12T07:30:54.576Z&quot;,
