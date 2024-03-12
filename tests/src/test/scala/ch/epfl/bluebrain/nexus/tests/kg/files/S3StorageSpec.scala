@@ -108,19 +108,13 @@ class S3StorageSpec extends StorageSpec {
         .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
 
     for {
-      _ <- log("Creating first storage")
       _ <- storagesDsl.createStorage(payload, projectRef)
-      _ <- log("Created storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storId, expectedStorage)
       _ <- permissionDsl.addPermissions(Permission(storName, "read"), Permission(storName, "write"))
-      _ <- log("Creating first storage")
       _ <- storagesDsl.createStorage(payload2, projectRef)
-      _ <- log("Created second storage")
       _ <- storagesDsl.checkStorageMetadata(projectRef, storageId2, expectedStorageWithPerms)
     } yield succeed
   }
-
-  def log(msg: String): IO[Unit] = IO.println(msg)
 
   "creating a s3 storage" should {
     "fail creating an S3Storage with an invalid bucket" in {
