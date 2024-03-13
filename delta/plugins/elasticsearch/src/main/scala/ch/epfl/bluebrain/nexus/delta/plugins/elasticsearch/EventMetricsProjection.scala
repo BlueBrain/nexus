@@ -23,6 +23,9 @@ object EventMetricsProjection {
   val projectionMetadata: ProjectionMetadata  = ProjectionMetadata("system", "event-metrics", None, None)
   val eventMetricsIndex: String => IndexLabel = prefix => IndexLabel.unsafe(s"${prefix}_project_metrics")
 
+  // We need a value to return to Distage
+  private val dummy = new EventMetricsProjection {}
+
   /**
     * @param metricEncoders
     *   a set of encoders for all entity
@@ -52,8 +55,9 @@ object EventMetricsProjection {
       queryConfig: QueryConfig,
       indexPrefix: String,
       metricMappings: MetricsMapping,
-      metricsSettings: MetricsSettings
-  ): IO[EventMetricsProjection] = {
+      metricsSettings: MetricsSettings,
+      indexingEnabled: Boolean
+  ): IO[EventMetricsProjection] = if (indexingEnabled) {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
     implicit val multiDecoder: MultiDecoder[ProjectScopedMetric] =
@@ -70,7 +74,7 @@ object EventMetricsProjection {
     val createIndex = client.createIndex(index, Some(metricMappings.value), Some(metricsSettings.value)).void
 
     apply(sink, supervisor, metrics, createIndex)
-  }
+  } else IO.pure(dummy)
 
   /**
     * Test friendly apply method
@@ -98,7 +102,7 @@ object EventMetricsProjection {
     for {
       projection <- IO.fromEither(compiledProjection)
       _          <- supervisor.run(projection, init)
-    } yield new EventMetricsProjection {}
+    } yield dummy
   }
 
 }
