@@ -28,6 +28,7 @@ import scala.concurrent.duration.Duration
   */
 class MainSuite extends NexusSuite with MainSuite.Fixture {
 
+  // The default timeout of 30s is slightly too short for the GitHub free runners
   override val munitIOTimeout: Duration = Duration(60, "s")
 
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
