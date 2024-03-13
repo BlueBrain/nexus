@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.http
 import akka.actor.ActorSystem
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.akka.ActorSystemSetup
+import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 
 object HttpClientSetup {
 

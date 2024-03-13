@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.akka
+package ch.epfl.bluebrain.nexus.delta.sdk.actor
 
 import akka.actor.ActorSystem
 import cats.effect.{IO, Resource}
