@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
-
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, GlobalEntityDefinition, StateMachine}
 import cats.implicits._
 
 /**
@@ -207,9 +206,12 @@ object Realms {
       openIdExists: (Label, Uri) => IO[Unit],
       clock: Clock[IO]
   ): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(wellKnown, openIdExists, clock))
+
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(wellKnown, openIdExists, clock), next),
+      evaluator,
       RealmEvent.serializer,
       RealmState.serializer,
       onUniqueViolation = (id: Label, c: RealmCommand) =>

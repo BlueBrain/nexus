@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, GlobalEntityDefinition, StateMachine}
 
 import java.time.Instant
 
@@ -323,10 +323,13 @@ object Acls {
       fetchPermissionSet: IO[Set[Permission]],
       findUnknownRealms: Set[Label] => IO[Unit],
       clock: Clock[IO]
-  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
+  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(fetchPermissionSet, findUnknownRealms, clock))
+
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms, clock)(_, _), next),
+      evaluator,
       AclEvent.serializer,
       AclState.serializer,
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>
@@ -334,6 +337,7 @@ object Acls {
           case c => IncorrectRev(address, c.rev, c.rev + 1)
         }
     )
+  }
 
   /**
     * Project deletion task to delete the related ACL. If the project is deleted, we don't want it to inherit the former

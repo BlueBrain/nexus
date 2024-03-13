@@ -174,7 +174,7 @@ object ScopedEventLog {
       definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
-      definition.stateMachine,
+      definition.evaluator,
       definition.onUniqueViolation,
       definition.tagger,
       definition.extractDependencies,
@@ -186,7 +186,7 @@ object ScopedEventLog {
       entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
-      stateMachine: StateMachine[S, Command, E],
+      evaluator: CommandEvaluator[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
       extractDependencies: S => Option[Set[DependsOn]],
@@ -218,7 +218,7 @@ object ScopedEventLog {
           notFound: => R,
           invalidRevision: (Int, Int) => R
       ): IO[S] =
-        stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
+        evaluator.stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)
@@ -231,7 +231,7 @@ object ScopedEventLog {
             case Some((tag, rev)) if rev == state.rev =>
               IO.some(tag -> state)
             case Some((tag, rev))                     =>
-              stateMachine
+              evaluator.stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
                 .flatTap {
                   case stateOpt if !stateOpt.exists(_.rev == rev) =>
@@ -289,7 +289,7 @@ object ScopedEventLog {
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
-          result        <- stateMachine.evaluate(originalState, command, maxDuration)
+          result        <- evaluator.evaluate(originalState, command, maxDuration)
           _             <- persist(result._1, originalState, result._2)
         } yield result
       }
@@ -299,7 +299,7 @@ object ScopedEventLog {
 
       override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
         stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
-          stateMachine.evaluate(state, command, maxDuration)
+          evaluator.evaluate(state, command, maxDuration)
         }
 
       override def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =

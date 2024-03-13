@@ -9,8 +9,8 @@ import doobie.{Get, Put}
   * Defines the required information to be able to handle a global entity
   * @param tpe
   *   the entity type
-  * @param stateMachine
-  *   its state machine
+  * @param evaluator
+  *   how to evaluate commands
   * @param eventSerializer
   *   how to serialize/deserialize events in database
   * @param stateSerializer
@@ -20,7 +20,7 @@ import doobie.{Get, Put}
   */
 final case class GlobalEntityDefinition[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
     tpe: EntityType,
-    stateMachine: StateMachine[S, Command, E],
+    evaluator: CommandEvaluator[S, Command, E],
     eventSerializer: Serializer[Id, E],
     stateSerializer: Serializer[Id, S],
     onUniqueViolation: (Id, Command) => Rejection

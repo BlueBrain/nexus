@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, ScopedEventLog, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 
 /**
@@ -384,10 +384,13 @@ object Schemas {
   def definition(
       validate: ValidateSchema,
       clock: Clock[IO]
-  ): SchemaDefinition =
+  ): SchemaDefinition = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validate, clock))
+
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validate, clock), next),
+      evaluator,
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](
@@ -407,4 +410,5 @@ object Schemas {
           case c               => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

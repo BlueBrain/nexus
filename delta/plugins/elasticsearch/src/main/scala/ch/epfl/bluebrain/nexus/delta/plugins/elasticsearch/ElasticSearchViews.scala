@@ -550,14 +550,13 @@ object ElasticSearchViews {
     ElasticSearchViewCommand,
     ElasticSearchViewEvent,
     ElasticSearchViewRejection
-  ] =
+  ] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validate, clock))
+
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(
-        None,
-        evaluate(validate, clock)(_, _),
-        next
-      ),
+      evaluator,
       ElasticSearchViewEvent.serializer,
       ElasticSearchViewState.serializer,
       { s =>
@@ -573,4 +572,5 @@ object ElasticSearchViews {
           case c                          => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

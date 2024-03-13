@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, ScopedEntityDefinition, StateMachine}
 import fs2.Stream
 
 trait Projects {
@@ -284,10 +284,13 @@ object Projects {
       implicit
       base: BaseUri,
       uuidF: UUIDF
-  ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
+  ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(fetchActiveOrg, validateDeletion, clock))
+
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchActiveOrg, validateDeletion, clock)(_, _), next),
+      evaluator,
       ProjectEvent.serializer,
       ProjectState.serializer,
       _ => None,
@@ -297,4 +300,5 @@ object Projects {
           case c                => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

@@ -45,7 +45,7 @@ class GlobalEventLogSuite extends NexusSuite with Doobie.Fixture {
     GlobalEventLog(
       eventStore,
       stateStore,
-      Arithmetic.stateMachine,
+      Arithmetic.evaluator,
       AlreadyExists,
       maxDuration,
       xas

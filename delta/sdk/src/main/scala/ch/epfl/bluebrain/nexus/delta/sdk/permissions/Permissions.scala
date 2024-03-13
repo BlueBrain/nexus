@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, GlobalEntityDefinition, StateMachine}
 
 import java.time.Instant
 
@@ -324,15 +324,20 @@ object Permissions {
       clock: Clock[IO]
   ): GlobalEntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
     val initial = PermissionsState.initial(minimum)
+
+    val stateMachine = StateMachine(
+      Some(initial),
+      (state: Option[PermissionsState], event: PermissionsEvent) => Some(next(minimum)(state.getOrElse(initial), event))
+    )
+    val evaluator    = CommandEvaluator(
+      stateMachine,
+      (state: Option[PermissionsState], cmd: PermissionsCommand) =>
+        evaluate(minimum, clock)(state.getOrElse(initial), cmd)
+    )
+
     GlobalEntityDefinition(
       entityType,
-      StateMachine(
-        Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
-          evaluate(minimum, clock)(state.getOrElse(initial), cmd),
-        (state: Option[PermissionsState], event: PermissionsEvent) =>
-          Some(next(minimum)(state.getOrElse(initial), event))
-      ),
+      evaluator,
       PermissionsEvent.serializer,
       PermissionsState.serializer,
       onUniqueViolation = (_: Label, c: PermissionsCommand) => IncorrectRev(c.rev, c.rev + 1)

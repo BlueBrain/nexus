@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, ScopedEventLog, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 
 /**
@@ -517,10 +517,13 @@ object Resources {
       validateResource: ValidateResource,
       detectChange: DetectChange,
       clock: Clock[IO]
-  ): ResourceDefinition =
+  ): ResourceDefinition = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validateResource, detectChange, clock))
+
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validateResource, detectChange, clock)(_, _), next),
+      evaluator,
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](
@@ -542,4 +545,5 @@ object Resources {
           case c                 => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

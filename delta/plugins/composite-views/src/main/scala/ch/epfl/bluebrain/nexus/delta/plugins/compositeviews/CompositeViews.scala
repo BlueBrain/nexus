@@ -442,10 +442,18 @@ object CompositeViews {
 
   def definition(validate: ValidateCompositeView, clock: Clock[IO])(implicit
       uuidF: UUIDF
-  ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
+  ): ScopedEntityDefinition[
+    Iri,
+    CompositeViewState,
+    CompositeViewCommand,
+    CompositeViewEvent,
+    CompositeViewRejection
+  ] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validate, clock))
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(validate, clock)(_, _), next),
+      evaluator,
       CompositeViewEvent.serializer,
       CompositeViewState.serializer,
       state =>
@@ -462,6 +470,7 @@ object CompositeViews {
           case c                       => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 
   def apply(
       fetchContext: FetchContext,

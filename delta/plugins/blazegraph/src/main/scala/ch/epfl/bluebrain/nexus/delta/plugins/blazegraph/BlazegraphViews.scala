@@ -480,14 +480,12 @@ object BlazegraphViews {
     BlazegraphViewCommand,
     BlazegraphViewEvent,
     BlazegraphViewRejection
-  ] =
+  ] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validate, clock))
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(
-        None,
-        evaluate(validate, clock),
-        next
-      ),
+      evaluator,
       BlazegraphViewEvent.serializer,
       BlazegraphViewState.serializer,
       { s =>
@@ -503,6 +501,7 @@ object BlazegraphViews {
           case c                       => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 
   /**
     * Constructs a [[BlazegraphViews]] instance.

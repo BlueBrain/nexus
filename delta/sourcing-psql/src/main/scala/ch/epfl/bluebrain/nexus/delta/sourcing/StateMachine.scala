@@ -2,42 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.InvalidState
 import fs2.Stream
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Defines the state machine for an entity
   * @param initialState
   *   the initial state
-  * @param evaluate
-  *   the function attempting to create a new event and state from an incoming command
   * @param next
   *   the function allowing to replay a state from a list of events
   */
-final class StateMachine[State, Command, Event] private (
+final case class StateMachine[State, Event](
     initialState: Option[State],
-    evaluate: (Option[State], Command) => IO[Event],
-    val next: (Option[State], Event) => Option[State]
+    next: (Option[State], Event) => Option[State]
 ) {
-
-  /**
-    * Fetches the current state and attempt to apply an incoming command on it
-    */
-  def evaluate(
-      current: Option[State],
-      command: Command,
-      maxDuration: FiniteDuration
-  ): IO[(Event, State)] = {
-    val original = current.orElse(initialState)
-    for {
-      evaluated <- evaluate(original, command).attempt
-                     .timeoutTo(maxDuration, IO.raiseError(EvaluationTimeout(command, maxDuration)))
-      event     <- IO.fromEither(evaluated)
-      newState  <- IO.fromOption(next(original, event))(InvalidState(original, event))
-    } yield event -> newState
-  }
 
   /**
     * Compute the state from a stream of events
@@ -53,14 +31,5 @@ final class StateMachine[State, Command, Event] private (
       .lastOrError
       .flatMap(IO.fromEither(_))
   }
-}
-
-object StateMachine {
-
-  def apply[State, Command, Event](
-      initialState: Option[State],
-      evaluate: (Option[State], Command) => IO[Event],
-      next: (Option[State], Event) => Option[State]
-  ) = new StateMachine(initialState, evaluate, next)
 
 }

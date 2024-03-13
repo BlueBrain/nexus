@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.{TypeHierarchyComma
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, GlobalEventLog, StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, GlobalEntityDefinition, GlobalEventLog, StateMachine, Transactors}
 
 trait TypeHierarchy {
 
@@ -100,14 +100,13 @@ object TypeHierarchy {
     TypeHierarchyCommand,
     TypeHierarchyEvent,
     TypeHierarchyRejection
-  ] =
+  ] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(clock))
+
     GlobalEntityDefinition(
       entityType,
-      StateMachine(
-        None,
-        evaluate(clock),
-        next
-      ),
+      evaluator,
       TypeHierarchyEvent.serializer,
       TypeHierarchyState.serializer,
       onUniqueViolation = (_: Iri, c: TypeHierarchyCommand) =>
@@ -116,5 +115,6 @@ object TypeHierarchy {
           case u: UpdateTypeHierarchy => IncorrectRev(u.rev, u.rev + 1)
         }
     )
+  }
 
 }

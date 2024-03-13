@@ -106,7 +106,7 @@ object GlobalEventLog {
     apply(
       GlobalEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       GlobalStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
-      definition.stateMachine,
+      definition.evaluator,
       definition.onUniqueViolation,
       config.maxDuration,
       xas
@@ -115,7 +115,7 @@ object GlobalEventLog {
   def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection <: Throwable](
       eventStore: GlobalEventStore[Id, E],
       stateStore: GlobalStateStore[Id, S],
-      stateMachine: StateMachine[S, Command, E],
+      evaluator: CommandEvaluator[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
       maxDuration: FiniteDuration,
       xas: Transactors
@@ -127,7 +127,7 @@ object GlobalEventLog {
       }
 
       override def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[S] =
-        stateMachine.computeState(eventStore.history(id, rev)).flatMap {
+        evaluator.stateMachine.computeState(eventStore.history(id, rev)).flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)
@@ -135,7 +135,7 @@ object GlobalEventLog {
 
       override def evaluate(id: Id, command: Command): IO[(E, S)] =
         stateStore.get(id).flatMap { current =>
-          stateMachine
+          evaluator
             .evaluate(current, command, maxDuration)
             .flatTap { case (event, state) =>
               (eventStore.save(event) >> stateStore.save(state))
@@ -149,7 +149,7 @@ object GlobalEventLog {
 
       override def dryRun(id: Id, command: Command): IO[(E, S)] =
         stateStore.get(id).flatMap { current =>
-          stateMachine.evaluate(current, command, maxDuration)
+          evaluator.evaluate(current, command, maxDuration)
         }
 
       override def delete(id: Id): IO[Unit] =

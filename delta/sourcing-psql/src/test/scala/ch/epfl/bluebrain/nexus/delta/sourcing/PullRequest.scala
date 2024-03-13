@@ -45,49 +45,52 @@ object PullRequest {
     populateWith.traverse(store.unsafeSave).transact(xas.write).as(store)
   }
 
-  val stateMachine: StateMachine[PullRequestState, PullRequestCommand, PullRequestEvent] =
-    StateMachine(
-      None,
-      (state: Option[PullRequestState], command: PullRequestCommand) =>
-        state.fold[IO[PullRequestEvent]] {
-          command match {
-            case Create(id, project) => IO.pure(PullRequestCreated(id, project, Instant.EPOCH, Anonymous))
-            case _                   => IO.raiseError(NotFound)
-          }
-        } { s =>
-          (s, command) match {
-            case (_, Create(id, project))                                   => IO.raiseError(AlreadyExists(id, project))
-            case (_: PullRequestActive, Update(id, project, rev))           =>
-              IO.pure(PullRequestUpdated(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_: PullRequestActive, TagPR(id, project, rev, targetRev)) =>
-              IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
-            case (_: PullRequestActive, Merge(id, project, rev))            =>
-              IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_, Boom(_, _, message))                                   => IO.raiseError(new RuntimeException(message))
-            case (_, _: Never)                                              => IO.never
-            case (_: PullRequestClosed, _)                                  => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
-          }
-        },
-      (state: Option[PullRequestState], event: PullRequestEvent) =>
-        state.fold[Option[PullRequestState]] {
-          event match {
-            case PullRequestCreated(id, project, instant, subject) =>
-              Some(PullRequestActive(id, project, 1, instant, subject, instant, subject))
-            case _                                                 => None
-          }
-        } { s =>
-          (s, event) match {
-            case (_, _: PullRequestCreated)                                                 => None
-            case (po: PullRequestActive, PullRequestUpdated(_, _, rev, instant, subject))   =>
-              Some(po.copy(rev = rev, updatedAt = instant, updatedBy = subject))
-            case (po: PullRequestActive, PullRequestTagged(_, _, rev, _, instant, subject)) =>
-              Some(po.copy(rev = rev, updatedAt = instant, updatedBy = subject))
-            case (po: PullRequestActive, PullRequestMerged(_, _, rev, instant, subject))    =>
-              Some(PullRequestClosed(po.id, po.project, rev, po.createdAt, po.createdBy, instant, subject))
-            case (_: PullRequestClosed, _)                                                  => None
-          }
-        }
-    )
+  private val next = (state: Option[PullRequestState], event: PullRequestEvent) =>
+    state.fold[Option[PullRequestState]] {
+      event match {
+        case PullRequestCreated(id, project, instant, subject) =>
+          Some(PullRequestActive(id, project, 1, instant, subject, instant, subject))
+        case _                                                 => None
+      }
+    } { s =>
+      (s, event) match {
+        case (_, _: PullRequestCreated)                                                 => None
+        case (po: PullRequestActive, PullRequestUpdated(_, _, rev, instant, subject))   =>
+          Some(po.copy(rev = rev, updatedAt = instant, updatedBy = subject))
+        case (po: PullRequestActive, PullRequestTagged(_, _, rev, _, instant, subject)) =>
+          Some(po.copy(rev = rev, updatedAt = instant, updatedBy = subject))
+        case (po: PullRequestActive, PullRequestMerged(_, _, rev, instant, subject))    =>
+          Some(PullRequestClosed(po.id, po.project, rev, po.createdAt, po.createdBy, instant, subject))
+        case (_: PullRequestClosed, _)                                                  => None
+      }
+    }
+
+  private val evaluate = (state: Option[PullRequestState], command: PullRequestCommand) =>
+    state.fold[IO[PullRequestEvent]] {
+      command match {
+        case Create(id, project) => IO.pure(PullRequestCreated(id, project, Instant.EPOCH, Anonymous))
+        case _                   => IO.raiseError(NotFound)
+      }
+    } { s =>
+      (s, command) match {
+        case (_, Create(id, project))                                   => IO.raiseError(AlreadyExists(id, project))
+        case (_: PullRequestActive, Update(id, project, rev))           =>
+          IO.pure(PullRequestUpdated(id, project, rev, Instant.EPOCH, Anonymous))
+        case (_: PullRequestActive, TagPR(id, project, rev, targetRev)) =>
+          IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
+        case (_: PullRequestActive, Merge(id, project, rev))            =>
+          IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
+        case (_, Boom(_, _, message))                                   => IO.raiseError(new RuntimeException(message))
+        case (_, _: Never)                                              => IO.never
+        case (_: PullRequestClosed, _)                                  => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
+      }
+    }
+
+  val stateMachine: StateMachine[PullRequestState, PullRequestEvent] =
+    StateMachine(None, next)
+
+  val evaluator: CommandEvaluator[PullRequestState, PullRequestCommand, PullRequestEvent] =
+    CommandEvaluator(stateMachine, evaluate)
 
   sealed trait PullRequestCommand extends Product with Serializable {
     def id: Iri

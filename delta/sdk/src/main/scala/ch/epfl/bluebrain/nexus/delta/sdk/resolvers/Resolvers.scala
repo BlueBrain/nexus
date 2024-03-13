@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, ScopedEntityDefinition, StateMachine}
 import io.circe.Json
 
 /**
@@ -341,10 +341,13 @@ object Resolvers {
   /**
     * Entity definition for [[Resolvers]]
     */
-  def definition(validatePriority: ValidatePriority, clock: Clock[IO]): ResolverDefinition =
+  def definition(validatePriority: ValidatePriority, clock: Clock[IO]): ResolverDefinition = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(validatePriority, clock))
+
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validatePriority, clock)(_, _), next),
+      evaluator,
       ResolverEvent.serializer,
       ResolverState.serializer,
       Tagger[ResolverEvent](
@@ -369,4 +372,5 @@ object Resolvers {
           case c                 => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

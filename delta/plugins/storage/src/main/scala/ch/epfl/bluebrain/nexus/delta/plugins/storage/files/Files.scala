@@ -726,10 +726,13 @@ object Files {
     */
   def definition(
       clock: Clock[IO]
-  ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
+  ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(clock))
+
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(clock)(_, _), next),
+      evaluator,
       FileEvent.serializer,
       FileState.serializer,
       Tagger[FileEvent](
@@ -752,6 +755,7 @@ object Files {
           case c             => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 
   /**
     * Constructs a Files instance

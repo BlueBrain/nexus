@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{CommandEvaluator, GlobalEntityDefinition, StateMachine}
 
 /**
   * Operations pertaining to managing organizations.
@@ -219,14 +219,13 @@ object Organizations {
     */
   def definition(clock: Clock[IO])(implicit
       uuidf: UUIDF
-  ): GlobalEntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] =
+  ): GlobalEntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(clock))
+
     GlobalEntityDefinition(
       entityType,
-      StateMachine(
-        None,
-        evaluate(clock),
-        next
-      ),
+      evaluator,
       OrganizationEvent.serializer,
       OrganizationState.serializer,
       onUniqueViolation = (id: Label, c: OrganizationCommand) =>
@@ -237,4 +236,5 @@ object Organizations {
           case u: UndeprecateOrganization => IncorrectRev(u.rev, u.rev + 1)
         }
     )
+  }
 }

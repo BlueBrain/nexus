@@ -12,8 +12,6 @@ import doobie.{Get, Put}
   * Defines the required information to be able to handle an scoped entity
   * @param tpe
   *   the entity type
-  * @param stateMachine
-  *   its state machine
   * @param eventSerializer
   *   how to serialize/deserialize events in database
   * @param stateSerializer
@@ -27,7 +25,7 @@ import doobie.{Get, Put}
   */
 final case class ScopedEntityDefinition[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
     tpe: EntityType,
-    stateMachine: StateMachine[S, Command, E],
+    evaluator: CommandEvaluator[S, Command, E],
     eventSerializer: Serializer[Id, E],
     stateSerializer: Serializer[Id, S],
     tagger: Tagger[E],
@@ -42,7 +40,7 @@ object ScopedEntityDefinition {
     */
   def untagged[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
       tpe: EntityType,
-      stateMachine: StateMachine[S, Command, E],
+      evaluator: CommandEvaluator[S, Command, E],
       eventSerializer: Serializer[Id, E],
       stateSerializer: Serializer[Id, S],
       extractDependencies: S => Option[Set[DependsOn]],
@@ -50,7 +48,7 @@ object ScopedEntityDefinition {
   )(implicit get: Get[Id], put: Put[Id]): ScopedEntityDefinition[Id, S, Command, E, Rejection] =
     ScopedEntityDefinition(
       tpe,
-      stateMachine,
+      evaluator,
       eventSerializer,
       stateSerializer,
       Tagger(_ => None, _ => None),

@@ -23,29 +23,32 @@ import scala.annotation.nowarn
 object Arithmetic {
   val entityType: EntityType = EntityType("calculator")
 
-  val stateMachine: StateMachine[Total, ArithmeticCommand, ArithmeticEvent] = StateMachine(
-    None,
-    (state: Option[Total], command: ArithmeticCommand) =>
-      (state, command) match {
-        case (None, Add(value))         => IO.pure(Plus(1, value))
-        case (Some(r), Add(value))      => IO.pure(Plus(r.rev + 1, value))
-        case (None, Subtract(value))    => IO.raiseError(NegativeTotal(value * -1))
-        case (Some(r), Subtract(value)) =>
-          val newValue = r.value - value
-          IO.raiseWhen(newValue < 0)(NegativeTotal(newValue)).as(Minus(r.rev + 1, value))
-        case (_, Boom(message))         => IO.raiseError(new RuntimeException(message))
-        case (_, Never)                 => IO.never
-      },
-    (state: Option[Total], event: ArithmeticEvent) =>
-      (state, event) match {
-        case (None, p: Plus)     => Some(Total(1, p.value))
-        case (None, _: Minus)    => None
-        case (Some(r), p: Plus)  => Some(r.copy(value = r.value + p.value, rev = p.rev))
-        case (Some(r), s: Minus) =>
-          val newValue = r.value - s.value
-          Option.when(newValue >= 0)(r.copy(value = r.value - s.value, rev = s.rev))
-      }
-  )
+  private val next = (state: Option[Total], event: ArithmeticEvent) =>
+    (state, event) match {
+      case (None, p: Plus)     => Some(Total(1, p.value))
+      case (None, _: Minus)    => None
+      case (Some(r), p: Plus)  => Some(r.copy(value = r.value + p.value, rev = p.rev))
+      case (Some(r), s: Minus) =>
+        val newValue = r.value - s.value
+        Option.when(newValue >= 0)(r.copy(value = r.value - s.value, rev = s.rev))
+    }
+
+  private val evaluate = (state: Option[Total], command: ArithmeticCommand) =>
+    (state, command) match {
+      case (None, Add(value))         => IO.pure(Plus(1, value))
+      case (Some(r), Add(value))      => IO.pure(Plus(r.rev + 1, value))
+      case (None, Subtract(value))    => IO.raiseError(NegativeTotal(value * -1))
+      case (Some(r), Subtract(value)) =>
+        val newValue = r.value - value
+        IO.raiseWhen(newValue < 0)(NegativeTotal(newValue)).as(Minus(r.rev + 1, value))
+      case (_, Boom(message))         => IO.raiseError(new RuntimeException(message))
+      case (_, Never)                 => IO.never
+    }
+
+  val stateMachine: StateMachine[Total, ArithmeticEvent]                     =
+    StateMachine(None, next)
+  val evaluator: CommandEvaluator[Total, ArithmeticCommand, ArithmeticEvent] =
+    CommandEvaluator(stateMachine, evaluate)
 
   sealed trait ArithmeticCommand extends Product with Serializable
 

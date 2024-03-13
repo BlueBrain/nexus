@@ -460,10 +460,13 @@ object Storages {
       access: StorageAccess,
       fetchPermissions: IO[Set[Permission]],
       clock: Clock[IO]
-  ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
+  ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] = {
+    val stateMachine = StateMachine(None, next)
+    val evaluator    = CommandEvaluator(stateMachine, evaluate(access, fetchPermissions, config, clock))
+
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config, clock)(_, _), next),
+      evaluator,
       StorageEvent.serializer,
       StorageState.serializer,
       _ => None,
@@ -473,6 +476,7 @@ object Storages {
           case c                => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 
   /**
     * Constructs a Storages instance
