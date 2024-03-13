@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
@@ -18,7 +17,6 @@ import munit.catseffect.IOFixture
 import munit.{AnyFixture, CatsEffectSuite}
 
 import java.nio.file.{Files, Paths}
-import scala.concurrent.duration.Duration
 
 /**
   * Test class that allows to check that across core and plugins:
@@ -27,9 +25,6 @@ import scala.concurrent.duration.Duration
   *   - Distage wiring is valid
   */
 class MainSuite extends NexusSuite with MainSuite.Fixture {
-
-  // The default timeout of 30s is slightly too short for the GitHub free runners
-  override val munitIOTimeout: Duration = Duration(60, "s")
 
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
   private val pluginLoaderConfig = PluginLoaderConfig(pluginsParentPath.toString)
@@ -73,7 +68,7 @@ object MainSuite {
   trait Fixture { self: CatsEffectSuite =>
 
     // Overload config via system properties
-    private def initConfig(postgres: PostgresContainer, elastic: ElasticSearchContainer): IO[Map[String, String]] =
+    private def initConfig(postgres: PostgresContainer): IO[Map[String, String]] =
       IO.blocking {
         val resourceTypesFile = Files.createTempFile("resource-types", ".json")
         Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
@@ -92,12 +87,11 @@ object MainSuite {
           "app.defaults.database.access.username"              -> PostgresUser,
           "app.default.database.access.password"               -> PostgresPassword,
           "akka.actor.testkit.typed.throw-on-shutdown-timeout" -> "false",
-          "plugins.elasticsearch.base"                         -> s"http://${elastic.getHost}:${elastic.getMappedPort(9200)}",
-          "plugins.elasticsearch.credentials.username"         -> "elastic",
-          "plugins.elasticsearch.credentials.password"         -> "password",
+          "plugins.elasticsearch.indexing-enabled"             -> "false",
           //TODO Investigate how to remove this property from the config
           "plugins.elasticsearch.disable-metrics-projection"   -> "true",
           "plugins.graph-analytics.enabled"                    -> "true",
+          "plugins.graph-analytics.indexing-enabled"           -> "false",
           "plugins.search.enabled"                             -> "true",
           "plugins.search.indexing.resource-types"             -> resourceTypesFile.toString,
           "plugins.search.indexing.mapping"                    -> mappingFile.toString,
@@ -109,8 +103,7 @@ object MainSuite {
     private def resource() =
       for {
         postgres <- PostgresContainer.resource(PostgresUser, PostgresPassword)
-        elastic  <- ElasticSearchContainer.resource()
-        _        <- SystemPropertyOverride(initConfig(postgres, elastic))
+        _        <- SystemPropertyOverride(initConfig(postgres))
       } yield ()
 
     val main: IOFixture[Unit] = ResourceSuiteLocalFixture("main", resource())

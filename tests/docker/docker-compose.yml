@@ -172,9 +172,6 @@ services:
       - "127.0.0.1:4510-4559:4510-4559"
     environment:
       - DEBUG=${DEBUG:-0}
-    volumes:
-      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       ls:
         # Set the container IP address in the 10.0.2.0/24 subnet
