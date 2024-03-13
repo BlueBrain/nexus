@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{Total, evaluator}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{evaluator, Total}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
