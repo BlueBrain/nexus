@@ -449,7 +449,7 @@ final class Files(
       filename: String,
       fileId: Iri
   ): IO[FileStorageMetadata]                           =
-    LinkFile(storage, remoteDiskStorageClient, config)
+    LinkFile(storage, remoteDiskStorageClient)
       .apply(path, filename)
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
