@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
@@ -53,7 +53,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         as: ActorSystem[Nothing],
         authTokenProvider: AuthTokenProvider
     ) =>
-      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem)
+      val httpConfig = HttpClientConfig.noRetry(true)
+      val httpClient = HttpClient()(httpConfig, as.classicSystem)
       DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
         as
       )

@@ -26,10 +26,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import io.circe.parser.decode
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpTimeoutError
 import fs2._
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
   * Collection of functions for interacting with a remote delta instance.
@@ -114,9 +115,10 @@ object DeltaClient {
     override def checkElems(source: RemoteProjectSource): IO[Unit] = {
       for {
         authToken <- authTokenProvider(credentials)
-        result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
+        request    = Head(elemAddress(source)).withCredentials(authToken)
+        result    <- client(request) {
                        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()) >> IO.unit
-                     }
+                     }.timeoutTo(3.seconds, IO.raiseError(HttpTimeoutError(request, "Head request took more than 3s")))
       } yield result
     }
 
