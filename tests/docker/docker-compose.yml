@@ -160,6 +160,7 @@ services:
       AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
       AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
       SERVICES: "s3:4566"
+      DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM: "*delta"
     ports:
       - 4566:4566
     networks:
