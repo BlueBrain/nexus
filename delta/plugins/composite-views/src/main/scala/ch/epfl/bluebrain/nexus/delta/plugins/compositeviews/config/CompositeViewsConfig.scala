@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsCo
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
@@ -96,8 +95,6 @@ object CompositeViewsConfig {
 
   /**
     * Remote source client configuration
-    * @param http
-    *   http client configuration
     * @param retryDelay
     *   SSE client retry delay
     * @param maxBatchSize
@@ -107,7 +104,6 @@ object CompositeViewsConfig {
     *   the maximum batching duration. In this window, duplicated persistence ids are discarded
     */
   final case class RemoteSourceClientConfig(
-      http: HttpClientConfig,
       retryDelay: FiniteDuration,
       maxBatchSize: Int,
       maxTimeWindow: FiniteDuration
