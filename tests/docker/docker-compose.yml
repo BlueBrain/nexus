@@ -36,6 +36,8 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    extra_hosts:
+      - "delta:127.0.0.1"
     dns:
       # Set the DNS server to be the LocalStack container, for host resolution
       - 10.0.2.20
