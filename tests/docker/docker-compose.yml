@@ -1,6 +1,6 @@
 version: "3.3"
 networks:
-  ls:
+  default:
     ipam:
       config:
         # Specify the subnet range for IP address allocation
@@ -36,11 +36,11 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    extra_hosts:
+      - "delta:127.0.0.1"
     dns:
       # Set the DNS server to be the LocalStack container, for host resolution
       - 10.0.2.20
-    networks:
-      - ls
 
   delta2:
     depends_on:
@@ -63,6 +63,9 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
 
   delta3:
     depends_on:
@@ -85,6 +88,9 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.4
@@ -99,9 +105,6 @@ services:
       - --hostname-strict-backchannel=true
     ports:
       - 9090:8080
-    networks:
-      - ls
-
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
@@ -123,9 +126,6 @@ services:
       resources:
         limits:
           memory: 4G
-    networks:
-      - ls
-
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
@@ -135,16 +135,12 @@ services:
       - 9999:9999
     volumes:
       - ./config:/config
-    networks:
-      - ls
 
   postgres:
     image: library/postgres:15.6
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
-    networks:
-      - ls
 
   storage-service:
     container_name: "nexus-storage-service"
@@ -159,20 +155,16 @@ services:
       - 8090:8090
     volumes:
       - ./config:/config
-    networks:
-      - ls
 
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
-    image: localstack/localstack
-    ports:
-      # Now only required if you need to access LocalStack from the host
-      - "127.0.0.1:4566:4566"
-      # Now only required if you need to access LocalStack from the host
-      - "127.0.0.1:4510-4559:4510-4559"
+    image: localstack/localstack:3.2
     environment:
-      - DEBUG=${DEBUG:-0}
+      AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
+      AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
+      SERVICES: "s3:4566"
+    ports:
+      - 4566:4566
     networks:
-      ls:
+      default:
         # Set the container IP address in the 10.0.2.0/24 subnet
         ipv4_address: 10.0.2.20

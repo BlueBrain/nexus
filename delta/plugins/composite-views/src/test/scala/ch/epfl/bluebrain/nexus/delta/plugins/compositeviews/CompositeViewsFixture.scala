@@ -168,7 +168,7 @@ trait CompositeViewsFixture extends ConfigFixtures {
     3,
     eventLogConfig,
     pagination,
-    RemoteSourceClientConfig(httpClientConfig, 1.second, 1, 500.milliseconds),
+    RemoteSourceClientConfig(1.second, 1, 500.milliseconds),
     1.minute,
     batchConfig,
     batchConfig,
