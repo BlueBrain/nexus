@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection, SchemaState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLogReadOnly
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 trait FetchSchema {
@@ -22,17 +23,15 @@ trait FetchSchema {
 
 object FetchSchema {
 
-  def apply(log: SchemaLog): FetchSchema = {
+  def apply(log: ScopedEventLogReadOnly[Iri, SchemaState, SchemaRejection]): FetchSchema = {
 
     def notFound(iri: Iri, ref: ProjectRef) = SchemaNotFound(iri, ref)
 
     new FetchSchema {
-      override def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Schema] = {
-        stateOrNotFound(IdSegmentRef(ref), ref.iri, project)
-          .attemptNarrow[SchemaRejection]
+      override def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Schema] =
+        stateOrNotFound(IdSegmentRef(ref), ref.iri, project).attempt
           .map(_.toOption)
           .map(_.map(_.toResource))
-      }
 
       override def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[SchemaState] =
         id match {
