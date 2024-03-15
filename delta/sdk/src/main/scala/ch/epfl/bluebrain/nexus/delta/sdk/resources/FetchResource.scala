@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ResourceNotFound, RevisionNotFound, TagNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLogReadOnly
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 trait FetchResource {
@@ -22,14 +21,15 @@ trait FetchResource {
 
 object FetchResource {
 
-  def apply(log: ResourceLog): FetchResource = {
+  def apply(
+      log: ScopedEventLogReadOnly[Iri, ResourceState, ResourceRejection]
+  ): FetchResource = {
 
     def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
 
     new FetchResource {
       override def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Resource] = {
-        stateOrNotFound(IdSegmentRef(ref), ref.iri, project)
-          .attemptNarrow[ResourceRejection]
+        stateOrNotFound(IdSegmentRef(ref), ref.iri, project).attempt
           .map(_.toOption)
           .map(_.map(_.toResource))
       }
