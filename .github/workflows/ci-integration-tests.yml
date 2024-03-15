@@ -34,7 +34,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Start services
-        run: docker buildx bake --file docker-compose.yml --file docker-compose-cache.json
+        run: docker buildx bake --file tests/docker/docker-compose.yml --file tests/docker/docker-compose-cache.json
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
