@@ -10,7 +10,7 @@ on:
       - '.github/workflows/ci-integration-tests.yml'
 jobs:
   run:
-    runs-on: it
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
