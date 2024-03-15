@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
@@ -17,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef, ResourceLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.{logger, ResourcesLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoChangeDetected, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -164,10 +165,16 @@ final class ResourcesImpl private (
     for {
       (iri, pc)    <- expandWithContext(fetchContext.onRead, projectRef, id.value)
       schemaRefOpt <- IO.fromEither(expandResourceRef(schemaOpt, pc))
-      state        <- FetchResource(log).stateOrNotFound(id, iri, projectRef)
+      state        <- stateOrNotFound(id, iri, projectRef)
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound(iri, projectRef))
     } yield state
   }.span("fetchResource")
+
+  private def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] = id match {
+    case Latest(_)        => log.stateOr(ref, iri, notFound(iri, ref))
+    case Revision(_, rev) => log.stateOr(ref, iri, rev, notFound(iri, ref), RevisionNotFound)
+    case Tag(_, tag)      => log.stateOr(ref, iri, tag, notFound(iri, ref), TagNotFound(tag))
+  }
 
   private def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
 

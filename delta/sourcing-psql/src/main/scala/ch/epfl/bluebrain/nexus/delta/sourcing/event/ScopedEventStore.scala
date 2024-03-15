@@ -89,19 +89,10 @@ object ScopedEventStore {
       override def save(event: E, init: PartitionInit): doobie.ConnectionIO[Unit] =
         init.initializePartition("scoped_events") >> insertEvent(event)
 
-      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E] = {
-        val select =
-          fr"SELECT value FROM scoped_events" ++
-            Fragments.whereAndOpt(
-              Some(fr"type = $tpe"),
-              Some(fr"org = ${ref.organization}"),
-              Some(fr"project = ${ref.project}"),
-              Some(fr"id = $id"),
-              to.map { t => fr" rev <= $t" }
-            ) ++
-            fr"ORDER BY rev"
-
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
-      }
+      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E] =
+        ScopedEventGet
+          .history[Id, E](tpe, ref, id, to)
+          .streamWithChunkSize(config.batchSize)
+          .transact(xas.read)
     }
 }

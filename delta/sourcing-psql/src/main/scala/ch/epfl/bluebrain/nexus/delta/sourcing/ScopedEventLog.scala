@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{ScopedStateGet, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import doobie._
 import doobie.implicits._
@@ -174,6 +174,7 @@ object ScopedEventLog {
       definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
+      definition.eventSerializer,
       definition.evaluator,
       definition.onUniqueViolation,
       definition.tagger,
@@ -186,6 +187,8 @@ object ScopedEventLog {
       entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
+      // todo: remove the serializer
+      eventSerializer: Serializer[Id, E],
       evaluator: CommandEvaluator[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
@@ -211,6 +214,9 @@ object ScopedEventLog {
         }
       }
 
+      implicit val putId: Put[Id]        = eventSerializer.putId
+      implicit val getEventValue: Get[E] = eventSerializer.getValue
+
       override def stateOr[R <: Rejection](
           ref: ProjectRef,
           id: Id,
@@ -218,7 +224,7 @@ object ScopedEventLog {
           notFound: => R,
           invalidRevision: (Int, Int) => R
       ): IO[S] =
-        evaluator.stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
+        ScopedStateGet.rev(evaluator.stateMachine, entityType, ref, id, rev, xas).flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)

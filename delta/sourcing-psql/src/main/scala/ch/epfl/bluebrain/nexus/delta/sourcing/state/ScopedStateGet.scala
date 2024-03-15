@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sourcing.{StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventGet
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
 import doobie.implicits._
@@ -23,7 +26,16 @@ object ScopedStateGet {
   def tag[Id: Put, S: Get](tpe: EntityType, project: ProjectRef, id: Id, tag: Tag): ConnectionIO[Option[S]] =
     apply(tpe, project, id, tag)
 
-  def rev[Id: Put, S: Get](tpe: EntityType, project: ProjectRef, id: Id, rev: Int): ConnectionIO[Option[S]] =
-    apply(tpe, project, id, rev)
+  def rev[Id: Put, S, E: Get](
+      stateMachine: StateMachine[S, E],
+      tpe: EntityType,
+      project: ProjectRef,
+      id: Id,
+      rev: Int,
+      xas: Transactors
+  ): IO[Option[S]] =
+    stateMachine.computeState(
+      ScopedEventGet.history[Id, E](tpe, project, id, Some(rev)).stream.transact(xas.read)
+    )
 
 }

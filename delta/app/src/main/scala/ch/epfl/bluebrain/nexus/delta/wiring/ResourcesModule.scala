@@ -53,10 +53,6 @@ object ResourcesModule extends ModuleDef {
     ScopedEventLog(scopedDefinition, config.eventLog, xas)
   }
 
-  make[FetchResource].from { (scopedLog: ResourceLog) =>
-    FetchResource(scopedLog)
-  }
-
   make[Resources].from {
     (
         resourceLog: ResourceLog,

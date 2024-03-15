@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ResourceNotFound, RevisionNotFound, TagNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, StateMachine, Transactors}
+import doobie._
+import doobie.implicits._
 
 trait FetchResource {
 
@@ -22,24 +23,36 @@ trait FetchResource {
 
 object FetchResource {
 
-  def apply(log: ResourceLog): FetchResource = {
-
-    def notFound(iri: Iri, ref: ProjectRef) = ResourceNotFound(iri, ref)
+  def apply(
+      stateMachine: StateMachine[ResourceState, ResourceEvent],
+      stateSerializer: Serializer[Iri, ResourceState],
+      eventSerializer: Serializer[Iri, ResourceEvent],
+      xas: Transactors
+  ): FetchResource = {
 
     new FetchResource {
+      implicit val putId: Put[Iri]                   = stateSerializer.putId
+      implicit val getStateValue: Get[ResourceState] = stateSerializer.getValue
+      implicit val getEventValue: Get[ResourceEvent] = eventSerializer.getValue
+
       override def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Resource] = {
-        stateOrNotFound(IdSegmentRef(ref), ref.iri, project)
-          .attemptNarrow[ResourceRejection]
+        stateOrNotFound(IdSegmentRef(ref), ref.iri, project).attempt
           .map(_.toOption)
           .map(_.map(_.toResource))
       }
 
-      override def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] =
-        id match {
-          case Latest(_)        => log.stateOr(ref, iri, notFound(iri, ref))
-          case Revision(_, rev) => log.stateOr(ref, iri, rev, notFound(iri, ref), RevisionNotFound)
-          case Tag(_, tag)      => log.stateOr(ref, iri, tag, notFound(iri, ref), TagNotFound(tag))
+      override def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[ResourceState] = {
+        val state = id match {
+          case Latest(_)        =>
+            ScopedStateGet.latest[Iri, ResourceState](Resources.entityType, ref, iri).transact(xas.read)
+          case Tag(_, tag)      =>
+            ScopedStateGet.tag[Iri, ResourceState](Resources.entityType, ref, iri, tag).transact(xas.read)
+          case Revision(_, rev) =>
+            ScopedStateGet
+              .rev[Iri, ResourceState, ResourceEvent](stateMachine, Resources.entityType, ref, iri, rev, xas)
         }
+        state.flatMap(x => IO.fromOption(x)(new Exception("todo change this one")))
+      }
     }
 
   }

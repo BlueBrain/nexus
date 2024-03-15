@@ -77,6 +77,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     PullRequest.entityType,
     eventStore,
     stateStore,
+    PullRequestEvent.serializer,
     PullRequest.evaluator,
     (id: Iri, c: PullRequestCommand) => AlreadyExists(id, c.project),
     Tagger[PullRequestEvent](
