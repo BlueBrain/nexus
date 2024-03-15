@@ -1,4 +1,10 @@
 version: "3.3"
+networks:
+  default:
+    ipam:
+      config:
+        # Specify the subnet range for IP address allocation
+        - subnet: 10.0.2.0/24
 services:
   delta:
     depends_on:
@@ -12,7 +18,7 @@ services:
         condition: service_started
       storage-service:
         condition: service_started
-      minio:
+      localstack:
         condition: service_started
     environment:
       - DELTA_PLUGINS
@@ -30,6 +36,11 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    extra_hosts:
+      - "delta:127.0.0.1"
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
 
   delta2:
     depends_on:
@@ -52,6 +63,9 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
 
   delta3:
     depends_on:
@@ -74,6 +88,9 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.4
@@ -139,27 +156,15 @@ services:
     volumes:
       - ./config:/config
 
-  minio:
-    image: minio/minio:RELEASE.2021-07-30T00-02-00Z
-    command: server /data
+  localstack:
+    image: localstack/localstack:3.2
     environment:
-      MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
-      MINIO_SECRET_KEY: "CHUTCHUT"
-      MINIO_DOMAIN: "delta.bbp"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
+      AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
+      SERVICES: "s3:4566"
+    ports:
+      - 4566:4566
     networks:
       default:
-        # We add this alias due to the deprecation of path-styles on S3:
-        # https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
-        aliases:
-          - delta.bbp
-          - nexustest.delta.bbp
-          - foobar.delta.bbp
-    ports:
-      - 9000:9000
-    volumes:
-      - /tmp/minio:/data
+        # Set the container IP address in the 10.0.2.0/24 subnet
+        ipv4_address: 10.0.2.20

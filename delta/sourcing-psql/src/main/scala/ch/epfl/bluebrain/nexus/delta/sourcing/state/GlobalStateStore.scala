@@ -32,6 +32,12 @@ trait GlobalStateStore[Id, S <: GlobalState] {
   def delete(id: Id): ConnectionIO[Unit]
 
   /**
+    * Returns the latest state from the write nodes to get a stronger consistency when the Postgres works in a
+    * replicated fashion
+    */
+  def getWrite(id: Id): IO[Option[S]]
+
+  /**
     * Returns the state
     */
   def get(id: Id): IO[Option[S]]
@@ -102,7 +108,11 @@ object GlobalStateStore {
     override def delete(id: Id): ConnectionIO[Unit] =
       sql"""DELETE FROM global_states WHERE type = $tpe AND id = $id""".stripMargin.update.run.void
 
-    override def get(id: Id): IO[Option[S]] = GlobalStateGet[Id, S](tpe, id).transact(xas.read)
+    override def getWrite(id: Id): IO[Option[S]] = get(id, xas.write)
+
+    override def get(id: Id): IO[Option[S]] = get(id, xas.read)
+
+    private def get(id: Id, xa: Transactor[IO]) = GlobalStateGet[Id, S](tpe, id).transact(xa)
 
     private def states(offset: Offset, strategy: RefreshStrategy): Stream[IO, S] =
       StreamingQuery[(S, Long)](

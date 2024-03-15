@@ -45,7 +45,7 @@
     "@id": "https://creativecommons.org/licenses/by-nc/4.0/",
     "@type": "License"
   },
-  "name": "R1818-ReticularNeuron2_shrinkageCorr2.40_no dendrites_bouton_density",
+  "name": "1818-ReticularNeuron2_shrinkageCorr2.40_no dendrites_bouton_density",
   "series": [
     {
       "statistic": "mean",

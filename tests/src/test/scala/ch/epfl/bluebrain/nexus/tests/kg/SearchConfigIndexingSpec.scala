@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
@@ -18,10 +18,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
 
-  private val orgId    = genId()
-  private val projId1  = genId()
-  private val id1      = s"$orgId/$projId1"
-  private val projects = List(id1)
+  private val orgId   = genId()
+  private val projId1 = genId()
+  private val id1     = s"$orgId/$projId1"
 
   private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
   private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
@@ -1053,6 +1052,51 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
   }
 
+  "full text search" should {
+    def fullTextQuery(q: String): Json =
+      json"""
+          {
+            "query": {
+              "multi_match": {
+                "query": "$q",
+                "fields": [ "*" ],
+                "type": "most_fields",
+                "operator": "and",
+                "boost": 10
+              }
+            }
+          }
+          """
+
+    "return the detailed circuit based on its name" in {
+      val detailedCircuitId = "https://bbp.epfl.ch/data/detailed-circuit"
+
+      val prefix = "SSCx-HexO1"
+      val search = s"${prefix}-Release-TC__ConnRewire"
+
+      (prefix.length - 1 to search.length).toList.traverse { index =>
+        val s              = search.subSequence(0, index).toString
+        val query          = fullTextQuery(s)
+        val queryLowercase = fullTextQuery(s.toLowerCase)
+        assertIds(query)(detailedCircuitId) >> assertIds(queryLowercase)(detailedCircuitId)
+      }
+    }
+
+    "return the bouton density based on its name starting with digits" in {
+      val boutonDensityId = "https://bbp.epfl.ch/data/bouton-density"
+
+      val prefix = "1818-"
+      val search = s"${prefix}ReticularNeuron2_shrink"
+
+      (prefix.length - 1 to search.length).toList.traverse { index =>
+        val s              = search.subSequence(0, index).toString
+        val query          = fullTextQuery(s)
+        val queryLowercase = fullTextQuery(s.toLowerCase)
+        assertIds(query)(boutonDensityId) >> assertIds(queryLowercase)(boutonDensityId)
+      }
+    }
+  }
+
   /**
     * Defines an ES query that searches for the document with the provided id and limits the resulting source to just
     * the requested field
@@ -1067,14 +1111,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     json.hcursor.downField("aggregations").as[Json].toOption
 
   /** Post a resource across all defined projects in the suite */
-  private def postResource(resourcePath: String): IO[List[Assertion]] = {
+  private def postResource(resourcePath: String): IO[Assertion] = {
     val json = jsonContentOf(resourcePath)
-    projects.parTraverse { project =>
-      for {
-        _ <- deltaClient.post[Json](s"/resources/$project/_/", json, Rick) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-      } yield succeed
+    deltaClient.post[Json](s"/resources/$id1/_/", json, Rick) { (_, response) =>
+      response.status shouldEqual StatusCodes.Created
     }
   }
 
@@ -1083,14 +1123,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     * on the _source.
     */
   private def assertOneSource(query: Json)(assertion: Json => Assertion)(implicit pos: Position): IO[Assertion] =
-    deltaClient.post[Json]("/search/query", query, Rick) { (body, response) =>
+    deltaClient.post[Json]("/search/query", query, Rick) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
-
-      val results = Json
-        .fromValues(body.findAllByKey("_source"))
-        .hcursor
-        .as[List[Json]]
-        .getOrElse(Nil)
+      val results = Optics.hitsSource.getAll(json)
 
       results match {
         case single :: Nil => assertion(single)
@@ -1106,6 +1141,13 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
               s"Results were: $results"
           )
       }
+    }
+
+  private def assertIds(query: Json)(expectedIds: String*)(implicit pos: Position): IO[Assertion] =
+    deltaClient.post[Json]("/search/query", query, Rick) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      val results = Optics.hitsIds.getAll(json)
+      results shouldEqual expectedIds
     }
 
   private def assertEmpty(query: Json)(implicit pos: Position): IO[Assertion] =

@@ -114,7 +114,7 @@ Response
 
 ## Link using POST
 
-Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `S3Storage` and `RemoteDiskStorage`.
+Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `RemoteDiskStorage`.
 
 ```
 POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
@@ -150,7 +150,7 @@ Response
 
 ## Link using PUT
 
-Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `S3Storage` and `RemoteDiskStorage`.
+Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `RemoteDiskStorage`.
 
 This alternative endpoint allows to specify the resource `@id`.
 

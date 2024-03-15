@@ -174,13 +174,7 @@ object StorageValue {
       }
 
       val regionProvider: AwsRegionProvider = new AwsRegionProvider {
-        val getRegion: Region = region.getOrElse {
-          endpoint match {
-            case None                                                                 => Region.US_EAST_1
-            case Some(uri) if uri.authority.host.toString().contains("amazonaws.com") => Region.US_EAST_1
-            case _                                                                    => Region.AWS_GLOBAL
-          }
-        }
+        val getRegion: Region = region.getOrElse(Region.US_EAST_1)
       }
 
       s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)

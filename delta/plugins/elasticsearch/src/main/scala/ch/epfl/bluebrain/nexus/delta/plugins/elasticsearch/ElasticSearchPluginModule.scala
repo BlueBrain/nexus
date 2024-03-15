@@ -165,7 +165,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.metricsQuery,
         config.prefix,
         files.metricsMapping,
-        files.metricsSettings
+        files.metricsSettings,
+        config.indexingEnabled
       )
   }
 

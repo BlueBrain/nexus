@@ -197,7 +197,7 @@ object ScopedEventLog {
         }
 
         for {
-          originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
+          originalState <- stateStore.getWrite(ref, id).redeem(_ => None, Some(_))
           result        <- stateMachine.evaluate(originalState, command, maxDuration)
           _             <- persist(result._1, originalState, result._2)
         } yield result
@@ -207,7 +207,7 @@ object ScopedEventLog {
         sql.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value
 
       override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
-        stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
+        stateStore.getWrite(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
           stateMachine.evaluate(state, command, maxDuration)
         }
 

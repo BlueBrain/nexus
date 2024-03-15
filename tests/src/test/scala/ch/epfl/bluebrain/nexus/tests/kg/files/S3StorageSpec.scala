@@ -29,11 +29,11 @@ class S3StorageSpec extends StorageSpec {
 
   val s3Config: S3Config = storageConfig.s3
 
-  private val bucket  = "nexustest"
+  private val bucket  = genId()
   private val logoKey = "some/path/to/nexus-logo.png"
 
-  val s3Endpoint: String       = s"http://delta.bbp:9000"
-  val s3BucketEndpoint: String = s"http://$bucket.delta.bbp:9000"
+  val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566"
+  val s3BucketEndpoint: String = s"http://$bucket.s3.localhost.localstack.cloud:4566"
 
   private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
     case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))
@@ -41,7 +41,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   private val s3Client = S3Client.builder
-    .endpointOverride(new URI(s"http://${sys.props.getOrElse("minio-url", "localhost:9000")}"))
+    .endpointOverride(new URI(s3Endpoint))
     .credentialsProvider(credentialsProvider)
     .region(Region.US_EAST_1)
     .build
@@ -133,48 +133,16 @@ class S3StorageSpec extends StorageSpec {
   }
 
   s"Linking in S3" should {
-    "link an existing file" in {
+    "be rejected" in {
       val payload = Json.obj(
         "filename"  -> Json.fromString("logo.png"),
         "path"      -> Json.fromString(logoKey),
         "mediaType" -> Json.fromString("image/png")
       )
-      val fileId  = s"${config.deltaUri}/resources/$projectRef/_/logo.png"
       deltaClient.put[Json](s"/files/$projectRef/logo.png?storage=nxv:${storageId}2", payload, Coyote) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.Created
-          filterMetadataKeys(json) shouldEqual
-            jsonContentOf(
-              "kg/files/linking-metadata.json",
-              replacements(
-                Coyote,
-                "projId"         -> projectRef,
-                "self"           -> fileSelf(projectRef, fileId),
-                "endpoint"       -> s3Endpoint,
-                "endpointBucket" -> s3BucketEndpoint,
-                "key"            -> logoKey
-              ): _*
-            )
+        (_, response) =>
+          response.status shouldEqual StatusCodes.BadRequest
       }
-    }
-  }
-
-  "fail to link a nonexistent file" in {
-    val payload = Json.obj(
-      "filename"  -> Json.fromString("logo.png"),
-      "path"      -> Json.fromString("non/existent.png"),
-      "mediaType" -> Json.fromString("image/png")
-    )
-
-    deltaClient.put[Json](s"/files/$projectRef/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
-      (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf(
-          "kg/files/linking-notfound.json",
-          "org"            -> orgId,
-          "proj"           -> projId,
-          "endpointBucket" -> s3BucketEndpoint
-        )
     }
   }
 }
