@@ -27,6 +27,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'sbt'
           check-latest: true
       - name: Set up proxy for docker buildx
         run: |
