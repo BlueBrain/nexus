@@ -1,0 +1,26 @@
+{
+  "target": {
+    "elasticsearch": {
+      "cache-from": [
+        "type=registry,ref=ghcr.io/BlueBrain/elasticsearch:cache"
+      ],
+      "cache-to": [
+        "type=registry,ref=ghcr.io/BlueBrain/elasticsearch:cache"
+      ],
+      "output": [
+        "type=docker"
+      ]
+    },
+    "localstack": {
+      "cache-from": [
+        "type=registry,ref=ghcr.io/BlueBrain/localstack:cache"
+      ],
+      "cache-to": [
+        "type=registry,ref=ghcr.io/BlueBrain/localstack:cache"
+      ],
+      "output": [
+        "type=docker"
+      ]
+    }
+  }
+}
