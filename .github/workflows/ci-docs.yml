@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
@@ -20,9 +24,5 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Review
         run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateInternalLinks
