@@ -25,6 +25,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'sbt'
           check-latest: true
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
