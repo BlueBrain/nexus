@@ -17,6 +17,7 @@ import munit.catseffect.IOFixture
 import munit.{AnyFixture, CatsEffectSuite}
 
 import java.nio.file.{Files, Paths}
+import scala.concurrent.duration.Duration
 
 /**
   * Test class that allows to check that across core and plugins:
@@ -25,6 +26,8 @@ import java.nio.file.{Files, Paths}
   *   - Distage wiring is valid
   */
 class MainSuite extends NexusSuite with MainSuite.Fixture {
+
+  override val munitIOTimeout: Duration = Duration(60, "s")
 
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
   private val pluginLoaderConfig = PluginLoaderConfig(pluginsParentPath.toString)

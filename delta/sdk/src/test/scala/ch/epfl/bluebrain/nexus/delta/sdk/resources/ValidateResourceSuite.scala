@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
@@ -56,12 +57,12 @@ class ValidateResourceSuite extends NexusSuite {
 
   private val unconstrained = ResourceRef.Revision(schemas.resources, 1)
 
-  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchF[Schema] = {
     case (ref, p) if ref.iri == schemaId && p == project           => schema.map(Some(_))
     case (ref, p) if ref.iri == deprecatedSchemaId && p == project => deprecatedSchema.map(Some(_))
     case _                                                         => IO.none
   }
-  private val schemaResolution: ResourceResolution[Schema]                    =
+  private val schemaResolution: ResourceResolution[Schema]             =
     ResourceResolutionGen.singleInProject(project, fetchSchema)
 
   private def sourceWithId(id: Iri)                                   =

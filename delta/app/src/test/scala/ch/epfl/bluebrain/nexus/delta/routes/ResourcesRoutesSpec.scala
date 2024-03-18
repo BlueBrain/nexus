@@ -17,16 +17,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{DetectChange, Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -87,7 +88,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchF[Schema] = {
     case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
     case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
@@ -101,14 +102,17 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
+    val resourceDef = Resources.definition(validator, DetectChange(enabled = true), clock)
+    val scopedLog   = ScopedEventLog(
+      resourceDef,
+      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true).eventLog,
+      xas
+    )
+
     val resources = ResourcesImpl(
-      validator,
-      DetectChange(enabled = true),
+      scopedLog,
       fetchContext,
-      resolverContextResolution,
-      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true),
-      xas,
-      clock
+      resolverContextResolution
     )
     (
       Route.seal(

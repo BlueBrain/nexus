@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -12,14 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -145,13 +144,7 @@ final class SchemasImpl private (
     for {
       pc    <- fetchContext.onRead(projectRef)
       iri   <- expandIri(id.value, pc)
-      state <- id match {
-                 case Latest(_)        => log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-                 case Revision(_, rev) =>
-                   log.stateOr(projectRef, iri, rev, SchemaNotFound(iri, projectRef), RevisionNotFound)
-                 case Tag(_, tag)      =>
-                   log.stateOr(projectRef, iri, tag, SchemaNotFound(iri, projectRef), TagNotFound(tag))
-               }
+      state <- FetchSchema(log).stateOrNotFound(id, iri, projectRef)
     } yield state.toResource
   }.span("fetchSchema")
 
@@ -173,13 +166,10 @@ object SchemasImpl {
     * Constructs a [[Schemas]] instance.
     */
   final def apply(
+      scopedLog: SchemaLog,
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
-      contextResolution: ResolverContextResolution,
-      validate: ValidateSchema,
-      config: SchemasConfig,
-      xas: Transactors,
-      clock: Clock[IO]
+      contextResolution: ResolverContextResolution
   )(implicit
       api: JsonLdApi,
       uuidF: UUIDF
@@ -191,7 +181,7 @@ object SchemasImpl {
         uuidF
       )
     new SchemasImpl(
-      ScopedEventLog(Schemas.definition(validate, clock), config.eventLog, xas),
+      scopedLog,
       fetchContext,
       schemaImports,
       parser

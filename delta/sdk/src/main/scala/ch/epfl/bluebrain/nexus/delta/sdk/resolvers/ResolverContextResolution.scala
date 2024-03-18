@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.{logger, ProjectRemoteContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -111,18 +111,18 @@ object ResolverContextResolution {
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
-    * @param resources
-    *   a resource instance
     * @param rcr
     *   a previously defined 'RemoteContextResolution'
+    * @param fetchResource
+    *   how to fetch a resource
     */
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      resources: Resources,
-      rcr: RemoteContextResolution
+      rcr: RemoteContextResolution,
+      fetchResource: FetchResource
   ): ResolverContextResolution =
-    apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, resources, excludeDeprecated = false))
+    apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, fetchResource, excludeDeprecated = false))
 
   /**
     * A [[ResolverContextResolution]] that never resolves
