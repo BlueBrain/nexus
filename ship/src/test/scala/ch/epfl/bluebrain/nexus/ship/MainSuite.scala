@@ -5,6 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser}
@@ -29,6 +30,7 @@ class MainSuite extends NexusSuite with MainSuite.Fixture {
       Map(
         Projects.entityType  -> Count(5L, 0L),
         Resolvers.entityType -> Count(5L, 0L),
+        Resources.entityType -> Count(1L, 0L),
         EntityType("xxx")    -> Count(0L, 1L)
       )
     )

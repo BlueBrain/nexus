@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
+import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor
 import com.monovore.decline.Opts
 import com.monovore.decline.effect.CommandIOApp
 import fs2.Stream
@@ -80,7 +81,8 @@ object Main
                     fetchActiveOrg     = FetchActiveOrganization(xas)
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    report            <- EventProcessor.run(events, projectProcessor, resolverProcessor)
+                    resourceProcessor <- ResourceProcessor(eventLogConfig, fetchContext, xas)
+                    report            <- EventProcessor.run(events, projectProcessor, resolverProcessor, resourceProcessor)
                   } yield report
                 }
     } yield report
