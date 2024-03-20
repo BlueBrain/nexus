@@ -54,13 +54,13 @@ class ResourceProcessor private (resources: Resources, clock: EventClock) extend
         resources.updateAttachedSchema(e.id, e.project, e.schema.toIdSegment)
       case e: ResourceRefreshed     =>
         resources.refresh(e.id, e.project, e.schema.toIdSegment.some)
-      case e: ResourceTagAdded      => // todo deal with schema
+      case e: ResourceTagAdded      =>
         resources.tag(e.id, e.project, None, e.tag, e.targetRev, cRev)
-      case e: ResourceTagDeleted    => // todo deal with schema
+      case e: ResourceTagDeleted    =>
         resources.deleteTag(e.id, e.project, None, e.tag, cRev)
-      case e: ResourceDeprecated    => // todo deal with schema
+      case e: ResourceDeprecated    =>
         resources.deprecate(e.id, e.project, None, cRev)
-      case e: ResourceUndeprecated  => // todo deal with schema
+      case e: ResourceUndeprecated  =>
         resources.undeprecate(e.id, e.project, None, cRev)
     }
   }.redeemWith(
