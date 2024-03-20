@@ -200,6 +200,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestJson(GET, url, None, identity, (a: A, _: HttpResponse) => a, jsonHeaders)
   }
 
+  def getJsonAndStatus(url: String, identity: Identity)(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] = {
+    requestJsonAndStatus(GET, url, None, identity, jsonHeaders)
+  }
+
   def delete[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
@@ -260,6 +264,23 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       extraHeaders
     )
   }
+
+  def requestJsonAndStatus(
+                                  method: HttpMethod,
+                                  url: String,
+                                  body: Option[Json],
+                                  identity: Identity,
+                                  extraHeaders: Seq[HttpHeader]
+                                )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] =
+    request[Json, Json, (Json, StatusCode)](
+      method,
+      url,
+      body,
+      identity,
+      (j: Json) => HttpEntity(ContentTypes.`application/json`, j.noSpaces),
+      (json, response) => (json, response.status),
+      extraHeaders
+    )
 
   def requestJson[A, R](
       method: HttpMethod,

@@ -32,7 +32,7 @@ class EndToEndTest extends BaseIntegrationSpec {
 
     "transfer a project" in {
 
-      val project = thereIsAProject()
+      val (project, projectJson) = thereIsAProject()
 
       whenTheExportIsRunOnProject(project)
 
@@ -42,13 +42,15 @@ class EndToEndTest extends BaseIntegrationSpec {
 
       weFixThePermissions(project)
 
-      thereShouldBeAProject(project)
+      thereShouldBeAProject(project, projectJson)
     }
 
-    def thereIsAProject(): ProjectRef = {
+    def thereIsAProject(): (ProjectRef, Json) = {
       val project: ProjectRef = ProjectRef.unsafe(genString(), genString())
       createProjects(writer, project.organization.value, project.project.value).accepted
-      project
+      val (projectJson, status) = deltaClient.getJsonAndStatus(s"/projects/${project.organization}/${project.project}", writer).accepted
+      status shouldEqual StatusCodes.OK
+      project -> projectJson
     }
 
     def whenTheExportIsRunOnProject(project: ProjectRef): Unit = {
@@ -87,9 +89,12 @@ class EndToEndTest extends BaseIntegrationSpec {
       ()
     }
 
-    def thereShouldBeAProject(project: ProjectRef): Assertion = {
+    def thereShouldBeAProject(project: ProjectRef, originalJson: Json): Assertion = {
       deltaClient.get[Json](s"/projects/${project.organization}/${project.project}", writer) {
-        (_, response) => response.status shouldEqual StatusCodes.OK
+        (json, response) => {
+          response.status shouldEqual StatusCodes.OK
+          json shouldEqual originalJson
+        }
       }.accepted
     }
 
