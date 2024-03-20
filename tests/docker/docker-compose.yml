@@ -36,6 +36,7 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+      - /tmp/ship:/tmp
     extra_hosts:
       - "delta:127.0.0.1"
     dns:
@@ -138,6 +139,8 @@ services:
 
   postgres:
     image: library/postgres:15.6
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"

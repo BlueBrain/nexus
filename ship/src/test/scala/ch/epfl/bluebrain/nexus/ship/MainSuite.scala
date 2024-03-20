@@ -36,7 +36,7 @@ class MainSuite extends NexusSuite with MainSuite.Fixture {
     )
     for {
       importFile <- ClasspathResourceLoader().absolutePath("import/import.json").map(Path(_))
-      _          <- Main.run(importFile, None).assertEquals(expected)
+      _          <- new RunShip().run(importFile, None).assertEquals(expected)
     } yield ()
   }
 
