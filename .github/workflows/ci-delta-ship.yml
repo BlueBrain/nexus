@@ -30,6 +30,18 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
+      - name: Clean, build Delta & Storage images
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            app/Docker/publishLocal \
+            storage/Docker/publishLocal
+      - name: Start services
+        run: docker-compose -f tests/docker/docker-compose.yml up -d
+      - name: Waiting for Delta to start
+        run: |
+          URL="http://localhost:8080/v1/version"
+          curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
