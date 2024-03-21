@@ -23,6 +23,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Create /tmp/ship folder
+        run: mkdir -p /tmp/ship
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
