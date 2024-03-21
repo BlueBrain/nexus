@@ -44,4 +44,4 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            ship-unit-tests-with-coverage
+            ship-unit-tests
