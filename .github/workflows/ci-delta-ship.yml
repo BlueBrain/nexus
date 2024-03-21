@@ -48,12 +48,12 @@ jobs:
           curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
       - name: list
         run: ls -la /tmp
-      - name: tree
-        run: |
-          sudo apt install tree
-          tree /tmp
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
             ship-unit-tests-with-coverage
+      - name: tree
+        run: |
+          sudo apt install tree
+          tree /tmp
