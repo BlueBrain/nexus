@@ -46,7 +46,7 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereShouldBeAProject(project, projectJson)
     }
 
-    "transfer a resolver" in {
+    "transfer the default resolver" in {
       val (project, _)             = thereIsAProject()
       val defaultInProjectResolver = nxv + "defaultInProject"
       val (_, resolverJson)        = thereIsAResolver(defaultInProjectResolver, project)
@@ -58,6 +58,20 @@ class EndToEndTest extends BaseIntegrationSpec {
       weFixThePermissions(project)
 
       thereShouldBeAResolver(project, defaultInProjectResolver, resolverJson)
+    }
+
+    "transfer a generic resource" in {
+      val (project, _) = thereIsAProject()
+      val (resource, resourceJson) = thereIsAResource(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      // TODO: This test currently fails because of the dummy ValidateResource implementation in ship
+      thereShouldBeAResource(project, resource, resourceJson)
     }
 
     def thereIsAProject(): (ProjectRef, Json) = {
@@ -82,7 +96,7 @@ class EndToEndTest extends BaseIntegrationSpec {
         }
         .accepted
 
-      IO.sleep(5.seconds).accepted
+      IO.sleep(4.seconds).accepted
     }
 
     def theOldProjectIsDeleted(project: ProjectRef): Unit = {
@@ -136,6 +150,36 @@ class EndToEndTest extends BaseIntegrationSpec {
       val encodedResolver = UrlUtils.encode(resolver.toString)
       deltaClient
         .get[Json](s"/resolvers/${project.organization}/${project.project}/$encodedResolver", writer) {
+          (json, response) =>
+            {
+              response.status shouldEqual StatusCodes.OK
+              json shouldEqual originalJson
+            }
+        }
+        .accepted
+    }
+
+    def thereIsAResource(project: ProjectRef): (Iri, Json) = {
+      val resource               = nxv + genString()
+      val encodedResource        = UrlUtils.encode(resource.toString)
+      val body                   = json"""{"hello": "world"}"""
+      deltaClient
+        .put[Json](s"/resources/${project.organization}/${project.project}/_/$encodedResource", body, writer) {
+          (_, response) =>
+            response.status shouldEqual StatusCodes.Created
+        }
+        .accepted
+      val (resourceJson, status) = deltaClient
+        .getJsonAndStatus(s"/resources/${project.organization}/${project.project}/_/$encodedResource", writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      resource -> resourceJson
+    }
+
+    def thereShouldBeAResource(project: ProjectRef, resource: Iri, originalJson: Json): Assertion = {
+      val encodedResolver = UrlUtils.encode(resource.toString)
+      deltaClient
+        .get[Json](s"/resources/${project.organization}/${project.project}/_/$encodedResolver", writer) {
           (json, response) =>
             {
               response.status shouldEqual StatusCodes.OK
