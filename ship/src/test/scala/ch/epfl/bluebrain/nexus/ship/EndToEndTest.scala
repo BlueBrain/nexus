@@ -95,7 +95,7 @@ class EndToEndTest extends BaseIntegrationSpec {
         }
         .accepted
 
-      IO.sleep(4.seconds).accepted
+      IO.sleep(6.seconds).accepted
     }
 
     def theOldProjectIsDeleted(project: ProjectRef): Unit = {
