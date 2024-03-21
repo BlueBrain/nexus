@@ -32,10 +32,6 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
-      - name: Cache Docker images.
-        uses: ScribeMD/docker-cache@0.4.0
-        with:
-          key: docker-${{ runner.os }}-${{ hashFiles('tests/docker/docker-compose.yml') }}
       - name: Clean, build Delta & Storage images
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
