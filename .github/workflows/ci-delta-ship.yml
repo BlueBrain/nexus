@@ -34,6 +34,10 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             app/Docker/publishLocal
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@0.4.0
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('tests/docker/docker-compose.yml') }}
       - name: Start services
         run: docker-compose -f tests/docker/docker-compose.yml up -d
       - name: Waiting for Delta to start
