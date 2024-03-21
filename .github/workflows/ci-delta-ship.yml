@@ -30,6 +30,10 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
+      - name: Create tmp
+        run: |
+          cd /tmp
+          mkdir ship
       - name: Clean, build Delta & Storage images
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
@@ -42,6 +46,12 @@ jobs:
         run: |
           URL="http://localhost:8080/v1/version"
           curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
+      - name: list
+        run: ls -la /tmp
+      - name: tree
+        run: |
+          sudo apt install tree
+          tree /tmp
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
