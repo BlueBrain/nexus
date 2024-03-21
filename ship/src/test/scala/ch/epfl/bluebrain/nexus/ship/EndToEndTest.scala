@@ -61,7 +61,7 @@ class EndToEndTest extends BaseIntegrationSpec {
     }
 
     "transfer a generic resource" in {
-      val (project, _) = thereIsAProject()
+      val (project, _)             = thereIsAProject()
       val (resource, resourceJson) = thereIsAResource(project)
 
       whenTheExportIsRunOnProject(project)
@@ -70,7 +70,6 @@ class EndToEndTest extends BaseIntegrationSpec {
       weRunTheImporter(project)
       weFixThePermissions(project)
 
-      // TODO: This test currently fails because of the dummy ValidateResource implementation in ship
       thereShouldBeAResource(project, resource, resourceJson)
     }
 

@@ -200,7 +200,9 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestJson(GET, url, None, identity, (a: A, _: HttpResponse) => a, jsonHeaders)
   }
 
-  def getJsonAndStatus(url: String, identity: Identity)(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] = {
+  def getJsonAndStatus(url: String, identity: Identity)(implicit
+      um: FromEntityUnmarshaller[Json]
+  ): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(GET, url, None, identity, jsonHeaders)
   }
 
@@ -266,12 +268,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   }
 
   def requestJsonAndStatus(
-                                  method: HttpMethod,
-                                  url: String,
-                                  body: Option[Json],
-                                  identity: Identity,
-                                  extraHeaders: Seq[HttpHeader]
-                                )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] =
+      method: HttpMethod,
+      url: String,
+      body: Option[Json],
+      identity: Identity,
+      extraHeaders: Seq[HttpHeader]
+  )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] =
     request[Json, Json, (Json, StatusCode)](
       method,
       url,

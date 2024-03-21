@@ -22,7 +22,7 @@ class EventClock(instant: Ref[IO, Instant]) extends Clock[IO] {
 
   private def toDuration: IO[FiniteDuration] = instant.get.map { i =>
     val seconds = FiniteDuration(i.getEpochSecond, TimeUnit.SECONDS)
-    val nanos = FiniteDuration(i.getNano, TimeUnit.NANOSECONDS)
+    val nanos   = FiniteDuration(i.getNano, TimeUnit.NANOSECONDS)
     seconds + nanos
   }
 }

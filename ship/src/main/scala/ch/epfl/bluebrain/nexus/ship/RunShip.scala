@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor
+import ch.epfl.bluebrain.nexus.ship.schemas.SchemaOps
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import io.circe.parser.decode
@@ -42,9 +43,10 @@ class RunShip {
                     _                 <- orgProvider.create(config.organizations.values)
                     events             = eventStream(file)
                     fetchActiveOrg     = FetchActiveOrganization(xas)
+                    fetchSchema       <- SchemaOps.fetchSchema(config.eventLog, clock, xas)
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    resourceProcessor <- ResourceProcessor(eventLogConfig, fetchContext, xas)
+                    resourceProcessor <- ResourceProcessor(eventLogConfig, fetchContext, fetchSchema, xas)
                     report            <- EventProcessor.run(events, projectProcessor, resolverProcessor, resourceProcessor)
                   } yield report
                 }

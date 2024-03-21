@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{IncorrectRev, ResourceAlreadyExists}
@@ -81,14 +81,8 @@ object ResolverProcessor {
   )(implicit api: JsonLdApi): IO[ResolverProcessor] =
     EventClock.init().map { clock =>
       implicit val uuidF: UUIDF = FailingUUID
-      val resolvers             = ResolversImpl(
-        fetchContext,
-        // We rely on the parsed values and not on the original value
-        ResolverContextResolution.never,
-        config,
-        xas,
-        clock
-      )
+
+      val resolvers = ResolverOps.resolvers(fetchContext, config, clock, xas)
       new ResolverProcessor(resolvers, clock)
     }
 }

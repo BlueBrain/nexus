@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
@@ -108,12 +109,12 @@ object AclsImpl {
       fetchPermissionSet: IO[Set[Permission]],
       findUnknownRealms: Set[Label] => IO[Unit],
       minimum: Set[Permission],
-      config: AclsConfig,
+      config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
   ): Acls =
     new AclsImpl(
-      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms, clock), config.eventLog, xas),
+      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms, clock), config, xas),
       minimum
     )
 
