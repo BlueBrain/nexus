@@ -14,8 +14,8 @@ import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
-import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor
-import ch.epfl.bluebrain.nexus.ship.schemas.SchemaOps
+import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
+import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import io.circe.parser.decode
@@ -43,11 +43,23 @@ class RunShip {
                     _                 <- orgProvider.create(config.organizations.values)
                     events             = eventStream(file)
                     fetchActiveOrg     = FetchActiveOrganization(xas)
-                    fetchSchema       <- SchemaOps.fetchSchema(config.eventLog, clock, xas)
+                    // Wiring
+                    schemaLog          = SchemaWiring.schemaLog(config.eventLog, xas, jsonLdApi)
+                    resourceLog        = ResourceWiring.resourceLog(fetchContext, schemaLog, eventLogConfig, xas)
+                    schemaImports      = SchemaWiring.schemaImports(
+                                           resourceLog,
+                                           schemaLog,
+                                           fetchContext,
+                                           eventLogConfig,
+                                           xas
+                                         )
+                    // Processors
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    resourceProcessor <- ResourceProcessor(eventLogConfig, fetchContext, fetchSchema, xas)
-                    report            <- EventProcessor.run(events, projectProcessor, resolverProcessor, resourceProcessor)
+                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports)
+                    resourceProcessor <- ResourceProcessor(resourceLog, fetchContext)
+                    report            <- EventProcessor
+                                           .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
                   } yield report
                 }
     } yield report

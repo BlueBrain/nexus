@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.resolvers
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
 import io.circe.Decoder
 
 class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extends EventProcessor[ResolverEvent] {
@@ -80,9 +79,7 @@ object ResolverProcessor {
       xas: Transactors
   )(implicit api: JsonLdApi): IO[ResolverProcessor] =
     EventClock.init().map { clock =>
-      implicit val uuidF: UUIDF = FailingUUID
-
-      val resolvers = ResolverOps.resolvers(fetchContext, config, clock, xas)
+      val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
       new ResolverProcessor(resolvers, clock)
     }
 }
