@@ -52,7 +52,7 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists").as(ImportStatus.Dropped)
-      case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided").as(ImportStatus.Dropped)
+      case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)

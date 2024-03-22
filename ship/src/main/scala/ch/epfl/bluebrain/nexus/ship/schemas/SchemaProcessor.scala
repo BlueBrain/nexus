@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent.SchemaRefreshed
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -30,30 +30,19 @@ class SchemaProcessor private (schemas: Schemas, clock: EventClock) extends Even
     } yield result
   }
 
-  // TODO: Provide a correct implementation
   private def evaluateInternal(event: SchemaEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
     implicit val c: Caller  = Caller(s, Set.empty)
+    val cRev                = event.rev - 1
 
-    val id         = event.id
-    val projectRef = event.project
-    val cRev       = event.rev - 1
     event match {
-      case SchemaEvent.SchemaCreated(_, _, value, _, _, _, _, _) =>
-        schemas.create(id, projectRef, value)
-      case SchemaEvent.SchemaUpdated(_, _, value, _, _, _, _, _) =>
-        schemas.update(id, projectRef, cRev, value)
-      case e: SchemaRefreshed                                    => schemas.refresh(e.id, e.project)
-      case SchemaEvent.SchemaTagDeleted(_, _, _, _, _, _)        =>
-        // Tags have been removed
-        IO.unit
-      case _: SchemaEvent.SchemaTagAdded                         =>
-        // Tags have been removed
-        IO.unit
-      case _: SchemaEvent.SchemaDeprecated                       =>
-        schemas.deprecate(id, projectRef, cRev)
-      case _: SchemaEvent.SchemaUndeprecated                     =>
-        schemas.undeprecate(id, projectRef, cRev)
+      case e: SchemaCreated      => schemas.create(e.id, e.project, e.source)
+      case e: SchemaUpdated      => schemas.update(e.id, e.project, cRev, e.source)
+      case e: SchemaRefreshed    => schemas.refresh(e.id, e.project)
+      case e: SchemaTagAdded     => schemas.tag(e.id, e.project, e.tag, e.targetRev, cRev)
+      case e: SchemaTagDeleted   => schemas.deleteTag(e.id, e.project, e.tag, cRev)
+      case e: SchemaDeprecated   => schemas.deprecate(e.id, e.project, cRev)
+      case e: SchemaUndeprecated => schemas.undeprecate(e.id, e.project, cRev)
     }
   }.redeemWith(
     {
