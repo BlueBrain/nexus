@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
+import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
@@ -19,18 +20,19 @@ object ResourceWiring {
 
   def resourceLog(
       fetchContext: FetchContext,
-      schemaLog: Clock[IO] => IO[SchemaLog],
+      schemaLog: IO[SchemaLog],
       config: EventLogConfig,
+      clock: EventClock,
       xas: Transactors
   )(implicit
       jsonLdApi: JsonLdApi
-  ): Clock[IO] => IO[ResourceLog] = { clock =>
+  ): IO[ResourceLog] = {
     val detectChange = DetectChange(false)
     val aclCheck     = AclCheck(AclWiring.acls(config, clock, xas))
     val resolvers    = ResolverWiring.resolvers(fetchContext, config, clock, xas)
 
     for {
-      fetchSchema       <- schemaLog(clock).map(FetchSchema(_))
+      fetchSchema       <- schemaLog.map(FetchSchema(_))
       resourceResolution =
         ResourceResolution.schemaResource(aclCheck, resolvers, fetchSchema, excludeDeprecated = false)
       validate           = ValidateResource(resourceResolution)(RemoteContextResolution.never)

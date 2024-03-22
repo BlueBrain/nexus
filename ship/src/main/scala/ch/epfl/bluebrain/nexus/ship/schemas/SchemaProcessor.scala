@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.schemas
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -71,17 +71,17 @@ object SchemaProcessor {
   private val logger = Logger[SchemaProcessor]
 
   def apply(
-      log: Clock[IO] => IO[SchemaLog],
+      log: IO[SchemaLog],
       fetchContext: FetchContext,
-      schemaImports: Clock[IO] => IO[SchemaImports],
-      resolverContextResolution: Clock[IO] => IO[ResolverContextResolution]
-  )(implicit jsonLdApi: JsonLdApi): IO[SchemaProcessor] = EventClock.init().flatMap { clock =>
+      schemaImports: IO[SchemaImports],
+      resolverContextResolution: IO[ResolverContextResolution],
+      clock: EventClock
+  )(implicit jsonLdApi: JsonLdApi): IO[SchemaProcessor] =
     for {
-      rcr       <- resolverContextResolution(clock)
-      schemaLog <- log(clock)
-      imports   <- schemaImports(clock)
+      rcr       <- resolverContextResolution
+      schemaLog <- log
+      imports   <- schemaImports
       schemas    = SchemasImpl(schemaLog, fetchContext, imports, rcr)(jsonLdApi, FailingUUID)
     } yield new SchemaProcessor(schemas, clock)
-  }
 
 }

@@ -44,21 +44,24 @@ class RunShip {
                     events             = eventStream(file)
                     fetchActiveOrg     = FetchActiveOrganization(xas)
                     // Wiring
-                    schemaLog          = SchemaWiring.schemaLog(config.eventLog, xas, jsonLdApi)
-                    resourceLog        = ResourceWiring.resourceLog(fetchContext, schemaLog, eventLogConfig, xas)
+                    eventClock        <- EventClock.init()
+                    schemaLog          = SchemaWiring.schemaLog(config.eventLog, eventClock, xas, jsonLdApi)
+                    resourceLog        = ResourceWiring.resourceLog(fetchContext, schemaLog, eventLogConfig, eventClock, xas)
                     schemaImports      = SchemaWiring.schemaImports(
                                            resourceLog,
                                            schemaLog,
                                            fetchContext,
                                            eventLogConfig,
+                                           eventClock,
                                            xas
                                          )
-                    rcr                = ContextWiring.resolverContextResolution(resourceLog, fetchContext, eventLogConfig, xas)
+                    rcr                = ContextWiring
+                                           .resolverContextResolution(resourceLog, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr)
-                    resourceProcessor <- ResourceProcessor(resourceLog, fetchContext)
+                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
+                    resourceProcessor <- ResourceProcessor(resourceLog, fetchContext, eventClock)
                     report            <- EventProcessor
                                            .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
                   } yield report

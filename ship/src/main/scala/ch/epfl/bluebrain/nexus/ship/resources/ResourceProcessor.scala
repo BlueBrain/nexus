@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -74,14 +74,13 @@ object ResourceProcessor {
   private val logger = Logger[ResourceProcessor]
 
   def apply(
-      log: Clock[IO] => IO[ResourceLog],
-      fetchContext: FetchContext
+      log: IO[ResourceLog],
+      fetchContext: FetchContext,
+      clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): IO[ResourceProcessor] =
-    EventClock.init().flatMap { clock =>
-      for {
-        resourceLog <- log(clock)
-        resources    = ResourcesImpl(resourceLog, fetchContext, ResolverContextResolution.never)
-      } yield new ResourceProcessor(resources, clock)
-    }
+    for {
+      resourceLog <- log
+      resources    = ResourcesImpl(resourceLog, fetchContext, ResolverContextResolution.never)
+    } yield new ResourceProcessor(resources, clock)
 
 }

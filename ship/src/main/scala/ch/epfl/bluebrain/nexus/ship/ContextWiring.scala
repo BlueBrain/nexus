@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -29,16 +29,17 @@ object ContextWiring {
     )
 
   def resolverContextResolution(
-      resourceLog: Clock[IO] => IO[ResourceLog],
+      resourceLog: IO[ResourceLog],
       fetchContext: FetchContext,
       config: EventLogConfig,
+      clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): Clock[IO] => IO[ResolverContextResolution] = { clock =>
+  )(implicit jsonLdApi: JsonLdApi): IO[ResolverContextResolution] = {
     val aclCheck  = AclCheck(AclWiring.acls(config, clock, xas))
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
 
     for {
-      fetchResource <- resourceLog(clock).map(FetchResource(_))
+      fetchResource <- resourceLog.map(FetchResource(_))
       rcr           <- remoteContextResolution
     } yield ResolverContextResolution(aclCheck, resolvers, rcr, fetchResource)
   }
