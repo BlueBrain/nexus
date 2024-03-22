@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.schemas
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -12,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{FetchSchema, SchemaImports, Schemas, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
+import ch.epfl.bluebrain.nexus.ship.ContextWiring
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
@@ -34,10 +34,11 @@ object SchemaWiring {
     } yield SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
   }
 
-  private def validateSchema(implicit api: JsonLdApi): IO[ValidateSchema] = {
-    val rcr = RemoteContextResolution.never
-    ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
-  }
+  private def validateSchema(implicit api: JsonLdApi): IO[ValidateSchema] =
+    for {
+      rcr         <- ContextWiring.remoteContextResolution
+      shapesGraph <- ShaclShapesGraph.shaclShaclShapes
+    } yield ValidateSchema(api, shapesGraph, rcr)
 
   def schemaLog(config: EventLogConfig, xas: Transactors, api: JsonLdApi): Clock[IO] => IO[SchemaLog] =
     clock =>

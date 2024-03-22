@@ -73,6 +73,19 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereShouldBeAResource(project, resource, resourceJson)
     }
 
+    "transfer a schema" in {
+      val (project, _)         = thereIsAProject()
+      val (schema, schemaJson) = thereIsASchema(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeASchema(project, schema, schemaJson)
+    }
+
     def thereIsAProject(): (ProjectRef, Json) = {
       val project: ProjectRef   = ProjectRef.unsafe(genString(), genString())
       createProjects(writer, project.organization.value, project.project.value).accepted
@@ -184,6 +197,37 @@ class EndToEndTest extends BaseIntegrationSpec {
               response.status shouldEqual StatusCodes.OK
               json shouldEqual originalJson
             }
+        }
+        .accepted
+    }
+
+    def thereIsASchema(project: ProjectRef): (Iri, Json) = {
+      val schema                 = nxv + genString()
+      val encodedSchema          = UrlUtils.encode(schema.toString)
+      // TODO: Review the json of the simpleSchema
+      val simpleSchema           =
+        json"""{"shapes":[{"@id":"http://example.com/MyShape","@type":"http://www.w3.org/ns/shacl#NodeShape","nodeKind":"http://www.w3.org/ns/shacl#BlankNodeOrIRI","targetClass":"http://example.com/Custom","property":[{"path":"http://example.com/name","datatype":"http://www.w3.org/2001/XMLSchema#string","minCount":1}]}]}"""
+      deltaClient
+        .put[Json](s"/schemas/${project.organization}/${project.project}/$encodedSchema", simpleSchema, writer) {
+          (_, response) =>
+            response.status shouldEqual StatusCodes.Created
+        }
+        .accepted
+      val (resourceJson, status) = deltaClient
+        .getJsonAndStatus(s"/schemas/${project.organization}/${project.project}/$encodedSchema", writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      schema -> resourceJson
+    }
+
+    def thereShouldBeASchema(project: ProjectRef, schema: Iri, originalJson: Json): Assertion = {
+      val encodedIri = UrlUtils.encode(schema.toString)
+      deltaClient
+        .get[Json](s"/schemas/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
+          {
+            response.status shouldEqual StatusCodes.OK
+            json shouldEqual originalJson
+          }
         }
         .accepted
     }

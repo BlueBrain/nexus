@@ -53,10 +53,11 @@ class RunShip {
                                            eventLogConfig,
                                            xas
                                          )
+                    rcr                = ContextWiring.resolverContextResolution(resourceLog, fetchContext, eventLogConfig, xas)
                     // Processors
                     projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
                     resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports)
+                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr)
                     resourceProcessor <- ResourceProcessor(resourceLog, fetchContext)
                     report            <- EventProcessor
                                            .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)

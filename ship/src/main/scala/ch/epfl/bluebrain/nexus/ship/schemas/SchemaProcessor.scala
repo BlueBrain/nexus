@@ -74,10 +74,11 @@ object SchemaProcessor {
   def apply(
       log: Clock[IO] => IO[SchemaLog],
       fetchContext: FetchContext,
-      schemaImports: Clock[IO] => IO[SchemaImports]
+      schemaImports: Clock[IO] => IO[SchemaImports],
+      resolverContextResolution: Clock[IO] => IO[ResolverContextResolution]
   )(implicit jsonLdApi: JsonLdApi): IO[SchemaProcessor] = EventClock.init().flatMap { clock =>
-    val rcr = ResolverContextResolution.never
     for {
+      rcr       <- resolverContextResolution(clock)
       schemaLog <- log(clock)
       imports   <- schemaImports(clock)
       schemas    = SchemasImpl(schemaLog, fetchContext, imports, rcr)(jsonLdApi, FailingUUID)
