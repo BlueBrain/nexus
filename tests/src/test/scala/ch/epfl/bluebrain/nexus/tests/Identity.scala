@@ -36,6 +36,8 @@ object Identity extends Generators {
   // User with an invalid token
   val InvalidTokenUser: UserCredentials = UserCredentials(genString(), genString(), testRealm)
 
+  val writer = UserCredentials(genString(), genString(), testRealm)
+
   object acls {
     val Marge = UserCredentials(genString(), genString(), testRealm)
   }
@@ -107,6 +109,6 @@ object Identity extends Generators {
   }
 
   lazy val allUsers =
-    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: files.Writer :: typehierarchy.Writer :: Nil
+    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: files.Writer :: typehierarchy.Writer :: writer :: Nil
 
 }

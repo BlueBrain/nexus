@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{Acls, AclsConfig, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, PermissionsGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -22,7 +22,7 @@ class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with Doobie
       IO.pure(PermissionsGen.minimum),
       Acls.findUnknownRealms(_, Set(saRealm, usersRealm)),
       PermissionsGen.minimum,
-      AclsConfig(eventLogConfig),
+      eventLogConfig,
       xas,
       clock
     )

@@ -37,7 +37,7 @@ object AclsModule extends ModuleDef {
         permissions.fetchPermissionSet,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
-        config.acls,
+        config.acls.eventLog,
         xas,
         clock
       )
