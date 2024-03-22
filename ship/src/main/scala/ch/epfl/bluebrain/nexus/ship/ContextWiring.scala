@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
@@ -29,7 +28,7 @@ object ContextWiring {
     )
 
   def resolverContextResolution(
-      resourceLog: IO[ResourceLog],
+      fetchResource: FetchResource,
       fetchContext: FetchContext,
       config: EventLogConfig,
       clock: EventClock,
@@ -39,8 +38,7 @@ object ContextWiring {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
 
     for {
-      fetchResource <- resourceLog.map(FetchResource(_))
-      rcr           <- remoteContextResolution
+      rcr <- remoteContextResolution
     } yield ResolverContextResolution(aclCheck, resolvers, rcr, fetchResource)
   }
 

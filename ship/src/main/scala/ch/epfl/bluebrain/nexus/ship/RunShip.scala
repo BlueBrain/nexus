@@ -40,30 +40,31 @@ class RunShip {
                   val baseUri        = config.baseUri
                   for {
                     // Provision organizations
-                    _                 <- orgProvider.create(config.organizations.values)
-                    events             = eventStream(file)
-                    fetchActiveOrg     = FetchActiveOrganization(xas)
+                    _                           <- orgProvider.create(config.organizations.values)
+                    events                       = eventStream(file)
+                    fetchActiveOrg               = FetchActiveOrganization(xas)
                     // Wiring
-                    eventClock        <- EventClock.init()
-                    schemaLog          = SchemaWiring.schemaLog(config.eventLog, eventClock, xas, jsonLdApi)
-                    resourceLog        = ResourceWiring.resourceLog(fetchContext, schemaLog, eventLogConfig, eventClock, xas)
-                    schemaImports      = SchemaWiring.schemaImports(
-                                           resourceLog,
-                                           schemaLog,
-                                           fetchContext,
-                                           eventLogConfig,
-                                           eventClock,
-                                           xas
-                                         )
-                    rcr                = ContextWiring
-                                           .resolverContextResolution(resourceLog, fetchContext, eventLogConfig, eventClock, xas)
+                    eventClock                  <- EventClock.init()
+                    (schemaLog, fetchSchema)    <- SchemaWiring(config.eventLog, eventClock, xas, jsonLdApi)
+                    (resourceLog, fetchResource) =
+                      ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
+                    rcr                          = ContextWiring
+                                                     .resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
+                    schemaImports                = SchemaWiring.schemaImports(
+                                                     fetchResource,
+                                                     fetchSchema,
+                                                     fetchContext,
+                                                     eventLogConfig,
+                                                     eventClock,
+                                                     xas
+                                                   )
                     // Processors
-                    projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
-                    resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
-                    resourceProcessor <- ResourceProcessor(resourceLog, fetchContext, eventClock)
-                    report            <- EventProcessor
-                                           .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
+                    resolverProcessor           <- ResolverProcessor(fetchContext, eventLogConfig, xas)
+                    schemaProcessor             <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
+                    resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
+                    report                      <- EventProcessor
+                                                     .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
                   } yield report
                 }
     } yield report

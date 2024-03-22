@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{FetchSchema, SchemaImports, Schemas, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
@@ -17,22 +16,24 @@ import ch.epfl.bluebrain.nexus.ship.{ContextWiring, EventClock}
 
 object SchemaWiring {
 
+  def apply(config: EventLogConfig, clock: EventClock, xas: Transactors, api: JsonLdApi) =
+    for {
+      log <- schemaLog(config, clock, xas, api)
+    } yield (log, FetchSchema(log))
+
   def schemaImports(
-      resourceLog: IO[ResourceLog],
-      schemaLog: IO[SchemaLog],
+      fetchResource: FetchResource,
+      fetchSchema: FetchSchema,
       fetchContext: FetchContext,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit
       jsonLdApi: JsonLdApi
-  ): IO[SchemaImports] = {
+  ): SchemaImports = {
     val aclCheck  = AclCheck(AclWiring.acls(config, clock, xas))
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
-    for {
-      fetchResource <- resourceLog.map(FetchResource(_))
-      fetchSchema   <- schemaLog.map(FetchSchema(_))
-    } yield SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
+    SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
   }
 
   private def validateSchema(implicit api: JsonLdApi): IO[ValidateSchema] =

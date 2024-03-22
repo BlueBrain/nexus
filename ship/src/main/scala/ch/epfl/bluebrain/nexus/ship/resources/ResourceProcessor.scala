@@ -74,13 +74,13 @@ object ResourceProcessor {
   private val logger = Logger[ResourceProcessor]
 
   def apply(
-      log: IO[ResourceLog],
+      log: ResourceLog,
       fetchContext: FetchContext,
       clock: EventClock
-  )(implicit jsonLdApi: JsonLdApi): IO[ResourceProcessor] =
-    for {
-      resourceLog <- log
-      resources    = ResourcesImpl(resourceLog, fetchContext, ResolverContextResolution.never)
-    } yield new ResourceProcessor(resources, clock)
+  )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
+    val rcr       = ResolverContextResolution.never // TODO: Pass correct ResolverContextResolution
+    val resources = ResourcesImpl(log, fetchContext, rcr)
+    new ResourceProcessor(resources, clock)
+  }
 
 }

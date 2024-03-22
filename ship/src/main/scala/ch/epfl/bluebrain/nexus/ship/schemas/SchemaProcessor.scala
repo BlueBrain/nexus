@@ -71,17 +71,15 @@ object SchemaProcessor {
   private val logger = Logger[SchemaProcessor]
 
   def apply(
-      log: IO[SchemaLog],
+      log: SchemaLog,
       fetchContext: FetchContext,
-      schemaImports: IO[SchemaImports],
+      schemaImports: SchemaImports,
       resolverContextResolution: IO[ResolverContextResolution],
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): IO[SchemaProcessor] =
     for {
-      rcr       <- resolverContextResolution
-      schemaLog <- log
-      imports   <- schemaImports
-      schemas    = SchemasImpl(schemaLog, fetchContext, imports, rcr)(jsonLdApi, FailingUUID)
+      rcr    <- resolverContextResolution
+      schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
     } yield new SchemaProcessor(schemas, clock)
 
 }
