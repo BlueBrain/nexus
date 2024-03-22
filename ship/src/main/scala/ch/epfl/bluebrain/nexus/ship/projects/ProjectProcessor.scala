@@ -63,11 +63,10 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
 object ProjectProcessor {
 
   private val logger      = Logger[ProjectProcessor]
-  def apply(fetchActiveOrg: FetchActiveOrganization, config: EventLogConfig, xas: Transactors)(implicit
-      base: BaseUri
+  def apply(fetchActiveOrg: FetchActiveOrganization, config: EventLogConfig, clock: EventClock, xas: Transactors)(
+      implicit base: BaseUri
   ): IO[ProjectProcessor] =
     for {
-      clock <- EventClock.init()
       uuidF <- EventUUIDF.init()
     } yield {
       val disableDeletion: ValidateProjectDeletion = (p: ProjectRef) => IO.raiseError(ProjectDeletionIsNotAllowed(p))

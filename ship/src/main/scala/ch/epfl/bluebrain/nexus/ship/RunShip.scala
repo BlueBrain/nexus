@@ -59,8 +59,8 @@ class RunShip {
                                                      xas
                                                    )
                     // Processors
-                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
-                    resolverProcessor           <- ResolverProcessor(fetchContext, eventLogConfig, xas)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, eventClock, xas)(baseUri)
+                    resolverProcessor            = ResolverProcessor(fetchContext, eventLogConfig, eventClock, xas)
                     schemaProcessor             <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
                     resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
                     report                      <- EventProcessor
