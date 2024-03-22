@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent.SchemaRefreshed
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -42,9 +43,7 @@ class SchemaProcessor private (schemas: Schemas, clock: EventClock) extends Even
         schemas.create(id, projectRef, value)
       case SchemaEvent.SchemaUpdated(_, _, value, _, _, _, _, _) =>
         schemas.update(id, projectRef, cRev, value)
-      case SchemaEvent.SchemaRefreshed(_, _, _, _, _, _, _)      =>
-        // Refreshed events are not supported
-        IO.unit
+      case e: SchemaRefreshed                                    => schemas.refresh(e.id, e.project)
       case SchemaEvent.SchemaTagDeleted(_, _, _, _, _, _)        =>
         // Tags have been removed
         IO.unit
