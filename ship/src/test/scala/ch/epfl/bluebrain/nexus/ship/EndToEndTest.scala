@@ -49,20 +49,17 @@ class EndToEndTest extends BaseIntegrationSpec {
 
     "transfer multiple revisions of a project" in {
 
-      val (project, payload, projectJson) = thereIsAProject()
-
-      val updatedProjectJson = projectIsUpdated(project, payload.copy(description = "updated description"))
+      val (project, revisionsAndStates) = thereAreManyRevisionsOfAProject()
 
       whenTheExportIsRunOnProject(project)
 
-      theOldProjectIsDeleted(project, 2)
+      theOldProjectIsDeleted(project, revisionsAndStates.keys.max)
 
       weRunTheImporter(project)
 
       weFixThePermissions(project)
 
-      thereShouldBeAProject(project, updatedProjectJson)
-      thereShouldBeAProjectRevision(project, 1, projectJson)
+      thereShouldBeAProjectThatMatchesExpectations(project, revisionsAndStates)
     }
 
     "transfer the default resolver" in {
@@ -185,6 +182,22 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereIsAView(project, simpleEsView)
     }
 
+    def thereAreManyRevisionsOfAProject(): (ProjectRef, Map[Int, Json]) = {
+      val (ref, payload, json) = thereIsAProject()
+      val updatedJson          = projectIsUpdated(ref, payload.copy(description = "updated description"), 1)
+      val deprecatedJson       = projectIsDeprecated(ref, 2)
+      val undeprecatedJson     = projectIsUndeprecated(ref, 3)
+      (
+        ref,
+        Map(
+          1 -> json,
+          2 -> updatedJson,
+          3 -> deprecatedJson,
+          4 -> undeprecatedJson
+        )
+      )
+    }
+
     def thereIsAProject(): (ProjectRef, ProjectPayload, Json) = {
       val orgName  = genString()
       val projName = genString()
@@ -206,8 +219,23 @@ class EndToEndTest extends BaseIntegrationSpec {
       projectJson
     }
 
-    def projectIsUpdated(ref: ProjectRef, projectPayload: ProjectPayload): Json = {
-      adminDsl.updateProject(ref.organization.value, ref.project.value, projectPayload, writer, 1).accepted
+    def projectIsUpdated(ref: ProjectRef, projectPayload: ProjectPayload, revision: Int): Json = {
+      adminDsl.updateProject(ref.organization.value, ref.project.value, projectPayload, writer, revision).accepted
+      fetchProjectState(ref)
+    }
+
+    def projectIsDeprecated(ref: ProjectRef, rev: Int): Json = {
+      val (_, statusCode) =
+        deltaClient.deleteJsonAndStatus(s"/projects/${ref.organization}/${ref.project}?rev=$rev", writer).accepted
+      statusCode shouldBe StatusCodes.OK
+      fetchProjectState(ref)
+    }
+
+    def projectIsUndeprecated(ref: ProjectRef, rev: Int): Json = {
+      val (_, statusCode) = deltaClient
+        .putJsonAndStatus(s"/projects/${ref.organization}/${ref.project}/undeprecate?rev=$rev", Json.obj(), writer)
+        .accepted
+      statusCode shouldBe StatusCodes.OK
       fetchProjectState(ref)
     }
 
@@ -260,6 +288,13 @@ class EndToEndTest extends BaseIntegrationSpec {
           }
         }
         .accepted
+    }
+
+    def thereShouldBeAProjectThatMatchesExpectations(project: ProjectRef, expectations: Map[Int, Json]): Assertion = {
+      expectations.foreach { case (rev, expectedJson) =>
+        thereShouldBeAProjectRevision(project, rev, expectedJson)
+      }
+      succeed
     }
 
     def weFixThePermissions(project: ProjectRef) =
@@ -358,4 +393,5 @@ class EndToEndTest extends BaseIntegrationSpec {
         .accepted
     }
   }
+
 }
