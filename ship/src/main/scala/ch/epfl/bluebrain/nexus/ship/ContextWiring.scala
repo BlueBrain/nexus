@@ -14,17 +14,26 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts => esContexts}
+
 object ContextWiring {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
   def remoteContextResolution: IO[RemoteContextResolution] =
     for {
-      shaclCtx       <- ContextValue.fromFile("contexts/shacl.json")
-      schemasMetaCtx <- ContextValue.fromFile("contexts/schemas-metadata.json")
+      pipelineCtx      <- ContextValue.fromFile("contexts/pipeline.json")
+      shaclCtx         <- ContextValue.fromFile("contexts/shacl.json")
+      schemasMetaCtx   <- ContextValue.fromFile("contexts/schemas-metadata.json")
+      elasticsearchCtx <- ContextValue.fromFile("contexts/elasticsearch.json")
     } yield RemoteContextResolution.fixed(
+      // Delta
+      contexts.pipeline        -> pipelineCtx,
+      // Schema
       contexts.shacl           -> shaclCtx,
-      contexts.schemasMetadata -> schemasMetaCtx
+      contexts.schemasMetadata -> schemasMetaCtx,
+      // ElasticSearch
+      esContexts.elasticsearch -> elasticsearchCtx
     )
 
   def resolverContextResolution(

@@ -105,6 +105,61 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereShouldBeASchema(project, schema, schemaJson)
     }
 
+    "transfer an elasticsearch view" in {
+      val (project, _, _)      = thereIsAProject()
+      val (schema, schemaJson) = thereIsAnElasticSearchView(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeAnElasticSearchView(project, schema, schemaJson)
+    }
+
+    def thereShouldBeAnElasticSearchView(project: ProjectRef, schema: Iri, originalJson: Json): Assertion = {
+      val encodedIri = UrlUtils.encode(schema.toString)
+      deltaClient
+        .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
+          {
+            response.status shouldEqual StatusCodes.OK
+            json shouldEqual originalJson
+          }
+        }
+        .accepted
+    }
+
+    def thereIsAnElasticSearchView(project: ProjectRef): (Iri, Json) = {
+      val view        = nxv + genString()
+      val encodedView = UrlUtils.encode(view.toString)
+      val simpleView  =
+        json"""
+          {
+              "@type": "ElasticSearchView",
+              "resourceSchemas": [],
+              "resourceTypes": [],
+              "sourceAsText": false,
+              "includeMetadata": true,
+              "includeDeprecated": false,
+              "mapping": {}
+          }
+            """
+
+      deltaClient
+        .put[Json](s"/views/${project.organization}/${project.project}/$encodedView", simpleView, writer) {
+          (_, response) =>
+            response.status shouldEqual StatusCodes.Created
+        }
+        .accepted
+
+      val (viewJson, status) = deltaClient
+        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      view -> viewJson
+    }
+
     def thereIsAProject(): (ProjectRef, ProjectPayload, Json) = {
       val orgName  = genString()
       val projName = genString()

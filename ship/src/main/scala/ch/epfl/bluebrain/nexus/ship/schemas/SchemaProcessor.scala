@@ -63,12 +63,11 @@ object SchemaProcessor {
       log: SchemaLog,
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
-      resolverContextResolution: IO[ResolverContextResolution],
+      rcr: ResolverContextResolution,
       clock: EventClock
-  )(implicit jsonLdApi: JsonLdApi): IO[SchemaProcessor] =
-    for {
-      rcr    <- resolverContextResolution
-      schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
-    } yield new SchemaProcessor(schemas, clock)
+  )(implicit jsonLdApi: JsonLdApi): SchemaProcessor = {
+    val schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
+    new SchemaProcessor(schemas, clock)
+  }
 
 }

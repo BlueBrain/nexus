@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
+import ch.epfl.bluebrain.nexus.ship.views.ElasticSearchViewProcessor
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import io.circe.parser.decode
@@ -48,7 +49,7 @@ class RunShip {
                     (schemaLog, fetchSchema)    <- SchemaWiring(config.eventLog, eventClock, xas, jsonLdApi)
                     (resourceLog, fetchResource) =
                       ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
-                    rcr                          = ContextWiring
+                    rcr                         <- ContextWiring
                                                      .resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(
                                                      fetchResource,
@@ -61,10 +62,18 @@ class RunShip {
                     // Processors
                     projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, eventClock, xas)(baseUri)
                     resolverProcessor            = ResolverProcessor(fetchContext, eventLogConfig, eventClock, xas)
-                    schemaProcessor             <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
+                    schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
                     resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
+                    esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
                     report                      <- EventProcessor
-                                                     .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
+                                                     .run(
+                                                       events,
+                                                       projectProcessor,
+                                                       resolverProcessor,
+                                                       schemaProcessor,
+                                                       resourceProcessor,
+                                                       esViewsProcessor
+                                                     )
                   } yield report
                 }
     } yield report

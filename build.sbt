@@ -734,7 +734,7 @@ lazy val ship = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sdk % "compile->compile;test->test", tests % "test->test")
+  .dependsOn(sdk % "compile->compile;test->test", elasticsearchPlugin % "compile->compile", tests % "test->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(declineEffect),
     addCompilerPlugin(betterMonadicFor),
