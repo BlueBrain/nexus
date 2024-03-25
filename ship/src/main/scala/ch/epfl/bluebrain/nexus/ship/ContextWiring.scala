@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts => esContexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts => bgContexts}
 
 object ContextWiring {
 
@@ -26,6 +27,7 @@ object ContextWiring {
       shaclCtx         <- ContextValue.fromFile("contexts/shacl.json")
       schemasMetaCtx   <- ContextValue.fromFile("contexts/schemas-metadata.json")
       elasticsearchCtx <- ContextValue.fromFile("contexts/elasticsearch.json")
+      blazegraphCtx    <- ContextValue.fromFile("contexts/sparql.json")
     } yield RemoteContextResolution.fixed(
       // Delta
       contexts.pipeline        -> pipelineCtx,
@@ -33,7 +35,9 @@ object ContextWiring {
       contexts.shacl           -> shaclCtx,
       contexts.schemasMetadata -> schemasMetaCtx,
       // ElasticSearch
-      esContexts.elasticsearch -> elasticsearchCtx
+      esContexts.elasticsearch -> elasticsearchCtx,
+      // Blazegraph
+      bgContexts.blazegraph    -> blazegraphCtx
     )
 
   def resolverContextResolution(
