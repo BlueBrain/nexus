@@ -21,7 +21,7 @@ import io.circe.Decoder
 
 import java.util.UUID
 
-class ElasticSearchViewProcessor private (views: ElasticSearchViews, clock: EventClock)
+class ElasticSearchViewProcessor private (views: UUID => IO[ElasticSearchViews], clock: EventClock)
     extends EventProcessor[ElasticSearchViewEvent] {
 
   override def resourceType: EntityType = ElasticSearchViews.entityType
@@ -38,10 +38,10 @@ class ElasticSearchViewProcessor private (views: ElasticSearchViews, clock: Even
     implicit val s: Subject = event.subject
     val cRev                = event.rev - 1
     event match {
-      case e: ElasticSearchViewCreated      => views.create(e.id, e.project, e.value)
-      case e: ElasticSearchViewUpdated      => views.update(e.id, e.project, cRev, e.value)
-      case e: ElasticSearchViewDeprecated   => views.deprecate(e.id, e.project, cRev)
-      case e: ElasticSearchViewUndeprecated => views.undeprecate(e.id, e.project, cRev)
+      case e: ElasticSearchViewCreated      => views(event.uuid).flatMap(_.create(e.id, e.project, e.value))
+      case e: ElasticSearchViewUpdated      => views(event.uuid).flatMap(_.update(e.id, e.project, cRev, e.value))
+      case e: ElasticSearchViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, e.project, cRev))
+      case e: ElasticSearchViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, e.project, cRev))
       case _: ElasticSearchViewTagAdded     => IO.unit // TODO: Check if this is correct
     }
   }.redeemWith(
@@ -68,28 +68,28 @@ object ElasticSearchViewProcessor {
   )(implicit
       jsonLdApi: JsonLdApi
   ): IO[ElasticSearchViewProcessor] = {
-    implicit val uuidF: UUIDF                    = UUIDF.random // TODO: Use correct UUID?
     implicit val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
     val noValidation = new ValidateElasticSearchView {
       override def apply(uuid: UUID, indexingRev: IndexingRev, v: ElasticSearchViewValue): IO[Unit] = IO.unit
     }
     val prefix       = "wrong_prefix" // TODO: fix prefix
-    val files        = ElasticSearchFiles.mk(loader)
+    val esFiles      = ElasticSearchFiles.mk(loader)
 
     for {
-      f     <- files
-      views <- ElasticSearchViews(
-                 fetchContext,
-                 rcr,
-                 noValidation,
-                 config,
-                 prefix,
-                 xas,
-                 f.defaultMapping,
-                 f.defaultSettings,
-                 clock
-               )
+      files <- esFiles
+      views  = (uuid: UUID) =>
+                 ElasticSearchViews(
+                   fetchContext,
+                   rcr,
+                   noValidation,
+                   config,
+                   prefix,
+                   xas,
+                   files.defaultMapping,
+                   files.defaultSettings,
+                   clock
+                 )(jsonLdApi, UUIDF.fixed(uuid))
     } yield new ElasticSearchViewProcessor(views, clock)
   }
 
