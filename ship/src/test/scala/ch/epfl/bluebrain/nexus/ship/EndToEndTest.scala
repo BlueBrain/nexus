@@ -107,7 +107,7 @@ class EndToEndTest extends BaseIntegrationSpec {
 
     "transfer an elasticsearch view" in {
       val (project, _, _)      = thereIsAProject()
-      val (schema, schemaJson) = thereIsAnElasticSearchView(project)
+      val (esView, esViewJson) = thereIsAnElasticSearchView(project)
 
       whenTheExportIsRunOnProject(project)
       theOldProjectIsDeleted(project)
@@ -115,10 +115,23 @@ class EndToEndTest extends BaseIntegrationSpec {
       weRunTheImporter(project)
       weFixThePermissions(project)
 
-      thereShouldBeAnElasticSearchView(project, schema, schemaJson)
+      thereShouldBeAView(project, esView, esViewJson)
     }
 
-    def thereShouldBeAnElasticSearchView(project: ProjectRef, schema: Iri, originalJson: Json): Assertion = {
+    "transfer an blazegraph view" in {
+      val (project, _, _)      = thereIsAProject()
+      val (bgView, bgViewJson) = thereIsABlazegraphView(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeAView(project, bgView, bgViewJson)
+    }
+
+    def thereShouldBeAView(project: ProjectRef, schema: Iri, originalJson: Json): Assertion = {
       val encodedIri = UrlUtils.encode(schema.toString)
       deltaClient
         .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
@@ -130,10 +143,34 @@ class EndToEndTest extends BaseIntegrationSpec {
         .accepted
     }
 
-    def thereIsAnElasticSearchView(project: ProjectRef): (Iri, Json) = {
+    def thereIsABlazegraphView(project: ProjectRef): (Iri, Json) = {
+      val simpleBgView = json"""{
+        "@type": "SparqlView",
+        "includeMetadata": true,
+        "includeDeprecated": false,
+        "resourceTag": "mytag"
+      }"""
+      thereIsAView(project, simpleBgView)
+    }
+
+    def thereIsAView(project: ProjectRef, body: Json): (Iri, Json) = {
       val view        = nxv + genString()
       val encodedView = UrlUtils.encode(view.toString)
-      val simpleView  =
+      deltaClient
+        .put[Json](s"/views/${project.organization}/${project.project}/$encodedView", body, writer) { (_, response) =>
+          response.status shouldEqual StatusCodes.Created
+        }
+        .accepted
+
+      val (viewJson, status) = deltaClient
+        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      view -> viewJson
+    }
+
+    def thereIsAnElasticSearchView(project: ProjectRef): (Iri, Json) = {
+      val simpleEsView =
         json"""
           {
               "@type": "ElasticSearchView",
@@ -145,19 +182,7 @@ class EndToEndTest extends BaseIntegrationSpec {
               "mapping": {}
           }
             """
-
-      deltaClient
-        .put[Json](s"/views/${project.organization}/${project.project}/$encodedView", simpleView, writer) {
-          (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-        }
-        .accepted
-
-      val (viewJson, status) = deltaClient
-        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
-        .accepted
-      status shouldEqual StatusCodes.OK
-      view -> viewJson
+      thereIsAView(project, simpleEsView)
     }
 
     def thereIsAProject(): (ProjectRef, ProjectPayload, Json) = {

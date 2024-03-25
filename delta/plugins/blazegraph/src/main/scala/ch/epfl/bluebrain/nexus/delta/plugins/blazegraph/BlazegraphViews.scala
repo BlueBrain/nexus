@@ -532,7 +532,7 @@ object BlazegraphViews {
     apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas, clock)
   }
 
-  private[blazegraph] def apply(
+  def apply(
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateBlazegraphView,
