@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
+import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, ElasticSearchViewProcessor}
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import io.circe.parser.decode
@@ -40,27 +41,41 @@ class RunShip {
                   val baseUri        = config.baseUri
                   for {
                     // Provision organizations
-                    _                 <- orgProvider.create(config.organizations.values)
-                    events             = eventStream(file)
-                    fetchActiveOrg     = FetchActiveOrganization(xas)
+                    _                           <- orgProvider.create(config.organizations.values)
+                    events                       = eventStream(file)
+                    fetchActiveOrg               = FetchActiveOrganization(xas)
                     // Wiring
-                    schemaLog          = SchemaWiring.schemaLog(config.eventLog, xas, jsonLdApi)
-                    resourceLog        = ResourceWiring.resourceLog(fetchContext, schemaLog, eventLogConfig, xas)
-                    schemaImports      = SchemaWiring.schemaImports(
-                                           resourceLog,
-                                           schemaLog,
-                                           fetchContext,
-                                           eventLogConfig,
-                                           xas
-                                         )
-                    rcr                = ContextWiring.resolverContextResolution(resourceLog, fetchContext, eventLogConfig, xas)
+                    eventClock                  <- EventClock.init()
+                    (schemaLog, fetchSchema)    <- SchemaWiring(config.eventLog, eventClock, xas, jsonLdApi)
+                    (resourceLog, fetchResource) =
+                      ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
+                    rcr                         <- ContextWiring
+                                                     .resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
+                    schemaImports                = SchemaWiring.schemaImports(
+                                                     fetchResource,
+                                                     fetchSchema,
+                                                     fetchContext,
+                                                     eventLogConfig,
+                                                     eventClock,
+                                                     xas
+                                                   )
                     // Processors
-                    projectProcessor  <- ProjectProcessor(fetchActiveOrg, eventLogConfig, xas)(baseUri)
-                    resolverProcessor <- ResolverProcessor(fetchContext, eventLogConfig, xas)
-                    schemaProcessor   <- SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr)
-                    resourceProcessor <- ResourceProcessor(resourceLog, fetchContext)
-                    report            <- EventProcessor
-                                           .run(events, projectProcessor, resolverProcessor, schemaProcessor, resourceProcessor)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, eventClock, xas)(baseUri)
+                    resolverProcessor            = ResolverProcessor(fetchContext, eventLogConfig, eventClock, xas)
+                    schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
+                    resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
+                    esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
+                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
+                    report                      <- EventProcessor
+                                                     .run(
+                                                       events,
+                                                       projectProcessor,
+                                                       resolverProcessor,
+                                                       schemaProcessor,
+                                                       resourceProcessor,
+                                                       esViewsProcessor,
+                                                       bgViewsProcessor
+                                                     )
                   } yield report
                 }
     } yield report

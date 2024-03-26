@@ -52,7 +52,7 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists").as(ImportStatus.Dropped)
-      case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided").as(ImportStatus.Dropped)
+      case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
@@ -76,10 +76,10 @@ object ResolverProcessor {
   def apply(
       fetchContext: FetchContext,
       config: EventLogConfig,
+      clock: EventClock,
       xas: Transactors
-  )(implicit api: JsonLdApi): IO[ResolverProcessor] =
-    EventClock.init().map { clock =>
-      val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
-      new ResolverProcessor(resolvers, clock)
-    }
+  )(implicit api: JsonLdApi): ResolverProcessor = {
+    val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
+    new ResolverProcessor(resolvers, clock)
+  }
 }
