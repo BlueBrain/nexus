@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.ship.tags.Integration
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.writer
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
@@ -23,7 +22,6 @@ import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-@Integration
 class EndToEndTest extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
