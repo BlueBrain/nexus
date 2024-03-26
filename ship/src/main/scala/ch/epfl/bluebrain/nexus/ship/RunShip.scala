@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
-import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, ElasticSearchViewProcessor}
+import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import io.circe.parser.decode
@@ -66,6 +66,7 @@ class RunShip {
                     resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
                     esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
+                    compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
                     report                      <- EventProcessor
                                                      .run(
                                                        events,
@@ -74,7 +75,8 @@ class RunShip {
                                                        schemaProcessor,
                                                        resourceProcessor,
                                                        esViewsProcessor,
-                                                       bgViewsProcessor
+                                                       bgViewsProcessor,
+                                                       compositeViewsProcessor
                                                      )
                   } yield report
                 }
