@@ -22,7 +22,7 @@ import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-class EndToEndTest extends BaseIntegrationSpec {
+class ShipIntegrationSpec extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
