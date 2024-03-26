@@ -64,6 +64,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     body.flatMap(body => requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse))
   }
 
+  def putJsonAndStatus(url: String, body: Json, identity: Identity)(implicit
+      um: FromEntityUnmarshaller[Json]
+  ): IO[(Json, StatusCode)] = {
+    requestJsonAndStatus(PUT, url, Some(body), identity, jsonHeaders)
+  }
+
   def put[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
@@ -204,6 +210,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       um: FromEntityUnmarshaller[Json]
   ): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(GET, url, None, identity, jsonHeaders)
+  }
+
+  def deleteJsonAndStatus(url: String, identity: Identity)(implicit
+      um: FromEntityUnmarshaller[Json]
+  ): IO[(Json, StatusCode)] = {
+    requestJsonAndStatus(DELETE, url, None, identity, jsonHeaders)
   }
 
   def delete[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(

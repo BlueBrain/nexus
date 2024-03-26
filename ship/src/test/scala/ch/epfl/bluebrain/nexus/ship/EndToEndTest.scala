@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.writer
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Export
 import io.circe.Json
@@ -33,7 +34,7 @@ class EndToEndTest extends BaseIntegrationSpec {
 
     "transfer a project" in {
 
-      val (project, projectJson) = thereIsAProject()
+      val (project, _, projectJson) = thereIsAProject()
 
       whenTheExportIsRunOnProject(project)
 
@@ -46,8 +47,23 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereShouldBeAProject(project, projectJson)
     }
 
+    "transfer multiple revisions of a project" in {
+
+      val (project, revisionsAndStates) = thereAreManyRevisionsOfAProject()
+
+      whenTheExportIsRunOnProject(project)
+
+      theOldProjectIsDeleted(project, revisionsAndStates.keys.max)
+
+      weRunTheImporter(project)
+
+      weFixThePermissions(project)
+
+      thereShouldBeAProjectThatMatchesExpectations(project, revisionsAndStates)
+    }
+
     "transfer the default resolver" in {
-      val (project, _)             = thereIsAProject()
+      val (project, _, _)          = thereIsAProject()
       val defaultInProjectResolver = nxv + "defaultInProject"
       val (_, resolverJson)        = thereIsAResolver(defaultInProjectResolver, project)
 
@@ -61,7 +77,7 @@ class EndToEndTest extends BaseIntegrationSpec {
     }
 
     "transfer a generic resource" in {
-      val (project, _)             = thereIsAProject()
+      val (project, _, _)          = thereIsAProject()
       val (resource, resourceJson) = thereIsAResource(project)
 
       whenTheExportIsRunOnProject(project)
@@ -74,7 +90,7 @@ class EndToEndTest extends BaseIntegrationSpec {
     }
 
     "transfer a schema" in {
-      val (project, _)         = thereIsAProject()
+      val (project, _, _)      = thereIsAProject()
       val (schema, schemaJson) = thereIsASchema(project)
 
       whenTheExportIsRunOnProject(project)
@@ -86,13 +102,141 @@ class EndToEndTest extends BaseIntegrationSpec {
       thereShouldBeASchema(project, schema, schemaJson)
     }
 
-    def thereIsAProject(): (ProjectRef, Json) = {
-      val project: ProjectRef   = ProjectRef.unsafe(genString(), genString())
-      createProjects(writer, project.organization.value, project.project.value).accepted
+    "transfer an elasticsearch view" in {
+      val (project, _, _)      = thereIsAProject()
+      val (esView, esViewJson) = thereIsAnElasticSearchView(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeAView(project, esView, esViewJson)
+    }
+
+    "transfer an blazegraph view" in {
+      val (project, _, _)      = thereIsAProject()
+      val (bgView, bgViewJson) = thereIsABlazegraphView(project)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeAView(project, bgView, bgViewJson)
+    }
+
+    def thereShouldBeAView(project: ProjectRef, schema: Iri, originalJson: Json): Assertion = {
+      val encodedIri = UrlUtils.encode(schema.toString)
+      deltaClient
+        .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
+          {
+            response.status shouldEqual StatusCodes.OK
+            json shouldEqual originalJson
+          }
+        }
+        .accepted
+    }
+
+    def thereIsABlazegraphView(project: ProjectRef): (Iri, Json) = {
+      val simpleBgView = json"""{
+        "@type": "SparqlView",
+        "includeMetadata": true,
+        "includeDeprecated": false,
+        "resourceTag": "mytag"
+      }"""
+      thereIsAView(project, simpleBgView)
+    }
+
+    def thereIsAView(project: ProjectRef, body: Json): (Iri, Json) = {
+      val view        = nxv + genString()
+      val encodedView = UrlUtils.encode(view.toString)
+      deltaClient
+        .put[Json](s"/views/${project.organization}/${project.project}/$encodedView", body, writer) { (_, response) =>
+          response.status shouldEqual StatusCodes.Created
+        }
+        .accepted
+
+      val (viewJson, status) = deltaClient
+        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      view -> viewJson
+    }
+
+    def thereIsAnElasticSearchView(project: ProjectRef): (Iri, Json) = {
+      val simpleEsView =
+        json"""
+          {
+              "@type": "ElasticSearchView",
+              "resourceSchemas": [],
+              "resourceTypes": [],
+              "sourceAsText": false,
+              "includeMetadata": true,
+              "includeDeprecated": false,
+              "mapping": {}
+          }
+            """
+      thereIsAView(project, simpleEsView)
+    }
+
+    def thereAreManyRevisionsOfAProject(): (ProjectRef, Map[Int, Json]) = {
+      val (ref, payload, json) = thereIsAProject()
+      val updatedJson          = projectIsUpdated(ref, payload.copy(description = "updated description"), 1)
+      val deprecatedJson       = projectIsDeprecated(ref, 2)
+      val undeprecatedJson     = projectIsUndeprecated(ref, 3)
+      (
+        ref,
+        Map(
+          1 -> json,
+          2 -> updatedJson,
+          3 -> deprecatedJson,
+          4 -> undeprecatedJson
+        )
+      )
+    }
+
+    def thereIsAProject(): (ProjectRef, ProjectPayload, Json) = {
+      val orgName  = genString()
+      val projName = genString()
+
+      createOrg(writer, orgName).accepted
+
+      val payload = ProjectPayload.generate(s"$orgName/$projName")
+      adminDsl.createProject(orgName, projName, payload, writer).accepted
+
+      val ref = ProjectRef.unsafe(orgName, projName)
+
+      (ref, payload, fetchProjectState(ref))
+    }
+
+    def fetchProjectState(project: ProjectRef) = {
       val (projectJson, status) =
         deltaClient.getJsonAndStatus(s"/projects/${project.organization}/${project.project}", writer).accepted
       status shouldEqual StatusCodes.OK
-      project -> projectJson
+      projectJson
+    }
+
+    def projectIsUpdated(ref: ProjectRef, projectPayload: ProjectPayload, revision: Int): Json = {
+      adminDsl.updateProject(ref.organization.value, ref.project.value, projectPayload, writer, revision).accepted
+      fetchProjectState(ref)
+    }
+
+    def projectIsDeprecated(ref: ProjectRef, rev: Int): Json = {
+      val (_, statusCode) =
+        deltaClient.deleteJsonAndStatus(s"/projects/${ref.organization}/${ref.project}?rev=$rev", writer).accepted
+      statusCode shouldBe StatusCodes.OK
+      fetchProjectState(ref)
+    }
+
+    def projectIsUndeprecated(ref: ProjectRef, rev: Int): Json = {
+      val (_, statusCode) = deltaClient
+        .putJsonAndStatus(s"/projects/${ref.organization}/${ref.project}/undeprecate?rev=$rev", Json.obj(), writer)
+        .accepted
+      statusCode shouldBe StatusCodes.OK
+      fetchProjectState(ref)
     }
 
     def whenTheExportIsRunOnProject(project: ProjectRef): Unit = {
@@ -111,9 +255,9 @@ class EndToEndTest extends BaseIntegrationSpec {
       IO.sleep(6.seconds).accepted
     }
 
-    def theOldProjectIsDeleted(project: ProjectRef): Unit = {
+    def theOldProjectIsDeleted(project: ProjectRef, rev: Int = 1): Unit = {
       deltaClient
-        .delete[Json](s"/projects/${project.organization}/${project.project}?rev=1&prune=true", writer) {
+        .delete[Json](s"/projects/${project.organization}/${project.project}?rev=$rev&prune=true", writer) {
           (_, response) => response.status shouldEqual StatusCodes.OK
         }
         .accepted
@@ -144,6 +288,13 @@ class EndToEndTest extends BaseIntegrationSpec {
           }
         }
         .accepted
+    }
+
+    def thereShouldBeAProjectThatMatchesExpectations(project: ProjectRef, expectations: Map[Int, Json]): Assertion = {
+      expectations.foreach { case (rev, expectedJson) =>
+        thereShouldBeAProjectRevision(project, rev, expectedJson)
+      }
+      succeed
     }
 
     def weFixThePermissions(project: ProjectRef) =
@@ -227,6 +378,16 @@ class EndToEndTest extends BaseIntegrationSpec {
           {
             response.status shouldEqual StatusCodes.OK
             json shouldEqual originalJson
+          }
+        }
+        .accepted
+    }
+    def thereShouldBeAProjectRevision(project: ProjectRef, rev: Int, expectedProjectJson: Json): Assertion = {
+      deltaClient
+        .get[Json](s"/projects/${project.organization}/${project.project}?rev=$rev", writer) { (json, response) =>
+          {
+            response.status shouldEqual StatusCodes.OK
+            json shouldEqual expectedProjectJson
           }
         }
         .accepted
