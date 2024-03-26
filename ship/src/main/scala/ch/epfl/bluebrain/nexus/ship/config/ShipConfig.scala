@@ -26,7 +26,6 @@ object ShipConfig {
     for {
       externalConfig <- Configs.parseFile(externalConfigPath.map(_.toNioPath.toFile))
       defaultConfig  <- Configs.parseResource("ship-default.conf")
-      _               = println(defaultConfig)
       result         <- Configs.merge[ShipConfig]("ship", externalConfig, defaultConfig)
     } yield result
 
