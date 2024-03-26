@@ -21,11 +21,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
@@ -40,26 +41,32 @@ object SchemasModule extends ModuleDef {
 
   }
 
+  make[SchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
+    Schemas.definition(validateSchema, clock)
+  }
+
+  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: AppConfig, xas: Transactors) =>
+    ScopedEventLog(scopedDefinition, config.schemas.eventLog, xas)
+  }
+
+  make[FetchSchema].from { (schemaLog: SchemaLog) =>
+    FetchSchema(schemaLog)
+  }
+
   make[Schemas].from {
     (
+        schemaLog: SchemaLog,
         fetchContext: FetchContext,
         schemaImports: SchemaImports,
         api: JsonLdApi,
-        validate: ValidateSchema,
         resolverContextResolution: ResolverContextResolution,
-        config: AppConfig,
-        xas: Transactors,
-        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
+        schemaLog,
         fetchContext,
         schemaImports,
-        resolverContextResolution,
-        validate,
-        config.schemas,
-        xas,
-        clock
+        resolverContextResolution
       )(api, uuidF)
   }
 
@@ -67,10 +74,10 @@ object SchemasModule extends ModuleDef {
     (
         aclCheck: AclCheck,
         resolvers: Resolvers,
-        resources: Resources,
-        schemas: Schemas
+        fetchSchema: FetchSchema,
+        fetchResource: FetchResource
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)
+      SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
   }
 
   make[SchemasRoutes].from {

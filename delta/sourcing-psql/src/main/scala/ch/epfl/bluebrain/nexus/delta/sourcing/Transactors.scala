@@ -105,19 +105,19 @@ object Transactors {
   ): Resource[IO, Transactors] = {
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
-        ec        <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
-        dataSource = {
-          val ds = new HikariDataSource
-          ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
-          ds.setUsername(config.username)
-          ds.setPassword(config.password.value)
-          ds.setDriverClassName("org.postgresql.Driver")
-          ds.setMaximumPoolSize(access.poolSize)
-          ds.setPoolName(poolName)
-          ds.setAutoCommit(false)
-          ds.setReadOnly(readOnly)
-          ds
-        }
+        ec         <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
+        dataSource <- Resource.make[IO, HikariDataSource](IO.delay {
+                        val ds = new HikariDataSource
+                        ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
+                        ds.setUsername(config.username)
+                        ds.setPassword(config.password.value)
+                        ds.setDriverClassName("org.postgresql.Driver")
+                        ds.setMaximumPoolSize(access.poolSize)
+                        ds.setPoolName(poolName)
+                        ds.setAutoCommit(false)
+                        ds.setReadOnly(readOnly)
+                        ds
+                      })(ds => IO.delay(ds.close()))
       } yield HikariTransactor[IO](dataSource, ec, None)
     }
 

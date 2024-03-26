@@ -21,7 +21,9 @@ class EventClock(instant: Ref[IO, Instant]) extends Clock[IO] {
   override def realTime: IO[FiniteDuration] = toDuration
 
   private def toDuration: IO[FiniteDuration] = instant.get.map { i =>
-    FiniteDuration(i.toEpochMilli, TimeUnit.MILLISECONDS)
+    val seconds = FiniteDuration(i.getEpochSecond, TimeUnit.SECONDS)
+    val nanos   = FiniteDuration(i.getNano, TimeUnit.NANOSECONDS)
+    seconds + nanos
   }
 }
 

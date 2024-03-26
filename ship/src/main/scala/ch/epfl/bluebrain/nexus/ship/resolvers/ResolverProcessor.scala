@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.ship.resolvers
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{IncorrectRev, ResourceAlreadyExists}
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
 import io.circe.Decoder
 
 class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extends EventProcessor[ResolverEvent] {
@@ -53,7 +52,7 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resolver already exists").as(ImportStatus.Dropped)
-      case i: IncorrectRev          => logger.warn(i)("An incorrect revision as been provided").as(ImportStatus.Dropped)
+      case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
@@ -77,18 +76,10 @@ object ResolverProcessor {
   def apply(
       fetchContext: FetchContext,
       config: EventLogConfig,
+      clock: EventClock,
       xas: Transactors
-  )(implicit api: JsonLdApi): IO[ResolverProcessor] =
-    EventClock.init().map { clock =>
-      implicit val uuidF: UUIDF = FailingUUID
-      val resolvers             = ResolversImpl(
-        fetchContext,
-        // We rely on the parsed values and not on the original value
-        ResolverContextResolution.never,
-        config,
-        xas,
-        clock
-      )
-      new ResolverProcessor(resolvers, clock)
-    }
+  )(implicit api: JsonLdApi): ResolverProcessor = {
+    val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
+    new ResolverProcessor(resolvers, clock)
+  }
 }

@@ -7,7 +7,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsConfig, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -90,7 +90,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       IO.pure(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read)),
       Acls.findUnknownRealms(_, Set(realm1, realm2)),
       Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read),
-      AclsConfig(EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)),
+      EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis),
       xas,
       clock
     )

@@ -64,7 +64,7 @@ trait BaseIntegrationSpec
 
   val deltaUrl: Uri = Uri(s"http://${sys.props.getOrElse("delta-url", "localhost:8080")}/v1")
 
-  private[tests] val deltaClient = HttpClient(deltaUrl)
+  val deltaClient: HttpClient = HttpClient(deltaUrl)
 
   val elasticsearchDsl = new ElasticsearchDsl()
   val blazegraphDsl    = new BlazegraphDsl()

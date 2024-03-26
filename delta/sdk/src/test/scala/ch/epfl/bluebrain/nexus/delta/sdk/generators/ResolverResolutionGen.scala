@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.Fetch
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, Fetch}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.DeprecationCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 

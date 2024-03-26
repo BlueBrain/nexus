@@ -64,7 +64,7 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
       IO.pure(minimumPermissions),
       Acls.findUnknownRealms(_, Set(realm, realm2)),
       minimumPermissions,
-      AclsConfig(eventLogConfig),
+      eventLogConfig,
       xas,
       clock
     )
