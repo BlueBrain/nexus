@@ -1,18 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
-import akka.actor
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, FilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -20,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, StoragePermissionProviderImpl, Storages, StoragesStatistics}
@@ -43,9 +43,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -66,28 +66,30 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     HttpClient.noRetry(compression = false)(as.classicSystem)
   }
 
+  make[S3StorageClient].fromResource { (cfg: StoragePluginConfig) =>
+    S3StorageClient.mk(cfg.storages.storageTypeConfig.amazon)
+  }
+
   make[Storages]
     .fromEffect {
       (
           fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
           remoteDiskStorageClient: RemoteDiskStorageClient,
+          s3StorageClient: S3StorageClient,
           permissions: Permissions,
           xas: Transactors,
           cfg: StoragePluginConfig,
           serviceAccount: ServiceAccount,
           api: JsonLdApi,
           clock: Clock[IO],
-          uuidF: UUIDF,
-          as: ActorSystem[Nothing]
+          uuidF: UUIDF
       ) =>
-        implicit val classicAs: actor.ActorSystem         = as.classicSystem
-        implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
         Storages(
           fetchContext,
           contextResolution,
           permissions.fetchPermissionSet,
-          StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
+          StorageAccess.mk(remoteDiskStorageClient, s3StorageClient),
           xas,
           cfg.storages,
           serviceAccount,

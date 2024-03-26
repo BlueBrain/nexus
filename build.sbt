@@ -37,6 +37,7 @@ val declineVersion             = "2.4.1"
 val distageVersion             = "1.2.6"
 val doobieVersion              = "1.0.0-RC5"
 val fs2Version                 = "3.9.4"
+val fs2AwsVersion              = "6.1.1"
 val googleAuthClientVersion    = "1.35.0"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "5.1.0"
@@ -104,6 +105,8 @@ lazy val doobie                        = Seq(
 )
 lazy val fs2                           = "co.fs2"                       %% "fs2-core"                           % fs2Version
 lazy val fs2io                         = "co.fs2"                       %% "fs2-io"                             % fs2Version
+lazy val fs2Aws                        = "io.laserdisc"                 %% "fs2-aws-core"                       % fs2AwsVersion
+lazy val fs2AwsS3                      = "io.laserdisc"                 %% "fs2-aws-s3"                         % fs2AwsVersion
 lazy val googleAuthClient              = "com.google.oauth-client"       % "google-oauth-client"                % googleAuthClientVersion
 lazy val handleBars                    = "com.github.jknack"             % "handlebars"                         % handleBarsVersion
 lazy val jenaArq                       = "org.apache.jena"               % "jena-arq"                           % jenaVersion
@@ -250,6 +253,8 @@ lazy val testkit = project
       ),
       catsRetry,
       doobiePostgres,
+      fs2Aws,
+      fs2AwsS3,
       munit,
       munitCatsEffect,
       scalaTest,
@@ -571,6 +576,8 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
+      fs2Aws,
+      fs2AwsS3,
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),

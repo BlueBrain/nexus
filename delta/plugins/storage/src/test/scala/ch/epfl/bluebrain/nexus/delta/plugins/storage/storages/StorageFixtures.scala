@@ -33,7 +33,8 @@ trait StorageFixtures extends CirceLiteral {
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(5000), 50),
-    amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret(MinioDocker.RootUser)), Some(Secret(MinioDocker.RootPassword)), permissions.read, permissions.write, showLocation = false, 60)),
+    amazon = Some(S3StorageConfig(DigestAlgorithm.default, "localhost", Secret(MinioDocker.RootUser), Secret(MinioDocker.RootPassword),
+      permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), Anonymous, permissions.read, permissions.write, showLocation = false, 70, 50.millis)),
   )
   implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation
