@@ -35,7 +35,6 @@ jobs:
       - name: Clean, build Delta & Storage images
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            clean \
             app/Docker/publishLocal
       - name: Start services
         run: docker-compose -f tests/docker/docker-compose.yml up -d
@@ -46,5 +45,5 @@ jobs:
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            clean \
-            ship-unit-tests
+            ship/test -- -l "ch.epfl.bluebrain.nexus.ship.tags.Integration"
+            ship/test -- -n "ch.epfl.bluebrain.nexus.ship.tags.Integration"
