@@ -25,7 +25,7 @@ object ShipConfig {
   def merge(externalConfigPath: Option[Path]): IO[(ShipConfig, Config)] =
     for {
       externalConfig <- Configs.parseFile(externalConfigPath.map(_.toNioPath.toFile))
-      defaultConfig  <- Configs.parseResource("default.conf")
+      defaultConfig  <- Configs.parseResource("/default.conf")
       result         <- Configs.merge[ShipConfig]("ship", externalConfig, defaultConfig)
     } yield result
 

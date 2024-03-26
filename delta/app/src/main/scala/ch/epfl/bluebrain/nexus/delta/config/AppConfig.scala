@@ -85,7 +85,7 @@ object AppConfig {
   ): IO[(AppConfig, Config)] = {
     for {
       externalConfig            <- Configs.parseFile(externalConfigPath.map(new File(_)))
-      defaultConfig             <- Configs.parseResource("/default.conf")
+      defaultConfig             <- Configs.parseResource("default.conf")
       pluginConfigs             <- pluginsConfigPaths.traverse { path =>
                                      Configs.parseReader(new InputStreamReader(accClassLoader.getResourceAsStream(path), UTF_8))
                                    }
