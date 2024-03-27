@@ -60,18 +60,16 @@ final class ProjectsRoutes(
   implicit val paginationConfig: PaginationConfig = config.pagination
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] = {
-    onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
-      (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-        ProjectSearchParams(
-          None,
-          deprecated,
-          rev,
-          createdBy,
-          updatedBy,
-          label,
-          proj => aclCheck.authorizeFor(proj.ref, ReadProjects, allAcls)
-        )
-      }
+    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      ProjectSearchParams(
+        None,
+        deprecated,
+        rev,
+        createdBy,
+        updatedBy,
+        label,
+        proj => aclCheck.authorizeFor(proj.ref, ReadProjects)
+      )
     }
   }
 

@@ -28,10 +28,10 @@ object MultiFetch {
     new MultiFetch {
       override def apply(request: MultiFetchRequest)(implicit
           caller: Caller
-      ): IO[MultiFetchResponse] = aclCheck.fetchAll.flatMap { allAcls =>
+      ): IO[MultiFetchResponse] =
         request.resources
           .traverse { input =>
-            aclCheck.authorizeFor(input.project, resources.read, allAcls).flatMap {
+            aclCheck.authorizeFor(input.project, resources.read).flatMap {
               case true  =>
                 fetchResource(input).map {
                   _.map(Success(input.id, input.project, _))
@@ -44,7 +44,6 @@ object MultiFetch {
           .map { resources =>
             MultiFetchResponse(request.format, resources)
           }
-      }
 
     }
 }
