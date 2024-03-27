@@ -98,7 +98,7 @@ class AclCheckSuite extends NexusSuite {
 
   test("Map and filter a list of values for the user Alice without raising an error") {
     aclCheck
-      .mapFilterOrRaise[String, ProjectValue, Int](
+      .mapFilterOrRaise[ProjectValue, Int](
         projectValues,
         v => (v.project, v.permission),
         _.index,
@@ -119,7 +119,7 @@ class AclCheckSuite extends NexusSuite {
 
   test("Raise an error as bob is missing some of the acls") {
     aclCheck
-      .mapFilterOrRaise[String, ProjectValue, Int](
+      .mapFilterOrRaise[ProjectValue, Int](
         projectValues,
         v => (v.project, v.permission),
         _.index,
@@ -147,7 +147,7 @@ class AclCheckSuite extends NexusSuite {
 
   test("Map and filter a list of values at a given address for the user Alice without raising an error") {
     aclCheck
-      .mapFilterAtAddressOrRaise[String, Value, Int](
+      .mapFilterAtAddressOrRaise[Value, Int](
         values,
         proj12,
         _.permission,
@@ -170,7 +170,7 @@ class AclCheckSuite extends NexusSuite {
 
   test("Raise an error for values at a given address as bob is missing some of the acls") {
     aclCheck
-      .mapFilterAtAddressOrRaise[String, Value, Int](
+      .mapFilterAtAddressOrRaise[Value, Int](
         values,
         proj11,
         _.permission,

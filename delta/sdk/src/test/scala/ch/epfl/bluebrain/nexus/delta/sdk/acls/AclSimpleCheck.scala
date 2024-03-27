@@ -61,7 +61,7 @@ object AclSimpleCheck {
         )(implicit caller: Caller): IO[Unit] =
           aclCheck.authorizeForEveryOr(path, permissions)(onError)
 
-        override def mapFilterOrRaise[E, A, B](
+        override def mapFilterOrRaise[A, B](
             values: immutable.Iterable[A],
             extractAddressPermission: A => (AclAddress, Permission),
             onAuthorized: A => B,
@@ -84,6 +84,7 @@ object AclSimpleCheck {
   /**
     * Create an [[AclSimpleCheck]] and initializes it with the provided acls
     * @param input
+    *   the acls to append to the checker
     * @return
     */
   def apply(input: (Identity, AclAddress, Set[Permission])*): IO[AclSimpleCheck] =
@@ -94,7 +95,7 @@ object AclSimpleCheck {
         }
     }
 
-  def unsafe(input: (Identity, AclAddress, Set[Permission])*) =
+  def unsafe(input: (Identity, AclAddress, Set[Permission])*): AclSimpleCheck =
     apply(input: _*).unsafeRunSync()
 
 }

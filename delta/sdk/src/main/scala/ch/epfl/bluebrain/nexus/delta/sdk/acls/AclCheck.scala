@@ -52,8 +52,6 @@ trait AclCheck {
   /**
     * Map authorized values for the provided caller.
     *
-    * Will raise an error [[E]] at the first unauthorized attempt
-    *
     * @param values
     *   the list of couples address permission to check
     * @param extractAddressPermission
@@ -63,7 +61,7 @@ trait AclCheck {
     * @param onFailure
     *   to raise an error at the first unauthorized value
     */
-  def mapFilterOrRaise[E, A, B](
+  def mapFilterOrRaise[A, B](
       values: Iterable[A],
       extractAddressPermission: A => (AclAddress, Permission),
       onAuthorized: A => B,
@@ -229,7 +227,7 @@ object AclCheck {
       }
     }
 
-    def mapFilterAtAddressOrRaise[E, A, B](
+    def mapFilterAtAddressOrRaise[A, B](
         values: Iterable[A],
         address: AclAddress,
         extractPermission: A => Permission,
