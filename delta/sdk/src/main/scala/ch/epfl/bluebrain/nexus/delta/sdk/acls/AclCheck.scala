@@ -27,7 +27,8 @@ trait AclCheck {
     */
   def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission)(onError: => E)(implicit
       caller: Caller
-  ): IO[Unit]
+  ): IO[Unit] =
+    authorizeForOr(path, permission, caller.identities)(onError)
 
   /**
     * Checks whether the provided entities have the passed ''permission'' on the passed ''path''.
@@ -37,7 +38,8 @@ trait AclCheck {
   /**
     * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
     */
-  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): IO[Boolean]
+  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): IO[Boolean] =
+    authorizeFor(path, permission, caller.identities)
 
   /**
     * Checks whether a given [[Caller]] has all the passed ''permissions'' on the passed ''path'', raising the error
@@ -82,12 +84,11 @@ trait AclCheck {
       values: Iterable[A],
       extractAddressPermission: A => (AclAddress, Permission),
       onAuthorized: A => B
-  )(implicit caller: Caller): IO[Set[B]]
+  )(implicit caller: Caller): IO[Set[B]] =
+    mapFilterOrRaise(values, extractAddressPermission, onAuthorized, _ => IO.unit)
 
   /**
-    * Map authorized values for the provided caller.
-    *
-    * Will raise an error [[E]] at the first unauthorized attempt
+    * Map authorized values for the provided caller while filtering out the unauthorized ones.
     *
     * @param values
     *   the list of couples address permission to check
@@ -97,10 +98,8 @@ trait AclCheck {
     *   Extract an acl address and permission from a value [[A]]
     * @param onAuthorized
     *   to map the value [[A]] to [[B]] if access is granted
-    * @param onFailure
-    *   to raise an error at the first unauthorized value
     */
-  def mapFilterAtAddressOrRaise[E, A, B](
+  def mapFilterAtAddressOrRaise[A, B](
       values: Iterable[A],
       address: AclAddress,
       extractPermission: A => Permission,
@@ -125,7 +124,8 @@ trait AclCheck {
       address: AclAddress,
       extractPermission: A => Permission,
       onAuthorized: A => B
-  )(implicit caller: Caller): IO[Set[B]]
+  )(implicit caller: Caller): IO[Set[B]] =
+    mapFilterAtAddressOrRaise(values, address, extractPermission, onAuthorized, _ => IO.unit)
 
 }
 
@@ -186,15 +186,8 @@ object AclCheck {
         onError: => E
     ): IO[Unit] = authorizeForOrFail(path, permission, identities, fetchOne)(onError)
 
-    override def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission)(onError: => E)(implicit
-        caller: Caller
-    ): IO[Unit] = authorizeForOr(path, permission, caller.identities)(onError)
-
     override def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): IO[Boolean] =
       authorizeFor(path, permission, identities, fetchOne)
-
-    override def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): IO[Boolean] =
-      authorizeFor(path, permission, caller.identities)
 
     override def authorizeForEveryOr[E <: Throwable](path: AclAddress, permissions: Set[Permission])(onError: => E)(
         implicit caller: Caller
@@ -219,7 +212,7 @@ object AclCheck {
         }
         .flatMap { case (result, _) => IO.raiseWhen(!result)(onError) }
 
-    override def mapFilterOrRaise[E, A, B](
+    override def mapFilterOrRaise[A, B](
         values: Iterable[A],
         extractAddressPermission: A => (AclAddress, Permission),
         onAuthorized: A => B,
@@ -236,14 +229,7 @@ object AclCheck {
       }
     }
 
-    override def mapFilter[A, B](
-        values: Iterable[A],
-        extractAddressPermission: A => (AclAddress, Permission),
-        onAuthorized: A => B
-    )(implicit caller: Caller): IO[Set[B]] =
-      mapFilterOrRaise(values, extractAddressPermission, onAuthorized, _ => IO.unit)
-
-    override def mapFilterAtAddressOrRaise[E, A, B](
+    def mapFilterAtAddressOrRaise[E, A, B](
         values: Iterable[A],
         address: AclAddress,
         extractPermission: A => Permission,
@@ -267,14 +253,6 @@ object AclCheck {
           }
         }
       }
-
-    override def mapFilterAtAddress[A, B](
-        values: Iterable[A],
-        address: AclAddress,
-        extractPermission: A => Permission,
-        onAuthorized: A => B
-    )(implicit caller: Caller): IO[Set[B]] =
-      mapFilterAtAddressOrRaise(values, address, extractPermission, onAuthorized, _ => IO.unit)
   }
 
 }

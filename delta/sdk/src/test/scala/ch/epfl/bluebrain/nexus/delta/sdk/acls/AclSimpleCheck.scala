@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import cats.effect.IO
+import cats.effect.unsafe.implicits._
+import cats.effect.{IO, Ref}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import cats.effect.Ref
-import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 
 import scala.collection.immutable
 
@@ -54,16 +53,8 @@ object AclSimpleCheck {
         )(onError: => E): IO[Unit] =
           aclCheck.authorizeForOr(path, permission, identities)(onError)
 
-        override def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission)(onError: => E)(implicit
-            caller: Caller
-        ): IO[Unit] =
-          aclCheck.authorizeForOr(path, permission)(onError)
-
         override def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): IO[Boolean] =
           aclCheck.authorizeFor(path, permission, identities)
-
-        override def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): IO[Boolean] =
-          aclCheck.authorizeFor(path, permission)
 
         override def authorizeForEveryOr[E <: Throwable](path: AclAddress, permissions: Set[Permission])(
             onError: => E
@@ -78,14 +69,7 @@ object AclSimpleCheck {
         )(implicit caller: Caller): IO[Set[B]] =
           aclCheck.mapFilterOrRaise(values, extractAddressPermission, onAuthorized, onFailure)
 
-        override def mapFilter[A, B](
-            values: immutable.Iterable[A],
-            extractAddressPermission: A => (AclAddress, Permission),
-            onAuthorized: A => B
-        )(implicit caller: Caller): IO[Set[B]] =
-          aclCheck.mapFilter(values, extractAddressPermission, onAuthorized)
-
-        override def mapFilterAtAddressOrRaise[E, A, B](
+        override def mapFilterAtAddressOrRaise[A, B](
             values: immutable.Iterable[A],
             address: AclAddress,
             extractPermission: A => Permission,
@@ -93,14 +77,6 @@ object AclSimpleCheck {
             onFailure: AclAddress => IO[Unit]
         )(implicit caller: Caller): IO[Set[B]] =
           aclCheck.mapFilterAtAddressOrRaise(values, address, extractPermission, onAuthorized, onFailure)
-
-        override def mapFilterAtAddress[A, B](
-            values: immutable.Iterable[A],
-            address: AclAddress,
-            extractPermission: A => Permission,
-            onAuthorized: A => B
-        )(implicit caller: Caller): IO[Set[B]] =
-          aclCheck.mapFilterAtAddress(values, address, extractPermission, onAuthorized)
       }
     }
   }
