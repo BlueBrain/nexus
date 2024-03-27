@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheckSuite.{ProjectValue, Value}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -33,16 +33,10 @@ class AclCheckSuite extends NexusSuite {
   private val unauthorizedError = new IllegalArgumentException("The user has no access to this resource.")
 
   test("Return the acls provided at initialization") {
-    aclCheck.fetchAll.assertEquals(
-      Map(
-        AclAddress.Root               -> Acl(AclAddress.Root, Anonymous -> Set(events.read)),
-        AclAddress.Organization(org1) -> Acl(
-          AclAddress.Organization(org1),
-          alice.subject -> Set(resources.read, resources.write)
-        ),
-        AclAddress.Project(proj11)    -> Acl(AclAddress.Project(proj11), bob.subject -> Set(resources.read))
-      )
-    )
+    aclCheck.authorizeFor(AclAddress.Root, events.read, Set(Anonymous)).assertEquals(true)
+    aclCheck.authorizeFor(AclAddress.Organization(org1), resources.read, Set(aliceUser)).assertEquals(true)
+    aclCheck.authorizeFor(AclAddress.Organization(org1), resources.write, Set(aliceUser)).assertEquals(true)
+    aclCheck.authorizeFor(AclAddress.Project(proj11), resources.read, Set(bobUser)).assertEquals(true)
   }
 
   List(alice, bob).foreach { caller =>

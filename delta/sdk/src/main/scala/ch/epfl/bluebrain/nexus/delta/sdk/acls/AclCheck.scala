@@ -53,7 +53,7 @@ trait AclCheck {
     * Will raise an error [[E]] at the first unauthorized attempt
     *
     * @param values
-    *   the list of couples addres permission to check
+    *   the list of couples address permission to check
     * @param extractAddressPermission
     *   Extract an acl address and permission from a value [[A]]
     * @param onAuthorized
@@ -69,7 +69,7 @@ trait AclCheck {
   )(implicit caller: Caller): IO[Set[B]]
 
   /**
-    * Map authorized values for the provided caller while fitering out the unauthorized ones.
+    * Map authorized values for the provided caller while filtering out the unauthorized ones.
     *
     * @param values
     *   the values to work on
@@ -109,7 +109,7 @@ trait AclCheck {
   )(implicit caller: Caller): IO[Set[B]]
 
   /**
-    * Map authorized values for the provided caller while fitering out the unauthorized ones.
+    * Map authorized values for the provided caller while filtering out the unauthorized ones.
     *
     * @param values
     *   the list of couples address permission to check
@@ -131,13 +131,18 @@ trait AclCheck {
 
 object AclCheck {
 
-  def apply(acls: Acls): AclCheck = new AclCheck {
-    def fetchOne: AclAddress => IO[Acl] = acls.fetch(_).map(_.value)
-
-    def fetchAll: IO[Map[AclAddress, Acl]] =
+  def apply(acls: Acls): AclCheck =
+    apply(
+      acls.fetch(_).map(_.value),
       acls
         .list(AnyOrganizationAnyProject(true))
         .map(_.value.map { case (address, resource) => address -> resource.value })
+    )
+
+  def apply(
+      fetchOne: AclAddress => IO[Acl],
+      fetchAll: IO[Map[AclAddress, Acl]]
+  ): AclCheck = new AclCheck {
 
     def authorizeForOrFail[E <: Throwable](
         path: AclAddress,
@@ -146,7 +151,7 @@ object AclCheck {
         f: AclAddress => IO[Acl]
     )(
         onError: => E
-    ): IO[Unit]                            =
+    ): IO[Unit] =
       authorizeFor(path, permission, identities, f)
         .flatMap { result => IO.raiseWhen(!result)(onError) }
 
