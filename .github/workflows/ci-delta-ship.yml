@@ -45,5 +45,8 @@ jobs:
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            ship/testOnly *Suite \
-            ship/testOnly *Spec
+            ship/testOnly *Suite
+      - name: Integration tests
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            ship/it:testOnly *Spec
