@@ -49,4 +49,4 @@ jobs:
       - name: Integration tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            ship/it:testOnly *Spec
+            ship/testOnly *Spec
