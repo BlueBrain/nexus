@@ -22,8 +22,7 @@ object MinioSpec {
   def createBucket(
       value: S3StorageValue
   )(implicit config: StorageTypeConfig, system: ActorSystem): IO[Unit] = {
-    val thing               = value.alpakkaSettings(config)
-    implicit val attributes = S3Attributes.settings(thing)
+    implicit val attributes = S3Attributes.settings(value.alpakkaSettings(config))
 
     IO.fromFuture(IO.delay(S3.checkIfBucketExists(value.bucket))).flatMap {
       case BucketAccess.NotExists => IO.delay(S3.makeBucket(value.bucket)).void
