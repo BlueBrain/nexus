@@ -149,8 +149,8 @@ object StorageValue {
 
     def address(bucket: String): Uri =
       endpoint match {
-        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$host") / bucket
-        case Some(e)                                => e / bucket
+        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
+        case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
         case None                                   => region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
 

@@ -25,12 +25,8 @@ object MinioSpec {
     val thing               = value.alpakkaSettings(config)
     implicit val attributes = S3Attributes.settings(thing)
 
-    println(s"Checking bucket for endpoint ${thing.endpointUrl}")
-
     IO.fromFuture(IO.delay(S3.checkIfBucketExists(value.bucket))).flatMap {
-      case BucketAccess.NotExists =>
-        IO.println("did we even try to make the bucket?") >> IO.delay(S3.makeBucket(value.bucket)).void <* IO
-          .println("made the bucket")
+      case BucketAccess.NotExists => IO.delay(S3.makeBucket(value.bucket)).void
       case _                      => IO.unit
     }
   }
