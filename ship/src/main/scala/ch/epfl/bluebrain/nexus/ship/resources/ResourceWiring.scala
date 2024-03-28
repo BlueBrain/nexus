@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
@@ -11,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship.EventClock
-import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
