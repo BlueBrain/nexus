@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
@@ -37,16 +36,15 @@ class RemoteDiskStorageAccessSpec(fixture: RemoteStorageClientFixtures)
   )
 
   "A RemoteDiskStorage access operations" should {
-    val iri = iri"http://localhost/remote-disk"
 
     "succeed verifying the folder" in eventually {
 
-      access(iri, storageValue).accepted
+      access(storageValue).accepted
     }
 
     "fail when folder does not exist" in {
       val wrongFolder = storageValue.copy(folder = Label.unsafe("abcd"))
-      access(iri, wrongFolder).rejectedWith[StorageNotAccessible]
+      access(wrongFolder).rejectedWith[StorageNotAccessible]
     }
   }
 

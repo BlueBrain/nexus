@@ -130,7 +130,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       fetchContext,
       ResolverContextResolution(rcr),
       IO.pure(allowedPerms),
-      (_, _) => IO.unit,
+      _ => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, cfg),
       ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),

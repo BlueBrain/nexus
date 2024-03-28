@@ -155,7 +155,8 @@ object Optics {
   }
 
   object error {
-    val `@type` = root.`@type`.string
+    val `@type`             = root.`@type`.string
+    val deleteErrorMessages = root.obj.modify(_.remove("reason").remove("details"))
   }
 
   object listing {

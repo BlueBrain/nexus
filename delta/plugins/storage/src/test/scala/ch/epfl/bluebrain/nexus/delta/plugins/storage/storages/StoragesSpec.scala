@@ -59,7 +59,7 @@ private class StoragesSpec
       fetchContext,
       ResolverContextResolution(rcr),
       IO.pure(allowedPerms.toSet),
-      (_, _) => IO.unit,
+      _ => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, config),
       serviceAccount,

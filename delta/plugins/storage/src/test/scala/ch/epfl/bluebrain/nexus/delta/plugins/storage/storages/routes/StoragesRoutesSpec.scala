@@ -114,7 +114,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
     fetchContext,
     ResolverContextResolution(rcr),
     IO.pure(perms),
-    (_, _) => IO.unit,
+    _ => IO.unit,
     xas,
     cfg,
     serviceAccount,

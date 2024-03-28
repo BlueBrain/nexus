@@ -1,6 +1,6 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "StorageNotAccessible",
-  "reason" : "Storage 'https://bluebrain.github.io/nexus/vocabulary/invalid-volume' not accessible.",
+  "reason" : "Storage not accessible: Volume '{{volume}}' does not exist.",
   "details" : "Volume '{{volume}}' does not exist."
 }

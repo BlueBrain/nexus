@@ -3,18 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 import java.nio.file.Files
 
-object DiskStorageAccess extends StorageAccess {
-  override type Storage = DiskStorageValue
+object DiskStorageAccess {
 
-  override def apply(id: Iri, storage: DiskStorageValue): IO[Unit] = {
+  def apply(storage: DiskStorageValue): IO[Unit] = {
 
     def failWhen(condition: Boolean, err: => String) = {
-      IO.raiseWhen(condition)(StorageNotAccessible(id, err))
+      IO.raiseWhen(condition)(StorageNotAccessible(err))
     }
 
     for {

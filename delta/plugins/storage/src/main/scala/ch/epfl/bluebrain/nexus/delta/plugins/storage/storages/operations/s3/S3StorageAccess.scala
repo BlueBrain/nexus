@@ -1,35 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.actor.ActorSystem
-import akka.stream.alpakka.s3.S3Attributes
-import akka.stream.alpakka.s3.scaladsl.S3
-import akka.stream.scaladsl.Sink
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 
-final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem) extends StorageAccess {
-  override type Storage = S3StorageValue
+final class S3StorageAccess(s3Client: S3StorageClient) {
 
-  override def apply(id: Iri, storage: S3StorageValue): IO[Unit] = {
-    val attributes = S3Attributes.settings(storage.alpakkaSettings(config))
+  private val log = Logger[S3StorageAccess]
 
-    IO.fromFuture(
-      IO.delay(
-        S3.listBucket(storage.bucket, None)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
+  def apply(bucket: String): IO[Unit] =
+    s3Client
+      .listObjectsV2(bucket)
+      .redeemWith(
+        err => IO.raiseError(StorageNotAccessible(err.getMessage)),
+        response => log.info(s"S3 bucket $bucket contains ${response.keyCount()} objects")
       )
-    ).redeemWith(
-      {
-        case _: NoSuchElementException => IO.unit // // bucket is empty
-        case err                       =>
-          IO.raiseError(StorageNotAccessible(id, err.getMessage))
-      },
-      _ => IO.unit
-    )
-  }
 }

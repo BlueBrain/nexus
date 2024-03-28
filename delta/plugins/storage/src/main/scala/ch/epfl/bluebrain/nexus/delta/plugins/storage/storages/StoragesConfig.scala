@@ -172,9 +172,9 @@ object StoragesConfig {
     */
   final case class S3StorageConfig(
       digestAlgorithm: DigestAlgorithm,
-      defaultEndpoint: Option[Uri],
-      defaultAccessKey: Option[Secret[String]],
-      defaultSecretKey: Option[Secret[String]],
+      defaultEndpoint: Uri,
+      defaultAccessKey: Secret[String],
+      defaultSecretKey: Secret[String],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
