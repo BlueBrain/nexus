@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -62,7 +62,7 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
     clock
   )
 
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append(_), projects, provisioningConfig)
+  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
 
   "Provisioning projects" should {
 
@@ -70,7 +70,6 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
       val subject: Subject = Identity.User("user1######", Label.unsafe("realm"))
       val projectLabel     = Label.unsafe("user1")
       val projectRef       = ProjectRef(usersOrg, projectLabel)
-      val acl              = Acl(AclAddress.Project(projectRef), subject -> provisioningConfig.permissions)
       provisioning(subject).accepted
       projects.fetchProject(projectRef).accepted shouldEqual Project(
         projectLabel,
@@ -85,7 +84,10 @@ class ProjectProvisioningSpec extends CatsEffectSpec with DoobieScalaTestFixture
         enforceSchema = provisioningConfig.fields.enforceSchema,
         markedForDeletion = false
       )
-      aclCheck.fetchOne(projectRef).accepted shouldEqual acl
+
+      provisioningConfig.permissions.foreach { permission =>
+        aclCheck.authorizeFor(AclAddress.Project(projectRef), permission, Set(subject)).accepted shouldEqual true
+      }
     }
 
     "provision project with even if the ACLs have been set before" in {
