@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
@@ -27,12 +26,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import io.circe.Json
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Composite views resource lifecycle operations.
@@ -467,7 +469,8 @@ object CompositeViews {
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateCompositeView,
-      config: CompositeViewsConfig,
+      minIntervalRebuild: FiniteDuration,
+      eventLogConfig: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
   )(implicit
@@ -476,13 +479,13 @@ object CompositeViews {
   ): IO[CompositeViews] =
     IO
       .delay(
-        CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution, config.minIntervalRebuild)
+        CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution, minIntervalRebuild)
       )
       .map { sourceDecoder =>
         new CompositeViews(
           ScopedEventLog(
             definition(validate, clock),
-            config.eventLog,
+            eventLogConfig,
             xas
           ),
           fetchContext,

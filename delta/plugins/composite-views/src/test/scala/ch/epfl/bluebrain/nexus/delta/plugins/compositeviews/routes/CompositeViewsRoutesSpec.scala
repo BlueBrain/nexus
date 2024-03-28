@@ -50,7 +50,8 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    config,
+    config.minIntervalRebuild,
+    config.eventLog,
     xas,
     clock
   ).accepted

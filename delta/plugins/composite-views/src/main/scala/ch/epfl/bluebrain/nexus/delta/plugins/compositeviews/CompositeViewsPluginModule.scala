@@ -129,7 +129,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         fetchContext,
         contextResolution,
         validate,
-        config,
+        config.minIntervalRebuild,
+        config.eventLog,
         xas,
         clock
       )(
