@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
+import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 
 object ResourceWiring {
@@ -27,10 +28,9 @@ object ResourceWiring {
   ): (ResourceLog, FetchResource) = {
     val rcr                = RemoteContextResolution.never // TODO: Use correct RemoteContextResolution
     val detectChange       = DetectChange(false)
-    val aclCheck           = AclCheck(AclWiring.acls(config, clock, xas))
     val resolvers          = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     val resourceResolution =
-      ResourceResolution.schemaResource(aclCheck, resolvers, fetchSchema, excludeDeprecated = false)
+      ResourceResolution.schemaResource(alwaysAuthorize, resolvers, fetchSchema, excludeDeprecated = false)
     val validate           = ValidateResource(resourceResolution)(rcr)
     val resourceDef        = Resources.definition(validate, detectChange, clock)
 
