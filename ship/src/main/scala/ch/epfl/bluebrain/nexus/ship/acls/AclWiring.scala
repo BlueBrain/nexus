@@ -1,23 +1,44 @@
 package ch.epfl.bluebrain.nexus.ship.acls
 
-import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{Acls, AclsImpl}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+
+import scala.collection.immutable
 
 object AclWiring {
 
-  def acls(config: EventLogConfig, clock: Clock[IO], xas: Transactors): Acls = {
-    val permissionSet = Set(Permission.unsafe("resources/read"))
-    AclsImpl(
-      IO.pure(permissionSet),
-      AclsImpl.findUnknownRealms(xas),
-      permissionSet,
-      config,
-      xas,
-      clock
-    )
+  def alwaysAuthorize: AclCheck = new AclCheck {
+    override def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission, identities: Set[Identity])(
+        onError: => E
+    ): IO[Unit] = IO.unit
+
+    override def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): IO[Boolean] =
+      IO.pure(true)
+
+    override def authorizeForEveryOr[E <: Throwable](path: AclAddress, permissions: Set[Permission])(onError: => E)(
+        implicit caller: Caller
+    ): IO[Unit] = IO.unit
+
+    override def mapFilterOrRaise[A, B](
+        values: immutable.Iterable[A],
+        extractAddressPermission: A => (AclAddress, Permission),
+        onAuthorized: A => B,
+        onFailure: AclAddress => IO[Unit]
+    )(implicit caller: Caller): IO[Set[B]] =
+      IO.pure(values.map(onAuthorized).toSet)
+
+    override def mapFilterAtAddressOrRaise[A, B](
+        values: immutable.Iterable[A],
+        address: AclAddress,
+        extractPermission: A => Permission,
+        onAuthorized: A => B,
+        onFailure: AclAddress => IO[Unit]
+    )(implicit caller: Caller): IO[Set[B]] =
+      IO.pure(values.map(onAuthorized).toSet)
   }
 
 }
