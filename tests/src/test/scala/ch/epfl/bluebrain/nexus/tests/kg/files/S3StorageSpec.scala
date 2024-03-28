@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
+import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import org.scalatest.Assertion
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
@@ -126,7 +127,12 @@ class S3StorageSpec extends StorageSpec {
       )
 
       deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
-        json shouldEqual jsonContentOf("kg/storages/s3-error.json")
+        val stripErrors = error.deleteErrorMessages
+        val actual      = stripErrors(json)
+        actual shouldBe Json.obj(
+          "@context" -> "https://bluebrain.github.io/nexus/contexts/error.json".asJson,
+          "@type"    -> "StorageNotAccessible".asJson
+        )
         response.status shouldEqual StatusCodes.BadRequest
       }
     }

@@ -596,7 +596,8 @@ lazy val storagePlugin = project
         ExclusionRule(organization = "org.typelevel", name = "cats-core_2.13"),
         ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
         ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
-        ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13")
+        ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13"),
+        ExclusionRule(organization = "co.fs2", name = "fs2-io_2.13")
       )
     },
     buildInfoKeys              := Seq[BuildInfoKey](version),
