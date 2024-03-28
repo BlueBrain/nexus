@@ -28,10 +28,8 @@ object S3StorageClient {
           S3AsyncClient
             .builder()
             .credentialsProvider(creds)
-            // TODO does this need to be changed on the fly?
             .endpointOverride(URI.create(cfg.defaultEndpoint.toString()))
             .forcePathStyle(true)
-            // TODO may want to configure this?
             .region(Region.US_EAST_1)
         )
         .map(new S3StorageClientImpl(_))

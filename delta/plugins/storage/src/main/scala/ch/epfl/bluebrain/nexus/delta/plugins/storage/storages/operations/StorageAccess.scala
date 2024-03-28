@@ -22,7 +22,7 @@ trait StorageAccess {
 }
 
 object StorageAccess {
-  def mk(
+  final private[storage] def mk(
       remoteStorageClient: RemoteDiskStorageClient,
       s3Client: S3StorageClient
   ): StorageAccess = {
