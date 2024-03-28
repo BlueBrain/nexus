@@ -592,6 +592,8 @@ lazy val storagePlugin = project
       fs2AwsS3
     ).map {
       _ excludeAll (
+        ExclusionRule(organization = "org.typelevel", name = "cats-kernel_2.13"),
+        ExclusionRule(organization = "org.typelevel", name = "cats-core_2.13"),
         ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
         ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
         ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13")
