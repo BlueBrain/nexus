@@ -576,8 +576,6 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      fs2Aws,
-      fs2AwsS3,
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
@@ -589,7 +587,16 @@ lazy val storagePlugin = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       logback          % Test
-    ),
+    ) ++ Seq(
+      fs2Aws,
+      fs2AwsS3
+    ).map {
+      _ excludeAll (
+        ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
+        ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
+        ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13")
+      )
+    },
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
     addCompilerPlugin(betterMonadicFor),

@@ -16,7 +16,7 @@ trait S3StorageClient {
 }
 
 object S3StorageClient {
-  def mk(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
+  def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
     case Some(cfg) =>
       val creds =
         StaticCredentialsProvider.create(

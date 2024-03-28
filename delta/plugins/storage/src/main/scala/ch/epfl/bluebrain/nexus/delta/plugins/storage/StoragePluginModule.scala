@@ -67,7 +67,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[S3StorageClient].fromResource { (cfg: StoragePluginConfig) =>
-    S3StorageClient.mk(cfg.storages.storageTypeConfig.amazon)
+    S3StorageClient.resource(cfg.storages.storageTypeConfig.amazon)
   }
 
   make[Storages]
