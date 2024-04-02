@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.ship.schemas
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{FetchSchema, SchemaImports, Schemas, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
-import ch.epfl.bluebrain.nexus.ship.acls.AclWiring
+import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverWiring
 import ch.epfl.bluebrain.nexus.ship.{ContextWiring, EventClock}
 
@@ -31,9 +30,8 @@ object SchemaWiring {
   )(implicit
       jsonLdApi: JsonLdApi
   ): SchemaImports = {
-    val aclCheck  = AclCheck(AclWiring.acls(config, clock, xas))
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
-    SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
+    SchemaImports(alwaysAuthorize, resolvers, fetchSchema, fetchResource)
   }
 
   private def validateSchema(implicit api: JsonLdApi): IO[ValidateSchema] =

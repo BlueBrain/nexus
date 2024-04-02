@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
@@ -25,7 +26,7 @@ class RunShip {
 
   private val logger = Logger[RunShip]
 
-  def run(file: Path, config: Option[Path]): IO[ImportReport] = {
+  def run(file: Path, config: Option[Path], fromOffset: Offset = Offset.start): IO[ImportReport] = {
     val clock                         = Clock[IO]
     val uuidF                         = UUIDF.random
     // Resources may have been created with different configurations so we adopt the lenient one for the import
@@ -42,7 +43,7 @@ class RunShip {
                   for {
                     // Provision organizations
                     _                           <- orgProvider.create(config.organizations.values)
-                    events                       = eventStream(file)
+                    events                       = eventStream(file, fromOffset)
                     fetchActiveOrg               = FetchActiveOrganization(xas)
                     // Wiring
                     eventClock                  <- EventClock.init()
@@ -83,11 +84,17 @@ class RunShip {
     } yield report
   }
 
-  private def eventStream(file: Path): Stream[IO, InputEvent] =
-    Files[IO].readUtf8Lines(file).zipWithIndex.evalMap { case (line, index) =>
-      IO.fromEither(decode[InputEvent](line)).onError { err =>
-        logger.error(err)(s"Error parsing to event at line $index")
+  private def eventStream(file: Path, fromOffset: Offset): Stream[IO, InputEvent] =
+    Files[IO]
+      .readUtf8Lines(file)
+      .zipWithIndex
+      .evalMap { case (line, index) =>
+        IO.fromEither(decode[InputEvent](line)).onError { err =>
+          logger.error(err)(s"Error parsing to event at line $index")
+        }
       }
-    }
+      .filter { event =>
+        event.ordering.value >= fromOffset.value
+      }
 
 }

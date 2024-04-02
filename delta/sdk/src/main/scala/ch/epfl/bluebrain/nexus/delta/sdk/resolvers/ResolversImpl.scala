@@ -165,7 +165,12 @@ object ResolversImpl {
       uuidF: UUIDF
   ): Resolvers = {
     def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[Unit] = {
-      sql"SELECT id FROM scoped_states WHERE type = ${Resolvers.entityType} AND org = ${ref.organization} AND project = ${ref.project}  AND id != $self AND (value->'value'->'priority')::int = ${priority.value} "
+      sql"""SELECT id FROM scoped_states
+            WHERE type = ${Resolvers.entityType}
+            AND org = ${ref.organization} AND project = ${ref.project}
+            AND id != $self
+            AND (value->'deprecated')::boolean = false
+            AND (value->'value'->'priority')::int = ${priority.value}"""
         .query[Iri]
         .option
         .transact(xas.read)

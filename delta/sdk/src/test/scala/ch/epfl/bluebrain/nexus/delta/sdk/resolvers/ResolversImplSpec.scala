@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourceFor, sourceFrom, sourceWithoutId}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -24,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{Inco
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ResolverResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -619,6 +619,22 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
         )
       }
 
+    }
+
+    "validating priority" should {
+      "allow creating a resolver with the same priority as a deprecated resolver" in {
+        givenADeprecatedInProjectResolver(666) { resolver =>
+          resolvers.create(nxv + genString(), resolver.value.project, InProjectValue(resolver.value.priority))
+        }
+      }
+    }
+
+    def givenADeprecatedInProjectResolver(priority: Int)(test: ResolverResource => IO[ResolverResource]) = {
+      val id                 = nxv + genString()
+      val resolverValue      = InProjectValue(Priority.unsafe(priority))
+      resolvers.create(id, projectRef, resolverValue).accepted
+      val deprecatedResolver = resolvers.deprecate(id, projectRef, 1).accepted
+      test(deprecatedResolver).accepted
     }
   }
 
