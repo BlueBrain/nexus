@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser, transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.clearDB
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
