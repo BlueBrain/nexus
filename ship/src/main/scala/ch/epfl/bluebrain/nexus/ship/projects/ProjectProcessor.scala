@@ -15,11 +15,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, EventUUIDF, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, EventUUIDF, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
-final class ProjectProcessor private (projects: Projects, clock: EventClock, uuidF: EventUUIDF)
-    extends EventProcessor[ProjectEvent] {
+final class ProjectProcessor private (
+    projects: Projects,
+    projectMapper: ProjectMapper,
+    clock: EventClock,
+    uuidF: EventUUIDF
+) extends EventProcessor[ProjectEvent] {
   override def resourceType: EntityType = Projects.entityType
 
   override def decoder: Decoder[ProjectEvent] = ProjectEvent.serializer.codec
@@ -33,9 +37,9 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
   }
 
   private def evaluateInternal(event: ProjectEvent): IO[ImportStatus] = {
-    implicit val s: Subject         = event.subject
-    val projectRef                  = event.project
-    val cRev                        = event.rev - 1
+    implicit val s: Subject = event.subject
+    val projectRef          = projectMapper.map(event.project)
+    val cRev                = event.rev - 1
 
     event match {
       case ProjectCreated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
@@ -64,8 +68,14 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
 object ProjectProcessor {
 
   private val logger      = Logger[ProjectProcessor]
-  def apply(fetchActiveOrg: FetchActiveOrganization, config: EventLogConfig, clock: EventClock, xas: Transactors)(
-      implicit base: BaseUri
+  def apply(
+      fetchActiveOrg: FetchActiveOrganization,
+      projectMapper: ProjectMapper,
+      config: EventLogConfig,
+      clock: EventClock,
+      xas: Transactors
+  )(implicit
+      base: BaseUri
   ): IO[ProjectProcessor] =
     for {
       uuidF <- EventUUIDF.init()
@@ -80,6 +90,6 @@ object ProjectProcessor {
         xas,
         clock
       )(base, uuidF)
-      new ProjectProcessor(projects, clock, uuidF)
+      new ProjectProcessor(projects, projectMapper, clock, uuidF)
     }
 }
