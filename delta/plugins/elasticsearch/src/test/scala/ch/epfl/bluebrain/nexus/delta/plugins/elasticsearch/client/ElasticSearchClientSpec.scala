@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
@@ -23,7 +24,7 @@ import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
-import org.scalatest.DoNotDiscover
+import org.scalatest.{Assertion, DoNotDiscover}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -260,23 +261,25 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
         ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
 
+      def theCountShouldBe(count: Long): IO[Assertion] =
+        esClient.count(index.value).map(_ shouldEqual count)
+
       {
         for {
           // Indexing and checking count
-          _        <- esClient.bulk(operations)
-          _        <- esClient.refresh(index)
-          original <- esClient.count(index.value)
-          _         = original shouldEqual 2L
+          _    <- esClient.bulk(operations)
+          _    <- esClient.refresh(index)
+          _    <- eventually { theCountShouldBe(2L) }
           // Deleting document matching the given query
-          query     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
-          _        <- esClient.deleteByQuery(query, index)
+          query = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
+          _    <- esClient.deleteByQuery(query, index)
           // Checking docs again
-          newCount <- esClient.count(index.value)
-          _         = newCount shouldEqual 1L
-          doc1     <- esClient.getSource[Json](index, "1").attemptNarrow[HttpClientError]
-          _         = doc1.rightValue
-          doc2     <- esClient.getSource[Json](index, "2").attemptNarrow[HttpClientError]
-          _         = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
+          _    <- esClient.refresh(index)
+          _    <- eventually { theCountShouldBe(1L) }
+          doc1 <- esClient.getSource[Json](index, "1").attemptNarrow[HttpClientError]
+          _     = doc1.rightValue
+          doc2 <- esClient.getSource[Json](index, "2").attemptNarrow[HttpClientError]
+          _     = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
         } yield ()
       }.accepted
     }
