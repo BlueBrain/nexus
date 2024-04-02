@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -294,8 +295,7 @@ final class Storages private (
 
 object Storages {
 
-  type StorageLog    = ScopedEventLog[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  type StorageAccess = (Iri, StorageValue) => IO[Unit]
+  type StorageLog = ScopedEventLog[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection]
 
   /**
     * The storage entity type.
@@ -369,11 +369,11 @@ object Storages {
     def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
       target == parent || target.value.descendantOf(parent.value)
 
-    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[Unit] =
+    def verifyAllowedDiskVolume(value: StorageValue): IO[Unit] =
       value match {
         case d: DiskStorageValue if !config.disk.allowedVolumes.exists(isDescendantOrEqual(d.volume, _)) =>
           val err = s"Volume '${d.volume}' not allowed. Allowed volumes: '${config.disk.allowedVolumes.mkString(",")}'"
-          IO.raiseError(StorageNotAccessible(id, err))
+          IO.raiseError(StorageNotAccessible(err))
         case _                                                                                           => IO.unit
       }
 
@@ -386,8 +386,8 @@ object Storages {
       for {
         value <- IO.fromOption(fields.toValue(config))(InvalidStorageType(id, fields.tpe, allowedStorageTypes))
         _     <- validatePermissions(fields)
-        _     <- access(id, value)
-        _     <- verifyAllowedDiskVolume(id, value)
+        _     <- access(value)
+        _     <- verifyAllowedDiskVolume(value)
         _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield value
 

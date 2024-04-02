@@ -169,7 +169,7 @@ object StorageFields {
           default,
           cfg.digestAlgorithm,
           bucket,
-          endpoint.orElse(cfg.defaultEndpoint),
+          endpoint.orElse(Some(cfg.defaultEndpoint)),
           region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
