@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import doobie.{Get, Put}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
+import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 
 /**
   * A project label along with its parent organization label.
@@ -68,6 +70,17 @@ object ProjectRef {
 
   implicit val projectRefOrder: Order[ProjectRef] = Order.by { projectRef =>
     (projectRef.organization.value, projectRef.project.value)
+  }
+
+  implicit val projectRefConfigReader: ConfigReader[ProjectRef] = ConfigReader.fromString { value =>
+    value.split("/").toList match {
+      case orgStr :: projectStr :: Nil =>
+        (Label(orgStr), Label(projectStr))
+          .mapN(ProjectRef(_, _))
+          .leftMap(err => CannotConvert(value, classOf[ProjectRef].getSimpleName, err.getMessage))
+      case _                           =>
+        Left(CannotConvert(value, classOf[ProjectRef].getSimpleName, "Wrong format"))
+    }
   }
 
 }

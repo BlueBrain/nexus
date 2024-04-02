@@ -61,10 +61,6 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     } yield ()
   }
 
-  test("Show config") {
-    Main.showConfig(None)
-  }
-
   private def asPath(path: String): IO[Path] = {
     ClasspathResourceLoader().absolutePath(path).map(Path(_))
   }

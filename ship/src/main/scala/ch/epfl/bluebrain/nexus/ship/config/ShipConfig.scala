@@ -1,12 +1,17 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, EventLogConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.ship.config.ShipConfig.ProjectMapping
 import com.typesafe.config.Config
 import fs2.io.file.Path
 import pureconfig.ConfigReader
+import pureconfig.configurable.genericMapReader
+import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
 final case class ShipConfig(
@@ -14,13 +19,22 @@ final case class ShipConfig(
     database: DatabaseConfig,
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
+    projectMapping: Option[ProjectMapping],
     serviceAccount: ServiceAccountConfig
 )
 
 object ShipConfig {
 
-  implicit final val shipConfigReader: ConfigReader[ShipConfig] =
+  type ProjectMapping = Map[ProjectRef, ProjectRef]
+
+  implicit val mapReader: ConfigReader[ProjectMapping] =
+    genericMapReader(str =>
+      ProjectRef.parse(str).leftMap(e => CannotConvert(str, classOf[ProjectRef].getSimpleName, e))
+    )
+
+  implicit final val shipConfigReader: ConfigReader[ShipConfig] = {
     deriveReader[ShipConfig]
+  }
 
   def merge(externalConfigPath: Option[Path]): IO[(ShipConfig, Config)] =
     for {

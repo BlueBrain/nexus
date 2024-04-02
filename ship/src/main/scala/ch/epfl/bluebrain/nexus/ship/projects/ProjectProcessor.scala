@@ -33,9 +33,10 @@ final class ProjectProcessor private (projects: Projects, clock: EventClock, uui
   }
 
   private def evaluateInternal(event: ProjectEvent): IO[ImportStatus] = {
-    implicit val s: Subject = event.subject
-    val projectRef          = event.project
-    val cRev                = event.rev - 1
+    implicit val s: Subject         = event.subject
+    val projectRef                  = event.project
+    val cRev                        = event.rev - 1
+
     event match {
       case ProjectCreated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
         val fields = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
