@@ -41,8 +41,8 @@ object Main
   override def main: Opts[IO[ExitCode]] =
     (run orElse showConfig)
       .map {
-        case Run(file, config, _) => new RunShip().run(file, config)
-        case ShowConfig(config)   => showConfig(config)
+        case Run(file, config, offset) => new RunShip().run(file, config, offset)
+        case ShowConfig(config)        => showConfig(config)
       }
       .map(_.as(ExitCode.Success))
 

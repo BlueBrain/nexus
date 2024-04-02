@@ -69,7 +69,7 @@ object Transactors {
   /**
     * For testing purposes, drop the current tables and then executes the different available scripts
     */
-  private[sourcing] def dropAndCreateDDLs: IO[List[String]] = ddls.map(dropScript :: _)
+  def dropAndCreateDDLs: IO[List[String]] = ddls.map(dropScript :: _)
 
   /** Type of a cache that contains the hashed names of the projectRefs for which a partition was already created. */
   type PartitionsCache = LocalCache[String, Unit]
