@@ -9,11 +9,11 @@ trait ProjectMapper {
 
 object ProjectMapper {
 
-  def apply(projectMapping: Option[ProjectMapping]): ProjectMapper =
+  def apply(projectMapping: ProjectMapping): ProjectMapper =
     (project: ProjectRef) =>
       projectMapping match {
-        case Some(mapping) => mapping.getOrElse(project, project)
-        case None          => project
+        case m if m.isEmpty => project
+        case mapping        => mapping.getOrElse(project, project)
       }
 
 }

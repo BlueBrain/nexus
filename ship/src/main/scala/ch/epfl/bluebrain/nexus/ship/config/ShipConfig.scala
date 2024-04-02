@@ -19,7 +19,7 @@ final case class ShipConfig(
     database: DatabaseConfig,
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
-    projectMapping: Option[ProjectMapping],
+    projectMapping: ProjectMapping = Map.empty,
     serviceAccount: ServiceAccountConfig
 )
 

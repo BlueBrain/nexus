@@ -28,7 +28,7 @@ class ShipConfigSuite extends NexusSuite {
     for {
       externalConfigPath <- loader.absolutePath("config/project-mapping.conf")
       mapping             = ShipConfig.load(Some(Path(externalConfigPath))).map(_.projectMapping)
-      _                  <- mapping.assertEquals(Some(expected))
+      _                  <- mapping.assertEquals(expected)
     } yield ()
   }
 
