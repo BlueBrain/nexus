@@ -17,7 +17,7 @@ object Doobie {
   val PostgresUser     = "postgres"
   val PostgresPassword = "postgres"
 
-  private def transactors(
+  def transactors(
       postgres: Resource[IO, PostgresContainer],
       user: String,
       pass: String
