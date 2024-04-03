@@ -20,12 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversImpl.ResolversLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{FetchByTagNotSupported, PriorityAlreadyExists, ResolverNotFound, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{FetchByTagNotSupported, ResolverNotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
-import doobie.implicits._
 import io.circe.Json
 
 final class ResolversImpl private (
@@ -157,6 +156,7 @@ object ResolversImpl {
   def apply(
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
+      validatePriority: ValidatePriority,
       config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
@@ -164,24 +164,8 @@ object ResolversImpl {
       api: JsonLdApi,
       uuidF: UUIDF
   ): Resolvers = {
-    def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[Unit] = {
-      sql"""SELECT id FROM scoped_states
-            WHERE type = ${Resolvers.entityType}
-            AND org = ${ref.organization} AND project = ${ref.project}
-            AND id != $self
-            AND (value->'deprecated')::boolean = false
-            AND (value->'value'->'priority')::int = ${priority.value}"""
-        .query[Iri]
-        .option
-        .transact(xas.read)
-        .flatMap {
-          case Some(other) => IO.raiseError(PriorityAlreadyExists(ref, other, priority))
-          case None        => IO.unit
-        }
-    }
-
     new ResolversImpl(
-      ScopedEventLog(Resolvers.definition(priorityAlreadyExists, clock), config, xas),
+      ScopedEventLog(Resolvers.definition(validatePriority, clock), config, xas),
       fetchContext,
       new JsonLdSourceResolvingDecoder[ResolverValue](
         contexts.resolvers,

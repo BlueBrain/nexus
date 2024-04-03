@@ -73,9 +73,12 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
     Set(deprecatedProject.ref)
   )
 
+  private lazy val validatePriority = ValidatePriority.priorityAlreadyExists(xas)
+
   private lazy val resolvers: Resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
+    validatePriority,
     eventLogConfig,
     xas,
     clock

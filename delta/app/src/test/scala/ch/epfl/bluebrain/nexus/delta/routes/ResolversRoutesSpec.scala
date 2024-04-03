@@ -87,9 +87,12 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         case _                          => IO.none
       }
 
+  private lazy val validatePriority = ValidatePriority.priorityAlreadyExists(xas)
+
   private lazy val resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
+    validatePriority,
     eventLogConfig,
     xas,
     clock

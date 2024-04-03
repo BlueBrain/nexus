@@ -168,8 +168,6 @@ trait Resolvers {
 
 object Resolvers {
 
-  type ValidatePriority = (ProjectRef, Iri, Priority) => IO[Unit]
-
   /**
     * The resolver entity type.
     */
@@ -256,7 +254,7 @@ object Resolvers {
               IO.raiseWhen(missing.nonEmpty)(InvalidIdentities(missing))
           }
         case _                                                    => IO.unit
-      }) >> validatePriority(project, id, value.priority)
+      }) >> validatePriority.validate(project, id, value.priority)
 
     def create(c: CreateResolver): IO[ResolverCreated] = state match {
       // Create a resolver

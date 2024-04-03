@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{evaluate, ValidatePriority}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.evaluate
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
