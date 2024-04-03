@@ -58,7 +58,7 @@ class RunShip {
                     projectProcessor            <- ProjectProcessor(fetchActiveOrg, projectMapper, eventLogConfig, eventClock, xas)(baseUri)
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
-                    resourceProcessor            = ResourceProcessor(resourceLog, projectMapper, fetchContext, eventClock)
+                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, eventClock)
                     esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
