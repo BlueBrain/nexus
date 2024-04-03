@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -32,14 +33,14 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
   private val tmp2           = AbsolutePath("/tmp2").rightValue
   private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
-  private val access: Storages.StorageAccess = {
-    case (id, disk: DiskStorageValue)         =>
-      IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
-    case (id, s3: S3StorageValue)             =>
-      IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
-    case (id, remote: RemoteDiskStorageValue) =>
+  private val access: StorageAccess = {
+    case disk: DiskStorageValue         =>
+      IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible("wrong volume")))
+    case s3: S3StorageValue             =>
+      IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible("wrong bucket")))
+    case remote: RemoteDiskStorageValue =>
       IO.whenA(remote.folder != remoteFields.folder)(
-        IO.raiseError(StorageNotAccessible(id, "Folder does not exist"))
+        IO.raiseError(StorageNotAccessible("Folder does not exist"))
       )
   }
 

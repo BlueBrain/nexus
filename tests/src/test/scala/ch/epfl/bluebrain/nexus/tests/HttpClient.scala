@@ -58,6 +58,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
+  def postJson(url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (Json, HttpResponse) => Assertion
+  )(implicit um: FromEntityUnmarshaller[Json]): IO[Assertion] =
+    requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
+
   def postIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
@@ -76,7 +81,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse)
 
   def postAndReturn[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
-      assertResponse: (A, HttpResponse) => (A, Assertion)
+      assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[A] =
     requestAssertAndReturn(POST, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
 
@@ -229,7 +234,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       body: Option[Json],
       identity: Identity,
       extraHeaders: Seq[HttpHeader] = jsonHeaders
-  )(assertResponse: (A, HttpResponse) => (A, Assertion))(implicit um: FromEntityUnmarshaller[A]): IO[(A, Assertion)] = {
+  )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[(A, Assertion)] = {
     def buildClue(a: A, response: HttpResponse) =
       s"""
          |Endpoint: ${method.value} $url
@@ -248,7 +253,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       identity,
       (a: A, response: HttpResponse) => {
         assertDeltaNodeHeader(response)
-        assertResponse(a, response) withClue buildClue(a, response)
+        a -> assertResponse(a, response) withClue buildClue(a, response)
       },
       extraHeaders
     )
@@ -262,7 +267,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       extraHeaders: Seq[HttpHeader] = jsonHeaders
   )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssertAndReturn[A](method, url, body, identity, extraHeaders) { (a, resp) =>
-      (a, assertResponse(a, resp))
+      assertResponse(a, resp)
     }.map(_._2)
 
   def sparqlQuery[A](url: String, query: String, identity: Identity, extraHeaders: Seq[HttpHeader] = Nil)(

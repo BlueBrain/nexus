@@ -37,6 +37,7 @@ val declineVersion             = "2.4.1"
 val distageVersion             = "1.2.7"
 val doobieVersion              = "1.0.0-RC5"
 val fs2Version                 = "3.10.1"
+val fs2AwsVersion              = "6.1.1"
 val googleAuthClientVersion    = "1.35.0"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "5.1.0"
@@ -104,6 +105,8 @@ lazy val doobie                        = Seq(
 )
 lazy val fs2                           = "co.fs2"                       %% "fs2-core"                           % fs2Version
 lazy val fs2io                         = "co.fs2"                       %% "fs2-io"                             % fs2Version
+lazy val fs2Aws                        = "io.laserdisc"                 %% "fs2-aws-core"                       % fs2AwsVersion
+lazy val fs2AwsS3                      = "io.laserdisc"                 %% "fs2-aws-s3"                         % fs2AwsVersion
 lazy val googleAuthClient              = "com.google.oauth-client"       % "google-oauth-client"                % googleAuthClientVersion
 lazy val handleBars                    = "com.github.jknack"             % "handlebars"                         % handleBarsVersion
 lazy val jenaArq                       = "org.apache.jena"               % "jena-arq"                           % jenaVersion
@@ -250,6 +253,8 @@ lazy val testkit = project
       ),
       catsRetry,
       doobiePostgres,
+      fs2Aws,
+      fs2AwsS3,
       munit,
       munitCatsEffect,
       scalaTest,
@@ -582,7 +587,19 @@ lazy val storagePlugin = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       logback          % Test
-    ),
+    ) ++ Seq(
+      fs2Aws,
+      fs2AwsS3
+    ).map {
+      _ excludeAll (
+        ExclusionRule(organization = "org.typelevel", name = "cats-kernel_2.13"),
+        ExclusionRule(organization = "org.typelevel", name = "cats-core_2.13"),
+        ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
+        ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
+        ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13"),
+        ExclusionRule(organization = "co.fs2", name = "fs2-io_2.13")
+      )
+    },
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
     addCompilerPlugin(betterMonadicFor),

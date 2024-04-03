@@ -15,6 +15,7 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.concurrent.ExecutionContext
 
@@ -81,7 +82,7 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
     }
 
   private def attachmentString(filename: String): String = {
-    val encodedFilename = new String(Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8)))
+    val encodedFilename = new String(Base64.getEncoder.encode(filename.getBytes(StandardCharsets.UTF_8)))
     s"=?UTF-8?B?$encodedFilename?="
   }
 

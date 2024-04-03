@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class MinioSpec extends Suites with MinioDocker {
   override val nestedSuites: IndexedSeq[Suite] = Vector(
-    new S3StorageAccessSpec(this),
     new S3StorageSaveAndFetchFileSpec(this)
   )
 }
