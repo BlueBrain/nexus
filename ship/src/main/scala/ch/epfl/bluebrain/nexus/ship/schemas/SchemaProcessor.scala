@@ -14,10 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.ship.schemas.SchemaProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
-class SchemaProcessor private (schemas: Schemas, clock: EventClock) extends EventProcessor[SchemaEvent] {
+class SchemaProcessor private (schemas: Schemas, projectMapper: ProjectMapper, clock: EventClock)
+    extends EventProcessor[SchemaEvent] {
 
   override def resourceType: EntityType = Schemas.entityType
 
@@ -34,15 +35,16 @@ class SchemaProcessor private (schemas: Schemas, clock: EventClock) extends Even
     implicit val s: Subject = event.subject
     implicit val c: Caller  = Caller(s, Set.empty)
     val cRev                = event.rev - 1
+    val project             = projectMapper.map(event.project)
 
     event match {
-      case e: SchemaCreated      => schemas.create(e.id, e.project, e.source)
-      case e: SchemaUpdated      => schemas.update(e.id, e.project, cRev, e.source)
-      case e: SchemaRefreshed    => schemas.refresh(e.id, e.project)
-      case e: SchemaTagAdded     => schemas.tag(e.id, e.project, e.tag, e.targetRev, cRev)
-      case e: SchemaTagDeleted   => schemas.deleteTag(e.id, e.project, e.tag, cRev)
-      case e: SchemaDeprecated   => schemas.deprecate(e.id, e.project, cRev)
-      case e: SchemaUndeprecated => schemas.undeprecate(e.id, e.project, cRev)
+      case e: SchemaCreated      => schemas.create(e.id, project, e.source)
+      case e: SchemaUpdated      => schemas.update(e.id, project, cRev, e.source)
+      case e: SchemaRefreshed    => schemas.refresh(e.id, project)
+      case e: SchemaTagAdded     => schemas.tag(e.id, project, e.tag, e.targetRev, cRev)
+      case e: SchemaTagDeleted   => schemas.deleteTag(e.id, project, e.tag, cRev)
+      case e: SchemaDeprecated   => schemas.deprecate(e.id, project, cRev)
+      case e: SchemaUndeprecated => schemas.undeprecate(e.id, project, cRev)
     }
   }.redeemWith(
     {
@@ -64,10 +66,11 @@ object SchemaProcessor {
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
       rcr: ResolverContextResolution,
+      projectMapper: ProjectMapper,
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): SchemaProcessor = {
     val schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
-    new SchemaProcessor(schemas, clock)
+    new SchemaProcessor(schemas, projectMapper, clock)
   }
 
 }

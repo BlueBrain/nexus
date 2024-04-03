@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.io.file.Path
 
@@ -19,4 +19,17 @@ class ShipConfigSuite extends NexusSuite {
       _                  <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.baseUri).assertEquals(expectedBaseUri)
     } yield ()
   }
+
+  test("Should have correct project mapping") {
+    val privateMmb   = ProjectRef.unsafe("private", "mmb")
+    val obpReference = ProjectRef.unsafe("obp", "reference")
+    val expected     = Map(privateMmb -> obpReference)
+
+    for {
+      externalConfigPath <- loader.absolutePath("config/project-mapping.conf")
+      mapping             = ShipConfig.load(Some(Path(externalConfigPath))).map(_.projectMapping)
+      _                  <- mapping.assertEquals(expected)
+    } yield ()
+  }
+
 }
