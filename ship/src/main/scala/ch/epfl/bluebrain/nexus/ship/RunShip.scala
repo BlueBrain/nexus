@@ -46,13 +46,13 @@ class RunShip {
                     _                           <- orgProvider.create(config.organizations.values)
                     events                       = eventStream(file, fromOffset)
                     fetchActiveOrg               = FetchActiveOrganization(xas)
+                    // format: off
                     // Wiring
                     eventClock                  <- EventClock.init()
+                    remoteContextResolution     <- ContextWiring.remoteContextResolution
                     (schemaLog, fetchSchema)     = SchemaWiring(config.eventLog, eventClock, xas)
-                    (resourceLog, fetchResource) =
-                      ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
-                    // format: off
-                    rcr                         <- ContextWiring.resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
+                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, remoteContextResolution, eventLogConfig, eventClock, xas)
+                    rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
                     projectProcessor            <- ProjectProcessor(fetchActiveOrg, projectMapper, eventLogConfig, eventClock, xas)(baseUri)

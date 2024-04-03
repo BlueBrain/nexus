@@ -18,18 +18,18 @@ object ResourceWiring {
   def apply(
       fetchContext: FetchContext,
       fetchSchema: FetchSchema,
+      remoteContext: RemoteContextResolution,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit
       jsonLdApi: JsonLdApi
   ): (ResourceLog, FetchResource) = {
-    val rcr                = RemoteContextResolution.never // TODO: Use correct RemoteContextResolution
     val detectChange       = DetectChange(false)
     val resolvers          = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     val resourceResolution =
       ResourceResolution.schemaResource(alwaysAuthorize, resolvers, fetchSchema, excludeDeprecated = false)
-    val validate           = ValidateResource(resourceResolution)(rcr)
+    val validate           = ValidateResource(resourceResolution)(remoteContext)
     val resourceDef        = Resources.definition(validate, detectChange, clock)
 
     val log = ScopedEventLog(resourceDef, config, xas)

@@ -47,15 +47,13 @@ object ContextWiring {
   def resolverContextResolution(
       fetchResource: FetchResource,
       fetchContext: FetchContext,
+      remoteContextResolution: RemoteContextResolution,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[ResolverContextResolution] = {
+  )(implicit jsonLdApi: JsonLdApi): ResolverContextResolution = {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
-
-    for {
-      rcr <- remoteContextResolution
-    } yield ResolverContextResolution(alwaysAuthorize, resolvers, rcr, fetchResource)
+    ResolverContextResolution(alwaysAuthorize, resolvers, remoteContextResolution, fetchResource)
   }
 
 }
