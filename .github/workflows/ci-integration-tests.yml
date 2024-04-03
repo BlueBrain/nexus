@@ -33,7 +33,7 @@ jobs:
             app/Docker/publishLocal \
             storage/Docker/publishLocal
       - name: Start services
-        run: docker-compose -f tests/docker/docker-compose.yml up -d
+        run: docker compose -f tests/docker/docker-compose.yml up -d
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
@@ -43,5 +43,5 @@ jobs:
       - name: Stop & clean Docker
         if: ${{ always() }}
         run: |
-          docker-compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
+          docker compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
           docker system prune --force --volumes
