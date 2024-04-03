@@ -9,11 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.writer
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Export
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalatest.Assertion
@@ -65,7 +65,7 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
     "transfer the default resolver" in {
       val (project, _, _)          = thereIsAProject()
       val defaultInProjectResolver = nxv + "defaultInProject"
-      val (_, resolverJson)        = thereIsAResolver(defaultInProjectResolver, project)
+      val (_, resolverJson)        = thereIsADefaultResolver(defaultInProjectResolver, project)
 
       whenTheExportIsRunOnProject(project)
       theOldProjectIsDeleted(project)
@@ -74,6 +74,17 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       weFixThePermissions(project)
 
       thereShouldBeAResolver(project, defaultInProjectResolver, resolverJson)
+    }
+
+    "transfer all events from a resolver" in {
+      val (project, id, revisionsAndStates) = thereAreManyRevisionsOfAResolver()
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+      weRunTheImporter(project)
+      weFixThePermissions(project)
+
+      thereShouldBeAResolverThatMatchesExpectations(project, id, revisionsAndStates)
     }
 
     "transfer a generic resource" in {
@@ -243,6 +254,24 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       )
     }
 
+    def thereAreManyRevisionsOfAResolver(): (ProjectRef, String, Map[Int, Json]) = {
+      val (project, _, _)     = thereIsAProject()
+      val (id, payload, json) = thereIsAResolver(project)
+      val updatedPayload      =
+        payload.hcursor.downField("priority").set(3.asJson).top.getOrElse(fail("could not update payload"))
+      val updatedJson         = resolverIsUpdated(project, id, updatedPayload, 1)
+      val deprecatedJson      = resolverIsDeprecated(project, id, 2)
+      (
+        project,
+        id,
+        Map(
+          1 -> json,
+          2 -> updatedJson,
+          3 -> deprecatedJson
+        )
+      )
+    }
+
     def thereIsAProject(): (ProjectRef, ProjectPayload, Json) = {
       val orgName  = genString()
       val projName = genString()
@@ -342,17 +371,48 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       succeed
     }
 
+    def thereShouldBeAResolverThatMatchesExpectations(
+        project: ProjectRef,
+        id: String,
+        expectations: Map[Int, Json]
+    ): Assertion = {
+      expectations.foreach { case (rev, expectedJson) =>
+        thereShouldBeAResolverRevision(project, id, rev, expectedJson)
+      }
+      succeed
+    }
+
     def weFixThePermissions(project: ProjectRef) =
       aclDsl.addPermissions(s"/$project", writer, Permission.minimalPermissions).accepted
 
-    def thereIsAResolver(resolver: Iri, project: ProjectRef): (Iri, Json) = {
-      val encodedResolver        = UrlUtils.encode(resolver.toString)
+    def thereIsADefaultResolver(id: Iri, project: ProjectRef): (Iri, Json) = {
+      val encodedResolver        = UrlUtils.encode(id.toString)
       val (resolverJson, status) = deltaClient
         .getJsonAndStatus(s"/resolvers/${project.organization}/${project.project}/$encodedResolver", writer)
         .accepted
       status shouldEqual StatusCodes.OK
-      resolver -> resolverJson
+      id -> resolverJson
     }
+
+    def thereIsAResolver(project: ProjectRef): (String, Json, Json) = {
+      val payload  = json"""{"@type": "InProject", "priority": 2}"""
+      val response = deltaClient
+        .postAndReturn[Json](s"/resolvers/${project.organization}/${project.project}", payload, writer) {
+          case (_, response) => response.status shouldBe StatusCodes.Created
+        }
+        .accepted
+
+      val id = Optics.`@id`.getOption(response).getOrElse(fail("resolver creation response did not contain an @id"))
+
+      val (resolverJson, status) = deltaClient
+        .getJsonAndStatus(resolverUrl(project, id), writer)
+        .accepted
+      status shouldEqual StatusCodes.OK
+      (id, payload, resolverJson)
+    }
+
+    def resolverUrl(project: ProjectRef, id: String): String =
+      s"/resolvers/${project.organization}/${project.project}/${UrlUtils.encode(id)}"
 
     def thereShouldBeAResolver(project: ProjectRef, resolver: Iri, originalJson: Json): Assertion = {
       val encodedResolver = UrlUtils.encode(resolver.toString)
@@ -365,6 +425,15 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
             }
         }
         .accepted
+    }
+
+    def fetchResolver(project: ProjectRef, id: String): Json = {
+      val (json, status) = deltaClient
+        .getJsonAndStatus(s"/resolvers/${project.organization}/${project.project}/${UrlUtils.encode(id)}", writer)
+        .accepted
+
+      status shouldEqual StatusCodes.OK
+      json
     }
 
     def thereIsAResource(project: ProjectRef): (Iri, Json) = {
@@ -438,6 +507,38 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
         .accepted
     }
 
-  }
+    def thereShouldBeAResolverRevision(
+        project: ProjectRef,
+        id: String,
+        rev: Int,
+        expectedProjectJson: Json
+    ): Assertion = {
+      deltaClient
+        .get[Json](s"${resolverUrl(project, id)}?rev=$rev", writer) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json shouldEqual expectedProjectJson
+        }
+        .accepted
+    }
 
+    def resolverIsUpdated(project: ProjectRef, id: String, updatedPayload: Json, rev: Int): Json = {
+      deltaClient
+        .put[Json](s"${resolverUrl(project, id)}?rev=$rev", updatedPayload, writer) { case (_, response) =>
+          response.status shouldBe StatusCodes.OK
+        }
+        .accepted
+
+      fetchResolver(project, id)
+    }
+
+    def resolverIsDeprecated(project: ProjectRef, id: String, rev: Int): Json = {
+      deltaClient
+        .delete[Json](s"${resolverUrl(project, id)}?rev=$rev", writer) { case (_, response) =>
+          response.status shouldBe StatusCodes.OK
+        }
+        .accepted
+
+      fetchResolver(project, id)
+    }
+  }
 }
