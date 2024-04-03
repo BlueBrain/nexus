@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -97,8 +98,8 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem): FetchFile =
-      new S3StorageFetchFile(value, config)
+    def fetchFile(client: S3StorageClient): FetchFile =
+      new S3StorageFetchFile(client, value)
 
     def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
       new S3StorageSaveFile(this, config)

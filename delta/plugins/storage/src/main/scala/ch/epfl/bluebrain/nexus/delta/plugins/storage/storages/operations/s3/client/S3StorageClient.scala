@@ -19,7 +19,7 @@ import java.net.URI
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
-  def readFile(bucket: BucketName, fileKey: String): fs2.Stream[IO, Byte]
+  def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
 }
 
 object S3StorageClient {
@@ -50,10 +50,11 @@ object S3StorageClient {
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
 
-    def readFile(bucket: BucketName, fileKey: String): fs2.Stream[IO, Byte] =
+    def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       for {
+        bk    <- fs2.Stream.fromEither[IO].apply(refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
         fk    <- fs2.Stream.fromEither[IO].apply(refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
-        bytes <- s3.readFile(bucket, FileKey(fk))
+        bytes <- s3.readFile(BucketName(bk), FileKey(fk))
       } yield bytes
   }
 
@@ -63,7 +64,7 @@ object S3StorageClient {
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-    override def readFile(bucket: BucketName, fileKey: String): fs2.Stream[IO, Byte] =
+    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       fs2.Stream.raiseError[IO](disabledErr)
   }
 }

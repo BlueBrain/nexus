@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientDisabled
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
@@ -131,6 +132,7 @@ class FilesRoutesSpec
       config,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
+      S3StorageClientDisabled,
       clock
     )(uuidF, typedSystem)
   private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)

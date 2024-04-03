@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -85,12 +86,12 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     }
 
     "fetch a file from a bucket" in {
-      val sourceFetched = storage.fetchFile(config).apply(metadata.path).accepted
+      val sourceFetched = storage.fetchFile(S3StorageClientDisabled).apply(metadata.path).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile(config).apply(Uri.Path("other.txt")).rejectedWith[FileNotFound]
+      storage.fetchFile(S3StorageClientDisabled).apply(Uri.Path("other.txt")).rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {

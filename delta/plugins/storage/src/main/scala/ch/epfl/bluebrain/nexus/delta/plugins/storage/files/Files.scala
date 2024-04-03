@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -56,6 +57,7 @@ final class Files(
     storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
+    s3Client: S3StorageClient,
     config: StorageTypeConfig
 )(implicit
     uuidF: UUIDF,
@@ -392,7 +394,7 @@ final class Files(
   }.span("fetchFileContent")
 
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
-    FetchFile(storage, remoteDiskStorageClient, config)
+    FetchFile(storage, remoteDiskStorageClient, s3Client)
       .apply(attr)
       .adaptError { case e: FetchFileRejection =>
         FetchRejection(fileId, storage.id, e)
@@ -765,6 +767,7 @@ object Files {
       storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient,
+      s3Client: S3StorageClient,
       clock: Clock[IO]
   )(implicit
       uuidF: UUIDF,
@@ -779,6 +782,7 @@ object Files {
       storages,
       storagesStatistics,
       remoteDiskStorageClient,
+      s3Client,
       storageTypeConfig
     )
   }
