@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
-import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
@@ -79,12 +79,12 @@ class RunShip {
     } yield report
   }
 
-  private def eventStream(file: Path, fromOffset: Offset): Stream[IO, InputEvent] =
+  private def eventStream(file: Path, fromOffset: Offset): Stream[IO, RowEvent] =
     Files[IO]
       .readUtf8Lines(file)
       .zipWithIndex
       .evalMap { case (line, index) =>
-        IO.fromEither(decode[InputEvent](line)).onError { err =>
+        IO.fromEither(decode[RowEvent](line)).onError { err =>
           logger.error(err)(s"Error parsing to event at line $index")
         }
       }

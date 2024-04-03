@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.exporter
 
 import fs2.io.file.Path
 import pureconfig.ConfigConvert.catchReadError
-import pureconfig.{ConfigConvert, ConfigReader}
 import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigConvert, ConfigReader}
 
 import scala.annotation.nowarn
 
-final case class ExportConfig(permits: Int, target: Path)
+final case class ExportConfig(batchSize: Int, permits: Int, target: Path)
 
 object ExportConfig {
 
