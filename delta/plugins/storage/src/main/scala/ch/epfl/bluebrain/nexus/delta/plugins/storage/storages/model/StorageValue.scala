@@ -6,22 +6,19 @@ import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.{Codec, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
 import java.io.File
-import java.nio.file.Path
 import scala.annotation.nowarn
 import scala.reflect.io.Directory
-import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
 
@@ -137,8 +134,6 @@ object StorageValue {
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
-      endpoint: Option[Uri],
-      region: Option[Region],
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
@@ -147,12 +142,7 @@ object StorageValue {
     override val tpe: StorageType       = StorageType.S3Storage
     override val capacity: Option[Long] = None
 
-    def address(bucket: String): Uri =
-      endpoint match {
-        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
-        case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
-        case None                                   => region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
-      }
+    def address(bucket: String): Uri = s"https://$bucket.s3.${Region.US_EAST_1}.amazonaws.com"
 
     /**
       * @return
@@ -172,7 +162,7 @@ object StorageValue {
       }
 
       val regionProvider: AwsRegionProvider = new AwsRegionProvider {
-        val getRegion: Region = region.getOrElse(Region.US_EAST_1)
+        val getRegion: Region = Region.US_EAST_1
       }
 
       s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
@@ -190,8 +180,6 @@ object StorageValue {
         default: Boolean,
         algorithm: DigestAlgorithm,
         bucket: String,
-        endpoint: Option[Uri],
-        region: Option[Region],
         readPermission: Permission,
         writePermission: Permission,
         maxFileSize: Long
@@ -202,8 +190,6 @@ object StorageValue {
         default,
         algorithm,
         bucket,
-        endpoint,
-        region,
         readPermission,
         writePermission,
         maxFileSize
@@ -270,11 +256,6 @@ object StorageValue {
   @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
   def databaseCodec(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
-    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
-    implicit val pathDecoder: Decoder[Path]     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
-    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.toString)
-    implicit val regionDecoder: Decoder[Region] = Decoder.decodeString.map(Region.of)
-
     implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
 
     deriveConfiguredCodec[StorageValue]

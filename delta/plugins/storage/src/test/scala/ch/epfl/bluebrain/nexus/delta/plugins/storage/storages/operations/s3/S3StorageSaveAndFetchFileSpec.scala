@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
-import software.amazon.awssdk.regions.Region
 
 import java.util.UUID
 
@@ -53,8 +52,6 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
       default = false,
       algorithm = DigestAlgorithm.default,
       bucket = "bucket2",
-      endpoint = Some(docker.hostConfig.endpoint),
-      region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
       maxFileSize = 20

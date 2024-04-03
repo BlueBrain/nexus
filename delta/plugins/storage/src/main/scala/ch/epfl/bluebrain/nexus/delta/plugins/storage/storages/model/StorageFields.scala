@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
@@ -151,8 +149,6 @@ object StorageFields {
       description: Option[String],
       default: Boolean,
       bucket: String,
-      endpoint: Option[Uri],
-      region: Option[Region],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -169,8 +165,6 @@ object StorageFields {
           default,
           cfg.digestAlgorithm,
           bucket,
-          endpoint.orElse(Some(cfg.defaultEndpoint)),
-          region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
           computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)

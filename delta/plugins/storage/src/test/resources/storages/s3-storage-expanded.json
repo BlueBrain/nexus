@@ -30,11 +30,6 @@
         "@value": true
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/endpoint": [
-      {
-        "@value": "http://localhost"
-      }
-    ],
     "https://bluebrain.github.io/nexus/vocabulary/maxFileSize": [
       {
         "@value": 51
@@ -43,11 +38,6 @@
     "https://bluebrain.github.io/nexus/vocabulary/readPermission": [
       {
         "@value": "s3/read"
-      }
-    ],
-    "https://bluebrain.github.io/nexus/vocabulary/region": [
-      {
-        "@value": "eu-west-1"
       }
     ],
     "https://bluebrain.github.io/nexus/vocabulary/writePermission": [
