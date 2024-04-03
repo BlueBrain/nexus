@@ -15,13 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.ship.views.BlazegraphViewProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
 import java.util.UUID
 
-class BlazegraphViewProcessor private (views: UUID => IO[BlazegraphViews], clock: EventClock)
-    extends EventProcessor[BlazegraphViewEvent] {
+class BlazegraphViewProcessor private (
+    views: UUID => IO[BlazegraphViews],
+    projectMapper: ProjectMapper,
+    clock: EventClock
+) extends EventProcessor[BlazegraphViewEvent] {
 
   override def resourceType: EntityType = BlazegraphViews.entityType
 
@@ -36,11 +39,12 @@ class BlazegraphViewProcessor private (views: UUID => IO[BlazegraphViews], clock
   private def evaluateInternal(event: BlazegraphViewEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
     val cRev                = event.rev - 1
+    val project             = projectMapper.map(event.project)
     event match {
-      case e: BlazegraphViewCreated      => views(event.uuid).flatMap(_.create(e.id, e.project, e.value))
-      case e: BlazegraphViewUpdated      => views(event.uuid).flatMap(_.update(e.id, e.project, cRev, e.value))
-      case e: BlazegraphViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, e.project, cRev))
-      case e: BlazegraphViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, e.project, cRev))
+      case e: BlazegraphViewCreated      => views(event.uuid).flatMap(_.create(e.id, project, e.value))
+      case e: BlazegraphViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.value))
+      case e: BlazegraphViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
+      case e: BlazegraphViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: BlazegraphViewTagAdded     => IO.unit // TODO: Can we tag?
     }
   }.redeemWith(
@@ -60,6 +64,7 @@ object BlazegraphViewProcessor {
   def apply(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
+      projectMapper: ProjectMapper,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -82,7 +87,7 @@ object BlazegraphViewProcessor {
         xas,
         clock
       )(jsonLdApi, UUIDF.fixed(uuid))
-    new BlazegraphViewProcessor(views, clock)
+    new BlazegraphViewProcessor(views, projectMapper, clock)
   }
 
 }
