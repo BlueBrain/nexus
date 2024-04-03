@@ -46,6 +46,7 @@ object ResolversModule extends ModuleDef {
       ResolversImpl(
         fetchContext,
         resolverContextResolution,
+        ValidatePriority.priorityAlreadyExists(xas),
         config.resolvers.eventLog,
         xas,
         clock
