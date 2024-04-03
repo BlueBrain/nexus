@@ -33,13 +33,10 @@ object ResolversModule extends ModuleDef {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
-  make[ValidatePriority].from { (xas: Transactors) => ValidatePriority.priorityAlreadyExists(xas) }
-
   make[Resolvers].from {
     (
         fetchContext: FetchContext,
         resolverContextResolution: ResolverContextResolution,
-        validatePriority: ValidatePriority,
         config: AppConfig,
         xas: Transactors,
         api: JsonLdApi,
@@ -49,7 +46,7 @@ object ResolversModule extends ModuleDef {
       ResolversImpl(
         fetchContext,
         resolverContextResolution,
-        validatePriority,
+        ValidatePriority.priorityAlreadyExists(xas),
         config.resolvers.eventLog,
         xas,
         clock
