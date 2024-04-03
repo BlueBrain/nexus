@@ -16,13 +16,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.ship.views.ElasticSearchViewProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
 import java.util.UUID
 
-class ElasticSearchViewProcessor private (views: UUID => IO[ElasticSearchViews], clock: EventClock)
-    extends EventProcessor[ElasticSearchViewEvent] {
+class ElasticSearchViewProcessor private (
+    views: UUID => IO[ElasticSearchViews],
+    projectMapper: ProjectMapper,
+    clock: EventClock
+) extends EventProcessor[ElasticSearchViewEvent] {
 
   override def resourceType: EntityType = ElasticSearchViews.entityType
 
@@ -37,11 +40,12 @@ class ElasticSearchViewProcessor private (views: UUID => IO[ElasticSearchViews],
   private def evaluateInternal(event: ElasticSearchViewEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
     val cRev                = event.rev - 1
+    val project             = projectMapper.map(event.project)
     event match {
-      case e: ElasticSearchViewCreated      => views(event.uuid).flatMap(_.create(e.id, e.project, e.value))
-      case e: ElasticSearchViewUpdated      => views(event.uuid).flatMap(_.update(e.id, e.project, cRev, e.value))
-      case e: ElasticSearchViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, e.project, cRev))
-      case e: ElasticSearchViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, e.project, cRev))
+      case e: ElasticSearchViewCreated      => views(event.uuid).flatMap(_.create(e.id, project, e.value))
+      case e: ElasticSearchViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.value))
+      case e: ElasticSearchViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
+      case e: ElasticSearchViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: ElasticSearchViewTagAdded     => IO.unit // TODO: Check if this is correct
     }
   }.redeemWith(
@@ -62,6 +66,7 @@ object ElasticSearchViewProcessor {
   def apply(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
+      projectMapper: ProjectMapper,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -90,7 +95,7 @@ object ElasticSearchViewProcessor {
                    files.defaultSettings,
                    clock
                  )(jsonLdApi, UUIDF.fixed(uuid))
-    } yield new ElasticSearchViewProcessor(views, clock)
+    } yield new ElasticSearchViewProcessor(views, projectMapper, clock)
   }
 
 }

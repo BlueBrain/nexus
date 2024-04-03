@@ -16,13 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.ship.views.CompositeViewProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-class CompositeViewProcessor(views: UUID => IO[CompositeViews], clock: EventClock)
+class CompositeViewProcessor(views: UUID => IO[CompositeViews], projectMapper: ProjectMapper, clock: EventClock)
     extends EventProcessor[CompositeViewEvent] {
   override def resourceType: EntityType = CompositeViews.entityType
 
@@ -38,12 +38,12 @@ class CompositeViewProcessor(views: UUID => IO[CompositeViews], clock: EventCloc
     implicit val s: Subject = event.subject
     implicit val c: Caller  = Caller(s, Set.empty)
     val cRev                = event.rev - 1
-
+    val project             = projectMapper.map(event.project)
     event match {
-      case e: CompositeViewCreated      => views(event.uuid).flatMap(_.create(e.project, e.source))
-      case e: CompositeViewUpdated      => views(event.uuid).flatMap(_.update(e.id, e.project, cRev, e.source))
-      case e: CompositeViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, e.project, cRev))
-      case e: CompositeViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, e.project, cRev))
+      case e: CompositeViewCreated      => views(event.uuid).flatMap(_.create(project, e.source))
+      case e: CompositeViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+      case e: CompositeViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
+      case e: CompositeViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: CompositeViewTagAdded     => IO.unit // TODO: Can/should we tag?
     }
   }.redeemWith(
@@ -63,6 +63,7 @@ object CompositeViewProcessor {
   def apply(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
+      projectMapper: ProjectMapper,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -84,7 +85,7 @@ object CompositeViewProcessor {
         clock
       )(jsonLdApi, UUIDF.fixed(uuid))
 
-    new CompositeViewProcessor(views, clock)
+    new CompositeViewProcessor(views, projectMapper, clock)
 
   }
 

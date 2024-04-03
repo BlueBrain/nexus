@@ -16,10 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
-class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extends EventProcessor[ResolverEvent] {
+class ResolverProcessor private (resolvers: Resolvers, projectMapper: ProjectMapper, clock: EventClock)
+    extends EventProcessor[ResolverEvent] {
   override def resourceType: EntityType = Resolvers.entityType
 
   override def decoder: Decoder[ResolverEvent] = ResolverEvent.serializer.codec
@@ -34,7 +35,7 @@ class ResolverProcessor private (resolvers: Resolvers, clock: EventClock) extend
   private def evaluateInternal(event: ResolverEvent): IO[ImportStatus] = {
     val id                  = event.id
     implicit val s: Subject = event.subject
-    val projectRef          = event.project
+    val projectRef          = projectMapper.map(event.project)
     val cRev                = event.rev - 1
     event match {
       case ResolverCreated(_, _, value, _, _, _, _) =>
@@ -75,11 +76,12 @@ object ResolverProcessor {
 
   def apply(
       fetchContext: FetchContext,
+      projectMapper: ProjectMapper,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit api: JsonLdApi): ResolverProcessor = {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
-    new ResolverProcessor(resolvers, clock)
+    new ResolverProcessor(resolvers, projectMapper, clock)
   }
 }

@@ -16,10 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{Inco
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus}
+import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
-class ResourceProcessor private (resources: Resources, clock: EventClock) extends EventProcessor[ResourceEvent] {
+class ResourceProcessor private (resources: Resources, projectMapper: ProjectMapper, clock: EventClock)
+    extends EventProcessor[ResourceEvent] {
 
   override def resourceType: EntityType = Resources.entityType
 
@@ -35,6 +36,7 @@ class ResourceProcessor private (resources: Resources, clock: EventClock) extend
     implicit val s: Subject = event.subject
     implicit val c: Caller  = Caller(s, Set.empty)
     val cRev                = event.rev - 1
+    val project             = projectMapper.map(event.project)
 
     implicit class ResourceRefOps(ref: ResourceRef) {
       def toIdSegment: IdSegment = IdSegmentRef(ref).value
@@ -42,21 +44,21 @@ class ResourceProcessor private (resources: Resources, clock: EventClock) extend
 
     event match {
       case e: ResourceCreated       =>
-        resources.create(e.id, e.project, e.schema.toIdSegment, e.source, e.tag)
+        resources.create(e.id, project, e.schema.toIdSegment, e.source, e.tag)
       case e: ResourceUpdated       =>
-        resources.update(e.id, event.project, e.schema.toIdSegment.some, cRev, e.source, e.tag)
+        resources.update(e.id, project, e.schema.toIdSegment.some, cRev, e.source, e.tag)
       case e: ResourceSchemaUpdated =>
-        resources.updateAttachedSchema(e.id, e.project, e.schema.toIdSegment)
+        resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
       case e: ResourceRefreshed     =>
-        resources.refresh(e.id, e.project, e.schema.toIdSegment.some)
+        resources.refresh(e.id, project, e.schema.toIdSegment.some)
       case e: ResourceTagAdded      =>
-        resources.tag(e.id, e.project, None, e.tag, e.targetRev, cRev)
+        resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
       case e: ResourceTagDeleted    =>
-        resources.deleteTag(e.id, e.project, None, e.tag, cRev)
+        resources.deleteTag(e.id, project, None, e.tag, cRev)
       case e: ResourceDeprecated    =>
-        resources.deprecate(e.id, e.project, None, cRev)
+        resources.deprecate(e.id, project, None, cRev)
       case e: ResourceUndeprecated  =>
-        resources.undeprecate(e.id, e.project, None, cRev)
+        resources.undeprecate(e.id, project, None, cRev)
     }
   }.redeemWith(
     {
@@ -75,12 +77,13 @@ object ResourceProcessor {
 
   def apply(
       log: ResourceLog,
+      projectMapper: ProjectMapper,
       fetchContext: FetchContext,
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val rcr       = ResolverContextResolution.never // TODO: Pass correct ResolverContextResolution
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, clock)
+    new ResourceProcessor(resources, projectMapper, clock)
   }
 
 }
