@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.Show
 import cats.kernel.Monoid
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
-import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 
 import java.time.Instant
 
 final case class ImportReport(offset: Offset, instant: Instant, progress: Map[EntityType, Count]) {
-  def +(event: InputEvent, status: ImportStatus): ImportReport = {
+  def +(event: RowEvent, status: ImportStatus): ImportReport = {
     val entityType  = event.`type`
     val newProgress = progress.updatedWith(entityType) {
       case Some(count) => Some(count |+| status.asCount)

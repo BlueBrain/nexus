@@ -4,9 +4,9 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.ship.EventProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.model.InputEvent
 import fs2.Stream
 import io.circe.Decoder
 
@@ -21,7 +21,7 @@ trait EventProcessor[Event <: ScopedEvent] {
 
   def evaluate(event: Event): IO[ImportStatus]
 
-  def evaluate(event: InputEvent): IO[ImportStatus] =
+  def evaluate(event: RowEvent): IO[ImportStatus] =
     IO.fromEither(decoder.decodeJson(event.value))
       .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
       .flatMap(evaluate)
@@ -31,7 +31,7 @@ object EventProcessor {
 
   private val logger = Logger[EventProcessor.type]
 
-  def run(eventStream: Stream[IO, InputEvent], processors: EventProcessor[_]*): IO[ImportReport] = {
+  def run(eventStream: Stream[IO, RowEvent], processors: EventProcessor[_]*): IO[ImportReport] = {
     val processorsMap = processors.foldLeft(Map.empty[EntityType, EventProcessor[_]]) { (acc, processor) =>
       acc + (processor.resourceType -> processor)
     }

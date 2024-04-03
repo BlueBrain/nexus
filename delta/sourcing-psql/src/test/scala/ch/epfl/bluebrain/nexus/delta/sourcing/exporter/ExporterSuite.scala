@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.exporter
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.file.TempDirectory
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.io.file.{Files, Path}
-import io.circe.{parser, DecodingFailure, JsonObject}
+import io.circe.{DecodingFailure, JsonObject, parser}
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
@@ -27,7 +27,7 @@ class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fi
   )
   override def munitFixtures: Seq[AnyFixture[_]] = List(tempDirectory, doobieFixture)
 
-  private lazy val exporterConfig   = ExportConfig(3, exportDirectory)
+  private lazy val exporterConfig   = ExportConfig(5, 3, exportDirectory)
   private lazy val (_, _, exporter) = doobieFixture()
   private lazy val exportDirectory  = tempDirectory()
 
