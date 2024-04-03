@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.file.TempDirectory
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.io.file.{Files, Path}
-import io.circe.{DecodingFailure, JsonObject, parser}
+import io.circe.{parser, DecodingFailure, JsonObject}
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
