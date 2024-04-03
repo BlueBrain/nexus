@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.clearDB
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{check, clearDB}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
@@ -61,8 +61,16 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     } yield ()
   }
 
-  test("Show config") {
-    Main.showConfig(None)
+  test("Import and map public/sscx to obp/somato") {
+    for {
+      externalConfigPath        <- loader.absolutePath("config/project-mapping-sscx.conf").map(x => Some(Path(x)))
+      importFileWithTwoProjects <- asPath("import/import.json")
+      _                         <- new RunShip().run(importFileWithTwoProjects, externalConfigPath, Offset.start)
+      _                         <- check(xas).map { projects =>
+                                     assert(projects.size == 1)
+                                     assert(projects.contains(("obp", "somato")))
+                                   }
+    } yield ()
   }
 
   private def asPath(path: String): IO[Path] = {
@@ -81,6 +89,11 @@ object RunShipSuite {
          | DELETE FROM scoped_events; DELETE FROM scoped_states;
          |""".stripMargin.update.run.void.transact(xas.write)
 
+  def check(xas: Transactors) =
+    sql"""
+         | SELECT DISTINCT org, project FROM scoped_events;
+       """.stripMargin.query[(String, String)].to[List].transact(xas.read)
+
   trait Fixture { self: CatsEffectSuite =>
 
     private def initConfig(postgres: PostgresContainer) =
@@ -88,7 +101,8 @@ object RunShipSuite {
         "ship.database.access.host"        -> postgres.getHost,
         "ship.database.access.port"        -> postgres.getMappedPort(5432).toString,
         "ship.database.tables-autocreate"  -> "true",
-        "ship.organizations.values.public" -> "The public organization"
+        "ship.organizations.values.public" -> "The public organization",
+        "ship.organizations.values.obp"    -> "The OBP organization"
       )
 
     private val resource: Resource[IO, Transactors] = transactors(

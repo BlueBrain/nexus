@@ -40,6 +40,7 @@ class RunShip {
                   val fetchContext   = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
                   val eventLogConfig = config.eventLog
                   val baseUri        = config.baseUri
+                  val projectMapper  = ProjectMapper(config.projectMapping)
                   for {
                     // Provision organizations
                     _                           <- orgProvider.create(config.organizations.values)
@@ -50,24 +51,18 @@ class RunShip {
                     (schemaLog, fetchSchema)    <- SchemaWiring(config.eventLog, eventClock, xas, jsonLdApi)
                     (resourceLog, fetchResource) =
                       ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
-                    rcr                         <- ContextWiring
-                                                     .resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
-                    schemaImports                = SchemaWiring.schemaImports(
-                                                     fetchResource,
-                                                     fetchSchema,
-                                                     fetchContext,
-                                                     eventLogConfig,
-                                                     eventClock,
-                                                     xas
-                                                   )
+                    // format: off
+                    rcr                         <- ContextWiring.resolverContextResolution(fetchResource, fetchContext, eventLogConfig, eventClock, xas)
+                    schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
-                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, eventLogConfig, eventClock, xas)(baseUri)
-                    resolverProcessor            = ResolverProcessor(fetchContext, eventLogConfig, eventClock, xas)
-                    schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, eventClock)
-                    resourceProcessor            = ResourceProcessor(resourceLog, fetchContext, eventClock)
-                    esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
-                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
-                    compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, eventLogConfig, eventClock, xas)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, projectMapper, eventLogConfig, eventClock, xas)(baseUri)
+                    resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
+                    schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
+                    resourceProcessor            = ResourceProcessor(resourceLog, projectMapper, fetchContext, eventClock)
+                    esViewsProcessor            <- ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
+                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
+                    compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
+                    // format: on
                     report                      <- EventProcessor
                                                      .run(
                                                        events,

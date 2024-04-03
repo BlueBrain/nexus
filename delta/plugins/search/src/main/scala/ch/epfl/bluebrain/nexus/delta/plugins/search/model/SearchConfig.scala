@@ -34,17 +34,6 @@ final case class SearchConfig(
 
 object SearchConfig {
 
-  implicit val projectRefReader: ConfigReader[ProjectRef] = ConfigReader.fromString { value =>
-    value.split("/").toList match {
-      case orgStr :: projectStr :: Nil =>
-        (Label(orgStr), Label(projectStr))
-          .mapN(ProjectRef(_, _))
-          .leftMap(err => CannotConvert(value, classOf[ProjectRef].getSimpleName, err.getMessage))
-      case _                           =>
-        Left(CannotConvert(value, classOf[ProjectRef].getSimpleName, "Wrong format"))
-    }
-  }
-
   type Suite  = Set[ProjectRef]
   type Suites = Map[Label, Suite]
 
