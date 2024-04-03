@@ -48,7 +48,7 @@ class RunShip {
                     fetchActiveOrg               = FetchActiveOrganization(xas)
                     // Wiring
                     eventClock                  <- EventClock.init()
-                    (schemaLog, fetchSchema)    <- SchemaWiring(config.eventLog, eventClock, xas, jsonLdApi)
+                    (schemaLog, fetchSchema)     = SchemaWiring(config.eventLog, eventClock, xas)
                     (resourceLog, fetchResource) =
                       ResourceWiring(fetchContext, fetchSchema, eventLogConfig, eventClock, xas)
                     // format: off
