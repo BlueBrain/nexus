@@ -175,7 +175,7 @@ services:
 #  fusion:
 #    depends_on:
 #      - delta
-#    image: bluebrain/nexus-web:1.9.9
+#    image: bluebrain/nexus-web:1.10.0-M2-fix-resource-update
 #    environment:
 #      BASE_PATH: "/"
 #      HOST_NAME: "http://localhost"
@@ -183,7 +183,7 @@ services:
 
 #  router:
 #    depends_on:
-#      - web
+#      - fusion
 #    image: nginx:stable
 #    ports:
 #      - target: 80

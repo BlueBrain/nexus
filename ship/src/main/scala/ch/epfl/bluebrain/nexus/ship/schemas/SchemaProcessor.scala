@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.SchemaLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidSchema, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.schemas.SchemaProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, FailingUUID, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
 class SchemaProcessor private (schemas: Schemas, projectMapper: ProjectMapper, clock: EventClock)
@@ -50,6 +50,9 @@ class SchemaProcessor private (schemas: Schemas, projectMapper: ProjectMapper, c
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The schema already exists").as(ImportStatus.Dropped)
       case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+      case i: InvalidSchema         =>
+        val message = s"The schema '${i.id}' is invalid. Report: ${i.report}"
+        logger.error(message) >> IO.raiseError(i)
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
