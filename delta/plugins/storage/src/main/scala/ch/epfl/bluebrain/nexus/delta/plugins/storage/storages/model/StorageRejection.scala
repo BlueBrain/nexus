@@ -93,8 +93,7 @@ object StorageRejection {
     * @param id
     *   the storage identifier
     */
-  final case class StorageNotAccessible(id: Iri, details: String)
-      extends StorageRejection(s"Storage '$id' not accessible.")
+  final case class StorageNotAccessible(details: String) extends StorageRejection(s"Storage not accessible: $details")
 
   /**
     * Signals an error creating/updating a storage with a wrong maxFileSize
@@ -165,7 +164,7 @@ object StorageRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case StorageNotAccessible(_, details) => obj.add("details", details.asJson)
+        case StorageNotAccessible(details)    => obj.add("details", details.asJson)
         case IncorrectRev(provided, expected) => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: StorageNotFound               => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                => obj
@@ -183,7 +182,7 @@ object StorageRejection {
       case ResourceAlreadyExists(_, _) => StatusCodes.Conflict
       case IncorrectRev(_, _)          => StatusCodes.Conflict
       case FetchByTagNotSupported(_)   => StatusCodes.BadRequest
-      case StorageNotAccessible(_, _)  => StatusCodes.BadRequest
+      case StorageNotAccessible(_)     => StatusCodes.BadRequest
       case _                           => StatusCodes.BadRequest
     }
 

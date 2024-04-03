@@ -6,6 +6,7 @@ import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
@@ -15,7 +16,6 @@ import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 import java.io.File
 import java.nio.file.Path
@@ -161,14 +161,12 @@ object StorageValue {
     def alpakkaSettings(config: StorageTypeConfig): s3.S3Settings = {
 
       val keys          = for {
-        cfg       <- config.amazon
-        accessKey <- cfg.defaultAccessKey
-        secretKey <- cfg.defaultSecretKey
-      } yield accessKey -> secretKey
+        cfg <- config.amazon
+      } yield cfg.defaultAccessKey.value -> cfg.defaultSecretKey.value
 
       val credsProvider = keys match {
         case Some((accessKey, secretKey)) =>
-          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey.value, secretKey.value))
+          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
         case _                            =>
           StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials())
       }

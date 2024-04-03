@@ -1,6 +1,0 @@
-{
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "StorageNotAccessible",
-  "reason" : "Storage 'https://bluebrain.github.io/nexus/vocabulary/missing' not accessible.",
-  "details" : "The specified bucket does not exist"
-}

@@ -126,7 +126,7 @@ class BatchCopySpec extends BaseIntegrationSpec {
 
     for {
       response <- deltaClient.postAndReturn[Response](uri, payload, Coyote) { (json, response) =>
-                    (json, expectCreated(json, response))
+                    expectCreated(json, response)
                   }
       ids       = response.ids
       _        <- checkFileResourcesExist(destProjRef, ids)
