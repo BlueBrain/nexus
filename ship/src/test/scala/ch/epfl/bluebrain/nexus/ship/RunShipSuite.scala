@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{check, clearDB}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
@@ -66,7 +66,7 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
       externalConfigPath        <- loader.absolutePath("config/project-mapping-sscx.conf").map(x => Some(Path(x)))
       importFileWithTwoProjects <- asPath("import/import.json")
       _                         <- new RunShip().run(importFileWithTwoProjects, externalConfigPath, Offset.start)
-      _                         <- check(xas).map { projects =>
+      _                         <- getDistinctOrgProjects(xas).map { projects =>
                                      assert(projects.size == 1)
                                      assert(projects.contains(("obp", "somato")))
                                    }
@@ -89,7 +89,7 @@ object RunShipSuite {
          | DELETE FROM scoped_events; DELETE FROM scoped_states;
          |""".stripMargin.update.run.void.transact(xas.write)
 
-  def check(xas: Transactors) =
+  def getDistinctOrgProjects(xas: Transactors) =
     sql"""
          | SELECT DISTINCT org, project FROM scoped_events;
        """.stripMargin.query[(String, String)].to[List].transact(xas.read)
