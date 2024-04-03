@@ -61,9 +61,9 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     } yield ()
   }
 
-  test("Import with project mapping") {
+  test("Import and map public/sscx to obp/somato") {
     for {
-      externalConfigPath        <- loader.absolutePath("config/project-mapping.conf").map(x => Some(Path(x)))
+      externalConfigPath        <- loader.absolutePath("config/project-mapping-sscx.conf").map(x => Some(Path(x)))
       importFileWithTwoProjects <- asPath("import/import.json")
       _                         <- new RunShip().run(importFileWithTwoProjects, externalConfigPath, Offset.start)
       _                         <- check(xas).map { projects =>
