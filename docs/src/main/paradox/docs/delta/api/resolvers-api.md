@@ -91,7 +91,7 @@ where...
 
 ## Indexing
 
-All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed
+All the API calls modifying a resolver (creation, update, deprecation) can specify whether the resolver should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the resolver will be indexed asynchronously
@@ -195,15 +195,12 @@ Response
 ## Fetch
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&tag={tag}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}
 ```
 
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -219,14 +216,11 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}&tag={tag}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -235,26 +229,6 @@ Request
 
 Response
 :   @@snip [payload.json](assets/resolvers/payload.json)
-
-## Fetch tags
-
-```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={rev}&tag={tag}
-```
-where ...
-
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
-
-**Example**
-
-Request
-:   @@snip [fetchTags.sh](assets/resolvers/tags.sh)
-
-Response
-:   @@snip [tags.json](assets/tags.json)
 
 ## List
 
@@ -348,8 +322,8 @@ GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={r
 ... where
 
 - `{resource_id}`: Iri - the @id value of the resource to be retrieved.
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{rev}`: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted resource tag to be fetched. This field is optional.
 - `{showReport}`: Boolean - return the resolver resolution steps instead of the resource for debugging purposes.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
@@ -374,8 +348,8 @@ GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source
 ```
 where ...
 - `{resource_id}`: Iri - the @id value of the resource to be retrieved.
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{rev}`: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted resource tag to be fetched. This field is optional.
 - `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
