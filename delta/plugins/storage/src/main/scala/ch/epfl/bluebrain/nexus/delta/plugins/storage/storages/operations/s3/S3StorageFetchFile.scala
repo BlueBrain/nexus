@@ -27,7 +27,7 @@ final class S3StorageFetchFile(client: S3StorageClient, value: S3StorageValue) e
         StreamConverter(
           client
             .readFile(value.bucket, URLDecoder.decode(path.toString, UTF_8.toString))
-            .groupWithin(1024, 1.second)
+            .groupWithin(8192, 1.second)
             .map(bytes => ByteString(bytes.toArray))
         )
       )
