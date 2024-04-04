@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -96,7 +97,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   }
 
   private val validator: ValidateResource                          = ValidateResource(
-    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+    ResourceResolutionGen.singleInProject(projectRef, fetchSchema),
+    ValidateShacl(rcr).accepted
   )
   private val fetchContext                                         = FetchContextDummy(List(project.value))
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)

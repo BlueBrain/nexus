@@ -1,0 +1,378 @@
+{
+  "@context": {
+    "BlankNode": {
+      "@id": "sh:BlankNode"
+    },
+    "BlankNodeOrIRI": {
+      "@id": "sh:BlankNodeOrIRI"
+    },
+    "BlankNodeOrLiteral": {
+      "@id": "sh:BlankNodeOrLiteral"
+    },
+    "IRI": {
+      "@id": "sh:IRI"
+    },
+    "IRIOrLiteral": {
+      "@id": "sh:IRIOrLiteral"
+    },
+    "Literal": {
+      "@id": "sh:Literal"
+    },
+    "NodeShape": {
+      "@id": "sh:NodeShape"
+    },
+    "PropertyShape": {
+      "@id": "sh:PropertyShape"
+    },
+    "Schema": "nxv:Schema",
+    "Shape": {
+      "@id": "sh:Shape"
+    },
+    "Violation": {
+      "@id": "sh:Violation"
+    },
+    "and": {
+      "@id": "sh:and",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "bmo": "https://bbp.epfl.ch/ontologies/core/bmo/",
+    "bmoutils": "https://bbp.epfl.ch/ontologies/core/bmoutils/",
+    "class": {
+      "@id": "sh:class",
+      "@type": "@id"
+    },
+    "comment": {
+      "@id": "rdfs:comment",
+      "@type": "xsd:string"
+    },
+    "datatype": {
+      "@id": "sh:datatype",
+      "@type": "@id"
+    },
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "deactivated": {
+      "@id": "sh:deactivated"
+    },
+    "declare": {
+      "@id": "sh:declare"
+    },
+    "description": {
+      "@id": "sh:description"
+    },
+    "editorialNote": {
+      "@id": "skos:editorialNote",
+      "@type": "xsd:string"
+    },
+    "hasValue": {
+      "@id": "sh:hasValue"
+    },
+    "imports": {
+      "@id": "owl:imports",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "in": {
+      "@id": "sh:in",
+      "@container": "@list"
+    },
+    "isDefinedBy": {
+      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id"
+    },
+    "label": {
+      "@id": "rdfs:label",
+      "@type": "xsd:string"
+    },
+    "lessThan": {
+      "@id": "sh:lessThan",
+      "@type": "@id"
+    },
+    "maxCount": {
+      "@id": "sh:maxCount",
+      "@type": "xsd:integer"
+    },
+    "maxExclusive": {
+      "@id": "sh:maxExclusive"
+    },
+    "maxInclusive": {
+      "@id": "sh:maxInclusive"
+    },
+    "minCount": {
+      "@id": "sh:minCount",
+      "@type": "xsd:integer"
+    },
+    "minExclusive": {
+      "@id": "sh:minExclusive"
+    },
+    "minInclusive": {
+      "@id": "sh:minInclusive"
+    },
+    "name": {
+      "@id": "sh:name"
+    },
+    "namespace": {
+      "@id": "sh:namespace",
+      "@type": "xsd:anyURI"
+    },
+    "node": {
+      "@id": "sh:node",
+      "@type": "@id"
+    },
+    "nodeKind": {
+      "@id": "sh:nodeKind",
+      "@type": "@id"
+    },
+    "not": {
+      "@id": "sh:not",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "nsg": "https://neuroshapes.org/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "or": {
+      "@id": "sh:or",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "path": {
+      "@id": "sh:path",
+      "@type": "@id"
+    },
+    "pattern": {
+      "@id": "sh:pattern"
+    },
+    "prefix": {
+      "@id": "sh:prefix",
+      "@type": "xsd:string"
+    },
+    "property": {
+      "@id": "sh:property",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "qualifiedMaxCount": {
+      "@id": "sh:qualifiedMaxCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedMinCount": {
+      "@id": "sh:qualifiedMinCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedValueShape": {
+      "@id": "sh:qualifiedValueShape",
+      "@type": "@id"
+    },
+    "qualifiedValueShapesDisjoint": {
+      "@id": "sh:qualifiedValueShapesDisjoint",
+      "@type": "xsd:boolean"
+    },
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "resultMessage": {
+      "@id": "sh:message"
+    },
+    "schema": "http://schema.org/",
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    },
+    "severity": {
+      "@id": "sh:severity"
+    },
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shapes": {
+      "@id": "nxv:shapes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "shapesGraph": {
+      "@id": "sh:shapesGraph",
+      "@type": "@id"
+    },
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "suggestedShapesGraph": {
+      "@id": "sh:suggestedShapesGraph",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "sh:target",
+      "@type": "@id"
+    },
+    "targetClass": {
+      "@id": "sh:targetClass",
+      "@type": "@id"
+    },
+    "targetNode": {
+      "@id": "sh:targetNode",
+      "@type": "@id"
+    },
+    "targetObjectsOf": {
+      "@id": "sh:targetObjectsOf",
+      "@type": "@id"
+    },
+    "targetSubjectsOf": {
+      "@id": "sh:targetSubjectsOf",
+      "@type": "@id"
+    },
+    "this": "https://neuroshapes.org/commons/annotationselector/shapes/",
+    "xone": {
+      "@id": "sh:xone",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "https://neuroshapes.org/commons/annotationselector",
+  "@type": "Schema",
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/SelectorShape",
+      "@type": "NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "seeAlso": "https://www.w3.org/TR/annotation-model/#selectors"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/TextPositionSelectorShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:SelectorShape"
+        },
+        {
+          "property": [
+            {
+              "datatype": "xsd:integer",
+              "description": "The starting position of the segment of text. The first character in the full text is character position 0, and the character is included within the segment.",
+              "lessThan": "oa:end",
+              "maxCount": 1,
+              "minCount": 1,
+              "minInclusive": 0,
+              "name": "Start offset",
+              "path": "oa:start"
+            },
+            {
+              "datatype": "xsd:integer",
+              "description": "The end position of the segment of text. The character is not included within the segment.",
+              "maxCount": 1,
+              "minCount": 1,
+              "minInclusive": 0,
+              "name": "End offset",
+              "path": "oa:end"
+            },
+            {
+              "datatype": "xsd:string",
+              "description": "The selected segment of text.",
+              "maxCount": 1,
+              "name": "Value",
+              "path": "schema:value"
+            }
+          ]
+        }
+      ],
+      "class": "oa:TextPositionSelector"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/DocumentIndexSelectorShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:SelectorShape"
+        },
+        {
+          "property": [
+            {
+              "datatype": "xsd:string",
+              "description": "The index of a document media (figure) or item (equation, table,...) (e.g. '1', '2.a', 'III').",
+              "maxCount": 1,
+              "minCount": 1,
+              "name": "Index",
+              "path": "nsg:index"
+            }
+          ]
+        }
+      ],
+      "class": "nsg:DocumentIndexSelector"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/TableSelectorShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:DocumentIndexSelectorShape"
+        },
+        {
+          "property": [
+            {
+              "description": "The number of the row of a table (e.g. '1', '1, 3').",
+              "name": "Row number",
+              "path": "nsg:row"
+            },
+            {
+              "description": "The index(es) in the table of the columns(s) (e.g. '1', '1, 3').",
+              "name": "Column index",
+              "path": "nsg:column"
+            }
+          ]
+        }
+      ],
+      "class": "nsg:TableSelector",
+      "seeAlso": "https://www.w3.org/TR/csv2rdf/"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/FragmentSelectorShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:SelectorShape"
+        },
+        {
+          "property": [
+            {
+              "description": "The contents of the fragment component of an IRI that describes the Segment.",
+              "maxCount": 1,
+              "minCount": 1,
+              "name": "Fragment value",
+              "path": "schema:value"
+            },
+            {
+              "description": "Specification of the fragment syntax.",
+              "maxCount": 1,
+              "name": "Fragment specification",
+              "nodeKind": "sh:IRI",
+              "path": "nsg:conformsTo",
+              "seeAlso": "https://www.w3.org/TR/annotation-model/#fragment-selector"
+            }
+          ]
+        }
+      ],
+      "class": "oa:FragmentSelector",
+      "nodeKind": "sh:BlankNodeOrIRI"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/annotationselector/shapes/DocumentAreaSelectorShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:FragmentSelectorShape"
+        },
+        {
+          "property": [
+            {
+              "comment": "Used format is page=<pagenum>&viewrect=<left>,<top>,<wd>,<ht>. <left>, and <top> are measured from the top left corner of the page.",
+              "hasValue": "http://tools.ietf.org/rfc/rfc3778",
+              "name": "Specification",
+              "path": "nsg:conformsTo"
+            }
+          ]
+        }
+      ],
+      "class": "nsg:PDFAreaSelector",
+      "nodeKind": "sh:BlankNodeOrIRI"
+    }
+  ]
+}

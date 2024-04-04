@@ -6,10 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -51,7 +52,7 @@ class ResourcesImplSpec
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
-  implicit private def res: RemoteContextResolution =
+  implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
       contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),
       contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
@@ -91,11 +92,12 @@ class ResourcesImplSpec
   private val detectChanges = DetectChange(enabled = config.skipUpdateNoChange)
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
+    rcr,
     (r, p, _) => resources.fetch(r, p).attempt.map(_.left.map(_ => ResourceResolutionReport()))
   )
 
-  private val resourceDef      = Resources.definition(ValidateResource(resourceResolution), detectChanges, clock)
+  private val validateResource = ValidateResource(resourceResolution, ValidateShacl(rcr).accepted)
+  private val resourceDef      = Resources.definition(validateResource, detectChanges, clock)
   private lazy val resourceLog = ScopedEventLog(resourceDef, eventLogConfig, xas)
 
   private lazy val resources: Resources = ResourcesImpl(

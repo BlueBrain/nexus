@@ -4,8 +4,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -52,8 +51,9 @@ trait ValidateResource {
 object ValidateResource {
 
   def apply(
-      resourceResolution: ResourceResolution[Schema]
-  )(implicit rcr: RemoteContextResolution): ValidateResource =
+      resourceResolution: ResourceResolution[Schema],
+      validateShacl: ValidateShacl
+  ): ValidateResource =
     new ValidateResource {
       override def apply(
           jsonld: JsonLdAssembly,
@@ -77,11 +77,10 @@ object ValidateResource {
           schemaRef: ResourceRef,
           schema: ResourceF[Schema]
       ): IO[ValidationReport] =
-        ShaclEngine(
+        validateShacl(
           jsonld.graph ++ schema.value.ontologies,
           schema.value.shapes,
-          reportDetails = true,
-          validateShapes = false
+          reportDetails = true
         ).adaptError { e =>
           ResourceShaclEngineRejection(jsonld.id, schemaRef, e.getMessage)
         }

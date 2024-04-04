@@ -7,9 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.InvalidJsonLdFormat
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ShaclShapesGraph, ValidationReport}
 
 trait ValidateSchema {
 
@@ -19,12 +18,12 @@ trait ValidateSchema {
 
 object ValidateSchema {
 
-  def apply(implicit api: JsonLdApi, shaclShapesGraph: ShaclShapesGraph, rcr: RemoteContextResolution): ValidateSchema =
+  def apply(validateShacl: ValidateShacl)(implicit api: JsonLdApi): ValidateSchema =
     new ValidateSchema {
       override def apply(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[ValidationReport] = {
         for {
           graph  <- toGraph(id, expanded)
-          report <- ShaclEngine(graph, reportDetails = true)
+          report <- validateShacl(graph, reportDetails = true)
         } yield report
       }
 

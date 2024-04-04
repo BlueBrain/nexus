@@ -20,12 +20,14 @@ import org.apache.jena.riot.system.ErrorHandlerFactory
 import org.apache.jena.riot._
 import org.apache.jena.sparql.core.DatasetGraph
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
   * Json-LD high level API implementation by Json-LD Java library
   */
+@nowarn("cat=deprecation")
 final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
@@ -76,7 +78,7 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
     val ds          = DatasetFactory.create
     val initBuilder = RDFParser.create
       .fromString(input.noSpaces)
-      .lang(Lang.JSONLD)
+      .lang(Lang.JSONLD10)
       .context(c)
       .strict(config.strict)
       .checking(config.extraChecks)

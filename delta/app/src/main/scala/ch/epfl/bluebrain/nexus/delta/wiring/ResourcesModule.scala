@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -36,9 +37,8 @@ object ResourcesModule extends ModuleDef {
     ResourceResolution.schemaResource(aclCheck, resolvers, fetchSchema, excludeDeprecated = false)
   }
 
-  make[ValidateResource].from {
-    (resourceResolution: ResourceResolution[Schema], rcr: RemoteContextResolution @Id("aggregate")) =>
-      ValidateResource(resourceResolution)(rcr)
+  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], validateShacl: ValidateShacl) =>
+    ValidateResource(resourceResolution, validateShacl)
   }
 
   make[ResourcesConfig].from { (config: AppConfig) => config.resources }

@@ -27,7 +27,7 @@ import org.apache.jena.sparql.graph.GraphFactory
 import org.apache.jena.sparql.util.IsoMatcher
 
 import java.util.UUID
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -39,6 +39,7 @@ import scala.util.Try
   * @param value
   *   the Jena dataset graph
   */
+@nowarn("cat=deprecation")
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
   val rootResource: Node = subject(rootNode)
