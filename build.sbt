@@ -57,7 +57,7 @@ val postgresJdbcVersion        = "42.7.3"
 val pureconfigVersion          = "0.17.6"
 val scalaTestVersion           = "3.2.18"
 val scalaXmlVersion            = "2.2.0"
-val topBraidVersion            = "1.4.3" // 1.4.1 fails to validate some test schemas
+val topBraidVersion            = "1.4.3"
 val testContainersVersion      = "1.19.7"
 val testContainersScalaVersion = "0.41.3"
 
