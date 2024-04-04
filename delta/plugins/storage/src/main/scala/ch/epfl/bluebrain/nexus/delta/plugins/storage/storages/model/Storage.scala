@@ -99,7 +99,7 @@ object Storage {
     override val storageValue: StorageValue = value
 
     def fetchFile(client: S3StorageClient): FetchFile =
-      new S3StorageFetchFile(client, value)
+      new S3StorageFetchFile(client, value.bucket)
 
     def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
       new S3StorageSaveFile(this, config)

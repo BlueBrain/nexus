@@ -5,7 +5,6 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
@@ -16,7 +15,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.duration.DurationInt
 
-final class S3StorageFetchFile(client: S3StorageClient, value: S3StorageValue) extends FetchFile {
+final class S3StorageFetchFile(client: S3StorageClient, bucket: String) extends FetchFile {
 
   override def apply(attributes: FileAttributes): IO[AkkaSource] =
     apply(attributes.path)
@@ -26,7 +25,7 @@ final class S3StorageFetchFile(client: S3StorageClient, value: S3StorageValue) e
       Source.fromGraph(
         StreamConverter(
           client
-            .readFile(value.bucket, URLDecoder.decode(path.toString, UTF_8.toString))
+            .readFile(bucket, URLDecoder.decode(path.toString, UTF_8.toString))
             .groupWithin(8192, 1.second)
             .map(bytes => ByteString(bytes.toArray))
         )
