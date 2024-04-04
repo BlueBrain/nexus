@@ -74,7 +74,7 @@ object BlazegraphViewProcessor {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
-    val prefix       = "wrong_prefix" // TODO: fix prefix
+    val prefix       = "nexus" // TODO: use the config?
 
     val views = (uuid: UUID) =>
       BlazegraphViews(

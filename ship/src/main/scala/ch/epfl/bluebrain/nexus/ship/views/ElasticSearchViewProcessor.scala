@@ -78,7 +78,7 @@ object ElasticSearchViewProcessor {
     val noValidation = new ValidateElasticSearchView {
       override def apply(uuid: UUID, indexingRev: IndexingRev, v: ElasticSearchViewValue): IO[Unit] = IO.unit
     }
-    val prefix       = "wrong_prefix" // TODO: fix prefix
+    val prefix       = "nexus" // TODO: use the config?
     val esFiles      = ElasticSearchFiles.mk(loader)
 
     for {
