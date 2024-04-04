@@ -1,15 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
-import org.apache.jena.riot.{Lang, RDFDataMgr}
 
 class ValidateShaclSuite extends NexusSuite {
 
@@ -62,13 +60,6 @@ class ValidateShaclSuite extends NexusSuite {
       wrongGraph <- toGraph(wrongSchema)
       _          <- shaclValidation(wrongGraph, reportDetails = true).assert(_.isValid() == false)
     } yield ()
-  }
-
-  test("pouet") {
-    val data   = Graph.unsafe(RDFDataMgr.loadDatasetGraph("/tmp/ship/resource.nquads", Lang.NQUADS))
-    val schema = Graph.unsafe(RDFDataMgr.loadDatasetGraph("/tmp/ship/schema.nquad", Lang.NQUADS))
-
-    shaclValidation(data, schema, reportDetails = true).assert(_.isValid())
   }
 
 }
