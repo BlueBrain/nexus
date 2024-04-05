@@ -20,6 +20,8 @@ trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
   def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
+
+  def underlyingClient: S3AsyncClientOp[IO]
 }
 
 object S3StorageClient {
@@ -56,6 +58,8 @@ object S3StorageClient {
         fk    <- fs2.Stream.fromEither[IO].apply(refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
         bytes <- s3.readFile(BucketName(bk), FileKey(fk))
       } yield bytes
+
+    override def underlyingClient: S3AsyncClientOp[IO] = client
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -66,5 +70,7 @@ object S3StorageClient {
 
     override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       fs2.Stream.raiseError[IO](disabledErr)
+
+    override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
   }
 }

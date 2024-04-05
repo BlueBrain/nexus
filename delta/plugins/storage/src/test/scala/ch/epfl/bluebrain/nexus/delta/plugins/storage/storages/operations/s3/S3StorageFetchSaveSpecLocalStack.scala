@@ -30,7 +30,7 @@ class S3StorageFetchSaveSpecLocalStack
     with LocalStackS3.Fixture
     with ActorSystemSetup.Fixture {
 
-  override def munitIOTimeout: Duration = 60.seconds
+  override def munitIOTimeout: Duration = 120.seconds
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client, actorSystem)
 

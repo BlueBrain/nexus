@@ -129,7 +129,6 @@ class FilesRoutesSpec
       storages,
       storagesStatistics,
       xas,
-      config,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
       S3StorageClientDisabled,

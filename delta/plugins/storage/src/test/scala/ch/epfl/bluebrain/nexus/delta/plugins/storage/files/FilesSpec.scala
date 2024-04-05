@@ -144,7 +144,6 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       storages,
       storageStatistics,
       xas,
-      cfg,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
       S3StorageClientDisabled,

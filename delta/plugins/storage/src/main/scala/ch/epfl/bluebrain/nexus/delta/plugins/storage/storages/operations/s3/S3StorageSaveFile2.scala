@@ -5,30 +5,40 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.S3
 import fs2.aws.s3.S3.MultipartETagValidation
 import fs2.aws.s3.models.Models.{BucketName, ETag, FileKey, PartSizeMB}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
-import software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest
+import software.amazon.awssdk.services.s3.model._
+import fs2.Stream
 
 import java.util.UUID
 
 final class S3StorageSaveFile2(client: S3AsyncClientOp[IO], storage: S3Storage)(implicit
     as: ActorSystem,
     uuidf: UUIDF
-) {
-  private val fileAlreadyExistException = new IllegalArgumentException("Collision, file already exist")
+) extends SaveFile {
+
+  private val s3                      = S3.create(client)
+  private val multipartETagValidation = MultipartETagValidation.create[IO]
+  private val logger                  = Logger[S3StorageSaveFile2]
+  private val partSizeMB: PartSizeMB  = refineMV(5)
+  private val bucket                  = BucketName(NonEmptyString.unsafeFrom(storage.value.bucket))
 
   def apply(
       filename: String,
@@ -42,58 +52,86 @@ final class S3StorageSaveFile2(client: S3AsyncClientOp[IO], storage: S3Storage)(
   }
 
   private def storeFile(path: Path, uuid: UUID, entity: BodyPartEntity): IO[FileStorageMetadata] = {
-    val key                                   = path.toString()
-    val s3                                    = S3.create(client)
-    val convertedStream: fs2.Stream[IO, Byte] = StreamConverter(
-      entity.dataBytes.flatMapConcat(x => Source.fromIterator(() => x.iterator)).mapMaterializedValue(_ => NotUsed)
+    val key                        = path.toString()
+    val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
+
+    (for {
+      _          <- log(key, s"Checking for object existence")
+      _          <- getFileAttributes(key).redeemWith(
+                      {
+                        case _: NoSuchKeyException => IO.unit
+                        case e                     => IO.raiseError(e)
+                      },
+                      _ => IO.raiseError(ResourceAlreadyExists(key))
+                    )
+      _          <- log(key, s"Beginning multipart upload")
+      maybeEtags <- uploadFileMultipart(fileData, key)
+      _          <- log(key, s"Finished multipart upload. Etag by part: $maybeEtags")
+      attr       <- collectFileMetadata(key, uuid, maybeEtags)
+    } yield attr)
+      .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
+  }
+
+  private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
+    StreamConverter(
+      source
+        .flatMapConcat(x => Source.fromIterator(() => x.iterator))
+        .mapMaterializedValue(_ => NotUsed)
     )
 
-    // TODO where to get the etag returned?
-    val thing: IO[Option[Option[ETag]]] = convertedStream
+  // TODO test etags and file round trip for true multipart uploads.
+  // It's not clear whether the last value in the stream will be the final aggregate checksum
+  private def uploadFileMultipart(fileData: Stream[IO, Byte], key: String): IO[List[Option[ETag]]] =
+    fileData
       .through(
         s3.uploadFileMultipart(
-          BucketName(NonEmptyString.unsafeFrom(storage.value.bucket)),
+          bucket,
           FileKey(NonEmptyString.unsafeFrom(key)),
-          PartSizeMB.unsafeFrom(5),
-          multipartETagValidation = MultipartETagValidation.create[IO].some
+          partSizeMB,
+          uploadEmptyFiles = true,
+          multipartETagValidation = multipartETagValidation.some
         )
       )
       .compile
-      .last
-    final case class Attr(fileSize: Long, checksum: String)
+      .to(List)
 
-    // todo not sure this library sets the checksum on the object
-    val getSize: IO[Attr] =
-      client
-        .getObjectAttributes(GetObjectAttributesRequest.builder().bucket(storage.value.bucket).key(key).build())
-        .map(x => Attr(x.objectSize(), x.checksum().checksumSHA256()))
-
-    val otherThing: IO[FileStorageMetadata] = thing.flatMap { a =>
-      a.flatten match {
-        case Some(_) =>
-          getSize.map { case Attr(fileSize, checksum) =>
-            FileStorageMetadata(
-              uuid = uuid,
-              bytes = fileSize,
-              // TODO the digest for multipart uploads is a concatenation
-              // Add this as an option to the ADT
-              // https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums
-              digest = Digest.ComputedDigest(DigestAlgorithm.default, checksum),
-              origin = Client,
-              location = Uri(key), // both of these are absolute URIs?
-              path = Uri.Path(key)
-            )
-          }
-        case None    => IO.raiseError(UnexpectedSaveError(key, "S3 multipart upload did not complete"))
+  private def getFileAttributes(key: String): IO[GetObjectAttributesResponse] =
+    client
+      .getObjectAttributes(
+        GetObjectAttributesRequest
+          .builder()
+          .bucket(bucket.value.value)
+          .key(key)
+          .objectAttributes(ObjectAttributes.knownValues())
+          .build()
+      )
+      .onError { e =>
+        logger.error(e)(s"Error fetching S3 file attributes for key $key")
       }
 
+  private def getFileSize(key: String) =
+    getFileAttributes(key).flatMap { attr =>
+      log(key, s"File attributes from S3: $attr").as(attr.objectSize())
     }
 
-    otherThing
-      .adaptError {
-        case `fileAlreadyExistException` => ResourceAlreadyExists(key)
-        case err                         => UnexpectedSaveError(key, err.getMessage)
-      }
-  }
+  private def collectFileMetadata(key: String, uuid: UUID, maybeEtags: List[Option[ETag]]): IO[FileStorageMetadata] =
+    maybeEtags.sequence match {
+      case Some(onlyPartETag :: Nil) => getFileSize(key).map(fileMetadata(key, uuid, _, onlyPartETag))
+      case Some(other)               => raiseUnexpectedErr(key, s"S3 multipart upload returned multiple etags unexpectedly: $other")
+      case None                      => raiseUnexpectedErr(key, "S3 multipart upload was aborted because no data was received")
+    }
 
+  private def fileMetadata(key: String, uuid: UUID, fileSize: Long, digest: String) =
+    FileStorageMetadata(
+      uuid = uuid,
+      bytes = fileSize,
+      digest = Digest.ComputedDigest(DigestAlgorithm.md5, digest),
+      origin = Client,
+      location = Uri(key), // both of these are now absolute URIs?
+      path = Uri.Path(key)
+    )
+
+  private def raiseUnexpectedErr[A](key: String, msg: String): IO[A] = IO.raiseError(UnexpectedSaveError(key, msg))
+
+  private def log(key: String, msg: String) = logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg")
 }

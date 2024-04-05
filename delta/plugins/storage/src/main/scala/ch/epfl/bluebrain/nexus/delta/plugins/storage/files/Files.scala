@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
@@ -57,8 +56,7 @@ final class Files(
     storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
-    s3Client: S3StorageClient,
-    config: StorageTypeConfig
+    s3Client: S3StorageClient
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
@@ -506,7 +504,7 @@ final class Files(
       metadata: FileDescription,
       source: BodyPartEntity
   ): IO[FileStorageMetadata]                                                    =
-    SaveFile(storage, remoteDiskStorageClient, config)
+    SaveFile(storage, remoteDiskStorageClient, s3Client.underlyingClient)
       .apply(metadata.filename, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
@@ -764,7 +762,6 @@ object Files {
       storages: FetchStorage,
       storagesStatistics: StoragesStatistics,
       xas: Transactors,
-      storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient,
       s3Client: S3StorageClient,
@@ -782,8 +779,7 @@ object Files {
       storages,
       storagesStatistics,
       remoteDiskStorageClient,
-      s3Client,
-      storageTypeConfig
+      s3Client
     )
   }
 }

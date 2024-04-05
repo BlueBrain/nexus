@@ -8,10 +8,10 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,13 +34,13 @@ object SaveFile {
   /**
     * Construct a [[SaveFile]] from the given ''storage''.
     */
-  def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
+  def apply(storage: Storage, client: RemoteDiskStorageClient, s3Client: S3AsyncClientOp[IO])(implicit
       as: ActorSystem,
       uuidf: UUIDF
   ): SaveFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.saveFile
-      case storage: Storage.S3Storage         => storage.saveFile(config)
+      case storage: Storage.S3Storage         => storage.saveFile(s3Client)
       case storage: Storage.RemoteDiskStorage => storage.saveFile(client)
     }
 
