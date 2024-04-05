@@ -198,7 +198,7 @@ services:
 #    depends_on:
 #      - postgres
 #    image: bluebrain/nexus-ship:latest
-#    command: run --file "/tmp/export.json" --config "/config/external-ship.conf"
+#    command: run --path "/tmp/export.json" --config "/config/external-ship.conf"
 #    volumes:
 #      - /tmp/ship:/tmp # put the export file in /tmp/ship locally
 #      - ./config:/config
