@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
@@ -9,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.kamonComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.SubmitOnDefinedSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
@@ -83,7 +85,7 @@ object ValidateResource {
           reportDetails = true
         ).adaptError { e =>
           ResourceShaclEngineRejection(jsonld.id, schemaRef, e.getMessage)
-        }
+        }.span("validateShacl")
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {
         IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))
