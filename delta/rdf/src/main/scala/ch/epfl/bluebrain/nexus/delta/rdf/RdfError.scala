@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import org.apache.jena.riot.Lang
 
 import scala.annotation.nowarn
 
@@ -40,6 +42,32 @@ object RdfError {
     */
   final case class ConversionError(details: String, stage: String)
       extends RdfError(s"Error on the conversion stage '$stage'", Some(details))
+
+  final case class ParsingError(lang: String, message: String, rootNode: IriOrBNode, headValue: String)
+      extends RdfError(
+        s"Error while parsing $lang for id $rootNode: '$message'",
+        Some(s"Value:\n$headValue...")
+      )
+
+  object ParsingError {
+
+    private val limit                                            = 500
+    def apply(message: String, nTriples: NTriples): ParsingError =
+      ParsingError(
+        Lang.NTRIPLES.getName,
+        message,
+        nTriples.rootNode,
+        nTriples.value.substring(0, limit)
+      )
+
+    def apply(message: String, nQuads: NQuads): ParsingError =
+      ParsingError(
+        Lang.NQUADS.getName,
+        message,
+        nQuads.rootNode,
+        nQuads.value.substring(0, limit)
+      )
+  }
 
   /**
     * Missing required predicate.

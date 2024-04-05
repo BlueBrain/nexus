@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, SparqlConstructQueryError, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ParsingError, SparqlConstructQueryError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
@@ -24,10 +24,9 @@ import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
-import org.apache.jena.sparql.util.IsoMatcher
 
 import java.util.UUID
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -39,7 +38,6 @@ import scala.util.Try
   * @param value
   *   the Jena dataset graph
   */
-@nowarn("cat=deprecation")
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
   val rootResource: Node = subject(rootNode)
@@ -74,19 +72,6 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     }
     copy(value = newGraph)
   }
-
-  /**
-    * Compare this graph with another using the method described in <a
-    * href="https://www.w3.org/TR/rdf-concepts/#graph-isomorphism">
-    * https://www.w3.org/TR/rdf-concepts/#graph-isomorphism </a>
-    *
-    * @param g
-    *   The graph to compare to
-    * @return
-    *   boolean True if the two graphs are isomorphic.
-    */
-  def isIsomorphic(other: Graph) =
-    IsoMatcher.isomorphic(value, other.value)
 
   /**
     * Returns a triple matching the predicate if found.
@@ -184,7 +169,7 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     */
   def add(triple: Set[Triple]): Graph = {
     val newGraph = copyGraph(value)
-    triple.foreach { case (s, p, o) => newGraph.getDefaultGraph.add(new JenaTriple(s, p, o)) }
+    triple.foreach { case (s, p, o) => newGraph.getDefaultGraph.add(JenaTriple.create(s, p, o)) }
     copy(value = newGraph)
   }
 
@@ -366,20 +351,20 @@ object Graph {
   /**
     * Generates a [[Graph]] from the passed ''nTriples'' representation
     */
-  final def apply(nTriples: NTriples): Either[ConversionError, Graph] = {
+  final def apply(nTriples: NTriples): Either[ParsingError, Graph] = {
     val g = DatasetFactory.create().asDatasetGraph()
     Try(RDFParser.create().fromString(nTriples.value).lang(Lang.NTRIPLES).parse(g)).toEither
-      .leftMap(err => ConversionError(err.getMessage, "NTriples to Graph"))
+      .leftMap(err => ParsingError(err.getMessage, nTriples))
       .as(Graph(nTriples.rootNode, g))
   }
 
   /**
     * Generates a [[Graph]] from the passed ''nQuads'' representation
     */
-  final def apply(nQuads: NQuads): Either[ConversionError, Graph] = {
+  final def apply(nQuads: NQuads): Either[ParsingError, Graph] = {
     val g = DatasetFactory.create().asDatasetGraph()
     Try(RDFParser.create().fromString(nQuads.value).lang(Lang.NQUADS).parse(g)).toEither
-      .leftMap(err => ConversionError(err.getMessage, "NQuads to Graph"))
+      .leftMap(err => ParsingError(err.getMessage, nQuads))
       .as(Graph(nQuads.rootNode, g))
   }
 
