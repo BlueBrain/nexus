@@ -802,16 +802,16 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
           field(
             "preSynapticPathway",
             json"""[
-               {
-                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
-                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
-                "label": "SO_BS"
-          },
               {
                 "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
                 "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
                 "label": "Somatosensory areas",
                 "notation": "SS"
+              },
+              {
+                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
+                "label": "SO_BS"
               }
             ]"""
           )
