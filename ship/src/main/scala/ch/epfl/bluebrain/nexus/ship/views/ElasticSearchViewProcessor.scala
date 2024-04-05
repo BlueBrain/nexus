@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchFiles, ElasticSearchViewEvent, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchFiles, ElasticSearchViewEvent, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -44,8 +44,16 @@ class ElasticSearchViewProcessor private (
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
     event match {
-      case e: ElasticSearchViewCreated      => views(event.uuid).flatMap(_.create(project, e.source))
-      case e: ElasticSearchViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+      case e: ElasticSearchViewCreated      =>
+        e.id match {
+          case id if id == defaultViewId => views(event.uuid).flatMap(_.create(e.id, project, e.value))
+          case _                         => views(event.uuid).flatMap(_.create(e.id, project, e.source))
+        }
+      case e: ElasticSearchViewUpdated      =>
+        e.id match {
+          case id if id == defaultViewId => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.value))
+          case _                         => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+        }
       case e: ElasticSearchViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
       case e: ElasticSearchViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: ElasticSearchViewTagAdded     => IO.unit // TODO: Check if this is correct
