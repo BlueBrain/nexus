@@ -1,0 +1,16 @@
+{
+  "@context": "https://incf.github.io/neuroshapes/contexts/schema.json",
+  "@id": "https://neuroshapes.org/dash/neuronmorphology",
+  "@type": "Schema",
+  "imports": [
+    "https://neuroshapes.org/commons/neuronmorphology"
+  ],
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/dash/neuronmorphology/shapes/NeuronMorphologyShape",
+      "@type": "NodeShape",
+      "node": "https://neuroshapes.org/commons/neuronmorphology/shapes/NeuronMorphologyShape",
+      "targetClass": "nsg:NeuronMorphology"
+    }
+  ]
+}

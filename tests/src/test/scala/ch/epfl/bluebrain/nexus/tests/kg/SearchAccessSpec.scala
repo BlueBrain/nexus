@@ -33,8 +33,8 @@ class SearchAccessSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId2", Rick, Resources.Read)
 
-      _ <- postResource("kg/search/context/neuroshapes.json")
-      _ <- postResource("kg/search/context/bbp-neuroshapes.json")
+      _ <- postResource("kg/context/neuroshapes.json")
+      _ <- postResource("kg/context/bbp-neuroshapes.json")
       _ <- postResource("kg/search/data/trace.json")
     } yield ()
 

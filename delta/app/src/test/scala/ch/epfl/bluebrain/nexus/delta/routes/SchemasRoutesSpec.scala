@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasConfig, SchemasImpl, ValidateSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
@@ -37,9 +37,8 @@ import java.util.UUID
 
 class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
-  private val uuid                                        = UUID.randomUUID()
-  implicit private val uuidF: UUIDF                       = UUIDF.fixed(uuid)
-  implicit private val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val reader = User("reader", realm)
   private val writer = User("writer", realm)
@@ -79,7 +78,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
 
   private val config = SchemasConfig(eventLogConfig)
 
-  private val schemaDef      = Schemas.definition(ValidateSchema.apply, clock)
+  private val schemaDef      = Schemas.definition(ValidateSchema(ValidateShacl(rcr).accepted), clock)
   private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
 
   private lazy val routes =

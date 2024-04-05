@@ -1,0 +1,100 @@
+{
+  "@context": "https://incf.github.io/neuroshapes/contexts/schema.json",
+  "@id": "https://neuroshapes.org/commons/neuronmorphology",
+  "@type": "Schema",
+  "imports": [
+    "nsg:commons/minds",
+    "nsg:commons/quantitativevalue",
+    "nsg:commons/collection"
+  ],
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/commons/neuronmorphology/shapes/NeuronMorphologyShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/minds/shapes/MINDSShape"
+        },
+        {
+          "property": [
+            {
+              "datatype": "xsd:int",
+              "description": "Number of points involved in the modelisation of the soma",
+              "maxCount": 1,
+              "name": "Soma number of points",
+              "path": "nsg:somaNumberOfPoints"
+            },
+            {
+              "description": "Unopinionated metrics relative to the neurites of this morphology",
+              "name": "Neurite features",
+              "node": "https://neuroshapes.org/commons/neuronmorphology/shapes/NeuriteFeature",
+              "path": "nsg:neuriteFeature",
+              "xone": [
+                {
+                  "class": "nsg:Axon"
+                },
+                {
+                  "class": "nsg:Dendrite"
+                },
+                {
+                  "class": "nsg:BasalDendrite"
+                },
+                {
+                  "class": "nsg:ApicalDendrite"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "label": "Definition of a neuron morphology, whether it comes from a stack, a slice, was synthetized in-silico, is whole brain or local to a single brain region.",
+      "nodeKind": "sh:BlankNodeOrIRI"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/neuronmorphology/shapes/NeuriteFeature",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/collection/shapes/CollectionShape"
+        },
+        {
+          "property": [
+            {
+              "description": "Total length of a neurite category",
+              "maxCount": 1,
+              "name": "Cumulated length",
+              "node": "nsg:commons/quantitativevalue/shapes/QuantitativeValueShape",
+              "path": "nsg:cumulatedLength"
+            },
+            {
+              "description": "Brain regions being traversed by neurites of this category",
+              "name": "Traversed brain regions",
+              "path": "nsg:traversedBrainRegion"
+            },
+            {
+              "description": "Brain regions where neurites of this category have their projection (i.e. where they terminate)",
+              "name": "Projection brain regions",
+              "path": "nsg:projectionBrainRegion"
+            },
+            {
+              "description": "Longest branch length of a neurite category",
+              "name": "Longest branch length",
+              "node": "nsg:commons/quantitativevalue/shapes/QuantitativeValueShape",
+              "path": "nsg:longestBranchLength"
+            },
+            {
+              "description": "Longest branch number of nodes of a neurite category",
+              "name": "Longest branch number of nodes",
+              "path": "nsg:longestBranchNumberOfNodes"
+            },
+            {
+              "description": "Number of projections of a neurite category",
+              "name": "Number of projections",
+              "path": "nsg:numberOfProjections"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

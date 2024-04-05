@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, J
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
@@ -53,7 +52,7 @@ final case class Schema(
     */
   // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
   @transient
-  lazy val shapes: ShaclShapesGraph = ShaclShapesGraph(graph(_.contains(nxv.Schema)))
+  lazy val shapes: Graph = graph(_.contains(nxv.Schema))
 
   /**
     * the Graph representation of the imports that are ontologies

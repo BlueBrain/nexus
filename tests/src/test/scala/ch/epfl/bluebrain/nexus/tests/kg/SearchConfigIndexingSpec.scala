@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
+import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.Json
 import org.scalactic.source.Position
 import org.scalatest.Assertion
 
 import java.time.Instant
-import concurrent.duration._
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
+import scala.concurrent.duration._
 
 class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
@@ -83,9 +83,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       _ <- adminDsl.createProject(orgId, projId1, ProjectPayload.generateBbp(id1), authenticated = Rick)
       _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
       _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
-
-      _ <- postResource("kg/search/context/neuroshapes.json")
-      _ <- postResource("kg/search/context/bbp-neuroshapes.json")
+      _ <- postResource("kg/context/neuroshapes.json")
+      _ <- postResource("kg/context/bbp-neuroshapes.json")
       _ <- allResources.traverseTap { resource => postResource(s"kg/search/data/$resource") }
     } yield ()
 
@@ -803,16 +802,16 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
           field(
             "preSynapticPathway",
             json"""[
-               {
-                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
-                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
-                "label": "SO_BS"
-          },
               {
                 "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
                 "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
                 "label": "Somatosensory areas",
                 "notation": "SS"
+              },
+              {
+                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
+                "label": "SO_BS"
               }
             ]"""
           )

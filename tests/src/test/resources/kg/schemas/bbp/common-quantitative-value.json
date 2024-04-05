@@ -1,0 +1,383 @@
+{
+  "@context": {
+    "BlankNode": {
+      "@id": "sh:BlankNode"
+    },
+    "BlankNodeOrIRI": {
+      "@id": "sh:BlankNodeOrIRI"
+    },
+    "BlankNodeOrLiteral": {
+      "@id": "sh:BlankNodeOrLiteral"
+    },
+    "IRI": {
+      "@id": "sh:IRI"
+    },
+    "IRIOrLiteral": {
+      "@id": "sh:IRIOrLiteral"
+    },
+    "Literal": {
+      "@id": "sh:Literal"
+    },
+    "NodeShape": {
+      "@id": "sh:NodeShape"
+    },
+    "PropertyShape": {
+      "@id": "sh:PropertyShape"
+    },
+    "Schema": "nxv:Schema",
+    "Shape": {
+      "@id": "sh:Shape"
+    },
+    "Violation": {
+      "@id": "sh:Violation"
+    },
+    "and": {
+      "@id": "sh:and",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "bmo": "https://bbp.epfl.ch/ontologies/core/bmo/",
+    "bmoutils": "https://bbp.epfl.ch/ontologies/core/bmoutils/",
+    "class": {
+      "@id": "sh:class",
+      "@type": "@id"
+    },
+    "comment": {
+      "@id": "rdfs:comment",
+      "@type": "xsd:string"
+    },
+    "datatype": {
+      "@id": "sh:datatype",
+      "@type": "@id"
+    },
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "deactivated": {
+      "@id": "sh:deactivated"
+    },
+    "declare": {
+      "@id": "sh:declare"
+    },
+    "description": {
+      "@id": "sh:description"
+    },
+    "editorialNote": {
+      "@id": "skos:editorialNote",
+      "@type": "xsd:string"
+    },
+    "hasValue": {
+      "@id": "sh:hasValue"
+    },
+    "imports": {
+      "@id": "owl:imports",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "in": {
+      "@id": "sh:in",
+      "@container": "@list"
+    },
+    "isDefinedBy": {
+      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id"
+    },
+    "label": {
+      "@id": "rdfs:label",
+      "@type": "xsd:string"
+    },
+    "lessThan": {
+      "@id": "sh:lessThan",
+      "@type": "@id"
+    },
+    "maxCount": {
+      "@id": "sh:maxCount",
+      "@type": "xsd:integer"
+    },
+    "maxExclusive": {
+      "@id": "sh:maxExclusive"
+    },
+    "maxInclusive": {
+      "@id": "sh:maxInclusive"
+    },
+    "minCount": {
+      "@id": "sh:minCount",
+      "@type": "xsd:integer"
+    },
+    "minExclusive": {
+      "@id": "sh:minExclusive"
+    },
+    "minInclusive": {
+      "@id": "sh:minInclusive"
+    },
+    "name": {
+      "@id": "sh:name"
+    },
+    "namespace": {
+      "@id": "sh:namespace",
+      "@type": "xsd:anyURI"
+    },
+    "node": {
+      "@id": "sh:node",
+      "@type": "@id"
+    },
+    "nodeKind": {
+      "@id": "sh:nodeKind",
+      "@type": "@id"
+    },
+    "not": {
+      "@id": "sh:not",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "nsg": "https://neuroshapes.org/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "or": {
+      "@id": "sh:or",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "path": {
+      "@id": "sh:path",
+      "@type": "@id"
+    },
+    "pattern": {
+      "@id": "sh:pattern"
+    },
+    "prefix": {
+      "@id": "sh:prefix",
+      "@type": "xsd:string"
+    },
+    "property": {
+      "@id": "sh:property",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "qualifiedMaxCount": {
+      "@id": "sh:qualifiedMaxCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedMinCount": {
+      "@id": "sh:qualifiedMinCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedValueShape": {
+      "@id": "sh:qualifiedValueShape",
+      "@type": "@id"
+    },
+    "qualifiedValueShapesDisjoint": {
+      "@id": "sh:qualifiedValueShapesDisjoint",
+      "@type": "xsd:boolean"
+    },
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "resultMessage": {
+      "@id": "sh:message"
+    },
+    "schema": "http://schema.org/",
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    },
+    "severity": {
+      "@id": "sh:severity"
+    },
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shapes": {
+      "@id": "nxv:shapes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "shapesGraph": {
+      "@id": "sh:shapesGraph",
+      "@type": "@id"
+    },
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "suggestedShapesGraph": {
+      "@id": "sh:suggestedShapesGraph",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "sh:target",
+      "@type": "@id"
+    },
+    "targetClass": {
+      "@id": "sh:targetClass",
+      "@type": "@id"
+    },
+    "targetNode": {
+      "@id": "sh:targetNode",
+      "@type": "@id"
+    },
+    "targetObjectsOf": {
+      "@id": "sh:targetObjectsOf",
+      "@type": "@id"
+    },
+    "targetSubjectsOf": {
+      "@id": "sh:targetSubjectsOf",
+      "@type": "@id"
+    },
+    "this": "https://neuroshapes.org/commons/quantitativevalue/shapes/",
+    "xone": {
+      "@id": "sh:xone",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "https://neuroshapes.org/commons/quantitativevalue",
+  "@type": "Schema",
+  "imports": [
+    "nsg:commons/unit"
+  ],
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/commons/quantitativevalue/shapes/QuantitativeValueShape",
+      "@type": "NodeShape",
+      "property": [
+        {
+          "description": "The value of the quantitative value or property value node.",
+          "maxCount": 1,
+          "minCount": 1,
+          "name": "Value",
+          "or": [
+            {
+              "datatype": "xsd:float"
+            },
+            {
+              "datatype": "xsd:decimal"
+            },
+            {
+              "datatype": "xsd:double"
+            },
+            {
+              "datatype": "xsd:int"
+            },
+            {
+              "datatype": "xsd:long"
+            },
+            {
+              "datatype": "xsd:unsignedInt"
+            },
+            {
+              "datatype": "xsd:unsignedLong"
+            },
+            {
+              "datatype": "xsd:integer"
+            }
+          ],
+          "path": "schema:value"
+        },
+        "nsg:commons/unit/shapes/WithUnitCodeShape"
+      ]
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/quantitativevalue/shapes/RepeatedQuantitativeValueShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:QuantitativeValueShape"
+        },
+        {
+          "property": [
+            {
+              "description": "Number of repetitions of an activity (a measurement for example).",
+              "maxCount": 1,
+              "minCount": 1,
+              "name": "Repetitions",
+              "path": "schema:repetitions",
+              "xone": [
+                {
+                  "datatype": "xsd:integer"
+                },
+                {
+                  "node": "this:QuantitativeValueShape"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/quantitativevalue/shapes/PositiveQuantitativeValueShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:QuantitativeValueShape"
+        },
+        {
+          "property": [
+            {
+              "minInclusive": 0,
+              "path": "schema:value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/quantitativevalue/shapes/NegativeQuantitativeValueShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "this:QuantitativeValueShape"
+        },
+        {
+          "property": [
+            {
+              "maxExclusive": 0,
+              "path": "schema:value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/quantitativevalue/shapes/RangeQuantitativeValueShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/unit/shapes/UnitShape"
+        },
+        {
+          "or": [
+            {
+              "property": [
+                {
+                  "description": "The minimum value of the quantitative value.",
+                  "lessThan": "schema:maxValue",
+                  "maxCount": 1,
+                  "minCount": 1,
+                  "name": "Minimum value",
+                  "path": "schema:minValue"
+                }
+              ]
+            },
+            {
+              "property": [
+                {
+                  "description": "The maximum value of the quantitative value.",
+                  "maxCount": 1,
+                  "minCount": 1,
+                  "name": "Maximum value",
+                  "path": "schema:maxValue"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "property": [
+            {
+              "minCount": 0,
+              "path": "schema:value"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
