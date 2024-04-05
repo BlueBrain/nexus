@@ -19,8 +19,10 @@ object Main
 
   private val logger = Logger[Main.type]
 
-  private val inputFile: Opts[Path] =
-    Opts.option[String]("file", help = "The data file containing the imports.").map(Path(_))
+  private val inputPath: Opts[Path] =
+    Opts
+      .option[String]("path", help = "The path containing the imports. Either a single file or a directory")
+      .map(Path(_))
 
   private val configFile: Opts[Option[Path]] =
     Opts.option[String]("config", help = "The configuration file.").map(Path(_)).orNone
@@ -31,7 +33,7 @@ object Main
     .withDefault(Offset.start)
 
   private val run = Opts.subcommand("run", "Run an import") {
-    (inputFile, configFile, offset).mapN(Run)
+    (inputPath, configFile, offset).mapN(Run)
   }
 
   private val showConfig = Opts.subcommand("config", "Show reconciled config") {
@@ -41,7 +43,7 @@ object Main
   override def main: Opts[IO[ExitCode]] =
     (run orElse showConfig)
       .map {
-        case Run(file, config, offset) => new RunShip().run(file, config, offset)
+        case Run(path, config, offset) => new RunShip().run(path, config, offset)
         case ShowConfig(config)        => showConfig(config)
       }
       .map(_.as(ExitCode.Success))
@@ -55,7 +57,7 @@ object Main
 
   sealed private trait Command
 
-  final private case class Run(file: Path, config: Option[Path], offset: Offset) extends Command
+  final private case class Run(path: Path, config: Option[Path], offset: Offset) extends Command
 
   final private case class ShowConfig(config: Option[Path]) extends Command
 
