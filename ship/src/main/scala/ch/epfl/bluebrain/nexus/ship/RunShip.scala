@@ -27,13 +27,13 @@ class RunShip {
 
   private val logger = Logger[RunShip]
 
-  def run(file: Path, config: Option[Path], fromOffset: Offset = Offset.start): IO[ImportReport] = {
+  def run(path: Path, config: Option[Path], fromOffset: Offset = Offset.start): IO[ImportReport] = {
     val clock                         = Clock[IO]
     val uuidF                         = UUIDF.random
     // Resources may have been created with different configurations so we adopt the lenient one for the import
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     for {
-      _      <- logger.info(s"Running the import with file $file, config $config")
+      _      <- logger.info(s"Running the import with file $path, config $config")
       config <- ShipConfig.load(config)
       report <- Transactors.init(config.database).use { xas =>
                   val orgProvider    =
@@ -45,7 +45,7 @@ class RunShip {
                   for {
                     // Provision organizations
                     _                           <- orgProvider.create(config.organizations.values)
-                    events                       = eventStream(file, fromOffset)
+                    events                       = eventStream(path, fromOffset)
                     fetchActiveOrg               = FetchActiveOrganization(xas)
                     // format: off
                     // Wiring
@@ -81,8 +81,9 @@ class RunShip {
     } yield report
   }
 
-  private def eventStream(file: Path, fromOffset: Offset): Stream[IO, RowEvent] =
-    Files[IO]
+  private def eventStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
+
+    def streamFromFile(file: Path) = Files[IO]
       .readUtf8Lines(file)
       .zipWithIndex
       .evalMap { case (line, index) =>
@@ -93,5 +94,21 @@ class RunShip {
       .filter { event =>
         event.ordering.value >= fromOffset.value
       }
+
+    def streamFromDirectory(dirPath: Path) = {
+      val importFiles = Files[IO]
+        .list(dirPath)
+        .filter(_.extName.contains("json"))
+        .compile
+        .toList
+        .map(_.sortBy(_.fileName.toString))
+      Stream.evals(importFiles).flatMap(streamFromFile)
+    }
+
+    Stream.eval(Files[IO].isDirectory(path)).flatMap { isDir =>
+      if (isDir) streamFromDirectory(path)
+      else streamFromFile(path)
+    }
+  }
 
 }
