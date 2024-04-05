@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -36,10 +36,9 @@ object SchemasModule extends ModuleDef {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
-  make[ValidateSchema].fromEffect { (api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
-    ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
+  make[ValidateShacl].fromEffect { (rcr: RemoteContextResolution @Id("aggregate")) => ValidateShacl(rcr) }
 
-  }
+  make[ValidateSchema].from { (validateShacl: ValidateShacl, api: JsonLdApi) => ValidateSchema(validateShacl)(api) }
 
   make[SchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
     Schemas.definition(validateSchema, clock)

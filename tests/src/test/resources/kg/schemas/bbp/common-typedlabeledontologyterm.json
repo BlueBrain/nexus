@@ -1,0 +1,459 @@
+{
+  "@context": {
+    "BlankNode": {
+      "@id": "sh:BlankNode"
+    },
+    "BlankNodeOrIRI": {
+      "@id": "sh:BlankNodeOrIRI"
+    },
+    "BlankNodeOrLiteral": {
+      "@id": "sh:BlankNodeOrLiteral"
+    },
+    "IRI": {
+      "@id": "sh:IRI"
+    },
+    "IRIOrLiteral": {
+      "@id": "sh:IRIOrLiteral"
+    },
+    "Literal": {
+      "@id": "sh:Literal"
+    },
+    "NodeShape": {
+      "@id": "sh:NodeShape"
+    },
+    "PropertyShape": {
+      "@id": "sh:PropertyShape"
+    },
+    "Schema": "nxv:Schema",
+    "Shape": {
+      "@id": "sh:Shape"
+    },
+    "Violation": {
+      "@id": "sh:Violation"
+    },
+    "and": {
+      "@id": "sh:and",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "bmo": "https://bbp.epfl.ch/ontologies/core/bmo/",
+    "bmoutils": "https://bbp.epfl.ch/ontologies/core/bmoutils/",
+    "class": {
+      "@id": "sh:class",
+      "@type": "@id"
+    },
+    "comment": {
+      "@id": "rdfs:comment",
+      "@type": "xsd:string"
+    },
+    "datatype": {
+      "@id": "sh:datatype",
+      "@type": "@id"
+    },
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "deactivated": {
+      "@id": "sh:deactivated"
+    },
+    "declare": {
+      "@id": "sh:declare"
+    },
+    "description": {
+      "@id": "sh:description"
+    },
+    "editorialNote": {
+      "@id": "skos:editorialNote",
+      "@type": "xsd:string"
+    },
+    "hasValue": {
+      "@id": "sh:hasValue"
+    },
+    "imports": {
+      "@id": "owl:imports",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "in": {
+      "@id": "sh:in",
+      "@container": "@list"
+    },
+    "isDefinedBy": {
+      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id"
+    },
+    "label": {
+      "@id": "rdfs:label",
+      "@type": "xsd:string"
+    },
+    "lessThan": {
+      "@id": "sh:lessThan",
+      "@type": "@id"
+    },
+    "maxCount": {
+      "@id": "sh:maxCount",
+      "@type": "xsd:integer"
+    },
+    "maxExclusive": {
+      "@id": "sh:maxExclusive"
+    },
+    "maxInclusive": {
+      "@id": "sh:maxInclusive"
+    },
+    "minCount": {
+      "@id": "sh:minCount",
+      "@type": "xsd:integer"
+    },
+    "minExclusive": {
+      "@id": "sh:minExclusive"
+    },
+    "minInclusive": {
+      "@id": "sh:minInclusive"
+    },
+    "name": {
+      "@id": "sh:name"
+    },
+    "namespace": {
+      "@id": "sh:namespace",
+      "@type": "xsd:anyURI"
+    },
+    "node": {
+      "@id": "sh:node",
+      "@type": "@id"
+    },
+    "nodeKind": {
+      "@id": "sh:nodeKind",
+      "@type": "@id"
+    },
+    "not": {
+      "@id": "sh:not",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "nsg": "https://neuroshapes.org/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "or": {
+      "@id": "sh:or",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "path": {
+      "@id": "sh:path",
+      "@type": "@id"
+    },
+    "pattern": {
+      "@id": "sh:pattern"
+    },
+    "prefix": {
+      "@id": "sh:prefix",
+      "@type": "xsd:string"
+    },
+    "property": {
+      "@id": "sh:property",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "qualifiedMaxCount": {
+      "@id": "sh:qualifiedMaxCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedMinCount": {
+      "@id": "sh:qualifiedMinCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedValueShape": {
+      "@id": "sh:qualifiedValueShape",
+      "@type": "@id"
+    },
+    "qualifiedValueShapesDisjoint": {
+      "@id": "sh:qualifiedValueShapesDisjoint",
+      "@type": "xsd:boolean"
+    },
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "resultMessage": {
+      "@id": "sh:message"
+    },
+    "schema": "http://schema.org/",
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    },
+    "severity": {
+      "@id": "sh:severity"
+    },
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shapes": {
+      "@id": "nxv:shapes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "shapesGraph": {
+      "@id": "sh:shapesGraph",
+      "@type": "@id"
+    },
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "suggestedShapesGraph": {
+      "@id": "sh:suggestedShapesGraph",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "sh:target",
+      "@type": "@id"
+    },
+    "targetClass": {
+      "@id": "sh:targetClass",
+      "@type": "@id"
+    },
+    "targetNode": {
+      "@id": "sh:targetNode",
+      "@type": "@id"
+    },
+    "targetObjectsOf": {
+      "@id": "sh:targetObjectsOf",
+      "@type": "@id"
+    },
+    "targetSubjectsOf": {
+      "@id": "sh:targetSubjectsOf",
+      "@type": "@id"
+    },
+    "this": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/",
+    "xone": {
+      "@id": "sh:xone",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm",
+  "@type": "Schema",
+  "imports": [
+    "nsg:commons/labeledontologyentity"
+  ],
+  "rdfs:label": "Typed labeled Ontology term",
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/StimulusTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a stimulus type."
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/ActivityTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape",
+      "nsg:expectedRootClass": {
+        "@id": "http://www.w3.org/ns/prov#Activity",
+        "nsg:definingOntology": {
+          "@id": "https://neuroshapes.org/"
+        },
+        "rdfs:label": "Activity type ontology"
+      },
+      "rdfs:label": "The shape of an ontology term representing an activity type"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/CellTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "nsg:expectedRootClass": {
+        "@id": "https://neuroshapes.org/CellType",
+        "rdfs:label": "Cell Type Ontology."
+      },
+      "rdfs:label": "The shape of an ontology term representing a cell type"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/BrainRegionOntologyTermShape",
+      "@type": "NodeShape",
+      "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape",
+      "nsg:expectedRootClass": {
+        "@id": "https://neuroshapes.org/BrainRegion",
+        "nsg:definingOntology": {
+          "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/brainregion"
+        },
+        "rdfs:label": "Brain Region ontology"
+      },
+      "rdfs:label": "The shape of an ontology term representing a brain region"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/LabelingCompoundOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a labeling compound"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/SpeciesOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "nsg:expectedRootClass": {
+        "@id": "https://neuroshapes.org/Species",
+        "isDefinedBy": "http://bbp.epfl.ch/neurosciencegraph/ontologies/speciestaxonomy",
+        "rdfs:label": "NCBI species taxonomy ontology"
+      },
+      "rdfs:label": "The shape of an ontology term representing a species"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/UnitOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a unit code"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/GeneOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a gene"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/LicenseOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a license"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/MorphologicalCellTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a morphological cell type"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/StrainOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "nsg:expectedRootClass": {
+        "@id": "https://neuroshapes.org/Strain",
+        "isDefinedBy": "http://bbp.epfl.ch/neurosciencegraph/ontologies/strain",
+        "rdfs:label": "Animal strain"
+      },
+      "rdfs:label": "The shape of an ontology term representing an animal strain"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/LayerOntologyTermShape",
+      "@type": "NodeShape",
+      "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape",
+      "rdfs:label": "The shape of an ontology term representing brain parcellation layers"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/RoleOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a role"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/SomaTypeTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing the types of somas of the reconstructed cell"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/CellLineOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a cell line"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/ObjectiveTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a microscope objective type"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/ElectricalCellTypeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing an electrical cell type"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/EcodeOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing an eCode"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/SexOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "nsg:expectedRootClass": {
+        "@id": "https://neuroshapes.org/BiologicalSex",
+        "isDefinedBy": "http://bbp.epfl.ch/neurosciencegraph/ontologies/sex",
+        "rdfs:label": "Biological Sex"
+      },
+      "rdfs:label": "The shape of an ontology term representing a sex"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/typedlabeledontologyterm/shapes/ModelSimulationStatusOntologyTermShape",
+      "@type": "NodeShape",
+      "and": [
+        {
+          "node": "nsg:commons/labeledontologyentity/shapes/LabeledOntologyEntityShape"
+        }
+      ],
+      "rdfs:label": "The shape of an ontology term representing a model simulation status"
+    }
+  ]
+}

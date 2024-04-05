@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas._
@@ -26,8 +26,6 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
 
   "The Schemas state machine" when {
 
-    implicit val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
-
     val epoch   = Instant.EPOCH
     val time2   = Instant.ofEpochMilli(10L)
     val subject = User("myuser", Label.unsafe("myrealm"))
@@ -44,7 +42,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
     val schemaUpdated = SchemaGen.schema(myId, project.value.ref, sourceUpdated)
 
     val eval: (Option[SchemaState], SchemaCommand) => IO[SchemaEvent] =
-      evaluate(ValidateSchema.apply, clock)
+      evaluate(ValidateSchema(ValidateShacl(rcr).accepted), clock)
 
     "evaluating an incoming command" should {
 

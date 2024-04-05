@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
@@ -26,7 +27,7 @@ import munit.Location
 class ValidateResourceSuite extends NexusSuite {
 
   implicit val api: JsonLdApi                       = JsonLdJavaApi.lenient
-  implicit private def res: RemoteContextResolution =
+  implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
       contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),
       contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
@@ -78,7 +79,7 @@ class ValidateResourceSuite extends NexusSuite {
     jsonLdWithId(id, source)
   }
 
-  private val validateResource = ValidateResource(schemaResolution)
+  private val validateResource = ValidateResource(schemaResolution, ValidateShacl(rcr).accepted)
 
   private def assertResult(result: ValidationResult, expectedProject: ProjectRef, expectedSchema: ResourceRef.Revision)(
       implicit loc: Location

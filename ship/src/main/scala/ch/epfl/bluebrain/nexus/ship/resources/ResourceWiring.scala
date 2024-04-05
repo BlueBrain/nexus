@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
@@ -18,7 +18,7 @@ object ResourceWiring {
   def apply(
       fetchContext: FetchContext,
       fetchSchema: FetchSchema,
-      remoteContext: RemoteContextResolution,
+      validateShacl: ValidateShacl,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -29,7 +29,7 @@ object ResourceWiring {
     val resolvers          = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     val resourceResolution =
       ResourceResolution.schemaResource(alwaysAuthorize, resolvers, fetchSchema, excludeDeprecated = false)
-    val validate           = ValidateResource(resourceResolution)(remoteContext)
+    val validate           = ValidateResource(resourceResolution, validateShacl)
     val resourceDef        = Resources.definition(validate, detectChange, clock)
 
     val log = ScopedEventLog(resourceDef, config, xas)
