@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
@@ -267,6 +268,8 @@ object Resources {
     * The resource entity type.
     */
   final val entityType: EntityType = EntityType("resource")
+
+  implicit val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   val expandIri: ExpandIri[InvalidResourceId] = new ExpandIri(InvalidResourceId.apply)
 

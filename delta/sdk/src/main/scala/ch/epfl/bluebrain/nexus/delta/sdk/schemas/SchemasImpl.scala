@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -15,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri, SchemaLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{expandIri, kamonComponent, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
@@ -32,8 +31,6 @@ final class SchemasImpl private (
     schemaImports: SchemaImports,
     sourceParser: JsonLdSourceResolvingParser
 ) extends Schemas {
-
-  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   override def create(
       projectRef: ProjectRef,
