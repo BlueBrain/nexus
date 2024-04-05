@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts => bgContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts => compositeViewContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts => esContexts}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -22,26 +23,71 @@ object ContextWiring {
 
   def remoteContextResolution: IO[RemoteContextResolution] =
     for {
-      metadataCtx      <- ContextValue.fromFile("contexts/metadata.json")
-      pipelineCtx      <- ContextValue.fromFile("contexts/pipeline.json")
-      shaclCtx         <- ContextValue.fromFile("contexts/shacl.json")
-      schemasMetaCtx   <- ContextValue.fromFile("contexts/schemas-metadata.json")
-      elasticsearchCtx <- ContextValue.fromFile("contexts/elasticsearch.json")
-      blazegraphCtx    <- ContextValue.fromFile("contexts/sparql.json")
-      compositeCtx     <- ContextValue.fromFile("contexts/composite-views.json")
+      // Delta
+      bulkOpCtx            <- ContextValue.fromFile("contexts/bulk-operation.json")
+      errorCtx             <- ContextValue.fromFile("contexts/error.json")
+      metadataCtx          <- ContextValue.fromFile("contexts/metadata.json")
+      searchCtx            <- ContextValue.fromFile("contexts/search.json")
+      pipelineCtx          <- ContextValue.fromFile("contexts/pipeline.json")
+      remoteContextsCtx    <- ContextValue.fromFile("contexts/remote-contexts.json")
+      tagsCtx              <- ContextValue.fromFile("contexts/tags.json")
+      versionCtx           <- ContextValue.fromFile("contexts/version.json")
+      validationCtx        <- ContextValue.fromFile("contexts/validation.json")
+      // Project
+      projectsCtx          <- ContextValue.fromFile("contexts/projects.json")
+      projectsMetaCtx      <- ContextValue.fromFile("contexts/projects-metadata.json")
+      // Resolver
+      resolversCtx         <- ContextValue.fromFile("contexts/resolvers.json")
+      resolversMetaCtx     <- ContextValue.fromFile("contexts/resolvers-metadata.json")
+      // Schema
+      shaclCtx             <- ContextValue.fromFile("contexts/shacl.json")
+      schemasMetaCtx       <- ContextValue.fromFile("contexts/schemas-metadata.json")
+      // ElasticSearch
+      aggregationsCtx      <- ContextValue.fromFile("contexts/aggregations.json")
+      elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
+      elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
+      elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
+      offsetCtx            <- ContextValue.fromFile("contexts/offset.json")
+      statisticsCtx        <- ContextValue.fromFile("contexts/statistics.json")
+      // Blazegraph
+      blazegraphCtx        <- ContextValue.fromFile("contexts/sparql.json")
+      blazegraphMetaCtx    <- ContextValue.fromFile("contexts/sparql-metadata.json")
+      // Composite views
+      compositeCtx         <- ContextValue.fromFile("contexts/composite-views.json")
+      compositeMetaCtx     <- ContextValue.fromFile("contexts/composite-views-metadata.json")
     } yield RemoteContextResolution.fixed(
       // Delta
-      contexts.metadata                    -> metadataCtx,
-      contexts.pipeline                    -> pipelineCtx,
+      contexts.error                               -> errorCtx,
+      contexts.metadata                            -> metadataCtx,
+      contexts.search                              -> searchCtx,
+      contexts.pipeline                            -> pipelineCtx,
+      contexts.remoteContexts                      -> remoteContextsCtx,
+      contexts.tags                                -> tagsCtx,
+      contexts.version                             -> versionCtx,
+      contexts.validation                          -> validationCtx,
+      contexts.bulkOperation                       -> bulkOpCtx,
+      // Project
+      contexts.projects                            -> projectsCtx,
+      contexts.projectsMetadata                    -> projectsMetaCtx,
+      // Resolver
+      contexts.resolvers                           -> resolversCtx,
+      contexts.resolversMetadata                   -> resolversMetaCtx,
       // Schema
-      contexts.shacl                       -> shaclCtx,
-      contexts.schemasMetadata             -> schemasMetaCtx,
+      contexts.shacl                               -> shaclCtx,
+      contexts.schemasMetadata                     -> schemasMetaCtx,
       // ElasticSearch
-      esContexts.elasticsearch             -> elasticsearchCtx,
+      esContexts.aggregations                      -> aggregationsCtx,
+      esContexts.elasticsearch                     -> elasticsearchCtx,
+      esContexts.elasticsearchMetadata             -> elasticsearchMetaCtx,
+      esContexts.elasticsearchIndexing             -> elasticsearchIdxCtx,
+      Vocabulary.contexts.offset                   -> offsetCtx,
+      Vocabulary.contexts.statistics               -> statisticsCtx,
       // Blazegraph
-      bgContexts.blazegraph                -> blazegraphCtx,
+      bgContexts.blazegraph                        -> blazegraphCtx,
+      bgContexts.blazegraphMetadata                -> blazegraphMetaCtx,
       // Composite views
-      compositeViewContexts.compositeViews -> compositeCtx
+      compositeViewContexts.compositeViews         -> compositeCtx,
+      compositeViewContexts.compositeViewsMetadata -> compositeMetaCtx
     )
 
   def resolverContextResolution(

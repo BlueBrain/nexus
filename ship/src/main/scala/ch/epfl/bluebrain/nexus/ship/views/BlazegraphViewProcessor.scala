@@ -5,9 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, BlazegraphViewEvent, BlazegraphViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, ValidateBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -38,11 +39,20 @@ class BlazegraphViewProcessor private (
 
   private def evaluateInternal(event: BlazegraphViewEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
+    implicit val c: Caller  = Caller(s, Set.empty)
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
     event match {
-      case e: BlazegraphViewCreated      => views(event.uuid).flatMap(_.create(e.id, project, e.value))
-      case e: BlazegraphViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.value))
+      case e: BlazegraphViewCreated      =>
+        e.id match {
+          case id if id == defaultViewId => views(event.uuid).flatMap(_.create(e.id, project, e.value))
+          case _                         => views(event.uuid).flatMap(_.create(e.id, project, e.source))
+        }
+      case e: BlazegraphViewUpdated      =>
+        e.id match {
+          case id if id == defaultViewId => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.value))
+          case _                         => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+        }
       case e: BlazegraphViewDeprecated   => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
       case e: BlazegraphViewUndeprecated => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: BlazegraphViewTagAdded     => IO.unit // TODO: Can we tag?
@@ -74,7 +84,7 @@ object BlazegraphViewProcessor {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
-    val prefix       = "wrong_prefix" // TODO: fix prefix
+    val prefix       = "nexus" // TODO: use the config?
 
     val views = (uuid: UUID) =>
       BlazegraphViews(
