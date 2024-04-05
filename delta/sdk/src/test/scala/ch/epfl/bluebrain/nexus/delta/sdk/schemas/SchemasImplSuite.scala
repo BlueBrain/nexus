@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -36,8 +36,6 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   private lazy val xas = doobie()
 
-  implicit private lazy val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
-
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
 
@@ -46,7 +44,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
-  implicit def res: RemoteContextResolution =
+  implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
       contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
@@ -54,7 +52,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   private val schemaImports: SchemaImports = SchemaImports.alwaysFail
 
-  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private val org               = Label.unsafe("myorg")
   private val am                = ApiMappings("nxv" -> nxv.base)
@@ -76,7 +74,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   private val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref))
   private val config       = SchemasConfig(eventLogConfig)
 
-  private val schemaDef      = Schemas.definition(ValidateSchema.apply, clock)
+  private val schemaDef      = Schemas.definition(ValidateSchema(ValidateShacl(rcr).accepted), clock)
   private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
 
   private lazy val schemas: Schemas =

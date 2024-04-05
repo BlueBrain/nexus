@@ -4,6 +4,7 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -50,8 +51,9 @@ class RunShip {
                     // Wiring
                     eventClock                  <- EventClock.init()
                     remoteContextResolution     <- ContextWiring.remoteContextResolution
+                    validateShacl               <- ValidateShacl(remoteContextResolution)
                     (schemaLog, fetchSchema)     = SchemaWiring(config.eventLog, eventClock, xas)
-                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, remoteContextResolution, eventLogConfig, eventClock, xas)
+                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, validateShacl, eventLogConfig, eventClock, xas)
                     rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors

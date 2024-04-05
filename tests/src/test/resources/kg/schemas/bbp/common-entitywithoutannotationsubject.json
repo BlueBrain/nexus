@@ -1,0 +1,443 @@
+{
+  "@context": {
+    "BlankNode": {
+      "@id": "sh:BlankNode"
+    },
+    "BlankNodeOrIRI": {
+      "@id": "sh:BlankNodeOrIRI"
+    },
+    "BlankNodeOrLiteral": {
+      "@id": "sh:BlankNodeOrLiteral"
+    },
+    "IRI": {
+      "@id": "sh:IRI"
+    },
+    "IRIOrLiteral": {
+      "@id": "sh:IRIOrLiteral"
+    },
+    "Literal": {
+      "@id": "sh:Literal"
+    },
+    "NodeShape": {
+      "@id": "sh:NodeShape"
+    },
+    "PropertyShape": {
+      "@id": "sh:PropertyShape"
+    },
+    "Schema": "nxv:Schema",
+    "Shape": {
+      "@id": "sh:Shape"
+    },
+    "Violation": {
+      "@id": "sh:Violation"
+    },
+    "and": {
+      "@id": "sh:and",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "bmo": "https://bbp.epfl.ch/ontologies/core/bmo/",
+    "bmoutils": "https://bbp.epfl.ch/ontologies/core/bmoutils/",
+    "class": {
+      "@id": "sh:class",
+      "@type": "@id"
+    },
+    "comment": {
+      "@id": "rdfs:comment",
+      "@type": "xsd:string"
+    },
+    "datatype": {
+      "@id": "sh:datatype",
+      "@type": "@id"
+    },
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "deactivated": {
+      "@id": "sh:deactivated"
+    },
+    "declare": {
+      "@id": "sh:declare"
+    },
+    "description": {
+      "@id": "sh:description"
+    },
+    "editorialNote": {
+      "@id": "skos:editorialNote",
+      "@type": "xsd:string"
+    },
+    "hasValue": {
+      "@id": "sh:hasValue"
+    },
+    "imports": {
+      "@id": "owl:imports",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "in": {
+      "@id": "sh:in",
+      "@container": "@list"
+    },
+    "isDefinedBy": {
+      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id"
+    },
+    "label": {
+      "@id": "rdfs:label",
+      "@type": "xsd:string"
+    },
+    "lessThan": {
+      "@id": "sh:lessThan",
+      "@type": "@id"
+    },
+    "maxCount": {
+      "@id": "sh:maxCount",
+      "@type": "xsd:integer"
+    },
+    "maxExclusive": {
+      "@id": "sh:maxExclusive"
+    },
+    "maxInclusive": {
+      "@id": "sh:maxInclusive"
+    },
+    "minCount": {
+      "@id": "sh:minCount",
+      "@type": "xsd:integer"
+    },
+    "minExclusive": {
+      "@id": "sh:minExclusive"
+    },
+    "minInclusive": {
+      "@id": "sh:minInclusive"
+    },
+    "name": {
+      "@id": "sh:name"
+    },
+    "namespace": {
+      "@id": "sh:namespace",
+      "@type": "xsd:anyURI"
+    },
+    "node": {
+      "@id": "sh:node",
+      "@type": "@id"
+    },
+    "nodeKind": {
+      "@id": "sh:nodeKind",
+      "@type": "@id"
+    },
+    "not": {
+      "@id": "sh:not",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "nsg": "https://neuroshapes.org/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "or": {
+      "@id": "sh:or",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "path": {
+      "@id": "sh:path",
+      "@type": "@id"
+    },
+    "pattern": {
+      "@id": "sh:pattern"
+    },
+    "prefix": {
+      "@id": "sh:prefix",
+      "@type": "xsd:string"
+    },
+    "property": {
+      "@id": "sh:property",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "qualifiedMaxCount": {
+      "@id": "sh:qualifiedMaxCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedMinCount": {
+      "@id": "sh:qualifiedMinCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedValueShape": {
+      "@id": "sh:qualifiedValueShape",
+      "@type": "@id"
+    },
+    "qualifiedValueShapesDisjoint": {
+      "@id": "sh:qualifiedValueShapesDisjoint",
+      "@type": "xsd:boolean"
+    },
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "resultMessage": {
+      "@id": "sh:message"
+    },
+    "schema": "http://schema.org/",
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    },
+    "severity": {
+      "@id": "sh:severity"
+    },
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shapes": {
+      "@id": "nxv:shapes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "shapesGraph": {
+      "@id": "sh:shapesGraph",
+      "@type": "@id"
+    },
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "suggestedShapesGraph": {
+      "@id": "sh:suggestedShapesGraph",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "sh:target",
+      "@type": "@id"
+    },
+    "targetClass": {
+      "@id": "sh:targetClass",
+      "@type": "@id"
+    },
+    "targetNode": {
+      "@id": "sh:targetNode",
+      "@type": "@id"
+    },
+    "targetObjectsOf": {
+      "@id": "sh:targetObjectsOf",
+      "@type": "@id"
+    },
+    "targetSubjectsOf": {
+      "@id": "sh:targetSubjectsOf",
+      "@type": "@id"
+    },
+    "this": "https://neuroshapes.org/commons/entitywithoutannotationsubject/shapes/",
+    "xone": {
+      "@id": "sh:xone",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "https://neuroshapes.org/commons/entitywithoutannotationsubject",
+  "@type": "nxv:Schema",
+  "editorialNote": "This is a helper schema to avoid recursive imports of annoation and entity: an annotation is an entity while an entity can have an annotation.",
+  "imports": [
+    "https://neuroshapes.org/commons/identifier",
+    "https://neuroshapes.org/commons/license",
+    "https://neuroshapes.org/commons/language",
+    "https://neuroshapes.org/commons/contribution",
+    "https://provshapes.org/commons/generation",
+    "https://neuroshapes.org/commons/distribution",
+    "https://provshapes.org/commons/invalidation",
+    "https://provshapes.org/commons/derivation",
+    "https://neuroshapes.org/commons/brainlocation",
+    "https://neuroshapes.org/commons/labeledontologyentity"
+  ],
+  "shapes": [
+    {
+      "@id": "https://neuroshapes.org/commons/entitywithoutannotationsubject/shapes/EntityShape",
+      "@type": "sh:NodeShape",
+      "comment": "An entity is a physical, digital, conceptual, or other kind of thing with some fixed aspects; entities may be real or imaginary.",
+      "label": "Entity shape",
+      "property": [
+        {
+          "datatype": "xsd:string",
+          "description": "The entity name.",
+          "maxCount": 1,
+          "minCount": 1,
+          "name": "Name",
+          "path": "schema:name"
+        },
+        {
+          "datatype": "xsd:string",
+          "description": "The entity description",
+          "maxCount": 1,
+          "name": "Description",
+          "path": "schema:description"
+        },
+        {
+          "description": "URI of an entity sharing the same identity.",
+          "name": "Same as",
+          "nodeKind": "sh:IRI",
+          "path": "schema:sameAs"
+        },
+        {
+          "description": "The dataset language.",
+          "maxCount": 1,
+          "name": "Language",
+          "node": "https://neuroshapes.org/commons/language/shapes/LanguageShape",
+          "path": "schema:language"
+        },
+        {
+          "description": "Identifier",
+          "name": "Identifier",
+          "node": "https://neuroshapes.org/commons/identifier/shapes/IdentifierShape",
+          "path": "schema:identifier"
+        },
+        {
+          "description": "A citation or reference to another creative work, such as another publication, web page, scholarly article, etc.",
+          "name": "Citation",
+          "or": [
+            {
+              "datatype": "xsd:string"
+            },
+            {
+              "nodeKind": "sh:IRI"
+            }
+          ],
+          "path": "schema:citation"
+        },
+        {
+          "class": "nsg:License",
+          "description": "A Link towards the dataset license.",
+          "name": "License",
+          "node": "https://neuroshapes.org/commons/license/shapes/LicenseShape",
+          "path": "schema:license",
+          "seeAlso": "https://github.com/creativecommons/cc.licenserdf"
+        },
+        {
+          "datatype": "xsd:dateTime",
+          "description": "Date at which this entity was created.",
+          "maxCount": 1,
+          "name": "Creation date",
+          "path": "schema:dateCreated"
+        },
+        {
+          "description": "The entity for which this entity is a revision of. An entity revision is a specific type of derivation.",
+          "maxCount": 1,
+          "name": "Revision of",
+          "nodeKind": "sh:IRI",
+          "path": "prov:wasRevisionOf"
+        },
+        {
+          "description": "The entity from which this entity was derived from.",
+          "name": "Derived from",
+          "nodeKind": "sh:IRI",
+          "path": "prov:wasDerivedFrom"
+        },
+        {
+          "description": "A landing page describing the entity.",
+          "name": "URL",
+          "nodeKind": "sh:IRI",
+          "path": "schema:url"
+        },
+        {
+          "datetype": "xsd:dateTime",
+          "description": "The date of the last update of this entity.",
+          "maxCount": 1,
+          "name": "Update date",
+          "path": "schema:dateModified"
+        },
+        {
+          "datatype": "xsd:string",
+          "description": "Keywords describing the entity.",
+          "name": "Keywords",
+          "path": "schema:keywords"
+        },
+        {
+          "description": "The agent to which this entity was attributed to.",
+          "name": "Attributed to",
+          "nodeKind": "sh:IRI",
+          "path": "prov:wasAttributedTo"
+        },
+        {
+          "class": "prov:Derivation",
+          "description": "A derivation is a transformation of an entity into another, an update of an entity resulting in a new one, or the construction of a new entity based on a pre-existing entity.",
+          "name": "Qualified Derivation",
+          "node": "https://provshapes.org/commons/derivation/shapes/DerivationShape",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "nsg:derivation"
+        },
+        {
+          "class": "nsg:Contribution",
+          "description": "Information about the contribution of an agent during the generation of this dataset.",
+          "name": "Qualified Contribution",
+          "node": "https://neuroshapes.org/commons/contribution/shapes/ContributionShape",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "nsg:contribution"
+        },
+        {
+          "class": "prov:Generation",
+          "description": "Generation.",
+          "name": "Qualified Generation",
+          "node": "https://provshapes.org/commons/generation/shapes/GenerationShape",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "nsg:generation"
+        },
+        {
+          "class": "prov:Invalidation",
+          "description": "Invalidation.",
+          "name": "Qualified Invalidation",
+          "node": "https://provshapes.org/commons/invalidation/shapes/InvalidationShape",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "nsg:invalidation"
+        },
+        {
+          "description": "A reference to an entity representing an image that can be used as preview.",
+          "name": "Preview",
+          "nodeKind": "sh:IRI",
+          "path": "schema:image"
+        },
+        {
+          "class": "schema:DataDownload",
+          "description": "A dataset in downloadable form. The downloadable form has a specific format and is located at a specific location.",
+          "name": "Distribution",
+          "node": "https://neuroshapes.org/commons/distribution/shapes/DistributionShape",
+          "path": "schema:distribution"
+        },
+        {
+          "description": "Sub-parts of the entity.",
+          "name": "Has Part",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "schema:hasPart"
+        },
+        {
+          "description": "What the entity is a part of.",
+          "name": "Is Part Of",
+          "nodeKind": "sh:BlankNodeOrIRI",
+          "path": "schema:isPartOf"
+        },
+        {
+          "class": "nsg:ObjectOfStudy",
+          "description": "Object of Study",
+          "editorialNote": "The object of study ",
+          "name": "Object of Study",
+          "node": "https://neuroshapes.org/commons/labeledontologyentity/shapes/LabeledOntologyEntityShape",
+          "path": "nsg:objectOfStudy"
+        },
+        {
+          "class": "nsg:AtlasRelease",
+          "name": "Atlas Release",
+          "nodeKind": "sh:IRI",
+          "path": "nsg:atlasRelease"
+        },
+        {
+          "class": "nsg:BrainAtlasSpatialReferenceSystem",
+          "nodeKind": "sh:IRI",
+          "path": "nsg:isRegisteredIn"
+        },
+        {
+          "description": "The Brain location object.",
+          "name": "Brain Location",
+          "node": "nsg:commons/brainlocation/shapes/BrainLocationShape",
+          "path": "nsg:brainLocation"
+        },
+        {
+          "description": "The subject matter of the content.",
+          "name": "About",
+          "nodeKind": "sh:IRI",
+          "path": "schema:about"
+        }
+      ]
+    }
+  ]
+}
