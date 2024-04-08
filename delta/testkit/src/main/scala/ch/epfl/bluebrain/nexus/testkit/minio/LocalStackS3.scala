@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 object LocalStackS3 {
   val ServiceType = Service.S3
 
-  private def resource(): Resource[IO, LocalStackV2Container] = {
+  def localstackS3(): Resource[IO, LocalStackV2Container] = {
 
     def acquire: IO[LocalStackV2Container] = IO.delay {
       val containerDef = LocalStackV2Container.Def(services = Seq(ServiceType))
@@ -23,20 +23,22 @@ object LocalStackS3 {
     Resource.make(acquire)(release)
   }
 
-  private def fs2ClientResource(): Resource[IO, S3AsyncClientOp[IO]] = resource().flatMap { container =>
-    val endpoint = container.endpointOverride(LocalStackS3.ServiceType)
+  def fs2ClientFromLocalstack(localstack: LocalStackV2Container): Resource[IO, S3AsyncClientOp[IO]] = {
+    val endpoint = localstack.endpointOverride(LocalStackS3.ServiceType)
 
     Interpreter[IO].S3AsyncClientOpResource(
       S3AsyncClient
         .builder()
-        .credentialsProvider(container.staticCredentialsProvider)
+        .credentialsProvider(localstack.staticCredentialsProvider)
         .endpointOverride(endpoint)
         .forcePathStyle(true)
-        .region(container.region)
+        .region(localstack.region)
     )
   }
 
+  def fs2Client(): Resource[IO, S3AsyncClientOp[IO]] = localstackS3().flatMap(fs2ClientFromLocalstack)
+
   trait Fixture { self: CatsEffectSuite =>
-    val localStackS3Client: IOFixture[S3AsyncClientOp[IO]] = ResourceSuiteLocalFixture("s3client", fs2ClientResource())
+    val localStackS3Client: IOFixture[S3AsyncClientOp[IO]] = ResourceSuiteLocalFixture("s3client", fs2Client())
   }
 }

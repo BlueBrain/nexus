@@ -504,7 +504,7 @@ final class Files(
       metadata: FileDescription,
       source: BodyPartEntity
   ): IO[FileStorageMetadata]                                                    =
-    SaveFile(storage, remoteDiskStorageClient, s3Client.underlyingClient)
+    SaveFile(storage, remoteDiskStorageClient, s3Client)
       .apply(metadata.filename, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
+import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
@@ -13,6 +14,7 @@ import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCrede
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{ListObjectsV2Request, ListObjectsV2Response}
+import fs2.Stream
 
 import java.net.URI
 
@@ -22,6 +24,8 @@ trait S3StorageClient {
   def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
 
   def underlyingClient: S3AsyncClientOp[IO]
+
+  def baseEndpoint: IO[Uri]
 }
 
 object S3StorageClient {
@@ -41,12 +45,12 @@ object S3StorageClient {
             .forcePathStyle(true)
             .region(Region.US_EAST_1)
         )
-        .map(new S3StorageClientImpl(_))
+        .map(new S3StorageClientImpl(_, cfg.defaultEndpoint))
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
 
-  final class S3StorageClientImpl(client: S3AsyncClientOp[IO]) extends S3StorageClient {
+  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], baseEndpoint: Uri) extends S3StorageClient {
     private val s3: S3[IO] = S3.create(client)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
@@ -54,12 +58,14 @@ object S3StorageClient {
 
     def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       for {
-        bk    <- fs2.Stream.fromEither[IO].apply(refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
-        fk    <- fs2.Stream.fromEither[IO].apply(refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
+        bk    <- Stream.fromEither[IO].apply(refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
+        fk    <- Stream.fromEither[IO].apply(refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
         bytes <- s3.readFile(BucketName(bk), FileKey(fk))
       } yield bytes
 
     override def underlyingClient: S3AsyncClientOp[IO] = client
+
+    override def baseEndpoint: IO[Uri] = IO.pure(baseEndpoint)
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -72,5 +78,7 @@ object S3StorageClient {
       fs2.Stream.raiseError[IO](disabledErr)
 
     override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
+
+    override def baseEndpoint: IO[Uri] = raiseDisabledErr
   }
 }

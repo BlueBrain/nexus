@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{D
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile2}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 
 sealed trait Storage extends Product with Serializable {
 
@@ -102,8 +100,8 @@ object Storage {
     def fetchFile(client: S3StorageClient): FetchFile =
       new S3StorageFetchFile(client, value.bucket)
 
-    def saveFile(client: S3AsyncClientOp[IO])(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
-      new S3StorageSaveFile2(client, this)
+    def saveFile(s3StorageClient: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
+      new S3StorageSaveFile(s3StorageClient, this)
   }
 
   /**
