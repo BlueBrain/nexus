@@ -33,7 +33,7 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     ()
   }
 
-  test("Run import") {
+  test("Run import by providing the path to a file") {
     val expected = ImportReport(
       Offset.at(9999999L),
       Instant.parse("2099-12-31T22:59:59.999Z"),
@@ -46,6 +46,23 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     )
     for {
       importFile <- asPath("import/import.json")
+      _          <- new RunShip().run(importFile, None).assertEquals(expected)
+    } yield ()
+  }
+
+  test("Run import by providing the path to a directory") {
+    val expected = ImportReport(
+      Offset.at(9999999L),
+      Instant.parse("2099-12-31T22:59:59.999Z"),
+      Map(
+        Projects.entityType  -> Count(5L, 0L),
+        Resolvers.entityType -> Count(5L, 0L),
+        Resources.entityType -> Count(1L, 0L),
+        EntityType("xxx")    -> Count(0L, 1L)
+      )
+    )
+    for {
+      importFile <- asPath("import/multi-part-import")
       _          <- new RunShip().run(importFile, None).assertEquals(expected)
     } yield ()
   }
