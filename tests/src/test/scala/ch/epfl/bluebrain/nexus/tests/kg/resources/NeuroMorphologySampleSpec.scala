@@ -14,7 +14,9 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
   private val projId  = genId()
   private val project = s"$orgId/$projId"
 
-  private val neuronMorphologySample = "kg/schemas/bbp/sample-neuromorphology.json"
+  private val neuronMorphologyEntitySample  = "kg/schemas/bbp/sample-neuromorphology-entity.json"
+  // Dataset is a complex shape most of our models inherits from so it is worth to be tested on its own
+  private val neuronMorphologyDatasetSample = "kg/schemas/bbp/sample-neuronmorphology-dataset.json"
 
   private val noSchema               = "_"
   private val neuronMorphologySchema = UrlUtils.encode("https://neuroshapes.org/dash/neuronmorphology")
@@ -63,17 +65,24 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
       schemas.traverse { f => postSchema(s"kg/schemas/bbp/$f") }
     }
 
-    "succeed creating the morphology without a schema" in {
-      putResource("no-schema", noSchema, neuronMorphologySample)
+    List(
+      "neuronmorphology-entity"  -> neuronMorphologyEntitySample,
+      "neuronmorphology-dataset" -> neuronMorphologyDatasetSample
+    ).foreach { case (prefix, file) =>
+      s"succeed creating the $prefix without a schema" in {
+        putResource(s"$prefix-no-schema", noSchema, file)
+      }
+
+      s"succeed creating the $prefix with a schema" in {
+        putResource(s"$prefix-with-schema", neuronMorphologySchema, file)
+      }
+
+      s"succeed updating the $prefix with a schema" in {
+        putResource(s"$prefix-with-schema", 1, neuronMorphologySchema, file)
+      }
+
     }
 
-    "succeed creating the morphology with a schema" in {
-      putResource("with-schema", neuronMorphologySchema, neuronMorphologySample)
-    }
-
-    "succeed updating the morphology with a schema" in {
-      putResource("with-schema", 1, neuronMorphologySchema, neuronMorphologySample)
-    }
   }
 
   private def postResource(resourcePath: String): IO[Assertion] =

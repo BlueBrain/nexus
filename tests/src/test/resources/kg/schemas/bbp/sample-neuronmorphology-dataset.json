@@ -1,0 +1,233 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Dataset",
+    "NeuronMorphology",
+    "ReconstructedNeuronMorphology"
+  ],
+  "annotation": {
+    "@type": [
+      "QualityAnnotation",
+      "Annotation"
+    ],
+    "hasBody": {
+      "@id": "https://neuroshapes.org/Curated",
+      "@type": [
+        "AnnotationBody",
+        "DataMaturity"
+      ],
+      "label": "Curated"
+    },
+    "motivatedBy": {
+      "@id": "https://neuroshapes.org/qualityAssessment",
+      "@type": "Motivation"
+    },
+    "name": "Data maturity annotation",
+    "note": "NeuronMorphology dataset contains complete minimal metadata."
+  },
+  "atlasRelease": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/831a626a-c0ae-4691-8ce8-cfb7491345d9",
+    "@type": [
+      "BrainAtlasRelease",
+      "AtlasRelease"
+    ]
+  },
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "atlasSpatialReferenceSystem": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+      "@type": [
+        "AtlasSpatialReferenceSystem",
+        "BrainAtlasSpatialReferenceSystem"
+      ]
+    },
+    "brainRegion": {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/943",
+      "label": "Primary motor area, layer 2/3"
+    },
+    "coordinatesInBrainAtlas": {
+      "valueX": {
+        "@type": "xsd:float",
+        "@value": 4168.773437625
+      },
+      "valueY": {
+        "@type": "xsd:float",
+        "@value": 1459.3144526875
+      },
+      "valueZ": {
+        "@type": "xsd:float",
+        "@value": 7408.09375
+      }
+    }
+  },
+  "contribution": [
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://www.grid.ac/institutes/grid.443970.d",
+        "@type": [
+          "Organization",
+          "Agent"
+        ],
+        "label": "Janelia Research Campus"
+      }
+    },
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/kanari",
+        "@type": [
+          "Person",
+          "Agent"
+        ],
+        "familyName": "Kanari",
+        "givenName": "Lida"
+      }
+    }
+  ],
+  "dateCreated": {
+    "@type": "xsd:dateTime",
+    "@value": "2018-04-13T15:28:33.000Z"
+  },
+  "derivation": [
+    {
+      "@type": "Derivation",
+      "entity": {
+        "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/16c247e4-6111-4ad3-bf4f-2c9c1b9a13ad",
+        "@type": "ReconstructedNeuronMorphology"
+      }
+    }
+  ],
+  "description": "Annotation Space: CCFv3.0 Axes> X: Anterior-Posterior; Y: Inferior-Superior; Z:Left-Right",
+  "distribution": [
+    {
+      "@id": "https://bbp.epfl.ch/data/bbp/mmb-point-neuron-framework-model/f0cda8a3-1215-4400-9605-7473c69e4ca2",
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "location": "file:///gpfs/bbp.cscs.ch/data/project/proj134/nexus/bbp/mmb-point-neuron-framework-model/d/2/0/9/9/1/d/f/AA0622.swc",
+        "store": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/10419671-da26-48d3-abf9-51eb54759ca4",
+          "@type": "RemoteDiskStorage",
+          "_rev": 1
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 3988430
+      },
+      "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp/mmb-point-neuron-framework-model/https:%2F%2Fbbp.epfl.ch%2Fdata%2Fbbp%2Fmmb-point-neuron-framework-model%2Ff0cda8a3-1215-4400-9605-7473c69e4ca2",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "98852bc395d7300b9f608e280e865c7784bbf7b271faf5a7a6b02b96648d5d59"
+      },
+      "encodingFormat": "application/swc",
+      "name": "AA0622.swc"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/bbp/mmb-point-neuron-framework-model/ce5f202a-4e7c-4aca-bb52-11ce3589c451",
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "location": "file:///gpfs/bbp.cscs.ch/data/project/proj134/nexus/bbp/mmb-point-neuron-framework-model/d/c/d/d/d/1/5/a/AA0622.asc",
+        "store": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/10419671-da26-48d3-abf9-51eb54759ca4",
+          "@type": "RemoteDiskStorage",
+          "_rev": 1
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 3894291
+      },
+      "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp/mmb-point-neuron-framework-model/https:%2F%2Fbbp.epfl.ch%2Fdata%2Fbbp%2Fmmb-point-neuron-framework-model%2Fce5f202a-4e7c-4aca-bb52-11ce3589c451",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "0712864a2bca247bfbe54b7858e601428cf741ada0b99ccaccfb1cbfb77c91dd"
+      },
+      "encodingFormat": "application/asc",
+      "name": "AA0622.asc"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/bbp/mmb-point-neuron-framework-model/f94ffdb3-44ee-429c-8b11-b9777d421a0f",
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "location": "file:///gpfs/bbp.cscs.ch/data/project/proj134/nexus/bbp/mmb-point-neuron-framework-model/b/1/9/6/3/c/4/c/AA0622.h5",
+        "store": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/10419671-da26-48d3-abf9-51eb54759ca4",
+          "@type": "RemoteDiskStorage",
+          "_rev": 1
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 760876
+      },
+      "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp/mmb-point-neuron-framework-model/https:%2F%2Fbbp.epfl.ch%2Fdata%2Fbbp%2Fmmb-point-neuron-framework-model%2Ff94ffdb3-44ee-429c-8b11-b9777d421a0f",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "2b1e7410575b53c210fbc5c6ec0114b4187a6787c1f6dc8ae11d204314781f97"
+      },
+      "encodingFormat": "application/h5",
+      "name": "AA0622.h5"
+    }
+  ],
+  "fluorophore": "immuno labeled for anti-GFP",
+  "generation": {
+    "@type": "Generation",
+    "activity": {
+      "@type": "Activity",
+      "description": "Apical dendrite correction",
+      "endedAtTime": "2024-02-27T11:41:00",
+      "startedAtTime": "2024-02-27T11:40:00",
+      "wasAssociatedWith": {
+        "@type": [
+          "Agent",
+          "SoftwareAgent"
+        ],
+        "description": "Set of tools to correct and curate morphologies.",
+        "name": "morpho_toolkit",
+        "softwareSourceCode": {
+          "@type": "SoftwareSourceCode",
+          "codeRepository": {
+            "@id": "https://github.com/lidakanari/morpho_toolkit"
+          },
+          "programmingLanguage": "Python",
+          "runtimePlatform": "3.8.16",
+          "version": "0.0.1"
+        }
+      }
+    }
+  },
+  "isRegisteredIn": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+    "@type": [
+      "AtlasSpatialReferenceSystem",
+      "BrainAtlasSpatialReferenceSystem"
+    ]
+  },
+  "license": {
+    "@id": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "@type": "License"
+  },
+  "name": "AA0622 BBP Corrected",
+  "objectOfStudy": {
+    "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+    "@type": "ObjectOfStudy",
+    "label": "Single Cell"
+  },
+  "subject": {
+    "@type": "Subject",
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "label": "Mus musculus"
+    },
+    "strain": {
+      "@id": "https://phenome.jax.org/strains/138",
+      "label": "C57BL/6N",
+      "name": "C57BL/6N"
+    }
+  },
+  "virus": "AAV2/1 Cre + AAV2/1 GFP"
+}
