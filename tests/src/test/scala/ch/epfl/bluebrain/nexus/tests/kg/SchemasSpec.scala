@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
@@ -194,6 +195,24 @@ class SchemasSpec extends BaseIntegrationSpec {
                      json.hcursor.downField("_deprecated").as[Boolean].toOption shouldEqual Some(false)
                    }
       } yield succeed
+    }
+
+    "create a schema against the resource endpoint" in {
+      val id            = genId()
+      val schemaSegment = UrlUtils.encode("https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl")
+
+      for {
+        payload <- SchemaPayloads.simple(id)
+        _       <- deltaClient.put[Json](s"/resources/$project/$schemaSegment/$id", payload, Rick) { expectCreated }
+        // Attempting to create it again and to get a 409 as a response
+        _       <- deltaClient.put[Json](s"/resources/$project/$schemaSegment/$id", payload, Rick) { (json, response) =>
+                     json should have(`@type`("ResourceAlreadyExists"))
+                     response.status shouldEqual StatusCodes.Conflict
+                   }
+        // Should be fetched as a schema
+        _       <- deltaClient.get[Json](s"/schemas/$project/$id", Rick) { expectOk }
+      } yield succeed
+
     }
   }
 
