@@ -152,10 +152,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         locationPrefix.foreach { l =>
           location.getOption(json).value should startWith(l)
         }
-        val actual = filterMetadataKeys.andThen(filterNestedKeys("_location", "_digest"))(json)
-        println(s"====== EXPECTED ====== $expected")
-        println(s"====== ACTUAL ====== $actual")
-        actual shouldEqual expected
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
     }
   }
@@ -250,12 +247,9 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         "storageId"      -> storageId,
         "storageType"    -> storageType
       )
-      val expected = equalIgnoreArrayOrder(jsonContentOf("kg/files/list.json", mapping: _*))
-      val actual   = filterSearchMetadata.andThen(filterNestedKeys("_location", "_digest"))(json)
-
-      println(s"====== EXPECTED ====== $expected")
-      println(s"====== ACTUAL ====== $actual")
-      actual shouldEqual expected
+      val expected = jsonContentOf("kg/files/list.json", mapping: _*)
+      filterSearchMetadata
+        .andThen(filterResults(Set("_location")))(json) should equalIgnoreArrayOrder(expected)
     }
   }
 
@@ -406,7 +400,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
       deltaClient.get[Json](s"/files/$projectRef/attachment:attachment2", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        filterMetadataKeys.andThen(filterNestedKeys("_location", "_digest"))(json) shouldEqual expected
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
     }
   }
