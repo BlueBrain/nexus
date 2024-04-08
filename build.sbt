@@ -76,7 +76,6 @@ lazy val akkaTestKit                   = "com.typesafe.akka"            %% "akka
 lazy val akkaTestKitTyped              = "com.typesafe.akka"            %% "akka-actor-testkit-typed"           % akkaVersion
 lazy val alpakkaFile                   = "com.lightbend.akka"           %% "akka-stream-alpakka-file"           % alpakkaVersion
 lazy val alpakkaSse                    = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"            % alpakkaVersion
-lazy val alpakkaS3                     = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"             % alpakkaVersion
 lazy val apacheCompress                = "org.apache.commons"            % "commons-compress"                   % apacheCompressVersion
 lazy val apacheIO                      = "commons-io"                    % "commons-io"                         % apacheIOVersion
 lazy val awsSdk                        = "software.amazon.awssdk"        % "s3"                                 % awsSdkVersion
@@ -576,12 +575,6 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      alpakkaS3 excludeAll (
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-xml_2.13"),
-        ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
-      ),
       kamonAkkaHttp    % Provided,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
