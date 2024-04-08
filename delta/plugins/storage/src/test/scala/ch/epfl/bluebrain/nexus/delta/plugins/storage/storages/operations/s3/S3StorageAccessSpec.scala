@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, DeleteBuck
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
-class S3StorageAccessSpecLocalStack
+class S3StorageAccessSpec
     extends NexusSuite
     with StorageFixtures
     with LocalStackS3StorageClient.Fixture

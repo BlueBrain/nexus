@@ -58,8 +58,8 @@ object S3StorageClient {
 
     def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       for {
-        bk    <- Stream.fromEither[IO].apply(refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
-        fk    <- Stream.fromEither[IO].apply(refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
+        bk    <- Stream.fromEither[IO](refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
+        fk    <- Stream.fromEither[IO](refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
         bytes <- s3.readFile(BucketName(bk), FileKey(fk))
       } yield bytes
 

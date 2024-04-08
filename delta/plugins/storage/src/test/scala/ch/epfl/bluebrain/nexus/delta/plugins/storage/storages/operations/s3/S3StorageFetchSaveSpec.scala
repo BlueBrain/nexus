@@ -24,7 +24,7 @@ import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class S3StorageFetchSaveSpecLocalStack
+class S3StorageFetchSaveSpec
     extends NexusSuite
     with StorageFixtures
     with ActorSystemSetup.Fixture

@@ -58,13 +58,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
 
     (for {
       _          <- log(key, s"Checking for object existence")
-      _          <- getFileAttributes(key).redeemWith(
-                      {
-                        case _: NoSuchKeyException => IO.unit
-                        case e                     => IO.raiseError(e)
-                      },
-                      _ => IO.raiseError(ResourceAlreadyExists(key))
-                    )
+      _          <- validateObjectDoesNotExist(key)
       _          <- log(key, s"Beginning multipart upload")
       maybeEtags <- uploadFileMultipart(fileData, key)
       _          <- log(key, s"Finished multipart upload. Etag by part: $maybeEtags")
@@ -73,6 +67,15 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
   }
 
+  private def validateObjectDoesNotExist(key: String) =
+    getFileAttributes(key).redeemWith(
+      {
+        case _: NoSuchKeyException => IO.unit
+        case e                     => IO.raiseError(e)
+      },
+      _ => IO.raiseError(ResourceAlreadyExists(key))
+    )
+
   private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
     StreamConverter(
       source
@@ -80,8 +83,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
         .mapMaterializedValue(_ => NotUsed)
     )
 
-  // TODO test etags and file round trip for true multipart uploads.
-  // It's not clear whether the last value in the stream will be the final aggregate checksum
   private def uploadFileMultipart(fileData: Stream[IO, Byte], key: String): IO[List[Option[ETag]]] =
     fileData
       .through(
@@ -117,8 +118,8 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
       case Some(onlyPartETag :: Nil) =>
         // TODO our tests expect specific values for digests and the only algorithm currently used is SHA-256.
         // If we want to continue to check this, but allow for different algorithms, this needs to be abstracted
-        // in the tests and checked on specific file contents.
-        // The result will depend on whether we use a multipart upload or a standard put object.
+        // in the tests and verified for specific file contents.
+        // The result will als depend on whether we use a multipart upload or a standard put object.
         for {
           _        <- log(key, s"Received ETag for single part upload: $onlyPartETag")
           fileSize <- computeSize(bytes)
@@ -161,8 +162,5 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
 
   private def raiseUnexpectedErr[A](key: String, msg: String): IO[A] = IO.raiseError(UnexpectedSaveError(key, msg))
 
-  private def log(key: String, msg: String) = {
-    val thing = s"Bucket: ${bucket.value}. Key: $key. $msg"
-    logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg") >> IO.println(thing)
-  }
+  private def log(key: String, msg: String) = logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg")
 }
