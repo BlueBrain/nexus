@@ -138,7 +138,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
   //      getFileAttributes(key).flatMap { attr =>
   //        log(key, s"File attributes from S3: $attr").as(attr.objectSize())
   //      }
-  private def computeSize(bytes: Stream[IO, Byte]): IO[Long] = bytes.fold(0L)(_ + _).compile.lastOrError
+  private def computeSize(bytes: Stream[IO, Byte]): IO[Long] = bytes.fold(0L)((acc, _) => acc + 1).compile.lastOrError
 
   private def computeDigest(bytes: Stream[IO, Byte], algorithm: DigestAlgorithm): IO[String] = {
     val digest = algorithm.digest
