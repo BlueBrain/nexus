@@ -753,7 +753,7 @@ lazy val ship = project
     tests                % "test->compile;test->test"
   )
   .settings(
-    libraryDependencies ++= Seq(declineEffect),
+    libraryDependencies ++= Seq(declineEffect, logback),
     addCompilerPlugin(betterMonadicFor),
     run / fork           := true,
     buildInfoKeys        := Seq[BuildInfoKey](version),
