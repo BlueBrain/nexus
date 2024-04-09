@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -143,9 +144,9 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       storages,
       storageStatistics,
       xas,
-      cfg,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient,
+      S3StorageClientDisabled,
       clock
     )
 

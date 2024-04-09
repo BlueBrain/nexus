@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 trait FetchFile {
@@ -33,13 +32,11 @@ object FetchFile {
   /**
     * Construct a [[FetchFile]] from the given ''storage''.
     */
-  def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem
-  ): FetchFile =
+  def apply(storage: Storage, remoteClient: RemoteDiskStorageClient, s3Client: S3StorageClient): FetchFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.fetchFile
-      case storage: Storage.S3Storage         => storage.fetchFile(config)
-      case storage: Storage.RemoteDiskStorage => storage.fetchFile(client)
+      case storage: Storage.S3Storage         => storage.fetchFile(s3Client)
+      case storage: Storage.RemoteDiskStorage => storage.fetchFile(remoteClient)
     }
 
 }

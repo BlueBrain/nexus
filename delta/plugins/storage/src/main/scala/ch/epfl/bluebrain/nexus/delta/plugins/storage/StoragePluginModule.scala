@@ -161,7 +161,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[Files].from {
     (
         cfg: StoragePluginConfig,
-        storageTypeConfig: StorageTypeConfig,
         aclCheck: AclCheck,
         fetchContext: FetchContext,
         storages: Storages,
@@ -170,7 +169,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
-        remoteDiskStorageClient: RemoteDiskStorageClient
+        remoteDiskStorageClient: RemoteDiskStorageClient,
+        s3Client: S3StorageClient
     ) =>
       Files(
         fetchContext,
@@ -178,9 +178,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storages,
         storagesStatistics,
         xas,
-        storageTypeConfig,
         cfg.files,
         remoteDiskStorageClient,
+        s3Client,
         clock
       )(
         uuidF,

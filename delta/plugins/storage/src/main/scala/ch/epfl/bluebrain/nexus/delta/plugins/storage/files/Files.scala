@@ -16,12 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -56,7 +56,7 @@ final class Files(
     storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
     remoteDiskStorageClient: RemoteDiskStorageClient,
-    config: StorageTypeConfig
+    s3Client: S3StorageClient
 )(implicit
     uuidF: UUIDF,
     system: ClassicActorSystem
@@ -392,7 +392,7 @@ final class Files(
   }.span("fetchFileContent")
 
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
-    FetchFile(storage, remoteDiskStorageClient, config)
+    FetchFile(storage, remoteDiskStorageClient, s3Client)
       .apply(attr)
       .adaptError { case e: FetchFileRejection =>
         FetchRejection(fileId, storage.id, e)
@@ -504,7 +504,7 @@ final class Files(
       metadata: FileDescription,
       source: BodyPartEntity
   ): IO[FileStorageMetadata]                                                    =
-    SaveFile(storage, remoteDiskStorageClient, config)
+    SaveFile(storage, remoteDiskStorageClient, s3Client)
       .apply(metadata.filename, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
@@ -762,9 +762,9 @@ object Files {
       storages: FetchStorage,
       storagesStatistics: StoragesStatistics,
       xas: Transactors,
-      storageTypeConfig: StorageTypeConfig,
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient,
+      s3Client: S3StorageClient,
       clock: Clock[IO]
   )(implicit
       uuidF: UUIDF,
@@ -779,7 +779,7 @@ object Files {
       storages,
       storagesStatistics,
       remoteDiskStorageClient,
-      storageTypeConfig
+      s3Client
     )
   }
 }
