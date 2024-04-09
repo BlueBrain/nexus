@@ -11,7 +11,6 @@
   "default": false,
   "maxFileSize" : {{maxFileSize}},
   "bucket": "{{bucket}}",
-  "endpoint" : "{{endpoint}}",
   "readPermission": "{{read}}",
   "writePermission": "{{write}}",
   "_algorithm": "SHA-256",

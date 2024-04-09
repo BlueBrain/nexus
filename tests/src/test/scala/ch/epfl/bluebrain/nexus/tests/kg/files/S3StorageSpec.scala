@@ -77,7 +77,6 @@ class S3StorageSpec extends StorageSpec {
         "self"        -> storageSelf(project, s"https://bluebrain.github.io/nexus/vocabulary/$id"),
         "bucket"      -> bucket,
         "maxFileSize" -> storageConfig.maxFileSize.toString,
-        "endpoint"    -> s3Endpoint,
         "read"        -> readPermission,
         "write"       -> writePermission
       ): _*
@@ -87,17 +86,14 @@ class S3StorageSpec extends StorageSpec {
     val payload = jsonContentOf(
       "kg/storages/s3.json",
       "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storId",
-      "bucket"    -> bucket,
-      "endpoint"  -> s3Endpoint
+      "bucket"    -> bucket
     )
 
     val payload2 = jsonContentOf(
       "kg/storages/s3.json",
       "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storId}2",
-      "bucket"          -> bucket,
-      "endpoint"        -> s3Endpoint
+      "bucket"          -> bucket
     ) deepMerge Json.obj(
-      "region"          -> Json.fromString("eu-west-2"),
       "readPermission"  -> Json.fromString(s"$storName/read"),
       "writePermission" -> Json.fromString(s"$storName/write")
     )
@@ -106,7 +102,6 @@ class S3StorageSpec extends StorageSpec {
     val storageId2               = s"${storId}2"
     val expectedStorageWithPerms =
       storageResponse(projectRef, storageId2, "s3/read", "s3/write")
-        .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
 
     for {
       _ <- storagesDsl.createStorage(payload, projectRef)
@@ -122,8 +117,7 @@ class S3StorageSpec extends StorageSpec {
       val payload = jsonContentOf(
         "kg/storages/s3.json",
         "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
-        "bucket"    -> "foobar",
-        "endpoint"  -> s3Endpoint
+        "bucket"    -> "foobar"
       )
 
       deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>

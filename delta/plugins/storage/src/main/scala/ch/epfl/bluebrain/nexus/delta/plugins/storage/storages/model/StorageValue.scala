@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
@@ -132,8 +130,6 @@ object StorageValue {
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
-      endpoint: Option[Uri],
-      region: Option[Region],
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
@@ -153,8 +149,6 @@ object StorageValue {
         default: Boolean,
         algorithm: DigestAlgorithm,
         bucket: String,
-        endpoint: Option[Uri],
-        region: Option[Region],
         readPermission: Permission,
         writePermission: Permission,
         maxFileSize: Long
@@ -165,8 +159,6 @@ object StorageValue {
         default,
         algorithm,
         bucket,
-        endpoint,
-        region,
         readPermission,
         writePermission,
         maxFileSize

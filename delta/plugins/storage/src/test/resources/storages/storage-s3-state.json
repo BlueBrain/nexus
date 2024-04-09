@@ -13,8 +13,6 @@
     "description": "s3description",
     "algorithm": "SHA-256",
     "bucket": "mybucket",
-    "endpoint": "http://localhost",
-    "region": "eu-west-1",
     "readPermission": "s3/read",
     "writePermission": "s3/write",
     "maxFileSize": 51,
@@ -26,9 +24,7 @@
     "description": "s3description",
     "default": true,
     "bucket": "mybucket",
-    "endpoint": "http://localhost",
     "readPermission": "s3/read",
-    "region": "eu-west-1",
     "writePermission": "s3/write",
     "maxFileSize": 51
   },
