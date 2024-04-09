@@ -486,7 +486,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }</code></pre></dd>
 </dl>
 <h2><a href="#link-using-post" name="link-using-post" class="anchor"><span class="anchor-link"></span></a>Link using POST</h2>
-<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>S3Storage</code> and <code>RemoteDiskStorage</code>.</p>
+<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>RemoteDiskStorage</code>.</p>
 <pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
   {
     &quot;path&quot;: &quot;{path}&quot;,
@@ -584,7 +584,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }</code></pre></dd>
 </dl>
 <h2><a href="#link-using-put" name="link-using-put" class="anchor"><span class="anchor-link"></span></a>Link using PUT</h2>
-<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>S3Storage</code> and <code>RemoteDiskStorage</code>.</p>
+<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>RemoteDiskStorage</code>.</p>
 <p>This alternative endpoint allows to specify the resource <code>@id</code>.</p>
 <pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
   {

@@ -254,7 +254,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
     <ul>
       <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
@@ -300,7 +299,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
     <ul>
       <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
@@ -382,7 +380,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{useCurrentCaller}</code>: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can&rsquo;t be <code>true</code> when <code>_identity_</code> is defined.</li>
 </ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
-<p>All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<p>All the API calls modifying a resolver (creation, update, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
   <li><code>async</code> - (default value) the resolver will be indexed asynchronously</li>
   <li><code>sync</code> - the resolver will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
@@ -641,14 +639,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }</code></pre></dd>
 </dl>
 <h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}
 </code></pre>
 <p>where &hellip;</p>
 <ul>
   <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -693,14 +689,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <p>If the <a href="../../getting-started/running-nexus/configuration/index.html#fusion-configuration">redirect to Fusion feature</a> is enabled and if the <code>Accept</code> header is set to <code>text/html</code>, a redirection to the fusion representation of the resource will be returned.</p>
 <h2><a href="#fetch-original-payload" name="fetch-original-payload" class="anchor"><span class="anchor-link"></span></a>Fetch original payload</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}
 </code></pre>
 <p>where &hellip;</p>
 <ul>
   <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -724,32 +718,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre></dd>
-</dl>
-<h2><a href="#fetch-tags" name="fetch-tags" class="anchor"><span class="anchor-link"></span></a>Fetch tags</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={rev}&amp;tag={tag}
-</code></pre>
-<p>where &hellip;</p>
-<ul>
-  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
-</ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/tags.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resolvers/myorg/myproj/myresolvers/e1729302-35b8-4d80-97b2-d63c984e2b5c/tags?rev=2&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/tags.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/tags.json&quot;,
-  &quot;tags&quot;: [
-    {
-      &quot;rev&quot;: 1,
-      &quot;tag&quot;: &quot;mytag&quot;
-    }
-  ]
 }</code></pre></dd>
 </dl>
 <h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
@@ -870,8 +838,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>&hellip; where</p>
 <ul>
   <li><code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved.</li>
-  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+  <li><code>{rev}</code>: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted resource tag to be fetched. This field is optional.</li>
   <li><code>{showReport}</code>: Boolean - return the resolver resolution steps instead of the resource for debugging purposes.</li>
 </ul>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
@@ -914,7 +882,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}&amp;annotate={annotate}
 </code></pre>
-<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted tag to be fetched. This field is optional. - <code>{annotate}</code>: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.</p>
+<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted resource tag to be fetched. This field is optional. - <code>{annotate}</code>: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.</p>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p>If <code>{annotate}</code> is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence. The context in the original payload is also amended with the metadata context.</p>
 <p><strong>Example</strong></p>
