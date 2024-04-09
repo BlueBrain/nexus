@@ -64,6 +64,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
       _          <- log(key, s"Finished multipart upload. Etag by part: $maybeEtags")
       attr       <- collectFileMetadata(fileData, key, uuid, maybeEtags)
     } yield attr)
+      .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
   }
 
@@ -144,8 +145,10 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
     bytes.chunks
       .evalMap(chunk => IO(digest.update(chunk.toArray)))
       .compile
-      .lastOrError
-      .map(_ => digest.digest().map("%02x".format(_)).mkString)
+      .last
+      .map { _ =>
+        digest.digest().map("%02x".format(_)).mkString
+      }
   }
 
   private def fileMetadata(key: String, uuid: UUID, fileSize: Long, digest: String) =
