@@ -12,6 +12,7 @@ native
 target/
 .bloop
 .metals
+metals.sbt
 project/.bloop
 .bsp
 
