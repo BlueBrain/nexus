@@ -93,6 +93,7 @@ final class ResourcesRoutes(
                             .flatTap(index(project, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
+                            .rejectOn[InvalidSchemaRejection]
                         )
                       }
                   },
@@ -113,6 +114,7 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
+                                      .rejectOn[InvalidSchemaRejection]
                                   )
                                 case (Some(rev), source, tag) =>
                                   // Update a resource
@@ -122,7 +124,7 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
-                                      .rejectOn[ResourceNotFound]
+                                      .rejectWhen { case _: ResourceNotFound | _: InvalidSchemaRejection => true }
                                   )
                               }
                             }
