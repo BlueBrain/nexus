@@ -11,13 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser, transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport, getDistinctOrgProjects, uploadImportFileToS3}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
+import eu.timepit.refined.types.string.NonEmptyString
+import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
 import munit.catseffect.IOFixture
 import munit.{AnyFixture, CatsEffectSuite}
@@ -44,7 +46,7 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS
 
   test("Run import from S3 providing a single file") {
     val path   = Path("/import/import.json")
-    val bucket = "bucket"
+    val bucket = BucketName(NonEmptyString.unsafeFrom("bucket"))
     for {
       _ <- uploadImportFileToS3(s3Client, bucket, path)
       _ <- RunShip.s3Ship(s3Client, bucket).run(path, None).assertEquals(expectedImportReport)
@@ -53,13 +55,14 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS
 
   test("Run import from S3 providing a directory") {
     val directoryPath = Path("/import/multi-part-import")
+    val bucket        = BucketName(NonEmptyString.unsafeFrom("bucket"))
     for {
-      _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
+      _ <- uploadImportFileToS3(s3Client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
       _ <-
-        uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
-      _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
+        uploadImportFileToS3(s3Client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
+      _ <- uploadImportFileToS3(s3Client, bucket, Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
       _ <- RunShip
-             .s3Ship(s3Client, "bucket")
+             .s3Ship(s3Client, bucket)
              .run(directoryPath, None)
              .assertEquals(expectedImportReport)
     } yield ()
@@ -135,11 +138,11 @@ object RunShipSuite {
     )
   )
 
-  def uploadImportFileToS3(s3Client: S3StorageClient, bucket: String, path: Path): IO[PutObjectResponse] = {
-    s3Client.underlyingClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build) >>
+  def uploadImportFileToS3(s3Client: S3StorageClient, bucket: BucketName, path: Path): IO[PutObjectResponse] = {
+    s3Client.underlyingClient.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build) >>
       s3Client.underlyingClient
         .putObject(
-          PutObjectRequest.builder.bucket(bucket).key(path.toString).build,
+          PutObjectRequest.builder.bucket(bucket.value.value).key(path.toString).build,
           Paths.get(getClass.getResource(path.toString).toURI)
         )
   }

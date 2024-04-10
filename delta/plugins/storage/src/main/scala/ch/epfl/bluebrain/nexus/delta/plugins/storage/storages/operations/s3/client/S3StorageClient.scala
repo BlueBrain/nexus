@@ -21,9 +21,11 @@ import java.net.URI
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
-  def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response]
+  def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response]
 
   def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
+
+  def readFile(bucket: BucketName, fileKey: FileKey): fs2.Stream[IO, Byte]
 
   def underlyingClient: S3AsyncClientOp[IO]
 
@@ -60,15 +62,18 @@ object S3StorageClient {
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
 
-    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
-      client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
+    override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] =
+      client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(prefix).build())
 
-    def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
+    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       for {
         bk    <- Stream.fromEither[IO](refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
         fk    <- Stream.fromEither[IO](refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
-        bytes <- s3.readFile(BucketName(bk), FileKey(fk))
+        bytes <- readFile(BucketName(bk), FileKey(fk))
       } yield bytes
+
+    override def readFile(bucket: BucketName, fileKey: FileKey): fs2.Stream[IO, Byte] =
+      s3.readFile(bucket, fileKey)
 
     override def underlyingClient: S3AsyncClientOp[IO] = client
 
@@ -81,9 +86,12 @@ object S3StorageClient {
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
+    override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
     override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
+      fs2.Stream.raiseError[IO](disabledErr)
+
+    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
       fs2.Stream.raiseError[IO](disabledErr)
 
     override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
