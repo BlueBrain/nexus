@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -54,8 +55,6 @@ object EventStreamer {
   private val logger = Logger[EventStreamer]
 
   def s3eventStreamer(client: S3AsyncClientOp[IO], bucket: String): EventStreamer = new EventStreamer {
-
-    import cats.implicits._
 
     override def streamLines(path: Path): Stream[IO, String] =
       for {
