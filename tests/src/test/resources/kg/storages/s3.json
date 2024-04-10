@@ -2,6 +2,5 @@
   "@id": "{{storageId}}",
   "@type": "S3Storage",
   "default": false,
-  "bucket": "{{bucket}}",
-  "endpoint": "{{endpoint}}"
+  "bucket": "{{bucket}}"
 }

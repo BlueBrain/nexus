@@ -63,7 +63,7 @@ class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixtu
             "region"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None)
+          S3StorageFields(None, None, default = true, "mybucket", None, None, None)
       }
     }
 

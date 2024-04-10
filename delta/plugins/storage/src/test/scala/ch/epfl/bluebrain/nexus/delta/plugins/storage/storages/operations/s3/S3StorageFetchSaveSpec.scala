@@ -48,8 +48,6 @@ class S3StorageFetchSaveSpec
         default = false,
         algorithm = DigestAlgorithm.default,
         bucket = bucket,
-        endpoint = None,
-        region = None,
         readPermission = read,
         writePermission = write,
         maxFileSize = 20
