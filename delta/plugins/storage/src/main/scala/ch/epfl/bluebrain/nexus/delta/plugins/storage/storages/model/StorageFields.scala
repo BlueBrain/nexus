@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
@@ -131,14 +129,6 @@ object StorageFields {
     *   ''true'' if this store is the project's default, ''false'' otherwise
     * @param bucket
     *   the S3 compatible bucket
-    * @param endpoint
-    *   the endpoint, either a domain or a full URL
-    * @param accessKey
-    *   the AWS access key ID
-    * @param secretKey
-    *   the AWS secret key
-    * @param region
-    *   the AWS region
     * @param readPermission
     *   the permission required in order to download a file from this storage
     * @param writePermission
@@ -151,8 +141,6 @@ object StorageFields {
       description: Option[String],
       default: Boolean,
       bucket: String,
-      endpoint: Option[Uri],
-      region: Option[Region],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -169,8 +157,6 @@ object StorageFields {
           default,
           cfg.digestAlgorithm,
           bucket,
-          endpoint.orElse(Some(cfg.defaultEndpoint)),
-          region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
           computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)

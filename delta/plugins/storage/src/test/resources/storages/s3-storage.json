@@ -7,9 +7,7 @@
   "name": "s3name",
   "description": "s3description",
   "bucket": "mybucket",
-  "endpoint": "http://localhost",
   "readPermission": "s3/read",
-  "region": "eu-west-1",
   "writePermission": "s3/write",
   "maxFileSize": 51
 }

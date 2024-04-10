@@ -96,8 +96,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 {
   "@type": "S3Storage",
   "default": "{default}",
-  "endpoint": "{endpoint}",
-  "region": "{region}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
   "maxFileSize": {max_file_size}
@@ -107,8 +105,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 ...where
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{endpoint}`: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-endpoint`.
-- `{region}`: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-max-file-size` (10G).
