@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser, transactors}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport, getDistinctOrgProjects, uploadImportFileToS3}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
@@ -21,12 +21,16 @@ import doobie.implicits._
 import fs2.io.file.Path
 import munit.catseffect.IOFixture
 import munit.{AnyFixture, CatsEffectSuite}
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, PutObjectRequest, PutObjectResponse}
 
 import java.nio.file.Paths
 import java.time.Instant
+import scala.concurrent.duration.Duration
 
 class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS3StorageClient.Fixture {
+
+  override def munitIOTimeout: Duration = 60.seconds
 
   override def munitFixtures: Seq[AnyFixture[_]]  = List(mainFixture, localStackS3Client)
   private lazy val xas                            = mainFixture()
