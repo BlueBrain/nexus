@@ -34,7 +34,9 @@ trait EventStreamer {
       .filter { event => event.ordering.value >= fromOffset.value }
 
   private def streamFromDirectory(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
-    val sortedImportFiles = fileList(path).map(l => l.sortBy(_.fileName.toString))
+    val sortedImportFiles = fileList(path)
+      .map(_.filter(_.extName.equals(".json")))
+      .map(_.sortBy(_.fileName.toString))
     Stream.evals(sortedImportFiles).flatMap(streamFromFile(_, fromOffset))
   }
 
@@ -76,7 +78,7 @@ object EventStreamer {
       Files[IO].readUtf8Lines(path)
 
     override def fileList(path: Path): IO[List[Path]] =
-      Files[IO].list(path).filter(_.extName.contains("json")).compile.toList
+      Files[IO].list(path).compile.toList
 
     override def isDirectory(path: Path): IO[Boolean] =
       Files[IO].isDirectory(path)
