@@ -750,7 +750,7 @@ lazy val ship = project
     blazegraphPlugin     % "compile->compile",
     compositeViewsPlugin % "compile->compile",
     elasticsearchPlugin  % "compile->compile",
-    storagePlugin        % "compile->compile",
+    storagePlugin        % "compile->compile;test->test",
     tests                % "test->compile;test->test"
   )
   .settings(
