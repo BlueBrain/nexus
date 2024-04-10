@@ -10,7 +10,7 @@ import eu.timepit.refined.refineV
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{ListObjectsV2Request, ListObjectsV2Response}
@@ -35,20 +35,22 @@ object S3StorageClient {
         StaticCredentialsProvider.create(
           AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
         )
-
-      Interpreter[IO]
-        .S3AsyncClientOpResource(
-          S3AsyncClient
-            .builder()
-            .credentialsProvider(creds)
-            .endpointOverride(URI.create(cfg.defaultEndpoint.toString()))
-            .forcePathStyle(true)
-            .region(Region.US_EAST_1)
-        )
+      resource(URI.create(cfg.defaultEndpoint.toString()), creds)
         .map(new S3StorageClientImpl(_, cfg.defaultEndpoint))
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
+
+  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3AsyncClientOp[IO]] =
+    Interpreter[IO]
+      .S3AsyncClientOpResource(
+        S3AsyncClient
+          .builder()
+          .credentialsProvider(credentialProvider)
+          .endpointOverride(endpoint)
+          .forcePathStyle(true)
+          .region(Region.US_EAST_1)
+      )
 
   final class S3StorageClientImpl(client: S3AsyncClientOp[IO], baseEndpoint: Uri) extends S3StorageClient {
     private val s3: S3[IO] = S3.create(client)
