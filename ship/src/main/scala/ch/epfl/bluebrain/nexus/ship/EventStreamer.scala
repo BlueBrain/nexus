@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.EventStreamer.logger
-import eu.timepit.refined.types.string.NonEmptyString
+import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.refineV
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.io.file.{Files, Path}
@@ -52,23 +53,32 @@ object EventStreamer {
 
   private val logger = Logger[EventStreamer]
 
-  def s3eventStreamer(client: S3AsyncClientOp[IO], bucket: BucketName): EventStreamer = new EventStreamer {
+  def s3eventStreamer(client: S3AsyncClientOp[IO], bucket: String): EventStreamer = new EventStreamer {
+
+    import cats.implicits._
 
     override def streamLines(path: Path): Stream[IO, String] =
-      S3.create(client)
-        .readFile(bucket, FileKey.apply(NonEmptyString.unsafeFrom(path.toString)))
-        .through(text.utf8.decode)
-        .through(text.lines)
+      for {
+        bk    <- Stream.fromEither[IO](refineString(bucket))
+        key   <- Stream.fromEither[IO](refineString(path.toString))
+        lines <- S3.create(client)
+                   .readFile(BucketName(bk), FileKey(key))
+                   .through(text.utf8.decode)
+                   .through(text.lines)
+      } yield lines
 
     override def fileList(path: Path): IO[List[Path]] =
       client
-        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(path.toString).build())
+        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(path.toString).build())
         .map(_.contents().asScala.map(obj => Path(obj.key())).toList)
 
     override def isDirectory(path: Path): IO[Boolean] =
       client
-        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(path.toString).build())
+        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(path.toString).build())
         .map(_.keyCount() > 1)
+
+    private def refineString(str: String) =
+      refineV[NonEmpty](str).leftMap(e => new IllegalArgumentException(e))
 
   }
 

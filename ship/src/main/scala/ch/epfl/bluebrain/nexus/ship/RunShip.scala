@@ -19,9 +19,7 @@ import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
-import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
-import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 
@@ -94,12 +92,10 @@ object RunShip {
   }
 
   def s3Ship(client: S3AsyncClientOp[IO], bucket: String) = new RunShip {
-    override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
-      val bk = BucketName(NonEmptyString.unsafeFrom(bucket))
+    override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
       EventStreamer
-        .s3eventStreamer(client, bk)
+        .s3eventStreamer(client, bucket)
         .stream(path, fromOffset)
-    }
   }
 
 }

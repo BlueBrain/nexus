@@ -51,7 +51,8 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS
     val directoryPath = Path("/import/multi-part-import")
     for {
       _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
-      _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
+      _ <-
+        uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
       _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
       _ <- RunShip
              .s3Ship(s3Client.underlyingClient, "bucket")
