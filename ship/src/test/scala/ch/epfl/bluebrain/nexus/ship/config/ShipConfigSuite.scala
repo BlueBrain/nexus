@@ -37,7 +37,7 @@ class ShipConfigSuite extends NexusSuite {
   }
 
   test("Should read the S3 config") {
-    val bucket = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
+    val bucket   = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
     val expected = S3Config(new URI("http://my-s3-endpoint.com"), bucket)
     for {
       externalConfigPath <- loader.absolutePath("config/s3.conf")
