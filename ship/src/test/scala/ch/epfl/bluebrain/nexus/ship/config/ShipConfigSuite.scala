@@ -3,7 +3,11 @@ package ch.epfl.bluebrain.nexus.ship.config
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import eu.timepit.refined.types.string.NonEmptyString
+import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
+
+import java.net.URI
 
 class ShipConfigSuite extends NexusSuite {
 
@@ -29,6 +33,16 @@ class ShipConfigSuite extends NexusSuite {
       externalConfigPath <- loader.absolutePath("config/project-mapping.conf")
       mapping             = ShipConfig.load(Some(Path(externalConfigPath))).map(_.projectMapping)
       _                  <- mapping.assertEquals(expected)
+    } yield ()
+  }
+
+  test("Should read the S3 config") {
+    val bucket   = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
+    val expected = S3Config(new URI("http://my-s3-endpoint.com"), bucket)
+    for {
+      externalConfigPath <- loader.absolutePath("config/s3.conf")
+      s3Config            = ShipConfig.load(Some(Path(externalConfigPath))).map(_.S3)
+      _                  <- s3Config.assertEquals(expected)
     } yield ()
   }
 
