@@ -84,7 +84,7 @@ object ValidateResource {
           schema.value.shapes,
           reportDetails = true
         ).adaptError { e =>
-          ResourceShaclEngineRejection(jsonld.id, schemaRef, e.getMessage)
+          ResourceShaclEngineRejection(jsonld.id, schemaRef, e)
         }.span("validateShacl")
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {

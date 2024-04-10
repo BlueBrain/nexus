@@ -160,8 +160,10 @@ object ResourceRejection {
     * @param details
     *   the SHACL engine errors
     */
-  final case class ResourceShaclEngineRejection(id: Iri, schema: ResourceRef, details: String)
-      extends ResourceRejection(s"Resource '$id' failed to produce a SHACL engine for schema '$schema'.")
+  final case class ResourceShaclEngineRejection(id: Iri, schema: ResourceRef, cause: Throwable)
+      extends ResourceRejection(
+        s"${ClassUtils.simpleName(cause)}: The SHACL engine could not be instantiated for resource '$id' and schema '$schema'."
+      )
 
   /**
     * Rejection returned when attempting to update/deprecate a resource that is already deprecated.
@@ -211,13 +213,13 @@ object ResourceRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
-        case InvalidResource(_, _, report, expanded)     =>
+        case ResourceShaclEngineRejection(_, _, cause) => obj.add("details", cause.getMessage.asJson)
+        case InvalidResource(_, _, report, expanded)   =>
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
-        case InvalidSchemaRejection(_, _, report)        =>
+        case InvalidSchemaRejection(_, _, report)      =>
           obj.addContext(contexts.resolvers).add("report", report.asJson)
-        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                           => obj
+        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                         => obj
       }
     }
 
@@ -226,12 +228,13 @@ object ResourceRejection {
 
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)          => StatusCodes.NotFound
-      case ResourceNotFound(_, _)          => StatusCodes.NotFound
-      case TagNotFound(_)                  => StatusCodes.NotFound
-      case InvalidSchemaRejection(_, _, _) => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)     => StatusCodes.Conflict
-      case IncorrectRev(_, _)              => StatusCodes.Conflict
-      case _                               => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)                => StatusCodes.NotFound
+      case ResourceNotFound(_, _)                => StatusCodes.NotFound
+      case TagNotFound(_)                        => StatusCodes.NotFound
+      case InvalidSchemaRejection(_, _, _)       => StatusCodes.NotFound
+      case ResourceShaclEngineRejection(_, _, _) => StatusCodes.InternalServerError
+      case ResourceAlreadyExists(_, _)           => StatusCodes.Conflict
+      case IncorrectRev(_, _)                    => StatusCodes.Conflict
+      case _                                     => StatusCodes.BadRequest
     }
 }
