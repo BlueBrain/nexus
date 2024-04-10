@@ -750,10 +750,11 @@ lazy val ship = project
     blazegraphPlugin     % "compile->compile",
     compositeViewsPlugin % "compile->compile",
     elasticsearchPlugin  % "compile->compile",
+    storagePlugin        % "compile->compile",
     tests                % "test->compile;test->test"
   )
   .settings(
-    libraryDependencies ++= Seq(declineEffect, logback),
+    libraryDependencies ++= Seq(declineEffect, logback, fs2Aws, fs2AwsS3),
     addCompilerPlugin(betterMonadicFor),
     run / fork           := true,
     buildInfoKeys        := Seq[BuildInfoKey](version),

@@ -32,4 +32,13 @@ class ShipConfigSuite extends NexusSuite {
     } yield ()
   }
 
+  test("Should read the S3 config") {
+    val expected = S3Config("http://my-s3-endpoint.com", "my-import-bucket")
+    for {
+      externalConfigPath <- loader.absolutePath("config/s3.conf")
+      s3Config            = ShipConfig.load(Some(Path(externalConfigPath))).map(_.S3)
+      _                  <- s3Config.assertEquals(expected)
+    } yield ()
+  }
+
 }

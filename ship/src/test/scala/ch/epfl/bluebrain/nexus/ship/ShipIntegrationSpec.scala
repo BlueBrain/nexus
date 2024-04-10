@@ -349,7 +349,7 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       val folderPath = Paths.get(folder)
       val file       = Files.newDirectoryStream(folderPath, "*.json").iterator().asScala.toList.head
 
-      new RunShip().run(fs2.io.file.Path.fromNioPath(file), None).accepted
+      RunShip.localShip.run(fs2.io.file.Path.fromNioPath(file), None).accepted
       ()
     }
 

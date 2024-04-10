@@ -19,13 +19,17 @@ import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
+import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
-import fs2.io.file.{Files, Path}
-import io.circe.parser.decode
+import fs2.aws.s3.models.Models.BucketName
+import fs2.io.file.Path
+import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 
-class RunShip {
+trait RunShip {
 
   private val logger = Logger[RunShip]
+
+  def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent]
 
   def run(path: Path, config: Option[Path], fromOffset: Offset = Offset.start): IO[ImportReport] = {
     val clock                         = Clock[IO]
@@ -45,7 +49,6 @@ class RunShip {
                   for {
                     // Provision organizations
                     _                           <- orgProvider.create(config.organizations.values)
-                    events                       = eventStream(path, fromOffset)
                     fetchActiveOrg               = FetchActiveOrganization(xas)
                     // format: off
                     // Wiring
@@ -67,7 +70,7 @@ class RunShip {
                     // format: on
                     report                      <- EventProcessor
                                                      .run(
-                                                       events,
+                                                       eventsStream(path, fromOffset),
                                                        projectProcessor,
                                                        resolverProcessor,
                                                        schemaProcessor,
@@ -81,33 +84,21 @@ class RunShip {
     } yield report
   }
 
-  private def eventStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
+}
 
-    def streamFromFile(file: Path) = Files[IO]
-      .readUtf8Lines(file)
-      .zipWithIndex
-      .evalMap { case (line, index) =>
-        IO.fromEither(decode[RowEvent](line)).onError { err =>
-          logger.error(err)(s"Error parsing to event at line $index")
-        }
-      }
-      .filter { event =>
-        event.ordering.value >= fromOffset.value
-      }
+object RunShip {
 
-    def streamFromDirectory(dirPath: Path) = {
-      val importFiles = Files[IO]
-        .list(dirPath)
-        .filter(_.extName.contains("json"))
-        .compile
-        .toList
-        .map(_.sortBy(_.fileName.toString))
-      Stream.evals(importFiles).flatMap(streamFromFile)
-    }
+  def localShip = new RunShip {
+    override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
+      EventStreamer.localStreamer.stream(path, fromOffset)
+  }
 
-    Stream.eval(Files[IO].isDirectory(path)).flatMap { isDir =>
-      if (isDir) streamFromDirectory(path)
-      else streamFromFile(path)
+  def s3Ship(client: S3AsyncClientOp[IO], bucket: String) = new RunShip {
+    override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
+      val bk = BucketName(NonEmptyString.unsafeFrom(bucket))
+      EventStreamer
+        .s3eventStreamer(client, bk)
+        .stream(path, fromOffset)
     }
   }
 

@@ -9,6 +9,11 @@ import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 import com.monovore.decline.Opts
 import com.monovore.decline.effect.CommandIOApp
 import fs2.io.file.Path
+import io.laserdisc.pure.s3.tagless.Interpreter
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.s3.S3AsyncClient
+
+import java.net.URI
 
 object Main
     extends CommandIOApp(
@@ -32,8 +37,11 @@ object Main
     .map(Offset.at)
     .withDefault(Offset.start)
 
+  private val s3: Opts[Boolean] =
+    Opts.flag("s3", help = "Run the import from an S3 bucket").orFalse
+
   private val run = Opts.subcommand("run", "Run an import") {
-    (inputPath, configFile, offset).mapN(Run)
+    (inputPath, configFile, offset, s3).mapN(Run)
   }
 
   private val showConfig = Opts.subcommand("config", "Show reconciled config") {
@@ -43,8 +51,15 @@ object Main
   override def main: Opts[IO[ExitCode]] =
     (run orElse showConfig)
       .map {
-        case Run(path, config, offset) => new RunShip().run(path, config, offset)
-        case ShowConfig(config)        => showConfig(config)
+        case Run(path, config, offset, false) =>
+          RunShip.localShip.run(path, config, offset)
+        case Run(path, config, offset, true)  =>
+          ShipConfig.load(config).flatMap { cfg =>
+            s3client(cfg).use { client =>
+              RunShip.s3Ship(client, cfg.S3.importBucket).run(path, config, offset)
+            }
+          }
+        case ShowConfig(config)               => showConfig(config)
       }
       .map(_.as(ExitCode.Success))
 
@@ -55,9 +70,18 @@ object Main
       _      <- logger.info(config.root().render())
     } yield ()
 
+  private def s3client(config: ShipConfig) = Interpreter[IO]
+    .S3AsyncClientOpResource(
+      S3AsyncClient
+        .builder()
+        .credentialsProvider(DefaultCredentialsProvider.create())
+        .endpointOverride(URI.create(config.S3.endpoint))
+        .forcePathStyle(true)
+    )
+
   sealed private trait Command
 
-  final private case class Run(path: Path, config: Option[Path], offset: Offset) extends Command
+  final private case class Run(path: Path, config: Option[Path], offset: Offset, s3: Boolean) extends Command
 
   final private case class ShowConfig(config: Option[Path]) extends Command
 
