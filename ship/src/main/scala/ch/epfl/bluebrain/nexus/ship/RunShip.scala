@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
@@ -21,7 +22,6 @@ import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
 import fs2.Stream
 import fs2.io.file.Path
-import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 
 trait RunShip {
 
@@ -91,7 +91,7 @@ object RunShip {
       EventStreamer.localStreamer.stream(path, fromOffset)
   }
 
-  def s3Ship(client: S3AsyncClientOp[IO], bucket: String) = new RunShip {
+  def s3Ship(client: S3StorageClient, bucket: String) = new RunShip {
     override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
       EventStreamer
         .s3eventStreamer(client, bucket)

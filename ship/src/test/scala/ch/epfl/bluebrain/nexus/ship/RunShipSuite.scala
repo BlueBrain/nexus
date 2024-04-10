@@ -43,7 +43,7 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS
     val bucket = "bucket"
     for {
       _ <- uploadImportFileToS3(s3Client, bucket, path)
-      _ <- RunShip.s3Ship(s3Client.underlyingClient, bucket).run(path, None).assertEquals(expectedImportReport)
+      _ <- RunShip.s3Ship(s3Client, bucket).run(path, None).assertEquals(expectedImportReport)
     } yield ()
   }
 
@@ -55,7 +55,7 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS
         uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
       _ <- uploadImportFileToS3(s3Client, "bucket", Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
       _ <- RunShip
-             .s3Ship(s3Client.underlyingClient, "bucket")
+             .s3Ship(s3Client, "bucket")
              .run(directoryPath, None)
              .assertEquals(expectedImportReport)
     } yield ()

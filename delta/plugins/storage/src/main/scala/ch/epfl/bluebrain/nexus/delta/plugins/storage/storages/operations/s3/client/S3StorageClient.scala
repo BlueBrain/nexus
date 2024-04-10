@@ -21,6 +21,8 @@ import java.net.URI
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
+  def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response]
+
   def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
 
   def underlyingClient: S3AsyncClientOp[IO]
@@ -36,12 +38,11 @@ object S3StorageClient {
           AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
         )
       resource(URI.create(cfg.defaultEndpoint.toString()), creds)
-        .map(new S3StorageClientImpl(_, cfg.defaultEndpoint))
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
 
-  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3AsyncClientOp[IO]] =
+  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
     Interpreter[IO]
       .S3AsyncClientOpResource(
         S3AsyncClient
@@ -51,12 +52,16 @@ object S3StorageClient {
           .forcePathStyle(true)
           .region(Region.US_EAST_1)
       )
+      .map(new S3StorageClientImpl(_, endpoint.toString))
 
   final class S3StorageClientImpl(client: S3AsyncClientOp[IO], baseEndpoint: Uri) extends S3StorageClient {
     private val s3: S3[IO] = S3.create(client)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
+
+    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
+      client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
 
     def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       for {
@@ -75,6 +80,8 @@ object S3StorageClient {
     private val raiseDisabledErr = IO.raiseError(disabledErr)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] = raiseDisabledErr
+
+    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
     override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       fs2.Stream.raiseError[IO](disabledErr)

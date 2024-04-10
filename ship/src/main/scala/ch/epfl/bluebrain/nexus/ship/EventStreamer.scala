@@ -3,18 +3,13 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.EventStreamer.logger
-import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.refineV
-import fs2.aws.s3.S3
-import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.io.file.{Files, Path}
 import fs2.{text, Stream}
 import io.circe.parser.decode
-import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
@@ -54,30 +49,23 @@ object EventStreamer {
 
   private val logger = Logger[EventStreamer]
 
-  def s3eventStreamer(client: S3AsyncClientOp[IO], bucket: String): EventStreamer = new EventStreamer {
+  def s3eventStreamer(client: S3StorageClient, bucket: String): EventStreamer = new EventStreamer {
 
     override def streamLines(path: Path): Stream[IO, String] =
-      for {
-        bk    <- Stream.fromEither[IO](refineString(bucket))
-        key   <- Stream.fromEither[IO](refineString(path.toString))
-        lines <- S3.create(client)
-                   .readFile(BucketName(bk), FileKey(key))
-                   .through(text.utf8.decode)
-                   .through(text.lines)
-      } yield lines
+      client
+        .readFile(bucket, path.toString)
+        .through(text.utf8.decode)
+        .through(text.lines)
 
     override def fileList(path: Path): IO[List[Path]] =
       client
-        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(path.toString).build())
+        .listObjectsV2(bucket, path.toString)
         .map(_.contents().asScala.map(obj => Path(obj.key())).toList)
 
     override def isDirectory(path: Path): IO[Boolean] =
       client
-        .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(path.toString).build())
+        .listObjectsV2(bucket, path.toString)
         .map(_.keyCount() > 1)
-
-    private def refineString(str: String) =
-      refineV[NonEmpty](str).leftMap(e => new IllegalArgumentException(e))
 
   }
 
