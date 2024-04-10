@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.ship.config
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-final case class S3Config(endpoint: String, importBucket: String)
+import java.net.URI
+
+final case class S3Config(endpoint: URI, importBucket: String)
 
 object S3Config {
 

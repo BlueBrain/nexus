@@ -13,8 +13,6 @@ import io.laserdisc.pure.s3.tagless.Interpreter
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
-import java.net.URI
-
 object Main
     extends CommandIOApp(
       name = "ship",
@@ -75,7 +73,7 @@ object Main
       S3AsyncClient
         .builder()
         .credentialsProvider(DefaultCredentialsProvider.create())
-        .endpointOverride(URI.create(config.S3.endpoint))
+        .endpointOverride(config.S3.endpoint)
         .forcePathStyle(true)
     )
 
