@@ -17,6 +17,7 @@ import pureconfig.generic.semiauto.deriveReader
 final case class ShipConfig(
     baseUri: BaseUri,
     database: DatabaseConfig,
+    S3: S3Config,
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
     projectMapping: ProjectMapping = Map.empty,
