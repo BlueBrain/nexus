@@ -107,6 +107,25 @@ final class FilesRoutes(
                   )
                 }
               },
+              (pathPrefix("register-s3") & post & noParameter("rev") & parameter(
+                "storage".as[IdSegment].?
+              ) & indexingMode & tagParam) { (storage, mode, tag) =>
+                operationName(s"$prefixSegment/files/{org}/{project}/register-s3") {
+                  // Register a file from an S3 bucket, path is relative to the bucket's root
+                  entity(as[LinkFileRequest]) { linkRequest =>
+                    emit(
+                      Created,
+                      fileDescriptionFromRequest(linkRequest)
+                        .flatMap { desc =>
+                          files
+                            .createLink(storage, project, desc, linkRequest.path, tag)
+                            .index(mode)
+                        }
+                        .attemptNarrow[FileRejection]
+                    )
+                  }
+                }
+              },
               (idSegment & indexingMode) { (id, mode) =>
                 val fileId = FileId(id, project)
                 concat(

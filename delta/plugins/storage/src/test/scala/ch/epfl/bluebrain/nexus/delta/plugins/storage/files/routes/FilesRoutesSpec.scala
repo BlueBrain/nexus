@@ -350,6 +350,21 @@ class FilesRoutesSpec
       }
     }
 
+    "register a file from S3" in {
+      withUUIDF(UUID.randomUUID()) {
+        val metadata = genCustomMetadata()
+        val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
+        val file     = entity(genString())
+
+        postFileWithMetadata("/v1/files/org/proj/register-s3", file, metadata.asJson) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson should have(description(metadata.description.get))
+          response.asJson should have(name(metadata.name.get))
+          response.asJson should have(keywords(kw))
+        }
+      }
+    }
+
     "update a file" in {
       givenAFile { id =>
         val endpoints = List(

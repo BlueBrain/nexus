@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{InvalidStorageType, StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
@@ -42,6 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import shapeless.syntax.typeable.typeableOps
 
 import java.util.UUID
 
@@ -159,6 +161,42 @@ final class Files(
       res <- createLink(iri, projectRef, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
+
+  def registerS3File(
+      storageId: IdSegment,
+      projectRef: ProjectRef,
+      description: FileDescription,
+      path: Uri.Path,
+      tag: Option[UserTag]
+  )(implicit caller: Caller): IO[FileResource] = {
+    for {
+      pc                    <- fetchContext.onCreate(projectRef)
+      iri                   <- generateId(pc)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId.some, projectRef, pc)
+      s3Storage             <- storage
+                                 .narrowTo[S3Storage]
+                                 .map(IO.pure)
+                                 .getOrElse(IO.raiseError(InvalidStorageType(storage.id, storage.tpe, Set(StorageType.S3Storage))))
+      // TODO: call S3 for file attributes
+      _                     <- IO.println(s"Registering existing file in S3 bucket ${s3Storage.value.bucket} at path $path")
+      storageMetadata       <- IO[FileStorageMetadata](???)
+      res                   <- eval(
+                                 CreateFile(
+                                   iri,
+                                   projectRef,
+                                   storageRef,
+                                   storage.tpe,
+                                   FileAttributes
+                                     .from(
+                                       description,
+                                       storageMetadata
+                                     ),
+                                   caller.subject,
+                                   tag
+                                 )
+                               )
+    } yield res
+  }
 
   /**
     * Create a new file linking it from an existing file in a storage
