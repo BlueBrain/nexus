@@ -46,4 +46,5 @@ jobs:
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             app/Docker/publish \
-            storage/Docker/publish
+            storage/Docker/publish \
+            ship/Docker/publish
