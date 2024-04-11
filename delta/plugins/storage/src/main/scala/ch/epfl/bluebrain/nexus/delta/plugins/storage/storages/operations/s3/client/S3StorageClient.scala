@@ -2,19 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
-import cats.implicits.toBifunctorOps
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.refineV
+import fs2.Stream
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{ListObjectsV2Request, ListObjectsV2Response}
-import fs2.Stream
+import software.amazon.awssdk.services.s3.model.{GetObjectAttributesRequest, GetObjectAttributesResponse, ListObjectsV2Request, ListObjectsV2Response, ObjectAttributes}
 
 import java.net.URI
 
@@ -23,11 +21,14 @@ trait S3StorageClient {
 
   def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response]
 
-  def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte]
+  final def readFile(bucket: String, fileKey: String): Stream[IO, Byte] =
+    (parseBucket[StreamIO](bucket), parseFileKey[StreamIO](fileKey)).flatMapN(readFile)
 
-  def readFile(bucket: BucketName, fileKey: FileKey): fs2.Stream[IO, Byte]
+  def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
-  def underlyingClient: S3AsyncClientOp[IO]
+  def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse]
+
+  def underlyingClient: S3[IO]
 
   def baseEndpoint: IO[Uri]
 }
@@ -65,17 +66,21 @@ object S3StorageClient {
     override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(prefix).build())
 
-    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
-      for {
-        bk    <- Stream.fromEither[IO](refineV[NonEmpty](bucket).leftMap(e => new IllegalArgumentException(e)))
-        fk    <- Stream.fromEither[IO](refineV[NonEmpty](fileKey).leftMap(e => new IllegalArgumentException(e)))
-        bytes <- readFile(BucketName(bk), FileKey(fk))
-      } yield bytes
-
-    override def readFile(bucket: BucketName, fileKey: FileKey): fs2.Stream[IO, Byte] =
+    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
       s3.readFile(bucket, fileKey)
 
-    override def underlyingClient: S3AsyncClientOp[IO] = client
+    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
+      client
+        .getObjectAttributes(
+          GetObjectAttributesRequest
+            .builder()
+            .bucket(bucket)
+            .key(key)
+            .objectAttributes(ObjectAttributes.knownValues()) // TODO get all values
+            .build()
+        )
+
+    override def underlyingClient: S3[IO] = s3
 
     override def baseEndpoint: IO[Uri] = IO.pure(baseEndpoint)
   }
@@ -88,13 +93,11 @@ object S3StorageClient {
 
     override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
-      fs2.Stream.raiseError[IO](disabledErr)
+    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
 
-    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
-      fs2.Stream.raiseError[IO](disabledErr)
+    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] = raiseDisabledErr
 
-    override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
+    override def underlyingClient: S3[IO] = throw disabledErr
 
     override def baseEndpoint: IO[Uri] = raiseDisabledErr
   }
