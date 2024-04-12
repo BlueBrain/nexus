@@ -23,9 +23,7 @@ import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeVie
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
-import fs2.io.file.{Files, Path}
-
-import java.io.File
+import fs2.io.file.Path
 
 trait RunShip {
 
@@ -101,18 +99,11 @@ object RunShip {
   }
 
   def s3Ship(client: S3StorageClient, bucket: BucketName) = new RunShip {
-    override def loadConfig(config: Option[Path]): IO[ShipConfig] = {
-      config match {
-        case Some(configPath) =>
-          val stream  = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(configPath.toString)))
-          val tmpPath = Path("/tmp/ship/s3ship-external.conf")
-          Files[IO].writeAll(tmpPath)(stream).compile.drain.flatMap { _ =>
-            val configFile = new File(tmpPath.toString)
-            ShipConfig.loadFromFile(Some(configFile))
-          }
-        case None             => ShipConfig.load(None)
-      }
-
+    override def loadConfig(config: Option[Path]): IO[ShipConfig] = config match {
+      case Some(configPath) =>
+        val configStream = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(configPath.toString)))
+        ShipConfig.load(configStream)
+      case None             => ShipConfig.load(None)
     }
 
     override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
