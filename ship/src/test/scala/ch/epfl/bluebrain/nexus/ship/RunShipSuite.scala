@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import fs2.io.file.Path
+import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.catseffect.IOFixture
 import munit.{AnyFixture, CatsEffectSuite}
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime

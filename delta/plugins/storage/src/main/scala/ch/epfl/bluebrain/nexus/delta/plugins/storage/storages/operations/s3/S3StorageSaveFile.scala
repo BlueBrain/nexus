@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
-import fs2.aws.s3.S3
 import fs2.aws.s3.S3.MultipartETagValidation
 import fs2.aws.s3.models.Models.{BucketName, ETag, FileKey, PartSizeMB}
 import software.amazon.awssdk.services.s3.model._
@@ -35,8 +34,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
     uuidf: UUIDF
 ) extends SaveFile {
 
-  private val client                  = s3StorageClient.underlyingClient
-  private val s3                      = S3.create(client)
+  private val s3                      = s3StorageClient.underlyingClient
   private val multipartETagValidation = MultipartETagValidation.create[IO]
   private val logger                  = Logger[S3StorageSaveFile]
   private val partSizeMB: PartSizeMB  = refineMV(5)
@@ -99,15 +97,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, storage: S3Stora
       .to(List)
 
   private def getFileAttributes(key: String): IO[GetObjectAttributesResponse] =
-    client
-      .getObjectAttributes(
-        GetObjectAttributesRequest
-          .builder()
-          .bucket(bucket.value.value)
-          .key(key)
-          .objectAttributes(ObjectAttributes.OBJECT_SIZE) // TODO get all values
-          .build()
-      )
+    s3StorageClient.getFileAttributes(bucket.value.value, key)
 
   private def collectFileMetadata(
       bytes: Stream[IO, Byte],
