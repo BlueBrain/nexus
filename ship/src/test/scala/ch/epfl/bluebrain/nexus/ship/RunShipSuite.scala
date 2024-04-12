@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
-import ch.epfl.bluebrain.nexus.ship.LocalRunShipSuite.{clearDB, expectedImportReport, getDistinctOrgProjects}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
@@ -24,7 +24,7 @@ import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import java.time.Instant
 import scala.concurrent.duration.Duration
 
-class LocalRunShipSuite extends NexusSuite with LocalRunShipSuite.Fixture {
+class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
 
   override def munitIOTimeout: Duration = 60.seconds
 
@@ -83,7 +83,7 @@ class LocalRunShipSuite extends NexusSuite with LocalRunShipSuite.Fixture {
 
 }
 
-object LocalRunShipSuite {
+object RunShipSuite {
 
   def clearDB(xas: Transactors): IO[Unit] =
     sql"""

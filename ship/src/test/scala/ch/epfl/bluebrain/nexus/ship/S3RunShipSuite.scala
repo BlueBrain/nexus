@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.ship.LocalRunShipSuite.{clearDB, expectedImportReport}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport}
 import ch.epfl.bluebrain.nexus.ship.S3RunShipSuite.uploadFileToS3
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import eu.timepit.refined.types.string.NonEmptyString
@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, PutObjectR
 import java.nio.file.Paths
 import scala.concurrent.duration.Duration
 
-class S3RunShipSuite extends NexusSuite with LocalRunShipSuite.Fixture with LocalStackS3StorageClient.Fixture {
+class S3RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS3StorageClient.Fixture {
 
   override def munitIOTimeout: Duration = 60.seconds
 
