@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.S3Helpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import cats.effect.IO
 import cats.syntax.all._

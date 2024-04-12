@@ -22,7 +22,7 @@ trait S3StorageClient {
   def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response]
 
   final def readFile(bucket: String, fileKey: String): Stream[IO, Byte] =
-    (parseBucket[StreamIO](bucket), parseFileKey[StreamIO](fileKey)).flatMapN(readFile)
+    (Stream.eval(parseBucket(bucket)), Stream.eval(parseFileKey(fileKey))).flatMapN(readFile)
 
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
