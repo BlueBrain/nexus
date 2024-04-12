@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
 import ch.epfl.bluebrain.nexus.testkit.minio.LocalStackS3
+import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import org.testcontainers.containers.localstack.LocalStackContainer.Service
@@ -15,7 +16,7 @@ import org.testcontainers.containers.localstack.LocalStackContainer.Service
 object LocalStackS3StorageClient {
   val ServiceType = Service.S3
 
-  def s3StorageClientResource(): Resource[IO, (S3StorageClient, S3StorageConfig)] =
+  def s3StorageClientResource(): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
     LocalStackS3.localstackS3().flatMap { localstack =>
       LocalStackS3.fs2ClientFromLocalstack(localstack).map { client =>
         val creds                  = localstack.staticCredentialsProvider.resolveCredentials()
@@ -30,12 +31,12 @@ object LocalStackS3StorageClient {
           showLocation = false,
           defaultMaxFileSize = 1
         )
-        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint), conf)
+        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint), client, conf)
       }
     }
 
   trait Fixture { self: CatsEffectSuite =>
-    val localStackS3Client: IOFixture[(S3StorageClient, S3StorageConfig)] =
+    val localStackS3Client: IOFixture[(S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
       ResourceSuiteLocalFixture("s3storageclient", s3StorageClientResource())
   }
 }
