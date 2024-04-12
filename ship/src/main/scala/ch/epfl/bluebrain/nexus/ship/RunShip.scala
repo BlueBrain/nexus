@@ -103,14 +103,14 @@ object RunShip {
   def s3Ship(client: S3StorageClient, bucket: BucketName) = new RunShip {
     override def loadConfig(config: Option[Path]): IO[ShipConfig] = {
       config match {
-        case Some(value) =>
-          val stream = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(value.toString)))
-          val path   = Path("/tmp/ship/s3ship-external.conf")
-          Files[IO].writeAll(path)(stream).compile.drain.flatMap { _ =>
-            val configFile = new File(path.toString)
+        case Some(configPath) =>
+          val stream  = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(configPath.toString)))
+          val tmpPath = Path("/tmp/ship/s3ship-external.conf")
+          Files[IO].writeAll(tmpPath)(stream).compile.drain.flatMap { _ =>
+            val configFile = new File(tmpPath.toString)
             ShipConfig.loadFromFile(Some(configFile))
           }
-        case None        => ShipConfig.load(None)
+        case None             => ShipConfig.load(None)
       }
 
     }
