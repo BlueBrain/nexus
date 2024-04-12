@@ -14,6 +14,8 @@ import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
+import java.io.File
+
 final case class ShipConfig(
     baseUri: BaseUri,
     database: DatabaseConfig,
@@ -38,12 +40,18 @@ object ShipConfig {
   }
 
   def merge(externalConfigPath: Option[Path]): IO[(ShipConfig, Config)] =
+    mergeFromFile(externalConfigPath.map(_.toNioPath.toFile))
+
+  def mergeFromFile(externalConfigFile: Option[File]): IO[(ShipConfig, Config)] =
     for {
-      externalConfig <- Configs.parseFile(externalConfigPath.map(_.toNioPath.toFile))
+      externalConfig <- Configs.parseFile(externalConfigFile)
       defaultConfig  <- Configs.parseResource("ship-default.conf")
       result         <- Configs.merge[ShipConfig]("ship", externalConfig, defaultConfig)
     } yield result
 
   def load(externalConfigPath: Option[Path]): IO[ShipConfig] =
     merge(externalConfigPath).map(_._1)
+
+  def loadFromFile(externalConfigFile: Option[File]): IO[ShipConfig] =
+    mergeFromFile(externalConfigFile).map(_._1)
 }

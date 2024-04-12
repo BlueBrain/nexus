@@ -20,13 +20,18 @@ import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
+import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
-import fs2.aws.s3.models.Models.BucketName
-import fs2.io.file.Path
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
+import fs2.io.file.{Files, Path}
+
+import java.io.File
 
 trait RunShip {
 
   private val logger = Logger[RunShip]
+
+  def loadConfig(config: Option[Path]): IO[ShipConfig]
 
   def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent]
 
@@ -37,7 +42,7 @@ trait RunShip {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     for {
       _      <- logger.info(s"Running the import with file $path, config $config")
-      config <- ShipConfig.load(config)
+      config <- loadConfig(config)
       report <- Transactors.init(config.database).use { xas =>
                   val orgProvider    =
                     OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
@@ -88,11 +93,28 @@ trait RunShip {
 object RunShip {
 
   def localShip = new RunShip {
+    override def loadConfig(config: Option[Path]): IO[ShipConfig] =
+      ShipConfig.load(config)
+
     override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
       EventStreamer.localStreamer.stream(path, fromOffset)
   }
 
   def s3Ship(client: S3StorageClient, bucket: BucketName) = new RunShip {
+    override def loadConfig(config: Option[Path]): IO[ShipConfig] = {
+      config match {
+        case Some(value) =>
+          val stream = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(value.toString)))
+          val path   = Path("/tmp/ship/s3ship-external.conf")
+          Files[IO].writeAll(path)(stream).compile.drain.flatMap { _ =>
+            val configFile = new File(path.toString)
+            ShipConfig.loadFromFile(Some(configFile))
+          }
+        case None        => ShipConfig.load(None)
+      }
+
+    }
+
     override def eventsStream(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
       EventStreamer
         .s3eventStreamer(client, bucket)
