@@ -25,6 +25,7 @@ final case class ShipConfig(
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
     projectMapping: ProjectMapping = Map.empty,
+    viewDefaults: ViewDefaults,
     serviceAccount: ServiceAccountConfig
 )
 
