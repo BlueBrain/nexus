@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -138,6 +138,9 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       clock
     ).accepted
 
+    lazy val fileOps: FileOperations =
+      FileOperations.mk(S3StorageClientDisabled, remoteDiskStorageClient)
+
     lazy val files: Files = Files(
       fetchContext,
       aclCheck,
@@ -145,8 +148,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       storageStatistics,
       xas,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient,
-      S3StorageClientDisabled,
+      fileOps,
       clock
     )
 

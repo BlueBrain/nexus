@@ -9,7 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageSaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageSaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -26,7 +29,7 @@ trait SaveFile {
     * @param entity
     *   the entity with the file content
     */
-  def apply(filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]
+  def apply(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]
 }
 
 object SaveFile {
@@ -34,15 +37,21 @@ object SaveFile {
   /**
     * Construct a [[SaveFile]] from the given ''storage''.
     */
-  def apply(storage: Storage, client: RemoteDiskStorageClient, s3Client: S3StorageClient)(implicit
+  def apply(client: RemoteDiskStorageClient, s3Client: S3StorageClient)(implicit
       as: ActorSystem,
       uuidf: UUIDF
-  ): SaveFile =
-    storage match {
-      case storage: Storage.DiskStorage       => storage.saveFile
-      case storage: Storage.S3Storage         => storage.saveFile(s3Client)
-      case storage: Storage.RemoteDiskStorage => storage.saveFile(client)
-    }
+  ): SaveFile = new SaveFile {
+    private val disk   = new DiskStorageSaveFile
+    private val s3     = new S3StorageSaveFile(s3Client)
+    private val remote = new RemoteDiskStorageSaveFile(client)
+
+    override def apply(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
+      storage match {
+        case storage: Storage.DiskStorage       => disk.apply(storage, filename, entity)
+        case storage: Storage.S3Storage         => s3.apply(storage, filename, entity)
+        case storage: Storage.RemoteDiskStorage => remote.apply(storage, filename, entity)
+      }
+  }
 
   /**
     * A sink that computes the digest of the input ByteString
@@ -57,14 +66,6 @@ object SaveFile {
         digest
       }
       .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, dig.digest.map("%02x".format(_)).mkString)))
-
-  /**
-    * A sink that computes the size of the input ByteString
-    */
-  val sizeSink: Sink[ByteString, Future[Long]] =
-    Sink.fold(0L) { (size, currentBytes: ByteString) =>
-      size + currentBytes.size
-    }
 
   /**
     * Builds a relative file path with intermediate folders taken from the passed ''uuid''

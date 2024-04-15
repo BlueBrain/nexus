@@ -52,6 +52,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     10
   )
   private val storage: RemoteDiskStorage           = RemoteDiskStorage(iri, project, storageValue, Json.obj())
+  private val saveFile                             = new RemoteDiskStorageSaveFile(remoteDiskStorageClient)
 
   "RemoteDiskStorage operations" should {
     val content = "file content"
@@ -63,7 +64,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     val path     = Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
 
     "save a file to a folder" in {
-      storage.saveFile(remoteDiskStorageClient).apply(filename, entity).accepted shouldEqual FileStorageMetadata(
+      saveFile.apply(storage, filename, entity).accepted shouldEqual FileStorageMetadata(
         uuid,
         bytes,
         digest,
@@ -93,7 +94,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fail attempting to save the same file again" in {
-      storage.saveFile(remoteDiskStorageClient).apply(filename, entity).rejectedWith[ResourceAlreadyExists]
+      saveFile.apply(storage, filename, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

@@ -6,15 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 
-class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage, client: RemoteDiskStorageClient)(implicit uuidf: UUIDF)
-    extends SaveFile {
+class RemoteDiskStorageSaveFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF) {
 
-  override def apply(
+  def apply(
+      storage: RemoteDiskStorage,
       filename: String,
       entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {

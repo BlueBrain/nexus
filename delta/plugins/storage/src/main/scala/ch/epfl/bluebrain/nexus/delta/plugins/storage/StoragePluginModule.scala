@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, StorageAccess}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -169,8 +169,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
-        remoteDiskStorageClient: RemoteDiskStorageClient,
-        s3Client: S3StorageClient
+        fileOps: FileOperations
     ) =>
       Files(
         fetchContext,
@@ -179,8 +178,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storagesStatistics,
         xas,
         cfg.files,
-        remoteDiskStorageClient,
-        s3Client,
+        fileOps,
         clock
       )(
         uuidF,

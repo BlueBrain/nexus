@@ -7,12 +7,10 @@ import akka.stream.scaladsl.FileIO
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
@@ -24,17 +22,17 @@ import java.nio.file._
 import java.util.UUID
 import scala.concurrent.Future
 
-final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, uuidf: UUIDF) extends SaveFile {
+final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
 
   import as.dispatcher
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
-  override def apply(filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
+  def apply(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
     for {
       uuid                     <- uuidf()
       (fullPath, relativePath) <- initLocation(storage.project, storage.value, uuid, filename)
-      (size, digest)           <- storeFile(entity, fullPath)
+      (size, digest)           <- storeFile(storage, entity, fullPath)
     } yield FileStorageMetadata(
       uuid = uuid,
       bytes = size,
@@ -46,7 +44,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, 
   }
 
   @SuppressWarnings(Array("IsInstanceOf"))
-  private def storeFile(entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
+  private def storeFile(storage: DiskStorage, entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
     IO.fromFuture(
       IO.delay(
         entity.dataBytes.runWith(

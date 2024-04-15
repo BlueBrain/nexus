@@ -40,6 +40,7 @@ class S3StorageFetchSaveSpec
   implicit private lazy val (s3StorageClient: S3StorageClient, underlying: S3AsyncClientOp[IO], _) =
     localStackS3Client()
   implicit private lazy val as: ActorSystem                                                        = actorSystem()
+  private lazy val s3Save                                                                          = new S3StorageSaveFile(s3StorageClient)
 
   test("Save and fetch an object in a bucket") {
     givenAnS3Bucket { bucket =>
@@ -52,17 +53,17 @@ class S3StorageFetchSaveSpec
         writePermission = write,
         maxFileSize = 20
       )
-      val iri          = iri"http://localhost/s3"
-      val project      = ProjectRef.unsafe("org", "project")
-      val storage      = S3Storage(iri, project, storageValue, Json.obj())
-      val s3Save       = new S3StorageSaveFile(s3StorageClient, storage)
+
+      val iri     = iri"http://localhost/s3"
+      val project = ProjectRef.unsafe("org", "project")
+      val storage = S3Storage(iri, project, storageValue, Json.obj())
 
       val filename = "myfile.txt"
       val content  = genString()
       val entity   = HttpEntity(content)
 
       val result = for {
-        attr   <- s3Save.apply(filename, entity)
+        attr   <- s3Save.apply(storage, filename, entity)
         source <- s3Fetch.apply(attr.path)
       } yield consume(source)
 

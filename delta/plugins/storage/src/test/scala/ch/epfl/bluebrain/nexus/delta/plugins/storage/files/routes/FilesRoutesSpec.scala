@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.Computed
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
@@ -122,6 +123,7 @@ class FilesRoutesSpec
     ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
     clock
   ).accepted
+  lazy val fileOps: FileOperations                         = FileOperations.mk(S3StorageClientDisabled, remoteDiskStorageClient)
   lazy val files: Files                                    =
     Files(
       fetchContext,
@@ -130,8 +132,7 @@ class FilesRoutesSpec
       storagesStatistics,
       xas,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient,
-      S3StorageClientDisabled,
+      fileOps,
       clock
     )(uuidF, typedSystem)
   private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)

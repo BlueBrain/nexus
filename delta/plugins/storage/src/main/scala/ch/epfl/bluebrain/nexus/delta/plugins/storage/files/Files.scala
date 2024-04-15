@@ -21,8 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -57,12 +55,9 @@ final class Files(
     fetchContext: FetchContext,
     storages: FetchStorage,
     storagesStatistics: StoragesStatistics,
-    remoteDiskStorageClient: RemoteDiskStorageClient,
-    s3Client: S3StorageClient
-)(implicit
-    uuidF: UUIDF,
-    system: ClassicActorSystem
-) extends FetchFileStorage
+    fileOperations: FileOperations
+)(implicit uuidF: UUIDF)
+    extends FetchFileStorage
     with FetchFileResource {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -430,11 +425,9 @@ final class Files(
   }.span("fetchFileContent")
 
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
-    FetchFile(storage, remoteDiskStorageClient, s3Client)
-      .apply(attr)
-      .adaptError { case e: FetchFileRejection =>
-        FetchRejection(fileId, storage.id, e)
-      }
+    fileOperations.fetch(storage, attr).adaptError { case e: FetchFileRejection =>
+      FetchRejection(fileId, storage.id, e)
+    }
 
   override def fetch(id: FileId): IO[FileResource] =
     (for {
@@ -486,10 +479,10 @@ final class Files(
       path: Uri.Path,
       filename: String,
       fileId: Iri
-  ): IO[FileStorageMetadata]                           =
-    LinkFile(storage, remoteDiskStorageClient)
-      .apply(path, filename)
-      .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
+  ): IO[FileStorageMetadata] =
+    fileOperations.link(storage, path, filename).adaptError { case e: StorageFileRejection =>
+      LinkRejection(fileId, storage.id, e)
+    }
 
   private def eval(cmd: FileCommand): IO[FileResource] = FilesLog.eval(log)(cmd)
 
@@ -542,8 +535,8 @@ final class Files(
       metadata: FileDescription,
       source: BodyPartEntity
   ): IO[FileStorageMetadata]                                                    =
-    SaveFile(storage, remoteDiskStorageClient, s3Client)
-      .apply(metadata.filename, source)
+    fileOperations
+      .save(storage, metadata.filename, source)
       .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
   private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
@@ -576,10 +569,11 @@ final class Files(
     } yield ()
   }
 
-  private def fetchAttributes(storage: Storage, attr: FileAttributes, fileId: Iri): IO[ComputedFileAttributes] =
-    FetchAttributes(storage, remoteDiskStorageClient)
-      .apply(attr)
+  private def fetchAttributes(storage: Storage, attr: FileAttributes, fileId: Iri): IO[ComputedFileAttributes] = {
+    fileOperations
+      .fetchAttributes(storage, attr)
       .adaptError { case e: FetchAttributeRejection => FetchAttributesRejection(fileId, storage.id, e) }
+  }
 
 }
 
@@ -801,8 +795,7 @@ object Files {
       storagesStatistics: StoragesStatistics,
       xas: Transactors,
       config: FilesConfig,
-      remoteDiskStorageClient: RemoteDiskStorageClient,
-      s3Client: S3StorageClient,
+      fileOps: FileOperations,
       clock: Clock[IO]
   )(implicit
       uuidF: UUIDF,
@@ -816,8 +809,7 @@ object Files {
       fetchContext,
       storages,
       storagesStatistics,
-      remoteDiskStorageClient,
-      s3Client
+      fileOps
     )
   }
 }

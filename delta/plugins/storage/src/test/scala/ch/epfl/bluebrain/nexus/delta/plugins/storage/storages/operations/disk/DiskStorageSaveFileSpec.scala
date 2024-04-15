@@ -40,12 +40,13 @@ class DiskStorageSaveFileSpec
     val storage               = DiskStorage(iri, project, value, Json.obj())
     val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     implicit val uuidf: UUIDF = UUIDF.fixed(uuid)
+    val saveFile              = new DiskStorageSaveFile()
     val content               = "file content"
     val entity                = HttpEntity(content)
 
     "save a file to a volume" in {
 
-      val metadata = storage.saveFile.apply("myfile.txt", entity).accepted
+      val metadata = saveFile.apply(storage, "myfile.txt", entity).accepted
 
       Files.readString(file.value) shouldEqual content
 
@@ -64,7 +65,7 @@ class DiskStorageSaveFileSpec
     }
 
     "fail attempting to save the same file again" in {
-      storage.saveFile.apply("myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
+      saveFile.apply(storage, "myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 
