@@ -3,15 +3,17 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{PostgresPassword, PostgresUser, transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.{transactors, PostgresPassword, PostgresUser}
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport, getDistinctOrgProjects}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, clearDB, expectedImportReport, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.testkit.config.SystemPropertyOverride
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
@@ -41,6 +43,15 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     for {
       importFile <- asPath("import/import.json")
       _          <- RunShip.localShip.run(importFile, None).assertEquals(expectedImportReport)
+    } yield ()
+  }
+
+  test("Run import and check for views") {
+    for {
+      importFile <- asPath("import/import.json")
+      _          <- RunShip.localShip.run(importFile, None).assertEquals(expectedImportReport)
+      _          <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
+      _          <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
     } yield ()
   }
 
@@ -94,6 +105,13 @@ object RunShipSuite {
     sql"""
          | SELECT DISTINCT org, project FROM scoped_events;
        """.stripMargin.query[(String, String)].to[List].transact(xas.read)
+
+  def checkFor(entityType: String, id: Iri, xas: Transactors): IO[Int] =
+    sql"""
+         | SELECT COUNT(*) FROM scoped_events 
+         | WHERE type = $entityType
+         | AND id = ${id.toString}
+       """.stripMargin.query[Int].unique.transact(xas.read)
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory
   val expectedImportReport: ImportReport = ImportReport(

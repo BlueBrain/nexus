@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.ship.views
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, CompositeViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, ValidateCompositeView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -20,7 +19,6 @@ import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, P
 import io.circe.Decoder
 
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
 
 class CompositeViewProcessor(views: UUID => IO[CompositeViews], projectMapper: ProjectMapper, clock: EventClock)
     extends EventProcessor[CompositeViewEvent] {
@@ -39,6 +37,7 @@ class CompositeViewProcessor(views: UUID => IO[CompositeViews], projectMapper: P
     implicit val c: Caller  = Caller(s, Set.empty)
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
+
     event match {
       case e: CompositeViewCreated      => views(event.uuid).flatMap(_.create(project, e.source))
       case e: CompositeViewUpdated      => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
@@ -70,23 +69,8 @@ object CompositeViewProcessor {
   )(implicit
       jsonLdApi: JsonLdApi
   ): CompositeViewProcessor = {
-    val noValidation = new ValidateCompositeView {
-      override def apply(uuid: UUID, value: CompositeViewValue): IO[Unit] = IO.unit
-    }
-
-    val views = (uuid: UUID) =>
-      CompositeViews(
-        fetchContext,
-        rcr,
-        noValidation,
-        3.seconds,
-        config,
-        xas,
-        clock
-      )(jsonLdApi, UUIDF.fixed(uuid))
-
+    val views = ViewWiring.cvViews(fetchContext, rcr, config, clock, xas)
     new CompositeViewProcessor(views, projectMapper, clock)
-
   }
 
 }

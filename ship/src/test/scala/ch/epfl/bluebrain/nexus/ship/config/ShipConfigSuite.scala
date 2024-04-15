@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.ship.config.ShipConfigSuite.{defaultBgValues, defaultEsValues}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.models.Models.BucketName
@@ -14,6 +16,12 @@ class ShipConfigSuite extends NexusSuite {
   test("Default configuration should be parsed and loaded") {
     val expectedBaseUri = BaseUri("http://localhost:8080", Label.unsafe("v1"))
     ShipConfig.load(None).map(_.baseUri).assertEquals(expectedBaseUri)
+  }
+
+  test("The defaults (name/description) for views should be correct") {
+    val config = ShipConfig.load(None)
+    config.map(_.viewDefaults.elasticsearch).assertEquals(defaultEsValues) >>
+      config.map(_.viewDefaults.blazegraph).assertEquals(defaultBgValues)
   }
 
   test("Default configuration should be overloaded by the external config") {
@@ -46,4 +54,10 @@ class ShipConfigSuite extends NexusSuite {
     } yield ()
   }
 
+}
+
+object ShipConfigSuite {
+  private val defaultEsValues =
+    Defaults("Default Elasticsearch view", "An Elasticsearch view of all resources in the project.")
+  private val defaultBgValues = Defaults("Default Sparql view", "A Sparql view of all resources in the project.")
 }
