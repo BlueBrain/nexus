@@ -6,15 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 
-class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage, client: RemoteDiskStorageClient)(implicit uuidf: UUIDF)
-    extends LinkFile {
+class RemoteDiskStorageLinkFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF) {
 
-  def apply(sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] = {
+  def apply(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
     for {
       uuid                                                        <- uuidf()
       destinationPath                                              = Uri.Path(intermediateFolders(storage.project, uuid, filename))
@@ -30,5 +28,4 @@ class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage, client: RemoteDiskSt
         path = destinationPath
       )
     }
-  }
 }

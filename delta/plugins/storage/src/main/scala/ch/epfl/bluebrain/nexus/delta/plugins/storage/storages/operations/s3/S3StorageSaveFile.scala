@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -37,7 +36,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
   private val multipartETagValidation = MultipartETagValidation.create[IO]
   private val logger                  = Logger[S3StorageSaveFile]
   private val partSizeMB: PartSizeMB  = refineMV(5)
-  private val bucket                  = BucketName(NonEmptyString.unsafeFrom("TODO pass this through"))
 
   def apply(
       storage: S3Storage,
@@ -45,15 +43,16 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {
 
-    def storeFile(path: Path, uuid: UUID, entity: BodyPartEntity): IO[FileStorageMetadata] = {
-      val key                        = path.toString()
+    val bucket = BucketName(NonEmptyString.unsafeFrom(storage.value.bucket))
+
+    def storeFile(key: String, uuid: UUID, entity: BodyPartEntity): IO[FileStorageMetadata] = {
       val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
 
       (for {
         _          <- log(key, s"Checking for object existence")
-        _          <- validateObjectDoesNotExist(key)
+        _          <- validateObjectDoesNotExist(bucket.value.value, key)
         _          <- log(key, s"Beginning multipart upload")
-        maybeEtags <- uploadFileMultipart(fileData, key)
+        maybeEtags <- uploadFileMultipart(fileData, bucket, key)
         _          <- log(key, s"Finished multipart upload. Etag by part: $maybeEtags")
         attr       <- collectFileMetadata(fileData, key, uuid, maybeEtags)
       } yield attr)
@@ -95,15 +94,17 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
         )
       }
 
+    def log(key: String, msg: String) = logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg")
+
     for {
       uuid   <- uuidf()
       path    = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-      result <- storeFile(path, uuid, entity)
+      result <- storeFile(path.toString(), uuid, entity)
     } yield result
   }
 
-  private def validateObjectDoesNotExist(key: String) =
-    getFileAttributes(key).redeemWith(
+  private def validateObjectDoesNotExist(bucket: String, key: String) =
+    getFileAttributes(bucket, key).redeemWith(
       {
         case _: NoSuchKeyException => IO.unit
         case e                     => IO.raiseError(e)
@@ -118,7 +119,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
         .mapMaterializedValue(_ => NotUsed)
     )
 
-  private def uploadFileMultipart(fileData: Stream[IO, Byte], key: String): IO[List[Option[ETag]]] =
+  private def uploadFileMultipart(fileData: Stream[IO, Byte], bucket: BucketName, key: String): IO[List[Option[ETag]]] =
     fileData
       .through(
         s3.uploadFileMultipart(
@@ -132,8 +133,8 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       .compile
       .to(List)
 
-  private def getFileAttributes(key: String): IO[GetObjectAttributesResponse] =
-    s3StorageClient.getFileAttributes(bucket.value.value, key)
+  private def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
+    s3StorageClient.getFileAttributes(bucket, key)
 
   // TODO issue fetching attributes when tested against localstack, only after the object is saved
   // Verify if it's the same for real S3. Error msg: 'Could not parse XML response.'
@@ -156,6 +157,4 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
   }
 
   private def raiseUnexpectedErr[A](key: String, msg: String): IO[A] = IO.raiseError(UnexpectedSaveError(key, msg))
-
-  private def log(key: String, msg: String) = logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg")
 }

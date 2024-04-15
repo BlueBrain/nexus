@@ -34,12 +34,13 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
     with ConfigFixtures {
 
   private lazy val remoteDiskStorageClient = fixture.init
+  private val uuid                         = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  private val uuidf: UUIDF                 = UUIDF.fixed(uuid)
+  private lazy val linkFile                = new RemoteDiskStorageLinkFile(remoteDiskStorageClient)(uuidf)
 
-  private val iri                   = iri"http://localhost/remote"
-  private val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-  implicit private val uuidf: UUIDF = UUIDF.fixed(uuid)
-  private val project               = ProjectRef.unsafe("org", "project")
-  private val filename              = "file-2.txt"
+  private val iri      = iri"http://localhost/remote"
+  private val project  = ProjectRef.unsafe("org", "project")
+  private val filename = "file-2.txt"
 
   private var storageValue: RemoteDiskStorageValue = _
   private var storage: RemoteDiskStorage           = _
@@ -60,7 +61,7 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
   "RemoteDiskStorage linking operations" should {
 
     "succeed" in {
-      storage.linkFile(remoteDiskStorageClient).apply(Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
+      linkFile.apply(storage, Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
         FileStorageMetadata(
           uuid,
           12,
@@ -72,10 +73,7 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fail linking a file that does not exist" in {
-      storage
-        .linkFile(remoteDiskStorageClient)
-        .apply(Uri.Path("my/file-40.txt"), filename)
-        .rejectedWith[FileNotFound]
+      linkFile.apply(storage, Uri.Path("my/file-40.txt"), filename).rejectedWith[FileNotFound]
     }
   }
 }

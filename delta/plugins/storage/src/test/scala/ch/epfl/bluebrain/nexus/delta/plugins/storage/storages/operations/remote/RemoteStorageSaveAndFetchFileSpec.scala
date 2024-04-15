@@ -52,6 +52,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
   )
   private val storage: RemoteDiskStorage           = RemoteDiskStorage(iri, project, storageValue, Json.obj())
   private val saveFile                             = new RemoteDiskStorageSaveFile(remoteDiskStorageClient)
+  private val fetchAttr                            = new RemoteStorageFetchAttributes(remoteDiskStorageClient)
 
   "RemoteDiskStorage operations" should {
     val content = "file content"
@@ -79,7 +80,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fetch a file attributes" in eventually {
-      val computedAttributes = storage.fetchComputedAttributes(remoteDiskStorageClient).apply(path).accepted
+      val computedAttributes = fetchAttr.apply(storage, path).accepted
       computedAttributes.digest shouldEqual digest
       computedAttributes.bytes shouldEqual bytes
       computedAttributes.mediaType shouldEqual `text/plain(UTF-8)`
