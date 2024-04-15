@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.views
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ResourceAlreadyExists}
@@ -88,7 +89,7 @@ object BlazegraphViewProcessor {
   )(implicit
       jsonLdApi: JsonLdApi
   ): BlazegraphViewProcessor = {
-    val views = ViewWiring.bgViews(fetchContext, rcr, config, clock, xas)
+    val views = (uuid: UUID) => ViewWiring.blazegraphViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
     new BlazegraphViewProcessor(views, projectMapper, clock)
   }
 

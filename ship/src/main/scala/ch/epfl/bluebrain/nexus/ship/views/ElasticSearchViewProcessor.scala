@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.views
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{IncorrectRev, ResourceAlreadyExists}
@@ -88,9 +89,9 @@ object ElasticSearchViewProcessor {
       xas: Transactors
   )(implicit
       jsonLdApi: JsonLdApi
-  ): IO[ElasticSearchViewProcessor] =
-    ViewWiring.esViews(fetchContext, rcr, config, clock, xas).map { views =>
-      new ElasticSearchViewProcessor(views, projectMapper, clock)
-    }
+  ): ElasticSearchViewProcessor = {
+    val views = (uuid: UUID) => ViewWiring.elasticSearchViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
+    new ElasticSearchViewProcessor(views, projectMapper, clock)
+  }
 
 }

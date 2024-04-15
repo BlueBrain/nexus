@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfigSuite.{defaultBgValues, defaultEsValues, defaultSearchValues}
+import ch.epfl.bluebrain.nexus.ship.config.ShipConfigSuite.{defaultBgValues, defaultEsValues}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.models.Models.BucketName
@@ -21,8 +21,7 @@ class ShipConfigSuite extends NexusSuite {
   test("The defaults (name/description) for views should be correct") {
     val config = ShipConfig.load(None)
     config.map(_.viewDefaults.elasticsearch).assertEquals(defaultEsValues) >>
-      config.map(_.viewDefaults.blazegraph).assertEquals(defaultBgValues) >>
-      config.map(_.viewDefaults.search).assertEquals(defaultSearchValues)
+      config.map(_.viewDefaults.blazegraph).assertEquals(defaultBgValues)
   }
 
   test("Default configuration should be overloaded by the external config") {
@@ -58,9 +57,7 @@ class ShipConfigSuite extends NexusSuite {
 }
 
 object ShipConfigSuite {
-  private val defaultEsValues     =
+  private val defaultEsValues =
     Defaults("Default Elasticsearch view", "An Elasticsearch view of all resources in the project.")
-  private val defaultBgValues     = Defaults("Default Sparql view", "A Sparql view of all resources in the project.")
-  private val defaultSearchValues =
-    Defaults("Default global search view", "An Elasticsearch view of configured resources for the global search.")
+  private val defaultBgValues = Defaults("Default Sparql view", "A Sparql view of all resources in the project.")
 }

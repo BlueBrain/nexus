@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.projects
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -15,11 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.views.ViewWiring
-import ch.epfl.bluebrain.nexus.ship._
 import io.circe.Decoder
 
 final class ProjectProcessor private (
@@ -87,12 +86,8 @@ object ProjectProcessor {
       jsonLdApi: JsonLdApi
   ): IO[ProjectProcessor] =
     for {
-      uuidF      <- EventUUIDF.init()
-      esViewUuid <- UUIDF.random()
-      bgViewUuid <- UUIDF.random()
-      esViews    <- ViewWiring.esViews(fetchContext, rcr, config.eventLog, clock, xas).flatMap(_(esViewUuid))
-      bgViews    <- ViewWiring.bgViews(fetchContext, rcr, config.eventLog, clock, xas)(jsonLdApi)(bgViewUuid)
-      initializer = ViewWiring.viewInitializer(esViews, bgViews, config)
+      uuidF       <- EventUUIDF.init()
+      initializer <- ViewWiring.viewInitializer2(fetchContext, rcr, config, clock, xas)
     } yield {
       val disableDeletion: ValidateProjectDeletion = (p: ProjectRef) => IO.raiseError(ProjectDeletionIsNotAllowed(p))
       val projects                                 = ProjectsImpl(

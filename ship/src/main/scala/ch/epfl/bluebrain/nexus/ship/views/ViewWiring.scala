@@ -9,14 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Val
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchFiles, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchScopeInitialization, ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ScopeInitializationErrorStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sdk.{ScopeInitialization, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 
@@ -25,11 +23,12 @@ import scala.concurrent.duration.DurationInt
 
 object ViewWiring {
 
-  def esViews(
+  def elasticSearchViews(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       config: EventLogConfig,
       clock: EventClock,
+      uuidF: UUIDF,
       xas: Transactors
   )(implicit jsonLdApi: JsonLdApi) = {
     implicit val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
@@ -39,7 +38,7 @@ object ViewWiring {
       override def apply(uuid: UUID, indexingRev: IndexingRev, v: ElasticSearchViewValue): IO[Unit] = IO.unit
     }
 
-    ElasticSearchFiles.mk(loader).map { files => (uuid: UUID) =>
+    ElasticSearchFiles.mk(loader).flatMap { files =>
       ElasticSearchViews(
         fetchContext,
         rcr,
@@ -50,32 +49,32 @@ object ViewWiring {
         files.defaultMapping,
         files.defaultSettings,
         clock
-      )(jsonLdApi, UUIDF.fixed(uuid))
+      )(jsonLdApi, uuidF)
     }
   }
 
-  def bgViews(
+  def blazegraphViews(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       config: EventLogConfig,
       clock: EventClock,
+      uuidF: UUIDF,
       xas: Transactors
   )(implicit jsonLdApi: JsonLdApi) = {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
     val prefix       = "nexus" // TODO: use the config?
-    (uuid: UUID) =>
-      BlazegraphViews(
-        fetchContext,
-        rcr,
-        noValidation,
-        (_: ViewResource) => IO.unit,
-        config,
-        prefix,
-        xas,
-        clock
-      )(jsonLdApi, UUIDF.fixed(uuid))
+    BlazegraphViews(
+      fetchContext,
+      rcr,
+      noValidation,
+      (_: ViewResource) => IO.unit,
+      config,
+      prefix,
+      xas,
+      clock
+    )(jsonLdApi, uuidF)
   }
 
   def cvViews(
@@ -100,10 +99,27 @@ object ViewWiring {
       )(jsonLdApi, UUIDF.fixed(uuid))
   }
 
-  def viewInitializer(
+  def viewInitializer2(
+      fetchContext: FetchContext,
+      rcr: ResolverContextResolution,
+      config: ShipConfig,
+      clock: EventClock,
+      xas: Transactors
+  )(implicit jsonLdApi: JsonLdApi) = {
+    for {
+      esViews <- elasticSearchViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
+      bgViews <- blazegraphViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
+    } yield {
+      viewInitializer(esViews, bgViews, config, clock, xas)
+    }
+  }
+
+  private def viewInitializer(
       esViews: ElasticSearchViews,
       bgViews: BlazegraphViews,
-      config: ShipConfig
+      config: ShipConfig,
+      clock: EventClock,
+      xas: Transactors
   ) = {
     val viewInits = Set.empty[ScopeInitialization] +
       new ElasticSearchScopeInitialization(
@@ -115,19 +131,7 @@ object ViewWiring {
         config.serviceAccount.value,
         config.viewDefaults.blazegraph
       )
-    ScopeInitializer(viewInits, noopErrorStore)
-  }
-
-  def noopErrorStore: ScopeInitializationErrorStore = new ScopeInitializationErrorStore {
-    override def save(
-        entityType: EntityType,
-        project: ProjectRef,
-        e: ServiceError.ScopeInitializationFailed
-    ): IO[Unit] = IO.unit
-
-    override def fetch: IO[List[ScopeInitializationErrorStore.ScopeInitErrorRow]] = IO.pure(List.empty)
-
-    override def delete(project: ProjectRef): IO[Unit] = IO.unit
+    ScopeInitializer(viewInits, ScopeInitializationErrorStore.apply(xas, clock))
   }
 
 }
