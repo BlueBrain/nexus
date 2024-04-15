@@ -99,19 +99,17 @@ object ViewWiring {
       )(jsonLdApi, UUIDF.fixed(uuid))
   }
 
-  def viewInitializer2(
+  def viewInitializer(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       config: ShipConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi) = {
+  )(implicit jsonLdApi: JsonLdApi): IO[ScopeInitializer] = {
     for {
       esViews <- elasticSearchViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
       bgViews <- blazegraphViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
-    } yield {
-      viewInitializer(esViews, bgViews, config, clock, xas)
-    }
+    } yield viewInitializer(esViews, bgViews, config, clock, xas)
   }
 
   private def viewInitializer(
@@ -120,7 +118,7 @@ object ViewWiring {
       config: ShipConfig,
       clock: EventClock,
       xas: Transactors
-  ) = {
+  ): ScopeInitializer = {
     val viewInits = Set.empty[ScopeInitialization] +
       new ElasticSearchScopeInitialization(
         esViews,

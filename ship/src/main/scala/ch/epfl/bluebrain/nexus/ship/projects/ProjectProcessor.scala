@@ -87,7 +87,7 @@ object ProjectProcessor {
   ): IO[ProjectProcessor] =
     for {
       uuidF       <- EventUUIDF.init()
-      initializer <- ViewWiring.viewInitializer2(fetchContext, rcr, config, clock, xas)
+      initializer <- ViewWiring.viewInitializer(fetchContext, rcr, config, clock, xas)
     } yield {
       val disableDeletion: ValidateProjectDeletion = (p: ProjectRef) => IO.raiseError(ProjectDeletionIsNotAllowed(p))
       val projects                                 = ProjectsImpl(
