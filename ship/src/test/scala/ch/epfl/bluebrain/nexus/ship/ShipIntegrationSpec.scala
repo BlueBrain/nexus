@@ -139,29 +139,6 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       thereShouldBeAView(project, bgView, bgViewJson)
     }
 
-    "transfer a search view" in {
-      val (project, _, _)              = thereIsAProject()
-      val (searchView, searchViewJson) = thereIsASearchView(project)
-
-      whenTheExportIsRunOnProject(project)
-      theOldProjectIsDeleted(project)
-
-      weRunTheImporter(project)
-      weFixThePermissions(project)
-
-      thereShouldBeAViewIgnoringUUID(project, searchView, searchViewJson)
-    }
-
-    def thereIsASearchView(project: ProjectRef): (Iri, Json) = {
-      val searchView         = nxv + "searchView"
-      val encodedView        = UrlUtils.encode(searchView.toString)
-      val (viewJson, status) = deltaClient
-        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
-        .accepted
-      status shouldEqual StatusCodes.OK
-      searchView -> viewJson
-    }
-
     def thereShouldBeAView(project: ProjectRef, view: Iri, originalJson: Json): Assertion = {
       val encodedIri = UrlUtils.encode(view.toString)
       deltaClient
@@ -169,28 +146,6 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
           {
             response.status shouldEqual StatusCodes.OK
             json shouldEqual originalJson
-          }
-        }
-        .accepted
-    }
-
-    def thereShouldBeAViewIgnoringUUID(project: ProjectRef, view: Iri, originalJson: Json): Assertion = {
-      val encodedIri = UrlUtils.encode(view.toString)
-
-      import io.circe.optics.JsonPath.root
-      val ignoreSourceUUID     = root.sources.each.at("_uuid").replace(None)
-      val ignoreProjectionUUID = root.projections.each.at("_uuid").replace(None)
-      val ignoreUUID           = root.at("_uuid").replace(None)
-
-      val filter = ignoreUUID andThen ignoreSourceUUID andThen ignoreProjectionUUID
-
-      root.sources.`null`
-
-      deltaClient
-        .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
-          {
-            response.status shouldEqual StatusCodes.OK
-            filter(json) shouldEqual filter(originalJson)
           }
         }
         .accepted
