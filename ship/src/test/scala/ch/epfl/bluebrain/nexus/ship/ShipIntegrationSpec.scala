@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.ship.ShipCommand.RunCommand
 import ch.epfl.bluebrain.nexus.tests.Identity.writer
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -348,8 +349,8 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       val folder     = s"/tmp/ship/${project.project.value}/"
       val folderPath = Paths.get(folder)
       val file       = Files.newDirectoryStream(folderPath, "*.json").iterator().asScala.toList.head
-
-      RunShip.localShip.run(fs2.io.file.Path.fromNioPath(file), None).accepted
+      val r          = RunCommand(fs2.io.file.Path.fromNioPath(file), None, Offset.start, RunMode.Local)
+      Main.run(r).accepted
       ()
     }
 

@@ -3,40 +3,23 @@ package ch.epfl.bluebrain.nexus.ship.config
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, EventLogConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig.ProjectMapping
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import com.typesafe.config.Config
+import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.io.file.Path
 import pureconfig.ConfigReader
 import pureconfig.backend.ConfigFactoryWrapper
-import pureconfig.configurable.genericMapReader
-import pureconfig.error.{CannotConvert, ConfigReaderException}
+import pureconfig.error.ConfigReaderException
 import pureconfig.generic.semiauto.deriveReader
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-final case class ShipConfig(
-    baseUri: BaseUri,
-    database: DatabaseConfig,
-    S3: S3Config,
-    eventLog: EventLogConfig,
-    organizations: OrganizationCreationConfig,
-    projectMapping: ProjectMapping = Map.empty,
-    viewDefaults: ViewDefaults,
-    serviceAccount: ServiceAccountConfig
-)
+final case class ShipConfig(database: DatabaseConfig, s3: S3Config, input: InputConfig)
 
 object ShipConfig {
-
-  type ProjectMapping = Map[ProjectRef, ProjectRef]
-
-  implicit val mapReader: ConfigReader[ProjectMapping] =
-    genericMapReader(str =>
-      ProjectRef.parse(str).leftMap(e => CannotConvert(str, classOf[ProjectRef].getSimpleName, e))
-    )
 
   implicit final val shipConfigReader: ConfigReader[ShipConfig] = {
     deriveReader[ShipConfig]
@@ -61,9 +44,10 @@ object ShipConfig {
   def load(externalConfigPath: Option[Path]): IO[ShipConfig] =
     merge(externalConfigPath).map(_._1)
 
-  def load(externalConfigStream: Stream[IO, Byte]): IO[ShipConfig] = {
-    merge(externalConfigStream).map(_._1)
-  }
+  def loadFromS3(client: S3StorageClient, bucket: BucketName, path: Path): IO[ShipConfig] = {
+    val configStream = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(path.toString)))
+    configFromStream(configStream).flatMap(mergeFromConfig)
+  }.map(_._1)
 
   /**
     * Loads a config from a stream. Taken from

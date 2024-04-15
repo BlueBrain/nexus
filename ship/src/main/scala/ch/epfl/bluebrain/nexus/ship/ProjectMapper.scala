@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig.ProjectMapping
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig.ProjectMapping
 
 trait ProjectMapper {
   def map(project: ProjectRef): ProjectRef
