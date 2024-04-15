@@ -6,8 +6,7 @@ import pureconfig.generic.semiauto.deriveReader
 
 case class ViewDefaults(
     elasticsearch: Defaults,
-    blazegraph: Defaults,
-    search: Defaults
+    blazegraph: Defaults
 )
 
 object ViewDefaults {
