@@ -4,8 +4,6 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -15,12 +13,8 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.duration.DurationInt
 
-final class S3StorageFetchFile(client: S3StorageClient, bucket: String) extends FetchFile {
-
-  override def apply(attributes: FileAttributes): IO[AkkaSource] =
-    apply(attributes.path)
-
-  override def apply(path: Uri.Path): IO[AkkaSource] = {
+final class S3StorageFetchFile(client: S3StorageClient) {
+  def apply(bucket: String, path: Uri.Path): IO[AkkaSource] =
     IO.delay(
       Source.fromGraph(
         StreamConverter(
@@ -33,5 +27,4 @@ final class S3StorageFetchFile(client: S3StorageClient, bucket: String) extends 
     ).recoverWith { err =>
       IO.raiseError(UnexpectedFetchError(path.toString, err.getMessage))
     }
-  }
 }

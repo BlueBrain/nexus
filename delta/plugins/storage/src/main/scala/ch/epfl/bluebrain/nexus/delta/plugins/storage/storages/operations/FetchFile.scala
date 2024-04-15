@@ -1,42 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageFetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageFetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 trait FetchFile {
-
-  /**
-    * Fetches the file with the passed parameters.
-    *
-    * @param attributes
-    *   the file attributes
-    */
-  def apply(attributes: FileAttributes): IO[AkkaSource]
-
-  /**
-    * Fetches the file with the passed parameters.
-    *
-    * @param path
-    *   the file path
-    */
-  def apply(path: Uri.Path): IO[AkkaSource]
+  def apply(storage: Storage, attributes: FileAttributes): IO[AkkaSource]
 }
 
 object FetchFile {
+  def apply(remoteClient: RemoteDiskStorageClient, s3Client: S3StorageClient): FetchFile = new FetchFile {
+    private val s3 = new S3StorageFetchFile(s3Client)
 
-  /**
-    * Construct a [[FetchFile]] from the given ''storage''.
-    */
-  def apply(storage: Storage, remoteClient: RemoteDiskStorageClient, s3Client: S3StorageClient): FetchFile =
-    storage match {
-      case storage: Storage.DiskStorage       => storage.fetchFile
-      case storage: Storage.S3Storage         => storage.fetchFile(s3Client)
-      case storage: Storage.RemoteDiskStorage => storage.fetchFile(remoteClient)
+    override def apply(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {
+      case _: DiskStorage             => DiskStorageFetchFile.apply(attributes.location.path)
+      case storage: S3Storage         => s3.apply(storage.value.bucket, attributes.path)
+      case storage: RemoteDiskStorage => remoteClient.getFile(storage.value.folder, attributes.path)
     }
-
+  }
 }

@@ -60,7 +60,7 @@ class DiskStorageSaveFileSpec
           Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
         )
 
-      consume(storage.fetchFile(metadata.location.path).accepted) shouldEqual content
+      consume(DiskStorageFetchFile.apply(metadata.location.path).accepted) shouldEqual content
 
     }
 

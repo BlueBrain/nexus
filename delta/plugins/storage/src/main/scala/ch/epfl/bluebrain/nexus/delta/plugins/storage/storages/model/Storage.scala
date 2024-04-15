@@ -4,11 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageFetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageFetchFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -75,9 +72,6 @@ object Storage {
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile: FetchFile =
-      DiskStorageFetchFile
   }
 
   /**
@@ -89,12 +83,8 @@ object Storage {
       value: S3StorageValue,
       source: Json
   ) extends Storage {
-
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile(client: S3StorageClient): FetchFile =
-      new S3StorageFetchFile(client, value.bucket)
   }
 
   /**
@@ -108,9 +98,6 @@ object Storage {
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile(client: RemoteDiskStorageClient): FetchFile =
-      new RemoteDiskStorageFetchFile(value, client)
 
     def linkFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF): LinkFile =
       new RemoteDiskStorageLinkFile(this, client)

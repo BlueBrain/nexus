@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -75,7 +74,7 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fetch a file from a folder" in {
-      val sourceFetched = storage.fetchFile(remoteDiskStorageClient).apply(path).accepted
+      val sourceFetched = remoteDiskStorageClient.getFile(storage.value.folder, path).accepted
       consume(sourceFetched) shouldEqual content
     }
 
@@ -84,13 +83,6 @@ class RemoteStorageSaveAndFetchFileSpec(fixture: RemoteStorageClientFixtures)
       computedAttributes.digest shouldEqual digest
       computedAttributes.bytes shouldEqual bytes
       computedAttributes.mediaType shouldEqual `text/plain(UTF-8)`
-    }
-
-    "fail fetching a file that does not exist" in {
-      storage
-        .fetchFile(remoteDiskStorageClient)
-        .apply(Uri.Path("other.txt"))
-        .rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {

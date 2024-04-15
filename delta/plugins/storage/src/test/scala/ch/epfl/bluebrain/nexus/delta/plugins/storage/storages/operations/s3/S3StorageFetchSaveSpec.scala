@@ -41,10 +41,10 @@ class S3StorageFetchSaveSpec
     localStackS3Client()
   implicit private lazy val as: ActorSystem                                                        = actorSystem()
   private lazy val s3Save                                                                          = new S3StorageSaveFile(s3StorageClient)
+  private lazy val s3Fetch                                                                         = new S3StorageFetchFile(s3StorageClient)
 
   test("Save and fetch an object in a bucket") {
     givenAnS3Bucket { bucket =>
-      val s3Fetch      = new S3StorageFetchFile(s3StorageClient, bucket)
       val storageValue = S3StorageValue(
         default = false,
         algorithm = DigestAlgorithm.default,
@@ -64,7 +64,7 @@ class S3StorageFetchSaveSpec
 
       val result = for {
         attr   <- s3Save.apply(storage, filename, entity)
-        source <- s3Fetch.apply(attr.path)
+        source <- s3Fetch.apply(bucket, attr.path)
       } yield consume(source)
 
       assertIO(result, content)
