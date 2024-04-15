@@ -40,6 +40,9 @@ object Doobie {
     val doobie: IOFixture[Transactors] =
       ResourceSuiteLocalFixture("doobie", resource(PostgresUser, PostgresPassword))
 
+    /**
+      * Truncate all tables after each test
+      */
     val doobieTruncateAfterTest: IOFixture[Transactors] = new IOFixture[Transactors]("doobie") {
       @volatile var value: Option[(Transactors, IO[Unit])] = None
 
