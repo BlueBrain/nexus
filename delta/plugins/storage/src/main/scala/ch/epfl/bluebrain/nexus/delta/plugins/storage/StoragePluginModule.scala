@@ -16,9 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{Sh
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, StorageAccess}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageCopyFiles
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -156,6 +157,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[FilesLog].from { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[IO]) =>
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
+  }
+
+  make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
+    FileOperations.mk(disk, remoteDisk, s3)
   }
 
   make[Files].from {

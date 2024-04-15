@@ -1,15 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageLinkFile, RemoteStorageFetchAttributes}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 trait FileOperations {
@@ -24,47 +21,39 @@ trait FileOperations {
 
 object FileOperations {
 
-  def mk2(
-      saveFile: SaveFile,
-      linkFile: RemoteDiskStorageLinkFile,
-      fetchFile: FetchFile,
-      fetchAttr: RemoteStorageFetchAttributes
+  // TODO do errors properly
+  def mk(
+      diskFileOps: DiskFileOperations,
+      remoteDiskFileOps: RemoteDiskFileOperations,
+      s3FileOps: S3FileOperations
   ): FileOperations = new FileOperations {
 
     override def save(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.apply(storage, filename, entity)
+      storage match {
+        case storage: Storage.DiskStorage       => diskFileOps.save(storage, filename, entity)
+        case storage: Storage.S3Storage         => s3FileOps.save(storage, filename, entity)
+        case storage: Storage.RemoteDiskStorage => remoteDiskFileOps.save(storage, filename, entity)
+      }
 
     override def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
       storage match {
-        case storage: Storage.RemoteDiskStorage => linkFile.apply(storage, sourcePath, filename)
-        case other                              => unsupportedErr(other.tpe)
+        case _: Storage.DiskStorage             => ???
+        case _: Storage.S3Storage               => ???
+        case storage: Storage.RemoteDiskStorage => remoteDiskFileOps.link(storage, sourcePath, filename)
       }
 
-    override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] =
-      fetchFile.apply(storage, attributes)
+    override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {
+      case _: Storage.DiskStorage                    => diskFileOps.fetch(attributes.location.path)
+      case Storage.S3Storage(_, _, value, _)         => s3FileOps.fetch(value.bucket, attributes.path)
+      case Storage.RemoteDiskStorage(_, _, value, _) => remoteDiskFileOps.fetch(value.folder, attributes.path)
+    }
 
     override def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] =
       storage match {
-        case storage: Storage.RemoteDiskStorage => fetchAttr.apply(storage, attributes.path)
-        case other                              => unsupportedErr(other.tpe)
+        case Storage.RemoteDiskStorage(_, _, value, _) =>
+          remoteDiskFileOps.fetchAttributes(value.folder, attributes.path)
+        case _                                         => ???
       }
-
-    // TODO this error can be one for everything
-    private def unsupportedErr(storageType: StorageType) =
-      IO.raiseError(MoveFileRejection.UnsupportedOperation(storageType))
   }
-
-  def mk(
-      s3Client: S3StorageClient,
-      remoteClient: RemoteDiskStorageClient
-  )(implicit
-      as: ActorSystem,
-      uuidf: UUIDF
-  ): FileOperations = mk2(
-    saveFile = SaveFile.apply(remoteClient, s3Client),
-    fetchFile = FetchFile.apply(remoteClient, s3Client),
-    linkFile = new RemoteDiskStorageLinkFile(remoteClient),
-    fetchAttr = new RemoteStorageFetchAttributes(remoteClient)
-  )
 
 }

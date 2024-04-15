@@ -9,6 +9,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -138,8 +138,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       clock
     ).accepted
 
-    lazy val fileOps: FileOperations =
-      FileOperations.mk(S3StorageClientDisabled, remoteDiskStorageClient)
+    lazy val fileOps: FileOperations = FileOperationsMock.forDiskAndRemoteDisk(remoteDiskStorageClient)
 
     lazy val files: Files = Files(
       fetchContext,
