@@ -10,11 +10,12 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 
 object LocalStackS3 {
   val ServiceType = Service.S3
+  val Version     = "3.2"
 
   def localstackS3(): Resource[IO, LocalStackV2Container] = {
 
     def acquire: IO[LocalStackV2Container] = IO.delay {
-      val containerDef = LocalStackV2Container.Def(services = Seq(ServiceType))
+      val containerDef = LocalStackV2Container.Def(tag = Version, services = Seq(ServiceType))
       containerDef.start()
     }
 
