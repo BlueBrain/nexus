@@ -13,8 +13,11 @@ import fs2.io.file.Path
 import munit.AnyFixture
 
 import java.net.URI
+import scala.concurrent.duration.{Duration, DurationInt}
 
 class ShipConfigSuite extends NexusSuite with LocalStackS3StorageClient.Fixture {
+
+  override def munitIOTimeout: Duration = 60.seconds
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
 
