@@ -67,10 +67,9 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
   }
 
   test("Should read the target bucket") {
-    val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
     for {
-      actualConfig <- ShipConfig.load(None).map(_.input)
-      _             = assertEquals(actualConfig.targetBucket, targetBucket)
+      config <- ShipConfig.load(None).map(_.input)
+      _       = assertEquals(config.targetBucket, inputConfig.targetBucket)
     } yield ()
   }
 
