@@ -45,7 +45,7 @@ class StorageScopeInitialization(
         case _: ResourceAlreadyExists => IO.unit // nothing to do, storage already exits
         case rej                      =>
           val str =
-            s"Failed to create the default DiskStorage for project '$project' due to '${rej.getMessage}'."
+            s"Failed to create the default ${defaultStorageFields.tpe} for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultStorage")
