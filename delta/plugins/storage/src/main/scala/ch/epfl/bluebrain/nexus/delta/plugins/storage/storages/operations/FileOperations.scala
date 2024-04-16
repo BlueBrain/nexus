@@ -3,57 +3,72 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
-trait FileOperations {
+import java.util.UUID
+
+trait FileOperations extends StorageAccess {
   def save(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]
 
-  def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
-
   def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]
+
+  def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
 
   def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]
 }
 
 object FileOperations {
-
-  // TODO do errors properly
   def mk(
       diskFileOps: DiskFileOperations,
       remoteDiskFileOps: RemoteDiskFileOperations,
       s3FileOps: S3FileOperations
   ): FileOperations = new FileOperations {
 
+    override def validateStorageAccess(storage: StorageValue): IO[Unit] = storage match {
+      case s: DiskStorageValue       => diskFileOps.checkVolumeExists(s.volume)
+      case s: S3StorageValue         => s3FileOps.checkBucketExists(s.bucket)
+      case s: RemoteDiskStorageValue => remoteDiskFileOps.checkFolderExists(s.folder)
+    }
+
     override def save(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
       storage match {
-        case storage: Storage.DiskStorage       => diskFileOps.save(storage, filename, entity)
-        case storage: Storage.S3Storage         => s3FileOps.save(storage, filename, entity)
-        case storage: Storage.RemoteDiskStorage => remoteDiskFileOps.save(storage, filename, entity)
-      }
-
-    override def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
-      storage match {
-        case _: Storage.DiskStorage             => ???
-        case _: Storage.S3Storage               => ???
-        case storage: Storage.RemoteDiskStorage => remoteDiskFileOps.link(storage, sourcePath, filename)
+        case s: DiskStorage       => diskFileOps.save(s, filename, entity)
+        case s: S3Storage         => s3FileOps.save(s, filename, entity)
+        case s: RemoteDiskStorage => remoteDiskFileOps.save(s, filename, entity)
       }
 
     override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {
-      case _: Storage.DiskStorage                    => diskFileOps.fetch(attributes.location.path)
-      case Storage.S3Storage(_, _, value, _)         => s3FileOps.fetch(value.bucket, attributes.path)
-      case Storage.RemoteDiskStorage(_, _, value, _) => remoteDiskFileOps.fetch(value.folder, attributes.path)
+      case _: DiskStorage       => diskFileOps.fetch(attributes.location.path)
+      case s: S3Storage         => s3FileOps.fetch(s.value.bucket, attributes.path)
+      case s: RemoteDiskStorage => remoteDiskFileOps.fetch(s.value.folder, attributes.path)
     }
+
+    override def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
+      storage match {
+        case storage: RemoteDiskStorage => remoteDiskFileOps.link(storage, sourcePath, filename)
+        case s                          => IO.raiseError(MoveFileRejection.UnsupportedOperation(s.tpe))
+      }
 
     override def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] =
       storage match {
-        case Storage.RemoteDiskStorage(_, _, value, _) =>
-          remoteDiskFileOps.fetchAttributes(value.folder, attributes.path)
-        case _                                         => ???
+        case s: RemoteDiskStorage => remoteDiskFileOps.fetchAttributes(s.value.folder, attributes.path)
+        case s                    => IO.raiseError(FetchAttributeRejection.UnsupportedOperation(s.tpe))
       }
   }
 
+  /**
+    * Builds a relative file path with intermediate folders taken from the passed ''uuid''
+    *
+    * Example: uuid = 12345678-90ab-cdef-abcd-1234567890ab {org}/{proj}/1/2/3/4/5/6/7/8/{filename}
+    */
+  def intermediateFolders(ref: ProjectRef, uuid: UUID, filename: String): String =
+    s"$ref/${uuid.toString.toLowerCase.takeWhile(_ != '-').mkString("/")}/$filename"
 }

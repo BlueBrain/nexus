@@ -3,18 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, UUIDFFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -22,21 +21,18 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
-import java.util.UUID
-
 @DoNotDiscover
 class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
     extends TestKit(ActorSystem("RemoteStorageMoveFileSpec"))
     with CatsEffectSpec
     with AkkaSourceHelpers
     with StorageFixtures
+    with UUIDFFixtures.Fixed
     with BeforeAndAfterAll
     with ConfigFixtures {
 
   private lazy val remoteDiskStorageClient = fixture.init
-  private val uuid                         = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-  private val uuidf: UUIDF                 = UUIDF.fixed(uuid)
-  private lazy val linkFile                = new RemoteDiskStorageLinkFile(remoteDiskStorageClient)(uuidf)
+  private lazy val fileOps                 = RemoteDiskFileOperations.mk(remoteDiskStorageClient)
 
   private val iri      = iri"http://localhost/remote"
   private val project  = ProjectRef.unsafe("org", "project")
@@ -61,9 +57,9 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
   "RemoteDiskStorage linking operations" should {
 
     "succeed" in {
-      linkFile.apply(storage, Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
+      fileOps.link(storage, Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
         FileStorageMetadata(
-          uuid,
+          fixedUuid,
           12,
           NotComputedDigest,
           Storage,
@@ -73,7 +69,7 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fail linking a file that does not exist" in {
-      linkFile.apply(storage, Uri.Path("my/file-40.txt"), filename).rejectedWith[FileNotFound]
+      fileOps.link(storage, Uri.Path("my/file-40.txt"), filename).rejectedWith[FileNotFound]
     }
   }
 }

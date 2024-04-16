@@ -121,7 +121,7 @@ class FilesRoutesSpec
     ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
     clock
   ).accepted
-  lazy val fileOps: FileOperations                         = FileOperationsMock.unimplemented
+  lazy val fileOps: FileOperations                         = FileOperationsMock.disabled
   lazy val files: Files                                    =
     Files(
       fetchContext,
@@ -345,21 +345,6 @@ class FilesRoutesSpec
       givenAFile { id =>
         putJson(s"/v1/files/org/proj/$id?rev=1", s3FieldsJson) ~> routes ~> check {
           response.shouldBeForbidden
-        }
-      }
-    }
-
-    "register a file from S3" in {
-      withUUIDF(UUID.randomUUID()) {
-        val metadata = genCustomMetadata()
-        val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
-        val file     = entity(genString())
-
-        postFileWithMetadata("/v1/files/org/proj/register-s3", file, metadata.asJson) ~> asWriter ~> routes ~> check {
-          status shouldEqual StatusCodes.Created
-          response.asJson should have(description(metadata.description.get))
-          response.asJson should have(name(metadata.name.get))
-          response.asJson should have(keywords(kw))
         }
       }
     }

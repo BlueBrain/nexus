@@ -29,7 +29,6 @@ object DiskFileOperations {
     private val saveFile = new DiskStorageSaveFile()
 
     override def checkVolumeExists(path: AbsolutePath): IO[Unit] = {
-
       def failWhen(condition: Boolean, err: => String) = {
         IO.raiseWhen(condition)(StorageNotAccessible(err))
       }

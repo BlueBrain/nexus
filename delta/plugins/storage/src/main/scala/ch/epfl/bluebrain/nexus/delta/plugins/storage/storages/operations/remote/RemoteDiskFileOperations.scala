@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchAttributeRejection.WrappedFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -65,16 +65,14 @@ object RemoteDiskFileOperations {
           path                                                         = Uri.Path(intermediateFolders(storage.project, uuid, filename))
           RemoteDiskStorageFileAttributes(location, bytes, digest, _) <-
             client.createFile(storage.value.folder, path, entity)
-        } yield {
-          FileStorageMetadata(
-            uuid = uuid,
-            bytes = bytes,
-            digest = digest,
-            origin = Client,
-            location = location,
-            path = path
-          )
-        }
+        } yield FileStorageMetadata(
+          uuid = uuid,
+          bytes = bytes,
+          digest = digest,
+          origin = Client,
+          location = location,
+          path = path
+        )
 
       override def fetchAttributes(folder: Label, path: Uri.Path): IO[ComputedFileAttributes] =
         client

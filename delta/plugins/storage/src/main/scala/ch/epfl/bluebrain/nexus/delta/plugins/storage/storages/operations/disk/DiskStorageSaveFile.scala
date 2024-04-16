@@ -3,15 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.IOOperationIncompleteException
-import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.{FileIO, Sink}
+import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
@@ -64,6 +67,19 @@ final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
     }
   }
 
+  /**
+    * A sink that computes the digest of the input ByteString
+    *
+    * @param algorithm
+    *   the digest algorithm. E.g.: SHA-256
+    */
+  private def digestSink(algorithm: DigestAlgorithm): Sink[ByteString, Future[ComputedDigest]] =
+    Sink
+      .fold(algorithm.digest) { (digest, currentBytes: ByteString) =>
+        digest.update(currentBytes.asByteBuffer)
+        digest
+      }
+      .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, dig.digest.map("%02x".format(_)).mkString)))
 }
 
 object DiskStorageSaveFile {

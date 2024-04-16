@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
@@ -25,14 +24,13 @@ import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.{Assertion, CancelAfterFailure}
 
-import java.util.UUID
-
 private class StoragesSpec
     extends CatsEffectSpec
     with DoobieScalaTestFixture
     with CancelAfterFailure
     with ConfigFixtures
     with StorageFixtures
+    with UUIDFFixtures.Random
     with RemoteContextResolutionFixture {
 
   private val realm = Label.unsafe("myrealm")
@@ -41,8 +39,6 @@ private class StoragesSpec
   "The Storages operations bundle" when {
     val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
-    val uuid                    = UUID.randomUUID()
-    implicit val uuidF: UUIDF   = UUIDF.fixed(uuid)
     implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
 
     val org               = Label.unsafe("org")
