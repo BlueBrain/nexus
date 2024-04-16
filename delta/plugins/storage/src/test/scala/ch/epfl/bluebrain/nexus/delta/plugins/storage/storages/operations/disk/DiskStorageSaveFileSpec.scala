@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.UUIDFFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
@@ -21,37 +21,36 @@ import io.circe.Json
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Paths}
-import java.util.UUID
 import scala.reflect.io.Directory
 
 class DiskStorageSaveFileSpec
     extends TestKit(ActorSystem("DiskStorageSaveFileSpec"))
     with AkkaSourceHelpers
     with CatsEffectSpec
+    with UUIDFFixtures.Fixed
     with BeforeAndAfterAll {
 
-  private val volume = AbsolutePath(Files.createTempDirectory("disk-access")).rightValue
-  private val file   = AbsolutePath(Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")).rightValue
+  private val volume  = AbsolutePath(Files.createTempDirectory("disk-access")).rightValue
+  private val file    = AbsolutePath(Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")).rightValue
+  private val fileOps = DiskFileOperations.mk
 
   "A DiskStorage saving operations" should {
-    val iri                   = iri"http://localhost/disk"
-    val project               = ProjectRef.unsafe("org", "project")
-    val value                 = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
-    val storage               = DiskStorage(iri, project, value, Json.obj())
-    val uuid                  = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-    implicit val uuidf: UUIDF = UUIDF.fixed(uuid)
-    val content               = "file content"
-    val entity                = HttpEntity(content)
+    val iri     = iri"http://localhost/disk"
+    val project = ProjectRef.unsafe("org", "project")
+    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
+    val storage = DiskStorage(iri, project, value, Json.obj())
+    val content = "file content"
+    val entity  = HttpEntity(content)
 
     "save a file to a volume" in {
 
-      val metadata = storage.saveFile.apply("myfile.txt", entity).accepted
+      val metadata = fileOps.save(storage, "myfile.txt", entity).accepted
 
       Files.readString(file.value) shouldEqual content
 
       metadata shouldEqual
         FileStorageMetadata(
-          uuid,
+          fixedUuid,
           Files.size(file.value),
           ComputedDigest(DigestAlgorithm.default, RemoteStorageClientFixtures.Digest),
           Client,
@@ -59,12 +58,12 @@ class DiskStorageSaveFileSpec
           Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
         )
 
-      consume(storage.fetchFile(metadata.location.path).accepted) shouldEqual content
+      consume(fileOps.fetch(metadata.location.path).accepted) shouldEqual content
 
     }
 
     "fail attempting to save the same file again" in {
-      storage.saveFile.apply("myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
+      fileOps.save(storage, "myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 

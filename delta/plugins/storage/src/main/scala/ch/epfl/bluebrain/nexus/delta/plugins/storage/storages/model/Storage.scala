@@ -1,15 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import akka.actor.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -76,12 +68,6 @@ object Storage {
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile: FetchFile =
-      DiskStorageFetchFile
-
-    def saveFile(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
-      new DiskStorageSaveFile(this)
   }
 
   /**
@@ -93,15 +79,8 @@ object Storage {
       value: S3StorageValue,
       source: Json
   ) extends Storage {
-
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile(client: S3StorageClient): FetchFile =
-      new S3StorageFetchFile(client, value.bucket)
-
-    def saveFile(s3StorageClient: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): SaveFile =
-      new S3StorageSaveFile(s3StorageClient, this)
   }
 
   /**
@@ -115,18 +94,6 @@ object Storage {
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
-
-    def fetchFile(client: RemoteDiskStorageClient): FetchFile =
-      new RemoteDiskStorageFetchFile(value, client)
-
-    def saveFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF): SaveFile =
-      new RemoteDiskStorageSaveFile(this, client)
-
-    def linkFile(client: RemoteDiskStorageClient)(implicit uuidf: UUIDF): LinkFile =
-      new RemoteDiskStorageLinkFile(this, client)
-
-    def fetchComputedAttributes(client: RemoteDiskStorageClient): FetchAttributes =
-      new RemoteStorageFetchAttributes(value, client)
   }
 
   /**

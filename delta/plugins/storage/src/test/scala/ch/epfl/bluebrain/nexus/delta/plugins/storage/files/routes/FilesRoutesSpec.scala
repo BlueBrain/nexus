@@ -4,17 +4,17 @@ import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{HttpRequest, MediaTypes, RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientDisabled
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
@@ -56,7 +56,6 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-  private val remoteDiskStorageClient                          = RemoteDiskStorageClientDisabled
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
@@ -122,6 +121,7 @@ class FilesRoutesSpec
     ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
     clock
   ).accepted
+  lazy val fileOps: FileOperations                         = FileOperationsMock.disabled
   lazy val files: Files                                    =
     Files(
       fetchContext,
@@ -130,8 +130,7 @@ class FilesRoutesSpec
       storagesStatistics,
       xas,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      remoteDiskStorageClient,
-      S3StorageClientDisabled,
+      fileOps,
       clock
     )(uuidF, typedSystem)
   private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)

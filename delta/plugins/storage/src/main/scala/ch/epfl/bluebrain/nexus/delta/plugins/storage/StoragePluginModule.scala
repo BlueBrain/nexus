@@ -15,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageCopyFiles
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -75,8 +76,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       (
           fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
-          remoteDiskStorageClient: RemoteDiskStorageClient,
-          s3StorageClient: S3StorageClient,
+          fileOperations: FileOperations,
           permissions: Permissions,
           xas: Transactors,
           cfg: StoragePluginConfig,
@@ -89,7 +89,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           fetchContext,
           contextResolution,
           permissions.fetchPermissionSet,
-          StorageAccess.mk(remoteDiskStorageClient, s3StorageClient),
+          fileOperations,
           xas,
           cfg.storages,
           serviceAccount,
@@ -158,6 +158,22 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
   }
 
+  make[DiskFileOperations].from { (uuidF: UUIDF, as: ActorSystem[Nothing]) =>
+    DiskFileOperations.mk(as.classicSystem, uuidF)
+  }
+
+  make[RemoteDiskFileOperations].from { (client: RemoteDiskStorageClient, uuidF: UUIDF) =>
+    RemoteDiskFileOperations.mk(client)(uuidF)
+  }
+
+  make[S3FileOperations].from { (client: S3StorageClient, uuidF: UUIDF, as: ActorSystem[Nothing]) =>
+    S3FileOperations.mk(client)(as.classicSystem, uuidF)
+  }
+
+  make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
+    FileOperations.mk(disk, remoteDisk, s3)
+  }
+
   make[Files].from {
     (
         cfg: StoragePluginConfig,
@@ -169,8 +185,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
-        remoteDiskStorageClient: RemoteDiskStorageClient,
-        s3Client: S3StorageClient
+        fileOps: FileOperations
     ) =>
       Files(
         fetchContext,
@@ -179,8 +194,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storagesStatistics,
         xas,
         cfg.files,
-        remoteDiskStorageClient,
-        s3Client,
+        fileOps,
         clock
       )(
         uuidF,
