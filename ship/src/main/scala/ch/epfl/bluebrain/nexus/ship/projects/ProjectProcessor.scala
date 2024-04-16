@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship._
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.views.ViewWiring
@@ -78,7 +78,7 @@ object ProjectProcessor {
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
-      config: ShipConfig,
+      config: InputConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit

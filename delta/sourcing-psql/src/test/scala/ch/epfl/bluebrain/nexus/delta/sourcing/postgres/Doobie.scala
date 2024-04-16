@@ -6,10 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
+import doobie.Fragment
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import munit.Location
 import munit.catseffect.IOFixture
-import munit.{catseffect, Location}
+import munit.catseffect.ResourceFixture.FixtureNotInstantiatedException
 import org.postgresql.util.PSQLException
 
 object Doobie {
@@ -34,8 +36,40 @@ object Doobie {
     transactors(PostgresContainer.resource(user, pass), user, pass)
 
   trait Fixture { self: NexusSuite =>
-    val doobie: catseffect.IOFixture[Transactors] =
+
+    val doobie: IOFixture[Transactors] =
       ResourceSuiteLocalFixture("doobie", resource(PostgresUser, PostgresPassword))
+
+    /**
+      * Truncate all tables after each test
+      */
+    val doobieTruncateAfterTest: IOFixture[Transactors] = new IOFixture[Transactors]("doobie") {
+      @volatile var value: Option[(Transactors, IO[Unit])] = None
+
+      def apply(): Transactors = value match {
+        case Some(v) => v._1
+        case None    => throw new FixtureNotInstantiatedException(fixtureName)
+      }
+
+      def xas: Transactors = apply()
+
+      override def beforeAll(): IO[Unit] = resource(PostgresUser, PostgresPassword).allocated.flatMap { value =>
+        IO(this.value = Some(value))
+      }
+
+      override def afterAll(): IO[Unit] = value.fold(IO.unit)(_._2)
+
+      override def afterEach(context: AfterEach): IO[Unit] =
+        for {
+          allTables <- sql"""SELECT table_name from information_schema.tables WHERE table_schema = 'public'"""
+                         .query[String]
+                         .to[List]
+                         .transact(xas.read)
+          _         <- allTables
+                         .traverse { table => Fragment.const(s"""TRUNCATE $table""").update.run.transact(xas.write) }
+                         .onError(IO.println)
+        } yield ()
+    }
 
     def doobieInject[A](f: Transactors => IO[A]): IOFixture[(Transactors, A)] =
       ResourceSuiteLocalFixture(
