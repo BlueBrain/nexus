@@ -35,8 +35,8 @@ object S3FileOperations {
 
   def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
 
-    private val log      = Logger[S3FileOperations]
-    private val saveFile = new S3StorageSaveFile(client)
+    private val log           = Logger[S3FileOperations]
+    private lazy val saveFile = new S3StorageSaveFile(client)
 
     override def checkBucketExists(bucket: String): IO[Unit] =
       client

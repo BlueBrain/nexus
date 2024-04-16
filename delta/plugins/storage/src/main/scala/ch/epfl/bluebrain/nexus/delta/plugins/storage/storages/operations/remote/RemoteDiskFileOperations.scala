@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.{Client, Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
@@ -15,7 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+
+import java.util.UUID
 
 trait RemoteDiskFileOperations {
   def checkFolderExists(folder: Label): IO[Unit]
@@ -42,37 +44,39 @@ object RemoteDiskFileOperations {
             )
           }
 
-      override def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
-        for {
-          uuid                                                        <- uuidf()
-          destinationPath                                              = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-          RemoteDiskStorageFileAttributes(location, bytes, digest, _) <-
-            client.moveFile(storage.value.folder, sourcePath, destinationPath)
-        } yield FileStorageMetadata(
-          uuid = uuid,
-          bytes = bytes,
-          digest = digest,
-          origin = Storage,
-          location = location,
-          path = destinationPath
-        )
-
       override def fetch(folder: Label, path: Uri.Path): IO[AkkaSource] = client.getFile(folder, path)
 
       override def save(storage: RemoteDiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
         for {
-          uuid                                                        <- uuidf()
-          path                                                         = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-          RemoteDiskStorageFileAttributes(location, bytes, digest, _) <-
-            client.createFile(storage.value.folder, path, entity)
-        } yield FileStorageMetadata(
+          (uuid, destinationPath) <- generateRandomPath(storage.project, filename)
+          attr                    <- client.createFile(storage.value.folder, destinationPath, entity)
+        } yield metadataFromAttributes(attr, uuid, destinationPath, FileAttributesOrigin.Client)
+
+      override def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
+        for {
+          (uuid, destinationPath) <- generateRandomPath(storage.project, filename)
+          attr                    <- client.moveFile(storage.value.folder, sourcePath, destinationPath)
+        } yield metadataFromAttributes(attr, uuid, destinationPath, FileAttributesOrigin.Storage)
+
+      private def metadataFromAttributes(
+          attr: RemoteDiskStorageFileAttributes,
+          uuid: UUID,
+          destinationPath: Uri.Path,
+          origin: FileAttributesOrigin
+      ) =
+        FileStorageMetadata(
           uuid = uuid,
-          bytes = bytes,
-          digest = digest,
-          origin = Client,
-          location = location,
-          path = path
+          bytes = attr.bytes,
+          digest = attr.digest,
+          origin = origin,
+          location = attr.location,
+          path = destinationPath
         )
+
+      private def generateRandomPath(project: ProjectRef, filename: String) = uuidf().map { uuid =>
+        val path = Uri.Path(intermediateFolders(project, uuid, filename))
+        (uuid, path)
+      }
 
       override def fetchAttributes(folder: Label, path: Uri.Path): IO[ComputedFileAttributes] =
         client
