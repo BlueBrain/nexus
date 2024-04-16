@@ -49,7 +49,7 @@ class StorageScopeInitializationSpec
       IO.pure(allowedPerms.toSet),
       _ => IO.unit,
       xas,
-      StoragesConfig(eventLogConfig, pagination, config),
+      StoragesConfig(eventLogConfig, config),
       serviceAccount,
       clock
     ).accepted

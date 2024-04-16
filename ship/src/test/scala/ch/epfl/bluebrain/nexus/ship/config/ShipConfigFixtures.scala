@@ -53,7 +53,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       Map.empty,
       viewDefaults,
       serviceAccount,
-      StoragesConfig(eventLogConfig, pagination, config.copy(amazon = Some(amazonConfig))),
+      StoragesConfig(eventLogConfig, config.copy(amazon = Some(amazonConfig))),
       targetBucket
     )
 
