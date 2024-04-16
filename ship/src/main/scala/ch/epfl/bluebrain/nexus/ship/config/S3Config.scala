@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
 import cats.implicits.toBifunctorOps
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.refineV
 import fs2.aws.s3.models.Models.BucketName
@@ -11,7 +12,7 @@ import pureconfig.generic.semiauto.deriveReader
 import java.net.URI
 import scala.annotation.nowarn
 
-final case class S3Config(endpoint: URI, importBucket: BucketName)
+final case class S3Config(endpoint: URI, importBucket: BucketName, storages: StoragesConfig, defaultBucket: BucketName)
 
 object S3Config {
 

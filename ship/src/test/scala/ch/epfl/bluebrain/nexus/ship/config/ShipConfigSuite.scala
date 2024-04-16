@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -11,7 +12,7 @@ import fs2.io.file.Path
 
 import java.net.URI
 
-class ShipConfigSuite extends NexusSuite {
+class ShipConfigSuite extends NexusSuite with StorageFixtures {
 
   test("Default configuration should be parsed and loaded") {
     val expectedBaseUri = BaseUri("http://localhost:8080", Label.unsafe("v1"))
@@ -45,12 +46,16 @@ class ShipConfigSuite extends NexusSuite {
   }
 
   test("Should read the S3 config") {
-    val bucket   = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
-    val expected = S3Config(new URI("http://my-s3-endpoint.com"), bucket)
+    val importBucket     = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
+    val defaultBucket    = BucketName(NonEmptyString.unsafeFrom("my-default-bucket"))
+    val expectedEndpoint = new URI("http://my-s3-endpoint.com")
     for {
       externalConfigPath <- loader.absolutePath("config/s3.conf")
-      s3Config            = ShipConfig.load(Some(Path(externalConfigPath))).map(_.S3)
-      _                  <- s3Config.assertEquals(expected)
+      s3Config           <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.S3)
+      _                   = assertEquals(s3Config.endpoint, expectedEndpoint)
+      _                   = assertEquals(s3Config.importBucket, importBucket)
+      _                   = assertEquals(s3Config.defaultBucket, defaultBucket)
+      _                   = assertEquals(s3Config.storages.storageTypeConfig.amazon, s3Config.storages.storageTypeConfig.amazon)
     } yield ()
   }
 

@@ -40,4 +40,9 @@ package object storages {
     */
   final val defaultStorageId = nxv + "diskStorageDefault"
 
+  /**
+    * The id for the default S3 storage
+    */
+  final val defaultS3StorageId = nxv + "defaultS3Storage"
+
 }

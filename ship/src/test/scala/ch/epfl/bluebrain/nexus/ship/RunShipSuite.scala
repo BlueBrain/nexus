@@ -46,12 +46,13 @@ class RunShipSuite extends NexusSuite with RunShipSuite.Fixture {
     } yield ()
   }
 
-  test("Run import and check for views") {
+  test("Run import and check that events created at project initialisation are there") {
     for {
       importFile <- asPath("import/import.json")
       _          <- RunShip.localShip.run(importFile, None).assertEquals(expectedImportReport)
       _          <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
       _          <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
+      _          <- checkFor("storage", nxv + "defaultS3Storage", xas).assertEquals(1)
     } yield ()
   }
 

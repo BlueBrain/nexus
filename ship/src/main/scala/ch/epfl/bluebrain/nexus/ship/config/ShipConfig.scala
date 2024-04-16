@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, EventLogConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -15,6 +16,7 @@ import pureconfig.backend.ConfigFactoryWrapper
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.{CannotConvert, ConfigReaderException}
 import pureconfig.generic.semiauto.deriveReader
+import software.amazon.awssdk.services.s3.model.Bucket
 
 import java.nio.charset.StandardCharsets.UTF_8
 
@@ -41,6 +43,8 @@ object ShipConfig {
   implicit final val shipConfigReader: ConfigReader[ShipConfig] = {
     deriveReader[ShipConfig]
   }
+
+  case class ShipStorageConfig(amazon: S3StorageConfig, defaultBucket: Bucket)
 
   def merge(externalConfigPath: Option[Path]): IO[(ShipConfig, Config)] = {
     val externalConfig = Configs.parseFile(externalConfigPath.map(_.toNioPath.toFile))

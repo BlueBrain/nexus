@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.views.ViewWiring
 import io.circe.Decoder
 
 final class ProjectProcessor private (
@@ -87,7 +86,7 @@ object ProjectProcessor {
   ): IO[ProjectProcessor] =
     for {
       uuidF       <- EventUUIDF.init()
-      initializer <- ViewWiring.viewInitializer(fetchContext, rcr, config, clock, xas)
+      initializer <- ScopeInitializerWiring.initializer(fetchContext, rcr, config, clock, xas)
     } yield {
       val disableDeletion: ValidateProjectDeletion = (p: ProjectRef) => IO.raiseError(ProjectDeletionIsNotAllowed(p))
       val projects                                 = ProjectsImpl(
