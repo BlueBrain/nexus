@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
+import ch.epfl.bluebrain.nexus.ship.ImportReport.Statistics
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -75,7 +75,7 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
   }
 
   private def thereIsOneProjectEventIn(report: ImportReport) =
-    report.progress == Map(Projects.entityType -> Count(1L, 0L))
+    report.progress == Map(Projects.entityType -> Statistics(1L, 0L))
 
 }
 
@@ -100,10 +100,10 @@ object RunShipSuite {
     Offset.at(9999999L),
     Instant.parse("2099-12-31T22:59:59.999Z"),
     Map(
-      Projects.entityType  -> Count(5L, 0L),
-      Resolvers.entityType -> Count(5L, 0L),
-      Resources.entityType -> Count(1L, 0L),
-      EntityType("xxx")    -> Count(0L, 1L)
+      Projects.entityType  -> Statistics(5L, 0L),
+      Resolvers.entityType -> Statistics(5L, 0L),
+      Resources.entityType -> Statistics(1L, 0L),
+      EntityType("xxx")    -> Statistics(0L, 1L)
     )
   )
 

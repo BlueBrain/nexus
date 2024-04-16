@@ -1,22 +1,22 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import ch.epfl.bluebrain.nexus.ship.ImportReport.Count
+import ch.epfl.bluebrain.nexus.ship.ImportReport.Statistics
 
 sealed trait ImportStatus {
 
-  def asCount: Count
+  def asCount: Statistics
 
 }
 
 object ImportStatus {
 
   case object Success extends ImportStatus {
-    override def asCount: Count = Count(1L, 0L)
+    override def asCount: Statistics = Statistics(1L, 0L)
   }
 
   case object Dropped extends ImportStatus {
 
-    override def asCount: Count = Count(0L, 1L)
+    override def asCount: Statistics = Statistics(0L, 1L)
 
   }
 
