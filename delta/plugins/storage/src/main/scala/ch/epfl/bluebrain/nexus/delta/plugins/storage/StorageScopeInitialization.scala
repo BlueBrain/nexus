@@ -22,6 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Proje
   *   the storages module
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
+  * @param defaultStorageId
+  *   the id to use for the default storage to be created
   * @param defaultStorageFields
   *   the default value for the storage fields
   */
