@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
@@ -22,11 +23,14 @@ import scala.concurrent.duration.FiniteDuration
   *
   * @param eventLog
   *   configuration of the event log
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
   * @param storageTypeConfig
   *   configuration of each of the storage types
   */
 final case class StoragesConfig(
     eventLog: EventLogConfig,
+    pagination: PaginationConfig,
     storageTypeConfig: StorageTypeConfig
 )
 
@@ -36,11 +40,13 @@ object StoragesConfig {
   implicit val storageConfigReader: ConfigReader[StoragesConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
-        obj            <- cursor.asObjectCursor
-        eventLogCursor <- obj.atKey("event-log")
-        eventLog       <- ConfigReader[EventLogConfig].from(eventLogCursor)
-        storageType    <- ConfigReader[StorageTypeConfig].from(cursor)
-      } yield StoragesConfig(eventLog, storageType)
+        obj              <- cursor.asObjectCursor
+        eventLogCursor   <- obj.atKey("event-log")
+        eventLog         <- ConfigReader[EventLogConfig].from(eventLogCursor)
+        paginationCursor <- obj.atKey("pagination")
+        pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
+        storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
+      } yield StoragesConfig(eventLog, pagination, storageType)
     }
 
   /**

@@ -118,7 +118,7 @@ class FilesRoutesSpec
     IO.pure(allowedPerms.toSet),
     _ => IO.unit,
     xas,
-    StoragesConfig(eventLogConfig, stCfg),
+    StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
     clock
   ).accepted

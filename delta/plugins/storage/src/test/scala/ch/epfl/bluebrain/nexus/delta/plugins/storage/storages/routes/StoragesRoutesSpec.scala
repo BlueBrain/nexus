@@ -108,7 +108,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
         IO.pure(StorageStatEntry(50, 5000))
       else IO.raiseError(StorageNotFound(iri"https://bluebrain.github.io/nexus/vocabulary/$storage", project))
 
-  private val cfg = StoragesConfig(eventLogConfig, config)
+  private val cfg = StoragesConfig(eventLogConfig, pagination, config)
 
   private lazy val storages    = Storages(
     fetchContext,

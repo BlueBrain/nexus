@@ -133,7 +133,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       IO.pure(allowedPerms),
       _ => IO.unit,
       xas,
-      StoragesConfig(eventLogConfig, cfg),
+      StoragesConfig(eventLogConfig, pagination, cfg),
       ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
       clock
     ).accepted
