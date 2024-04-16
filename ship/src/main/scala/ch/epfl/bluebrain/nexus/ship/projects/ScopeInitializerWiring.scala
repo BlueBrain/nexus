@@ -8,17 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ScopeInitializa
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.ship.EventClock
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
-import ch.epfl.bluebrain.nexus.ship.views.ViewWiring.{blazegraphViews, elasticSearchViews, viewInitializers}
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.s3StorageInitializer
+import ch.epfl.bluebrain.nexus.ship.views.ViewWiring.{blazegraphViews, elasticSearchViews, viewInitializers}
 
 object ScopeInitializerWiring {
 
   def initializer(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
-      config: ShipConfig,
+      config: InputConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit jsonLdApi: JsonLdApi): IO[ScopeInitializer] =

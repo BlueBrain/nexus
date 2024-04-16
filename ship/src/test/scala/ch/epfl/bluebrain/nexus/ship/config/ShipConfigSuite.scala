@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.uploadFileToS3
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
@@ -16,7 +15,7 @@ import munit.AnyFixture
 import java.net.URI
 import scala.concurrent.duration.{Duration, DurationInt}
 
-class ShipConfigSuite extends NexusSuite with StorageFixtures with LocalStackS3StorageClient.Fixture {
+class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStackS3StorageClient.Fixture {
 
   override def munitIOTimeout: Duration = 60.seconds
 
@@ -58,15 +57,29 @@ class ShipConfigSuite extends NexusSuite with StorageFixtures with LocalStackS3S
 
   test("Should read the S3 config") {
     val importBucket     = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
-    val defaultBucket    = BucketName(NonEmptyString.unsafeFrom("my-default-bucket"))
     val expectedEndpoint = new URI("http://my-s3-endpoint.com")
     for {
       externalConfigPath <- loader.absolutePath("config/s3.conf")
       s3Config           <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.s3)
       _                   = assertEquals(s3Config.endpoint, expectedEndpoint)
       _                   = assertEquals(s3Config.importBucket, importBucket)
-      _                   = assertEquals(s3Config.defaultBucket, defaultBucket)
-      _                   = assertEquals(s3Config.storages.storageTypeConfig.amazon, s3Config.storages.storageTypeConfig.amazon)
+    } yield ()
+  }
+
+  test("Should read the target bucket") {
+    val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
+    for {
+      actualConfig <- ShipConfig.load(None).map(_.input)
+      _             = assertEquals(actualConfig.targetBucket, targetBucket)
+    } yield ()
+  }
+
+  test("Should read the amazon storage config") {
+    for {
+      amazonConfig <- ShipConfig
+                        .load(None)
+                        .map(_.input.storages.storageTypeConfig.amazon)
+      _             = assertEquals(amazonConfig, inputConfig.storages.storageTypeConfig.amazon)
     } yield ()
   }
 

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.ship.EventClock
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import fs2.aws.s3.models.Models.BucketName
 
 object StorageWiring {
@@ -22,14 +22,14 @@ object StorageWiring {
   def storages(
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
-      config: ShipConfig,
+      config: InputConfig,
       clock: EventClock,
       xas: Transactors
   )(implicit api: JsonLdApi): IO[Storages] = {
     val noopAccess   = new StorageAccess {
       override def apply(storage: StorageValue): IO[Unit] = IO.unit
     }
-    val amazonConfig = IO.fromOption(config.S3.storages.storageTypeConfig.amazon)(
+    val amazonConfig = IO.fromOption(config.storages.storageTypeConfig.amazon)(
       new IllegalArgumentException("Amazon storage type config not found")
     )
     Storages(
@@ -38,7 +38,7 @@ object StorageWiring {
       amazonConfig.map(cfg => Set(cfg.defaultWritePermission, cfg.defaultReadPermission)),
       noopAccess,
       xas,
-      config.S3.storages,
+      config.storages,
       config.serviceAccount.value,
       clock
     )(api, UUIDF.random)
@@ -46,15 +46,15 @@ object StorageWiring {
 
   def s3StorageInitializer(
       storages: Storages,
-      config: ShipConfig
+      config: InputConfig
   ): IO[StorageScopeInitialization] =
-    IO.fromOption(config.S3.storages.storageTypeConfig.amazon)(
+    IO.fromOption(config.storages.storageTypeConfig.amazon)(
       new IllegalArgumentException("Amazon S3 configuration is missing")
     ).map { amzConfig =>
       StorageScopeInitialization.s3(
         storages,
         config.serviceAccount.value,
-        defaultS3Fields(config.S3.defaultBucket, amzConfig)
+        defaultS3Fields(config.targetBucket, amzConfig)
       )
     }
 
