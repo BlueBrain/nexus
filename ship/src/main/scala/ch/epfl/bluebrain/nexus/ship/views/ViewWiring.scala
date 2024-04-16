@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.ship.EventClock
-import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
@@ -102,7 +102,7 @@ object ViewWiring {
   def viewInitializers(
       esViews: ElasticSearchViews,
       bgViews: BlazegraphViews,
-      config: ShipConfig
+      config: InputConfig
   ): Set[ScopeInitialization] =
     Set.empty[ScopeInitialization] +
       new ElasticSearchScopeInitialization(

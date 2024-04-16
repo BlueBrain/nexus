@@ -8,13 +8,26 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
 import ch.epfl.bluebrain.nexus.testkit.minio.LocalStackS3
+import fs2.aws.s3.models.Models.BucketName
+import fs2.io.file.Path
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import org.testcontainers.containers.localstack.LocalStackContainer.Service
+import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, PutObjectRequest, PutObjectResponse}
+
+import java.nio.file.Paths
 
 object LocalStackS3StorageClient {
   val ServiceType = Service.S3
+
+  def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: BucketName, path: Path): IO[PutObjectResponse] = {
+    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build) >>
+      s3Client.putObject(
+        PutObjectRequest.builder.bucket(bucket.value.value).key(path.toString).build,
+        Paths.get(getClass.getResource(path.toString).toURI)
+      )
+  }
 
   def s3StorageClientResource(): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
     LocalStackS3.localstackS3().flatMap { localstack =>

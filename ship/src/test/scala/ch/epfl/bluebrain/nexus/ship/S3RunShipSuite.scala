@@ -1,78 +1,51 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{clearDB, expectedImportReport}
-import ch.epfl.bluebrain.nexus.ship.S3RunShipSuite.uploadFileToS3
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.uploadFileToS3
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.expectedImportReport
+import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
-import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
-import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, PutObjectRequest, PutObjectResponse}
 
-import java.nio.file.Paths
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 
-class S3RunShipSuite extends NexusSuite with RunShipSuite.Fixture with LocalStackS3StorageClient.Fixture {
+class S3RunShipSuite
+    extends NexusSuite
+    with Doobie.Fixture
+    with LocalStackS3StorageClient.Fixture
+    with ShipConfigFixtures {
 
   override def munitIOTimeout: Duration = 60.seconds
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(mainFixture, localStackS3Client)
-  private lazy val xas                           = mainFixture()
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest, localStackS3Client)
+  private lazy val xas                           = doobieTruncateAfterTest()
   private lazy val (s3Client, fs2S3client, _)    = localStackS3Client()
 
   private val bucket = BucketName(NonEmptyString.unsafeFrom("bucket"))
 
-  override def beforeEach(context: BeforeEach): Unit = {
-    super.beforeEach(context)
-    clearDB(xas).accepted
-    ()
-  }
-
   test("Run import from S3 providing a single file") {
     val importFilePath = Path("/import/import.json")
     for {
-      _ <- uploadFileToS3(fs2S3client, bucket, importFilePath)
-      _ <- RunShip.s3Ship(s3Client, bucket).run(importFilePath, None).assertEquals(expectedImportReport)
-    } yield ()
-  }
-
-  test("Succeed in overloading the default config with an external config in S3") {
-    val configPath = Path("/config/external.conf")
-    for {
-      _          <- uploadFileToS3(fs2S3client, bucket, configPath)
-      shipConfig <- RunShip.s3Ship(s3Client, bucket).loadConfig(configPath.some)
-      _           = assertEquals(shipConfig.baseUri.toString, "https://bbp.epfl.ch/v1")
+      _     <- uploadFileToS3(fs2S3client, bucket, importFilePath)
+      events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(importFilePath, Offset.start)
+      _     <- RunShip(events, inputConfig, xas).assertEquals(expectedImportReport)
     } yield ()
   }
 
   test("Run import from S3 providing a directory") {
     val directoryPath = Path("/import/multi-part-import")
     for {
-      _ <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
-      _ <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
-      _ <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
-      _ <- RunShip
-             .s3Ship(s3Client, bucket)
-             .run(directoryPath, None)
-             .assertEquals(expectedImportReport)
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
+      events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(directoryPath, Offset.start)
+      _     <- RunShip(events, inputConfig, xas).assertEquals(expectedImportReport)
     } yield ()
-  }
-
-}
-
-object S3RunShipSuite {
-
-  def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: BucketName, path: Path): IO[PutObjectResponse] = {
-    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build) >>
-      s3Client.putObject(
-        PutObjectRequest.builder.bucket(bucket.value.value).key(path.toString).build,
-        Paths.get(getClass.getResource(path.toString).toURI)
-      )
   }
 
 }
