@@ -27,7 +27,7 @@ object StorageWiring {
       xas: Transactors
   )(implicit api: JsonLdApi): IO[Storages] = {
     val noopAccess   = new StorageAccess {
-      override def apply(storage: StorageValue): IO[Unit] = IO.unit
+      override def validateStorageAccess(storage: StorageValue): IO[Unit] = IO.unit
     }
     val amazonConfig = IO.fromOption(config.storages.storageTypeConfig.amazon)(
       new IllegalArgumentException("Amazon storage type config not found")
