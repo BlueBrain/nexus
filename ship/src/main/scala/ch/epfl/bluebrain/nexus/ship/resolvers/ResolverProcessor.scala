@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
-import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.logger
+import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.{logger, patchValue}
 import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
@@ -40,10 +40,12 @@ class ResolverProcessor private (resolvers: Resolvers, projectMapper: ProjectMap
     event match {
       case ResolverCreated(_, _, value, _, _, _, _) =>
         implicit val caller: Caller = Caller(s, identities(value))
-        resolvers.create(id, projectRef, value)
+        val patched                 = patchValue(value, projectMapper)
+        resolvers.create(id, projectRef, patched)
       case ResolverUpdated(_, _, value, _, _, _, _) =>
         implicit val caller: Caller = Caller(s, identities(value))
-        resolvers.update(id, projectRef, cRev, value)
+        val patched                 = patchValue(value, projectMapper)
+        resolvers.update(id, projectRef, cRev, patched)
       case _: ResolverTagAdded                      =>
         // Tags have been removed
         IO.unit
@@ -73,6 +75,14 @@ class ResolverProcessor private (resolvers: Resolvers, projectMapper: ProjectMap
 object ResolverProcessor {
 
   private val logger = Logger[ResolverProcessor]
+
+  def patchValue(value: ResolverValue, projectMapper: ProjectMapper): ResolverValue =
+    value match {
+      case ip: InProjectValue    => ip
+      case cp: CrossProjectValue =>
+        val mappedProjects = cp.projects.map(projectMapper.map)
+        cp.copy(projects = mappedProjects)
+    }
 
   def apply(
       fetchContext: FetchContext,
