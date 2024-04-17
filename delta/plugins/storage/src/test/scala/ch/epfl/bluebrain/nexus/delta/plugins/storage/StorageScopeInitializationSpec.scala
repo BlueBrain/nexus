@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, UUIDFFixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -17,19 +16,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-import java.util.UUID
-
 class StorageScopeInitializationSpec
     extends CatsEffectSpec
     with DoobieScalaTestFixture
     with RemoteContextResolutionFixture
     with ConfigFixtures
-    with StorageFixtures {
+    with StorageFixtures
+    with UUIDFFixtures.Random {
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
-
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")
@@ -38,7 +33,7 @@ class StorageScopeInitializationSpec
 
   private val am      = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val project =
-    ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = nxv.base, mappings = am)
+    ProjectGen.project("org", "project", uuid = randomUuid, orgUuid = randomUuid, base = nxv.base, mappings = am)
 
   private val fetchContext = FetchContextDummy(List(project))
 
@@ -55,7 +50,7 @@ class StorageScopeInitializationSpec
     ).accepted
 
     val defaults  = Defaults("defaultName", "defaultDescription")
-    lazy val init = new StorageScopeInitialization(storages, sa, defaults)
+    lazy val init = StorageScopeInitialization(storages, sa, defaults)
 
     "create a default storage on newly created project" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]

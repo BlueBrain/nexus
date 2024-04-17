@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Val
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchFiles, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchScopeInitialization, ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ScopeInitializationErrorStore}
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sdk.{ScopeInitialization, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.ship.EventClock
@@ -30,7 +30,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi) = {
+  )(implicit jsonLdApi: JsonLdApi): IO[ElasticSearchViews] = {
     implicit val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
     val prefix                                   = "nexus" // TODO: use the config?
 
@@ -60,7 +60,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi) = {
+  )(implicit jsonLdApi: JsonLdApi): IO[BlazegraphViews] = {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
@@ -77,7 +77,7 @@ object ViewWiring {
     )(jsonLdApi, uuidF)
   }
 
-  def cvViews(
+  def compositeViews(
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       config: EventLogConfig,
@@ -99,27 +99,12 @@ object ViewWiring {
       )(jsonLdApi, UUIDF.fixed(uuid))
   }
 
-  def viewInitializer(
-      fetchContext: FetchContext,
-      rcr: ResolverContextResolution,
-      config: InputConfig,
-      clock: EventClock,
-      xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[ScopeInitializer] = {
-    for {
-      esViews <- elasticSearchViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
-      bgViews <- blazegraphViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
-    } yield viewInitializer(esViews, bgViews, config, clock, xas)
-  }
-
-  private def viewInitializer(
+  def viewInitializers(
       esViews: ElasticSearchViews,
       bgViews: BlazegraphViews,
-      config: InputConfig,
-      clock: EventClock,
-      xas: Transactors
-  ): ScopeInitializer = {
-    val viewInits = Set.empty[ScopeInitialization] +
+      config: InputConfig
+  ): Set[ScopeInitialization] =
+    Set.empty[ScopeInitialization] +
       new ElasticSearchScopeInitialization(
         esViews,
         config.serviceAccount.value,
@@ -129,7 +114,5 @@ object ViewWiring {
         config.serviceAccount.value,
         config.viewDefaults.blazegraph
       )
-    ScopeInitializer(viewInits, ScopeInitializationErrorStore.apply(xas, clock))
-  }
 
 }

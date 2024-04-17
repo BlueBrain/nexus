@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageStatEntry, StorageType}
@@ -35,9 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 import org.scalatest.Assertion
 
-import java.util.UUID
-
-class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
+class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFixtures.Random {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
@@ -55,9 +53,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
   private val reader = User("reader", realm)
   private val writer = User("writer", realm)
 
@@ -73,7 +68,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures {
   private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
   private val projBase   = nxv.base
   private val project    =
-    ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
+    ProjectGen.project("myorg", "myproject", uuid = randomUuid, orgUuid = randomUuid, base = projBase, mappings = am)
   private val projectRef = project.ref
 
   private val remoteIdEncoded = UrlUtils.encode(rdId.toString)

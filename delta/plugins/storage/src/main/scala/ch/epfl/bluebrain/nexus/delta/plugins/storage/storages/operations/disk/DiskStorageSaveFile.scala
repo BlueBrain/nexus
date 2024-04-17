@@ -3,17 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.IOOperationIncompleteException
-import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.{FileIO, Sink}
+import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
@@ -24,17 +25,17 @@ import java.nio.file._
 import java.util.UUID
 import scala.concurrent.Future
 
-final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, uuidf: UUIDF) extends SaveFile {
+final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
 
   import as.dispatcher
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
-  override def apply(filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
+  def apply(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
     for {
       uuid                     <- uuidf()
       (fullPath, relativePath) <- initLocation(storage.project, storage.value, uuid, filename)
-      (size, digest)           <- storeFile(entity, fullPath)
+      (size, digest)           <- storeFile(storage, entity, fullPath)
     } yield FileStorageMetadata(
       uuid = uuid,
       bytes = size,
@@ -46,7 +47,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, 
   }
 
   @SuppressWarnings(Array("IsInstanceOf"))
-  private def storeFile(entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
+  private def storeFile(storage: DiskStorage, entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
     IO.fromFuture(
       IO.delay(
         entity.dataBytes.runWith(
@@ -66,6 +67,19 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem, 
     }
   }
 
+  /**
+    * A sink that computes the digest of the input ByteString
+    *
+    * @param algorithm
+    *   the digest algorithm. E.g.: SHA-256
+    */
+  private def digestSink(algorithm: DigestAlgorithm): Sink[ByteString, Future[ComputedDigest]] =
+    Sink
+      .fold(algorithm.digest) { (digest, currentBytes: ByteString) =>
+        digest.update(currentBytes.asByteBuffer)
+        digest
+      }
+      .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, dig.digest.map("%02x".format(_)).mkString)))
 }
 
 object DiskStorageSaveFile {

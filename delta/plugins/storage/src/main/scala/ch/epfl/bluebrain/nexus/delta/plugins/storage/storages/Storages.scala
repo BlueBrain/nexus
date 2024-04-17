@@ -386,7 +386,7 @@ object Storages {
       for {
         value <- IO.fromOption(fields.toValue(config))(InvalidStorageType(id, fields.tpe, allowedStorageTypes))
         _     <- validatePermissions(fields)
-        _     <- access(value)
+        _     <- access.validateStorageAccess(value)
         _     <- verifyAllowedDiskVolume(value)
         _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield value
