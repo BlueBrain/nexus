@@ -101,13 +101,16 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
   }
 
   private def validateObjectDoesNotExist(bucket: String, key: String) =
-    getFileAttributes(bucket, key).redeemWith(
-      {
-        case _: NoSuchKeyException => IO.unit
-        case e                     => IO.raiseError(e)
-      },
-      _ => IO.raiseError(ResourceAlreadyExists(key))
-    )
+    s3StorageClient
+      .headObject(bucket, key)
+      .void
+      .redeemWith(
+        {
+          case _: NoSuchKeyException => IO.unit
+          case e                     => IO.raiseError(e)
+        },
+        _ => IO.raiseError(ResourceAlreadyExists(key))
+      )
 
   private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
     StreamConverter(
@@ -129,9 +132,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       )
       .compile
       .to(List)
-
-  private def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
-    s3StorageClient.getFileAttributes(bucket, key)
 
   // TODO issue fetching attributes when tested against localstack, only after the object is saved
   // Verify if it's the same for real S3. Error msg: 'Could not parse XML response.'

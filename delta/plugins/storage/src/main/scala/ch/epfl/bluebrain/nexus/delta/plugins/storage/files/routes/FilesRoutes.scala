@@ -268,25 +268,27 @@ final class FilesRoutes(
               pathPrefix("register") {
                 (idSegment & indexingMode) { (id, mode) =>
                   pathEndOrSingleSlash {
-                    parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { (storage, tag) =>
-                      entity(as[RegisterFileRequest]) { registerRequest =>
-                        val fileId = FileId(id, project)
-                        emit(
-                          files
-                            .registerS3File(
-                              fileId,
-                              storage,
-                              registerRequest.metadata,
-                              registerRequest.path,
-                              tag
-                            )
-                            .index(mode)
-                            .attemptNarrow[FileRejection]
-                        )
+                    operationName(s"$prefixSegment/files/{org}/{project}/register/{id}") {
+                      parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { (storage, tag) =>
+                        entity(as[RegisterFileRequest]) { registerRequest =>
+                          val fileId = FileId(id, project)
+                          emit(
+                            Created,
+                            files
+                              .registerFile(
+                                fileId,
+                                storage,
+                                registerRequest.metadata,
+                                registerRequest.path,
+                                tag
+                              )
+                              .index(mode)
+                              .attemptNarrow[FileRejection]
+                          )
+                        }
                       }
                     }
                   }
-
                 }
               }
             )
@@ -364,7 +366,7 @@ object FilesRoutes {
     def fileDescriptionFromRequest(f: LinkFileRequest): IO[FileDescription] =
       f.filename.orElse(f.path.lastSegment) match {
         case Some(value) => IO.pure(FileDescription(value, f.mediaType, f.metadata))
-        case None        => IO.raiseError(InvalidFileLink)
+        case None        => IO.raiseError(InvalidFilePath)
       }
   }
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
+import ch.epfl.bluebrain.nexus.tests.Optics.error
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
@@ -30,8 +30,9 @@ class S3StorageSpec extends StorageSpec {
 
   val s3Config: S3Config = storageConfig.s3
 
-  private val bucket  = genId()
-  private val logoKey = "some/path/to/nexus-logo.png"
+  private val bucket       = genId()
+  private val logoFilename = "nexus-logo.png"
+  private val logoKey      = s"some/path/to/$logoFilename"
 
   val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566"
   val s3BucketEndpoint: String = s"http://s3.localhost.localstack.cloud:4566/$bucket"
@@ -51,12 +52,14 @@ class S3StorageSpec extends StorageSpec {
     super.beforeAll()
     // Configure minio
     s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build)
-    s3Client.putObject(
-      PutObjectRequest.builder.bucket(bucket).key(logoKey).build,
-      Paths.get(getClass.getResource("/kg/files/nexus-logo.png").toURI)
-    )
+    uploadLogoFile(logoKey)
     ()
   }
+
+  private def uploadLogoFile(key: String) = s3Client.putObject(
+    PutObjectRequest.builder.bucket(bucket).key(key).build,
+    Paths.get(getClass.getResource("/kg/files/nexus-logo.png").toURI)
+  )
 
   override def afterAll(): Unit = {
     val objects = s3Client.listObjects(ListObjectsRequest.builder.bucket(bucket).build)
@@ -148,14 +151,21 @@ class S3StorageSpec extends StorageSpec {
 
   s"Registering an S3 file in-place" should {
     "succeed" in {
-      val payload = Json.obj(
-        "path" -> Json.fromString(logoKey)
-      )
       val id      = genId()
+      val path    = s"$id/nexus-logo.png"
+      uploadLogoFile(path)
+      val payload = Json.obj("path" -> Json.fromString(path))
       deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
-        (_, response) =>
-          response.status shouldEqual StatusCodes.Created
-      }
+        (_, response) => response.status shouldEqual StatusCodes.Created
+      } >>
+        deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json.findAllByKey("_mediaType").headOption shouldEqual Some("image/png".asJson)
+          json.findAllByKey("_bytes").headOption shouldEqual Some(29625.asJson)
+          json.findAllByKey("_digest").headOption shouldEqual Some(
+            Json.obj("_algorithm" -> "MD5".asJson, "_value" -> "1f63e15e11e27d2899aef40cca9dc34d".asJson)
+          )
+        }
     }
   }
 }

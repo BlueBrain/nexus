@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.{BodyPartEntity, ContentType, Uri}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import cats.data.Validated
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -15,11 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.MissingS3Attributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.InvalidContentType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
@@ -37,10 +38,11 @@ trait S3FileOperations {
       entity: BodyPartEntity
   ): IO[FileStorageMetadata]
 
-  def register(bucket: String, path: Uri.Path): IO[FileStorageMetadata]
+  def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
 }
 
 object S3FileOperations {
+  final case class S3FileMetadata(contentType: ContentType, metadata: FileStorageMetadata)
 
   def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
 
@@ -73,28 +75,33 @@ object S3FileOperations {
     override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
       saveFile.apply(storage, filename, entity)
 
-    override def register(bucket: String, path: Uri.Path): IO[FileStorageMetadata] =
-      client.getFileAttributes(bucket, path.toString()).flatMap { resp =>
-        val maybeSize     = Option(resp.objectSize()).toRight("object size").toValidatedNel
-        println(maybeSize)
-        val maybeEtag     = Option(resp.objectSize()).toRight("etag").toValidatedNel
-        println(maybeEtag)
-        val maybeChecksum = Option(resp.checksum()).toRight("checksum").toValidatedNel
-        println(maybeChecksum)
-
-        maybeSize.product(maybeEtag).product(maybeChecksum) match {
-          case Validated.Valid(((size, _), checksum)) =>
-            FileStorageMetadata(
-              UUID.randomUUID(),
-              size,
-              Digest.ComputedDigest(DigestAlgorithm.MD5, checksum.toString),
-              FileAttributesOrigin.External,
-              location = client.baseEndpoint / bucket / path,
-              path = path
-            ).pure[IO]
-          case Validated.Invalid(errors)              => IO.raiseError(MissingS3Attributes(errors))
-        }
+    override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] = {
+      for {
+        _           <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
+        resp        <- client.headObject(bucket, path.toString())
+        contentType <- parseContentType(resp.contentType())
+      } yield mkS3Metadata(bucket, path, resp, contentType)
+    }
+      .onError { e =>
+        log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
       }
+
+    private def parseContentType(raw: String): IO[ContentType] =
+      ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
+
+    private def mkS3Metadata(bucket: String, path: Uri.Path, resp: HeadObjectResponse, ct: ContentType) = {
+      S3FileMetadata(
+        ct,
+        FileStorageMetadata(
+          UUID.randomUUID(), // TODO unused field for this use case, but mandatory everywhere?
+          resp.contentLength(),
+          Digest.ComputedDigest(DigestAlgorithm.MD5, resp.eTag().filterNot(_ == '"')),
+          FileAttributesOrigin.External,
+          client.baseEndpoint / bucket / path,
+          path
+        )
+      )
+    }
   }
 
 }

@@ -12,7 +12,7 @@ import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{GetObjectAttributesRequest, GetObjectAttributesResponse, ListObjectsV2Request, ListObjectsV2Response, ObjectAttributes}
+import software.amazon.awssdk.services.s3.model.{HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response}
 
 import java.net.URI
 
@@ -26,7 +26,7 @@ trait S3StorageClient {
 
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
-  def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse]
+  def headObject(bucket: String, key: String): IO[HeadObjectResponse]
 
   def underlyingClient: S3[IO]
 
@@ -69,16 +69,8 @@ object S3StorageClient {
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
       s3.readFile(bucket, fileKey)
 
-    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
-      client
-        .getObjectAttributes(
-          GetObjectAttributesRequest
-            .builder()
-            .bucket(bucket)
-            .key(key)
-            .objectAttributes(ObjectAttributes.knownValues())
-            .build()
-        )
+    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
+      client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build)
 
     override def underlyingClient: S3[IO] = s3
   }
@@ -93,7 +85,7 @@ object S3StorageClient {
 
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
 
-    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] = raiseDisabledErr
+    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
 
     override def underlyingClient: S3[IO] = throw disabledErr
 
