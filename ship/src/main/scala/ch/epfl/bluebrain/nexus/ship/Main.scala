@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import cats.effect.{ExitCode, IO}
+import cats.effect.{Clock, ExitCode, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.ship.BuildInfo
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.ShipCommand._
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
@@ -41,7 +40,7 @@ object Main
     }
 
   private val run = Opts.subcommand("run", "Run an import") {
-    (inputPath, configFile, offset, runMode).mapN(RunCommand)
+    (inputPath, configFile, offset, runMode).mapN(RunCommand.apply)
   }
 
   private val showConfig = Opts.subcommand("config", "Show reconciled config") {
@@ -56,13 +55,18 @@ object Main
       }
       .map(_.as(ExitCode.Success))
 
-  private[ship] def run(r: RunCommand) =
-    for {
-      (config, eventsStream) <- InitShip(r)
-      _                      <- Transactors.init(config.database).use { xas =>
-                                  RunShip(eventsStream, config.input, xas)
-                                }
-    } yield ()
+  private[ship] def run(r: RunCommand): IO[Unit] = {
+    val clock = Clock[IO]
+    InitShip(r).use { case (config, eventsStream, xas) =>
+      for {
+        start         <- clock.realTimeInstant
+        reportOrError <- RunShip(eventsStream, config.input, xas).attempt
+        end           <- clock.realTimeInstant
+        _             <- ShipSummaryStore.save(xas, start, end, r, reportOrError)
+        _             <- IO.fromEither(reportOrError)
+      } yield ()
+    }
+  }
 
   private[ship] def showConfig(config: Option[Path]) =
     for {

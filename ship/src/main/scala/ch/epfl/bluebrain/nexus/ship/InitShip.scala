@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.ship.ShipCommand.RunCommand
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
@@ -9,7 +10,14 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 object InitShip {
 
-  def apply(run: RunCommand): IO[(ShipConfig, fs2.Stream[IO, RowEvent])] = run.mode match {
+  def apply(run: RunCommand): Resource[IO, (ShipConfig, fs2.Stream[IO, RowEvent], Transactors)] =
+    Resource.eval(configAndStream(run)).flatMap { case (config, eventStream) =>
+      Transactors
+        .init(config.database)
+        .map { xas => (config, eventStream, xas) }
+    }
+
+  private def configAndStream(run: RunCommand): IO[(ShipConfig, fs2.Stream[IO, RowEvent])] = run.mode match {
     case RunMode.Local =>
       val eventsStream = EventStreamer.localStreamer.stream(run.path, run.offset)
       ShipConfig.load(run.config).map(_ -> eventsStream)
