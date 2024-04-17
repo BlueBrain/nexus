@@ -28,7 +28,7 @@ trait S3StorageClient {
 
   def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse]
 
-  def underlyingClient: S3[IO]
+  def underlyingClient: S3AsyncClientOp[IO]
 
   def baseEndpoint: IO[Uri]
 }
@@ -80,7 +80,7 @@ object S3StorageClient {
             .build()
         )
 
-    override def underlyingClient: S3[IO] = s3
+    override def underlyingClient: S3AsyncClientOp[IO] = client
 
     override def baseEndpoint: IO[Uri] = IO.pure(baseEndpoint)
   }
@@ -97,7 +97,7 @@ object S3StorageClient {
 
     override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] = raiseDisabledErr
 
-    override def underlyingClient: S3[IO] = throw disabledErr
+    override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
 
     override def baseEndpoint: IO[Uri] = raiseDisabledErr
   }
