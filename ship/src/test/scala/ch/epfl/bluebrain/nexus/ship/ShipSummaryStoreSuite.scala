@@ -32,7 +32,7 @@ class ShipSummaryStoreSuite extends NexusSuite with Doobie.Fixture {
         ReportRow(start, end, success, hasError, hasReport)
       }
 
-  private def assertSave(
+  private def assertSaveRun(
       start: Instant,
       end: Instant,
       command: RunCommand,
@@ -50,18 +50,18 @@ class ShipSummaryStoreSuite extends NexusSuite with Doobie.Fixture {
     }
   }
 
-  private val start      = Instant.now().minusSeconds(3600)
-  private val end        = Instant.now()
+  private val start      = Instant.parse("2024-04-17T10:00:00.000Z")
+  private val end        = Instant.parse("2024-04-17T11:00:00.000Z")
   private val runCommand = RunCommand(Path("/data"), None, Offset.start, RunMode.Local)
 
   test("Save a failed run") {
     val error = new IllegalStateException("BOOM !")
-    assertSave(start, end, runCommand, Left(error))
+    assertSaveRun(start, end, runCommand, Left(error))
   }
 
   test("Save a successful run") {
     val report = ImportReport(Offset.at(5L), Instant.now(), Map.empty)
-    assertSave(start, end, runCommand, Right(report))
+    assertSaveRun(start, end, runCommand, Right(report))
   }
 
 }
