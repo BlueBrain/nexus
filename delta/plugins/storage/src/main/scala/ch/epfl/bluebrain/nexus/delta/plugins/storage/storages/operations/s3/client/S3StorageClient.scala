@@ -30,7 +30,7 @@ trait S3StorageClient {
 
   def underlyingClient: S3[IO]
 
-  def baseEndpoint: IO[Uri]
+  def baseEndpoint: Uri
 }
 
 object S3StorageClient {
@@ -57,7 +57,7 @@ object S3StorageClient {
       )
       .map(new S3StorageClientImpl(_, endpoint.toString))
 
-  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], baseEndpoint: Uri) extends S3StorageClient {
+  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri) extends S3StorageClient {
     private val s3: S3[IO] = S3.create(client)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
@@ -76,13 +76,11 @@ object S3StorageClient {
             .builder()
             .bucket(bucket)
             .key(key)
-            .objectAttributes(ObjectAttributes.knownValues()) // TODO get all values
+            .objectAttributes(ObjectAttributes.knownValues())
             .build()
         )
 
     override def underlyingClient: S3[IO] = s3
-
-    override def baseEndpoint: IO[Uri] = IO.pure(baseEndpoint)
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -99,6 +97,6 @@ object S3StorageClient {
 
     override def underlyingClient: S3[IO] = throw disabledErr
 
-    override def baseEndpoint: IO[Uri] = raiseDisabledErr
+    override def baseEndpoint: Uri = throw disabledErr
   }
 }

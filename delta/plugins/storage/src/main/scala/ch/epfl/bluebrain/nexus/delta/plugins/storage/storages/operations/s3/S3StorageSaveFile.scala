@@ -76,23 +76,20 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
             _        <- log(key, s"Received ETag for single part upload: $onlyPartETag")
             fileSize <- computeSize(bytes)
             digest   <- computeDigest(bytes, storage.storageValue.algorithm)
-            metadata <- fileMetadata(key, uuid, fileSize, digest)
-          } yield metadata
+          } yield fileMetadata(key, uuid, fileSize, digest)
         case Some(other)               => raiseUnexpectedErr(key, s"S3 multipart upload returned multiple etags unexpectedly: $other")
         case None                      => raiseUnexpectedErr(key, "S3 multipart upload was aborted because no data was received")
       }
 
     def fileMetadata(key: String, uuid: UUID, fileSize: Long, digest: String) =
-      s3StorageClient.baseEndpoint.map { base =>
-        FileStorageMetadata(
-          uuid = uuid,
-          bytes = fileSize,
-          digest = Digest.ComputedDigest(storage.value.algorithm, digest),
-          origin = Client,
-          location = base / bucket.value.value / Uri.Path(key),
-          path = Uri.Path(key)
-        )
-      }
+      FileStorageMetadata(
+        uuid = uuid,
+        bytes = fileSize,
+        digest = Digest.ComputedDigest(storage.value.algorithm, digest),
+        origin = Client,
+        location = s3StorageClient.baseEndpoint / bucket.value.value / Uri.Path(key),
+        path = Uri.Path(key)
+      )
 
     def log(key: String, msg: String) = logger.info(s"Bucket: ${bucket.value}. Key: $key. $msg")
 

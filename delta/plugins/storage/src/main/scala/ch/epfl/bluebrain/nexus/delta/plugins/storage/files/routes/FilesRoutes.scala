@@ -11,7 +11,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder, regFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -264,6 +264,30 @@ final class FilesRoutes(
                     }
                   }
                 )
+              },
+              pathPrefix("register") {
+                (idSegment & indexingMode) { (id, mode) =>
+                  pathEndOrSingleSlash {
+                    parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { (storage, tag) =>
+                      entity(as[RegisterFileRequest]) { registerRequest =>
+                        val fileId = FileId(id, project)
+                        emit(
+                          files
+                            .registerS3File(
+                              fileId,
+                              storage,
+                              registerRequest.metadata,
+                              registerRequest.path,
+                              tag
+                            )
+                            .index(mode)
+                            .attemptNarrow[FileRejection]
+                        )
+                      }
+                    }
+                  }
+
+                }
               }
             )
           }
@@ -329,10 +353,13 @@ object FilesRoutes {
       metadata: Option[FileCustomMetadata]
   )
 
+  final case class RegisterFileRequest(path: Path, metadata: Option[FileCustomMetadata])
+
   object LinkFileRequest {
     @nowarn("cat=unused")
-    implicit private val config: Configuration             = Configuration.default
-    implicit val linkFileDecoder: Decoder[LinkFileRequest] = deriveConfiguredDecoder[LinkFileRequest]
+    implicit private val config: Configuration                = Configuration.default
+    implicit val linkFileDecoder: Decoder[LinkFileRequest]    = deriveConfiguredDecoder[LinkFileRequest]
+    implicit val regFileDecoder: Decoder[RegisterFileRequest] = deriveConfiguredDecoder[RegisterFileRequest]
 
     def fileDescriptionFromRequest(f: LinkFileRequest): IO[FileDescription] =
       f.filename.orElse(f.path.lastSegment) match {

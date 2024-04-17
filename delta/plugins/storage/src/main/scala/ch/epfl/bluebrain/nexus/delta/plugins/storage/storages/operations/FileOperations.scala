@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, MoveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, MoveFileRejection, RegisterFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
@@ -21,6 +21,8 @@ trait FileOperations extends StorageAccess {
   def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]
 
   def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
+
+  def register(storage: Storage, path: Uri.Path): IO[FileStorageMetadata]
 
   def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]
 }
@@ -61,6 +63,12 @@ object FileOperations {
       storage match {
         case s: RemoteDiskStorage => remoteDiskFileOps.fetchAttributes(s.value.folder, attributes.path)
         case s                    => IO.raiseError(FetchAttributeRejection.UnsupportedOperation(s.tpe))
+      }
+
+    override def register(storage: Storage, path: Uri.Path): IO[FileStorageMetadata] =
+      storage match {
+        case s: S3Storage => s3FileOps.register(s.value.bucket, path)
+        case s            => IO.raiseError(RegisterFileRejection.UnsupportedOperation(s.tpe))
       }
   }
 

@@ -4,19 +4,26 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.data.Validated
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.MissingS3Attributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
@@ -29,6 +36,8 @@ trait S3FileOperations {
       filename: String,
       entity: BodyPartEntity
   ): IO[FileStorageMetadata]
+
+  def register(bucket: String, path: Uri.Path): IO[FileStorageMetadata]
 }
 
 object S3FileOperations {
@@ -63,6 +72,29 @@ object S3FileOperations {
 
     override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
       saveFile.apply(storage, filename, entity)
+
+    override def register(bucket: String, path: Uri.Path): IO[FileStorageMetadata] =
+      client.getFileAttributes(bucket, path.toString()).flatMap { resp =>
+        val maybeSize     = Option(resp.objectSize()).toRight("object size").toValidatedNel
+        println(maybeSize)
+        val maybeEtag     = Option(resp.objectSize()).toRight("etag").toValidatedNel
+        println(maybeEtag)
+        val maybeChecksum = Option(resp.checksum()).toRight("checksum").toValidatedNel
+        println(maybeChecksum)
+
+        maybeSize.product(maybeEtag).product(maybeChecksum) match {
+          case Validated.Valid(((size, _), checksum)) =>
+            FileStorageMetadata(
+              UUID.randomUUID(),
+              size,
+              Digest.ComputedDigest(DigestAlgorithm.MD5, checksum.toString),
+              FileAttributesOrigin.External,
+              location = client.baseEndpoint / bucket / path,
+              path = path
+            ).pure[IO]
+          case Validated.Invalid(errors)              => IO.raiseError(MissingS3Attributes(errors))
+        }
+      }
   }
 
 }

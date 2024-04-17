@@ -145,4 +145,17 @@ class S3StorageSpec extends StorageSpec {
       }
     }
   }
+
+  s"Registering an S3 file in-place" should {
+    "succeed" in {
+      val payload = Json.obj(
+        "path" -> Json.fromString(logoKey)
+      )
+      val id      = genId()
+      deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.Created
+      }
+    }
+  }
 }
