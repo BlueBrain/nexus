@@ -61,12 +61,7 @@ object Main
     InitShip(r).use { case (config, eventsStream, xas) =>
       for {
         start         <- clock.realTimeInstant
-        reportOrError <- Transactors
-                           .init(config.database)
-                           .use { xas =>
-                             RunShip(eventsStream, config.input, xas)
-                           }
-                           .attempt
+        reportOrError <- RunShip(eventsStream, config.input, xas).attempt
         end           <- clock.realTimeInstant
         _             <- ShipSummaryStore.save(xas, start, end, r, reportOrError)
         _             <- IO.fromEither(reportOrError)
