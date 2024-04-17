@@ -4,7 +4,6 @@ import cats.effect.{Clock, ExitCode, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.ship.BuildInfo
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.ShipCommand._
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
