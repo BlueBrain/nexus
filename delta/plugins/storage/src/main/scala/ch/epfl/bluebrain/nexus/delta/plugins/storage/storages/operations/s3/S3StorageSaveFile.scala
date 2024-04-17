@@ -38,43 +38,45 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {
 
-    val bucket = storage.value.bucket
-
-    def storeFile(key: String, uuid: UUID, entity: BodyPartEntity): IO[FileStorageMetadata] = {
-      val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
-
-      (for {
-        _               <- log(key, s"Checking for object existence")
-        _               <- validateObjectDoesNotExist(bucket, key)
-        _               <- log(key, s"Beginning upload")
-        (md5, fileSize) <- uploadFile(fileData, bucket, key)
-        _               <- log(key, s"Finished upload. MD5: $md5")
-        attr            <- fileMetadata(bucket, key, uuid, fileSize, md5)
-      } yield attr)
-        .onError(e => logger.error(e)("Unexpected error when storing file"))
-        .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
-    }
-
-    def fileMetadata(bucket: String, key: String, uuid: UUID, fileSize: Long, md5: String) =
-      s3StorageClient.baseEndpoint.map { base =>
-        FileStorageMetadata(
-          uuid = uuid,
-          bytes = fileSize,
-          digest = Digest.ComputedDigest(DigestAlgorithm.MD5, md5),
-          origin = Client,
-          location = base / bucket / Uri.Path(key),
-          path = Uri.Path(key)
-        )
-      }
-
-    def log(key: String, msg: String): IO[Unit] = logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
-
     for {
       uuid   <- uuidf()
       path    = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-      result <- storeFile(path.toString(), uuid, entity)
+      result <- storeFile(storage.value.bucket, path.toString(), uuid, entity)
     } yield result
   }
+
+  private def storeFile(bucket: String, key: String, uuid: UUID, entity: BodyPartEntity): IO[FileStorageMetadata] = {
+    val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
+
+    (for {
+      _               <- log(bucket, key, s"Checking for object existence")
+      _               <- validateObjectDoesNotExist(bucket, key)
+      _               <- log(bucket, key, s"Beginning upload")
+      (md5, fileSize) <- uploadFile(fileData, bucket, key)
+      _               <- log(bucket, key, s"Finished upload. MD5: $md5")
+      attr            <- fileMetadata(bucket, key, uuid, fileSize, md5)
+    } yield attr)
+      .onError(e => logger.error(e)("Unexpected error when storing file"))
+      .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
+  }
+
+  private def fileMetadata(
+      bucket: String,
+      key: String,
+      uuid: UUID,
+      fileSize: Long,
+      md5: String
+  ): IO[FileStorageMetadata] =
+    s3StorageClient.baseEndpoint.map { base =>
+      FileStorageMetadata(
+        uuid = uuid,
+        bytes = fileSize,
+        digest = Digest.ComputedDigest(DigestAlgorithm.MD5, md5),
+        origin = Client,
+        location = base / bucket / Uri.Path(key),
+        path = Uri.Path(key)
+      )
+    }
 
   private def validateObjectDoesNotExist(bucket: String, key: String) =
     getFileAttributes(bucket, key).redeemWith(
@@ -126,4 +128,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
   private def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
     s3StorageClient.getFileAttributes(bucket, key)
+
+  private def log(bucket: String, key: String, msg: String): IO[Unit] =
+    logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
 }
