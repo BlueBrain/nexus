@@ -5,6 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts => bgContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts => compositeViewContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts => esContexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContext}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -55,6 +57,10 @@ object ContextWiring {
       // Composite views
       compositeCtx         <- ContextValue.fromFile("contexts/composite-views.json")
       compositeMetaCtx     <- ContextValue.fromFile("contexts/composite-views-metadata.json")
+      // Storages
+      storageCtx           <- ContextValue.fromFile("contexts/storages.json")
+      storageMetaCtx       <- ContextValue.fromFile("contexts/storages-metadata.json")
+      fileCtx              <- ContextValue.fromFile("contexts/files.json")
     } yield RemoteContextResolution.fixed(
       // Delta
       contexts.error                               -> errorCtx,
@@ -87,7 +93,11 @@ object ContextWiring {
       bgContexts.blazegraphMetadata                -> blazegraphMetaCtx,
       // Composite views
       compositeViewContexts.compositeViews         -> compositeCtx,
-      compositeViewContexts.compositeViewsMetadata -> compositeMetaCtx
+      compositeViewContexts.compositeViewsMetadata -> compositeMetaCtx,
+      // Storages and files
+      storageContext.storages                      -> storageCtx,
+      storageContext.storagesMetadata              -> storageMetaCtx,
+      fileContext.files                            -> fileCtx
     )
 
   def resolverContextResolution(

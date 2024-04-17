@@ -3,9 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.{DiskStorageFields, S3StorageFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.ResourceAlreadyExists
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultS3StorageId, defaultStorageId, Storages}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -20,13 +22,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Proje
   *   the storages module
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
-  * @param defaults
-  *   default name and description for the storage
+  * @param defaultStorageId
+  *   the id to use for the default storage to be created
+  * @param defaultStorageFields
+  *   the default value for the storage fields
   */
 class StorageScopeInitialization(
     storages: Storages,
     serviceAccount: ServiceAccount,
-    defaults: Defaults
+    defaultStorageId: Iri,
+    defaultStorageFields: StorageFields
 ) extends ScopeInitialization {
 
   private val logger                                        = Logger[StorageScopeInitialization]
@@ -34,26 +39,15 @@ class StorageScopeInitialization(
 
   implicit private val caller: Caller = serviceAccount.caller
 
-  private lazy val defaultValue: DiskStorageFields = DiskStorageFields(
-    name = Some(defaults.name),
-    description = Some(defaults.description),
-    default = true,
-    volume = None,
-    readPermission = None,
-    writePermission = None,
-    capacity = None,
-    maxFileSize = None
-  )
-
   override def onProjectCreation(project: ProjectRef, subject: Identity.Subject): IO[Unit] =
     storages
-      .create(defaultStorageId, project, defaultValue)
+      .create(defaultStorageId, project, defaultStorageFields)
       .void
       .handleErrorWith {
         case _: ResourceAlreadyExists => IO.unit // nothing to do, storage already exits
         case rej                      =>
           val str =
-            s"Failed to create the default DiskStorage for project '$project' due to '${rej.getMessage}'."
+            s"Failed to create the default ${defaultStorageFields.tpe} for project '$project' due to '${rej.getMessage}'."
           logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultStorage")
@@ -69,13 +63,31 @@ class StorageScopeInitialization(
 object StorageScopeInitialization {
 
   /**
-    * Conditionnally create a [[StorageScopeInitialization]]
+    * Creates a [[StorageScopeInitialization]] that creates a default DiskStorage with the provided default
+    * name/description
     */
-  def when(enabled: Boolean)(
-      storages: Storages,
+  def apply(storages: Storages, serviceAccount: ServiceAccount, defaults: Defaults): StorageScopeInitialization = {
+    val defaultFields: DiskStorageFields = DiskStorageFields(
+      name = Some(defaults.name),
+      description = Some(defaults.description),
+      default = true,
+      volume = None,
+      readPermission = None,
+      writePermission = None,
+      capacity = None,
+      maxFileSize = None
+    )
+    new StorageScopeInitialization(storages, serviceAccount, defaultStorageId, defaultFields)
+  }
+
+  /**
+    * Creates a [[StorageScopeInitialization]] that creates a default S3Storage with the provided default fields
+    */
+  def s3(
+      storage: Storages,
       serviceAccount: ServiceAccount,
-      defaults: Defaults
-  ): Option[StorageScopeInitialization] =
-    Option.when(enabled)(new StorageScopeInitialization(storages, serviceAccount, defaults))
+      defaultFields: S3StorageFields
+  ): StorageScopeInitialization =
+    new StorageScopeInitialization(storage, serviceAccount, defaultS3StorageId, defaultFields)
 
 }

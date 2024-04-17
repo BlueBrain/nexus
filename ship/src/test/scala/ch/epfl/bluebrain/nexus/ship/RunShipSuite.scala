@@ -38,6 +38,7 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
       _      <- RunShip(events, inputConfig, xas).assertEquals(expectedImportReport)
       _      <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
       _      <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
+      _      <- checkFor("storage", nxv + "defaultS3Storage", xas).assertEquals(1)
     } yield ()
   }
 

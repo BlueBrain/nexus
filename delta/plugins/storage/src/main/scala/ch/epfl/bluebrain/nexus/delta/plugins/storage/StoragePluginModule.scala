@@ -314,7 +314,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
-    Option.when(cfg.enableDefaultCreation)(new StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet
+    Option.when(cfg.enableDefaultCreation)(StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet
   }
 
   many[ProjectDeletionTask].add { (storages: Storages) => StorageDeletionTask(storages) }

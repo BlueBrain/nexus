@@ -69,7 +69,7 @@ object CompositeViewProcessor {
   )(implicit
       jsonLdApi: JsonLdApi
   ): CompositeViewProcessor = {
-    val views = ViewWiring.cvViews(fetchContext, rcr, config, clock, xas)
+    val views = ViewWiring.compositeViews(fetchContext, rcr, config, clock, xas)
     new CompositeViewProcessor(views, projectMapper, clock)
   }
 
