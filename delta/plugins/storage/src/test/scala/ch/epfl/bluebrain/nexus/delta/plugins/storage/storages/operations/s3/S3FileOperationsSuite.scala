@@ -79,6 +79,7 @@ class S3FileOperationsSuite
       val result = for {
         attr   <- fileOps.save(storage, filename, entity)
         _       = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.MD5, hashOfContent))
+        _       = assertEquals(attr.bytes, content.length.toLong)
         source <- fileOps.fetch(bucket, attr.path)
       } yield consume(source)
 
