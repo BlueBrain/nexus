@@ -180,7 +180,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         fetchContext: FetchContext,
         storages: Storages,
-        storagesStatistics: StoragesStatistics,
         xas: Transactors,
         clock: Clock[IO],
         uuidF: UUIDF,
@@ -191,7 +190,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fetchContext,
         aclCheck,
         storages,
-        storagesStatistics,
         xas,
         cfg.files,
         fileOps,
@@ -220,12 +218,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         files: Files,
         storages: Storages,
         aclCheck: AclCheck,
-        storagesStatistics: StoragesStatistics,
         diskCopy: DiskStorageCopyFiles,
         remoteDiskCopy: RemoteDiskStorageCopyFiles,
         uuidF: UUIDF
     ) =>
-      BatchCopy.mk(files, storages, aclCheck, storagesStatistics, diskCopy, remoteDiskCopy)(uuidF)
+      BatchCopy.mk(files, storages, aclCheck, diskCopy, remoteDiskCopy)(uuidF)
   }
 
   make[BatchFiles].from {

@@ -145,11 +145,8 @@ object FileRejection {
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
     * contain a ''file'' fieldName
     */
-  final case class FileTooLarge(maxFileSize: Long, storageAvailableSpace: Option[Long])
-      extends FileRejection(
-        s"File size exceeds the max file size for the storage ($maxFileSize bytes)${storageAvailableSpace
-          .fold("") { r => s" or its remaining available space ($r bytes)" }}."
-      )
+  final case class FileTooLarge(maxFileSize: Long)
+      extends FileRejection(s"File size exceeds the max file size for the storage ($maxFileSize bytes).")
 
   /**
     * Rejection returned when attempting to create/update a file and the unmarshaller fails
@@ -277,7 +274,7 @@ object FileRejection {
       case FileNotFound(_, _)                                              => (StatusCodes.NotFound, Seq.empty)
       case ResourceAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
       case IncorrectRev(_, _)                                              => (StatusCodes.Conflict, Seq.empty)
-      case FileTooLarge(_, _)                                              => (StatusCodes.PayloadTooLarge, Seq.empty)
+      case FileTooLarge(_)                                                 => (StatusCodes.PayloadTooLarge, Seq.empty)
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
       // If this happens it signifies a system problem rather than the user having made a mistake

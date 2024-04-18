@@ -74,7 +74,6 @@ object StorageScopeInitialization {
       volume = None,
       readPermission = None,
       writePermission = None,
-      capacity = None,
       maxFileSize = None
     )
     new StorageScopeInitialization(storages, serviceAccount, defaultStorageId, defaultFields)

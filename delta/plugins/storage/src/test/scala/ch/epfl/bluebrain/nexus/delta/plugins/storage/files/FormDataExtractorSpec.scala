@@ -69,7 +69,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("filename"))
 
       val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 250, None).accepted
+        extractor(iri, entity, 250).accepted
 
       filename shouldEqual "filename"
       contentType shouldEqual `application/octet-stream`
@@ -79,7 +79,7 @@ class FormDataExtractorSpec
     "be extracted with the custom media type from the config" in {
       val entity                                                   = createEntity("file", NoContentType, Some("file.custom"))
       val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 2000, None).accepted
+        extractor(iri, entity, 2000).accepted
 
       filename shouldEqual "file.custom"
       contentType shouldEqual customContentType
@@ -90,7 +90,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("file.txt"))
 
       val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 250, None).accepted
+        extractor(iri, entity, 250).accepted
       filename shouldEqual "file.txt"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
@@ -99,7 +99,7 @@ class FormDataExtractorSpec
     "be extracted with the provided content type header" in {
       val entity                                                   = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
       val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 2000, None).accepted
+        extractor(iri, entity, 2000).accepted
       filename shouldEqual "file.custom"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
@@ -107,12 +107,12 @@ class FormDataExtractorSpec
 
     "fail to be extracted if no file part exists found" in {
       val entity = createEntity("other", NoContentType, None)
-      extractor(iri, entity, 250, None).rejectedWith[InvalidMultipartFieldName]
+      extractor(iri, entity, 250).rejectedWith[InvalidMultipartFieldName]
     }
 
     "fail to be extracted if payload size is too large" in {
       val entity = createEntity("other", `text/plain(UTF-8)`, None)
-      extractor(iri, entity, 10, None).rejected shouldEqual FileTooLarge(10L, None)
+      extractor(iri, entity, 10).rejected shouldEqual FileTooLarge(10L)
     }
   }
 }

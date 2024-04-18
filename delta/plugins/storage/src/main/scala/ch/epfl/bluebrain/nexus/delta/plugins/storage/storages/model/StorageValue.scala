@@ -50,12 +50,6 @@ sealed trait StorageValue extends Product with Serializable {
 
   /**
     * @return
-    *   the maximum allocated capacity for the storage
-    */
-  def capacity: Option[Long]
-
-  /**
-    * @return
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   def maxFileSize: Long
@@ -89,7 +83,6 @@ object StorageValue {
       volume: AbsolutePath,
       readPermission: Permission,
       writePermission: Permission,
-      capacity: Option[Long],
       maxFileSize: Long
   ) extends StorageValue {
 
@@ -111,10 +104,9 @@ object StorageValue {
         volume: AbsolutePath,
         readPermission: Permission,
         writePermission: Permission,
-        capacity: Option[Long],
         maxFileSize: Long
     ): DiskStorageValue =
-      DiskStorageValue(None, None, default, algorithm, volume, readPermission, writePermission, capacity, maxFileSize)
+      DiskStorageValue(None, None, default, algorithm, volume, readPermission, writePermission, maxFileSize)
 
   }
 
@@ -135,8 +127,8 @@ object StorageValue {
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType       = StorageType.S3Storage
-    override val capacity: Option[Long] = None
+    override val tpe: StorageType = StorageType.S3Storage
+
   }
 
   object S3StorageValue {
@@ -182,8 +174,8 @@ object StorageValue {
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType       = StorageType.RemoteDiskStorage
-    override val capacity: Option[Long] = None
+    override val tpe: StorageType = StorageType.RemoteDiskStorage
+
   }
 
   object RemoteDiskStorageValue {

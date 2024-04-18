@@ -31,15 +31,15 @@ trait StorageFixtures extends CirceLiteral {
 
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
-    disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(5000), 50),
+    disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, "localhost", Secret(MinioDocker.RootUser), Secret(MinioDocker.RootPassword),
       permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), Anonymous, permissions.read, permissions.write, showLocation = false, 70, 50.millis)),
   )
   implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation
-  val diskFields        = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(1000), Some(50))
+  val diskFields        = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
   val diskVal           = diskFields.toValue(config).get
-  val diskFieldsUpdate  = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(2000), Some(40))
+  val diskFieldsUpdate  = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
   val diskValUpdate     = diskFieldsUpdate.toValue(config).get
   val s3Fields          = S3StorageFields(Some("s3name"), Some("s3description"), default = true, "mybucket", Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).get

@@ -28,19 +28,16 @@ sealed trait FormDataExtractor {
     * @param id
     *   the file id
     * @param entity
-    *   the Miltipart/FormData payload
+    *   the Multipart/FormData payload
     * @param maxFileSize
     *   the file size limit to be uploaded, provided by the storage
-    * @param storageAvailableSpace
-    *   the remaining available space on the storage
     * @return
     *   the file metadata. plus the entity with the file content
     */
   def apply(
       id: Iri,
       entity: HttpEntity,
-      maxFileSize: Long,
-      storageAvailableSpace: Option[Long]
+      maxFileSize: Long
   ): IO[UploadedFileInformation]
 }
 
@@ -79,13 +76,11 @@ object FormDataExtractor {
       override def apply(
           id: Iri,
           entity: HttpEntity,
-          maxFileSize: Long,
-          storageAvailableSpace: Option[Long]
+          maxFileSize: Long
       ): IO[UploadedFileInformation] = {
-        val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         for {
-          formData <- unmarshall(entity, sizeLimit)
-          fileOpt  <- extractFile(formData, maxFileSize, storageAvailableSpace)
+          formData <- unmarshall(entity, maxFileSize)
+          fileOpt  <- extractFile(formData, maxFileSize)
           file     <- IO.fromOption(fileOpt)(InvalidMultipartFieldName(id))
         } yield file
       }
@@ -110,8 +105,7 @@ object FormDataExtractor {
 
       private def extractFile(
           formData: FormData,
-          maxFileSize: Long,
-          storageAvailableSpace: Option[Long]
+          maxFileSize: Long
       ): IO[Option[UploadedFileInformation]] = IO
         .fromFuture(
           IO(
@@ -124,7 +118,7 @@ object FormDataExtractor {
         )
         .adaptError {
           case _: EntityStreamSizeException =>
-            FileTooLarge(maxFileSize, storageAvailableSpace)
+            FileTooLarge(maxFileSize)
           case NotARejection(th)            =>
             WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
         }
