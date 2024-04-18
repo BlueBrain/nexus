@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -52,7 +52,6 @@ final class Files(
     aclCheck: AclCheck,
     fetchContext: FetchContext,
     storages: FetchStorage,
-    storagesStatistics: StoragesStatistics,
     fileOperations: FileOperations
 )(implicit uuidF: UUIDF)
     extends FetchFileStorage
@@ -77,6 +76,8 @@ final class Files(
     *   the http FormData entity
     * @param tag
     *   the optional tag this file is being created with, attached to the current revision
+    * @param metadata
+    *   the optional custom metadata provided by the user
     */
   def create(
       storageId: Option[IdSegment],
@@ -102,12 +103,12 @@ final class Files(
     *   the file identifier to expand as the iri of the file
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef
-    *   the project where the file will belong
     * @param entity
     *   the http FormData entity
     * @param tag
     *   the optional tag this file is being created with, attached to the current revision
+    * @param metadata
+    *   the optional custom metadata provided by the user
     */
   def create(
       id: FileId,
@@ -132,10 +133,6 @@ final class Files(
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
     * @param tag
@@ -162,12 +159,6 @@ final class Files(
     *   the file identifier to expand as the iri of the file
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef
-    *   the project where the file will belong
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
     * @param tag
@@ -193,8 +184,6 @@ final class Files(
     *   the file identifier to expand as the iri of the file
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef
-    *   the project where the file will belong
     * @param rev
     *   the current revision of the file
     * @param entity
@@ -236,14 +225,8 @@ final class Files(
     *   the file identifier to expand as the iri of the file
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef
-    *   the project where the file will belong
     * @param rev
     *   the current revision of the file
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
     */
@@ -283,8 +266,6 @@ final class Files(
     *
     * @param id
     *   the file identifier to expand as the iri of the storage
-    * @param projectRef
-    *   the project where the file belongs
     * @param tag
     *   the tag name
     * @param tagRev
@@ -309,8 +290,6 @@ final class Files(
     *
     * @param id
     *   the identifier that will be expanded to the Iri of the file
-    * @param projectRef
-    *   the project reference where the file belongs
     * @param tag
     *   the tag name
     * @param rev
@@ -332,8 +311,6 @@ final class Files(
     *
     * @param id
     *   the file identifier to expand as the iri of the file
-    * @param projectRef
-    *   the project where the file belongs
     * @param rev
     *   the current revision of the file
     */
@@ -352,8 +329,6 @@ final class Files(
     *
     * @param id
     *   the file identifier to expand as the iri of the file
-    * @param projectRef
-    *   the project where the file belongs
     * @param rev
     *   the current revision of the file
     */
@@ -372,8 +347,6 @@ final class Files(
     *
     * @param id
     *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
     */
   def fetchContent(id: FileId)(implicit caller: Caller): IO[FileResponse] = {
     for {
@@ -480,16 +453,10 @@ final class Files(
       fileMetadata: Option[FileCustomMetadata]
   ): IO[FileAttributes] =
     for {
-      info            <- extractFormData(iri, storage, entity)
+      info            <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
       description      = FileDescription.from(info, fileMetadata)
       storageMetadata <- saveFile(iri, storage, description, info.contents)
     } yield FileAttributes.from(description, storageMetadata)
-
-  private def extractFormData(iri: Iri, storage: Storage, entity: HttpEntity): IO[UploadedFileInformation] =
-    for {
-      storageAvailableSpace <- storagesStatistics.getStorageAvailableSpace(storage)
-      fi                    <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
-    } yield fi
 
   private def saveFile(
       iri: Iri,
@@ -754,7 +721,6 @@ object Files {
       fetchContext: FetchContext,
       aclCheck: AclCheck,
       storages: FetchStorage,
-      storagesStatistics: StoragesStatistics,
       xas: Transactors,
       config: FilesConfig,
       fileOps: FileOperations,
@@ -770,7 +736,6 @@ object Files {
       aclCheck,
       fetchContext,
       storages,
-      storagesStatistics,
       fileOps
     )
   }

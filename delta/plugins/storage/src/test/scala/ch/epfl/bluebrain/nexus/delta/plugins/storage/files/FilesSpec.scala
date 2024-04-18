@@ -16,10 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileDescription, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -119,13 +119,12 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
     ).accepted
 
-    val cfg = config.copy(
-      disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
-      remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
-    )
+    val maxFileSize = 300L
 
-    val storageStatistics: StoragesStatistics =
-      (_, _) => IO.pure { StorageStatEntry(10L, 100L) }
+    val cfg = config.copy(
+      disk = config.disk.copy(defaultMaxFileSize = maxFileSize, allowedVolumes = config.disk.allowedVolumes + path),
+      remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = maxFileSize))
+    )
 
     lazy val storages: Storages = Storages(
       fetchContext,
@@ -144,7 +143,6 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       fetchContext,
       aclCheck,
       storages,
-      storageStatistics,
       xas,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       fileOps,
@@ -262,15 +260,10 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       val aliceCaller = Caller(alice, Set(alice, Group("mygroup", realm), Authenticated(realm)))
 
       "reject if the file exceeds max file size for the storage" in {
+        val fileTooLarge = randomEntity("large_file", (maxFileSize + 1).toInt)
         files
-          .create(fileId("file-too-long"), Some(remoteId), randomEntity("large_file", 280), None, None)(aliceCaller)
-          .rejected shouldEqual FileTooLarge(300L, None)
-      }
-
-      "reject if the file exceeds the remaining available space on the storage" in {
-        files
-          .create(fileId("file-too-long"), Some(diskId), randomEntity("large_file", 250), None, None)
-          .rejected shouldEqual FileTooLarge(300L, Some(220))
+          .create(fileId("file-too-long"), Some(remoteId), fileTooLarge, None, None)(aliceCaller)
+          .rejected shouldEqual FileTooLarge(maxFileSize)
       }
 
       "reject if storage does not exist" in {

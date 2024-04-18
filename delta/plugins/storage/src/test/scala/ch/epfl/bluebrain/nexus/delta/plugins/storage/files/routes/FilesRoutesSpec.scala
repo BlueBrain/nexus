@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsM
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -106,9 +106,6 @@ class FilesRoutesSpec
 
   private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val storagesStatistics: StoragesStatistics =
-    (_, _) => IO.pure { StorageStatEntry(0, 0) }
-
   private val aclCheck = AclSimpleCheck().accepted
 
   lazy val storages: Storages                              = Storages(
@@ -127,7 +124,6 @@ class FilesRoutesSpec
       fetchContext,
       aclCheck,
       storages,
-      storagesStatistics,
       xas,
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       fileOps,
