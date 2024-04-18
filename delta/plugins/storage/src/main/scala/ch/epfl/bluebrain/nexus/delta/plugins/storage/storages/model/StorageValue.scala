@@ -120,14 +120,14 @@ object StorageValue {
       name: Option[String],
       description: Option[String],
       default: Boolean,
+      algorithm: DigestAlgorithm,
       bucket: String,
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
   ) extends StorageValue {
 
-    override val tpe: StorageType           = StorageType.S3Storage
-    override val algorithm: DigestAlgorithm = DigestAlgorithm.MD5
+    override val tpe: StorageType = StorageType.S3Storage
   }
 
   object S3StorageValue {
@@ -138,6 +138,7 @@ object StorageValue {
       */
     def apply(
         default: Boolean,
+        algorithm: DigestAlgorithm,
         bucket: String,
         readPermission: Permission,
         writePermission: Permission,
@@ -147,6 +148,7 @@ object StorageValue {
         None,
         None,
         default,
+        algorithm,
         bucket,
         readPermission,
         writePermission,

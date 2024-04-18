@@ -43,8 +43,8 @@ class S3FileOperationsSuite
 
   private lazy val fileOps = S3FileOperations.mk(s3StorageClient)
 
-  private def md5Hash(content: String) = {
-    Hex.encodeHexString(DigestAlgorithm.MD5.digest.digest(content.getBytes(StandardCharsets.UTF_8)))
+  private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
+    Hex.encodeHexString(algorithm.digest.digest(content.getBytes(StandardCharsets.UTF_8)))
   }
 
   test("List objects in an existing bucket") {
@@ -61,6 +61,7 @@ class S3FileOperationsSuite
     givenAnS3Bucket { bucket =>
       val storageValue = S3StorageValue(
         default = false,
+        algorithm = DigestAlgorithm.default,
         bucket = bucket,
         readPermission = read,
         writePermission = write,
@@ -73,17 +74,44 @@ class S3FileOperationsSuite
 
       val filename      = "myfile.txt"
       val content       = genString()
-      val hashOfContent = md5Hash(content)
+      val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
       val entity        = HttpEntity(content)
 
       val result = for {
         attr   <- fileOps.save(storage, filename, entity)
-        _       = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.MD5, hashOfContent))
+        _       = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.default, hashOfContent))
         _       = assertEquals(attr.bytes, content.length.toLong)
         source <- fileOps.fetch(bucket, attr.path)
       } yield consume(source)
 
       assertIO(result, content)
+    }
+  }
+
+  test("Use MD5 to calculate a checksum") {
+    givenAnS3Bucket { bucket =>
+      val storageValue = S3StorageValue(
+        default = false,
+        algorithm = DigestAlgorithm.MD5,
+        bucket = bucket,
+        readPermission = read,
+        writePermission = write,
+        maxFileSize = 20
+      )
+
+      val iri     = iri"http://localhost/s3"
+      val project = ProjectRef.unsafe("org", "project")
+      val storage = S3Storage(iri, project, storageValue, Json.obj())
+
+      val filename      = "myfile.txt"
+      val content       = genString()
+      val hashOfContent = makeContentHash(DigestAlgorithm.MD5, content)
+      val entity        = HttpEntity(content)
+
+      for {
+        attr <- fileOps.save(storage, filename, entity)
+        _     = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.MD5, hashOfContent))
+      } yield ()
     }
   }
 }

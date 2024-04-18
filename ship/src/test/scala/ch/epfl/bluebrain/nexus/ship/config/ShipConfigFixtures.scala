@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageFixtures, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
@@ -32,6 +33,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
 
   private val amazonConfig: S3StorageConfig =
     S3StorageConfig(
+      DigestAlgorithm.default,
       "https://s3.us-east-1.amazonaws.com",
       Secret("my-key"),
       Secret("my-secret-key"),

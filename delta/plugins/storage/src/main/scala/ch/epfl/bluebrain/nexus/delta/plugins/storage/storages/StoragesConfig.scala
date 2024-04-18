@@ -168,6 +168,7 @@ object StoragesConfig {
     *   the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class S3StorageConfig(
+      digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: Uri,
       defaultAccessKey: Secret[String],
       defaultSecretKey: Secret[String],
