@@ -134,8 +134,6 @@ object StoragesConfig {
     *   the default permission required in order to upload a file to a disk storage
     * @param showLocation
     *   flag to decide whether or not to show the absolute location of the files in the metadata response
-    * @param defaultCapacity
-    *   the default capacity available to store the files
     * @param defaultMaxFileSize
     *   the default maximum allowed file size (in bytes) for uploaded files
     */
@@ -146,7 +144,6 @@ object StoragesConfig {
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
-      defaultCapacity: Option[Long],
       defaultMaxFileSize: Long
   ) extends StorageTypeEntryConfig
 

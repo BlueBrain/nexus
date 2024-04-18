@@ -33,12 +33,11 @@ class StorageFieldsSpec extends CatsEffectSpec with RemoteContextResolutionFixtu
           "description",
           "readPermission",
           "writePermission",
-          "capacity",
           "maxFileSize",
           "volume"
         )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(None, None, default = true, None, None, None, None, None)
+          DiskStorageFields(None, None, default = true, None, None, None, None)
       }
     }
 

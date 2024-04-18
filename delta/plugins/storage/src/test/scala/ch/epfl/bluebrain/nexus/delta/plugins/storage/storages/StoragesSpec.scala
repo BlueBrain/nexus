@@ -109,7 +109,7 @@ private class StoragesSpec
     "updating a storage" should {
 
       "succeed" in {
-        val payload = diskFieldsJson deepMerge json"""{"default": false, "capacity": 2000, "maxFileSize": 40}"""
+        val payload = diskFieldsJson deepMerge json"""{"default": false, "maxFileSize": 40}"""
         storages.update(dId, projectRef, 2, payload).accepted shouldEqual
           resourceFor(dId, projectRef, diskValUpdate, payload, rev = 3, createdBy = bob, updatedBy = bob)
       }

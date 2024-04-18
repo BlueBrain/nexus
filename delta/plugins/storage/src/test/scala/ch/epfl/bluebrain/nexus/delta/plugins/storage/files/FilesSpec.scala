@@ -167,7 +167,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     "creating a file" should {
 
       "create storages for files" in {
-        val payload = diskFieldsJson deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}"""
+        val payload = diskFieldsJson deepMerge json"""{"maxFileSize": 300, "volume": "$path"}"""
         storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =

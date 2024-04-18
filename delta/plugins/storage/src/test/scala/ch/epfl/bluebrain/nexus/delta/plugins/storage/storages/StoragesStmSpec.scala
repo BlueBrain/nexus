@@ -248,7 +248,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
       val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
-        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(1000), 150),
+        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 150),
         amazon      = None,
         remoteDisk  = None
       )

@@ -13,7 +13,6 @@
     "@type": "DiskStorage",
     "name": "diskName",
     "description": "diskDescription",
-    "capacity": 1000,
     "default": true,
     "maxFileSize": 50,
     "readPermission": "disk/read",
