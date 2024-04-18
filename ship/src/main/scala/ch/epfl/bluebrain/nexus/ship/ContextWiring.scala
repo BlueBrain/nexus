@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts => bgContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts => compositeViewContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts => esContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContext}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContext}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi

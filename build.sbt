@@ -754,7 +754,7 @@ lazy val ship = project
     tests                % "test->compile;test->test"
   )
   .settings(
-    libraryDependencies ++= Seq(declineEffect, logback, fs2Aws, fs2AwsS3),
+    libraryDependencies ++= Seq(declineEffect, logback, circeOptics),
     addCompilerPlugin(betterMonadicFor),
     run / fork           := true,
     buildInfoKeys        := Seq[BuildInfoKey](version),
