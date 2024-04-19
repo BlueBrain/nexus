@@ -9,7 +9,6 @@
     "volume": "/tmp",
     "readPermission": "disk/read",
     "writePermission": "disk/write",
-    "capacity" : 1000,
     "maxFileSize": 50,
     "@type": "DiskStorageValue"
   },
@@ -21,7 +20,6 @@
     "default": true,
     "readPermission": "disk/read",
     "writePermission": "disk/write",
-    "capacity" : 1000,
     "maxFileSize": 50
   },
   "rev": 1,

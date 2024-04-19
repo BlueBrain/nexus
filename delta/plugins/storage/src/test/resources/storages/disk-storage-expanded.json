@@ -25,11 +25,6 @@
         "@value": true
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/capacity": [
-      {
-        "@value": 1000
-      }
-    ],
     "https://bluebrain.github.io/nexus/vocabulary/maxFileSize": [
       {
         "@value": 50

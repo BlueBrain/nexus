@@ -15,7 +15,6 @@
     "volume": "/tmp",
     "readPermission": "disk/read",
     "writePermission": "disk/write",
-    "capacity": 1000,
     "maxFileSize": 50,
     "@type": "DiskStorageValue"
   },
@@ -27,7 +26,6 @@
     "default": true,
     "readPermission": "disk/read",
     "writePermission": "disk/write",
-    "capacity": 1000,
     "maxFileSize": 50
   },
   "createdAt": "1970-01-01T00:00:00Z",

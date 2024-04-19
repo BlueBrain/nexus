@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageStatEntry}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -18,17 +18,6 @@ trait StoragesStatistics {
     */
   def get(idSegment: IdSegment, project: ProjectRef): IO[StorageStatEntry]
 
-  /**
-    * Retrieve remaining space on a storage if it has a capacity.
-    */
-  final def getStorageAvailableSpace(storage: Storage): IO[Option[Long]] =
-    storage.storageValue.capacity.fold(IO.none[Long]) { capacity =>
-      get(storage.id, storage.project)
-        .redeem(
-          _ => Some(capacity),
-          stat => Some(capacity - stat.spaceUsed)
-        )
-    }
 }
 
 object StoragesStatistics {

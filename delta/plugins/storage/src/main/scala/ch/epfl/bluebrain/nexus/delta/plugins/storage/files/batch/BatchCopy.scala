@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FetchFileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.CopyFileSource
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.CopyFileRejection
@@ -14,8 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskCopyDetails, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageCopyFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskCopyDetails
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StoragesStatistics}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -32,7 +31,6 @@ object BatchCopy {
       fetchFile: FetchFileResource,
       fetchStorage: FetchStorage,
       aclCheck: AclCheck,
-      storagesStatistics: StoragesStatistics,
       diskCopy: DiskStorageCopyFiles,
       remoteDiskCopy: RemoteDiskStorageCopyFiles
   )(implicit uuidF: UUIDF): BatchCopy = new BatchCopy {
@@ -68,20 +66,8 @@ object BatchCopy {
 
     private def validateFilesForStorage(destStorage: Storage, sourcesBytes: NonEmptyList[Long]): IO[Unit] = {
       val maxSize = destStorage.storageValue.maxFileSize
-      for {
-        _ <- IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(SourceFileTooLarge(maxSize, destStorage.id))
-        _ <- validateRemainingStorageCapacity(destStorage, sourcesBytes)
-      } yield ()
+      IO.raiseWhen(sourcesBytes.exists(_ > maxSize))(SourceFileTooLarge(maxSize, destStorage.id))
     }
-
-    private def validateRemainingStorageCapacity(destStorage: Storage, sourcesBytes: NonEmptyList[Long]) =
-      for {
-        spaceLeft <- storagesStatistics.getStorageAvailableSpace(destStorage)
-        totalSize  = sourcesBytes.toList.sum
-        _         <- spaceLeft
-                       .collectFirst { case s if s < totalSize => notEnoughSpace(totalSize, s, destStorage.id) }
-                       .getOrElse(IO.unit)
-      } yield ()
 
     private def fetchDiskCopyDetails(destStorage: DiskStorage, fileId: FileId)(implicit
         c: Caller
@@ -121,9 +107,6 @@ object BatchCopy {
       IO.raiseError[A](DifferentStorageTypes(sourceStorage.id, sourceStorage.tpe, destStorage.tpe))
 
     private def unsupported(tpe: StorageType) = IO.raiseError(CopyFileRejection.UnsupportedOperation(tpe))
-
-    private def notEnoughSpace(totalSize: Long, spaceLeft: Long, destStorage: Iri) =
-      IO.raiseError(TotalCopySizeTooLarge(totalSize, spaceLeft, destStorage))
 
     private def fetchFileAndValidateStorage(id: FileId)(implicit c: Caller) = {
       for {

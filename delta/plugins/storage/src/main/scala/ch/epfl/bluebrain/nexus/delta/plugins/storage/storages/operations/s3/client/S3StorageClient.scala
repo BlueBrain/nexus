@@ -28,7 +28,7 @@ trait S3StorageClient {
 
   def headObject(bucket: String, key: String): IO[HeadObjectResponse]
 
-  def underlyingClient: S3[IO]
+  def underlyingClient: S3AsyncClientOp[IO]
 
   def baseEndpoint: Uri
 }
@@ -72,7 +72,7 @@ object S3StorageClient {
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
       client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build)
 
-    override def underlyingClient: S3[IO] = s3
+    override def underlyingClient: S3AsyncClientOp[IO] = client
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -87,7 +87,7 @@ object S3StorageClient {
 
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
 
-    override def underlyingClient: S3[IO] = throw disabledErr
+    override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
 
     override def baseEndpoint: Uri = throw disabledErr
   }
