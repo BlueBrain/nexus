@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageSaveFile.PutObjectRequestOps
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
@@ -124,27 +125,25 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
   private def uploadFilePipe(bucket: String, key: String, algorithm: DigestAlgorithm): Pipe[IO, Byte, String] = { in =>
     fs2.Stream.eval {
       in.compile.to(Chunk).flatMap { chunks =>
-        val bs      = chunks.toByteBuffer
-        val request = PutObjectRequest
-          .builder()
-          .bucket(bucket)
-          .key(key)
-
+        val bs = chunks.toByteBuffer
         for {
-          fullRequest <- setAlgorithm(request, algorithm)
-          response    <- s3.putObject(
-                           fullRequest
-                             .build(),
-                           AsyncRequestBody.fromByteBuffer(bs)
-                         )
+          response <- s3.putObject(
+                        PutObjectRequest
+                          .builder()
+                          .bucket(bucket)
+                          .deltaDigest(algorithm)
+                          .key(key)
+                          .build(),
+                        AsyncRequestBody.fromByteBuffer(bs)
+                      )
         } yield {
-          parseResponse(response, algorithm)
+          checksumFromResponse(response, algorithm)
         }
       }
     }
   }
 
-  private def parseResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
+  private def checksumFromResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
     algorithm.value match {
       case "MD5"     => response.eTag().stripPrefix("\"").stripSuffix("\"")
       case "SHA-256" => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
@@ -153,20 +152,21 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     }
   }
 
-  private def setAlgorithm(
-      request: PutObjectRequest.Builder,
-      algorithm: DigestAlgorithm
-  ): IO[PutObjectRequest.Builder] =
-    algorithm.value match {
-      case "MD5"     => IO.pure(request)
-      case "SHA-256" => IO.delay(request.checksumAlgorithm(ChecksumAlgorithm.SHA256))
-      case "SHA-1"   => IO.delay(request.checksumAlgorithm(ChecksumAlgorithm.SHA1))
-      case _         => IO.raiseError(new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}"))
-    }
-
   private def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
     s3StorageClient.getFileAttributes(bucket, key)
 
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
     logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
+}
+
+object S3StorageSaveFile {
+  implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
+    def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
+      algorithm.value match {
+        case "MD5"     => request
+        case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
+        case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
+        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+      }
+  }
 }
