@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.{Base64, UUID}
+import java.util.Base64
 import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
