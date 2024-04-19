@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpEntity
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
@@ -18,7 +19,9 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
+import org.apache.commons.codec.binary.Hex
 
+import java.nio.charset.StandardCharsets
 import scala.concurrent.duration.{Duration, DurationInt}
 
 class S3FileOperationsSuite
@@ -39,6 +42,10 @@ class S3FileOperationsSuite
   implicit private lazy val as: ActorSystem                                                        = actorSystem()
 
   private lazy val fileOps = S3FileOperations.mk(s3StorageClient)
+
+  private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
+    Hex.encodeHexString(algorithm.digest.digest(content.getBytes(StandardCharsets.UTF_8)))
+  }
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>
@@ -65,16 +72,46 @@ class S3FileOperationsSuite
       val project = ProjectRef.unsafe("org", "project")
       val storage = S3Storage(iri, project, storageValue, Json.obj())
 
-      val filename = "myfile.txt"
-      val content  = genString()
-      val entity   = HttpEntity(content)
+      val filename      = "myfile.txt"
+      val content       = genString()
+      val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
+      val entity        = HttpEntity(content)
 
       val result = for {
         attr   <- fileOps.save(storage, filename, entity)
+        _       = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.default, hashOfContent))
+        _       = assertEquals(attr.bytes, content.length.toLong)
         source <- fileOps.fetch(bucket, attr.path)
       } yield consume(source)
 
       assertIO(result, content)
+    }
+  }
+
+  test("Use MD5 to calculate a checksum") {
+    givenAnS3Bucket { bucket =>
+      val storageValue = S3StorageValue(
+        default = false,
+        algorithm = DigestAlgorithm.MD5,
+        bucket = bucket,
+        readPermission = read,
+        writePermission = write,
+        maxFileSize = 20
+      )
+
+      val iri     = iri"http://localhost/s3"
+      val project = ProjectRef.unsafe("org", "project")
+      val storage = S3Storage(iri, project, storageValue, Json.obj())
+
+      val filename      = "myfile.txt"
+      val content       = genString()
+      val hashOfContent = makeContentHash(DigestAlgorithm.MD5, content)
+      val entity        = HttpEntity(content)
+
+      for {
+        attr <- fileOps.save(storage, filename, entity)
+        _     = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.MD5, hashOfContent))
+      } yield ()
     }
   }
 }
