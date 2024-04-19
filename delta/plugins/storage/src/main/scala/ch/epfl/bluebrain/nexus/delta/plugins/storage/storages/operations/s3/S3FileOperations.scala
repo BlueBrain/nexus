@@ -20,11 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.clie
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import org.apache.commons.codec.binary.Hex
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.UUID
+import java.util.{Base64, UUID}
 import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
@@ -80,7 +81,8 @@ object S3FileOperations {
         _           <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
         resp        <- client.headObject(bucket, path.toString())
         contentType <- parseContentType(resp.contentType())
-      } yield mkS3Metadata(bucket, path, resp, contentType)
+        metadata    <- mkS3Metadata(bucket, path, resp, contentType)
+      } yield metadata
     }
       .onError { e =>
         log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
@@ -90,18 +92,31 @@ object S3FileOperations {
       ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
 
     private def mkS3Metadata(bucket: String, path: Uri.Path, resp: HeadObjectResponse, ct: ContentType) = {
-      S3FileMetadata(
+      for {
+        uuid     <- uuidf()
+        checksum <- checksumFrom(resp)
+      } yield S3FileMetadata(
         ct,
         FileStorageMetadata(
-          UUID.randomUUID(), // TODO unused field for this use case, but mandatory everywhere?
+          uuid,
           resp.contentLength(),
-          Digest.ComputedDigest(DigestAlgorithm.MD5, resp.eTag().filterNot(_ == '"')),
+          checksum,
           FileAttributesOrigin.External,
           client.baseEndpoint / bucket / path,
           path
         )
       )
     }
+
+    private def checksumFrom(response: HeadObjectResponse) = IO.fromOption {
+      Option(response.checksumSHA256())
+        .map { checksum =>
+          Digest.ComputedDigest(
+            DigestAlgorithm.default,
+            Hex.encodeHexString(Base64.getDecoder.decode(checksum))
+          )
+        }
+    }(new IllegalArgumentException("Missing checksum"))
   }
 
 }
