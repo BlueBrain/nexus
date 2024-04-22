@@ -5,6 +5,7 @@ import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
@@ -50,6 +51,7 @@ trait S3StorageClient {
   ): IO[UploadMetadata]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
+  def bucketExists(bucket: String): IO[Boolean]
 
   def baseEndpoint: Uri
 }
@@ -174,6 +176,18 @@ object S3StorageClient {
         case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
       }
     }
+
+    override def bucketExists(bucket: String): IO[Boolean] = {
+      listObjectsV2(bucket)
+        .redeemWith(
+          err =>
+            err match {
+              case _: NoSuchBucketException => IO.pure(false)
+              case e                        => IO.raiseError(StorageNotAccessible(e.getMessage))
+            },
+          _ => IO.pure(true)
+        )
+    }
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -206,6 +220,8 @@ object S3StorageClient {
         key: String,
         algorithm: DigestAlgorithm
     ): IO[UploadMetadata] = raiseDisabledErr
+
+    override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
   }
 
   implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {

@@ -51,13 +51,12 @@ object S3FileOperations {
 
     private lazy val saveFile = new S3StorageSaveFile(client)
 
-    override def checkBucketExists(bucket: String): IO[Unit] =
-      client
-        .listObjectsV2(bucket)
-        .redeemWith(
-          err => IO.raiseError(StorageNotAccessible(err.getMessage)),
-          response => log.info(s"S3 bucket $bucket contains ${response.keyCount()} objects")
-        )
+    override def checkBucketExists(bucket: String): IO[Unit] = {
+      client.bucketExists(bucket).flatMap {
+        case true  => IO.unit
+        case false => IO.raiseError(StorageNotAccessible(s"Bucket $bucket does not exist"))
+      }
+    }
 
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] = IO
       .delay(
