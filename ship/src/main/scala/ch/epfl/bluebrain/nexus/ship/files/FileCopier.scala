@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.clie
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.refineV
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm
 
 trait FileCopier {
 
@@ -28,7 +29,8 @@ object FileCopier {
       val fileKey = IO.fromEither(refineString(path.toString).map(FileKey))
 
       fileKey.flatMap { key =>
-        s3StorageClient.copyObject(importBucket, key, targetBucket, key)
+        // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
+        s3StorageClient.copyObject(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256)
       }.void
     }
 

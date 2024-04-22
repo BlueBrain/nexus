@@ -38,7 +38,8 @@ trait S3StorageClient {
       sourceBucket: BucketName,
       sourceKey: FileKey,
       destinationBucket: BucketName,
-      destinationKey: FileKey
+      destinationKey: FileKey,
+      checksumAlgorithm: ChecksumAlgorithm
   ): IO[CopyObjectResponse]
 
   def uploadFile(
@@ -99,7 +100,8 @@ object S3StorageClient {
         sourceBucket: BucketName,
         sourceKey: FileKey,
         destinationBucket: BucketName,
-        destinationKey: FileKey
+        destinationKey: FileKey,
+        checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] =
       client.copyObject(
         CopyObjectRequest
@@ -108,7 +110,7 @@ object S3StorageClient {
           .sourceKey(sourceKey.value.value)
           .destinationBucket(destinationBucket.value.value)
           .destinationKey(destinationKey.value.value)
-          .checksumAlgorithm(ChecksumAlgorithm.SHA256) // TODO: See what to do with this
+          .checksumAlgorithm(checksumAlgorithm)
           .build()
       )
 
@@ -201,7 +203,8 @@ object S3StorageClient {
         sourceBucket: BucketName,
         sourceKey: FileKey,
         destinationBucket: BucketName,
-        destinationKey: FileKey
+        destinationKey: FileKey,
+        checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] = raiseDisabledErr
 
     override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
