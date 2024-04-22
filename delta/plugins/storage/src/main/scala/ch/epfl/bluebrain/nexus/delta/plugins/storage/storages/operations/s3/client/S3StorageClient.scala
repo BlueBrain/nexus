@@ -174,15 +174,6 @@ object S3StorageClient {
         case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
       }
     }
-
-    implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
-      def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
-        algorithm.value match {
-          case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
-          case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
-          case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
-        }
-    }
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -215,5 +206,14 @@ object S3StorageClient {
         key: String,
         algorithm: DigestAlgorithm
     ): IO[UploadMetadata] = raiseDisabledErr
+  }
+
+  implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
+    def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
+      algorithm.value match {
+        case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
+        case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
+        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+      }
   }
 }
