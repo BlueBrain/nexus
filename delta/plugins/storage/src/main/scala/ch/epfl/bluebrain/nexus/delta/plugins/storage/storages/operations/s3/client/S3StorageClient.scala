@@ -5,6 +5,7 @@ import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.{Chunk, Pipe, Stream}
 import fs2.aws.s3.S3
@@ -37,7 +38,7 @@ trait S3StorageClient {
       bucket: String,
       key: String,
       algorithm: DigestAlgorithm
-  ): IO[(String, Long)]
+  ): IO[(String, Long, Uri)]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
 
@@ -99,7 +100,7 @@ object S3StorageClient {
         bucket: String,
         key: String,
         algorithm: DigestAlgorithm
-    ): IO[(String, Long)] = {
+    ): IO[(String, Long, Uri)] = {
       for {
         fileSizeAcc <- Ref.of[IO, Long](0L)
         digest      <- fileData
@@ -110,7 +111,8 @@ object S3StorageClient {
                          .compile
                          .onlyOrError
         fileSize    <- fileSizeAcc.get
-      } yield (digest, fileSize)
+        location     = baseEndpoint / bucket / Uri.Path(key)
+      } yield (digest, fileSize, location)
     }
 
     private def uploadFilePipe(bucket: String, key: String, algorithm: DigestAlgorithm): Pipe[IO, Byte, String] = {
@@ -174,6 +176,6 @@ object S3StorageClient {
         bucket: String,
         key: String,
         algorithm: DigestAlgorithm
-    ): IO[(String, Long)] = raiseDisabledErr
+    ): IO[(String, Long, Uri)] = raiseDisabledErr
   }
 }

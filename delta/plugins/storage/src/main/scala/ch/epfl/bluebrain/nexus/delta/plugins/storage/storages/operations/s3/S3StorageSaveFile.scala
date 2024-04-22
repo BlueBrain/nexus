@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3St
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import fs2.Stream
 
@@ -52,31 +51,31 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
 
     (for {
-      _                  <- log(bucket, key, s"Checking for object existence")
-      _                  <- validateObjectDoesNotExist(bucket, key)
-      _                  <- log(bucket, key, s"Beginning upload")
-      (digest, fileSize) <- s3StorageClient.uploadFile(fileData, bucket, key, algorithm)
-      _                  <- log(bucket, key, s"Finished upload. Digest: $digest")
-      attr                = fileMetadata(bucket, key, uuid, fileSize, algorithm, digest)
+      _                            <- log(bucket, key, s"Checking for object existence")
+      _                            <- validateObjectDoesNotExist(bucket, key)
+      _                            <- log(bucket, key, s"Beginning upload")
+      (digest, fileSize, location) <- s3StorageClient.uploadFile(fileData, bucket, key, algorithm)
+      _                            <- log(bucket, key, s"Finished upload. Digest: $digest")
+      attr                          = fileMetadata(key, uuid, fileSize, algorithm, digest, location)
     } yield attr)
       .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
   }
 
   private def fileMetadata(
-      bucket: String,
       key: String,
       uuid: UUID,
       fileSize: Long,
       algorithm: DigestAlgorithm,
-      digest: String
+      digest: String,
+      location: Uri
   ): FileStorageMetadata =
     FileStorageMetadata(
       uuid = uuid,
       bytes = fileSize,
       digest = Digest.ComputedDigest(algorithm, digest),
       origin = Client,
-      location = s3StorageClient.baseEndpoint / bucket / Uri.Path(key),
+      location = location,
       path = Uri.Path(key)
     )
 
