@@ -43,6 +43,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       10737418240L
     )
 
+  private val importBucket = BucketName(NonEmptyString.unsafeFrom("nexus-ship-production"))
   private val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
 
   def inputConfig: InputConfig =
@@ -54,6 +55,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       viewDefaults,
       serviceAccount,
       StoragesConfig(eventLogConfig, pagination, config.copy(amazon = Some(amazonConfig))),
+      importBucket,
       targetBucket
     )
 

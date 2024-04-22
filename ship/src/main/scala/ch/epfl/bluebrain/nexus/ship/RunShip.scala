@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
+import ch.epfl.bluebrain.nexus.ship.files.FileProcessor
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
@@ -21,7 +23,12 @@ import fs2.Stream
 
 object RunShip {
 
-  def apply(eventsStream: Stream[IO, RowEvent], config: InputConfig, xas: Transactors): IO[ImportReport] = {
+  def apply(
+      eventsStream: Stream[IO, RowEvent],
+      s3Client: S3StorageClient,
+      config: InputConfig,
+      xas: Transactors
+  ): IO[ImportReport] = {
     val clock                         = Clock[IO]
     val uuidF                         = UUIDF.random
     // Resources may have been created with different configurations so we adopt the lenient one for the import
@@ -55,6 +62,7 @@ object RunShip {
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
+                    fileProcessor                = FileProcessor(fetchContext, s3Client, projectMapper, rcr, config, eventClock, xas)
                     // format: on
           report                      <- EventProcessor
                                            .run(
@@ -65,7 +73,8 @@ object RunShip {
                                              resourceProcessor,
                                              esViewsProcessor,
                                              bgViewsProcessor,
-                                             compositeViewsProcessor
+                                             compositeViewsProcessor,
+                                             fileProcessor
                                            )
         } yield report
       }

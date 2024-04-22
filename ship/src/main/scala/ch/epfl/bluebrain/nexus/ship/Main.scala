@@ -57,10 +57,10 @@ object Main
 
   private[ship] def run(r: RunCommand): IO[Unit] = {
     val clock = Clock[IO]
-    InitShip(r).use { case (config, eventsStream, xas) =>
+    InitShip(r).use { case (config, eventsStream, s3Client, xas) =>
       for {
         start         <- clock.realTimeInstant
-        reportOrError <- RunShip(eventsStream, config.input, xas).attempt
+        reportOrError <- RunShip(eventsStream, s3Client, config.input, xas).attempt
         end           <- clock.realTimeInstant
         _             <- ShipSummaryStore.save(xas, start, end, r, reportOrError)
         _             <- IO.fromEither(reportOrError)

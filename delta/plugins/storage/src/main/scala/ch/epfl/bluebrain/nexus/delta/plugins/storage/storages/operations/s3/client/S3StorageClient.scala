@@ -8,16 +8,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import fs2.{Chunk, Pipe, Stream}
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
+import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import org.apache.commons.codec.binary.Hex
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response, NoSuchKeyException, PutObjectRequest, PutObjectResponse}
+import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
 import java.util.Base64
@@ -33,6 +33,13 @@ trait S3StorageClient {
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
   def headObject(bucket: String, key: String): IO[HeadObjectResponse]
+
+  def copyObject(
+      sourceBucket: BucketName,
+      sourceKey: FileKey,
+      destinationBucket: BucketName,
+      destinationKey: FileKey
+  ): IO[CopyObjectResponse]
 
   def uploadFile(
       fileData: Stream[IO, Byte],
@@ -87,6 +94,23 @@ object S3StorageClient {
 
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
       client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
+
+    override def copyObject(
+        sourceBucket: BucketName,
+        sourceKey: FileKey,
+        destinationBucket: BucketName,
+        destinationKey: FileKey
+    ): IO[CopyObjectResponse] =
+      client.copyObject(
+        CopyObjectRequest
+          .builder()
+          .sourceBucket(sourceBucket.value.value)
+          .sourceKey(sourceKey.value.value)
+          .destinationBucket(destinationBucket.value.value)
+          .destinationKey(destinationKey.value.value)
+          .checksumAlgorithm(ChecksumAlgorithm.SHA256) // TODO: See what to do with this
+          .build()
+      )
 
     override def objectExists(bucket: String, key: String): IO[Boolean] = {
       headObject(bucket, key)
@@ -172,6 +196,13 @@ object S3StorageClient {
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
 
     override def baseEndpoint: Uri = throw disabledErr
+
+    override def copyObject(
+        sourceBucket: BucketName,
+        sourceKey: FileKey,
+        destinationBucket: BucketName,
+        destinationKey: FileKey
+    ): IO[CopyObjectResponse] = raiseDisabledErr
 
     override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
 

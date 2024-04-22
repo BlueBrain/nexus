@@ -66,6 +66,13 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
     } yield ()
   }
 
+  test("Should read the import bucket") {
+    for {
+      config <- ShipConfig.load(None).map(_.input)
+      _       = assertEquals(config.importBucket, inputConfig.importBucket)
+    } yield ()
+  }
+
   test("Should read the target bucket") {
     for {
       config <- ShipConfig.load(None).map(_.input)

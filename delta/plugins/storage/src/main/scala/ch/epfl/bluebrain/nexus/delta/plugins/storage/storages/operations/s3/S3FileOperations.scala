@@ -45,9 +45,10 @@ trait S3FileOperations {
 object S3FileOperations {
   final case class S3FileMetadata(contentType: ContentType, metadata: FileStorageMetadata)
 
+  private val log = Logger[S3FileOperations]
+
   def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
 
-    private val log           = Logger[S3FileOperations]
     private lazy val saveFile = new S3StorageSaveFile(client)
 
     override def checkBucketExists(bucket: String): IO[Unit] =
@@ -76,47 +77,61 @@ object S3FileOperations {
     override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
       saveFile.apply(storage, filename, entity)
 
-    override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] = {
-      for {
-        _           <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
-        resp        <- client.headObject(bucket, path.toString())
-        contentType <- parseContentType(resp.contentType())
-        metadata    <- mkS3Metadata(bucket, path, resp, contentType)
-      } yield metadata
-    }
-      .onError { e =>
-        log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
-      }
+    override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
+      registerInternal(client, bucket, path)
 
-    private def parseContentType(raw: String): IO[ContentType] =
-      ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
-
-    private def mkS3Metadata(bucket: String, path: Uri.Path, resp: HeadObjectResponse, ct: ContentType) = {
-      for {
-        uuid     <- uuidf()
-        checksum <- checksumFrom(resp)
-      } yield S3FileMetadata(
-        ct,
-        FileStorageMetadata(
-          uuid,
-          resp.contentLength(),
-          checksum,
-          FileAttributesOrigin.External,
-          client.baseEndpoint / bucket / path,
-          path
-        )
-      )
-    }
-
-    private def checksumFrom(response: HeadObjectResponse) = IO.fromOption {
-      Option(response.checksumSHA256())
-        .map { checksum =>
-          Digest.ComputedDigest(
-            DigestAlgorithm.default,
-            Hex.encodeHexString(Base64.getDecoder.decode(checksum))
-          )
-        }
-    }(new IllegalArgumentException("Missing checksum"))
   }
+
+  def registerInternal(client: S3StorageClient, bucket: String, path: Uri.Path)(implicit
+      uuidF: UUIDF
+  ): IO[S3FileMetadata] = {
+    for {
+      _           <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
+      resp        <- client.headObject(bucket, path.toString())
+      contentType <- parseContentType(resp.contentType())
+      metadata    <- mkS3Metadata(client, bucket, path, resp, contentType)
+    } yield metadata
+  }
+    .onError { e =>
+      log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
+    }
+
+  private def parseContentType(raw: String): IO[ContentType] =
+    ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
+
+  private def mkS3Metadata(
+      client: S3StorageClient,
+      bucket: String,
+      path: Uri.Path,
+      resp: HeadObjectResponse,
+      ct: ContentType
+  )(implicit
+      uuidf: UUIDF
+  ) = {
+    for {
+      uuid     <- uuidf()
+      checksum <- checksumFrom(resp)
+    } yield S3FileMetadata(
+      ct,
+      FileStorageMetadata(
+        uuid,
+        resp.contentLength(),
+        checksum,
+        FileAttributesOrigin.External,
+        client.baseEndpoint / bucket / path,
+        path
+      )
+    )
+  }
+
+  private def checksumFrom(response: HeadObjectResponse) = IO.fromOption {
+    Option(response.checksumSHA256())
+      .map { checksum =>
+        Digest.ComputedDigest(
+          DigestAlgorithm.default,
+          Hex.encodeHexString(Base64.getDecoder.decode(checksum))
+        )
+      }
+  }(new IllegalArgumentException("Missing checksum"))
 
 }
