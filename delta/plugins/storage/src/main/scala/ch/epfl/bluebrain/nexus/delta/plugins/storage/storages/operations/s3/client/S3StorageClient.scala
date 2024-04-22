@@ -12,7 +12,7 @@ import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response}
+import software.amazon.awssdk.services.s3.model.{ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response}
 
 import java.net.URI
 
@@ -70,7 +70,7 @@ object S3StorageClient {
       s3.readFile(bucket, fileKey)
 
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
-      client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build)
+      client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
 
     override def underlyingClient: S3AsyncClientOp[IO] = client
   }

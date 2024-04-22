@@ -854,7 +854,9 @@ lazy val tests = project
       awsSdk          % Test,
       scalaTest       % Test,
       akkaSlf4j       % Test,
-      alpakkaSse      % Test
+      alpakkaSse      % Test,
+      fs2Aws % Test,
+      fs2AwsS3 % Test
     ),
     scalacOptions                      ~= { options: Seq[String] => options.filterNot(Set("-Wunused:imports")) },
     Test / parallelExecution           := false,
