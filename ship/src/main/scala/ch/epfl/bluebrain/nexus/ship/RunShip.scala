@@ -35,8 +35,8 @@ object RunShip {
         val fetchContext           = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
         val originalProjectContext = new OriginalProjectContext(xas)
         val eventLogConfig         = config.eventLog
-        val originalBase           = config.originalBase
-        val targetBase             = config.targetBase
+        val originalBaseUri        = config.originalBaseUri
+        val targetBaseUri          = config.targetBaseUri
         val projectMapper          = ProjectMapper(config.projectMapping)
         for {
           // Provision organizations
@@ -52,11 +52,11 @@ object RunShip {
                     rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
-                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, config, eventClock, xas)(targetBase, jsonLdApi)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, config, eventClock, xas)(targetBaseUri, jsonLdApi)
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
-                    fileSelf          = FileSelf(originalProjectContext)(originalBase)
-                    distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBase)
+                    fileSelf          = FileSelf(originalProjectContext)(originalBaseUri)
+                    distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBaseUri)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, distributionPatcher, eventClock)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)

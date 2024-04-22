@@ -25,7 +25,7 @@ final class DistributionPatcher(fileSelfParser: FileSelf, projectMapper: Project
     }
   }(_)
 
-  def single: Json => IO[Json] = (json: Json) => fileContentUrl(json).map(toS3Location)
+  private[resources] def single: Json => IO[Json] = (json: Json) => fileContentUrl(json).map(toS3Location)
 
   private def toS3Location: Json => Json = root.atLocation.store.json.replace(targetStorage)
 

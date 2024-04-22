@@ -19,10 +19,11 @@ class DistributionPatcherSuite extends NexusSuite {
 
   private val resourceIri: Iri = nxv + "resourceId"
 
-  private val originalBase = BaseUri(uri"http://bbp.epfl.ch/nexus", Label.unsafe("v1"))
-  private val targetBase   = BaseUri(uri"https://www.openbrainplatform.org/api/nexus", Label.unsafe("v1"))
+  private val prefix          = Label.unsafe("v1")
+  private val originalBaseUri = BaseUri(uri"http://bbp.epfl.ch/nexus", prefix)
+  private val targetBaseUri   = BaseUri(uri"https://www.openbrainplatform.org/api/nexus", prefix)
 
-  private val validFileSelfUri = buildFileSelfUri(project1, resourceIri).accessUri(originalBase)
+  private val validFileSelfUri = buildFileSelfUri(project1, resourceIri).accessUri(originalBaseUri)
 
   private def buildFileSelfUri(project: ProjectRef, id: Iri) =
     ResourceUris("files", project, id)
@@ -30,21 +31,22 @@ class DistributionPatcherSuite extends NexusSuite {
   private val fileSelf = new FileSelf {
     override def parse(input: IriOrBNode.Iri): IO[(ProjectRef, ResourceRef)] =
       input match {
-        case value if value.startsWith(originalBase.iriEndpoint) => IO.pure(project1 -> ResourceRef.Latest(resourceIri))
-        case value                                               => IO.raiseError(InvalidFileId(value))
+        case value if value.startsWith(originalBaseUri.iriEndpoint) =>
+          IO.pure(project1 -> ResourceRef.Latest(resourceIri))
+        case value                                                  => IO.raiseError(InvalidFileId(value))
       }
   }
 
-  private val patcherNoProjectMapping   = new DistributionPatcher(fileSelf, ProjectMapper(Map.empty), targetBase)
+  private val patcherNoProjectMapping   = new DistributionPatcher(fileSelf, ProjectMapper(Map.empty), targetBaseUri)
   private val patcherWithProjectMapping =
-    new DistributionPatcher(fileSelf, ProjectMapper(Map(project1 -> targetProject1)), targetBase)
+    new DistributionPatcher(fileSelf, ProjectMapper(Map(project1 -> targetProject1)), targetBaseUri)
 
   test("Do nothing on a distribution payload without fields to patch") {
     val input = json"""{ "anotherField": "XXX" }"""
     patcherNoProjectMapping.single(input).assertEquals(input)
   }
 
-  test("Patch location on a distribution") {
+  test("Patch location on a distribution to point to the new unique S3 storage") {
     val input    =
       json"""{
               "atLocation": {
@@ -75,14 +77,14 @@ class DistributionPatcherSuite extends NexusSuite {
 
   test("Patch a valid file self on a distribution without project mapping") {
     val input              = json"""{ "contentUrl": "$validFileSelfUri" }"""
-    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBase)
+    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBaseUri)
     val expected           = json"""{ "contentUrl": "$expectedContentUri" }"""
     patcherNoProjectMapping.single(input).assertEquals(expected)
   }
 
   test("Patch a valid file self on a distribution with project mapping") {
     val input              = json"""{ "contentUrl": "$validFileSelfUri" }"""
-    val expectedContentUri = buildFileSelfUri(targetProject1, resourceIri).accessUri(targetBase)
+    val expectedContentUri = buildFileSelfUri(targetProject1, resourceIri).accessUri(targetBaseUri)
     val expected           = json"""{ "contentUrl": "$expectedContentUri" }"""
     patcherWithProjectMapping.single(input).assertEquals(expected)
   }
@@ -94,14 +96,14 @@ class DistributionPatcherSuite extends NexusSuite {
 
   test("Patch a valid file self on a distribution as an object") {
     val input              = json"""{ "distribution": { "contentUrl": "$validFileSelfUri" } }"""
-    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBase)
+    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBaseUri)
     val expected           = json"""{ "distribution": { "contentUrl": "$expectedContentUri" } }"""
     patcherNoProjectMapping.singleOrArray(input).assertEquals(expected)
   }
 
   test("Patch a valid file self on a distribution as an array") {
     val input              = json"""{ "distribution": [{ "contentUrl": "$validFileSelfUri" }] }"""
-    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBase)
+    val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBaseUri)
     val expected           = json"""{ "distribution": [{ "contentUrl": "$expectedContentUri" }] }"""
     patcherNoProjectMapping.singleOrArray(input).assertEquals(expected)
   }
