@@ -12,7 +12,7 @@ import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response}
+import software.amazon.awssdk.services.s3.model.{ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response, NoSuchKeyException}
 
 import java.net.URI
 
@@ -27,6 +27,8 @@ trait S3StorageClient {
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
   def headObject(bucket: String, key: String): IO[HeadObjectResponse]
+
+  def objectExists(bucket: String, key: String): IO[Boolean]
 
   def underlyingClient: S3AsyncClientOp[IO]
 
@@ -73,6 +75,17 @@ object S3StorageClient {
       client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
 
     override def underlyingClient: S3AsyncClientOp[IO] = client
+
+    override def objectExists(bucket: String, key: String): IO[Boolean] = {
+      headObject(bucket, key)
+        .redeemWith(
+          {
+            case _: NoSuchKeyException => IO.pure(false)
+            case e                     => IO.raiseError(e)
+          },
+          _ => IO.pure(true)
+        )
+    }
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -90,5 +103,7 @@ object S3StorageClient {
     override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
 
     override def baseEndpoint: Uri = throw disabledErr
+
+    override def objectExists(bucket: String, key: String): IO[Boolean] = throw disabledErr
   }
 }

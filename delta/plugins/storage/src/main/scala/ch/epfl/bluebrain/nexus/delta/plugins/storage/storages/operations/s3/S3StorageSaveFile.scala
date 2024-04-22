@@ -87,15 +87,11 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
   private def validateObjectDoesNotExist(bucket: String, key: String) =
     s3StorageClient
-      .headObject(bucket, key)
-      .void
-      .redeemWith(
-        {
-          case _: NoSuchKeyException => IO.unit
-          case e                     => IO.raiseError(e)
-        },
-        _ => IO.raiseError(ResourceAlreadyExists(key))
-      )
+      .objectExists(bucket, key)
+      .flatMap {
+        case true  => IO.raiseError(ResourceAlreadyExists(key))
+        case false => IO.unit
+      }
 
   private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
     StreamConverter(
