@@ -146,7 +146,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
   private def checksumFromResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
     algorithm.value match {
-      case "MD5"     => response.eTag().stripPrefix("\"").stripSuffix("\"")
       case "SHA-256" => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
       case "SHA-1"   => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA1()))
       case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
@@ -161,7 +160,6 @@ object S3StorageSaveFile {
   implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
     def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
       algorithm.value match {
-        case "MD5"     => request
         case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
         case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
         case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")

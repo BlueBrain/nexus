@@ -22,6 +22,7 @@ import munit.AnyFixture
 import org.apache.commons.codec.binary.Hex
 
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import scala.concurrent.duration.{Duration, DurationInt}
 
 class S3FileOperationsSuite
@@ -44,7 +45,7 @@ class S3FileOperationsSuite
   private lazy val fileOps = S3FileOperations.mk(s3StorageClient)
 
   private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
-    Hex.encodeHexString(algorithm.digest.digest(content.getBytes(StandardCharsets.UTF_8)))
+    Hex.encodeHexString(MessageDigest.getInstance(algorithm.value).digest(content.getBytes(StandardCharsets.UTF_8)))
   }
 
   test("List objects in an existing bucket") {
@@ -88,11 +89,11 @@ class S3FileOperationsSuite
     }
   }
 
-  test("Use MD5 to calculate a checksum") {
+  test("Use SHA-1 to calculate a checksum") {
     givenAnS3Bucket { bucket =>
       val storageValue = S3StorageValue(
         default = false,
-        algorithm = DigestAlgorithm.MD5,
+        algorithm = DigestAlgorithm.SHA1,
         bucket = bucket,
         readPermission = read,
         writePermission = write,
@@ -105,12 +106,12 @@ class S3FileOperationsSuite
 
       val filename      = "myfile.txt"
       val content       = genString()
-      val hashOfContent = makeContentHash(DigestAlgorithm.MD5, content)
+      val hashOfContent = makeContentHash(DigestAlgorithm.SHA1, content)
       val entity        = HttpEntity(content)
 
       for {
         attr <- fileOps.save(storage, filename, entity)
-        _     = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.MD5, hashOfContent))
+        _     = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.SHA1, hashOfContent))
       } yield ()
     }
   }
