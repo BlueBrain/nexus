@@ -90,8 +90,8 @@ object StoragesConfig {
         amazonCursor: ConfigObjectCursor
     ): Result[Unit] = {
       digestAlgorithm.value match {
-        case "SHA-256" | "SHA-1" | "MD5" => Right(())
-        case _                           =>
+        case "SHA-256" | "SHA-1" => Right(())
+        case _                   =>
           Left(
             ConfigReaderFailures(
               ConvertFailure(

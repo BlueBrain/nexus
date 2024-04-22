@@ -29,8 +29,8 @@ object DigestAlgorithm {
   final val default: DigestAlgorithm =
     new DigestAlgorithm("SHA-256")
 
-  final val MD5: DigestAlgorithm =
-    new DigestAlgorithm("MD5")
+  final val SHA1: DigestAlgorithm =
+    new DigestAlgorithm("SHA-1")
 
   /**
     * Safely construct an [[DigestAlgorithm]]
