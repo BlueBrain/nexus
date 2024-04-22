@@ -1,20 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
 import akka.http.scaladsl.model.Uri
-import cats.effect.{IO, Resource}
+import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import fs2.Stream
+import fs2.{Chunk, Pipe, Stream}
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
+import org.apache.commons.codec.binary.Hex
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
+import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response, NoSuchKeyException}
+import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response, NoSuchKeyException, PutObjectRequest, PutObjectResponse}
 
 import java.net.URI
+import java.util.Base64
 
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
@@ -28,9 +32,14 @@ trait S3StorageClient {
 
   def headObject(bucket: String, key: String): IO[HeadObjectResponse]
 
-  def objectExists(bucket: String, key: String): IO[Boolean]
+  def uploadFile(
+      fileData: Stream[IO, Byte],
+      bucket: String,
+      key: String,
+      algorithm: DigestAlgorithm
+  ): IO[(String, Long)]
 
-  def underlyingClient: S3AsyncClientOp[IO]
+  def objectExists(bucket: String, key: String): IO[Boolean]
 
   def baseEndpoint: Uri
 }
@@ -74,8 +83,6 @@ object S3StorageClient {
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
       client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
 
-    override def underlyingClient: S3AsyncClientOp[IO] = client
-
     override def objectExists(bucket: String, key: String): IO[Boolean] = {
       headObject(bucket, key)
         .redeemWith(
@@ -85,6 +92,64 @@ object S3StorageClient {
           },
           _ => IO.pure(true)
         )
+    }
+
+    override def uploadFile(
+        fileData: Stream[IO, Byte],
+        bucket: String,
+        key: String,
+        algorithm: DigestAlgorithm
+    ): IO[(String, Long)] = {
+      for {
+        fileSizeAcc <- Ref.of[IO, Long](0L)
+        digest      <- fileData
+                         .evalTap(_ => fileSizeAcc.update(_ + 1))
+                         .through(
+                           uploadFilePipe(bucket, key, algorithm)
+                         )
+                         .compile
+                         .onlyOrError
+        fileSize    <- fileSizeAcc.get
+      } yield (digest, fileSize)
+    }
+
+    private def uploadFilePipe(bucket: String, key: String, algorithm: DigestAlgorithm): Pipe[IO, Byte, String] = {
+      in =>
+        fs2.Stream.eval {
+          in.compile.to(Chunk).flatMap { chunks =>
+            val bs = chunks.toByteBuffer
+            for {
+              response <- client.putObject(
+                            PutObjectRequest
+                              .builder()
+                              .bucket(bucket)
+                              .deltaDigest(algorithm)
+                              .key(key)
+                              .build(),
+                            AsyncRequestBody.fromByteBuffer(bs)
+                          )
+            } yield {
+              checksumFromResponse(response, algorithm)
+            }
+          }
+        }
+    }
+
+    private def checksumFromResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
+      algorithm.value match {
+        case "SHA-256" => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
+        case "SHA-1"   => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA1()))
+        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+      }
+    }
+
+    implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
+      def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
+        algorithm.value match {
+          case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
+          case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
+          case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+        }
     }
   }
 
@@ -100,10 +165,15 @@ object S3StorageClient {
 
     override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
 
-    override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
-
     override def baseEndpoint: Uri = throw disabledErr
 
-    override def objectExists(bucket: String, key: String): IO[Boolean] = throw disabledErr
+    override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
+
+    override def uploadFile(
+        fileData: Stream[IO, Byte],
+        bucket: String,
+        key: String,
+        algorithm: DigestAlgorithm
+    ): IO[(String, Long)] = raiseDisabledErr
   }
 }

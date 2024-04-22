@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import cats.effect.{IO, Ref}
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -15,23 +15,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageSaveFile.PutObjectRequestOps
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
-import fs2.{Chunk, Pipe, Stream}
-import org.apache.commons.codec.binary.Hex
-import software.amazon.awssdk.core.async.AsyncRequestBody
-import software.amazon.awssdk.services.s3.model._
+import fs2.Stream
 
-import java.util.{Base64, UUID}
+import java.util.UUID
 
 final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     as: ActorSystem,
     uuidf: UUIDF
 ) {
 
-  private val s3     = s3StorageClient.underlyingClient
   private val logger = Logger[S3StorageSaveFile]
 
   def apply(
@@ -60,7 +55,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       _                  <- log(bucket, key, s"Checking for object existence")
       _                  <- validateObjectDoesNotExist(bucket, key)
       _                  <- log(bucket, key, s"Beginning upload")
-      (digest, fileSize) <- uploadFile(fileData, bucket, key, algorithm)
+      (digest, fileSize) <- s3StorageClient.uploadFile(fileData, bucket, key, algorithm)
       _                  <- log(bucket, key, s"Finished upload. Digest: $digest")
       attr                = fileMetadata(bucket, key, uuid, fileSize, algorithm, digest)
     } yield attr)
@@ -100,65 +95,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
         .mapMaterializedValue(_ => NotUsed)
     )
 
-  private def uploadFile(
-      fileData: Stream[IO, Byte],
-      bucket: String,
-      key: String,
-      algorithm: DigestAlgorithm
-  ): IO[(String, Long)] = {
-    for {
-      fileSizeAcc <- Ref.of[IO, Long](0L)
-      digest      <- fileData
-                       .evalTap(_ => fileSizeAcc.update(_ + 1))
-                       .through(
-                         uploadFilePipe(bucket, key, algorithm)
-                       )
-                       .compile
-                       .onlyOrError
-      fileSize    <- fileSizeAcc.get
-    } yield (digest, fileSize)
-  }
-
-  private def uploadFilePipe(bucket: String, key: String, algorithm: DigestAlgorithm): Pipe[IO, Byte, String] = { in =>
-    fs2.Stream.eval {
-      in.compile.to(Chunk).flatMap { chunks =>
-        val bs = chunks.toByteBuffer
-        for {
-          response <- s3.putObject(
-                        PutObjectRequest
-                          .builder()
-                          .bucket(bucket)
-                          .deltaDigest(algorithm)
-                          .key(key)
-                          .build(),
-                        AsyncRequestBody.fromByteBuffer(bs)
-                      )
-        } yield {
-          checksumFromResponse(response, algorithm)
-        }
-      }
-    }
-  }
-
-  private def checksumFromResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
-    algorithm.value match {
-      case "SHA-256" => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
-      case "SHA-1"   => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA1()))
-      case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
-    }
-  }
-
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
     logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
-}
-
-object S3StorageSaveFile {
-  implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
-    def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
-      algorithm.value match {
-        case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
-        case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
-        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
-      }
-  }
 }
