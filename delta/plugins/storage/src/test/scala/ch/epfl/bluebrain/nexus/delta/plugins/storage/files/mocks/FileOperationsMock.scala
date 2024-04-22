@@ -36,6 +36,7 @@ object FileOperationsMock {
     def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]   = ???
     def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                       = ???
     def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] = ???
+    def register(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]           = ???
   }
 
   def diskUnimplemented: DiskFileOperations = new DiskFileOperations {
@@ -48,5 +49,6 @@ object FileOperationsMock {
     def checkBucketExists(bucket: String): IO[Unit]                                                         = ???
     def fetch(bucket: String, path: Uri.Path): IO[AkkaSource]                                               = ???
     def save(storage: Storage.S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = ???
+    def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                       = ???
   }
 }

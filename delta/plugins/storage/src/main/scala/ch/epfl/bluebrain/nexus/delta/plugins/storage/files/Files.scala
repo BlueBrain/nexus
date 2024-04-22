@@ -218,6 +218,33 @@ final class Files(
     } yield res
   }.span("updateFileMetadata")
 
+  def registerFile(
+      id: FileId,
+      storageId: Option[IdSegment],
+      metadata: Option[FileCustomMetadata],
+      path: Uri.Path,
+      tag: Option[UserTag]
+  )(implicit caller: Caller): IO[FileResource] = {
+    for {
+      (iri, pc)             <- id.expandIri(fetchContext.onCreate)
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
+      s3Metadata            <- fileOperations.register(storage, path)
+      filename              <- IO.fromOption(path.lastSegment)(InvalidFilePath)
+      attr                   = FileAttributes.from(FileDescription(filename, s3Metadata.contentType.some, metadata), s3Metadata.metadata)
+      res                   <- eval(
+                                 CreateFile(
+                                   iri,
+                                   id.project,
+                                   storageRef,
+                                   storage.tpe,
+                                   attr,
+                                   caller.subject,
+                                   tag
+                                 )
+                               )
+    } yield res
+  }.span("registerFile")
+
   /**
     * Update a new file linking it from an existing file in a storage
     *

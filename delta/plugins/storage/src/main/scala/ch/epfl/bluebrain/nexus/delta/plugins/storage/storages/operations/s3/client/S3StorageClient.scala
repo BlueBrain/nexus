@@ -12,7 +12,7 @@ import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{GetObjectAttributesRequest, GetObjectAttributesResponse, ListObjectsV2Request, ListObjectsV2Response, ObjectAttributes}
+import software.amazon.awssdk.services.s3.model.{ChecksumMode, HeadObjectRequest, HeadObjectResponse, ListObjectsV2Request, ListObjectsV2Response}
 
 import java.net.URI
 
@@ -26,11 +26,11 @@ trait S3StorageClient {
 
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
-  def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse]
+  def headObject(bucket: String, key: String): IO[HeadObjectResponse]
 
   def underlyingClient: S3AsyncClientOp[IO]
 
-  def baseEndpoint: IO[Uri]
+  def baseEndpoint: Uri
 }
 
 object S3StorageClient {
@@ -57,7 +57,7 @@ object S3StorageClient {
       )
       .map(new S3StorageClientImpl(_, endpoint.toString))
 
-  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], baseEndpoint: Uri) extends S3StorageClient {
+  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri) extends S3StorageClient {
     private val s3: S3[IO] = S3.create(client)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
@@ -69,20 +69,10 @@ object S3StorageClient {
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
       s3.readFile(bucket, fileKey)
 
-    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
-      client
-        .getObjectAttributes(
-          GetObjectAttributesRequest
-            .builder()
-            .bucket(bucket)
-            .key(key)
-            .objectAttributes(ObjectAttributes.knownValues()) // TODO get all values
-            .build()
-        )
+    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
+      client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
 
     override def underlyingClient: S3AsyncClientOp[IO] = client
-
-    override def baseEndpoint: IO[Uri] = IO.pure(baseEndpoint)
   }
 
   final case object S3StorageClientDisabled extends S3StorageClient {
@@ -95,10 +85,10 @@ object S3StorageClient {
 
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
 
-    override def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] = raiseDisabledErr
+    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
 
     override def underlyingClient: S3AsyncClientOp[IO] = throw disabledErr
 
-    override def baseEndpoint: IO[Uri] = raiseDisabledErr
+    override def baseEndpoint: Uri = throw disabledErr
   }
 }

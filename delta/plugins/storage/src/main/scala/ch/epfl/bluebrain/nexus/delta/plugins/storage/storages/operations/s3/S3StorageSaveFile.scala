@@ -62,7 +62,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       _                  <- log(bucket, key, s"Beginning upload")
       (digest, fileSize) <- uploadFile(fileData, bucket, key, algorithm)
       _                  <- log(bucket, key, s"Finished upload. Digest: $digest")
-      attr               <- fileMetadata(bucket, key, uuid, fileSize, algorithm, digest)
+      attr                = fileMetadata(bucket, key, uuid, fileSize, algorithm, digest)
     } yield attr)
       .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
@@ -75,26 +75,27 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       fileSize: Long,
       algorithm: DigestAlgorithm,
       digest: String
-  ): IO[FileStorageMetadata] =
-    s3StorageClient.baseEndpoint.map { base =>
-      FileStorageMetadata(
-        uuid = uuid,
-        bytes = fileSize,
-        digest = Digest.ComputedDigest(algorithm, digest),
-        origin = Client,
-        location = base / bucket / Uri.Path(key),
-        path = Uri.Path(key)
-      )
-    }
+  ): FileStorageMetadata =
+    FileStorageMetadata(
+      uuid = uuid,
+      bytes = fileSize,
+      digest = Digest.ComputedDigest(algorithm, digest),
+      origin = Client,
+      location = s3StorageClient.baseEndpoint / bucket / Uri.Path(key),
+      path = Uri.Path(key)
+    )
 
   private def validateObjectDoesNotExist(bucket: String, key: String) =
-    getFileAttributes(bucket, key).redeemWith(
-      {
-        case _: NoSuchKeyException => IO.unit
-        case e                     => IO.raiseError(e)
-      },
-      _ => IO.raiseError(ResourceAlreadyExists(key))
-    )
+    s3StorageClient
+      .headObject(bucket, key)
+      .void
+      .redeemWith(
+        {
+          case _: NoSuchKeyException => IO.unit
+          case e                     => IO.raiseError(e)
+        },
+        _ => IO.raiseError(ResourceAlreadyExists(key))
+      )
 
   private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
     StreamConverter(
@@ -151,9 +152,6 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
     }
   }
-
-  private def getFileAttributes(bucket: String, key: String): IO[GetObjectAttributesResponse] =
-    s3StorageClient.getFileAttributes(bucket, key)
 
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
     logger.info(s"Bucket: ${bucket}. Key: $key. $msg")

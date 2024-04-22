@@ -2,20 +2,24 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
+import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.laserdisc.pure.s3.tagless.Interpreter
+import org.apache.commons.codec.binary.Hex
 import org.scalatest.Assertion
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
 import java.nio.file.Paths
+import java.util.Base64
 import scala.jdk.CollectionConverters._
 
 class S3StorageSpec extends StorageSpec {
@@ -30,8 +34,11 @@ class S3StorageSpec extends StorageSpec {
 
   val s3Config: S3Config = storageConfig.s3
 
-  private val bucket  = genId()
-  private val logoKey = "some/path/to/nexus-logo.png"
+  private val bucket                 = genId()
+  private val logoFilename           = "nexus-logo.png"
+  private val logoKey                = s"some/path/to/$logoFilename"
+  private val logoSha256Base64Digest = "Bb9EKBAhO55f7NUkLu/v8fPSB5E4YclmWMdcz1iZfoc="
+  private val logoSha256HexDigest    = Hex.encodeHexString(Base64.getDecoder.decode(logoSha256Base64Digest))
 
   val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566"
   val s3BucketEndpoint: String = s"http://s3.localhost.localstack.cloud:4566/$bucket"
@@ -41,29 +48,45 @@ class S3StorageSpec extends StorageSpec {
     case _                    => AnonymousCredentialsProvider.create()
   }
 
-  private val s3Client = S3Client.builder
-    .endpointOverride(new URI(s3Endpoint))
-    .credentialsProvider(credentialsProvider)
-    .region(Region.US_EAST_1)
-    .build
+  val s3Client = Interpreter[IO]
+    .S3AsyncClientOpResource(
+      S3AsyncClient
+        .builder()
+        .credentialsProvider(credentialsProvider)
+        .endpointOverride(new URI(s3Endpoint))
+        .forcePathStyle(true)
+        .region(Region.US_EAST_1)
+    )
+    .allocated
+    .map(_._1)
+    .accepted
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // Configure minio
-    s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build)
-    s3Client.putObject(
-      PutObjectRequest.builder.bucket(bucket).key(logoKey).build,
-      Paths.get(getClass.getResource("/kg/files/nexus-logo.png").toURI)
-    )
+    (s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build) >> uploadLogoFile(logoKey)).accepted
     ()
   }
 
+  private def uploadLogoFile(key: String): IO[PutObjectResponse] = s3Client.putObject(
+    PutObjectRequest.builder
+      .bucket(bucket)
+      .key(key)
+      .checksumAlgorithm(ChecksumAlgorithm.SHA256)
+      .checksumSHA256(logoSha256Base64Digest)
+      .build,
+    Paths.get(getClass.getResource("/kg/files/nexus-logo.png").toURI)
+  )
+
   override def afterAll(): Unit = {
-    val objects = s3Client.listObjects(ListObjectsRequest.builder.bucket(bucket).build)
-    objects.contents.asScala.foreach { obj =>
-      s3Client.deleteObject(DeleteObjectRequest.builder.bucket(bucket).key(obj.key).build)
-    }
-    s3Client.deleteBucket(DeleteBucketRequest.builder.bucket(bucket).build)
+    val cleanup: IO[Unit] = for {
+      resp   <- s3Client.listObjects(ListObjectsRequest.builder.bucket(bucket).build)
+      objects = resp.contents.asScala.toList
+      _      <- objects.traverse(obj => s3Client.deleteObject(DeleteObjectRequest.builder.bucket(bucket).key(obj.key).build))
+      _      <- s3Client.deleteBucket(DeleteBucketRequest.builder.bucket(bucket).build)
+    } yield ()
+
+    cleanup.accepted
+
     super.afterAll()
   }
 
@@ -143,6 +166,42 @@ class S3StorageSpec extends StorageSpec {
         (_, response) =>
           response.status shouldEqual StatusCodes.BadRequest
       }
+    }
+  }
+
+  private def registrationResponse(id: String, digestValue: String, location: String): Json =
+    jsonContentOf(
+      "kg/files/registration-metadata.json",
+      replacements(
+        Coyote,
+        "id"          -> id,
+        "storageId"   -> storageId,
+        "self"        -> fileSelf(projectRef, id),
+        "projId"      -> s"$projectRef",
+        "digestValue" -> digestValue,
+        "location"    -> location
+      ): _*
+    )
+
+  s"Registering an S3 file in-place" should {
+    "succeed" in {
+      val id      = genId()
+      val path    = s"$id/nexus-logo.png"
+      val payload = Json.obj("path" -> Json.fromString(path))
+
+      for {
+        _         <- uploadLogoFile(path)
+        _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
+                       (_, response) => response.status shouldEqual StatusCodes.Created
+                     }
+        fullId     = s"$attachmentPrefix$id"
+        location   = s"$s3BucketEndpoint/$path"
+        expected   = registrationResponse(fullId, logoSha256HexDigest, location)
+        assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       filterMetadataKeys(json) shouldEqual expected
+                     }
+      } yield assertion
     }
   }
 }
