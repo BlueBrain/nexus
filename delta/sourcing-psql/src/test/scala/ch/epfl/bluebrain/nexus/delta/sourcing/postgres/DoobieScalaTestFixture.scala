@@ -21,7 +21,8 @@ trait DoobieScalaTestFixture
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val xasResource = Transactors.test(container.getHost, container.getMappedPort(5432), "postgres", "postgres")
+    val xasResource =
+      Transactors.test(container.getHost, container.getMappedPort(5432), "postgres", "postgres", "postgres")
     val (x, t)      = xasResource.allocated.flatTap { case (x, _) =>
       Transactors.dropAndCreateDDLs.flatMap(x.execDDLs)
     }.accepted
