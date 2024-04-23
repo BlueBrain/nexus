@@ -128,7 +128,6 @@ object StorageValue {
   ) extends StorageValue {
 
     override val tpe: StorageType = StorageType.S3Storage
-
   }
 
   object S3StorageValue {

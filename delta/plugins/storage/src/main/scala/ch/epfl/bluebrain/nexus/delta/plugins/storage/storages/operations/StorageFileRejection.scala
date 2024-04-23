@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -190,6 +191,22 @@ object StorageFileRejection {
     final case class UnsupportedOperation(tpe: StorageType)
         extends MoveFileRejection(s"Moving a file is not supported for storages of type '${tpe.iri}'")
 
+  }
+
+  sealed abstract class RegisterFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
+
+  object RegisterFileRejection {
+    final case class MissingS3Attributes(missingAttributes: NonEmptyList[String])
+        extends RegisterFileRejection(s"Missing attributes from S3: ${missingAttributes.toList.mkString(", ")}")
+
+    final case class InvalidContentType(received: String)
+        extends RegisterFileRejection(s"Invalid content type returned from S3: $received")
+
+    final case class InvalidPath(path: Uri.Path)
+        extends RegisterFileRejection(s"An S3 path must contain at least the filename. Path was $path")
+
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends MoveFileRejection(s"Registering a file in-place is not supported for storages of type '${tpe.iri}'")
   }
 
 }
