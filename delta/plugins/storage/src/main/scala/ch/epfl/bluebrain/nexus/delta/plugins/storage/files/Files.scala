@@ -232,7 +232,7 @@ final class Files(
       s3Metadata            <- fileOperations.register(storage, path)
       filename              <- IO.fromOption(path.lastSegment)(InvalidFilePath)
       attr                   = FileAttributes.from(
-                                 FileDescription(filename, Some(mediaType.getOrElse(s3Metadata.contentType)), metadata),
+                                 FileDescription(filename, mediaType.orElse(s3Metadata.contentType), metadata),
                                  s3Metadata.metadata
                                )
       res                   <- eval(

@@ -51,7 +51,9 @@ class FileProcessor private (
     event match {
       case e: FileCreated               =>
         fileCopier.copyFile(e.attributes.path) >>
-          files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag).flatMap(IO.println)
+          files
+            .registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
+            .flatMap(IO.println)
       case e: FileUpdated               =>
         fileCopier.copyFile(e.attributes.path) >> IO.unit
       case e: FileCustomMetadataUpdated =>
