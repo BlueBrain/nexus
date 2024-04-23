@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
@@ -16,8 +17,9 @@ import ch.epfl.bluebrain.nexus.ship.files.FileProcessor
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
-import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring}
+import ch.epfl.bluebrain.nexus.ship.resources.{DistributionPatcher, ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
+import ch.epfl.bluebrain.nexus.ship.projects.OriginalProjectContext
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
 import fs2.Stream
 
@@ -35,12 +37,14 @@ object RunShip {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     for {
       report <- {
-        val orgProvider    =
+        val orgProvider            =
           OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
-        val fetchContext   = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
-        val eventLogConfig = config.eventLog
-        val baseUri        = config.baseUri
-        val projectMapper  = ProjectMapper(config.projectMapping)
+        val fetchContext           = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
+        val originalProjectContext = new OriginalProjectContext(xas)
+        val eventLogConfig         = config.eventLog
+        val originalBaseUri        = config.originalBaseUri
+        val targetBaseUri          = config.targetBaseUri
+        val projectMapper          = ProjectMapper(config.projectMapping)
         for {
           // Provision organizations
           _                           <- orgProvider.create(config.organizations.values)
@@ -55,10 +59,12 @@ object RunShip {
                     rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
-                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, projectMapper, config, eventClock, xas)(baseUri, jsonLdApi)
+                    projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, config, eventClock, xas)(targetBaseUri, jsonLdApi)
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
-                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, eventClock)
+                    fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
+                    distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBaseUri)
+                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, distributionPatcher, eventClock)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)

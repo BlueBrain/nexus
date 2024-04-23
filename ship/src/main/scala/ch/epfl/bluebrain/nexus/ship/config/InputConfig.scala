@@ -15,7 +15,8 @@ import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
 
 final case class InputConfig(
-    baseUri: BaseUri,
+    originalBaseUri: BaseUri,
+    targetBaseUri: BaseUri,
     eventLog: EventLogConfig,
     organizations: OrganizationCreationConfig,
     projectMapping: ProjectMapping = Map.empty,

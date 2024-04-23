@@ -49,6 +49,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
   def inputConfig: InputConfig =
     InputConfig(
       baseUri,
+      baseUri,
       eventLogConfig,
       organizationsCreation,
       Map.empty,
