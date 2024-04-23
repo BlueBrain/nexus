@@ -11,7 +11,7 @@ import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError.InvalidPath
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidPath
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest

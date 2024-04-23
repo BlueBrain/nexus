@@ -26,7 +26,7 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
 
   test("Default configuration should be parsed and loaded") {
     val expectedBaseUri = BaseUri("http://localhost:8080", Label.unsafe("v1"))
-    ShipConfig.load(None).map(_.input.baseUri).assertEquals(expectedBaseUri)
+    ShipConfig.load(None).map(_.input.targetBaseUri).assertEquals(expectedBaseUri)
   }
 
   test("The defaults (name/description) for views should be correct") {
@@ -39,7 +39,7 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
     val expectedBaseUri = BaseUri("https://bbp.epfl.ch", Label.unsafe("v1"))
     for {
       externalConfigPath <- loader.absolutePath("config/external.conf")
-      _                  <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.input.baseUri).assertEquals(expectedBaseUri)
+      _                  <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.input.targetBaseUri).assertEquals(expectedBaseUri)
     } yield ()
   }
 
@@ -87,7 +87,7 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
     for {
       _          <- uploadFileToS3(fs2S3client, bucket, configPath)
       shipConfig <- ShipConfig.loadFromS3(s3Client, bucket, configPath)
-      _           = assertEquals(shipConfig.input.baseUri.toString, "https://bbp.epfl.ch/v1")
+      _           = assertEquals(shipConfig.input.targetBaseUri.toString, "https://bbp.epfl.ch/v1")
     } yield ()
   }
 
