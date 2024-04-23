@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{BodyPartEntity, HttpEntity, Uri}
+import akka.http.scaladsl.model.{BodyPartEntity, ContentType, HttpEntity, Uri}
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -223,14 +223,18 @@ final class Files(
       storageId: Option[IdSegment],
       metadata: Option[FileCustomMetadata],
       path: Uri.Path,
-      tag: Option[UserTag]
+      tag: Option[UserTag],
+      mediaType: Option[ContentType]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
       s3Metadata            <- fileOperations.register(storage, path)
       filename              <- IO.fromOption(path.lastSegment)(InvalidFilePath)
-      attr                   = FileAttributes.from(FileDescription(filename, s3Metadata.contentType.some, metadata), s3Metadata.metadata)
+      attr                   = FileAttributes.from(
+                                 FileDescription(filename, Some(mediaType.getOrElse(s3Metadata.contentType)), metadata),
+                                 s3Metadata.metadata
+                               )
       res                   <- eval(
                                  CreateFile(
                                    iri,
