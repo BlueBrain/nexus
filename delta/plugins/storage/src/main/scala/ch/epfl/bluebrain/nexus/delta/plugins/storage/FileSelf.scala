@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.archive
+package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError

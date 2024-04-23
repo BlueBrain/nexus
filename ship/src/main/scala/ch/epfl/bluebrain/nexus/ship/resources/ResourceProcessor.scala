@@ -19,8 +19,12 @@ import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
-class ResourceProcessor private (resources: Resources, projectMapper: ProjectMapper, clock: EventClock)
-    extends EventProcessor[ResourceEvent] {
+class ResourceProcessor private (
+    resources: Resources,
+    projectMapper: ProjectMapper,
+    distributionPatcher: DistributionPatcher,
+    clock: EventClock
+) extends EventProcessor[ResourceEvent] {
 
   override def resourceType: EntityType = Resources.entityType
 
@@ -44,9 +48,13 @@ class ResourceProcessor private (resources: Resources, projectMapper: ProjectMap
 
     event match {
       case e: ResourceCreated       =>
-        resources.create(e.id, project, e.schema.toIdSegment, e.source, e.tag)
+        distributionPatcher.singleOrArray(e.source).flatMap { patched =>
+          resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
+        }
       case e: ResourceUpdated       =>
-        resources.update(e.id, project, e.schema.toIdSegment.some, cRev, e.source, e.tag)
+        distributionPatcher.singleOrArray(e.source).flatMap { patched =>
+          resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
+        }
       case e: ResourceSchemaUpdated =>
         resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
       case e: ResourceRefreshed     =>
@@ -80,10 +88,11 @@ object ResourceProcessor {
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
       fetchContext: FetchContext,
+      distributionPatcher: DistributionPatcher,
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, projectMapper, clock)
+    new ResourceProcessor(resources, projectMapper, distributionPatcher, clock)
   }
 
 }

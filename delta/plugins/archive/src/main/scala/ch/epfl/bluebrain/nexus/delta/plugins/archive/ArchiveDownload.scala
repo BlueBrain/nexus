@@ -7,10 +7,11 @@ import cats.effect.IO
 import cats.implicits._
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._

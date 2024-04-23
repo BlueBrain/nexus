@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.NotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectEvent, ProjectFields, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext, ProjectEvent, ProjectFields, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsImpl, ValidateProjectDeletion}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -22,6 +22,7 @@ import io.circe.Decoder
 
 final class ProjectProcessor private (
     projects: Projects,
+    originalProjectContext: OriginalProjectContext,
     projectMapper: ProjectMapper,
     clock: EventClock,
     uuidF: EventUUIDF,
@@ -46,12 +47,16 @@ final class ProjectProcessor private (
 
     event match {
       case ProjectCreated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
-        val fields = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
-        projects.create(projectRef, fields) >>
+        val fields  = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
+        val context = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
+        originalProjectContext.save(projectRef, context) >>
+          projects.create(projectRef, fields) >>
           scopeInitializer.initializeProject(projectRef)
       case ProjectUpdated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
-        val fields = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
-        projects.update(projectRef, cRev, fields)
+        val fields  = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
+        val context = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
+        originalProjectContext.save(projectRef, context) >>
+          projects.update(projectRef, cRev, fields)
       case _: ProjectDeprecated                                                                      =>
         projects.deprecate(projectRef, cRev)
       case _: ProjectUndeprecated                                                                    =>
@@ -76,6 +81,7 @@ object ProjectProcessor {
       fetchActiveOrg: FetchActiveOrganization,
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
+      originalProjectContext: OriginalProjectContext,
       projectMapper: ProjectMapper,
       config: InputConfig,
       clock: EventClock,
@@ -98,6 +104,6 @@ object ProjectProcessor {
         xas,
         clock
       )(base, uuidF)
-      new ProjectProcessor(projects, projectMapper, clock, uuidF, initializer)
+      new ProjectProcessor(projects, originalProjectContext, projectMapper, clock, uuidF, initializer)
     }
 }
