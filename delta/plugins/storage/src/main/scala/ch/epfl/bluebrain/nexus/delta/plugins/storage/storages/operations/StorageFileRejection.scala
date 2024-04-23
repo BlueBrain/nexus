@@ -202,6 +202,8 @@ object StorageFileRejection {
     final case class InvalidContentType(received: String)
         extends RegisterFileRejection(s"Invalid content type returned from S3: $received")
 
+    final case object MissingContentType extends RegisterFileRejection(s"Content type not returned from S3")
+
     final case class InvalidPath(path: Uri.Path)
         extends RegisterFileRejection(s"An S3 path must contain at least the filename. Path was $path")
 

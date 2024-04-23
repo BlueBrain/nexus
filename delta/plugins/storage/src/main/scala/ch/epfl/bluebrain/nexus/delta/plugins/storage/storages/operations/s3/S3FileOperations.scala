@@ -14,14 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.InvalidContentType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.{InvalidContentType, MissingContentType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import org.apache.commons.codec.binary.Hex
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
@@ -85,36 +85,32 @@ object S3FileOperations {
       uuidF: UUIDF
   ): IO[S3FileMetadata] = {
     for {
-      _           <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
-      resp        <- client.headObject(bucket, path.toString())
-      contentType <- parseContentType(resp.contentType())
-      metadata    <- mkS3Metadata(client, bucket, path, resp, contentType)
+      _        <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
+      resp     <- client.headObject(bucket, path.toString())
+      metadata <- mkS3Metadata(client, bucket, path, resp)
     } yield metadata
   }
     .onError { e =>
       log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
     }
 
-  private def parseContentType(raw: String): IO[ContentType] =
-    ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
+  private def parseContentType(raw: Option[String]): IO[ContentType] = {
+    IO.fromOption(raw)(MissingContentType)
+      .flatMap(raw => ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw))))
+  }
 
-  private def mkS3Metadata(
-      client: S3StorageClient,
-      bucket: String,
-      path: Uri.Path,
-      resp: HeadObjectResponse,
-      ct: ContentType
-  )(implicit
+  private def mkS3Metadata(client: S3StorageClient, bucket: String, path: Uri.Path, resp: HeadObject)(implicit
       uuidf: UUIDF
   ) = {
     for {
-      uuid     <- uuidf()
-      checksum <- checksumFrom(resp)
+      uuid        <- uuidf()
+      contentType <- parseContentType(resp.contentType)
+      checksum    <- checksumFrom(resp)
     } yield S3FileMetadata(
-      ct,
+      contentType,
       FileStorageMetadata(
         uuid,
-        resp.contentLength(),
+        resp.fileSize,
         checksum,
         FileAttributesOrigin.External,
         client.baseEndpoint / bucket / path,
@@ -123,8 +119,8 @@ object S3FileOperations {
     )
   }
 
-  private def checksumFrom(response: HeadObjectResponse) = IO.fromOption {
-    Option(response.checksumSHA256())
+  private def checksumFrom(response: HeadObject) = IO.fromOption {
+    response.sha256Checksum
       .map { checksum =>
         Digest.ComputedDigest(
           DigestAlgorithm.default,
