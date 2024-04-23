@@ -31,12 +31,13 @@ object FileOperationsMock {
     )
 
   def unimplemented: FileOperations = new FileOperations {
-    def validateStorageAccess(storage: StorageValue): IO[Unit]                                    = ???
-    def save(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = ???
-    def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]   = ???
-    def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                       = ???
-    def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] = ???
-    def register(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]           = ???
+    def validateStorageAccess(storage: StorageValue): IO[Unit]                                            = ???
+    def save(storage: Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]         = ???
+    def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]           = ???
+    def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                               = ???
+    def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]         = ???
+    def register(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                   = ???
+    def registerUpdate(storage: Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata] = ???
   }
 
   def diskUnimplemented: DiskFileOperations = new DiskFileOperations {
@@ -46,9 +47,11 @@ object FileOperationsMock {
   }
 
   def s3Unimplemented: S3FileOperations = new S3FileOperations {
-    def checkBucketExists(bucket: String): IO[Unit]                                                         = ???
-    def fetch(bucket: String, path: Uri.Path): IO[AkkaSource]                                               = ???
-    def save(storage: Storage.S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = ???
-    def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                       = ???
+    def checkBucketExists(bucket: String): IO[Unit]                                                                 = ???
+    def fetch(bucket: String, path: Uri.Path): IO[AkkaSource]                                                       = ???
+    def save(storage: Storage.S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]         = ???
+    def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                               = ???
+    def registerUpdate(storage: Storage.S3Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata] =
+      ???
   }
 }

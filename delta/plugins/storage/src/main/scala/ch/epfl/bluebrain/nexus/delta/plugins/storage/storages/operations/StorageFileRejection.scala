@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -138,6 +137,9 @@ object StorageFileRejection {
           s"File cannot be saved because it already exists on path '$path'."
         )
 
+    final case class FileNotFound(path: String)
+        extends SaveFileRejection(s"File could not be retrieved from expected path '$path'.")
+
     /**
       * Rejection returned when a storage cannot save a file due to an unexpected reason
       */
@@ -196,11 +198,11 @@ object StorageFileRejection {
   sealed abstract class RegisterFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object RegisterFileRejection {
-    final case class MissingS3Attributes(missingAttributes: NonEmptyList[String])
-        extends RegisterFileRejection(s"Missing attributes from S3: ${missingAttributes.toList.mkString(", ")}")
-
     final case class InvalidContentType(received: String)
         extends RegisterFileRejection(s"Invalid content type returned from S3: $received")
+
+    final case class MissingChecksum(key: String)
+        extends RegisterFileRejection(s"Missing SHA-256 checksum for S3 object at key: ")
 
     final case class InvalidPath(path: Uri.Path)
         extends RegisterFileRejection(s"An S3 path must contain at least the filename. Path was $path")

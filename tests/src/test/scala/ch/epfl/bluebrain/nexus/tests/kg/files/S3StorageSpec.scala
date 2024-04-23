@@ -7,6 +7,11 @@ import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput.textFileWithContentType
+import eu.timepit.refined.types.all.NonEmptyString
+import fs2.aws.s3.S3
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
+import fs2.text
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.laserdisc.pure.s3.tagless.Interpreter
@@ -184,9 +189,10 @@ class S3StorageSpec extends StorageSpec {
     )
 
   s"Registering an S3 file in-place" should {
+    val id   = genId()
+    val path = s"$id/nexus-logo.png"
+
     "succeed" in {
-      val id      = genId()
-      val path    = s"$id/nexus-logo.png"
       val payload = Json.obj("path" -> Json.fromString(path))
 
       for {
@@ -202,6 +208,32 @@ class S3StorageSpec extends StorageSpec {
                        filterMetadataKeys(json) shouldEqual expected
                      }
       } yield assertion
+    }
+
+    "be updated" in {
+      val file = textFileWithContentType.copy(fileId = id)
+
+      for {
+        _         <- deltaClient.uploadFile[Json](
+                       s"/files/$projectRef/register-update/${file.fileId}?storage=nxv:$storageId&rev=1",
+                       file.contents,
+                       file.ct,
+                       file.filename,
+                       Coyote
+                     )(expectOk)
+        _         <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote)(expectOk)
+        bucketName = BucketName(NonEmptyString.unsafeFrom(bucket))
+        fileKey    = FileKey(NonEmptyString.unsafeFrom(path))
+        lines     <- S3.create(s3Client)
+                       .readFile(bucketName, fileKey)
+                       .through(text.utf8.decode)
+                       .through(fs2.text.lines)
+                       .compile
+                       .toVector
+      } yield {
+        val receivedFileContents: String = lines.reduce(_ + _).mkString
+        receivedFileContents shouldEqual file.contents
+      }
     }
   }
 }

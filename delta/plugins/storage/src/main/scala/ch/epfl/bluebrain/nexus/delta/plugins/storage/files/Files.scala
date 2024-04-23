@@ -245,6 +245,37 @@ final class Files(
     } yield res
   }.span("registerFile")
 
+  def updateRegisteredFile(
+      id: FileId,
+      storageId: Option[IdSegment],
+      rev: Int,
+      entity: HttpEntity,
+      tag: Option[UserTag],
+      metadata: Option[FileCustomMetadata]
+  )(implicit caller: Caller): IO[FileResource] = {
+    for {
+      (iri, pc)             <- id.expandIri(fetchContext.onModify)
+      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
+      uploadedInfo          <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
+      path                  <- fetchState(id, iri).map(_.attributes.path)
+      storageMetadata       <- fileOperations.registerUpdate(storage, path, uploadedInfo.contents)
+      attr                   = FileAttributes.from(FileDescription.from(uploadedInfo, metadata), storageMetadata)
+      res                   <- eval(
+                                 UpdateFile(
+                                   iri,
+                                   id.project,
+                                   storageRef,
+                                   storage.tpe,
+                                   attr,
+                                   rev,
+                                   caller.subject,
+                                   tag
+                                 )
+                               )
+    } yield res
+  }.span("updateRegisteredFile")
+
   /**
     * Update a new file linking it from an existing file in a storage
     *

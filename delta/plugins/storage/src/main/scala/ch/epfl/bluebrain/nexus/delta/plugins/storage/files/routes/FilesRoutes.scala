@@ -290,6 +290,32 @@ final class FilesRoutes(
                     }
                   }
                 }
+              },
+              pathPrefix("register-update") {
+                (idSegment & indexingMode) { (id, mode) =>
+                  pathEndOrSingleSlash {
+                    operationName(s"$prefixSegment/files/{org}/{project}/register-update/{id}") {
+                      parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) { (rev, storage, tag) =>
+                        (requestEntityPresent & extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
+                          val fileId = FileId(id, project)
+                          emit(
+                            files
+                              .updateRegisteredFile(
+                                fileId,
+                                storage,
+                                rev,
+                                entity,
+                                tag,
+                                metadata
+                              )
+                              .index(mode)
+                              .attemptNarrow[FileRejection]
+                          )
+                        }
+                      }
+                    }
+                  }
+                }
               }
             )
           }

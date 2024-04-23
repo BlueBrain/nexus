@@ -25,6 +25,8 @@ trait FileOperations extends StorageAccess {
 
   def register(storage: Storage, path: Uri.Path): IO[S3FileMetadata]
 
+  def registerUpdate(storage: Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata]
+
   def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]
 }
 
@@ -69,6 +71,12 @@ object FileOperations {
     override def register(storage: Storage, path: Uri.Path): IO[S3FileMetadata] =
       storage match {
         case s: S3Storage => s3FileOps.register(s.value.bucket, path)
+        case s            => IO.raiseError(RegisterFileRejection.UnsupportedOperation(s.tpe))
+      }
+
+    override def registerUpdate(storage: Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata] =
+      storage match {
+        case s: S3Storage => s3FileOps.registerUpdate(s, path, entity)
         case s            => IO.raiseError(RegisterFileRejection.UnsupportedOperation(s.tpe))
       }
   }

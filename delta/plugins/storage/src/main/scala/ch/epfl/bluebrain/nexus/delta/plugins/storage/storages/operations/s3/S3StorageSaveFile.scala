@@ -29,20 +29,37 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
   private val logger = Logger[S3StorageSaveFile]
 
-  def apply(
+  def saveNewFile(
       storage: S3Storage,
       filename: String,
       entity: BodyPartEntity
-  ): IO[FileStorageMetadata] = {
-
+  ): IO[FileStorageMetadata] =
     for {
+      uuid  <- uuidf()
+      path   = Uri.Path(intermediateFolders(storage.project, uuid, filename))
+      bucket = storage.value.bucket
+      key    = path.toString()
+      _     <- log(bucket, key, s"Checking object does not exist in S3")
+      _     <- validateObjectDoesNotExist(bucket, key)
+      attr  <- uploadFile(bucket, key, uuid, entity, storage.value.algorithm)
+    } yield attr
+
+  def overwriteFile(
+      storage: S3Storage,
+      path: Uri.Path,
+      entity: BodyPartEntity
+  ): IO[FileStorageMetadata] = {
+    val bucket = storage.value.bucket
+    val key    = path.toString()
+    for {
+      _      <- log(bucket, key, s"Checking object exists in S3")
+      _      <- validateObjectExists(storage.value.bucket, path.toString())
       uuid   <- uuidf()
-      path    = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-      result <- storeFile(storage.value.bucket, path.toString(), uuid, entity, storage.value.algorithm)
+      result <- uploadFile(storage.value.bucket, path.toString(), uuid, entity, storage.value.algorithm)
     } yield result
   }
 
-  private def storeFile(
+  private def uploadFile(
       bucket: String,
       key: String,
       uuid: UUID,
@@ -52,14 +69,12 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
 
     (for {
-      _              <- log(bucket, key, s"Checking for object existence")
-      _              <- validateObjectDoesNotExist(bucket, key)
       _              <- log(bucket, key, s"Beginning upload")
       uploadMetadata <- s3StorageClient.uploadFile(fileData, bucket, key, algorithm)
       _              <- log(bucket, key, s"Finished upload. Digest: ${uploadMetadata.checksum}")
       attr            = fileMetadata(key, uuid, algorithm, uploadMetadata)
     } yield attr)
-      .onError(e => logger.error(e)("Unexpected error when storing file"))
+      .onError(e => logger.error(e)(s"Unexpected error when uploading file with key $key to bucket $bucket"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
   }
 
@@ -78,13 +93,11 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       path = Uri.Path(key)
     )
 
+  private def validateObjectExists(bucket: String, key: String) =
+    s3StorageClient.objectExists(bucket, key).ifM(IO.unit, IO.raiseError(FileNotFound(key)))
+
   private def validateObjectDoesNotExist(bucket: String, key: String) =
-    s3StorageClient
-      .objectExists(bucket, key)
-      .flatMap {
-        case true  => IO.raiseError(ResourceAlreadyExists(key))
-        case false => IO.unit
-      }
+    s3StorageClient.objectExists(bucket, key).ifM(IO.raiseError(ResourceAlreadyExists(key)), IO.unit)
 
   private def convertStream(source: Source[ByteString, Any]): Stream[IO, Byte] =
     StreamConverter(
@@ -94,5 +107,5 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     )
 
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
-    logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
+    logger.info(s"Bucket: $bucket. Key: $key. $msg")
 }

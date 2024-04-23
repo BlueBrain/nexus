@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.InvalidContentType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.{InvalidContentType, MissingChecksum}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
@@ -40,6 +40,8 @@ trait S3FileOperations {
   ): IO[FileStorageMetadata]
 
   def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
+
+  def registerUpdate(storage: S3Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata]
 }
 
 object S3FileOperations {
@@ -74,7 +76,7 @@ object S3FileOperations {
       }
 
     override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.apply(storage, filename, entity)
+      saveFile.saveNewFile(storage, filename, entity)
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] = {
       for {
@@ -88,13 +90,16 @@ object S3FileOperations {
         log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
       }
 
+    override def registerUpdate(storage: S3Storage, path: Uri.Path, entity: BodyPartEntity): IO[FileStorageMetadata] =
+      saveFile.overwriteFile(storage, path, entity)
+
     private def parseContentType(raw: String): IO[ContentType] =
       ContentType.parse(raw).map(_.pure[IO]).getOrElse(IO.raiseError(InvalidContentType(raw)))
 
-    private def mkS3Metadata(bucket: String, path: Uri.Path, resp: HeadObjectResponse, ct: ContentType) = {
+    private def mkS3Metadata(bucket: String, path: Uri.Path, resp: HeadObjectResponse, ct: ContentType) =
       for {
         uuid     <- uuidf()
-        checksum <- checksumFrom(resp)
+        checksum <- checksumFrom(resp, path.toString())
       } yield S3FileMetadata(
         ct,
         FileStorageMetadata(
@@ -106,9 +111,8 @@ object S3FileOperations {
           path
         )
       )
-    }
 
-    private def checksumFrom(response: HeadObjectResponse) = IO.fromOption {
+    private def checksumFrom(response: HeadObjectResponse, key: String) = IO.fromOption {
       Option(response.checksumSHA256())
         .map { checksum =>
           Digest.ComputedDigest(
@@ -116,7 +120,7 @@ object S3FileOperations {
             Hex.encodeHexString(Base64.getDecoder.decode(checksum))
           )
         }
-    }(new IllegalArgumentException("Missing checksum"))
+    }(MissingChecksum(key))
   }
 
 }
