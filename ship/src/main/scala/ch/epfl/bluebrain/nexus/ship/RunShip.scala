@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
@@ -70,6 +71,7 @@ object RunShip {
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     fileProcessor                = FileProcessor(fetchContext, s3Client, projectMapper, rcr, config, eventClock, xas)
                     // format: on
+          _                           <- logger.info("Starting import")
           report                      <- EventProcessor
                                            .run(
                                              eventsStream,
@@ -82,9 +84,12 @@ object RunShip {
                                              compositeViewsProcessor,
                                              fileProcessor
                                            )
+          _                           <- logger.info(s"Import finished. Report: $report")
         } yield report
       }
     } yield report
   }
+
+  private val logger = Logger[RunShip.type]
 
 }
