@@ -15,30 +15,21 @@ import munit.catseffect.ResourceFixture.FixtureNotInstantiatedException
 import org.postgresql.util.PSQLException
 
 object Doobie {
-
-  val PostgresUser     = "postgres"
-  val PostgresPassword = "postgres"
-
-  def transactors(
-      postgres: Resource[IO, PostgresContainer],
-      user: String,
-      pass: String
-  ): Resource[IO, Transactors] = {
-    postgres
-      .flatMap(container => Transactors.test(container.getHost, container.getMappedPort(5432), user, pass))
-      .evalTap(xas => Transactors.dropAndCreateDDLs.flatMap(xas.execDDLs))
+  def resource(): Resource[IO, Transactors] = {
+    val user     = PostgresUser
+    val pass     = PostgresPassword
+    val database = PostgresDb
+    for {
+      postgres    <- PostgresContainer.resource(user, pass, database)
+      transactors <- Transactors.test(postgres.getHost, postgres.getMappedPort(5432), user, pass, database)
+      _           <- Resource.eval(Transactors.dropAndCreateDDLs.flatMap(transactors.execDDLs))
+    } yield transactors
   }
-
-  def resource(
-      user: String = PostgresUser,
-      pass: String = PostgresPassword
-  ): Resource[IO, Transactors] =
-    transactors(PostgresContainer.resource(user, pass), user, pass)
 
   trait Fixture { self: NexusSuite =>
 
     val doobie: IOFixture[Transactors] =
-      ResourceSuiteLocalFixture("doobie", resource(PostgresUser, PostgresPassword))
+      ResourceSuiteLocalFixture("doobie", resource())
 
     /**
       * Truncate all tables after each test
@@ -53,7 +44,7 @@ object Doobie {
 
       def xas: Transactors = apply()
 
-      override def beforeAll(): IO[Unit] = resource(PostgresUser, PostgresPassword).allocated.flatMap { value =>
+      override def beforeAll(): IO[Unit] = resource().allocated.flatMap { value =>
         IO(this.value = Some(value))
       }
 
