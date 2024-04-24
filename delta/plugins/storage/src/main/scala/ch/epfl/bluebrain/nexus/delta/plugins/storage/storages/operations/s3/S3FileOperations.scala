@@ -51,9 +51,8 @@ object S3FileOperations {
     private lazy val saveFile = new S3StorageSaveFile(client)
 
     override def checkBucketExists(bucket: String): IO[Unit] = {
-      client.bucketExists(bucket).flatMap {
-        case true  => IO.unit
-        case false => IO.raiseError(StorageNotAccessible(s"Bucket $bucket does not exist"))
+      client.bucketExists(bucket).flatMap { exists =>
+        IO.raiseUnless(exists)(StorageNotAccessible(s"Bucket $bucket does not exist"))
       }
     }
 
