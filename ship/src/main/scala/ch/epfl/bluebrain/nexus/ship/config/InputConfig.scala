@@ -23,6 +23,7 @@ final case class InputConfig(
     viewDefaults: ViewDefaults,
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
+    importBucket: BucketName,
     targetBucket: BucketName
 )
 

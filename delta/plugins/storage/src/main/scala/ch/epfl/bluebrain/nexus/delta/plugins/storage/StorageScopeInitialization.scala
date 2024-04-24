@@ -83,10 +83,10 @@ object StorageScopeInitialization {
     * Creates a [[StorageScopeInitialization]] that creates a default S3Storage with the provided default fields
     */
   def s3(
-      storage: Storages,
+      storages: Storages,
       serviceAccount: ServiceAccount,
       defaultFields: S3StorageFields
   ): StorageScopeInitialization =
-    new StorageScopeInitialization(storage, serviceAccount, defaultS3StorageId, defaultFields)
+    new StorageScopeInitialization(storages, serviceAccount, defaultS3StorageId, defaultFields)
 
 }

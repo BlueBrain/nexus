@@ -21,11 +21,18 @@ import java.nio.file.Paths
 object LocalStackS3StorageClient {
   val ServiceType = Service.S3
 
+  def createBucket(s3Client: S3AsyncClientOp[IO], bucket: BucketName) =
+    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build)
+
   def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: BucketName, path: Path): IO[PutObjectResponse] = {
-    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build) >>
+    val absoluteResourcePath = if (path.isAbsolute) path else Path("/" + path.toString)
+    createBucket(s3Client, bucket) >>
       s3Client.putObject(
-        PutObjectRequest.builder.bucket(bucket.value.value).key(path.toString).build,
-        Paths.get(getClass.getResource(path.toString).toURI)
+        PutObjectRequest.builder
+          .bucket(bucket.value.value)
+          .key(path.toString)
+          .build,
+        Paths.get(getClass.getResource(absoluteResourcePath.toString).toURI)
       )
   }
 

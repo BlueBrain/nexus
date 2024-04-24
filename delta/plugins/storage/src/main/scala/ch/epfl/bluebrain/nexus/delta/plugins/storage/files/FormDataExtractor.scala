@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-sealed trait FormDataExtractor {
+trait FormDataExtractor {
 
   /**
     * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData. Any other part is
