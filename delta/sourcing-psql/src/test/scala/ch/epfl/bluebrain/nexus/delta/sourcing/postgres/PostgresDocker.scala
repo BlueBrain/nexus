@@ -10,7 +10,7 @@ import scala.jdk.DurationConverters._
 trait PostgresDocker extends BeforeAndAfterAll { this: Suite =>
 
   protected val container: PostgresContainer =
-    new PostgresContainer(PostgresUser, PostgresPassword)
+    new PostgresContainer(PostgresUser, PostgresPassword, PostgresDb)
       .withReuse(false)
       .withStartupTimeout(60.seconds.toJava)
 
@@ -30,8 +30,5 @@ trait PostgresDocker extends BeforeAndAfterAll { this: Suite =>
 }
 
 object PostgresDocker {
-  val PostgresUser     = "postgres"
-  val PostgresPassword = "postgres"
-
   final case class PostgresHostConfig(host: String, port: Int)
 }

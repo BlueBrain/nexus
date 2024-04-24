@@ -85,13 +85,13 @@ object Transactors {
     * @param password
     *   the password
     */
-  def test(host: String, port: Int, username: String, password: String): Resource[IO, Transactors] = {
+  def test(host: String, port: Int, username: String, password: String, database: String): Resource[IO, Transactors] = {
     val access         = DatabaseAccess(host, port, 10)
     val databaseConfig = DatabaseConfig(
       access,
       access,
       access,
-      "unused",
+      database,
       username,
       Secret(password),
       tablesAutocreate = false,
@@ -108,7 +108,7 @@ object Transactors {
         ec         <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
         dataSource <- Resource.make[IO, HikariDataSource](IO.delay {
                         val ds = new HikariDataSource
-                        ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
+                        ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/${config.name}")
                         ds.setUsername(config.username)
                         ds.setPassword(config.password.value)
                         ds.setDriverClassName("org.postgresql.Driver")
