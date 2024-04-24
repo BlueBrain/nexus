@@ -1,15 +1,18 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import cats.effect.{Clock, ExitCode, IO}
+import cats.effect.{Clock, ExitCode, IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.ship.BuildInfo
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.ShipCommand._
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfig
 import com.monovore.decline.Opts
 import com.monovore.decline.effect.CommandIOApp
 import fs2.io.file.Path
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 object Main
     extends CommandIOApp(
@@ -57,10 +60,18 @@ object Main
 
   private[ship] def run(r: RunCommand): IO[Unit] = {
     val clock = Clock[IO]
-    InitShip(r).use { case (config, eventsStream, s3Client, xas) =>
+
+    val resources = for {
+      defaultConfig          <- Resource.eval(ShipConfig.load(None))
+      client                 <- S3StorageClient.resource(defaultConfig.s3.endpoint, DefaultCredentialsProvider.create())
+      xas                    <- Transactors.init(defaultConfig.database)
+      (config, eventsStream) <- Resource.eval(InitShip.configAndStream(r, defaultConfig, client))
+    } yield (client, config, eventsStream, xas)
+
+    resources.use { case (client, config, eventsStream, xas) =>
       for {
         start         <- clock.realTimeInstant
-        reportOrError <- RunShip(eventsStream, s3Client, config.input, xas).attempt
+        reportOrError <- RunShip(eventsStream, client, config.input, xas).attempt
         end           <- clock.realTimeInstant
         _             <- ShipSummaryStore.save(xas, start, end, r, reportOrError)
         _             <- IO.fromEither(reportOrError)
