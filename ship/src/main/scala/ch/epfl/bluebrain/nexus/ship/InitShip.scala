@@ -18,13 +18,17 @@ object InitShip {
         val eventsStream = EventStreamer.localStreamer.stream(run.path, run.offset)
         ShipConfig.load(run.config).map((_, eventsStream))
       case RunMode.S3    =>
-        val eventsStream =
-          EventStreamer.s3eventStreamer(s3Client, defaultConfig.s3.importBucket).stream(run.path, run.offset)
-        val config       = run.config match {
+        val shipConfig = run.config match {
           case Some(configPath) => ShipConfig.loadFromS3(s3Client, defaultConfig.s3.importBucket, configPath)
           case None             => IO.pure(defaultConfig)
         }
-        config.map((_, eventsStream))
+
+        for {
+          cfg        <- shipConfig
+          eventStream = EventStreamer
+                          .s3eventStreamer(s3Client, cfg.s3.importBucket)
+                          .stream(run.path, run.offset)
+        } yield (cfg, eventStream)
     }
   }
 }
