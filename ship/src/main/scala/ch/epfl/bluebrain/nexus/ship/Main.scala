@@ -64,8 +64,8 @@ object Main
     val resources = for {
       defaultConfig          <- Resource.eval(ShipConfig.load(None))
       client                 <- S3StorageClient.resource(defaultConfig.s3.endpoint, DefaultCredentialsProvider.create())
-      xas                    <- Transactors.init(defaultConfig.database)
       (config, eventsStream) <- Resource.eval(InitShip.configAndStream(r, defaultConfig, client))
+      xas                    <- Transactors.init(config.database)
     } yield (client, config, eventsStream, xas)
 
     resources.use { case (client, config, eventsStream, xas) =>
