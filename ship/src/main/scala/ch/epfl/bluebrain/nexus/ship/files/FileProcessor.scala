@@ -51,11 +51,12 @@ class FileProcessor private (
     event match {
       case e: FileCreated               =>
         fileCopier.copyFile(e.attributes.path) >>
-          files
-            .registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
-            .flatMap(IO.println)
+          files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
       case e: FileUpdated               =>
-        fileCopier.copyFile(e.attributes.path) >> IO.unit
+        fileCopier.copyFile(e.attributes.path) >>
+          // format: off
+          files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
+          // format: on
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(FileId(e.id, project), cRev, e.metadata, e.tag)
       case _: FileAttributesUpdated     => IO.unit
