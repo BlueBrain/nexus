@@ -1,13 +1,19 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits.toTraverseOps
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import eu.timepit.refined.types.all.NonEmptyString
+import fs2.Stream
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
+import fs2.aws.s3.{AwsRequestModifier, S3}
 import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.laserdisc.pure.s3.tagless.Interpreter
@@ -19,7 +25,9 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.util.Base64
 import scala.jdk.CollectionConverters._
 
@@ -49,7 +57,7 @@ class S3StorageSpec extends StorageSpec {
     case _                    => AnonymousCredentialsProvider.create()
   }
 
-  val s3Client = Interpreter[IO]
+  private val s3Client = Interpreter[IO]
     .S3AsyncClientOpResource(
       S3AsyncClient
         .builder()
@@ -62,13 +70,15 @@ class S3StorageSpec extends StorageSpec {
     .map(_._1)
     .accepted
 
+  private val s3 = S3.create(s3Client)
+
   override def beforeAll(): Unit = {
     super.beforeAll()
-    (s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build) >> uploadLogoFile(logoKey)).accepted
+    (s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build) >> uploadLogoFileToS3(logoKey)).accepted
     ()
   }
 
-  private def uploadLogoFile(key: String): IO[PutObjectResponse] = s3Client.putObject(
+  private def uploadLogoFileToS3(key: String): IO[PutObjectResponse] = s3Client.putObject(
     PutObjectRequest.builder
       .bucket(bucket)
       .key(key)
@@ -184,6 +194,18 @@ class S3StorageSpec extends StorageSpec {
       ): _*
     )
 
+  private def uploadFileBytesToS3(content: Array[Byte], path: String): IO[String] = {
+    val sha256Base64Encoded                  = new String(
+      Base64.getEncoder.encode(MessageDigest.getInstance("SHA-256").digest(content)),
+      StandardCharsets.UTF_8
+    )
+    val modifier: AwsRequestModifier.Upload1 = (b: PutObjectRequest.Builder) =>
+      b.checksumAlgorithm(ChecksumAlgorithm.SHA256).checksumSHA256(sha256Base64Encoded)
+    val uploadPipe                           =
+      s3.uploadFile(BucketName(NonEmptyString.unsafeFrom(bucket)), FileKey(NonEmptyString.unsafeFrom(path)), modifier)
+    Stream.fromIterator[IO](content.iterator, 16).through(uploadPipe).compile.drain.as(sha256Base64Encoded)
+  }
+
   s"Registering an S3 file in-place" should {
     "succeed" in {
       val id      = genId()
@@ -191,7 +213,7 @@ class S3StorageSpec extends StorageSpec {
       val payload = Json.obj("path" -> Json.fromString(path))
 
       for {
-        _         <- uploadLogoFile(path)
+        _         <- uploadLogoFileToS3(path)
         _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
                        (_, response) => response.status shouldEqual StatusCodes.Created
                      }
@@ -210,7 +232,7 @@ class S3StorageSpec extends StorageSpec {
       val payload = Json.obj("path" := path, "mediaType" := "image/dan")
 
       for {
-        _         <- uploadLogoFile(path)
+        _         <- uploadLogoFileToS3(path)
         _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
                        (_, response) => response.status shouldEqual StatusCodes.Created
                      }
@@ -218,6 +240,43 @@ class S3StorageSpec extends StorageSpec {
                        response.status shouldEqual StatusCodes.OK
                        json should have(mediaTypeField("image/dan"))
                      }
+      } yield assertion
+    }
+
+    "be updated" in {
+      val id              = genId()
+      val fileContent     = genString()
+      val filename        = s"${genString()}.txt"
+      val originalPath    = s"$id/nexus-logo.png"
+      val updatedPath     = s"$id/some/path/$filename"
+      val originalPayload = Json.obj("path" -> Json.fromString(originalPath))
+      val updatedPayload  =
+        Json.obj("path" -> Json.fromString(updatedPath), "mediaType" := "text/plain; charset=UTF-8")
+
+      for {
+        _             <- uploadLogoFileToS3(originalPath)
+        _             <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", originalPayload, Coyote) {
+                           (_, response) => response.status shouldEqual StatusCodes.Created
+                         }
+        s3Digest      <- uploadFileBytesToS3(fileContent.getBytes(StandardCharsets.UTF_8), updatedPath)
+        _             <-
+          deltaClient
+            .put[Json](s"/files/$projectRef/register-update/$id?rev=1&storage=nxv:$storageId", updatedPayload, Coyote) {
+              expectOk
+            }
+        _             <- deltaClient.get[ByteString](s"/files/$projectRef/$id", Coyote, acceptAll) {
+                           filesDsl.expectFileContentAndMetadata(
+                             filename,
+                             ContentTypes.`text/plain(UTF-8)`,
+                             fileContent
+                           )
+                         }
+        expectedDigest = Hex.encodeHexString(Base64.getDecoder.decode(s3Digest))
+        assertion     <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
+                           response.status shouldEqual StatusCodes.OK
+                           json should have(filenameField(filename))
+                           json should have(digestField("SHA-256", expectedDigest))
+                         }
       } yield assertion
     }
   }

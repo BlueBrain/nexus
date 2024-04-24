@@ -291,6 +291,31 @@ final class FilesRoutes(
                     }
                   }
                 }
+              },
+              pathPrefix("register-update") {
+                (idSegment & indexingMode) { (id, mode) =>
+                  pathEndOrSingleSlash {
+                    parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) { (rev, storage, tag) =>
+                      val fileId = FileId(id, project)
+                      entity(as[RegisterFileRequest]) { registerRequest =>
+                        emit(
+                          files
+                            .updateRegisteredFile(
+                              fileId,
+                              storage,
+                              registerRequest.metadata,
+                              rev,
+                              registerRequest.path,
+                              tag,
+                              registerRequest.mediaType
+                            )
+                            .index(mode)
+                            .attemptNarrow[FileRejection]
+                        )
+                      }
+                    }
+                  }
+                }
               }
             )
           }
