@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
@@ -21,7 +22,7 @@ import doobie.implicits._
 import fs2.aws.s3.models.Models
 import fs2.io.file.Path
 import munit.AnyFixture
-import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CopyObjectResponse, HeadObjectResponse, ListObjectsV2Response}
+import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CopyObjectResponse, ListObjectsV2Response}
 
 import java.time.Instant
 
@@ -111,7 +112,7 @@ object RunShipSuite {
     override def readFile(bucket: Models.BucketName, fileKey: Models.FileKey): fs2.Stream[IO, Byte] =
       fs2.Stream.empty
 
-    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
+    override def headObject(bucket: String, key: String): IO[HeadObject] =
       IO.raiseError(new NotImplementedError("headObject is not implemented"))
 
     override def copyObject(
@@ -135,6 +136,9 @@ object RunShipSuite {
 
     override def objectExists(bucket: String, key: String): IO[Boolean] =
       IO.raiseError(new NotImplementedError("objectExists is not implemented"))
+
+    override def bucketExists(bucket: String): IO[Boolean] =
+      IO.raiseError(new NotImplementedError("bucketExists is not implemented"))
   }
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory

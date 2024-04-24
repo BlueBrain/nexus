@@ -5,7 +5,8 @@ import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.aws.s3.S3
@@ -32,7 +33,7 @@ trait S3StorageClient {
 
   def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
 
-  def headObject(bucket: String, key: String): IO[HeadObjectResponse]
+  def headObject(bucket: String, key: String): IO[HeadObject]
 
   def copyObject(
       sourceBucket: BucketName,
@@ -50,6 +51,7 @@ trait S3StorageClient {
   ): IO[UploadMetadata]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
+  def bucketExists(bucket: String): IO[Boolean]
 
   def baseEndpoint: Uri
 }
@@ -57,6 +59,12 @@ trait S3StorageClient {
 object S3StorageClient {
 
   case class UploadMetadata(checksum: String, fileSize: Long, location: Uri)
+  case class HeadObject(
+      fileSize: Long,
+      contentType: Option[String],
+      sha256Checksum: Option[String],
+      sha1Checksum: Option[String]
+  )
 
   def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
     case Some(cfg) =>
@@ -93,8 +101,24 @@ object S3StorageClient {
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
       s3.readFile(bucket, fileKey)
 
-    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] =
-      client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).checksumMode(ChecksumMode.ENABLED).build)
+    override def headObject(bucket: String, key: String): IO[HeadObject] =
+      client
+        .headObject(
+          HeadObjectRequest
+            .builder()
+            .bucket(bucket)
+            .key(key)
+            .checksumMode(ChecksumMode.ENABLED)
+            .build
+        )
+        .map(resp =>
+          HeadObject(
+            resp.contentLength(),
+            Option(resp.contentType()),
+            Option(resp.checksumSHA256()),
+            Option(resp.checksumSHA1())
+          )
+        )
 
     override def copyObject(
         sourceBucket: BucketName,
@@ -175,13 +199,16 @@ object S3StorageClient {
       }
     }
 
-    implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
-      def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
-        algorithm.value match {
-          case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
-          case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
-          case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
-        }
+    override def bucketExists(bucket: String): IO[Boolean] = {
+      listObjectsV2(bucket)
+        .redeemWith(
+          err =>
+            err match {
+              case _: NoSuchBucketException => IO.pure(false)
+              case e                        => IO.raiseError(StorageNotAccessible(e.getMessage))
+            },
+          _ => IO.pure(true)
+        )
     }
   }
 
@@ -195,7 +222,7 @@ object S3StorageClient {
 
     override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
 
-    override def headObject(bucket: String, key: String): IO[HeadObjectResponse] = raiseDisabledErr
+    override def headObject(bucket: String, key: String): IO[HeadObject] = raiseDisabledErr
 
     override def baseEndpoint: Uri = throw disabledErr
 
@@ -215,5 +242,16 @@ object S3StorageClient {
         key: String,
         algorithm: DigestAlgorithm
     ): IO[UploadMetadata] = raiseDisabledErr
+
+    override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
+  }
+
+  implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
+    def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
+      algorithm.value match {
+        case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
+        case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
+        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+      }
   }
 }

@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.implicits.toTraverseOps
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{mediaType => mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
-import io.circe.syntax.EncoderOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import io.laserdisc.pure.s3.tagless.Interpreter
 import org.apache.commons.codec.binary.Hex
 import org.scalatest.Assertion
@@ -196,10 +197,26 @@ class S3StorageSpec extends StorageSpec {
                      }
         fullId     = s"$attachmentPrefix$id"
         location   = s"$s3BucketEndpoint/$path"
-        expected   = registrationResponse(fullId, logoSha256HexDigest, location)
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
-                       filterMetadataKeys(json) shouldEqual expected
+                       filterMetadataKeys(json) shouldEqual registrationResponse(fullId, logoSha256HexDigest, location)
+                     }
+      } yield assertion
+    }
+
+    "succeed when a content type is supplied" in {
+      val id      = genId()
+      val path    = s"$id/nexus-logo.png"
+      val payload = Json.obj("path" := path, "mediaType" := "image/dan")
+
+      for {
+        _         <- uploadLogoFile(path)
+        _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
+                       (_, response) => response.status shouldEqual StatusCodes.Created
+                     }
+        assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       json should have(mediaTypeField("image/dan"))
                      }
       } yield assertion
     }

@@ -280,7 +280,8 @@ final class FilesRoutes(
                                 storage,
                                 registerRequest.metadata,
                                 registerRequest.path,
-                                tag
+                                tag,
+                                registerRequest.mediaType
                               )
                               .index(mode)
                               .attemptNarrow[FileRejection]
@@ -355,7 +356,7 @@ object FilesRoutes {
       metadata: Option[FileCustomMetadata]
   )
 
-  final case class RegisterFileRequest(path: Path, metadata: Option[FileCustomMetadata])
+  final case class RegisterFileRequest(path: Path, mediaType: Option[ContentType], metadata: Option[FileCustomMetadata])
 
   object LinkFileRequest {
     @nowarn("cat=unused")
