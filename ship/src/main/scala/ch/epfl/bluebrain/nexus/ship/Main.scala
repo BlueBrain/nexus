@@ -62,10 +62,10 @@ object Main
     val clock = Clock[IO]
 
     val resources = for {
-      initialConfig          <- Resource.eval(ShipConfig.load(r.config))
-      client                 <- S3StorageClient.resource(initialConfig.s3.endpoint, DefaultCredentialsProvider.create())
-      xas                    <- Transactors.init(initialConfig.database)
-      (config, eventsStream) <- Resource.eval(InitShip.configAndStream(r, client))
+      defaultConfig          <- Resource.eval(ShipConfig.load(None))
+      client                 <- S3StorageClient.resource(defaultConfig.s3.endpoint, DefaultCredentialsProvider.create())
+      xas                    <- Transactors.init(defaultConfig.database)
+      (config, eventsStream) <- Resource.eval(InitShip.configAndStream(r, defaultConfig, client))
     } yield (client, config, eventsStream, xas)
 
     resources.use { case (client, config, eventsStream, xas) =>
