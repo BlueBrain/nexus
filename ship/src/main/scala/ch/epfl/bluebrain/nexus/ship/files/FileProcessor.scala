@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
 class FileProcessor private (
     files: Files,
@@ -73,6 +74,14 @@ class FileProcessor private (
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
       case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+      case n: NoSuchKeyException    =>
+        event match {
+          // format: off
+          case e: FileCreated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
+          case e: FileUpdated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
+          case e              => logger.error(n)(s"This error should not occur as event for file ${e.id} at rev ${e.rev} is not moving any file.").as(ImportStatus.Dropped)
+          // format: on
+        }
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
