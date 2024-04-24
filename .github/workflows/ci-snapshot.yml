@@ -9,6 +9,7 @@ on:
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
+      - 'ship/**'
       - '.github/workflows/ci-snapshot.yml'
 jobs:
   publish-snapshot:
