@@ -179,6 +179,10 @@ object StoragesConfig {
     *   algorithm for checksum calculation
     * @param defaultEndpoint
     *   the default endpoint of the current storage
+    * @param useDefaultCredentialProvider
+    *   indicates that the default AWS credential provider will be used. If this is specified, the access and secret
+    *   keys will not be used, even if specified. Instead, this relies on delta running in an environment that is
+    *   configured (with policies, roles) to allow access to S3.
     * @param defaultAccessKey
     *   the access key for the default endpoint, when provided
     * @param defaultSecretKey
@@ -195,6 +199,7 @@ object StoragesConfig {
   final case class S3StorageConfig(
       digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: Uri,
+      useDefaultCredentialProvider: Boolean,
       defaultAccessKey: Secret[String],
       defaultSecretKey: Secret[String],
       defaultReadPermission: Permission,

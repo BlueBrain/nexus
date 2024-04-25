@@ -44,6 +44,7 @@ object LocalStackS3StorageClient {
         val conf: S3StorageConfig  = S3StorageConfig(
           digestAlgorithm = DigestAlgorithm.default,
           defaultEndpoint = Uri(localstack.endpointOverride(LocalStackS3.ServiceType).toString),
+          useDefaultCredentialProvider = false,
           defaultAccessKey = Secret(accessKey),
           defaultSecretKey = Secret(secretKey),
           defaultReadPermission = permissions.read,
