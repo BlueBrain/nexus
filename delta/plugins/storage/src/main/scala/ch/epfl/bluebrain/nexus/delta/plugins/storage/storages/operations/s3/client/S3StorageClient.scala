@@ -14,7 +14,7 @@ import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import org.apache.commons.codec.binary.Hex
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -69,9 +69,12 @@ object S3StorageClient {
   def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
     case Some(cfg) =>
       val creds =
-        StaticCredentialsProvider.create(
-          AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
-        )
+        if (cfg.useDefaultCredentialProvider) DefaultCredentialsProvider.create()
+        else {
+          StaticCredentialsProvider.create(
+            AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
+          )
+        }
       resource(URI.create(cfg.defaultEndpoint.toString()), creds)
 
     case None => Resource.pure(S3StorageClientDisabled)

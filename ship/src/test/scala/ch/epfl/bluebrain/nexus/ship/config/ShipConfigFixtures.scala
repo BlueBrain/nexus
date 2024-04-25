@@ -35,6 +35,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
     S3StorageConfig(
       DigestAlgorithm.default,
       "https://s3.us-east-1.amazonaws.com",
+      useDefaultCredentialProvider = false,
       Secret("my-key"),
       Secret("my-secret-key"),
       permissions.read,
