@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
 class FileProcessor private (
     files: Files,
@@ -51,11 +52,12 @@ class FileProcessor private (
     event match {
       case e: FileCreated               =>
         fileCopier.copyFile(e.attributes.path) >>
-          files
-            .registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
-            .flatMap(IO.println)
+          files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
       case e: FileUpdated               =>
-        fileCopier.copyFile(e.attributes.path) >> IO.unit
+        fileCopier.copyFile(e.attributes.path) >>
+          // format: off
+          files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
+          // format: on
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(FileId(e.id, project), cRev, e.metadata, e.tag)
       case _: FileAttributesUpdated     => IO.unit
@@ -72,6 +74,14 @@ class FileProcessor private (
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
       case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+      case n: NoSuchKeyException    =>
+        event match {
+          // format: off
+          case e: FileCreated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
+          case e: FileUpdated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
+          case e              => logger.error(n)(s"This error should not occur as event for file ${e.id} at rev ${e.rev} is not moving any file.").as(ImportStatus.Dropped)
+          // format: on
+        }
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
