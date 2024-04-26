@@ -24,7 +24,8 @@ final case class InputConfig(
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
     importBucket: BucketName,
-    targetBucket: BucketName
+    targetBucket: BucketName,
+    disableResourceValidation: Boolean
 )
 
 object InputConfig {

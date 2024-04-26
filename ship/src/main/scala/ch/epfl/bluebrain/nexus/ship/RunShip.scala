@@ -56,7 +56,7 @@ object RunShip {
                     remoteContextResolution     <- ContextWiring.remoteContextResolution
                     validateShacl               <- ValidateShacl(remoteContextResolution)
                     (schemaLog, fetchSchema)     = SchemaWiring(config.eventLog, eventClock, xas)
-                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, validateShacl, eventLogConfig, eventClock, xas)
+                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, validateShacl, config, eventClock, xas)
                     rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
