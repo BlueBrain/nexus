@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
 import ch.epfl.bluebrain.nexus.ship.resources.{DistributionPatcher, ResourceProcessor, ResourceWiring}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.projects.OriginalProjectContext
-import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor}
+import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor, ViewPatcher}
 import fs2.Stream
 
 object RunShip {
@@ -67,7 +67,8 @@ object RunShip {
                     distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBaseUri)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, distributionPatcher, eventClock)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
-                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
+                    viewPatcher                  = new ViewPatcher(config.projectMapping)
+                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper,viewPatcher,  eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     fileProcessor                = FileProcessor(fetchContext, s3Client, projectMapper, rcr, config, eventClock, xas)
                     // format: on
