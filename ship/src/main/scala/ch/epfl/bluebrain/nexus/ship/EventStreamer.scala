@@ -58,7 +58,7 @@ object EventStreamer {
       for {
         key   <- Stream.fromEither[IO](refineString(path.toString))
         lines <- client
-                   .readFile(bucket, FileKey(key))
+                   .readFileMultipart(bucket, FileKey(key))
                    .through(text.utf8.decode)
                    .through(text.lines)
       } yield lines
