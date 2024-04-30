@@ -62,7 +62,7 @@ object S3FileOperations {
           StreamConverter(
             client
               .readFile(bucket, URLDecoder.decode(path.toString, UTF_8.toString))
-              .groupWithin(8192, 1.second)
+              .groupWithin(81920, 1.second)
               .map(bytes => ByteString(bytes.toArray))
           )
         )
