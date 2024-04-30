@@ -74,9 +74,12 @@ class S3StorageSpec extends StorageSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    (s3Client.createBucket(CreateBucketRequest.builder.bucket(bucket).build) >> uploadLogoFileToS3(logoKey)).accepted
+    (createBucket(bucket) >> uploadLogoFileToS3(logoKey)).accepted
     ()
   }
+
+  private def createBucket(b: String): IO[CreateBucketResponse] =
+    s3Client.createBucket(CreateBucketRequest.builder.bucket(b).build)
 
   private def uploadLogoFileToS3(key: String): IO[PutObjectResponse] = s3Client.putObject(
     PutObjectRequest.builder
@@ -101,7 +104,13 @@ class S3StorageSpec extends StorageSpec {
     super.afterAll()
   }
 
-  private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
+  private def storageResponse(
+      project: String,
+      id: String,
+      expectedBucket: String,
+      readPermission: String,
+      writePermission: String
+  ) =
     jsonContentOf(
       "kg/storages/s3-response.json",
       replacements(
@@ -109,7 +118,7 @@ class S3StorageSpec extends StorageSpec {
         "id"          -> id,
         "project"     -> project,
         "self"        -> storageSelf(project, s"https://bluebrain.github.io/nexus/vocabulary/$id"),
-        "bucket"      -> bucket,
+        "bucket"      -> expectedBucket,
         "maxFileSize" -> storageConfig.maxFileSize.toString,
         "read"        -> readPermission,
         "write"       -> writePermission
@@ -132,10 +141,10 @@ class S3StorageSpec extends StorageSpec {
       "writePermission" -> Json.fromString(s"$storName/write")
     )
 
-    val expectedStorage          = storageResponse(projectRef, storId, "resources/read", "files/write")
+    val expectedStorage          = storageResponse(projectRef, storId, bucket, "resources/read", "files/write")
     val storageId2               = s"${storId}2"
     val expectedStorageWithPerms =
-      storageResponse(projectRef, storageId2, "s3/read", "s3/write")
+      storageResponse(projectRef, storageId2, bucket, "s3/read", "s3/write")
 
     for {
       _ <- storagesDsl.createStorage(payload, projectRef)
@@ -163,6 +172,23 @@ class S3StorageSpec extends StorageSpec {
         )
         response.status shouldEqual StatusCodes.BadRequest
       }
+    }
+
+    "succeed using the configured default bucket when a bucket is not provided" in {
+      val defaultBucket = "mydefaultbucket"
+      val id            = genId()
+      val payload       = jsonContentOf(
+        "kg/storages/s3.json",
+        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$id"
+      ).mapObject(_.remove("bucket"))
+
+      val expectedStorage = storageResponse(projectRef, id, defaultBucket, "resources/read", "files/write")
+
+      for {
+        _ <- createBucket(defaultBucket)
+        _ <- storagesDsl.createStorage(payload, projectRef)
+        _ <- storagesDsl.checkStorageMetadata(projectRef, id, expectedStorage)
+      } yield succeed
     }
   }
 

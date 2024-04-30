@@ -36,7 +36,9 @@ object LocalStackS3StorageClient {
       )
   }
 
-  def s3StorageClientResource(defaultBucket: String): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
+  def s3StorageClientResource(
+      defaultBucket: String
+  ): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
     LocalStackS3.localstackS3().flatMap { localstack =>
       LocalStackS3.fs2ClientFromLocalstack(localstack).map { client =>
         val creds                  = localstack.staticCredentialsProvider.resolveCredentials()
