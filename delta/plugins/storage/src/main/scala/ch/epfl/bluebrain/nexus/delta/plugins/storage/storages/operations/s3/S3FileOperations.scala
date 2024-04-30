@@ -27,7 +27,6 @@ import org.apache.commons.codec.binary.Hex
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
-import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
@@ -62,13 +61,16 @@ object S3FileOperations {
       .delay(
         Source.fromGraph(
           StreamConverter(
-            client
-              .readFileMultipart(
-                BucketName(NonEmptyString.unsafeFrom(bucket)),
-                FileKey(NonEmptyString.unsafeFrom(URLDecoder.decode(path.toString, UTF_8.toString)))
-              )
-              .groupWithin(8192, 1.second)
-              .map(bytes => ByteString(bytes.toArray))
+            fs2.Stream.eval {
+              client
+                .readFile(
+                  bucket,
+                  URLDecoder.decode(path.toString, UTF_8.toString)
+                )
+                .compile
+                .toList
+                .map(b => ByteString(b.toArray))
+            }
           )
         )
       )
