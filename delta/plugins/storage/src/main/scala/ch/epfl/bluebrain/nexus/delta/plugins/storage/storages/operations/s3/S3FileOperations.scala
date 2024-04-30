@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.clie
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import eu.timepit.refined.types.string.NonEmptyString
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import org.apache.commons.codec.binary.Hex
 
 import java.net.URLDecoder
@@ -61,7 +63,10 @@ object S3FileOperations {
         Source.fromGraph(
           StreamConverter(
             client
-              .readFile(bucket, URLDecoder.decode(path.toString, UTF_8.toString))
+              .readFileMultipart(
+                BucketName(NonEmptyString.unsafeFrom(bucket)),
+                FileKey(NonEmptyString.unsafeFrom(URLDecoder.decode(path.toString, UTF_8.toString)))
+              )
               .groupWithin(8192, 1.second)
               .map(bytes => ByteString(bytes.toArray))
           )
