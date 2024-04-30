@@ -10,12 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.ShipCommand.RunCommand
+import ch.epfl.bluebrain.nexus.ship.config.InputConfig.ProjectMapping
 import ch.epfl.bluebrain.nexus.tests.Identity.writer
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Export
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
+import fs2.io.file.Path
 import io.circe.Json
+import io.circe.optics.JsonPath.root
 import io.circe.syntax.EncoderOps
 import org.scalatest.Assertion
 
@@ -127,7 +130,7 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       thereShouldBeAView(project, esView, esViewJson)
     }
 
-    "transfer an blazegraph view" in {
+    "transfer a blazegraph view" in {
       val (project, _, _)      = thereIsAProject()
       val (bgView, bgViewJson) = thereIsABlazegraphView(project)
 
@@ -138,6 +141,25 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       weFixThePermissions(project)
 
       thereShouldBeAView(project, bgView, bgViewJson)
+    }
+
+    "transfer an aggregated blazegraph view" in {
+      val (project, _, _)          = thereIsAProject()
+      val (sourceProj1, _, _)      = thereIsAProject()
+      val (sourceProj2, _, _)      = thereIsAProject()
+      val (targetProj1, _, _)      = thereIsAProject()
+      val (targetProj2, _, _)      = thereIsAProject()
+      val (bgView, originalSource) = thereIsAnAggregateBlazegraphView(project, List(sourceProj1, sourceProj2))
+      val mapping                  = Map(sourceProj1 -> targetProj1, sourceProj2 -> targetProj2)
+      val patchedSource            = patchedAggregateViewSource(originalSource, mapping)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporterWithProjectMapping(project, mapping)
+      weFixThePermissions(project)
+
+      thereShouldBeAView(project, bgView, patchedSource)
     }
 
     "transfer a search view" in {
@@ -163,13 +185,13 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       searchView -> viewJson
     }
 
-    def thereShouldBeAView(project: ProjectRef, view: Iri, originalJson: Json): Assertion = {
+    def thereShouldBeAView(project: ProjectRef, view: Iri, expectedJson: Json): Assertion = {
       val encodedIri = UrlUtils.encode(view.toString)
       deltaClient
         .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
           {
             response.status shouldEqual StatusCodes.OK
-            json shouldEqual originalJson
+            json should equalIgnoreArrayOrder(expectedJson)
           }
         }
         .accepted
@@ -206,6 +228,32 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       }"""
       thereIsAView(project, simpleBgView)
     }
+
+    def patchedAggregateViewSource(original: Json, mapping: ProjectMapping): Json = {
+      val mapViewProjects: Json => Json =
+        root.views.each.project.string.modify(p => mapping(ProjectRef.parse(p).toOption.get).toString)
+      mapViewProjects(original)
+    }
+
+    def aggBgViewSource(projects: List[ProjectRef]): Json = {
+      val views: Json = projects
+        .map(pr => json"""
+          {
+            "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+            "project": "$pr"
+          }
+      """)
+        .asJson
+
+      json"""{
+        "@type": ["View", "AggregateSparqlView"],
+        "views": $views
+      }
+      """
+    }
+
+    def thereIsAnAggregateBlazegraphView(project: ProjectRef, viewProjects: List[ProjectRef]): (Iri, Json) =
+      thereIsAView(project, aggBgViewSource(viewProjects))
 
     def thereIsAView(project: ProjectRef, body: Json): (Iri, Json) = {
       val view        = nxv + genString()
@@ -345,11 +393,38 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       ()
     }
 
-    def weRunTheImporter(project: ProjectRef): Unit = {
+    def weRunTheImporter(project: ProjectRef): Unit =
+      weRunTheImporterWithConfig(project, None)
+
+    def weRunTheImporterWithProjectMapping(project: ProjectRef, mapping: ProjectMapping): Unit = {
+      val projectMappingConfPath = createProjectMappingConf(mapping)
+      weRunTheImporterWithConfig(project, Some(projectMappingConfPath))
+      Files.delete(projectMappingConfPath.toNioPath)
+    }
+
+    def createProjectMappingConf(mapping: ProjectMapping): Path = {
+      val confPath    = Paths.get(s"/tmp/ship-conf.conf")
+      val mappingConf = mapping.map { case (from, to) => s""" "$from": "$to" """ }.mkString("\n")
+      Files.write(
+        confPath,
+        s"""
+           |ship {
+           |  input {
+           |    project-mapping = {
+           |      $mappingConf
+           |    }
+           |  }
+           |}
+           |""".stripMargin.getBytes
+      )
+      Path.fromNioPath(confPath)
+    }
+
+    def weRunTheImporterWithConfig(project: ProjectRef, config: Option[Path]): Unit = {
       val folder     = s"/tmp/ship/${project.project.value}/"
       val folderPath = Paths.get(folder)
       val file       = Files.newDirectoryStream(folderPath, "*.json").iterator().asScala.toList.head
-      val r          = RunCommand(fs2.io.file.Path.fromNioPath(file), None, Offset.start, RunMode.Local)
+      val r          = RunCommand(Path.fromNioPath(file), config, Offset.start, RunMode.Local)
       Main.run(r).accepted
       ()
     }

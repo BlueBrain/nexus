@@ -24,6 +24,7 @@ import java.util.UUID
 class BlazegraphViewProcessor private (
     views: UUID => IO[BlazegraphViews],
     projectMapper: ProjectMapper,
+    viewPatcher: ViewPatcher,
     clock: EventClock
 ) extends EventProcessor[BlazegraphViewEvent] {
 
@@ -46,12 +47,16 @@ class BlazegraphViewProcessor private (
       case e: BlazegraphViewCreated      =>
         e.id match {
           case id if id == defaultViewId => IO.unit // the default view is created on project creation
-          case _                         => views(event.uuid).flatMap(_.create(e.id, project, e.source))
+          case _                         =>
+            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            views(event.uuid).flatMap(_.create(e.id, project, patchedSource))
         }
       case e: BlazegraphViewUpdated      =>
         e.id match {
           case id if id == defaultViewId => IO.unit
-          case _                         => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+          case _                         =>
+            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            views(event.uuid).flatMap(_.update(e.id, project, cRev, patchedSource))
         }
       case e: BlazegraphViewDeprecated   =>
         e.id match {
@@ -83,6 +88,7 @@ object BlazegraphViewProcessor {
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
+      viewPatcher: ViewPatcher,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -90,7 +96,7 @@ object BlazegraphViewProcessor {
       jsonLdApi: JsonLdApi
   ): BlazegraphViewProcessor = {
     val views = (uuid: UUID) => ViewWiring.blazegraphViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
-    new BlazegraphViewProcessor(views, projectMapper, clock)
+    new BlazegraphViewProcessor(views, projectMapper, viewPatcher, clock)
   }
 
 }
