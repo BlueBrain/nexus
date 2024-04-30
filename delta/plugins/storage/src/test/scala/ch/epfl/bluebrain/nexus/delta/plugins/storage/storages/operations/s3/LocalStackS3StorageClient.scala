@@ -36,7 +36,7 @@ object LocalStackS3StorageClient {
       )
   }
 
-  def s3StorageClientResource(): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
+  def s3StorageClientResource(defaultBucket: String): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
     LocalStackS3.localstackS3().flatMap { localstack =>
       LocalStackS3.fs2ClientFromLocalstack(localstack).map { client =>
         val creds                  = localstack.staticCredentialsProvider.resolveCredentials()
@@ -50,7 +50,8 @@ object LocalStackS3StorageClient {
           defaultReadPermission = permissions.read,
           defaultWritePermission = permissions.write,
           showLocation = false,
-          defaultMaxFileSize = 1
+          defaultMaxFileSize = 1,
+          defaultBucket = defaultBucket
         )
         (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint), client, conf)
       }
@@ -58,6 +59,6 @@ object LocalStackS3StorageClient {
 
   trait Fixture { self: CatsEffectSuite =>
     val localStackS3Client: IOFixture[(S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
-      ResourceSuiteLocalFixture("s3storageclient", s3StorageClientResource())
+      ResourceSuiteLocalFixture("s3storageclient", s3StorageClientResource(defaultBucket = ""))
   }
 }

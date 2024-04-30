@@ -19,9 +19,9 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
 
   override def munitIOTimeout: Duration = 60.seconds
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
-
   private lazy val (s3Client, fs2S3client, _) = localStackS3Client()
+
+  override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
   private val bucket                          = BucketName(NonEmptyString.unsafeFrom("bucket"))
 
   test("Default configuration should be parsed and loaded") {

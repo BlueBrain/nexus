@@ -76,7 +76,7 @@ object StorageWiring {
       name = Some(defaults.name),
       description = Some(defaults.description),
       default = true,
-      bucket = defaultBucket.value.value,
+      bucket = Some(defaultBucket.value.value),
       readPermission = Some(config.defaultReadPermission),
       writePermission = Some(config.defaultWritePermission),
       maxFileSize = Some(config.defaultMaxFileSize)

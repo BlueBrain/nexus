@@ -205,7 +205,8 @@ object StoragesConfig {
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
-      defaultMaxFileSize: Long
+      defaultMaxFileSize: Long,
+      defaultBucket: String
   ) extends StorageTypeEntryConfig
 
   /**

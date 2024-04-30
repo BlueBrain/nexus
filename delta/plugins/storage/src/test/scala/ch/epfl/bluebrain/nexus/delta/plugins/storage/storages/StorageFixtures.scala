@@ -33,7 +33,7 @@ trait StorageFixtures extends CirceLiteral {
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, "localhost", useDefaultCredentialProvider = false, Secret(MinioDocker.RootUser), Secret(MinioDocker.RootPassword),
-      permissions.read, permissions.write, showLocation = false, 60)),
+      permissions.read, permissions.write, showLocation = false, 60, defaultBucket = "potato")),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), Anonymous, permissions.read, permissions.write, showLocation = false, 70, 50.millis)),
   )
   implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation
@@ -41,7 +41,7 @@ trait StorageFixtures extends CirceLiteral {
   val diskVal           = diskFields.toValue(config).get
   val diskFieldsUpdate  = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
   val diskValUpdate     = diskFieldsUpdate.toValue(config).get
-  val s3Fields          = S3StorageFields(Some("s3name"), Some("s3description"), default = true, "mybucket", Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
+  val s3Fields          = S3StorageFields(Some("s3name"), Some("s3description"), default = true, Some("mybucket"), Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).get
   val remoteFields      = RemoteDiskStorageFields(Some("remoteName"), Some("remoteDescription"), default = true, Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
   val remoteVal         = remoteFields.toValue(config).get

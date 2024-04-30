@@ -21,14 +21,13 @@ class S3RunShipSuite
     with Doobie.Fixture
     with LocalStackS3StorageClient.Fixture
     with ShipConfigFixtures {
+  private val bucket = BucketName(NonEmptyString.unsafeFrom("bucket"))
 
   override def munitIOTimeout: Duration = 60.seconds
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest, localStackS3Client)
   private lazy val xas                           = doobieTruncateAfterTest()
   private lazy val (s3Client, fs2S3client, _)    = localStackS3Client()
-
-  private val bucket = BucketName(NonEmptyString.unsafeFrom("bucket"))
 
   test("Run import from S3 providing a single file") {
     val importFilePath = Path("/import/import.json")
