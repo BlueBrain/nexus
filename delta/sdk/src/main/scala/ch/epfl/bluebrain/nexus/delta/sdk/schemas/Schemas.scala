@@ -272,7 +272,7 @@ object Schemas {
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
         report <- shaclValidation(id, expanded)
-        result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
+        result <- IO.raiseWhen(!report.conformsWithTargetedNodes)(InvalidSchema(id, report))
       } yield result
 
     def create(c: CreateSchema) =

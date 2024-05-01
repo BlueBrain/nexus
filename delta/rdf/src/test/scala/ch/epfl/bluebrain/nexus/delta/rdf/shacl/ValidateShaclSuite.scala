@@ -27,7 +27,7 @@ class ValidateShaclSuite extends NexusSuite {
   private def toGraph(json: Json) = ExpandedJsonLd(json).map(_.toGraph).rethrow
 
   test("Validate data from schema model") {
-    shaclValidation(dataGraph, schemaGraph, reportDetails = true).assert(_.isValid())
+    shaclValidation(dataGraph, schemaGraph, reportDetails = true).assert(_.conformsWithTargetedNodes)
   }
 
   test("Fail validating data if not matching nodes") {
@@ -35,7 +35,7 @@ class ValidateShaclSuite extends NexusSuite {
     for {
       resourceGraph <- toGraph(dataChangedType)
       _             <- shaclValidation(resourceGraph, schemaGraph, reportDetails = true).assert { report =>
-                         !report.isValid() && report.targetedNodes == 0
+                         !report.conformsWithTargetedNodes && report.targetedNodes == 0
                        }
     } yield ()
   }
@@ -51,14 +51,14 @@ class ValidateShaclSuite extends NexusSuite {
   }
 
   test("Validate shapes") {
-    shaclValidation(schemaGraph, reportDetails = true).assert(_.isValid())
+    shaclValidation(schemaGraph, reportDetails = true).assert(_.conformsWithTargetedNodes)
   }
 
   test("Fail validating shapes if unexpected field value") {
     val wrongSchema = schema.replace("minCount" -> 1, "wrong")
     for {
       wrongGraph <- toGraph(wrongSchema)
-      _          <- shaclValidation(wrongGraph, reportDetails = true).assert(_.isValid() == false)
+      _          <- shaclValidation(wrongGraph, reportDetails = true).assert(_.conformsWithTargetedNodes == false)
     } yield ()
   }
 

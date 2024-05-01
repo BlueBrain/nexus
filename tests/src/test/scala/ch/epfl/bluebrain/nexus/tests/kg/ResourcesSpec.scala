@@ -107,7 +107,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         _ <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1", Json.obj(), Rick) {
                (json, response) =>
                  response.status shouldEqual StatusCodes.BadRequest
-                 json should have(`@type`("InvalidResource"))
+                 json should have(`@type`("NoTargetedNode"))
              }
       } yield succeed
     }

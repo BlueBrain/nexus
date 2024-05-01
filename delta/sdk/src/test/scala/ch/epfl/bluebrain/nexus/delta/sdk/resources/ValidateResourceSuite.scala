@@ -66,18 +66,19 @@ class ValidateResourceSuite extends NexusSuite {
   private val schemaResolution: ResourceResolution[Schema]             =
     ResourceResolutionGen.singleInProject(project, fetchSchema)
 
-  private def sourceWithId(id: Iri)                                   =
-    loader.jsonContentOf("resources/resource.json", "id" -> id)
+  private def sourceWithId(id: Iri, patch: Json => Json) =
+    loader.jsonContentOf("resources/resource.json", "id" -> id).map(patch)
 
-  private def jsonLdWithId(id: Iri, source: Json): IO[JsonLdAssembly] =
+  private def jsonLdWithId(id: Iri, patchSource: Json => Json): IO[JsonLdAssembly] = {
     for {
-      expanded <- ExpandedJsonLd(source)
-      graph    <- IO.fromEither(expanded.toGraph)
-    } yield JsonLdAssembly(id, source, CompactedJsonLd.empty, expanded, graph, Set.empty)
-
-  private def jsonLdWithId(id: Iri): IO[JsonLdAssembly] = sourceWithId(id).flatMap { source =>
-    jsonLdWithId(id, source)
+      patchedSource <- sourceWithId(id, patchSource)
+      expanded      <- ExpandedJsonLd(patchedSource)
+      graph         <- IO.fromEither(expanded.toGraph)
+    } yield JsonLdAssembly(id, patchedSource, CompactedJsonLd.empty, expanded, graph, Set.empty)
   }
+
+  private val validResourceId = nxv + "valid"
+  private val validResource   = jsonLdWithId(validResourceId, identity)
 
   private val validateResource = ValidateResource(schemaResolution, ValidateShacl(rcr).accepted)
 
@@ -89,9 +90,8 @@ class ValidateResourceSuite extends NexusSuite {
   }
 
   test("Validate a resource with the appropriate schema") {
-    val id = nxv + "valid"
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       result     <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
     } yield {
@@ -100,9 +100,8 @@ class ValidateResourceSuite extends NexusSuite {
   }
 
   test("Validate a resource with no schema and no schema enforcement is enabled") {
-    val id = nxv + "valid"
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, unconstrained, caller)
       result     <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
     } yield {
@@ -113,7 +112,7 @@ class ValidateResourceSuite extends NexusSuite {
   test("Reject a resource when the id starts with a reserved prefix") {
     val id = contexts.base / "fail"
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- jsonLdWithId(id, identity)
       schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
                       .interceptEquals(ReservedResourceId(id))
@@ -121,16 +120,14 @@ class ValidateResourceSuite extends NexusSuite {
   }
 
   test("Reject a resource with no schema and schema enforcement is enabled") {
-    val id = nxv + "valid"
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, unconstrained, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(SchemaIsMandatory(project))
     } yield ()
   }
 
   test("Reject a resource when schema is not found") {
-    val id            = nxv + "valid"
     val unknownSchema = Latest(nxv + "not-found")
     val expectedError = InvalidSchemaRejection(
       unknownSchema,
@@ -143,16 +140,15 @@ class ValidateResourceSuite extends NexusSuite {
       )
     )
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, unknownSchema, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(expectedError)
     } yield ()
   }
 
   test("Reject a resource when the resolved schema is deprecated") {
-    val id = nxv + "valid"
     for {
-      jsonLd     <- jsonLdWithId(id)
+      jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, deprecatedSchemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(
                       SchemaIsDeprecated(deprecatedSchemaId)
@@ -160,13 +156,19 @@ class ValidateResourceSuite extends NexusSuite {
     } yield ()
   }
 
-  test("Reject a resource when it can't be validated by the default schema") {
-    val id = nxv + "valid"
+  test("Reject a resource when it can't be validated by the provided schema") {
     for {
-      source     <- sourceWithId(id).map(_.removeKeys("name"))
-      jsonLd     <- jsonLdWithId(id, source)
+      jsonLd     <- jsonLdWithId(validResourceId, _.removeKeys("name"))
       schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).intercept[InvalidResource]
+    } yield ()
+  }
+
+  test("Reject a resource when it can't be targeted by the provided schema") {
+    for {
+      jsonLd     <- jsonLdWithId(validResourceId, _.replaceKeyWithValue("@type", "nxv:Another"))
+      schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
+      _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).intercept[NoTargetedNode]
     } yield ()
   }
 
