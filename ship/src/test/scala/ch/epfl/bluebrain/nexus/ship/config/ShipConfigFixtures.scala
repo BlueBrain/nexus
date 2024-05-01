@@ -31,6 +31,9 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
     ServiceAccount(User("internal", Label.unsafe("sa")))
   )
 
+  private val importBucket = BucketName(NonEmptyString.unsafeFrom("nexus-ship-production"))
+  private val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
+
   private val amazonConfig: S3StorageConfig =
     S3StorageConfig(
       DigestAlgorithm.default,
@@ -41,11 +44,9 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       permissions.read,
       files.permissions.write,
       showLocation = true,
-      10737418240L
+      10737418240L,
+      defaultBucket = targetBucket.value.value
     )
-
-  private val importBucket = BucketName(NonEmptyString.unsafeFrom("nexus-ship-production"))
-  private val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
 
   def inputConfig: InputConfig =
     InputConfig(

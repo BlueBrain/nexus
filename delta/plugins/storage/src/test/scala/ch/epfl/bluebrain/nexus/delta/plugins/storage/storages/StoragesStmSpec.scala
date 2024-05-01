@@ -37,7 +37,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
     case disk: DiskStorageValue         =>
       IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible("wrong volume")))
     case s3: S3StorageValue             =>
-      IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible("wrong bucket")))
+      IO.whenA(!s3Fields.bucket.contains(s3.bucket))(IO.raiseError(StorageNotAccessible("wrong bucket")))
     case remote: RemoteDiskStorageValue =>
       IO.whenA(remote.folder != remoteFields.folder)(
         IO.raiseError(StorageNotAccessible("Folder does not exist"))
@@ -106,7 +106,7 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
         val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
         val inaccessibleDiskVal   =
           diskFields.copy(volume = Some(AbsolutePath(Files.createTempDirectory("other")).rightValue))
-        val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
+        val inaccessibleS3Val     = s3Fields.copy(bucket = Some("other"))
         val inaccessibleRemoteVal = remoteFields.copy(folder = Label.unsafe("xxx"))
         val diskCurrent           = storageState(dId, project, diskVal)
         val s3Current             = storageState(s3Id, project, s3Val)

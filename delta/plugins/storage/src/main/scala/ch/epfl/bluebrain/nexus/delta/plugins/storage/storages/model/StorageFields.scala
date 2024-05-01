@@ -136,7 +136,7 @@ object StorageFields {
       name: Option[String],
       description: Option[String],
       default: Boolean,
-      bucket: String,
+      bucket: Option[String],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -152,7 +152,7 @@ object StorageFields {
           description,
           default,
           cfg.digestAlgorithm,
-          bucket,
+          bucket.getOrElse(cfg.defaultBucket),
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
           computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
