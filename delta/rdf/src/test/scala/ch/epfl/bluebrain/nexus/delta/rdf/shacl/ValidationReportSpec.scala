@@ -39,7 +39,7 @@ class ValidationReportSpec extends CatsEffectSpec {
       val report = ValidationReport(resource(failed)).accepted
       report.conforms shouldEqual false
       report.targetedNodes shouldEqual 1
-      report.isValid() shouldEqual false
+      report.conformsWithTargetedNodes shouldEqual false
       val array  = report.json.hcursor.downField("result").downField("detail").focus.flatMap(_.asArray).value
       array.map(_.hcursor.get[String]("resultMessage").rightValue).sorted shouldEqual Vector(
         "Focus node has 2^^http://www.w3.org/2001/XMLSchema#integer of the shapes from the 'exactly one' list",

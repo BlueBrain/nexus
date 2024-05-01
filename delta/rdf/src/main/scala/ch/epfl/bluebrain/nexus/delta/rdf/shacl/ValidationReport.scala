@@ -24,14 +24,9 @@ import org.apache.jena.rdf.model.Resource
   */
 final case class ValidationReport private (conforms: Boolean, targetedNodes: Int, json: Json) {
 
-  /**
-    * @param ignoreTargetedNodes
-    *   flag to decide whether or not ''targetedNodes'' should be ignored from the validation logic
-    * @return
-    *   true if the validation report has been successful or false otherwise
-    */
-  def isValid(ignoreTargetedNodes: Boolean = false): Boolean =
-    (ignoreTargetedNodes && conforms) || (!ignoreTargetedNodes && targetedNodes > 0 && conforms)
+  def withTargetedNodes: Boolean = targetedNodes > 0
+
+  def conformsWithTargetedNodes: Boolean = conforms && withTargetedNodes
 }
 
 object ValidationReport {
