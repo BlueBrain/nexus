@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.kamonComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.SubmitOnDefinedSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, NoTargetedNode, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
@@ -70,7 +70,8 @@ object ValidateResource {
         val schemaRef = ResourceRef.Revision(schema.id, schema.rev)
         for {
           report <- shaclValidate(jsonld, schemaRef, schema)
-          _      <- IO.raiseWhen(!report.isValid())(InvalidResource(jsonld.id, schemaRef, report, jsonld.expanded))
+          _      <- IO.raiseUnless(report.conforms)(InvalidResource(jsonld.id, schemaRef, report, jsonld.expanded))
+          _      <- IO.raiseUnless(report.withTargetedNodes)(NoTargetedNode(jsonld.id, schemaRef, jsonld.expanded))
         } yield Validated(schema.value.project, ResourceRef.Revision(schema.id, schema.rev), report)
       }
 
