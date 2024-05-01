@@ -1,0 +1,86 @@
+{
+  "@context": "https://neuroshapes.org",
+  "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/core/brainregion_slim",
+  "@type": "Ontology",
+  "defines": [
+    {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/170",
+      "@type": "Class",
+      "label": "Dorsal part of the lateral geniculate complex",
+      "subClassOf": [
+        "https://neuroshapes.org/BrainRegion"
+      ]
+    },
+    {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/943",
+      "@type": "Class",
+      "label": "Primary motor area, layer 2/3",
+      "subClassOf": [
+        "https://neuroshapes.org/BrainRegion"
+      ]
+    }
+  ],
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "store": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault"
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 399195
+      },
+      "contentUrl": "https://staging.nise.bbp.epfl.ch/nexus/v1/files/neurosciencegraph/datamodels/https:%2F%2Fstaging.nise.bbp.epfl.ch%2Fnexus%2Fv1%2Fresources%2Fneurosciencegraph%2Fdatamodels%2F_%2Fac2a5821-5599-4af0-bad5-61f7251ee33a",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "d4fc6409147bb7f26554b09845e155abb0ce4c817ccdd6eff2b7478e1d3a8a3a"
+      },
+      "encodingFormat": "text/turtle",
+      "name": "brainregion_slim.ttl"
+    },
+    {
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "store": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault"
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 362473
+      },
+      "contentUrl": "https://staging.nise.bbp.epfl.ch/nexus/v1/files/neurosciencegraph/datamodels/https:%2F%2Fstaging.nise.bbp.epfl.ch%2Fnexus%2Fv1%2Fresources%2Fneurosciencegraph%2Fdatamodels%2F_%2Fc9fdedef-5d10-4351-8998-68e7f267edaf",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "e491abe85781d01264806c1e712824ab4b48a4298c4d9ad27b6561ff410d9a1a"
+      },
+      "encodingFormat": "application/ld+json",
+      "name": "brainregion_slim.json"
+    },
+    {
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "store": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault"
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 270627
+      },
+      "contentUrl": "https://staging.nise.bbp.epfl.ch/nexus/v1/files/neurosciencegraph/datamodels/https:%2F%2Fstaging.nise.bbp.epfl.ch%2Fnexus%2Fv1%2Fresources%2Fneurosciencegraph%2Fdatamodels%2F_%2F912239fa-cb94-4e27-a65f-8b662446d229",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "1e2090d7311a05dfffccdf136ce10f688b90810707a0e797224062c6d227f56a"
+      },
+      "encodingFormat": "text/csv",
+      "name": "brainregion_slim.csv"
+    }
+  ],
+  "label": "Brain Region Ontology"
+}

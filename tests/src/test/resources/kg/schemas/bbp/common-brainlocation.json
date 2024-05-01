@@ -232,7 +232,8 @@
   "imports": [
     "nsg:commons/quantitativevalue",
     "nsg:commons/typedlabeledontologyterm",
-    "nsg:commons/vector3d"
+    "nsg:commons/vector3d",
+    "http://bbp.epfl.ch/neurosciencegraph/ontologies/core/brainregion_slim"
   ],
   "label": "Brain Location Schema",
   "shapes": [
@@ -338,7 +339,12 @@
           "description": "Brain region region (e.g. layer of the neocortex)",
           "name": "Brain region layer",
           "node": "nsg:commons/typedlabeledontologyterm/shapes/BrainRegionOntologyTermShape",
-          "path": "nsg:layer"
+          "path": "nsg:layer",
+          "sh:sparql": {
+            "@type": "sh:SPARQLConstraint",
+            "sh:message": "Layers should be defined in the Brain Region Ontology and be subClassOf nsg:BrainLayer",
+            "sh:select": "SELECT $this ?value \n WHERE {\n $this $PATH ?value. \n  FILTER NOT EXISTS {<http://bbp.epfl.ch/neurosciencegraph/ontologies/core/brainregion_slim> <https://neuroshapes.org/defines>  ?value . \n ?value <http://www.w3.org/2000/01/rdf-schema#subClassOf> <https://neuroshapes.org/BrainLayer> }.\n}"
+          }
         },
         {
           "in": [
@@ -354,7 +360,12 @@
           "name": "Brain region",
           "node": "nsg:commons/typedlabeledontologyterm/shapes/BrainRegionOntologyTermShape",
           "path": "nsg:brainRegion",
-          "sh:minCount": 1
+          "sh:minCount": 1,
+          "sh:sparql": {
+            "@type": "sh:SPARQLConstraint",
+            "sh:message": "Brain Regions should be defined in the Brain Region Ontology",
+            "sh:select": "SELECT $this ?value \n WHERE {\n $this $PATH ?value. \n  FILTER NOT EXISTS {<http://bbp.epfl.ch/neurosciencegraph/ontologies/core/brainregion_slim> <https://neuroshapes.org/defines>  ?value . \n ?value <http://www.w3.org/2000/01/rdf-schema#subClassOf> <https://neuroshapes.org/BrainRegion>}.\n}"
+          }
         },
         {
           "description": "Position in layer (deep / superficial)",

@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg.resources
 
+import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob
 import io.circe.Json
+import io.circe.optics.JsonPath.root
+import io.circe.syntax.KeyOps
 import org.scalatest.Assertion
 
 class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
@@ -18,8 +21,9 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
   // Dataset is a complex shape most of our models inherits from so it is worth to be tested on its own
   private val neuronMorphologyDatasetSample = "kg/schemas/bbp/sample-neuronmorphology-dataset.json"
 
-  private val noSchema               = "_"
-  private val neuronMorphologySchema = UrlUtils.encode("https://neuroshapes.org/dash/neuronmorphology")
+  private val noSchema                      = "_"
+  private val neuronMorphologySchema        = "https://neuroshapes.org/dash/neuronmorphology"
+  private val encodedNeuronMorphologySchema = UrlUtils.encode(neuronMorphologySchema)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -29,6 +33,7 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
       _ <- postResource("kg/context/neuroshapes.json")
       _ <- postResource("kg/context/bbp-neuroshapes.json")
       _ <- postResource("kg/schemas/bbp/schema-context.json")
+      _ <- postResource("kg/schemas/bbp/brain-region-ontology.json")
     } yield ()
     setup.accepted
   }
@@ -74,13 +79,16 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
       }
 
       s"succeed creating the $prefix with a schema" in {
-        putResource(s"$prefix-with-schema", neuronMorphologySchema, file)
+        putResource(s"$prefix-with-schema", encodedNeuronMorphologySchema, file)
       }
 
       s"succeed updating the $prefix with a schema" in {
-        putResource(s"$prefix-with-schema", 1, neuronMorphologySchema, file)
+        putResource(s"$prefix-with-schema", 1, encodedNeuronMorphologySchema, file)
       }
 
+      s"succeed generating the $prefix with the trial endpoint" in {
+        trialResource(neuronMorphologySchema, file)
+      }
     }
 
   }
@@ -103,7 +111,20 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
         expectOk
       }
     }
-  private def postSchema(schemaPath: String)                                                         =
+
+  private def trialResource(schema: String, resourcePath: String) =
+    loader.jsonContentOf(resourcePath).flatMap { resourcePayload =>
+      val trialPayload = Json.obj(
+        "schema"   := schema,
+        "resource" := resourcePayload
+      )
+      deltaClient.post[Json](s"/trial/resources/$project/", trialPayload, Bob) { case (json, response) =>
+        root.result.obj.getOption(json) shouldBe defined
+        response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+  private def postSchema(schemaPath: String) =
     loader.jsonContentOf(schemaPath).flatMap { payload =>
       deltaClient.post[Json](s"/schemas/$project", payload, Bob) { expectCreated }
     }
