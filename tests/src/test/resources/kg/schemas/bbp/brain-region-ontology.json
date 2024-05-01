@@ -1,0 +1,24 @@
+{
+  "@context": "https://neuroshapes.org",
+  "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/core/brainregion_slim",
+  "@type": "Ontology",
+  "defines": [
+    {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/170",
+      "@type": "Class",
+      "label": "Dorsal part of the lateral geniculate complex",
+      "subClassOf": [
+        "https://neuroshapes.org/BrainRegion"
+      ]
+    },
+    {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/943",
+      "@type": "Class",
+      "label": "Primary motor area, layer 2/3",
+      "subClassOf": [
+        "https://neuroshapes.org/BrainRegion"
+      ]
+    }
+  ],
+  "label": "Brain Region Ontology"
+}

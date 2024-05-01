@@ -104,7 +104,7 @@ class ResourcesTrialSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         resultId(json) shouldBe empty
         schema(json).value shouldBe newSchemaId
-        errorType(json).value shouldEqual "InvalidResource"
+        errorType(json).value shouldEqual "NoTargetedNode"
       }
     }
   }

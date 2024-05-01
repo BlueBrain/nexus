@@ -106,7 +106,7 @@ object ResourceRejection {
 
   /**
     * Rejection returned when attempting to create/update a resource where the payload does not satisfy the SHACL schema
-    * constrains.
+    * constraints.
     *
     * @param id
     *   the resource identifier
@@ -119,6 +119,27 @@ object ResourceRejection {
       extends ResourceRejection(
         s"Resource '$id' failed to validate against the constraints defined in schema '$schema'"
       )
+
+  /**
+    * Rejection returned when attempting to create/update a resource when no target could be produced for the resource
+    * for the given schema.
+    *
+    * @param id
+    *   the resource identifier
+    * @param schema
+    *   the schema for which validation failed
+    */
+  final case class NoTargetedNode(id: Iri, schema: ResourceRef, expanded: ExpandedJsonLd)
+      extends ResourceRejection(
+        s"No target node could be produced for resource '$id' with schema '$schema'."
+      ) {
+    val details: String =
+      s"""
+        |In the case of class-based targets, make sure that it defines one of the following types:
+        |${expanded.getTypes.getOrElse(Set.empty).mkString(",")}
+        |See https://www.w3.org/TR/shacl/#targets for more details
+        |""".stripMargin
+  }
 
   /**
     * Rejection returned when attempting to resolve ''schemaRef'' using resolvers on project ''projectRef''
@@ -218,6 +239,7 @@ object ResourceRejection {
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
         case InvalidSchemaRejection(_, _, report)      =>
           obj.addContext(contexts.resolvers).add("report", report.asJson)
+        case n: NoTargetedNode                         => obj.add("details", n.details.asJson)
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                         => obj
       }
