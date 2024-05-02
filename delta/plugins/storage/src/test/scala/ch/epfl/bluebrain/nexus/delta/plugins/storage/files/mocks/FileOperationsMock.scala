@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientDisabled
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.S3StorageClientDisabled
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 object FileOperationsMock {
@@ -27,7 +27,7 @@ object FileOperationsMock {
     FileOperations.mk(
       DiskFileOperations.mk,
       RemoteDiskFileOperations.mk(RemoteDiskStorageClientDisabled),
-      S3FileOperations.mk(S3StorageClientDisabled)
+      S3FileOperations.mk(S3StorageClient.disabled)
     )
 
   def unimplemented: FileOperations = new FileOperations {
