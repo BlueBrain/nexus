@@ -54,7 +54,7 @@ object LocalStackS3StorageClient {
           defaultMaxFileSize = 1,
           defaultBucket = defaultBucket
         )
-        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint), client, conf)
+        (S3StorageClient.unsafe(client, conf.defaultEndpoint), client, conf)
       }
     }
 
