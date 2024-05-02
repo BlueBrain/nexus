@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.interop.reactivestreams.PublisherOps
 import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
@@ -35,10 +34,10 @@ trait S3StorageClient {
   def headObject(bucket: String, key: String): IO[HeadObject]
 
   def copyObject(
-      sourceBucket: BucketName,
-      sourceKey: FileKey,
-      destinationBucket: BucketName,
-      destinationKey: FileKey,
+      sourceBucket: String,
+      sourceKey: String,
+      destinationBucket: String,
+      destinationKey: String,
       checksumAlgorithm: ChecksumAlgorithm
   ): IO[CopyObjectResponse]
 
@@ -133,19 +132,19 @@ object S3StorageClient {
         )
 
     override def copyObject(
-        sourceBucket: BucketName,
-        sourceKey: FileKey,
-        destinationBucket: BucketName,
-        destinationKey: FileKey,
+        sourceBucket: String,
+        sourceKey: String,
+        destinationBucket: String,
+        destinationKey: String,
         checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] =
       client.copyObject(
         CopyObjectRequest
           .builder()
-          .sourceBucket(sourceBucket.value.value)
-          .sourceKey(sourceKey.value.value)
-          .destinationBucket(destinationBucket.value.value)
-          .destinationKey(destinationKey.value.value)
+          .sourceBucket(sourceBucket)
+          .sourceKey(sourceKey)
+          .destinationBucket(destinationBucket)
+          .destinationKey(destinationKey)
           .checksumAlgorithm(checksumAlgorithm)
           .build()
       )
@@ -259,10 +258,10 @@ object S3StorageClient {
     override def baseEndpoint: Uri = throw disabledErr
 
     override def copyObject(
-        sourceBucket: BucketName,
-        sourceKey: FileKey,
-        destinationBucket: BucketName,
-        destinationKey: FileKey,
+        sourceBucket: String,
+        sourceKey: String,
+        destinationBucket: String,
+        destinationKey: String,
         checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] = raiseDisabledErr
 

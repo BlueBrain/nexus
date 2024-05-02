@@ -11,8 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
-import eu.timepit.refined.types.string.NonEmptyString
-import fs2.aws.s3.models.Models.BucketName
 
 trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with ClasspathResources {
 
@@ -31,8 +29,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
     ServiceAccount(User("internal", Label.unsafe("sa")))
   )
 
-  private val importBucket = BucketName(NonEmptyString.unsafeFrom("nexus-ship-production"))
-  private val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
+  private val importBucket = "nexus-ship-production"
+  private val targetBucket = "nexus-delta-production"
 
   private val amazonConfig: S3StorageConfig =
     S3StorageConfig(
@@ -45,7 +43,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       files.permissions.write,
       showLocation = true,
       10737418240L,
-      defaultBucket = targetBucket.value.value
+      defaultBucket = targetBucket
     )
 
   def inputConfig: InputConfig =
