@@ -21,7 +21,7 @@ class S3RunShipSuite
     with Doobie.Fixture
     with LocalStackS3StorageClient.Fixture
     with ShipConfigFixtures {
-  private val bucket = BucketName(NonEmptyString.unsafeFrom("bucket"))
+  private val bucket = "bucket"
 
   override def munitIOTimeout: Duration = 60.seconds
 
@@ -48,10 +48,10 @@ class S3RunShipSuite
 
     {
       for {
-        _     <- uploadFileToS3(fs2S3client, importBucket, importFilePath)
-        _     <- uploadFileToS3(fs2S3client, importBucket, gif)
-        _     <- createBucket(fs2S3client, targetBucket)
-        events = EventStreamer.s3eventStreamer(s3Client, importBucket).stream(importFilePath, Offset.start)
+        _     <- uploadFileToS3(fs2S3client, importBucket.value.value, importFilePath)
+        _     <- uploadFileToS3(fs2S3client, importBucket.value.value, gif)
+        _     <- createBucket(fs2S3client, targetBucket.value.value)
+        events = EventStreamer.s3eventStreamer(s3Client, importBucket.value.value).stream(importFilePath, Offset.start)
         _     <- RunShip(events, s3Client, shipConfig, xas).map(_.progress(EntityType("file")).success == 1L)
         _     <- fs2S3client.getObjectAttributes(
                    GetObjectAttributesRequest

@@ -2,16 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Ref, Resource}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import eu.timepit.refined.refineMV
-import fs2.aws.s3.S3
-import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
+import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.interop.reactivestreams.PublisherOps
 import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
@@ -31,14 +28,9 @@ import java.util.concurrent.CompletableFuture
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
-  def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response]
+  def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response]
 
-  final def readFile(bucket: String, fileKey: String): Stream[IO, Byte] =
-    (Stream.eval(parseBucket(bucket)), Stream.eval(parseFileKey(fileKey))).flatMapN(readFile)
-
-  def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
-
-  def readFileMultipart(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte]
+  def readFile(bucket: String, fileKey: String): Stream[IO, Byte]
 
   def headObject(bucket: String, key: String): IO[HeadObject]
 
@@ -103,31 +95,25 @@ object S3StorageClient {
 
   final class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri, val prefix: Uri)
       extends S3StorageClient {
-    private val s3: S3[IO]           = S3.create(client)
-    private val PartSize: PartSizeMB = refineMV(5)
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
 
-    override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] =
-      client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(prefix).build())
+    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
+      client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
 
-    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = {
+    override def readFile(bucket: String, fileKey: String): Stream[IO, Byte] = {
       Stream
         .eval(client.getObject(getObjectRequest(bucket, fileKey), fs2StreamAsyncResponseTransformer))
         .flatMap(_.toStreamBuffered[IO](2).flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))))
     }
 
-    private def getObjectRequest(bucket: BucketName, fileKey: FileKey) = {
+    private def getObjectRequest(bucket: String, fileKey: String) = {
       GetObjectRequest
         .builder()
-        .bucket(bucket.value.value)
-        .key(fileKey.value.value)
+        .bucket(bucket)
+        .key(fileKey)
         .build()
-    }
-
-    override def readFileMultipart(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = {
-      s3.readFileMultipart(bucket, fileKey, PartSize)
     }
 
     override def headObject(bucket: String, key: String): IO[HeadObject] =
@@ -267,12 +253,9 @@ object S3StorageClient {
 
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-    override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
+    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
-
-    override def readFileMultipart(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
-      Stream.raiseError[IO](disabledErr)
+    override def readFile(bucket: String, fileKey: String): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
 
     override def headObject(bucket: String, key: String): IO[HeadObject] = raiseDisabledErr
 

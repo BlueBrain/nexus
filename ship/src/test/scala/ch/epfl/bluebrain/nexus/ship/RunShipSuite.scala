@@ -106,10 +106,10 @@ object RunShipSuite {
     override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
       IO.raiseError(new NotImplementedError("listObjectsV2 is not implemented"))
 
-    override def listObjectsV2(bucket: Models.BucketName, prefix: String): IO[ListObjectsV2Response] =
+    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
       IO.raiseError(new NotImplementedError("listObjectsV2 is not implemented"))
 
-    override def readFile(bucket: Models.BucketName, fileKey: Models.FileKey): fs2.Stream[IO, Byte] =
+    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
       fs2.Stream.empty
 
     override def headObject(bucket: String, key: String): IO[HeadObject] =
@@ -139,9 +139,6 @@ object RunShipSuite {
 
     override def bucketExists(bucket: String): IO[Boolean] =
       IO.raiseError(new NotImplementedError("bucketExists is not implemented"))
-
-    override def readFileMultipart(bucket: Models.BucketName, fileKey: Models.FileKey): fs2.Stream[IO, Byte] =
-      fs2.Stream.empty
 
     override def prefix: Uri = throw new NotImplementedError("prefix is not implemented")
   }
