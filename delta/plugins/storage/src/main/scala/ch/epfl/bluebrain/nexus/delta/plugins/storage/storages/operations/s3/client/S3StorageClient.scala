@@ -57,6 +57,8 @@ trait S3StorageClient {
   def bucketExists(bucket: String): IO[Boolean]
 
   def baseEndpoint: Uri
+
+  def prefix: Uri
 }
 
 object S3StorageClient {
@@ -78,12 +80,12 @@ object S3StorageClient {
             AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
           )
         }
-      resource(URI.create(cfg.defaultEndpoint.toString()), creds)
+      resource(URI.create(cfg.defaultEndpoint.toString()), cfg.prefix, creds)
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
 
-  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
+  def resource(endpoint: URI, prefix: Uri, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
     Interpreter[IO]
       .S3AsyncClientOpResource(
         S3AsyncClient
@@ -93,9 +95,10 @@ object S3StorageClient {
           .forcePathStyle(true)
           .region(Region.US_EAST_1)
       )
-      .map(new S3StorageClientImpl(_, endpoint.toString))
+      .map(new S3StorageClientImpl(_, endpoint.toString, prefix.toString))
 
-  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri) extends S3StorageClient {
+  final class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri, val prefix: Uri)
+      extends S3StorageClient {
     private val s3: S3[IO]           = S3.create(client)
     private val PartSize: PartSizeMB = refineMV(5)
 
@@ -257,6 +260,8 @@ object S3StorageClient {
     ): IO[UploadMetadata] = raiseDisabledErr
 
     override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
+
+    override def prefix: Uri = throw disabledErr
   }
 
   implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
