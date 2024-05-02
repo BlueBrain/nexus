@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
 import ch.epfl.bluebrain.nexus.testkit.minio.LocalStackS3
-import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.CatsEffectSuite
@@ -21,15 +20,15 @@ import java.nio.file.Paths
 object LocalStackS3StorageClient {
   val ServiceType = Service.S3
 
-  def createBucket(s3Client: S3AsyncClientOp[IO], bucket: BucketName) =
-    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket.value.value).build)
+  def createBucket(s3Client: S3AsyncClientOp[IO], bucket: String) =
+    s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build)
 
-  def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: BucketName, path: Path): IO[PutObjectResponse] = {
+  def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: String, path: Path): IO[PutObjectResponse] = {
     val absoluteResourcePath = if (path.isAbsolute) path else Path("/" + path.toString)
     createBucket(s3Client, bucket) >>
       s3Client.putObject(
         PutObjectRequest.builder
-          .bucket(bucket.value.value)
+          .bucket(bucket)
           .key(path.toString)
           .build,
         Paths.get(getClass.getResource(absoluteResourcePath.toString).toURI)
