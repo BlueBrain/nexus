@@ -51,13 +51,11 @@ class S3FileOperationsSuite
     Hex.encodeHexString(MessageDigest.getInstance(algorithm.value).digest(content.getBytes(StandardCharsets.UTF_8)))
   }
 
-  private def expectedPath(proj: ProjectRef, filename: String): String = {
-    s"${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
-  }
+  private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
+    Uri.Path(s"${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
 
-  private def expectedLocation(bucket: String, proj: ProjectRef, filename: String): String = {
+  private def expectedLocation(bucket: String, proj: ProjectRef, filename: String): Uri =
     s"${conf.defaultEndpoint}/$bucket/${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
-  }
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>
@@ -96,7 +94,7 @@ class S3FileOperationsSuite
           ComputedDigest(DigestAlgorithm.default, hashOfContent),
           FileAttributesOrigin.Client,
           expectedLocation(bucket, project, filename),
-          Uri.Path(expectedPath(project, filename))
+          expectedPath(project, filename)
         )
 
       val result = for {

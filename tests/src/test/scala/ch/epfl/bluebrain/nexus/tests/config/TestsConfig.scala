@@ -12,4 +12,4 @@ case class TestsConfig(deltaUri: Uri, realmUri: Uri, patience: FiniteDuration, c
 
 final case class StorageConfig(s3: S3Config, maxFileSize: Long)
 
-final case class S3Config(accessKey: Option[String], secretKey: Option[String])
+final case class S3Config(accessKey: Option[String], secretKey: Option[String], prefix: String)
