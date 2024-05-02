@@ -12,17 +12,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import eu.timepit.refined.refineMV
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
+import fs2.interop.reactivestreams.PublisherOps
 import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import org.apache.commons.codec.binary.Hex
+import org.reactivestreams.Publisher
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
-import software.amazon.awssdk.core.async.AsyncRequestBody
+import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer, SdkPublisher}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
+import java.nio.ByteBuffer
 import java.util.Base64
+import java.util.concurrent.CompletableFuture
 
 trait S3StorageClient {
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
@@ -108,11 +112,23 @@ object S3StorageClient {
     override def listObjectsV2(bucket: BucketName, prefix: String): IO[ListObjectsV2Response] =
       client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket.value.value).prefix(prefix).build())
 
-    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
-      s3.readFile(bucket, fileKey)
+    override def readFile(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = {
+      Stream
+        .eval(client.getObject(getObjectRequest(bucket, fileKey), fs2StreamAsyncResponseTransformer))
+        .flatMap(_.toStreamBuffered[IO](2).flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))))
+    }
 
-    override def readFileMultipart(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] =
+    private def getObjectRequest(bucket: BucketName, fileKey: FileKey) = {
+      GetObjectRequest
+        .builder()
+        .bucket(bucket.value.value)
+        .key(fileKey.value.value)
+        .build()
+    }
+
+    override def readFileMultipart(bucket: BucketName, fileKey: FileKey): Stream[IO, Byte] = {
       s3.readFileMultipart(bucket, fileKey, PartSize)
+    }
 
     override def headObject(bucket: String, key: String): IO[HeadObject] =
       client
@@ -222,6 +238,26 @@ object S3StorageClient {
             },
           _ => IO.pure(true)
         )
+    }
+  }
+
+  private def fs2StreamAsyncResponseTransformer: AsyncResponseTransformer[GetObjectResponse, Publisher[ByteBuffer]] = {
+
+    new AsyncResponseTransformer[GetObjectResponse, Publisher[ByteBuffer]] {
+      private val cf                                                   = new CompletableFuture[Publisher[ByteBuffer]]()
+      override def prepare(): CompletableFuture[Publisher[ByteBuffer]] = cf
+
+      override def onResponse(response: GetObjectResponse): Unit = ()
+
+      override def onStream(publisher: SdkPublisher[ByteBuffer]): Unit = {
+        cf.complete(publisher)
+        ()
+      }
+
+      override def exceptionOccurred(error: Throwable): Unit = {
+        cf.completeExceptionally(error)
+        ()
+      }
     }
   }
 

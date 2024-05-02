@@ -67,7 +67,7 @@ object S3FileOperations {
                 )
                 .compile
                 .toList
-                .map(b => ByteString(b.toArray))
+                .map(b => ByteString(b))
             }
           )
         )
