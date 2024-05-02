@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3S
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
+import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.testkit.minio.LocalStackS3
 import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
@@ -37,7 +38,8 @@ object LocalStackS3StorageClient {
   }
 
   def s3StorageClientResource(
-      defaultBucket: String
+      defaultBucket: String,
+      prefix: String
   ): Resource[IO, (S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
     LocalStackS3.localstackS3().flatMap { localstack =>
       LocalStackS3.fs2ClientFromLocalstack(localstack).map { client =>
@@ -53,14 +55,18 @@ object LocalStackS3StorageClient {
           defaultWritePermission = permissions.write,
           showLocation = false,
           defaultMaxFileSize = 1,
-          defaultBucket = defaultBucket
+          defaultBucket = defaultBucket,
+          prefix = prefix
         )
-        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint), client, conf)
+        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint, conf.prefix), client, conf)
       }
     }
 
-  trait Fixture { self: CatsEffectSuite =>
+  trait Fixture { self: CatsEffectSuite with Generators =>
     val localStackS3Client: IOFixture[(S3StorageClient, S3AsyncClientOp[IO], S3StorageConfig)] =
-      ResourceSuiteLocalFixture("s3storageclient", s3StorageClientResource(defaultBucket = ""))
+      ResourceSuiteLocalFixture(
+        "s3storageclient",
+        s3StorageClientResource(defaultBucket = genString(), prefix = genString())
+      )
   }
 }

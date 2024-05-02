@@ -1,9 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
@@ -38,15 +41,21 @@ class S3FileOperationsSuite
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client, actorSystem)
 
-  implicit private lazy val (s3StorageClient: S3StorageClient, underlying: S3AsyncClientOp[IO], _) =
+  implicit private lazy val (s3StorageClient: S3StorageClient, underlying: S3AsyncClientOp[IO], conf: S3StorageConfig) =
     localStackS3Client()
-  implicit private lazy val as: ActorSystem                                                        = actorSystem()
+  implicit private lazy val as: ActorSystem                                                                            = actorSystem()
 
   private lazy val fileOps = S3FileOperations.mk(s3StorageClient)
 
   private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
     Hex.encodeHexString(MessageDigest.getInstance(algorithm.value).digest(content.getBytes(StandardCharsets.UTF_8)))
   }
+
+  private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
+    Uri.Path(s"${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
+
+  private def expectedLocation(bucket: String, proj: ProjectRef, filename: String): Uri =
+    s"${conf.defaultEndpoint}/$bucket/${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>
@@ -78,11 +87,20 @@ class S3FileOperationsSuite
       val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
       val entity        = HttpEntity(content)
 
+      val expectedMetadata =
+        FileStorageMetadata(
+          randomUuid,
+          content.length.toLong,
+          ComputedDigest(DigestAlgorithm.default, hashOfContent),
+          FileAttributesOrigin.Client,
+          expectedLocation(bucket, project, filename),
+          expectedPath(project, filename)
+        )
+
       val result = for {
-        attr   <- fileOps.save(storage, filename, entity)
-        _       = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.default, hashOfContent))
-        _       = assertEquals(attr.bytes, content.length.toLong)
-        source <- fileOps.fetch(bucket, attr.path)
+        storageMetadata <- fileOps.save(storage, filename, entity)
+        _                = assertEquals(storageMetadata, expectedMetadata)
+        source          <- fileOps.fetch(bucket, storageMetadata.path)
       } yield consume(source)
 
       assertIO(result, content)

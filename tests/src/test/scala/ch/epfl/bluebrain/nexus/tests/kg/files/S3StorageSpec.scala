@@ -39,7 +39,7 @@ class S3StorageSpec extends StorageSpec {
 
   override def storageId: String = "mys3storage"
 
-  override def locationPrefix: Option[String] = Some(s3BucketEndpoint)
+  override def locationPrefix: Option[String] = Some(s"$s3BucketEndpoint/${s3Config.prefix}")
 
   val s3Config: S3Config = storageConfig.s3
 

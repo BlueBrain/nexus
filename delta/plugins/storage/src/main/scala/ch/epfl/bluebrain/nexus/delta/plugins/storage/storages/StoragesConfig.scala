@@ -195,6 +195,10 @@ object StoragesConfig {
     *   flag to decide whether or not to show the absolute location of the files in the metadata response
     * @param defaultMaxFileSize
     *   the default maximum allowed file size (in bytes) for uploaded files
+    * @param defaultBucket
+    *   the bucket used for S3 storages if not specified during storage creation
+    * @param prefix
+    *   global prefix prepended to the path of all saved S3 files
     */
   final case class S3StorageConfig(
       digestAlgorithm: DigestAlgorithm,
@@ -206,7 +210,8 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long,
-      defaultBucket: String
+      defaultBucket: String,
+      prefix: Uri
   ) extends StorageTypeEntryConfig
 
   /**
