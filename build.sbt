@@ -103,6 +103,7 @@ lazy val doobie                        = Seq(
   "org.postgresql" % "postgresql"    % postgresJdbcVersion
 )
 lazy val fs2                           = "co.fs2"                       %% "fs2-core"                           % fs2Version
+lazy val fs2ReactiveStreams            = "co.fs2"                       %% "fs2-reactive-streams"               % fs2Version
 lazy val fs2io                         = "co.fs2"                       %% "fs2-io"                             % fs2Version
 lazy val fs2Aws                        = "io.laserdisc"                 %% "fs2-aws-core"                       % fs2AwsVersion
 lazy val fs2AwsS3                      = "io.laserdisc"                 %% "fs2-aws-s3"                         % fs2AwsVersion
@@ -581,6 +582,7 @@ lazy val storagePlugin = project
       akkaHttpTestKit  % Test,
       logback          % Test
     ) ++ Seq(
+      fs2ReactiveStreams,
       fs2Aws,
       fs2AwsS3
     ).map {
