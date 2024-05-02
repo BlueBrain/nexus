@@ -8,8 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.expectedImportReport
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import eu.timepit.refined.types.string.NonEmptyString
-import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
 import munit.AnyFixture
 import software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest
@@ -42,21 +40,21 @@ class S3RunShipSuite
     val importFilePath = Path("/import/file-events-import.json")
     val gif            = Path("gpfs/cat_scream.gif")
 
-    val importBucket = BucketName(NonEmptyString.unsafeFrom("nexus-ship-production"))
-    val targetBucket = BucketName(NonEmptyString.unsafeFrom("nexus-delta-production"))
+    val importBucket = "nexus-ship-production"
+    val targetBucket = "nexus-delta-production"
     val shipConfig   = inputConfig.copy(importBucket = importBucket, targetBucket = targetBucket)
 
     {
       for {
-        _     <- uploadFileToS3(fs2S3client, importBucket.value.value, importFilePath)
-        _     <- uploadFileToS3(fs2S3client, importBucket.value.value, gif)
-        _     <- createBucket(fs2S3client, targetBucket.value.value)
-        events = EventStreamer.s3eventStreamer(s3Client, importBucket.value.value).stream(importFilePath, Offset.start)
+        _     <- uploadFileToS3(fs2S3client, importBucket, importFilePath)
+        _     <- uploadFileToS3(fs2S3client, importBucket, gif)
+        _     <- createBucket(fs2S3client, targetBucket)
+        events = EventStreamer.s3eventStreamer(s3Client, importBucket).stream(importFilePath, Offset.start)
         _     <- RunShip(events, s3Client, shipConfig, xas).map(_.progress(EntityType("file")).success == 1L)
         _     <- fs2S3client.getObjectAttributes(
                    GetObjectAttributesRequest
                      .builder()
-                     .bucket(targetBucket.value.value)
+                     .bucket(targetBucket)
                      .key(gif.toString)
                      .objectAttributesWithStrings(java.util.List.of("Checksum"))
                      .build()

@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
-import fs2.aws.s3.models.Models.BucketName
 
 object StorageWiring {
 
@@ -66,7 +65,7 @@ object StorageWiring {
       )
     }
 
-  private def defaultS3Fields(defaultBucket: BucketName, config: S3StorageConfig) = {
+  private def defaultS3Fields(defaultBucket: String, config: S3StorageConfig) = {
     val defaults = Defaults(
       "S3 storage",
       "Default S3 storage of the Nexus service"
@@ -76,7 +75,7 @@ object StorageWiring {
       name = Some(defaults.name),
       description = Some(defaults.description),
       default = true,
-      bucket = Some(defaultBucket.value.value),
+      bucket = Some(defaultBucket),
       readPermission = Some(config.defaultReadPermission),
       writePermission = Some(config.defaultWritePermission),
       maxFileSize = Some(config.defaultMaxFileSize)

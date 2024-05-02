@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
-import fs2.aws.s3.models.Models
 import fs2.io.file.Path
 import munit.AnyFixture
 import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CopyObjectResponse, ListObjectsV2Response}
@@ -116,10 +115,10 @@ object RunShipSuite {
       IO.raiseError(new NotImplementedError("headObject is not implemented"))
 
     override def copyObject(
-        sourceBucket: Models.BucketName,
-        sourceKey: Models.FileKey,
-        destinationBucket: Models.BucketName,
-        destinationKey: Models.FileKey,
+        sourceBucket: String,
+        sourceKey: String,
+        destinationBucket: String,
+        destinationKey: String,
         checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] =
       IO.raiseError(new NotImplementedError("copyObject is not implemented"))

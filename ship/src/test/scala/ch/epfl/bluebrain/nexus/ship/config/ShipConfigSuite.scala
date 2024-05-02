@@ -7,8 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigSuite.{defaultBgValues, defaultEsValues}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import eu.timepit.refined.types.string.NonEmptyString
-import fs2.aws.s3.models.Models.BucketName
 import fs2.io.file.Path
 import munit.AnyFixture
 
@@ -56,7 +54,7 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
   }
 
   test("Should read the S3 config") {
-    val importBucket     = BucketName(NonEmptyString.unsafeFrom("my-import-bucket"))
+    val importBucket     = "my-import-bucket"
     val expectedEndpoint = new URI("http://my-s3-endpoint.com")
     for {
       externalConfigPath <- loader.absolutePath("config/s3.conf")
