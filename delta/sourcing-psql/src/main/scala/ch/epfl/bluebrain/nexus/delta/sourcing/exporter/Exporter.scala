@@ -47,6 +47,7 @@ object Exporter {
              |FROM public.scoped_events
              |${Fragments.whereAndOpt(projectFilter, offset.asFragment)}
              |ORDER BY ordering
+             |LIMIT ${config.batchSize}
              |""".stripMargin.query[RowEvent]
 
       val exportIO = for {
