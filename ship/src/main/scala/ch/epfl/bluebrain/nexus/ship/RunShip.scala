@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
@@ -16,11 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileProcessor
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
-import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor
+import ch.epfl.bluebrain.nexus.ship.projects.{OriginalProjectContext, ProjectProcessor}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
-import ch.epfl.bluebrain.nexus.ship.resources.{DistributionPatcher, ResourceProcessor, ResourceWiring}
+import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring, SourcePatcher}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
-import ch.epfl.bluebrain.nexus.ship.projects.OriginalProjectContext
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor, ViewPatcher}
 import fs2.Stream
 
@@ -64,8 +63,8 @@ object RunShip {
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
                     fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
-                    distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBaseUri)
-                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, distributionPatcher, eventClock)
+                    sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri)
+                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, eventClock)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     viewPatcher                  = new ViewPatcher(config.projectMapping)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper,viewPatcher,  eventLogConfig, eventClock, xas)
