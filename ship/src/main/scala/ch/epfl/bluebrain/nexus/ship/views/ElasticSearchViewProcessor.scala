@@ -24,6 +24,7 @@ import java.util.UUID
 class ElasticSearchViewProcessor private (
     views: UUID => IO[ElasticSearchViews],
     projectMapper: ProjectMapper,
+    viewPatcher: ViewPatcher,
     clock: EventClock
 ) extends EventProcessor[ElasticSearchViewEvent] {
 
@@ -46,12 +47,16 @@ class ElasticSearchViewProcessor private (
       case e: ElasticSearchViewCreated      =>
         e.id match {
           case id if id == defaultViewId => IO.unit // the default view is created on project creation
-          case _                         => views(event.uuid).flatMap(_.create(e.id, project, e.source))
+          case _                         =>
+            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            views(event.uuid).flatMap(_.create(e.id, project, patchedSource))
         }
       case e: ElasticSearchViewUpdated      =>
         e.id match {
           case id if id == defaultViewId => IO.unit
-          case _                         => views(event.uuid).flatMap(_.update(e.id, project, cRev, e.source))
+          case _                         =>
+            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            views(event.uuid).flatMap(_.update(e.id, project, cRev, patchedSource))
         }
       case e: ElasticSearchViewDeprecated   =>
         e.id match {
@@ -84,6 +89,7 @@ object ElasticSearchViewProcessor {
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
+      viewPatcher: ViewPatcher,
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
@@ -91,7 +97,7 @@ object ElasticSearchViewProcessor {
       jsonLdApi: JsonLdApi
   ): ElasticSearchViewProcessor = {
     val views = (uuid: UUID) => ViewWiring.elasticSearchViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
-    new ElasticSearchViewProcessor(views, projectMapper, clock)
+    new ElasticSearchViewProcessor(views, projectMapper, viewPatcher, clock)
   }
 
 }
