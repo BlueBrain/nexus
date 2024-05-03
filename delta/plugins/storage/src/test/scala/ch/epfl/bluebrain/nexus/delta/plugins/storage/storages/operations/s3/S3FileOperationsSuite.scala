@@ -52,10 +52,10 @@ class S3FileOperationsSuite
   }
 
   private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
-    Uri.Path(s"${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
+    Uri.Path(s"${conf.prefixUri}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
 
   private def expectedLocation(bucket: String, proj: ProjectRef, filename: String): Uri =
-    s"${conf.defaultEndpoint}/$bucket/${conf.prefix}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
+    s"${conf.defaultEndpoint}/$bucket/${conf.prefixUri}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>

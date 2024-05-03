@@ -10,7 +10,7 @@ import pureconfig.generic.semiauto.deriveReader
 import java.net.URI
 import scala.util.Try
 
-final case class S3Config(endpoint: URI, importBucket: BucketName, prefix: Uri)
+final case class S3Config(endpoint: URI, importBucket: BucketName, prefix: Option[Uri])
 
 object S3Config {
 
