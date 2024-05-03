@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
+import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, ExitCode, IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -65,7 +66,7 @@ object Main
       defaultConfig          <- Resource.eval(ShipConfig.load(None))
       client                 <- S3StorageClient.resource(
                                   defaultConfig.s3.endpoint,
-                                  defaultConfig.s3.prefix,
+                                  defaultConfig.s3.prefix.getOrElse(Uri.Empty),
                                   DefaultCredentialsProvider.create()
                                 )
       (config, eventsStream) <- Resource.eval(InitShip.configAndStream(r, defaultConfig, client))

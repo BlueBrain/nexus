@@ -56,9 +56,9 @@ object LocalStackS3StorageClient {
           showLocation = false,
           defaultMaxFileSize = 1,
           defaultBucket = defaultBucket,
-          prefix = prefix
+          prefix = Some(prefix)
         )
-        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint, conf.prefix), client, conf)
+        (new S3StorageClient.S3StorageClientImpl(client, conf.defaultEndpoint, conf.prefixUri), client, conf)
       }
     }
 

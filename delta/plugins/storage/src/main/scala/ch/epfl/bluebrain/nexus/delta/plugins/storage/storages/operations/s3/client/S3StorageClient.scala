@@ -80,7 +80,7 @@ object S3StorageClient {
             AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
           )
         }
-      resource(URI.create(cfg.defaultEndpoint.toString()), cfg.prefix, creds)
+      resource(URI.create(cfg.defaultEndpoint.toString()), cfg.prefixUri, creds)
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
