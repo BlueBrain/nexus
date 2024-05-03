@@ -45,7 +45,7 @@ object S3FileOperations {
   final case class S3FileMetadata(contentType: Option[ContentType], metadata: FileStorageMetadata)
 
   private val log       = Logger[S3FileOperations]
-  private val ChunkSize = 1024
+  private val ChunkSize = 8 * 1024
 
   def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
 
