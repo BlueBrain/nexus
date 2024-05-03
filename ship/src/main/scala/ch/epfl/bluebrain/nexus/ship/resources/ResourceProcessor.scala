@@ -22,7 +22,7 @@ import io.circe.Decoder
 class ResourceProcessor private (
     resources: Resources,
     projectMapper: ProjectMapper,
-    distributionPatcher: DistributionPatcher,
+    sourcePatcher: SourcePatcher,
     clock: EventClock
 ) extends EventProcessor[ResourceEvent] {
 
@@ -48,11 +48,11 @@ class ResourceProcessor private (
 
     event match {
       case e: ResourceCreated       =>
-        distributionPatcher.singleOrArray(e.source).flatMap { patched =>
+        sourcePatcher(e.source).flatMap { patched =>
           resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
         }
       case e: ResourceUpdated       =>
-        distributionPatcher.singleOrArray(e.source).flatMap { patched =>
+        sourcePatcher(e.source).flatMap { patched =>
           resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
         }
       case e: ResourceSchemaUpdated =>
@@ -88,11 +88,11 @@ object ResourceProcessor {
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
       fetchContext: FetchContext,
-      distributionPatcher: DistributionPatcher,
+      sourcePatcher: SourcePatcher,
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, projectMapper, distributionPatcher, clock)
+    new ResourceProcessor(resources, projectMapper, sourcePatcher, clock)
   }
 
 }

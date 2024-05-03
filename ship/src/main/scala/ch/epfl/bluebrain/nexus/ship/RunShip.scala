@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.ship.files.FileProcessor
 import ch.epfl.bluebrain.nexus.ship.organizations.OrganizationProvider
 import ch.epfl.bluebrain.nexus.ship.projects.{OriginalProjectContext, ProjectProcessor}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor
-import ch.epfl.bluebrain.nexus.ship.resources.{DistributionPatcher, ResourceProcessor, ResourceWiring}
+import ch.epfl.bluebrain.nexus.ship.resources.{ResourceProcessor, ResourceWiring, SourcePatcher}
 import ch.epfl.bluebrain.nexus.ship.schemas.{SchemaProcessor, SchemaWiring}
 import ch.epfl.bluebrain.nexus.ship.views.{BlazegraphViewProcessor, CompositeViewProcessor, ElasticSearchViewProcessor, ViewPatcher}
 import fs2.Stream
@@ -63,8 +63,8 @@ object RunShip {
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
                     fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
-                    distributionPatcher          = new DistributionPatcher(fileSelf, projectMapper, targetBaseUri)
-                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, distributionPatcher, eventClock)
+                    sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri)
+                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, eventClock)
                     viewPatcher                  = new ViewPatcher(config.projectMapping)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
