@@ -211,8 +211,10 @@ object StoragesConfig {
       showLocation: Boolean,
       defaultMaxFileSize: Long,
       defaultBucket: String,
-      prefix: Uri
-  ) extends StorageTypeEntryConfig
+      prefix: Option[Uri]
+  ) extends StorageTypeEntryConfig {
+    val prefixUri: Uri = prefix.getOrElse(Uri.Empty)
+  }
 
   /**
     * Remote Disk storage configuration
