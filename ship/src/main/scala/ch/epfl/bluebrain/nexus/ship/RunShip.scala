@@ -65,9 +65,9 @@ object RunShip {
                     fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
                     sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, eventClock)
-                    esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     viewPatcher                  = new ViewPatcher(config.projectMapping)
-                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper,viewPatcher,  eventLogConfig, eventClock, xas)
+                    esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
+                    bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)
                     fileProcessor                = FileProcessor(fetchContext, s3Client, projectMapper, rcr, config, eventClock, xas)
                     // format: on

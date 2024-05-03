@@ -4,6 +4,10 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.AggregateBlazegraphView
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId => bgDefaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId => esDefaultViewId}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
@@ -143,6 +147,25 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       thereShouldBeAView(project, bgView, bgViewJson)
     }
 
+    "transfer an aggregated elasticsearch view" in {
+      val (project, _, _)          = thereIsAProject()
+      val (sourceProj1, _, _)      = thereIsAProject()
+      val (sourceProj2, _, _)      = thereIsAProject()
+      val (targetProj1, _, _)      = thereIsAProject()
+      val (targetProj2, _, _)      = thereIsAProject()
+      val (esView, originalSource) = thereIsAnAggregateElasticSearchView(project, List(sourceProj1, sourceProj2))
+      val mapping                  = Map(sourceProj1 -> targetProj1, sourceProj2 -> targetProj2)
+      val patchedSource            = patchedAggregateViewSource(originalSource, mapping)
+
+      whenTheExportIsRunOnProject(project)
+      theOldProjectIsDeleted(project)
+
+      weRunTheImporterWithProjectMapping(project, mapping)
+      weFixThePermissions(project)
+
+      thereShouldBeAView(project, esView, patchedSource)
+    }
+
     "transfer an aggregated blazegraph view" in {
       val (project, _, _)          = thereIsAProject()
       val (sourceProj1, _, _)      = thereIsAProject()
@@ -235,25 +258,21 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       mapViewProjects(original)
     }
 
-    def aggBgViewSource(projects: List[ProjectRef]): Json = {
-      val views: Json = projects
-        .map(pr => json"""
-          {
-            "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
-            "project": "$pr"
-          }
-      """)
-        .asJson
+    def aggregateViewSource(projects: List[ProjectRef], viewType: String, defaultViewId: Iri): Json = {
+      val views: Json = projects.map(pr => json"""{"viewId": "$defaultViewId", "project": "$pr"}""").asJson
 
       json"""{
-        "@type": ["View", "AggregateSparqlView"],
+        "@type": ["View", "$viewType"],
         "views": $views
       }
       """
     }
 
     def thereIsAnAggregateBlazegraphView(project: ProjectRef, viewProjects: List[ProjectRef]): (Iri, Json) =
-      thereIsAView(project, aggBgViewSource(viewProjects))
+      thereIsAView(project, aggregateViewSource(viewProjects, AggregateBlazegraphView.toString, bgDefaultViewId))
+
+    def thereIsAnAggregateElasticSearchView(project: ProjectRef, viewProjects: List[ProjectRef]): (Iri, Json) =
+      thereIsAView(project, aggregateViewSource(viewProjects, AggregateElasticSearch.toString, esDefaultViewId))
 
     def thereIsAView(project: ProjectRef, body: Json): (Iri, Json) = {
       val view        = nxv + genString()
