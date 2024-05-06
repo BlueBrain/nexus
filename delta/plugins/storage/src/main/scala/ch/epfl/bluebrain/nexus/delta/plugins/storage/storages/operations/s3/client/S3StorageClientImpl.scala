@@ -76,7 +76,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       destinationBucket: String,
       destinationKey: String
   ): IO[CompleteMultipartUploadResponse] = {
-    val partSize = 5L * 1024L * 1024L // 5MB
+    val partSize = 5_000_000_000L // 5GB
     for {
       // Initiate the multipart upload
       createMultipartUploadResponse   <-
