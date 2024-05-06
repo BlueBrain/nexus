@@ -2,11 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest}
+import fs2.Stream
 
+import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait S3Helpers { self: Generators =>
@@ -32,5 +35,13 @@ trait S3Helpers { self: Generators =>
 
   def deleteObject(bucket: String, key: String)(implicit client: S3AsyncClientOp[IO]): IO[Unit] =
     client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).void
+
+  def givenAFileInABucket(bucket: String, contents: String)(
+      test: String => IO[Unit]
+  )(implicit client: S3StorageClient): IO[Unit] = {
+    val bytes = contents.getBytes(StandardCharsets.UTF_8)
+    val key   = genString()
+    client.uploadFile(Stream.fromIterator[IO](bytes.iterator, 16), bucket, key, DigestAlgorithm.default) >> test(key)
+  }
 
 }

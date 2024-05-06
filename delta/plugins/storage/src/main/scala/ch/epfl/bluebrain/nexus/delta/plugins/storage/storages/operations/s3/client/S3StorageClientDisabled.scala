@@ -42,4 +42,11 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
 
   override def prefix: Uri = throw disabledErr
+
+  override def copyObjectMultiPart(
+      sourceBucket: String,
+      sourceKey: String,
+      destinationBucket: String,
+      destinationKey: String
+  ): IO[CompleteMultipartUploadResponse] = raiseDisabledErr
 }

@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import org.apache.commons.codec.binary.Hex
@@ -75,7 +74,7 @@ object S3FileOperations {
       }
 
     override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.apply(storage, filename, entity)
+      saveFile.save(storage, filename, entity)
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
       registerInternal(client, bucket, path)
@@ -88,7 +87,7 @@ object S3FileOperations {
     for {
       _        <- log.debug(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
       resp     <- client.headObject(bucket, path.toString())
-      metadata <- mkS3Metadata(client, bucket, path, resp)
+      metadata <- mkS3Metadata(path, resp)
     } yield metadata
   }
     .onError { e =>
@@ -106,9 +105,9 @@ object S3FileOperations {
     }
   }
 
-  private def mkS3Metadata(client: S3StorageClient, bucket: String, path: Uri.Path, resp: HeadObject)(implicit
+  private def mkS3Metadata(path: Uri.Path, resp: HeadObject)(implicit
       uuidf: UUIDF
-  ) = {
+  ) =
     for {
       uuid        <- uuidf()
       contentType <- parseContentType(resp.contentType)
@@ -120,11 +119,10 @@ object S3FileOperations {
         resp.fileSize,
         checksum,
         FileAttributesOrigin.External,
-        client.baseEndpoint / bucket / path,
+        Uri(path.toString()),
         path
       )
     )
-  }
 
   private def checksumFrom(response: HeadObject) = IO.fromOption {
     response.sha256Checksum
