@@ -31,6 +31,13 @@ trait S3StorageClient {
       checksumAlgorithm: ChecksumAlgorithm
   ): IO[CopyObjectResponse]
 
+  def copyObjectMultiPart(
+      sourceBucket: String,
+      sourceKey: String,
+      destinationBucket: String,
+      destinationKey: String
+  ): IO[CompleteMultipartUploadResponse]
+
   def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,

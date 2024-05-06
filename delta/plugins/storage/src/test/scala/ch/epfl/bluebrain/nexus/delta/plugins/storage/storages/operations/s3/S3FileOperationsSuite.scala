@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, UUIDFFixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, uriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -52,10 +52,10 @@ class S3FileOperationsSuite
   }
 
   private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
-    Uri.Path(s"${conf.prefixUri}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
+    Uri.Path(s"$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
 
-  private def expectedLocation(bucket: String, proj: ProjectRef, filename: String): Uri =
-    s"${conf.defaultEndpoint}/$bucket/${conf.prefixUri}/$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename"
+  private def expectedLocation(proj: ProjectRef, filename: String): Uri =
+    conf.prefixUri / expectedPath(proj, filename)
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>
@@ -93,7 +93,7 @@ class S3FileOperationsSuite
           content.length.toLong,
           ComputedDigest(DigestAlgorithm.default, hashOfContent),
           FileAttributesOrigin.Client,
-          expectedLocation(bucket, project, filename),
+          expectedLocation(project, filename),
           expectedPath(project, filename)
         )
 
@@ -104,6 +104,24 @@ class S3FileOperationsSuite
       } yield consume(source)
 
       assertIO(result, content)
+    }
+  }
+
+  test("register and fetch an existing S3 file") {
+    givenAnS3Bucket { bucket =>
+      val fileContents = genString()
+      givenAFileInABucket(bucket, fileContents) { key =>
+        val path = Uri.Path(key)
+
+        val result = for {
+          storageMetadata <- fileOps.register(bucket, path)
+          _                = assertEquals(storageMetadata.metadata.path, path)
+          _                = assertEquals(storageMetadata.metadata.location, Uri(key))
+          source          <- fileOps.fetch(bucket, path)
+        } yield consume(source)
+
+        assertIO(result, fileContents)
+      }
     }
   }
 
