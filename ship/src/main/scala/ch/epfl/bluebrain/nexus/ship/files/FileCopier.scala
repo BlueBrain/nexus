@@ -7,7 +7,7 @@ import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm
 
 trait FileCopier {
 
-  def copyFile(path: Uri.Path): IO[Unit]
+  def copyFile(path: Uri.Path, fileSize: Long): IO[Unit]
 
 }
 
@@ -18,14 +18,18 @@ object FileCopier {
       importBucket: String,
       targetBucket: String
   ): FileCopier =
-    (path: Uri.Path) => {
-      val key = path.toString
+    (path: Uri.Path, fileSize: Long) => {
+      val key    = path.toString
+      val FIVEGB = 5000000000L
 
-      // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
-      s3StorageClient.copyObject(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void
+      if (fileSize >= FIVEGB)
+        s3StorageClient.copyObjectMultiPart(importBucket, key, targetBucket, key).void
+      else
+        // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
+        s3StorageClient.copyObject(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void
     }
 
   def apply(): FileCopier =
-    (_: Uri.Path) => IO.unit
+    (_: Uri.Path, _: Long) => IO.unit
 
 }

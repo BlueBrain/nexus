@@ -51,10 +51,10 @@ class FileProcessor private (
 
     event match {
       case e: FileCreated               =>
-        fileCopier.copyFile(e.attributes.path) >>
+        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
           files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
       case e: FileUpdated               =>
-        fileCopier.copyFile(e.attributes.path) >>
+        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
           // format: off
           files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
           // format: on
