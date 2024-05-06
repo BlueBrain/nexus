@@ -59,7 +59,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       StoragesConfig(eventLogConfig, pagination, config.copy(amazon = Some(amazonConfig))),
       importBucket,
       targetBucket,
-      disableResourceValidation = false
+      disableResourceValidation = false,
+      skipFileEvents = false
     )
 
 }
