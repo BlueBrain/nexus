@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Ref}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
@@ -15,6 +16,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.model._
 
 import java.util.Base64
+import scala.jdk.CollectionConverters._
 
 final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri, val prefix: Uri)
     extends S3StorageClient {
@@ -29,14 +31,6 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
     Stream
       .eval(client.getObject(getObjectRequest(bucket, fileKey), new Fs2StreamAsyncResponseTransformer))
       .flatMap(_.toStreamBuffered[IO](2).flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))))
-  }
-
-  private def getObjectRequest(bucket: String, fileKey: String) = {
-    GetObjectRequest
-      .builder()
-      .bucket(bucket)
-      .key(fileKey)
-      .build()
   }
 
   override def headObject(bucket: String, key: String): IO[HeadObject] =
@@ -75,6 +69,56 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
         .checksumAlgorithm(checksumAlgorithm)
         .build()
     )
+
+  def copyObjectMultiPart(
+      sourceBucket: String,
+      sourceKey: String,
+      destinationBucket: String,
+      destinationKey: String
+  ): IO[CompleteMultipartUploadResponse] = {
+    val partSize = 5_000_000_000L // 5GB
+    for {
+      // Initiate the multipart upload
+      createMultipartUploadResponse   <-
+        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey))
+      // Get the object size
+      objectSize                      <- headObject(sourceBucket, sourceKey).map(_.fileSize)
+      // Copy the object using 5 MB parts
+      completedParts                  <- {
+        val uploadParts = (0L until objectSize by partSize).zipWithIndex.map { case (start, partNumber) =>
+          val lastByte              = Math.min(start + partSize - 1, objectSize - 1)
+          val uploadPartCopyRequest = UploadPartCopyRequest.builder
+            .sourceBucket(sourceBucket)
+            .sourceKey(sourceKey)
+            .destinationBucket(destinationBucket)
+            .destinationKey(destinationKey)
+            .uploadId(createMultipartUploadResponse.uploadId)
+            .partNumber(partNumber + 1)
+            .copySourceRange(s"bytes=$start-$lastByte")
+            .build
+          client
+            .uploadPartCopy(uploadPartCopyRequest)
+            .map(response =>
+              CompletedPart.builder
+                .partNumber(partNumber + 1)
+                .eTag(response.copyPartResult.eTag)
+                .build
+            )
+        }
+        uploadParts.toList.sequence
+      }
+      // Complete the upload request
+      completeMultipartUploadResponse <-
+        client.completeMultipartUpload(
+          CompleteMultipartUploadRequest.builder
+            .bucket(destinationBucket)
+            .key(destinationKey)
+            .uploadId(createMultipartUploadResponse.uploadId)
+            .multipartUpload(CompletedMultipartUpload.builder.parts(completedParts.asJava).build)
+            .build
+        )
+    } yield completeMultipartUploadResponse
+  }
 
   override def objectExists(bucket: String, key: String): IO[Boolean] = {
     headObject(bucket, key)
@@ -147,6 +191,21 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
         _ => IO.pure(true)
       )
   }
+
+  private def getObjectRequest(bucket: String, fileKey: String) = {
+    GetObjectRequest
+      .builder()
+      .bucket(bucket)
+      .key(fileKey)
+      .build()
+  }
+
+  private def createMultipartUploadRequest(bucket: String, fileKey: String) =
+    CreateMultipartUploadRequest.builder
+      .bucket(bucket)
+      .key(fileKey)
+      .build
+
 }
 
 private object S3StorageClientImpl {
