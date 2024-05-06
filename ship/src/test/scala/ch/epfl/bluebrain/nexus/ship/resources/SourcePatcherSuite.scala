@@ -15,7 +15,7 @@ class SourcePatcherSuite extends NexusSuite {
   }
 
   test("Removing empty ids removes the @id field when it is empty") {
-    val source = json"""{ "@id": "", "name": "Bob" }"""
+    val source   = json"""{ "@id": "", "name": "Bob" }"""
     val expected = json"""{ "name": "Bob" }"""
     assertEquals(SourcePatcher.removeEmptyIds(source), expected)
   }

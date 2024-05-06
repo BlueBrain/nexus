@@ -39,7 +39,7 @@ class S3StorageSpec extends StorageSpec {
 
   override def storageId: String = "mys3storage"
 
-  override def locationPrefix: Option[String] = Some(s"$s3BucketEndpoint/${s3Config.prefix}")
+  override def locationPrefix: Option[String] = Some(s3Config.prefix)
 
   val s3Config: S3Config = storageConfig.s3
 
@@ -244,10 +244,13 @@ class S3StorageSpec extends StorageSpec {
                        (_, response) => response.status shouldEqual StatusCodes.Created
                      }
         fullId     = s"$attachmentPrefix$id"
-        location   = s"$s3BucketEndpoint/$path"
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
-                       filterMetadataKeys(json) shouldEqual registrationResponse(fullId, logoSha256HexDigest, location)
+                       filterMetadataKeys(json) shouldEqual registrationResponse(
+                         fullId,
+                         logoSha256HexDigest,
+                         location = path
+                       )
                      }
       } yield assertion
     }

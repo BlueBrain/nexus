@@ -103,7 +103,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
                        .compile
                        .onlyOrError
       fileSize    <- fileSizeAcc.get
-      location     = baseEndpoint / bucket / Uri.Path(key)
+      location     = prefix / Uri.Path(key)
     } yield UploadMetadata(digest, fileSize, location)
   }
 
