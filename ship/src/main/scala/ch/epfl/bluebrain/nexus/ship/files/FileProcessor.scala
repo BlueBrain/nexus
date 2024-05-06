@@ -49,15 +49,20 @@ class FileProcessor private (
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
 
+    // TODO: Remove the 5_000_000_000L limit when the multipart works correctly
     event match {
       case e: FileCreated               =>
-        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
-          files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
+        if (e.attributes.bytes < 5_000_000_000L) {
+          fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
+            files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
+        } else IO.unit
       case e: FileUpdated               =>
-        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
-          // format: off
-          files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
+        if (e.attributes.bytes < 5_000_000_000L) {
+          fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
+            // format: off
+            files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
           // format: on
+        } else IO.unit
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(FileId(e.id, project), cRev, e.metadata, e.tag)
       case _: FileAttributesUpdated     => IO.unit
