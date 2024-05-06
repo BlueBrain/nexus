@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
 import ch.epfl.bluebrain.nexus.testkit.Generators
-import ch.epfl.bluebrain.nexus.testkit.minio.LocalStackS3
+import ch.epfl.bluebrain.nexus.testkit.localstack.LocalStackS3
 import fs2.io.file.Path
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.CatsEffectSuite

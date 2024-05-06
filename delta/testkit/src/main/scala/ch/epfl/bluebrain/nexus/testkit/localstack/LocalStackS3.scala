@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.minio
+package ch.epfl.bluebrain.nexus.testkit.localstack
 
 import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.LocalStackV2Container
@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 
 object LocalStackS3 {
   val ServiceType = Service.S3
-  val Version     = "3.2"
+  val Version     = "3.4"
 
   def localstackS3(): Resource[IO, LocalStackV2Container] = {
 
