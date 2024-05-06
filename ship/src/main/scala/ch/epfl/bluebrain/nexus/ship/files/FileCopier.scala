@@ -19,11 +19,11 @@ object FileCopier {
       targetBucket: String
   ): FileCopier =
     (path: Uri.Path, fileSize: Long) => {
-      val key     = path.toString
-      val FIVE_GB = 5_000_000_000L
+      val key           = path.toString
+      val S3_FILE_LIMIT = 5_368_709_120L
 
       // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
-      if (fileSize >= FIVE_GB)
+      if (fileSize >= S3_FILE_LIMIT)
         s3StorageClient.copyObjectMultiPart(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void
       else
         s3StorageClient.copyObject(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void

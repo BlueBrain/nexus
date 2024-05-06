@@ -77,7 +77,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       destinationKey: String,
       checksumAlgorithm: ChecksumAlgorithm
   ): IO[CompleteMultipartUploadResponse] = {
-    val partSize = 5_000_000_000L // 5GB
+    val partSize = 5_368_709_120L // S3 part limit
     for {
       // Initiate the multipart upload
       createMultipartUploadResponse   <-
