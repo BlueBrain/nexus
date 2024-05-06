@@ -22,7 +22,7 @@ object SourcePatcher {
   // Resources will be keep their ids as we explicitly pass them along the source payload
   val removeEmptyIds: Json => Json = root.obj.modify {
     case obj if obj("@id").contains(emptyString) => obj.remove("@id")
-    case obj => obj
+    case obj                                     => obj
   }
 
   def apply(fileSelfParser: FileSelf, projectMapper: ProjectMapper, targetBase: BaseUri): SourcePatcher =
