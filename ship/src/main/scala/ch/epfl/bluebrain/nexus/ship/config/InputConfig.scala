@@ -22,7 +22,8 @@ final case class InputConfig(
     storages: StoragesConfig,
     importBucket: String,
     targetBucket: String,
-    disableResourceValidation: Boolean
+    disableResourceValidation: Boolean,
+    skipFileEvents: Boolean
 )
 
 object InputConfig {

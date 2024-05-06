@@ -85,7 +85,7 @@ object S3FileOperations {
       uuidF: UUIDF
   ): IO[S3FileMetadata] = {
     for {
-      _        <- log.info(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
+      _        <- log.debug(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
       resp     <- client.headObject(bucket, path.toString())
       metadata <- mkS3Metadata(path, resp)
     } yield metadata
