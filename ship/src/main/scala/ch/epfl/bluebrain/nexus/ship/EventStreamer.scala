@@ -7,9 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.clie
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.ship.EventStreamer.logger
-import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.refineV
-import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.io.file.{Files, Path}
 import fs2.{text, Stream}
 import io.circe.parser.decode
@@ -52,13 +49,12 @@ object EventStreamer {
 
   private val logger = Logger[EventStreamer]
 
-  def s3eventStreamer(client: S3StorageClient, bucket: BucketName): EventStreamer = new EventStreamer {
+  def s3eventStreamer(client: S3StorageClient, bucket: String): EventStreamer = new EventStreamer {
 
     override def streamLines(path: Path): Stream[IO, String] =
       for {
-        key   <- Stream.fromEither[IO](refineString(path.toString))
         lines <- client
-                   .readFileMultipart(bucket, FileKey(key))
+                   .readFile(bucket, path.toString)
                    .through(text.utf8.decode)
                    .through(text.lines)
       } yield lines
@@ -72,10 +68,6 @@ object EventStreamer {
       client
         .listObjectsV2(bucket, path.toString)
         .map(_.keyCount() > 1)
-
-    private def refineString(str: String) =
-      refineV[NonEmpty](str).leftMap(e => new IllegalArgumentException(e))
-
   }
 
   def localStreamer: EventStreamer = new EventStreamer {

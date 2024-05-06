@@ -25,6 +25,7 @@ import org.apache.commons.codec.binary.Hex
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
+import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
@@ -43,7 +44,8 @@ trait S3FileOperations {
 object S3FileOperations {
   final case class S3FileMetadata(contentType: Option[ContentType], metadata: FileStorageMetadata)
 
-  private val log = Logger[S3FileOperations]
+  private val log       = Logger[S3FileOperations]
+  private val ChunkSize = 8 * 1024
 
   def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
 
@@ -55,24 +57,20 @@ object S3FileOperations {
       }
     }
 
-    override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] = IO
-      .delay(
+    override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
+      IO.delay(
         Source.fromGraph(
           StreamConverter(
-            fs2.Stream.eval {
-              client
-                .readFile(
-                  bucket,
-                  URLDecoder.decode(path.toString, UTF_8.toString)
-                )
-                .compile
-                .toList
-                .map(b => ByteString(b.toArray))
-            }
+            client
+              .readFile(
+                bucket,
+                URLDecoder.decode(path.toString, UTF_8.toString)
+              )
+              .groupWithin(ChunkSize, 1.second)
+              .map(bytes => ByteString(bytes.toArray))
           )
         )
-      )
-      .recoverWith { err =>
+      ).recoverWith { err =>
         IO.raiseError(UnexpectedFetchError(path.toString, err.getMessage))
       }
 

@@ -6,9 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import com.typesafe.config.Config
-import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
-import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.io.file.Path
 import pureconfig.ConfigReader
 import pureconfig.backend.ConfigFactoryWrapper
@@ -44,8 +42,8 @@ object ShipConfig {
   def load(externalConfigPath: Option[Path]): IO[ShipConfig] =
     merge(externalConfigPath).map(_._1)
 
-  def loadFromS3(client: S3StorageClient, bucket: BucketName, path: Path): IO[ShipConfig] = {
-    val configStream = client.readFile(bucket, FileKey(NonEmptyString.unsafeFrom(path.toString)))
+  def loadFromS3(client: S3StorageClient, bucket: String, path: Path): IO[ShipConfig] = {
+    val configStream = client.readFile(bucket, path.toString)
     configFromStream(configStream).flatMap(mergeFromConfig)
   }.map(_._1)
 

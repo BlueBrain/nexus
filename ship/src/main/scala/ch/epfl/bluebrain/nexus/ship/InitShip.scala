@@ -19,7 +19,8 @@ object InitShip {
         ShipConfig.load(run.config).map((_, eventsStream))
       case RunMode.S3    =>
         val shipConfig = run.config match {
-          case Some(configPath) => ShipConfig.loadFromS3(s3Client, defaultConfig.s3.importBucket, configPath)
+          case Some(configPath) =>
+            ShipConfig.loadFromS3(s3Client, defaultConfig.s3.importBucket, configPath)
           case None             => IO.pure(defaultConfig)
         }
 
