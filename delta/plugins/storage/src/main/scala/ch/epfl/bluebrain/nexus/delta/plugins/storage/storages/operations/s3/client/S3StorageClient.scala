@@ -35,7 +35,8 @@ trait S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
+      destinationKey: String,
+      checksumAlgorithm: ChecksumAlgorithm
   ): IO[CompleteMultipartUploadResponse]
 
   def uploadFile(

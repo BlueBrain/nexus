@@ -25,6 +25,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
@@ -127,10 +128,17 @@ object S3FileOperations {
   private def checksumFrom(response: HeadObject) = IO.fromOption {
     response.sha256Checksum
       .map { checksum =>
-        Digest.ComputedDigest(
-          DigestAlgorithm.default,
-          Hex.encodeHexString(Base64.getDecoder.decode(checksum))
-        )
+        Try {
+          Base64.getDecoder.decode(checksum)
+        } match {
+          case Failure(_)            => Digest.NotComputedDigest
+          case Success(decodedValue) =>
+            Digest.ComputedDigest(
+              DigestAlgorithm.default,
+              Hex.encodeHexString(decodedValue)
+            )
+        }
+
       }
   }(new IllegalArgumentException("Missing checksum"))
 

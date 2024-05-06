@@ -145,7 +145,8 @@ object RunShipSuite {
         sourceBucket: String,
         sourceKey: String,
         destinationBucket: String,
-        destinationKey: String
+        destinationKey: String,
+        checksumAlgorithm: ChecksumAlgorithm
     ): IO[CompleteMultipartUploadResponse] =
       IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
   }

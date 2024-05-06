@@ -74,13 +74,14 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
+      destinationKey: String,
+      checksumAlgorithm: ChecksumAlgorithm
   ): IO[CompleteMultipartUploadResponse] = {
     val partSize = 5_000_000_000L // 5GB
     for {
       // Initiate the multipart upload
       createMultipartUploadResponse   <-
-        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey))
+        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey, checksumAlgorithm))
       // Get the object size
       objectSize                      <- headObject(sourceBucket, sourceKey).map(_.fileSize)
       // Copy the object using 5 MB parts
@@ -200,10 +201,11 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       .build()
   }
 
-  private def createMultipartUploadRequest(bucket: String, fileKey: String) =
+  private def createMultipartUploadRequest(bucket: String, fileKey: String, checksumAlgorithm: ChecksumAlgorithm) =
     CreateMultipartUploadRequest.builder
       .bucket(bucket)
       .key(fileKey)
+      .checksumAlgorithm(checksumAlgorithm)
       .build
 
 }

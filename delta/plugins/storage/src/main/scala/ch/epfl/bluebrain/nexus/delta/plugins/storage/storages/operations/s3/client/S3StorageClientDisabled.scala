@@ -47,6 +47,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
+      destinationKey: String,
+      checksumAlgorithm: ChecksumAlgorithm
   ): IO[CompleteMultipartUploadResponse] = raiseDisabledErr
 }
