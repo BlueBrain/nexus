@@ -51,10 +51,10 @@ class FileProcessor private (
 
     event match {
       case e: FileCreated               =>
-        fileCopier.copyFile(e.attributes.path) >>
+        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
           files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
       case e: FileUpdated               =>
-        fileCopier.copyFile(e.attributes.path) >>
+        fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
           // format: off
           files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
           // format: on
@@ -93,6 +93,14 @@ object FileProcessor {
 
   private val logger = Logger[FileProcessor]
 
+  private val noop = new EventProcessor[FileEvent] {
+    override def resourceType: EntityType = Files.entityType
+
+    override def decoder: Decoder[FileEvent] = FileEvent.serializer.codec
+
+    override def evaluate(event: FileEvent): IO[ImportStatus] = IO.pure(ImportStatus.Dropped)
+  }
+
   def apply(
       fetchContext: FetchContext,
       s3Client: S3StorageClient,
@@ -101,7 +109,8 @@ object FileProcessor {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): FileProcessor = {
+  )(implicit jsonLdApi: JsonLdApi): EventProcessor[FileEvent] = if (config.skipFileEvents) noop
+  else {
 
     val storages = StorageWiring.storages(fetchContext, rcr, config, clock, xas)
 

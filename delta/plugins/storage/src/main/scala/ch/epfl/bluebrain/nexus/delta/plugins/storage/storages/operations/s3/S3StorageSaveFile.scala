@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOpe
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import fs2.Stream
 
@@ -30,7 +29,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
   private val logger = Logger[S3StorageSaveFile]
 
-  def apply(
+  def save(
       storage: S3Storage,
       filename: String,
       entity: BodyPartEntity
@@ -38,7 +37,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
 
     for {
       uuid   <- uuidf()
-      path    = s3StorageClient.prefix / Uri.Path(intermediateFolders(storage.project, uuid, filename))
+      path    = Uri.Path(intermediateFolders(storage.project, uuid, filename))
       result <- storeFile(storage.value.bucket, path.toString(), uuid, entity, storage.value.algorithm)
     } yield result
   }

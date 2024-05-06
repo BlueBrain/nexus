@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import fs2.io.file.Path
 import munit.AnyFixture
-import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CopyObjectResponse, ListObjectsV2Response}
+import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CompleteMultipartUploadResponse, CopyObjectResponse, ListObjectsV2Response}
 
 import java.time.Instant
 
@@ -140,6 +140,14 @@ object RunShipSuite {
       IO.raiseError(new NotImplementedError("bucketExists is not implemented"))
 
     override def prefix: Uri = throw new NotImplementedError("prefix is not implemented")
+
+    override def copyObjectMultiPart(
+        sourceBucket: String,
+        sourceKey: String,
+        destinationBucket: String,
+        destinationKey: String
+    ): IO[CompleteMultipartUploadResponse] =
+      IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
   }
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory

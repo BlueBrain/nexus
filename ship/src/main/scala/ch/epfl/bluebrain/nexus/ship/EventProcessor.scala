@@ -37,18 +37,20 @@ object EventProcessor {
     }
     eventStream
       .evalScan(ImportReport.start) { case (report, event) =>
+        val processed = report.progress.foldLeft(0L) { case (acc, (_, stats)) => acc + stats.success + stats.dropped }
         processorsMap.get(event.`type`) match {
           case Some(processor) =>
-            processor
-              .evaluate(event)
-              .map { status =>
-                report + (event, status)
-              }
-              .onError { err =>
-                logger.error(err)(
-                  s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
-                )
-              }
+            IO.whenA(processed % 1000 == 0)(logger.info(s"Current progress is: ${report.progress}")) >>
+              processor
+                .evaluate(event)
+                .map { status =>
+                  report + (event, status)
+                }
+                .onError { err =>
+                  logger.error(err)(
+                    s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
+                  )
+                }
           case None            =>
             logger.warn(s"No processor is provided for '${event.`type`}', skipping...") >>
               IO.pure(report + (event, ImportStatus.Dropped))
