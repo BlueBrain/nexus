@@ -8,6 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClientImpl._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
+import eu.timepit.refined.refineMV
+import eu.timepit.refined.types.string.NonEmptyString
+import fs2.aws.s3.S3
+import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
 import fs2.interop.reactivestreams.PublisherOps
 import fs2.{Chunk, Pipe, Stream}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
@@ -31,6 +35,14 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
     Stream
       .eval(client.getObject(getObjectRequest(bucket, fileKey), new Fs2StreamAsyncResponseTransformer))
       .flatMap(_.toStreamBuffered[IO](2).flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))))
+  }
+
+  override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = {
+    val bucketName           = BucketName(NonEmptyString.unsafeFrom(bucket))
+    val objectKey            = FileKey(NonEmptyString.unsafeFrom(fileKey))
+    val partSize: PartSizeMB = refineMV(5)
+
+    S3.create(client).readFileMultipart(bucketName, objectKey, partSize)
   }
 
   override def headObject(bucket: String, key: String): IO[HeadObject] =

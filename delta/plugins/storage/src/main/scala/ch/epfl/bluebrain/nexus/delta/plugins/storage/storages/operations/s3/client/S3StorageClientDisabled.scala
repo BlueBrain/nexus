@@ -50,4 +50,6 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       destinationKey: String,
       checksumAlgorithm: ChecksumAlgorithm
   ): IO[CompleteMultipartUploadResponse] = raiseDisabledErr
+
+  override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = throw disabledErr
 }

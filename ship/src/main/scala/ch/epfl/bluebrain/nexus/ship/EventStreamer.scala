@@ -54,7 +54,7 @@ object EventStreamer {
     override def streamLines(path: Path): Stream[IO, String] =
       for {
         lines <- client
-                   .readFile(bucket, path.toString)
+                   .readFileMultipart(bucket, path.toString)
                    .through(text.utf8.decode)
                    .through(text.lines)
       } yield lines
