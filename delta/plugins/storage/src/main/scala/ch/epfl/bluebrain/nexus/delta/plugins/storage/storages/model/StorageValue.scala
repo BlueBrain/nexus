@@ -118,12 +118,11 @@ object StorageValue {
       bucket: String,
       readPermission: Permission,
       writePermission: Permission,
-      maxFileSize: Long
+      maxFileSize: Long,
+      algorithm: DigestAlgorithm = DigestAlgorithm.default
   ) extends StorageValue {
 
     override val tpe: StorageType = StorageType.S3Storage
-
-    override val algorithm: DigestAlgorithm = DigestAlgorithm.default
   }
 
   object S3StorageValue {
