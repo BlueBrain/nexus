@@ -81,7 +81,7 @@ object ScopedEventLog {
   ): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
       definition.tpe,
-      ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
+      ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig),
       ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
       definition.stateMachine,
       definition.onUniqueViolation,
@@ -127,7 +127,7 @@ object ScopedEventLog {
           notFound: => R,
           invalidRevision: (Int, Int) => R
       ): IO[S] =
-        stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
+        stateMachine.computeState(eventStore.history(ref, id, rev).transact(xas.read)).flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)
@@ -141,7 +141,7 @@ object ScopedEventLog {
               IO.some(tag -> state)
             case Some((tag, rev))                     =>
               stateMachine
-                .computeState(eventStore.history(ref, id, Some(rev)))
+                .computeState(eventStore.history(ref, id, Some(rev)).transact(xas.write))
                 .flatTap {
                   case stateOpt if !stateOpt.exists(_.rev == rev) =>
                     IO.raiseError(EvaluationTagFailure(command, stateOpt.map(_.rev)))

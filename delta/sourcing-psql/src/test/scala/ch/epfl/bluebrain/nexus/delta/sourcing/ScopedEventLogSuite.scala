@@ -40,8 +40,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   private lazy val eventStore = ScopedEventStore(
     PullRequest.entityType,
     PullRequestEvent.serializer,
-    queryConfig,
-    xas
+    queryConfig
   )
 
   private lazy val stateStore = ScopedStateStore(
@@ -102,7 +101,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     val expectedDependencies                        = Set(DependsOn(proj, id2))
     for {
       _        <- eventLog.evaluate(proj, id, Create(id, proj)).assertEquals((opened, state1))
-      _        <- eventStore.history(proj, id).assert(opened)
+      _        <- eventStore.history(proj, id).transact(xas.read).assert(opened)
       _        <- eventLog.stateOr(proj, id, NotFound).assertEquals(state1)
       // Check dependency on id2
       _        <- EntityDependencyStore.directDependencies(proj, id, xas).assertEquals(expectedDependencies)
@@ -127,7 +126,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Tag and check that the state has also been successfully tagged as well") {
     for {
       _ <- eventLog.evaluate(proj, id, TagPR(id, proj, 2, 1)).assertEquals((tagged, state2))
-      _ <- eventStore.history(proj, id).assert(opened, tagged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state2)
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).assertEquals(state1)
     } yield ()
@@ -141,7 +140,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Dry run successfully a command without persisting anything") {
     for {
       _ <- eventLog.dryRun(proj, id, Merge(id, proj, 3)).assertEquals((merged, state3))
-      _ <- eventStore.history(proj, id).assert(opened, tagged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state2)
     } yield ()
   }
@@ -149,7 +148,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Evaluate successfully merge command and store both event and state for an initial state") {
     for {
       _ <- eventLog.evaluate(proj, id, Merge(id, proj, 3)).assertEquals((merged, state3))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -169,7 +168,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   test("Reject a command and persist nothing") {
     for {
       _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).interceptEquals(PullRequestAlreadyClosed(id, proj))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -178,7 +177,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     val boom = Boom(id, proj, "fail")
     for {
       _ <- eventLog.evaluate(proj, id, boom).intercept[RuntimeException]
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -187,7 +186,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     val never = Never(id, proj)
     for {
       _ <- eventLog.evaluate(proj, id, never).interceptEquals(EvaluationTimeout(never, maxDuration))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
