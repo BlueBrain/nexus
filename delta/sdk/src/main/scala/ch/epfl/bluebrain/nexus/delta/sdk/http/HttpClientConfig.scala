@@ -6,8 +6,6 @@ import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.annotation.nowarn
-
 /**
   * Http Client configuration.
   *
@@ -40,7 +38,6 @@ object HttpClientConfig {
   def noRetry(compression: Boolean): HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)
 
-  @nowarn("cat=unused")
   implicit private val httpClientWorthRetryConverter: ConfigReader[HttpClientWorthRetry] =
     ConfigReader.fromString[HttpClientWorthRetry](string =>
       HttpClientWorthRetry

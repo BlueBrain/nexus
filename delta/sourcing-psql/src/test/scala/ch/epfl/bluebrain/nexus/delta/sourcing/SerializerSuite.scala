@@ -11,8 +11,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import munit.AnyFixture
 
-import scala.annotation.nowarn
-
 class SerializerSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
@@ -70,7 +68,7 @@ object SerializerSuite {
   final case class Foo(x: Int, y: Option[Int])
 
   object Foo {
-    @nowarn("cat=unused")
+
     val serializer: Serializer[Int, Foo] = {
       implicit val configuration: Configuration = Serializer.circeConfiguration
 
@@ -82,7 +80,7 @@ object SerializerSuite {
   final case class Bar(x: Int, y: Option[Int])
 
   object Bar {
-    @nowarn("cat=unused")
+
     val serializer: Serializer[Int, Bar] = {
       implicit val configuration: Configuration = Serializer.circeConfiguration
 

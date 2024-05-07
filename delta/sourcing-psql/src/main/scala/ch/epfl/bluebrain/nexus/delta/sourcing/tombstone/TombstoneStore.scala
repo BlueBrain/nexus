@@ -14,8 +14,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax.EncoderOps
 
-import scala.annotation.nowarn
-
 object TombstoneStore {
 
   /**
@@ -76,7 +74,6 @@ object TombstoneStore {
     val deleted: Cause = Cause(deleted = true, Set.empty, None)
 
     implicit val causeEncoder: Codec[Cause] = {
-      @nowarn("cat=unused")
       implicit val configuration: Configuration = Configuration.default
       deriveConfiguredCodec[Cause]
     }

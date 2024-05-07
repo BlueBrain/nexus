@@ -16,7 +16,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * State for an existing in project resolver
@@ -94,7 +93,7 @@ final case class ResolverState(
 }
 
 object ResolverState {
-  @nowarn("cat=unused")
+
   implicit val serializer: Serializer[Iri, ResolverState] = {
     import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._

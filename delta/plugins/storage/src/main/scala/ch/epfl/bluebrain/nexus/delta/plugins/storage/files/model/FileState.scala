@@ -15,7 +15,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * State for an existing file
@@ -92,10 +91,7 @@ final case class FileState(
 
 object FileState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, FileState] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration        = Serializer.circeConfiguration.withDefaults
     implicit val digestCodec: Codec.AsObject[Digest] =

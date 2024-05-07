@@ -16,7 +16,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * A schema state.
@@ -91,7 +90,6 @@ final case class SchemaState(
 
 object SchemaState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, SchemaState] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._

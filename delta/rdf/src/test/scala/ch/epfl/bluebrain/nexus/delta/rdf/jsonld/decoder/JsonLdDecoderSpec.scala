@@ -16,10 +16,9 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
+
 import scala.concurrent.duration._
 
-@nowarn("cat=unused")
 class JsonLdDecoderSpec extends CatsEffectSpec with Fixtures {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()

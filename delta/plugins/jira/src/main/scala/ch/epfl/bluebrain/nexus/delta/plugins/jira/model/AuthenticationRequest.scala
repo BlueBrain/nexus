@@ -6,8 +6,6 @@ import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
-import scala.annotation.nowarn
-
 /**
   * The request sent back to the user so that he can authorize the client
   * @param value
@@ -16,7 +14,7 @@ import scala.annotation.nowarn
 final case class AuthenticationRequest(value: Uri)
 
 object AuthenticationRequest {
-  @nowarn("cat=unused")
+
   implicit private val configuration: Configuration                         = Configuration.default.withStrictDecoding
   implicit val authenticationRequestDecoder: Encoder[AuthenticationRequest] =
     deriveConfiguredEncoder[AuthenticationRequest]

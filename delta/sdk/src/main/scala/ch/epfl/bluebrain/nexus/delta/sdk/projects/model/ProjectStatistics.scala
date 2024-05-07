@@ -8,7 +8,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * The statistics for a single project
@@ -25,7 +24,7 @@ final case class ProjectStatistics(events: Long, resources: Long, lastEventTime:
 object ProjectStatistics {
 
   implicit val projectStatisticsCodec: Codec[ProjectStatistics] = {
-    @nowarn("cat=unused")
+
     implicit val config: Configuration = Configuration.default.copy(
       transformMemberNames = {
         case "events"        => "eventsCount"

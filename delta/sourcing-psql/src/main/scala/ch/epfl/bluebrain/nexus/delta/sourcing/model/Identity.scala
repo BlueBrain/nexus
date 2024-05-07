@@ -6,7 +6,6 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
-import scala.annotation.nowarn
 import cats.implicits._
 
 /**
@@ -112,7 +111,6 @@ object Identity {
   }
 
   object Database {
-    @nowarn("cat=unused")
     implicit final private val configuration: Configuration =
       Configuration.default.withDiscriminator(keywords.tpe)
 

@@ -6,8 +6,6 @@ import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfigur
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
-import scala.annotation.nowarn
-
 /**
   * The Api mappings to be applied in order to shorten segment ids
   */
@@ -40,7 +38,6 @@ object ApiMappings {
 
   final private case class Mapping(prefix: String, namespace: Iri)
 
-  @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
 
   implicit private val mappingDecoder: Decoder[Mapping] = deriveConfiguredDecoder[Mapping]

@@ -14,7 +14,6 @@ import io.circe.{Codec, Json}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * State for an existing composite view.
@@ -98,7 +97,6 @@ final case class CompositeViewState(
 
 object CompositeViewState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, CompositeViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration

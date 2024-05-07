@@ -15,7 +15,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * State for permissions
@@ -76,7 +75,6 @@ object PermissionsState {
     Anonymous
   )
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Label, PermissionsState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration            = Serializer.circeConfiguration

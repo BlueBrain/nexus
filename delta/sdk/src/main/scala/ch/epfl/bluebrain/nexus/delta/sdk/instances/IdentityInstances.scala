@@ -13,8 +13,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
 
-import scala.annotation.nowarn
-
 trait IdentityInstances {
 
   implicit final val identityIriDecoder: IriDecoder[Identity] = new IriDecoder[Identity] {
@@ -37,7 +35,6 @@ trait IdentityInstances {
     }
   }
 
-  @nowarn("cat=unused")
   private val baseEncoder: Encoder.AsObject[Identity] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator("@type")
     deriveConfiguredEncoder[Identity]

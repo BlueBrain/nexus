@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 
-import scala.annotation.nowarn
-
 /**
   * An archive value.
   *
@@ -67,7 +65,6 @@ object ArchiveValue {
 
   final private case class ArchiveValueInput(resources: NonEmptySet[ArchiveReference])
 
-  @nowarn("cat=unused")
   implicit final val archiveValueJsonLdDecoder: JsonLdDecoder[ArchiveValue] = {
     implicit val cfg: Configuration = Configuration.default
     deriveConfigJsonLdDecoder[ArchiveValueInput].flatMap { input =>

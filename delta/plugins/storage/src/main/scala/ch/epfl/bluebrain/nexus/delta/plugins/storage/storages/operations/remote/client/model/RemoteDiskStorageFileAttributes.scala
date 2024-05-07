@@ -10,8 +10,6 @@ import io.circe.{Decoder, DecodingFailure}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-import scala.annotation.nowarn
-
 // $COVERAGE-OFF$
 /**
   * Holds all the metadata information related to the file.
@@ -32,7 +30,6 @@ final case class RemoteDiskStorageFileAttributes(
     mediaType: ContentType
 )
 
-@nowarn("cat=unused")
 object RemoteDiskStorageFileAttributes {
 
   implicit private val config: Configuration =

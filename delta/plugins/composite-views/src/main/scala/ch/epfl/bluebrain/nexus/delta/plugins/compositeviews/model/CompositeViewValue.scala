@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.data.NonEmptyMap
-//import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -10,7 +9,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Codec, Decoder, Encoder}
 
-import scala.annotation.nowarn
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
@@ -35,7 +33,6 @@ final case class CompositeViewValue(
 object CompositeViewValue {
 
   @SuppressWarnings(Array("TryGet"))
-  @nowarn("cat=unused")
   def databaseCodec()(implicit configuration: Configuration): Codec[CompositeViewValue] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
@@ -48,12 +45,6 @@ object CompositeViewValue {
 
     implicit val rebuildStrategyCodec: Codec.AsObject[RebuildStrategy] =
       deriveConfiguredCodec[RebuildStrategy]
-
-    implicit val compositeViewSourceTypeCodec: Codec.AsObject[SourceType] =
-      deriveConfiguredCodec[SourceType]
-
-    implicit val compositeViewProjectionTypeCodec: Codec.AsObject[ProjectionType] =
-      deriveConfiguredCodec[ProjectionType]
 
     implicit val compositeViewProjectionCodec: Codec.AsObject[CompositeViewProjection] =
       deriveConfiguredCodec[CompositeViewProjection]

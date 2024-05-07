@@ -15,14 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Resolver event types.
@@ -161,7 +160,6 @@ object ResolverEvent {
       subject: Subject
   ) extends ResolverEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, ResolverEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -200,7 +198,6 @@ object ResolverEvent {
 
     override val selectors: Set[Label] = Set(Label.unsafe("resolvers"), resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[ResolverEvent] = {
       val context                                               = ContextValue(contexts.metadata, contexts.resolvers)
       implicit val config: Configuration                        = Configuration.default
@@ -215,7 +212,6 @@ object ResolverEvent {
           case other     => other
         })
       implicit val subjectEncoder: Encoder[Subject]             = IriEncoder.jsonEncoder[Subject]
-      implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.Database.identityCodec
       implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
       implicit val projectRefEncoder: Encoder[ProjectRef]       = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>

@@ -12,8 +12,8 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "2.1.5"
-val scalaCompilerVersion   = "2.13.13"
+val scalacScapegoatVersion = "2.1.6"
+val scalaCompilerVersion   = "2.13.14"
 
 val akkaHttpVersion            = "10.2.10"
 val akkaHttpCirceVersion       = "1.39.2"

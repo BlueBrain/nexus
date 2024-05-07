@@ -14,8 +14,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax.EncoderOps
 import io.circe.{Codec, Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * Reference to a remote context
   */
@@ -56,7 +54,6 @@ object RemoteContextRef {
     final case class ResourceContext(id: Iri, project: ProjectRef, rev: Int)
   }
 
-  @nowarn("cat=unused")
   implicit val coder: Codec.AsObject[RemoteContextRef] = {
     implicit val configuration: Configuration = Serializer.circeConfiguration
     implicit val resourceContextRefCoder      = deriveConfiguredCodec[ResourceContext]

@@ -20,8 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * Enumeration of ElasticSearch values.
   */
@@ -192,7 +190,7 @@ object ElasticSearchViewValue {
   }
 
   object Source {
-    @nowarn("cat=unused")
+
     implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
       import io.circe.generic.extras.Configuration
       import io.circe.generic.extras.semiauto._

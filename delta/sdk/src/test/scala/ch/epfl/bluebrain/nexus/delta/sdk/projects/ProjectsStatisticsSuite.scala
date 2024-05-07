@@ -23,7 +23,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 class ProjectsStatisticsSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures {
 
@@ -98,7 +97,7 @@ object ProjectsStatisticsSuite {
   }
 
   object Fruit {
-    @nowarn("cat=unused")
+
     val serializer: Serializer[Iri, Fruit] = {
       implicit val configuration: Configuration = Serializer.circeConfiguration
       implicit val coder: Codec.AsObject[Fruit] = deriveConfiguredCodec[Fruit]
@@ -122,7 +121,7 @@ object ProjectsStatisticsSuite {
   }
 
   object Cheese {
-    @nowarn("cat=unused")
+
     val serializer: Serializer[Iri, Cheese] = {
       implicit val configuration: Configuration  = Serializer.circeConfiguration
       implicit val coder: Codec.AsObject[Cheese] = deriveConfiguredCodec[Cheese]

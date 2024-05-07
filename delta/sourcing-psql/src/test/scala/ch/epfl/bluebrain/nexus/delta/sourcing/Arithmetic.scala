@@ -18,7 +18,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 object Arithmetic {
   val entityType: EntityType = EntityType("calculator")
@@ -79,7 +78,6 @@ object Arithmetic {
       def apply(rev: Int, value: Int): Minus = Minus(nxv + "id", rev, value, Instant.EPOCH, Anonymous)
     }
 
-    @nowarn("cat=unused")
     val serializer: Serializer[Iri, ArithmeticEvent] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration           = Configuration.default.withDiscriminator("@type")
@@ -116,7 +114,7 @@ object Arithmetic {
   }
 
   object Total {
-    @nowarn("cat=unused")
+
     val serializer: Serializer[Iri, Total] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")

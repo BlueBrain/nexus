@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -13,10 +12,6 @@ import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
-import software.amazon.awssdk.regions.Region
-
-import scala.jdk.CollectionConverters._
-import scala.annotation.nowarn
 
 sealed trait StorageFields extends Product with Serializable { self =>
 
@@ -70,7 +65,6 @@ sealed trait StorageFields extends Product with Serializable { self =>
     self.asJsonObject.add(keywords.id, iri.asJson).asJson
 }
 
-@nowarn("cat=unused")
 object StorageFields {
 
   private def computeMaxFileSize(payloadSize: Option[Long], configMaxFileSize: Long) =
@@ -204,21 +198,12 @@ object StorageFields {
   }
 
   implicit private[model] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
-    implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
-
-    // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
-    implicit val secretStringEncoder: Encoder[Secret[String]] = Encoder.instance(_.value.asJson)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
     Encoder.encodeJsonObject.contramapObject { storage =>
       deriveConfiguredEncoder[StorageFields].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
     }
   }
-
-  private val regions = Region.regions().asScala
-
-  implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
-    _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 
   implicit def storageFieldsJsonLdDecoder(implicit cfg: JsonLdConfiguration): JsonLdDecoder[StorageFields] =
     deriveConfigJsonLdDecoder[StorageFields]

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.Encoder
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * A source for [[CompositeViewValue]].
@@ -218,7 +217,6 @@ object CompositeViewSource {
       )
   }
 
-  @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSource] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
@@ -240,7 +238,6 @@ object CompositeViewSource {
     deriveConfiguredEncoder[CompositeViewSource]
   }
 
-  @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSource] = {
     implicit val identityLdDecoder: JsonLdDecoder[Identity] = deriveDefaultJsonLdDecoder[Identity]
     deriveDefaultJsonLdDecoder[CompositeViewSource]

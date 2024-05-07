@@ -12,7 +12,6 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 /**
@@ -75,7 +74,6 @@ object ElasticSearchViewsConfig {
       .at("plugins.elasticsearch")
       .loadOrThrow[ElasticSearchViewsConfig]
 
-  @nowarn("cat=unused")
   implicit private val refreshConfigReader: ConfigReader[Refresh] = ConfigReader.fromString {
     case "true"     => Right(Refresh.True)
     case "false"    => Right(Refresh.False)

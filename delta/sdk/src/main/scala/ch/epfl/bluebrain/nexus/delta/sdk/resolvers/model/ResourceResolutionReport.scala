@@ -11,7 +11,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
 import scala.collection.immutable.VectorMap
 
 /**
@@ -107,7 +106,6 @@ object ResourceResolutionReport {
     override def success: Boolean = true
   }
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default
 
   implicit val resolverReportEncoder: Encoder.AsObject[ResolverReport] = {

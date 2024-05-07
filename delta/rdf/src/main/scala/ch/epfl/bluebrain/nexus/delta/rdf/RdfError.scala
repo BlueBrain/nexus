@@ -10,14 +10,11 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import org.apache.jena.riot.Lang
 
-import scala.annotation.nowarn
-
 sealed abstract class RdfError(val reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RdfError = this
   override def getMessage: String           = details.fold(reason)(d => s"$reason\nDetails: $d")
 }
 
-@nowarn("cat=unused")
 object RdfError {
 
   /**

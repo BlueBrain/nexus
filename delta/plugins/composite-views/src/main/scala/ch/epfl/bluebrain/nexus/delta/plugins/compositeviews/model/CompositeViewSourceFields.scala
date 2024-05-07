@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, IriFilter, Projec
 import io.circe.Encoder
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Necessary fields to create/update a composite view source.
@@ -141,7 +140,6 @@ object CompositeViewSourceFields {
     )
   }
 
-  @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSourceFields] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
@@ -163,7 +161,6 @@ object CompositeViewSourceFields {
     deriveConfiguredEncoder[CompositeViewSourceFields]
   }
 
-  @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSourceFields] = {
 
     val ctx = Configuration.default.context

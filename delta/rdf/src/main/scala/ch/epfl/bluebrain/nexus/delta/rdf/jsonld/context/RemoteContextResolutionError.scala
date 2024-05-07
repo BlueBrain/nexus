@@ -2,11 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-
-import scala.annotation.nowarn
+import io.circe.{Encoder, Json}
 
 sealed abstract class RemoteContextResolutionError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
@@ -15,7 +13,6 @@ sealed abstract class RemoteContextResolutionError(reason: String, details: Opti
   def getDetails: Option[String] = details
 }
 
-@nowarn("cat=unused")
 object RemoteContextResolutionError {
 
   /**

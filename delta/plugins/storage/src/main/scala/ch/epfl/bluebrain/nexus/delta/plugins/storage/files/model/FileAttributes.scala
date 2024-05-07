@@ -10,7 +10,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Holds all the metadata information related to the file.
@@ -117,8 +116,8 @@ object FileAttributes {
       underscoreFieldsForMetadata: Boolean = false,
       removePath: Boolean = false,
       removeLocation: Boolean = false
-  )(implicit @nowarn("cat=unused") digestEncoder: Encoder.AsObject[Digest]): Encoder.AsObject[FileAttributes] = {
-    @nowarn("cat=unused")
+  )(implicit digestEncoder: Encoder.AsObject[Digest]): Encoder.AsObject[FileAttributes] = {
+
     implicit val config: Configuration = underscoreFieldsForMetadata match {
       case true  => withUnderscoreMetadataFields(originalConfig)
       case false => originalConfig

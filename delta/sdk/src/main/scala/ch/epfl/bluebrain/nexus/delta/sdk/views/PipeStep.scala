@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeRef
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
-import scala.annotation.nowarn
 import cats.implicits._
 
 /**
@@ -28,7 +27,7 @@ final case class PipeStep(name: Label, description: Option[String], config: Opti
   def description(value: String): PipeStep = copy(description = Some(value))
 
 }
-@nowarn("cat=unused")
+
 object PipeStep {
 
   def apply(value: (PipeRef, ExpandedJsonLd)): PipeStep =

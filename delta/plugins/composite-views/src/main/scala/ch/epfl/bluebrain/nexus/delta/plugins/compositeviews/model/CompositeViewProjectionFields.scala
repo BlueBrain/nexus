@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Necessary fields needed to create/update a composite view projection.
@@ -146,7 +145,6 @@ object CompositeViewProjectionFields {
       )
   }
 
-  @nowarn("cat=unused")
   implicit final val projectionEncoder: Encoder.AsObject[CompositeViewProjectionFields] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
@@ -167,7 +165,6 @@ object CompositeViewProjectionFields {
     deriveConfiguredEncoder[CompositeViewProjectionFields]
   }
 
-  @nowarn("cat=unused")
   implicit final val projectionLdDecoder: JsonLdDecoder[CompositeViewProjectionFields] = {
 
     val ctx = Configuration.default.context

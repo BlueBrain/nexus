@@ -22,7 +22,6 @@ import io.circe.{Codec, Decoder, Encoder, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Project event types.
@@ -291,7 +290,6 @@ object ProjectEvent {
       subject: Subject
   ) extends ProjectEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[ProjectRef, ProjectEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
@@ -338,7 +336,6 @@ object ProjectEvent {
 
       override val selectors: Set[Label] = Set(Label.unsafe("projects"), resourcesSelector)
 
-      @nowarn("cat=unused")
       override val sseEncoder: Encoder.AsObject[ProjectEvent] = {
         val context = ContextValue(contexts.metadata, contexts.projects)
 

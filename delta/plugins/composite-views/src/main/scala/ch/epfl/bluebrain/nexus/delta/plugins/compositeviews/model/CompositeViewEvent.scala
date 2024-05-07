@@ -24,7 +24,6 @@ import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Composite view event enumeration.
@@ -193,7 +192,6 @@ object CompositeViewEvent {
       subject: Subject
   ) extends CompositeViewEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, CompositeViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
@@ -232,7 +230,6 @@ object CompositeViewEvent {
 
       override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
 
-      @nowarn("cat=unused")
       override val sseEncoder: Encoder.AsObject[CompositeViewEvent] = {
         val context                                                = ContextValue(Vocabulary.contexts.metadata, contexts.compositeViews)
         implicit val config: Configuration                         = Configuration.default

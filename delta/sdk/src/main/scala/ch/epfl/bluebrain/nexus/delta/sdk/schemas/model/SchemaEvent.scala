@@ -24,7 +24,6 @@ import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of schema event states
@@ -234,7 +233,6 @@ object SchemaEvent {
       subject: Subject
   ) extends SchemaEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, SchemaEvent] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
@@ -277,7 +275,6 @@ object SchemaEvent {
 
     override val selectors: Set[Label] = Set(Label.unsafe("schemas"), resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[SchemaEvent] = {
       val context                                                   = ContextValue(contexts.metadata, contexts.shacl)
       implicit val config: Configuration                            = Configuration.default

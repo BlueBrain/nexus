@@ -10,7 +10,6 @@ import pureconfig.generic.semiauto.deriveReader
 import pureconfig.module.cats._
 
 import java.util
-import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 
 /**
@@ -53,7 +52,6 @@ object AuthorizationMethod {
     }
   }
 
-  @nowarn("cat=unused")
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
     implicit val jsonObjectReader: ConfigReader[util.Map[String, AnyRef]] =
       ConfigReader.configObjectConfigReader.map(configObj => configObj.unwrapped())

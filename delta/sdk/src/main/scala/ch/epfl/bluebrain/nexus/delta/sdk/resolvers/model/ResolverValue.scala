@@ -14,8 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 sealed trait ResolverValue extends Product with Serializable {
 
   /**
@@ -175,7 +173,6 @@ object ResolverValue {
       identities: Option[Set[Identity]]
   ) extends Resolver
 
-  @nowarn("cat=unused")
   implicit val resolverValueJsonLdDecoder: JsonLdDecoder[ResolverValue] = {
     implicit val config: JsonLdConfiguration              = JsonLdConfiguration.default
     implicit val identityDecoder: JsonLdDecoder[Identity] = deriveConfigJsonLdDecoder[Identity]

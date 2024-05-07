@@ -11,7 +11,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.Codec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Permissions event types.
@@ -100,7 +99,6 @@ object PermissionsEvent {
       subject: Subject
   ) extends PermissionsEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Label, PermissionsEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration            = Serializer.circeConfiguration

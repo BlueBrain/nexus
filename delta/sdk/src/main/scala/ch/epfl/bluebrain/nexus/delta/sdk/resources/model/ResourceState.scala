@@ -18,7 +18,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * A resource active state.
@@ -103,7 +102,6 @@ final case class ResourceState(
 
 object ResourceState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, ResourceState] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._

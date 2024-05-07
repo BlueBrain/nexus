@@ -9,7 +9,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Describes the remaining elements to stream
@@ -23,7 +22,6 @@ final case class RemainingElems(count: Long, maxInstant: Instant)
 object RemainingElems {
 
   implicit final val remainingElemsCodec: Codec[RemainingElems] = {
-    @nowarn("cat=unused")
     implicit val configuration: Configuration =
       Configuration.default.withDiscriminator(keywords.tpe)
     deriveConfiguredCodec[RemainingElems]

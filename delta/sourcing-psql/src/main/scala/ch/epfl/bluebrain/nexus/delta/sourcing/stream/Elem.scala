@@ -15,7 +15,6 @@ import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfigur
 import io.circe.syntax.EncoderOps
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of projection element states.
@@ -240,7 +239,6 @@ object Elem {
   }
 
   object SuccessElem {
-    @nowarn("cat=unused")
     implicit def read[Value](implicit s: Decoder[Value]): Read[SuccessElem[Value]] = {
       import doobie._
       import doobie.postgres.implicits._
@@ -326,16 +324,13 @@ object Elem {
       }
   }
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
-  @nowarn("cat=unused")
   implicit val elemUnitEncoder: Encoder.AsObject[Elem[Unit]] = {
     implicit val throwableEncoder: Encoder[Throwable] = Encoder.instance[Throwable](_.getMessage.asJson)
     deriveConfiguredEncoder[Elem[Unit]]
   }
 
-  @nowarn("cat=unused")
   implicit val elemUnitDecoder: Decoder[Elem[Unit]] = {
     implicit val throwableDecoder: Decoder[Throwable] = Decoder.decodeString.map(new Exception(_))
     deriveConfiguredDecoder[Elem[Unit]]

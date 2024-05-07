@@ -15,8 +15,6 @@ import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
-import scala.annotation.nowarn
-
 sealed trait SimpleRejection extends Rejection {
   def reason: String
 }
@@ -35,7 +33,6 @@ object SimpleRejection extends CirceLiteral {
 
   val bNode: BNode = BNode.random
 
-  @nowarn("cat=unused")
   implicit private val cfg: Configuration =
     Configuration.default.withDiscriminator("@type")
 

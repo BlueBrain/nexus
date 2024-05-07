@@ -13,7 +13,6 @@ import io.circe.Codec
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Enumeration of organization event states
@@ -143,7 +142,6 @@ object OrganizationEvent {
       subject: Subject
   ) extends OrganizationEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Label, OrganizationEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration             = Serializer.circeConfiguration

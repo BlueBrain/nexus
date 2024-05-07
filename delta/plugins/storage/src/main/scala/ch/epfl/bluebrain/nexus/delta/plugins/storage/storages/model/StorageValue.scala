@@ -1,20 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder}
-import software.amazon.awssdk.regions.Region
+import io.circe.{Codec, Encoder}
 
 import java.io.File
-import java.nio.file.Path
-import scala.annotation.nowarn
+
 import scala.reflect.io.Directory
-import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
 
@@ -203,10 +199,8 @@ object StorageValue {
       )
   }
 
-  @nowarn("cat=unused")
   implicit private[model] val storageValueEncoder: Encoder.AsObject[StorageValue] = {
-    implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
     Encoder.encodeJsonObject.contramapObject { storage =>
       deriveConfiguredEncoder[StorageValue].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
@@ -214,16 +208,7 @@ object StorageValue {
   }
 
   @SuppressWarnings(Array("TryGet"))
-  @nowarn("cat=unused")
-  def databaseCodec(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
-    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
-    implicit val pathDecoder: Decoder[Path]     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
-    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.toString)
-    implicit val regionDecoder: Decoder[Region] = Decoder.decodeString.map(Region.of)
-
-    implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
-
+  def databaseCodec(implicit configuration: Configuration): Codec.AsObject[StorageValue] =
     deriveConfiguredCodec[StorageValue]
-  }
 
 }

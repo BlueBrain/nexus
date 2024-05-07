@@ -12,8 +12,6 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-import scala.annotation.nowarn
-
 /**
   * Analytics graph with nodes and edges with their counts.
   *
@@ -75,7 +73,6 @@ object AnalyticsGraph {
 
   val empty: AnalyticsGraph = AnalyticsGraph(Seq.empty, Seq.empty)
 
-  @nowarn("cat=unused")
   implicit private val relationshipsEncoder: Encoder.AsObject[AnalyticsGraph] = {
     implicit val cfg: Configuration                          =
       Configuration.default.copy(transformMemberNames = {

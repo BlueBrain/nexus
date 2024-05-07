@@ -7,8 +7,6 @@ import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
-import scala.annotation.nowarn
-
 /**
   * Type that represents a project payload for creation and update requests.
   *
@@ -59,7 +57,6 @@ final case class ProjectFields(
 
 object ProjectFields {
 
-  @nowarn("cat=unused")
   implicit final private val configuration: Configuration   = Configuration.default.withStrictDecoding.withDefaults
   implicit val projectFieldsDecoder: Decoder[ProjectFields] = deriveConfiguredDecoder[ProjectFields]
 

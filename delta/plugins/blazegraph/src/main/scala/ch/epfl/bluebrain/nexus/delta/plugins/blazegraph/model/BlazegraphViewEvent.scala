@@ -24,7 +24,6 @@ import io.circe._
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Blazegraph view events.
@@ -231,7 +230,6 @@ object BlazegraphViewEvent {
       subject: Subject
   ) extends BlazegraphViewEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, BlazegraphViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                    = Serializer.circeConfiguration
@@ -269,7 +267,6 @@ object BlazegraphViewEvent {
 
     override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[BlazegraphViewEvent] = {
       val context                                                 = ContextValue(Vocabulary.contexts.metadata, contexts.blazegraph)
       implicit val config: Configuration                          = Configuration.default

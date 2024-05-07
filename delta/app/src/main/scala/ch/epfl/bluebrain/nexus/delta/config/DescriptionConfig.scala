@@ -6,8 +6,6 @@ import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.annotation.nowarn
-
 /**
   * The service description.
   *
@@ -32,7 +30,7 @@ final case class DescriptionConfig(name: Name, env: Name) {
 }
 
 object DescriptionConfig {
-  @nowarn("cat=unused")
+
   implicit private val nameReader: ConfigReader[Name] =
     ConfigReader.fromString(str => Name(str).leftMap(err => CannotConvert(str, "Name", err.getMessage)))
 

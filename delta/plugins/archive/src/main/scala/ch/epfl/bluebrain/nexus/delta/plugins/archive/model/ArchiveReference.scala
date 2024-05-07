@@ -18,8 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Encoder
 
-import scala.annotation.nowarn
-
 /**
   * Enumeration of archive references.
   */
@@ -149,7 +147,6 @@ object ArchiveReference {
       path: Option[AbsolutePath]
   ) extends ReferenceInput
 
-  @nowarn("cat=unused")
   implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
     def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Int]): ResourceRef =
       (tag, rev) match {
@@ -189,7 +186,6 @@ object ArchiveReference {
     }
   }
 
-  @nowarn("cat=unused")
   implicit private[model] val archiveReferenceEncoder: Encoder[ArchiveReference] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._

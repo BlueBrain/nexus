@@ -30,8 +30,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
-import scala.annotation.nowarn
-
 /**
   * The organization routes.
   *
@@ -180,7 +178,7 @@ object OrganizationsRoutes {
   final private[routes] case class OrganizationInput(description: Option[String])
 
   private[routes] object OrganizationInput {
-    @nowarn("cat=unused")
+
     implicit final private val configuration: Configuration      = Configuration.default.withStrictDecoding
     implicit val organizationDecoder: Decoder[OrganizationInput] = deriveConfiguredDecoder[OrganizationInput]
   }

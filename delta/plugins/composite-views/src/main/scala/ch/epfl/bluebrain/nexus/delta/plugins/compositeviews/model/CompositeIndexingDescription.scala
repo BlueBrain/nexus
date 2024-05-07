@@ -11,8 +11,6 @@ import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
-import scala.annotation.nowarn
-
 /**
   * Describes the indexing context of a composite view
   * @param projectionName
@@ -45,7 +43,6 @@ object CompositeIndexingDescription {
     final case class SparqlSpace(value: String) extends ProjectionSpace
   }
 
-  @nowarn("cat=unused")
   implicit val compositeIndexingDescriptionEncoder: Encoder.AsObject[CompositeIndexingDescription] = {
     implicit val configuration: Configuration                              = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val projectionSpaceEncoder: Encoder.AsObject[ProjectionSpace] = deriveConfiguredEncoder[ProjectionSpace]

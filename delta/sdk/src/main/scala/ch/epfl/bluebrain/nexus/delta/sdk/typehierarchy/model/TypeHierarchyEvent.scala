@@ -10,7 +10,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchy.typeHierarchyId
 
@@ -66,7 +65,6 @@ object TypeHierarchyEvent {
       subject: Subject
   ) extends TypeHierarchyEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, TypeHierarchyEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration              = Serializer.circeConfiguration

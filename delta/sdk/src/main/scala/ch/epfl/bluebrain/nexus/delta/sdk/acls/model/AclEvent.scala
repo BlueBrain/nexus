@@ -11,7 +11,6 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Codec, Encoder}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of ACL event types.
@@ -115,7 +114,6 @@ object AclEvent {
       subject: Subject
   ) extends AclEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[AclAddress, AclEvent] = {
     import Acl.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._

@@ -27,7 +27,6 @@ import io.circe.{Codec, Json}
 import doobie.implicits._
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 object PullRequest {
 
@@ -129,7 +128,6 @@ object PullRequest {
     final case class PullRequestMerged(id: Iri, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
         extends PullRequestEvent
 
-    @nowarn("cat=unused")
     val serializer: Serializer[Iri, PullRequestEvent] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
@@ -237,7 +235,6 @@ object PullRequest {
       override def deprecated: Boolean = true
     }
 
-    @nowarn("cat=unused")
     implicit val serializer: Serializer[Iri, PullRequestState] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")

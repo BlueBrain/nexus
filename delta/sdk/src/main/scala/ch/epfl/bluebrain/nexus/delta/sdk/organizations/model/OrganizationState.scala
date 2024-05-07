@@ -16,7 +16,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Enumeration of organization states.
@@ -71,7 +70,6 @@ final case class OrganizationState(
 
 object OrganizationState {
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Label, OrganizationState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration             = Serializer.circeConfiguration

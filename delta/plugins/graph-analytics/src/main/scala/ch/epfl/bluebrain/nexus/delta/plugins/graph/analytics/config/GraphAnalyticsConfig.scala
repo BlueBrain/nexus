@@ -7,8 +7,6 @@ import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import scala.annotation.nowarn
-
 /**
   * Configuration for the graph analytics plugin.
   *
@@ -51,7 +49,6 @@ object GraphAnalyticsConfig {
       .at("plugins.graph-analytics")
       .loadOrThrow[GraphAnalyticsConfig]
 
-  @nowarn("cat=unused")
   implicit final private val termAggregationsConfigReader: ConfigReader[TermAggregationsConfig] =
     deriveReader[TermAggregationsConfig]
 

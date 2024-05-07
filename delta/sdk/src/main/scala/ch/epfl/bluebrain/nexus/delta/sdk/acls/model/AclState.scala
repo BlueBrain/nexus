@@ -17,7 +17,6 @@ import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfigur
 import io.circe.syntax.EncoderOps
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * An existing ACLs state.
@@ -88,7 +87,6 @@ final case class AclState(
 
 object AclState {
 
-  @nowarn("cat=unused")
   val serializer: Serializer[AclAddress, AclState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import Acl.Database._

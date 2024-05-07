@@ -23,7 +23,6 @@ import io.circe.syntax._
 import io.circe._
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Storage event types.
@@ -186,7 +185,6 @@ object StorageEvent {
       subject: Subject
   ) extends StorageEvent
 
-  @nowarn("cat=unused")
   def serializer: Serializer[Iri, StorageEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
@@ -225,7 +223,6 @@ object StorageEvent {
 
     override val selectors: Set[Label] = Set(Label.unsafe("storages"), resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[StorageEvent] = {
       val context = ContextValue(Vocabulary.contexts.metadata, contexts.storages)
 
