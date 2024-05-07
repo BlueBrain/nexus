@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -21,7 +20,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import fs2.io.file.Path
 import munit.AnyFixture
-import software.amazon.awssdk.services.s3.model.{ChecksumAlgorithm, CompleteMultipartUploadResponse, CopyObjectResponse, ListObjectsV2Response}
+import software.amazon.awssdk.services.s3.model.{CompleteMultipartUploadResponse, CopyObjectResponse, ListObjectsV2Response}
 
 import java.time.Instant
 
@@ -119,7 +118,6 @@ object RunShipSuite {
         sourceKey: String,
         destinationBucket: String,
         destinationKey: String,
-        checksumAlgorithm: ChecksumAlgorithm
     ): IO[CopyObjectResponse] =
       IO.raiseError(new NotImplementedError("copyObject is not implemented"))
 
@@ -129,7 +127,6 @@ object RunShipSuite {
         fileData: fs2.Stream[IO, Byte],
         bucket: String,
         key: String,
-        algorithm: DigestAlgorithm
     ): IO[S3StorageClient.UploadMetadata] =
       IO.raiseError(new NotImplementedError("uploadFile is not implemented"))
 
@@ -146,7 +143,6 @@ object RunShipSuite {
         sourceKey: String,
         destinationBucket: String,
         destinationKey: String,
-        checksumAlgorithm: ChecksumAlgorithm
     ): IO[CompleteMultipartUploadResponse] =
       IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
 
