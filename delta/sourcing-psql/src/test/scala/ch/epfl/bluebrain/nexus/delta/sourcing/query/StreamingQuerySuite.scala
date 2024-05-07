@@ -29,7 +29,6 @@ import io.circe.{Codec, DecodingFailure, Json}
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
@@ -292,7 +291,6 @@ object StreamingQuerySuite {
 
     val entityType: EntityType = EntityType("release")
 
-    @nowarn("cat=unused")
     val serializer: Serializer[Iri, Release] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration   = Configuration.default.withDiscriminator("@type")

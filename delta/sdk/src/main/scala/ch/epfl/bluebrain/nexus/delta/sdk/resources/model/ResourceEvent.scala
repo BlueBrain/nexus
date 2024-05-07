@@ -25,7 +25,6 @@ import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfigur
 import io.circe.syntax._
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of resource event states
@@ -392,7 +391,6 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, ResourceEvent] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
@@ -441,7 +439,6 @@ object ResourceEvent {
 
     override val selectors: Set[Label] = Set(resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[ResourceEvent] = {
       val context                        = ContextValue(contexts.metadata)
       implicit val config: Configuration = Configuration.default

@@ -29,7 +29,6 @@ import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of File event types.
@@ -321,7 +320,6 @@ object FileEvent {
       subject: Subject
   ) extends FileEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, FileEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                        = Serializer.circeConfiguration
@@ -337,7 +335,7 @@ object FileEvent {
   private def createFileAttributesCodec()(implicit
       digestCodec: Codec.AsObject[Digest]
   ): Codec.AsObject[FileAttributes] = {
-    @nowarn("cat=unused")
+
     implicit val configuration: Configuration          = Serializer.circeConfiguration.withDefaults
     implicit val enc: Encoder.AsObject[FileAttributes] =
       FileAttributes.createConfiguredEncoder(Serializer.circeConfiguration.withDefaults)
@@ -377,7 +375,6 @@ object FileEvent {
 
       override val selectors: Set[Label] = Set(Label.unsafe("files"), resourcesSelector)
 
-      @nowarn("cat=unused")
       override val sseEncoder: Encoder.AsObject[FileEvent] = {
         val context                                         = ContextValue(Vocabulary.contexts.metadata, contexts.files)
         val metadataKeys: Set[String]                       =

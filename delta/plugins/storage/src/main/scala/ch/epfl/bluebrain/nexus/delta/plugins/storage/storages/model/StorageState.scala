@@ -15,7 +15,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * State for an existing storage
@@ -84,7 +83,7 @@ final case class StorageState(
 }
 
 object StorageState {
-  @nowarn("cat=unused")
+
   implicit def serializer: Serializer[Iri, StorageState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration

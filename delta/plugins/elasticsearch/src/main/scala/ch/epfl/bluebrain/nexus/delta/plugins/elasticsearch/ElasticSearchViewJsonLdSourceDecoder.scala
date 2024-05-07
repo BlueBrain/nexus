@@ -29,8 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * Decoder for [[ElasticSearchViewValue]] which maps some fields to string, before decoding to get around lack of
   * support for @json in json ld library.
@@ -111,7 +109,6 @@ object ElasticSearchViewJsonLdSourceDecoder {
       override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
     }
 
-    @nowarn("cat=unused")
     implicit final def elasticSearchViewFieldsJsonLdDecoder(implicit
         configuration: Configuration
     ): JsonLdDecoder[ElasticSearchViewFields] = {

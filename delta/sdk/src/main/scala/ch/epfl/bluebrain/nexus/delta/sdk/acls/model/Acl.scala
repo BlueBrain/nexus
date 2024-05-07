@@ -14,8 +14,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
 
-import scala.annotation.nowarn
-
 /**
   * An Access Control List codified as an address and a map where the keys are [[Identity]] and the values are a set of
   * [[Permission]]. It specifies which permissions are applied for which identities in which address.
@@ -129,7 +127,7 @@ object Acl {
   final case class Metadata(path: AclAddress)
 
   object Metadata {
-    @nowarn("cat=unused")
+
     implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
       case "path" => nxv.path.prefix
       case other  => other
@@ -142,7 +140,7 @@ object Acl {
   }
 
   object Database {
-    @nowarn("cat=unused")
+
     implicit val aclCodec: Codec[Acl] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Serializer.circeConfiguration

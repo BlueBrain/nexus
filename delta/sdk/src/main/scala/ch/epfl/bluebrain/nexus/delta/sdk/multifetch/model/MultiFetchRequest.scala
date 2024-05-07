@@ -6,8 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest.Inpu
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Decoder
 
-import scala.annotation.nowarn
-
 /**
   * Request to get multiple resources
   * @param format
@@ -24,7 +22,6 @@ object MultiFetchRequest {
 
   final case class Input(id: ResourceRef, project: ProjectRef)
 
-  @nowarn("cat=unused")
   implicit val multiFetchRequestDecoder: Decoder[MultiFetchRequest] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._

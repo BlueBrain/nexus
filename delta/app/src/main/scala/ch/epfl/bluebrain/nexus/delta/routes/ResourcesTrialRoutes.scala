@@ -29,8 +29,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{Decoder, Json}
 
-import scala.annotation.nowarn
-
 /**
   * The resource trial routes allowing to do read-only operations on resources
   */
@@ -134,7 +132,7 @@ object ResourcesTrialRoutes {
   final private[routes] case class GenerationInput(schema: SchemaInput = noSchema, resource: NexusSource)
 
   private[routes] object GenerationInput {
-    @nowarn("cat=unused")
+
     implicit def generationInputDecoder(implicit decodingOption: DecodingOption): Decoder[GenerationInput] = {
       implicit val configuration: Configuration             = Configuration.default.withDefaults
       implicit val nexusSourceDecoder: Decoder[NexusSource] = NexusSource.nexusSourceDecoder

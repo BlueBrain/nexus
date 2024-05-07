@@ -7,13 +7,11 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.{Decoder, Encoder}
 
-import scala.annotation.nowarn
 import scala.util.Try
 
 // $COVERAGE-OFF$
 object File {
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default
     .copy(transformMemberNames = {
       case "@context" => "@context"
@@ -46,11 +44,9 @@ object File {
   object FileAttributes {
     import ch.epfl.bluebrain.nexus.delta.kernel.instances._
 
-    @nowarn("cat=unused")
     implicit final private val uriDecoder: Decoder[Uri] =
       Decoder.decodeString.emapTry(s => Try(Uri(s)))
 
-    @nowarn("cat=unused")
     implicit final private val uriEncoder: Encoder[Uri] =
       Encoder.encodeString.contramap(_.toString())
 

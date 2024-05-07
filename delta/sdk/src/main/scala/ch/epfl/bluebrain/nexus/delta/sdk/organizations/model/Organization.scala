@@ -11,7 +11,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Representation of an organization.
@@ -45,7 +44,6 @@ object Organization {
     */
   final case class Metadata(label: Label, uuid: UUID)
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "label" => nxv.label.prefix
     case "uuid"  => nxv.uuid.prefix

@@ -7,7 +7,6 @@ import doobie.Read
 import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 final case class RowEvent(
     ordering: Offset.At,
@@ -22,7 +21,6 @@ final case class RowEvent(
 
 object RowEvent {
 
-  @nowarn("cat=unused")
   implicit final val inputEventEncoder: Codec[RowEvent] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto.deriveConfiguredCodec

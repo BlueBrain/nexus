@@ -4,8 +4,6 @@ import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
-import scala.annotation.nowarn
-
 /**
   * OAuth token provided by the Jira instance
   *
@@ -41,7 +39,6 @@ object OAuthToken {
     */
   final case class AccessToken(value: String) extends OAuthToken
 
-  @nowarn("cat=unused")
   implicit val oauthTokenCodec: Codec.AsObject[OAuthToken] = {
     implicit val cfg: Configuration = Configuration.default
     deriveConfiguredCodec[OAuthToken]

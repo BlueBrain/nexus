@@ -16,7 +16,6 @@ import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * State used for all resources that have been created and later possibly updated or deprecated.
@@ -127,7 +126,6 @@ final case class ProjectState(
 
 object ProjectState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[ProjectRef, ProjectState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts

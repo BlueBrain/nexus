@@ -24,7 +24,6 @@ import io.circe._
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * ElasticSearch view event enumeration.
@@ -213,7 +212,6 @@ object ElasticSearchViewEvent {
       subject: Subject
   ) extends ElasticSearchViewEvent
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Iri, ElasticSearchViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
@@ -251,7 +249,6 @@ object ElasticSearchViewEvent {
 
     override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
 
-    @nowarn("cat=unused")
     override val sseEncoder: Encoder.AsObject[ElasticSearchViewEvent] = {
       val context                                                    = ContextValue(Vocabulary.contexts.metadata, contexts.elasticsearch)
       implicit val config: Configuration                             = Configuration.default

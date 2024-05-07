@@ -24,7 +24,7 @@ import io.circe.{Encoder, Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -109,7 +109,7 @@ object CompositeView {
   final case class Metadata(uuid: UUID)
 
   object RebuildStrategy {
-    @nowarn("cat=unused")
+
     implicit final val rebuildStrategyEncoder: Encoder.AsObject[RebuildStrategy] = {
       implicit val config: Configuration                          = Configuration.default.withDiscriminator(keywords.tpe)
       implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
@@ -117,7 +117,6 @@ object CompositeView {
     }
   }
 
-  @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
     import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._

@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * An archive value with its ttl.
   *
@@ -67,7 +65,6 @@ object Archive {
       JsonLdEncoder.computeFromCirce(ContextValue(contexts.archivesMetadata))
   }
 
-  @nowarn("cat=unused")
   implicit private def archiveJsonEncoder: Encoder.AsObject[Archive] = {
     import io.circe.generic.extras.semiauto._
     implicit val cfg: Configuration = Configuration.default.copy(transformMemberNames = {

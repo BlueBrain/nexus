@@ -12,8 +12,6 @@ import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
-import scala.annotation.nowarn
-
 sealed trait Offset extends Product with Serializable {
 
   def value: Long
@@ -52,7 +50,6 @@ object Offset {
   }
 
   implicit final val offsetCodec: Codec[Offset] = {
-    @nowarn("cat=unused")
     implicit val configuration: Configuration =
       Configuration.default.withDiscriminator(keywords.tpe)
     deriveConfiguredCodec[Offset]

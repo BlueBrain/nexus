@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * A target projection for [[CompositeView]].
@@ -167,7 +166,6 @@ object CompositeViewProjection {
       GraphResourceToNTriples
   }
 
-  @nowarn("cat=unused")
   implicit final val projectionEncoder: Encoder.AsObject[CompositeViewProjection] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._

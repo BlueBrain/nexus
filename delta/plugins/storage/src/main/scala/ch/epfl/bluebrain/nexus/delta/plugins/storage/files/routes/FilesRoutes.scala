@@ -35,8 +35,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{parser, Decoder}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
-import scala.annotation.nowarn
-
 /**
   * The files routes
   *
@@ -384,7 +382,7 @@ object FilesRoutes {
   final case class RegisterFileRequest(path: Path, mediaType: Option[ContentType], metadata: Option[FileCustomMetadata])
 
   object LinkFileRequest {
-    @nowarn("cat=unused")
+
     implicit private val config: Configuration                = Configuration.default
     implicit val linkFileDecoder: Decoder[LinkFileRequest]    = deriveConfiguredDecoder[LinkFileRequest]
     implicit val regFileDecoder: Decoder[RegisterFileRequest] = deriveConfiguredDecoder[RegisterFileRequest]

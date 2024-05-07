@@ -7,8 +7,6 @@ import pureconfig.ConvertHelpers._
 import pureconfig._
 import pureconfig.generic.auto._
 
-import scala.annotation.nowarn
-
 /**
   * Akka settings extension to expose application configuration. It typically uses the configuration instance of the
   * actor system as the configuration root.
@@ -19,7 +17,6 @@ import scala.annotation.nowarn
 @SuppressWarnings(Array("LooksLikeInterpolatedString", "OptionGet"))
 class Settings(config: Config) extends Extension {
 
-  @nowarn("cat=unused")
   val appConfig: AppConfig = {
     implicit val uriConverter: ConfigConvert[Uri] =
       ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)

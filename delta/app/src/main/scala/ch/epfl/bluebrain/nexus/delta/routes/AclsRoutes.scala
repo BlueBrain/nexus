@@ -37,8 +37,6 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
-import scala.annotation.nowarn
-
 class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -204,7 +202,6 @@ object AclsRoutes {
 
   private[routes] object AclValues {
 
-    @nowarn("cat=unused")
     implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = {
       implicit val config: Configuration = Configuration.default.withStrictDecoding
       deriveConfiguredDecoder[IdentityPermissions]
@@ -219,7 +216,6 @@ object AclsRoutes {
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
 
-    @nowarn("cat=unused")
     implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = {
       implicit val config: Configuration = Configuration.default.withStrictDecoding
       deriveConfiguredDecoder[ReplaceAcl]
@@ -231,7 +227,6 @@ object AclsRoutes {
     final case class Subtract(acl: AclValues) extends PatchAcl
     final case class Append(acl: AclValues)   extends PatchAcl
 
-    @nowarn("cat=unused")
     implicit val aclPatchDecoder: Decoder[PatchAcl] = {
       implicit val config: Configuration = Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
       deriveConfiguredDecoder[PatchAcl]

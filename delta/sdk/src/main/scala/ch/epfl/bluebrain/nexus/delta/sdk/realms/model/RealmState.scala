@@ -17,7 +17,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * A realm active state; a realm in an active state can be used to authorize a subject through a token.
@@ -142,7 +141,7 @@ final case class RealmState(
 }
 
 object RealmState {
-  @nowarn("cat=unused")
+
   val serializer: Serializer[Label, RealmState] = {
     import GrantType.Camel._
     import ch.epfl.bluebrain.nexus.delta.rdf.instances._

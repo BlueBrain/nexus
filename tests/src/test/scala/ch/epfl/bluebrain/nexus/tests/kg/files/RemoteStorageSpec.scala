@@ -14,8 +14,6 @@ import io.circe.{Decoder, Json}
 import org.scalactic.source.Position
 import org.scalatest.Assertion
 
-import scala.annotation.nowarn
-
 class RemoteStorageSpec extends StorageSpec {
 
   override def storageName: String = "external"
@@ -381,9 +379,9 @@ class RemoteStorageSpec extends StorageSpec {
       case class SupervisedDescription(metadata: Metadata, progress: ProjectionProgress)
       case class Metadata(module: String, name: String)
       case class ProjectionProgress(processed: Int)
-      @nowarn("cat=unused")
-      implicit val metadataDecoder: Decoder[Metadata]                 = deriveDecoder
-      @nowarn("cat=unused")
+
+      implicit val metadataDecoder: Decoder[Metadata] = deriveDecoder
+
       implicit val progressDecoder: Decoder[ProjectionProgress]       = deriveDecoder
       implicit val descriptionDecoder: Decoder[SupervisedDescription] = deriveDecoder
 

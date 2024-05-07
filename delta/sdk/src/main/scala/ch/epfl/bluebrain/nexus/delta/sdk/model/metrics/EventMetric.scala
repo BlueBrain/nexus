@@ -12,7 +12,6 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Metric extracted from a Delta event
@@ -147,7 +146,7 @@ object EventMetric {
   }
 
   implicit val eventMetricEncoder: Encoder.AsObject[EventMetric] = {
-    @nowarn("cat=unused")
+
     implicit val configuration: Configuration   = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val subjectCodec: Encoder[Subject] = deriveConfiguredEncoder[Subject]
     Encoder.AsObject.instance { e =>

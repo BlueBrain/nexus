@@ -7,8 +7,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
 
-import scala.annotation.nowarn
-
 /**
   * Enumeration of runtime errors.
   *
@@ -95,7 +93,6 @@ object StorageError {
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
 
   private val derivedEncoder = deriveConfiguredEncoder[StorageError].mapJson(jsonError)

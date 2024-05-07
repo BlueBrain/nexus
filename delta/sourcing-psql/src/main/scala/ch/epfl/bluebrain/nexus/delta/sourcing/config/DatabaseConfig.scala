@@ -6,8 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAcce
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.annotation.nowarn
-
 /**
   * Database configuration
   * @param read
@@ -40,7 +38,6 @@ final case class DatabaseConfig(
 
 object DatabaseConfig {
 
-  @nowarn("cat=unused")
   implicit final val databaseConfigReader: ConfigReader[DatabaseConfig] = {
     implicit val accessReader: ConfigReader[DatabaseAccess] = deriveReader[DatabaseAccess]
     deriveReader[DatabaseConfig]

@@ -28,8 +28,6 @@ import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
-import scala.annotation.nowarn
-
 /**
   * The permissions routes.
   *
@@ -145,7 +143,6 @@ object PermissionsRoutes {
     final case class Subtract(permissions: Set[Permission]) extends PatchPermissions
     final case class Replace(permissions: Set[Permission])  extends PatchPermissions
 
-    @nowarn("cat=unused")
     implicit final private val configuration: Configuration =
       Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
 

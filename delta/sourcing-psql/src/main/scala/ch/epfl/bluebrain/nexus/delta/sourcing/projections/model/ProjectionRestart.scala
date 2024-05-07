@@ -11,7 +11,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Intent to restart a given projection by a user
@@ -35,7 +34,6 @@ object ProjectionRestart {
     */
   def restartId(offset: Offset): Iri = nxv + s"projection/restart/${offset.value}"
 
-  @nowarn("cat=unused")
   implicit val projectionRestartCodec: Codec[ProjectionRestart] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration

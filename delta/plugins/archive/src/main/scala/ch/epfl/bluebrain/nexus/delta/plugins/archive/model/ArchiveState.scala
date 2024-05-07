@@ -14,7 +14,7 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -61,7 +61,6 @@ final case class ArchiveState(
 
 object ArchiveState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, ArchiveState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                                          = Serializer.circeConfiguration

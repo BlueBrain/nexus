@@ -9,8 +9,6 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
-import scala.annotation.nowarn
-
 /**
   * A type hierarchy representation.
   * @param mapping
@@ -21,7 +19,6 @@ case class TypeHierarchy(mapping: TypeHierarchyMapping)
 object TypeHierarchy {
   type TypeHierarchyMapping = Map[Iri, Set[Iri]]
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default
 
   implicit val typeHierarchyMappingDecoder: Decoder[TypeHierarchy] =

@@ -16,7 +16,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * State for an existing ElasticSearch view.
@@ -131,7 +130,7 @@ final case class ElasticSearchViewState(
 }
 
 object ElasticSearchViewState {
-  @nowarn("cat=unused")
+
   implicit val serializer: Serializer[Iri, ElasticSearchViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration

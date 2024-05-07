@@ -20,7 +20,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 class GraphAnalyticsStreamSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures {
 
@@ -89,7 +88,6 @@ object GraphAnalyticsStreamSuite {
 
     val entityType: EntityType = EntityType("sample")
 
-    @nowarn("cat=unused")
     val serializer: Serializer[Iri, Sample] = {
       implicit val configuration: Configuration  = Serializer.circeConfiguration
       implicit val coder: Codec.AsObject[Sample] = deriveConfiguredCodec[Sample]

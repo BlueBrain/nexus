@@ -16,8 +16,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
-import scala.annotation.nowarn
-
 /**
   * Enumeration of Blazegraph view values.
   */
@@ -50,7 +48,6 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
     }
 }
 
-@nowarn("cat=unused")
 object BlazegraphViewValue {
 
   /**

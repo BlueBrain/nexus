@@ -27,7 +27,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Enumeration of ElasticSearchView types.
@@ -171,7 +170,6 @@ object ElasticSearchView {
 
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
-  @nowarn("cat=unused")
   implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 

@@ -29,8 +29,6 @@ import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
-import scala.annotation.nowarn
-
 class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -119,7 +117,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
 
 object RealmsRoutes {
 
-  @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
 
   final private[routes] case class RealmInput(

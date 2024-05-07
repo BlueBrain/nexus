@@ -15,7 +15,6 @@ import io.circe.{Codec, Json}
 
 import java.time.Instant
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * State for an existing Blazegraph view.
@@ -115,7 +114,6 @@ final case class BlazegraphViewState(
 
 object BlazegraphViewState {
 
-  @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, BlazegraphViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                    = Serializer.circeConfiguration

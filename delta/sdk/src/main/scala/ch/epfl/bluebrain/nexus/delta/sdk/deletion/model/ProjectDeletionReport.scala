@@ -11,7 +11,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * A report compiling the stages of the tasks run during the project deletion
@@ -39,7 +38,6 @@ object ProjectDeletionReport {
   ): ProjectDeletionReport =
     ProjectDeletionReport(project, markedDeletedAt, deletedAt, deletedBy, Vector.empty)
 
-  @nowarn("cat=unused")
   implicit val projectDeletionReportCodec: Codec[ProjectDeletionReport] = {
     implicit val config: Configuration = Configuration.default
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
@@ -67,7 +65,6 @@ object ProjectDeletionReport {
 
     def apply(name: String, log: String): Stage = Stage(name, Vector(log))
 
-    @nowarn("cat=unused")
     implicit val stageEncoder: Codec[Stage] = {
       implicit val config: Configuration = Configuration.default
       deriveConfiguredCodec[Stage]

@@ -14,8 +14,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
-import scala.annotation.nowarn
-
 /**
   * Top level error type that represents general errors
   */
@@ -75,7 +73,6 @@ object ServiceError {
     */
   final case class UnknownSseLabel(label: Label) extends ServiceError(s"The SSE label $label is unknown.")
 
-  @nowarn("cat=unused")
   implicit def serviceErrorEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ServiceError] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]
@@ -87,7 +84,6 @@ object ServiceError {
   implicit def serviceErrorJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ServiceError] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  @nowarn("cat=unused")
   implicit def indexingFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[IndexingFailed] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]

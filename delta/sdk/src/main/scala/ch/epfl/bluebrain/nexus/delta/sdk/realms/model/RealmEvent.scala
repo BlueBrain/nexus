@@ -14,7 +14,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Enumeration of Realm event types.
@@ -235,7 +234,6 @@ object RealmEvent {
   import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
-  @nowarn("cat=unused")
   val serializer: Serializer[Label, RealmEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration      = Serializer.circeConfiguration

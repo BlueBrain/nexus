@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import doobie._
 import doobie.implicits._
 
-import scala.annotation.nowarn
 import cats.implicits._
 
 object EntityCheck {
@@ -39,7 +38,7 @@ object EntityCheck {
       refs: NonEmptySet[(ProjectRef, Id)],
       onUnknownOrDeprecated: Set[(ProjectRef, Id)] => E,
       xas: Transactors
-  )(implicit @nowarn("cat=unused") getId: Get[Id], putId: Put[Id]): IO[Unit] = {
+  )(implicit getId: Get[Id], putId: Put[Id]): IO[Unit] = {
     val fragments    = refs.toNonEmptyList.map { case (p, id) =>
       fr"org = ${p.organization} AND project = ${p.project}  AND id = $id AND tag = ${Latest.value} AND deprecated = false"
     }

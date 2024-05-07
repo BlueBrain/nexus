@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
-import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -49,7 +48,6 @@ object CompositeViewFields {
   ): CompositeViewFields =
     CompositeViewFields(None, None, sources, projections, rebuildStrategy)
 
-  @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
@@ -57,7 +55,6 @@ object CompositeViewFields {
     deriveConfiguredEncoder[CompositeViewFields]
   }
 
-  @nowarn("cat=unused")
   final def jsonLdDecoder(minIntervalRebuild: FiniteDuration): JsonLdDecoder[CompositeViewFields] = {
     implicit val rebuildStrategyDecoder: JsonLdDecoder[RebuildStrategy] = {
       implicit val scopedFiniteDurationDecoder: JsonLdDecoder[FiniteDuration] =

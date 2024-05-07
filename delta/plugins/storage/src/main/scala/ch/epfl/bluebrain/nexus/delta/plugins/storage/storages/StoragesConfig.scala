@@ -16,7 +16,6 @@ import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, Fa
 import pureconfig.generic.auto._
 import pureconfig.{ConfigConvert, ConfigObjectCursor, ConfigReader}
 
-import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -35,7 +34,6 @@ final case class StoragesConfig(
     storageTypeConfig: StorageTypeConfig
 )
 
-@nowarn("cat=unused")
 object StoragesConfig {
 
   implicit val storageConfigReader: ConfigReader[StoragesConfig] =

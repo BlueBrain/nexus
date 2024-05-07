@@ -17,7 +17,6 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * A project representation.
@@ -112,7 +111,6 @@ object Project {
 
   val context: ContextValue = ContextValue(contexts.projects)
 
-  @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "label"                => nxv.label.prefix
     case "uuid"                 => nxv.uuid.prefix
@@ -143,7 +141,6 @@ object Project {
     }
   }
 
-  @nowarn("cat=unused")
   implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = {
     implicit val enc: Encoder[ApiMappings] = effectiveApiMappingsEncoder
     deriveConfiguredEncoder[Metadata]

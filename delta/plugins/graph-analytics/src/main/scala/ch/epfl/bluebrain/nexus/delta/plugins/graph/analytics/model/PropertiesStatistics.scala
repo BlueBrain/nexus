@@ -14,7 +14,7 @@ import io.circe.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.contexts
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 
 /**
   * Each property with its counts.
@@ -40,7 +40,6 @@ object PropertiesStatistics {
     */
   final case class Metadata(id: Iri, name: String, count: Long)
 
-  @nowarn("cat=unused")
   implicit private lazy val propertiesEncoder: Encoder.AsObject[PropertiesStatistics] = {
     implicit val cfg: Configuration = Configuration.default.copy(transformMemberNames = {
       case "id"  => keywords.id

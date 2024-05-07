@@ -13,8 +13,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * Describes the shape of a JSON-LD document
   * @param properties
@@ -150,7 +148,6 @@ object JsonLdDocument {
     )
   }
 
-  @nowarn("cat=unused")
   implicit val jsonLdDocumentEncoder: Encoder[JsonLdDocument] = {
     implicit val config: Configuration = Configuration.default
     deriveConfiguredEncoder[JsonLdDocument].mapJsonObject(_.remove("referenceIds"))

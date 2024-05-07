@@ -7,7 +7,6 @@ import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.annotation.nowarn
 import cats.implicits._
 
 /**
@@ -69,7 +68,6 @@ object QuotasConfig {
       }
       .getOrElse(Right(()))
 
-  @nowarn("cat=unused")
   implicit final val quotasConfigReader: ConfigReader[QuotasConfig] = {
     implicit val quotaReader: ConfigReader[QuotaConfig]                      = deriveReader[QuotaConfig]
     implicit val customMapReader: ConfigReader[Map[ProjectRef, QuotaConfig]] =

@@ -7,8 +7,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax._
 import io.circe.{Codec, Encoder, Json, JsonObject}
 
-import scala.annotation.nowarn
-
 /**
   * Enumeration of identity resolutions for a resolver
   */
@@ -40,7 +38,7 @@ object IdentityResolution {
 
   object Database {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    @nowarn("cat=unused")
+
     implicit private val configuration: Configuration                        = Serializer.circeConfiguration
     implicit val identityResolutionCodec: Codec.AsObject[IdentityResolution] =
       deriveConfiguredCodec[IdentityResolution]

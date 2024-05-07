@@ -10,7 +10,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Possible restart strategies for a composite view
@@ -83,7 +82,6 @@ object CompositeRestart {
     def auto(viewRef: ViewRef, target: Iri): PartialRebuild = PartialRebuild(viewRef, target, Instant.EPOCH, Anonymous)
   }
 
-  @nowarn("cat=unused")
   implicit val compositeRestartCodec: Codec.AsObject[CompositeRestart] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
