@@ -9,7 +9,6 @@ import io.circe.syntax._
 import io.circe.{Codec, Encoder}
 
 import java.io.File
-
 import scala.reflect.io.Directory
 
 sealed trait StorageValue extends Product with Serializable {
@@ -116,11 +115,11 @@ object StorageValue {
       name: Option[String],
       description: Option[String],
       default: Boolean,
-      algorithm: DigestAlgorithm,
       bucket: String,
       readPermission: Permission,
       writePermission: Permission,
-      maxFileSize: Long
+      maxFileSize: Long,
+      algorithm: DigestAlgorithm = DigestAlgorithm.default
   ) extends StorageValue {
 
     override val tpe: StorageType = StorageType.S3Storage
@@ -134,7 +133,6 @@ object StorageValue {
       */
     def apply(
         default: Boolean,
-        algorithm: DigestAlgorithm,
         bucket: String,
         readPermission: Permission,
         writePermission: Permission,
@@ -144,7 +142,6 @@ object StorageValue {
         None,
         None,
         default,
-        algorithm,
         bucket,
         readPermission,
         writePermission,

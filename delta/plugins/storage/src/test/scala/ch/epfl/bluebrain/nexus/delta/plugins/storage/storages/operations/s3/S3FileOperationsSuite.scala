@@ -71,7 +71,6 @@ class S3FileOperationsSuite
     givenAnS3Bucket { bucket =>
       val storageValue = S3StorageValue(
         default = false,
-        algorithm = DigestAlgorithm.default,
         bucket = bucket,
         readPermission = read,
         writePermission = write,
@@ -122,33 +121,6 @@ class S3FileOperationsSuite
 
         assertIO(result, fileContents)
       }
-    }
-  }
-
-  test("Use SHA-1 to calculate a checksum") {
-    givenAnS3Bucket { bucket =>
-      val storageValue = S3StorageValue(
-        default = false,
-        algorithm = DigestAlgorithm.SHA1,
-        bucket = bucket,
-        readPermission = read,
-        writePermission = write,
-        maxFileSize = 20
-      )
-
-      val iri     = iri"http://localhost/s3"
-      val project = ProjectRef.unsafe("org", "project")
-      val storage = S3Storage(iri, project, storageValue, Json.obj())
-
-      val filename      = "myfile.txt"
-      val content       = genString()
-      val hashOfContent = makeContentHash(DigestAlgorithm.SHA1, content)
-      val entity        = HttpEntity(content)
-
-      for {
-        attr <- fileOps.save(storage, filename, entity)
-        _     = assertEquals(attr.digest, ComputedDigest(DigestAlgorithm.SHA1, hashOfContent))
-      } yield ()
     }
   }
 }

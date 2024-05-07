@@ -55,7 +55,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       _              <- log(bucket, key, s"Checking for object existence")
       _              <- validateObjectDoesNotExist(bucket, key)
       _              <- log(bucket, key, s"Beginning upload")
-      uploadMetadata <- s3StorageClient.uploadFile(fileData, bucket, key, algorithm)
+      uploadMetadata <- s3StorageClient.uploadFile(fileData, bucket, key)
       _              <- log(bucket, key, s"Finished upload. Digest: ${uploadMetadata.checksum}")
       attr            = fileMetadata(key, uuid, algorithm, uploadMetadata)
     } yield attr)
@@ -94,5 +94,5 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
     )
 
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
-    logger.info(s"Bucket: ${bucket}. Key: $key. $msg")
+    logger.info(s"Bucket: $bucket. Key: $key. $msg")
 }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.Stream
@@ -26,8 +25,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CopyObjectResponse] = raiseDisabledErr
 
   override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
@@ -35,8 +33,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
   override def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,
-      key: String,
-      algorithm: DigestAlgorithm
+      key: String
   ): IO[UploadMetadata] = raiseDisabledErr
 
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
@@ -47,8 +44,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CompleteMultipartUploadResponse] = raiseDisabledErr
 
   override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = throw disabledErr
