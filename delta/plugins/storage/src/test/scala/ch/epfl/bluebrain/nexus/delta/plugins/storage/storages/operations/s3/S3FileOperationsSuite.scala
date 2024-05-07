@@ -86,15 +86,15 @@ class S3FileOperationsSuite
       val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
       val entity        = HttpEntity(content)
 
-      val lcation          = expectedLocation(project, filename)
+      val location          = expectedLocation(project, filename)
       val expectedMetadata =
         FileStorageMetadata(
           randomUuid,
           content.length.toLong,
           ComputedDigest(DigestAlgorithm.default, hashOfContent),
           FileAttributesOrigin.Client,
-          lcation,
-          lcation.path
+          location,
+          location.path
         )
 
       val result = for {
