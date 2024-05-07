@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
@@ -15,6 +14,9 @@ import software.amazon.awssdk.services.s3.model._
 import java.net.URI
 
 trait S3StorageClient {
+
+  final val checksumAlgorithm: ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
   def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response]
@@ -29,23 +31,20 @@ trait S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CopyObjectResponse]
 
   def copyObjectMultiPart(
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CompleteMultipartUploadResponse]
 
   def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,
-      key: String,
-      algorithm: DigestAlgorithm
+      key: String
   ): IO[UploadMetadata]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
@@ -62,8 +61,7 @@ object S3StorageClient {
   case class HeadObject(
       fileSize: Long,
       contentType: Option[String],
-      sha256Checksum: Option[String],
-      sha1Checksum: Option[String]
+      sha256Checksum: Option[String]
   )
 
   def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {

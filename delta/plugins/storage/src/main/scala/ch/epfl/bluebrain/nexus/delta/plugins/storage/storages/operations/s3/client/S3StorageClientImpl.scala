@@ -3,10 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Ref}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClientImpl._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
@@ -21,9 +19,13 @@ import software.amazon.awssdk.services.s3.model._
 
 import java.util.Base64
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success, Try}
 
-final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val baseEndpoint: Uri, val prefix: Uri)
-    extends S3StorageClient {
+final private[client] class S3StorageClientImpl(
+    client: S3AsyncClientOp[IO],
+    val baseEndpoint: Uri,
+    val prefix: Uri
+) extends S3StorageClient {
 
   override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
     client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
@@ -59,8 +61,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
         HeadObject(
           resp.contentLength(),
           Option(resp.contentType()),
-          Option(resp.checksumSHA256()),
-          Option(resp.checksumSHA1())
+          Option(resp.checksumSHA256())
         )
       )
 
@@ -68,8 +69,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CopyObjectResponse] =
     client.copyObject(
       CopyObjectRequest
@@ -86,8 +86,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String,
-      checksumAlgorithm: ChecksumAlgorithm
+      destinationKey: String
   ): IO[CompleteMultipartUploadResponse] = {
     val partSize = 5_000_000_000L // 5GB
     for {
@@ -115,6 +114,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
               CompletedPart.builder
                 .partNumber(partNumber + 1)
                 .eTag(response.copyPartResult.eTag)
+                .checksumSHA256(response.copyPartResult.checksumSHA256)
                 .build
             )
         }
@@ -147,15 +147,14 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
   override def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,
-      key: String,
-      algorithm: DigestAlgorithm
+      key: String
   ): IO[UploadMetadata] = {
     for {
       fileSizeAcc <- Ref.of[IO, Long](0L)
       digest      <- fileData
                        .evalTap(_ => fileSizeAcc.update(_ + 1))
                        .through(
-                         uploadFilePipe(bucket, key, algorithm)
+                         uploadFilePipe(bucket, key)
                        )
                        .compile
                        .onlyOrError
@@ -164,7 +163,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
     } yield UploadMetadata(digest, fileSize, location)
   }
 
-  private def uploadFilePipe(bucket: String, key: String, algorithm: DigestAlgorithm): Pipe[IO, Byte, String] = { in =>
+  private def uploadFilePipe(bucket: String, key: String): Pipe[IO, Byte, String] = { in =>
     fs2.Stream.eval {
       in.compile.to(Chunk).flatMap { chunks =>
         val bs = chunks.toByteBuffer
@@ -173,23 +172,23 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
                         PutObjectRequest
                           .builder()
                           .bucket(bucket)
-                          .deltaDigest(algorithm)
+                          .checksumAlgorithm(checksumAlgorithm)
                           .key(key)
                           .build(),
                         AsyncRequestBody.fromByteBuffer(bs)
                       )
-        } yield {
-          checksumFromResponse(response, algorithm)
-        }
+          checksum <- checksumFromResponse(response)
+        } yield checksum
       }
     }
   }
 
-  private def checksumFromResponse(response: PutObjectResponse, algorithm: DigestAlgorithm): String = {
-    algorithm.value match {
-      case "SHA-256" => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
-      case "SHA-1"   => Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA1()))
-      case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
+  private def checksumFromResponse(response: PutObjectResponse): IO[String] = {
+    Try {
+      Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
+    } match {
+      case Failure(exception) => IO.raiseError(exception)
+      case Success(checksum)  => IO.pure(checksum)
     }
   }
 
@@ -220,15 +219,4 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO], val
       .checksumAlgorithm(checksumAlgorithm)
       .build
 
-}
-
-private object S3StorageClientImpl {
-  implicit class PutObjectRequestOps(request: PutObjectRequest.Builder) {
-    def deltaDigest(algorithm: DigestAlgorithm): PutObjectRequest.Builder =
-      algorithm.value match {
-        case "SHA-256" => request.checksumAlgorithm(ChecksumAlgorithm.SHA256)
-        case "SHA-1"   => request.checksumAlgorithm(ChecksumAlgorithm.SHA1)
-        case _         => throw new IllegalArgumentException(s"Unsupported algorithm for S3: ${algorithm.value}")
-      }
-  }
 }
