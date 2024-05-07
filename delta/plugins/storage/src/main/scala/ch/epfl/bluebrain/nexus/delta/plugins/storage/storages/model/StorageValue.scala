@@ -123,7 +123,7 @@ object StorageValue {
 
     override val tpe: StorageType = StorageType.S3Storage
 
-    override val algorithm: DigestAlgorithm  = DigestAlgorithm.default
+    override val algorithm: DigestAlgorithm = DigestAlgorithm.default
   }
 
   object S3StorageValue {

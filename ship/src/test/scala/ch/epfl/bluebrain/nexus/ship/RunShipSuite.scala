@@ -117,7 +117,7 @@ object RunShipSuite {
         sourceBucket: String,
         sourceKey: String,
         destinationBucket: String,
-        destinationKey: String,
+        destinationKey: String
     ): IO[CopyObjectResponse] =
       IO.raiseError(new NotImplementedError("copyObject is not implemented"))
 
@@ -126,7 +126,7 @@ object RunShipSuite {
     override def uploadFile(
         fileData: fs2.Stream[IO, Byte],
         bucket: String,
-        key: String,
+        key: String
     ): IO[S3StorageClient.UploadMetadata] =
       IO.raiseError(new NotImplementedError("uploadFile is not implemented"))
 
@@ -142,7 +142,7 @@ object RunShipSuite {
         sourceBucket: String,
         sourceKey: String,
         destinationBucket: String,
-        destinationKey: String,
+        destinationKey: String
     ): IO[CompleteMultipartUploadResponse] =
       IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
 

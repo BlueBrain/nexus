@@ -74,7 +74,7 @@ object StoragesConfig {
 
   object StorageTypeConfig {
 
-    private final case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
+    final private case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
       val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
     }
 
