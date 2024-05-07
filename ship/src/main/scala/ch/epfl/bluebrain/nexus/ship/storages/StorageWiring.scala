@@ -61,7 +61,7 @@ object StorageWiring {
       StorageScopeInitialization.s3(
         storages,
         config.serviceAccount.value,
-        defaultS3Fields(config.targetBucket, amzConfig)
+        defaultS3Fields(config.files.targetBucket, amzConfig)
       )
     }
 

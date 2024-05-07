@@ -45,17 +45,17 @@ class S3FileOperationsSuite
     localStackS3Client()
   implicit private lazy val as: ActorSystem                                                                            = actorSystem()
 
-  private lazy val fileOps = S3FileOperations.mk(s3StorageClient)
+  private lazy val locationGenerator = new S3LocationGenerator(conf.prefixUri)
+  private lazy val fileOps           = S3FileOperations.mk(s3StorageClient, locationGenerator)
 
   private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
     Hex.encodeHexString(MessageDigest.getInstance(algorithm.value).digest(content.getBytes(StandardCharsets.UTF_8)))
   }
 
   private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
-    Uri.Path(s"$proj/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
+    Uri.Path(s"$proj/files/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
 
-  private def expectedLocation(proj: ProjectRef, filename: String): Uri =
-    conf.prefixUri / expectedPath(proj, filename)
+  private def expectedLocation(proj: ProjectRef, filename: String): Uri = conf.prefixUri / expectedPath(proj, filename)
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>
@@ -86,14 +86,15 @@ class S3FileOperationsSuite
       val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
       val entity        = HttpEntity(content)
 
+      val lcation          = expectedLocation(project, filename)
       val expectedMetadata =
         FileStorageMetadata(
           randomUuid,
           content.length.toLong,
           ComputedDigest(DigestAlgorithm.default, hashOfContent),
           FileAttributesOrigin.Client,
-          expectedLocation(project, filename),
-          expectedPath(project, filename)
+          lcation,
+          lcation.path
         )
 
       val result = for {

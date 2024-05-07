@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Ref}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.S3
@@ -21,11 +19,7 @@ import java.util.Base64
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-final private[client] class S3StorageClientImpl(
-    client: S3AsyncClientOp[IO],
-    val baseEndpoint: Uri,
-    val prefix: Uri
-) extends S3StorageClient {
+final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) extends S3StorageClient {
 
   override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
     client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
@@ -159,8 +153,7 @@ final private[client] class S3StorageClientImpl(
                        .compile
                        .onlyOrError
       fileSize    <- fileSizeAcc.get
-      location     = prefix / Uri.Path(key)
-    } yield UploadMetadata(digest, fileSize, location)
+    } yield UploadMetadata(digest, fileSize)
   }
 
   private def uploadFilePipe(bucket: String, key: String): Pipe[IO, Byte, String] = { in =>

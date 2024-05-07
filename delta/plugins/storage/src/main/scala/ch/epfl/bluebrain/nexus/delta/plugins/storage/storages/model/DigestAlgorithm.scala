@@ -23,14 +23,13 @@ final case class DigestAlgorithm private (value: String) {
 
 object DigestAlgorithm {
 
+  final val SHA256: DigestAlgorithm =
+    new DigestAlgorithm("SHA-256")
+
   /**
     * The default algorithm, SHA-256
     */
-  final val default: DigestAlgorithm =
-    new DigestAlgorithm("SHA-256")
-
-  final val SHA1: DigestAlgorithm =
-    new DigestAlgorithm("SHA-1")
+  final val default: DigestAlgorithm = SHA256
 
   /**
     * Safely construct an [[DigestAlgorithm]]

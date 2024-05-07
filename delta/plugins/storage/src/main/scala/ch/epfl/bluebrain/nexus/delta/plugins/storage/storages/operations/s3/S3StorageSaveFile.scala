@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
@@ -22,7 +21,7 @@ import fs2.Stream
 
 import java.util.UUID
 
-final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
+final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerator: S3LocationGenerator)(implicit
     as: ActorSystem,
     uuidf: UUIDF
 ) {
@@ -33,49 +32,45 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient)(implicit
       storage: S3Storage,
       filename: String,
       entity: BodyPartEntity
-  ): IO[FileStorageMetadata] = {
-
+  ): IO[FileStorageMetadata] =
     for {
-      uuid   <- uuidf()
-      path    = Uri.Path(intermediateFolders(storage.project, uuid, filename))
-      result <- storeFile(storage.value.bucket, path.toString(), uuid, entity, storage.value.algorithm)
+      uuid    <- uuidf()
+      location = locationGenerator.file(storage.project, uuid, filename)
+      result  <- storeFile(storage.value.bucket, location, uuid, entity)
     } yield result
-  }
 
   private def storeFile(
       bucket: String,
-      key: String,
+      path: Uri,
       uuid: UUID,
-      entity: BodyPartEntity,
-      algorithm: DigestAlgorithm
+      entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {
     val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
-
+    val key                        = path.toString()
     (for {
       _              <- log(bucket, key, s"Checking for object existence")
       _              <- validateObjectDoesNotExist(bucket, key)
       _              <- log(bucket, key, s"Beginning upload")
       uploadMetadata <- s3StorageClient.uploadFile(fileData, bucket, key)
       _              <- log(bucket, key, s"Finished upload. Digest: ${uploadMetadata.checksum}")
-      attr            = fileMetadata(key, uuid, algorithm, uploadMetadata)
+      attr            = fileMetadata(path, uuid, uploadMetadata)
     } yield attr)
       .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
   }
 
   private def fileMetadata(
-      key: String,
+      location: Uri,
       uuid: UUID,
-      algorithm: DigestAlgorithm,
       uploadMetadata: UploadMetadata
   ): FileStorageMetadata =
     FileStorageMetadata(
       uuid = uuid,
       bytes = uploadMetadata.fileSize,
-      digest = Digest.ComputedDigest(algorithm, uploadMetadata.checksum),
+      digest = Digest.ComputedDigest(DigestAlgorithm.SHA256, uploadMetadata.checksum),
       origin = Client,
-      location = uploadMetadata.location,
-      path = Uri.Path(key)
+      location = location,
+      path = location.path
     )
 
   private def validateObjectDoesNotExist(bucket: String, key: String) =

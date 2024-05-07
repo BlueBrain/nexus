@@ -55,10 +55,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       viewDefaults,
       serviceAccount,
       StoragesConfig(eventLogConfig, pagination, config.copy(amazon = Some(amazonConfig))),
-      importBucket,
-      targetBucket,
-      disableResourceValidation = false,
-      skipFileEvents = false
+      FileProcessingConfig(importBucket, targetBucket, None, skipFileEvents = false, enableTargetRewrite = false),
+      disableResourceValidation = false
     )
 
 }

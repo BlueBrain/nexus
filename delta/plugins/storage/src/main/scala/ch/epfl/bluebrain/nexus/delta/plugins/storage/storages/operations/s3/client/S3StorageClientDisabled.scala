@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
@@ -19,8 +18,6 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
 
   override def headObject(bucket: String, key: String): IO[HeadObject] = raiseDisabledErr
 
-  override def baseEndpoint: Uri = throw disabledErr
-
   override def copyObject(
       sourceBucket: String,
       sourceKey: String,
@@ -37,8 +34,6 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
   ): IO[UploadMetadata] = raiseDisabledErr
 
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
-
-  override def prefix: Uri = throw disabledErr
 
   override def copyObjectMultiPart(
       sourceBucket: String,

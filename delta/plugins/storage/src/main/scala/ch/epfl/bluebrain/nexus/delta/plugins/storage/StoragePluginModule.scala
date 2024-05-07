@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOpe
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -69,6 +70,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[S3StorageClient].fromResource { (cfg: StoragePluginConfig) =>
     S3StorageClient.resource(cfg.storages.storageTypeConfig.amazon)
+  }
+
+  make[S3LocationGenerator].from { (cfg: StoragePluginConfig) =>
+    val prefix: Uri = cfg.storages.storageTypeConfig.amazon.flatMap(_.prefix).getOrElse(Uri.Empty)
+    new S3LocationGenerator(prefix)
   }
 
   make[Storages]
@@ -166,8 +172,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     RemoteDiskFileOperations.mk(client)(uuidF)
   }
 
-  make[S3FileOperations].from { (client: S3StorageClient, uuidF: UUIDF, as: ActorSystem[Nothing]) =>
-    S3FileOperations.mk(client)(as.classicSystem, uuidF)
+  make[S3FileOperations].from {
+    (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF, as: ActorSystem[Nothing]) =>
+      S3FileOperations.mk(client, locationGenerator)(as.classicSystem, uuidF)
   }
 
   make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
