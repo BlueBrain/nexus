@@ -21,6 +21,8 @@ trait S3StorageClient {
 
   def readFile(bucket: String, fileKey: String): Stream[IO, Byte]
 
+  def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte]
+
   def headObject(bucket: String, key: String): IO[HeadObject]
 
   def copyObject(

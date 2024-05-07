@@ -149,6 +149,9 @@ object RunShipSuite {
         checksumAlgorithm: ChecksumAlgorithm
     ): IO[CompleteMultipartUploadResponse] =
       IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
+
+    override def readFileMultipart(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
+      fs2.Stream.empty
   }
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory
