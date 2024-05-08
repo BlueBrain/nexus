@@ -1,23 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import cats.effect.{IO, Ref}
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
-import fs2.interop.reactivestreams.PublisherOps
-import fs2.{Chunk, Pipe, Stream}
+import fs2.interop.reactivestreams.{PublisherOps, _}
+import fs2.{Chunk, Stream}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
-import org.apache.commons.codec.binary.Hex
+import org.reactivestreams.Subscriber
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.model._
 
-import java.util.Base64
+import java.lang
+import java.nio.ByteBuffer
+import java.util.Optional
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Success, Try}
 
 final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) extends S3StorageClient {
 
@@ -51,13 +52,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
           .checksumMode(ChecksumMode.ENABLED)
           .build
       )
-      .map(resp =>
-        HeadObject(
-          resp.contentLength(),
-          Option(resp.contentType()),
-          Option(resp.checksumSHA256())
-        )
-      )
+      .map(resp => HeadObject(resp))
 
   override def copyObject(
       sourceBucket: String,
@@ -141,49 +136,27 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   override def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,
-      key: String
-  ): IO[UploadMetadata] = {
-    for {
-      fileSizeAcc <- Ref.of[IO, Long](0L)
-      digest      <- fileData
-                       .evalTap(_ => fileSizeAcc.update(_ + 1))
-                       .through(
-                         uploadFilePipe(bucket, key)
-                       )
-                       .compile
-                       .onlyOrError
-      fileSize    <- fileSizeAcc.get
-    } yield UploadMetadata(digest, fileSize)
-  }
-
-  private def uploadFilePipe(bucket: String, key: String): Pipe[IO, Byte, String] = { in =>
-    fs2.Stream.eval {
-      in.compile.to(Chunk).flatMap { chunks =>
-        val bs = chunks.toByteBuffer
-        for {
-          response <- client.putObject(
-                        PutObjectRequest
-                          .builder()
-                          .bucket(bucket)
-                          .checksumAlgorithm(checksumAlgorithm)
-                          .key(key)
-                          .build(),
-                        AsyncRequestBody.fromByteBuffer(bs)
-                      )
-          checksum <- checksumFromResponse(response)
-        } yield checksum
+      key: String,
+      contentLengthValue: Long
+  ): IO[Unit] =
+    Stream
+      .resource(fileData.chunks.map { chunk => ByteBuffer.wrap(chunk.toArray) }.toUnicastPublisher)
+      .evalMap { publisher =>
+        val request = PutObjectRequest
+          .builder()
+          .bucket(bucket)
+          .checksumAlgorithm(checksumAlgorithm)
+          .contentLength(contentLengthValue)
+          .key(key)
+          .build()
+        val body    = new AsyncRequestBody {
+          override def contentLength(): Optional[lang.Long]            = Optional.of(contentLengthValue)
+          override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit = publisher.subscribe(s)
+        }
+        client.putObject(request, body)
       }
-    }
-  }
-
-  private def checksumFromResponse(response: PutObjectResponse): IO[String] = {
-    Try {
-      Hex.encodeHexString(Base64.getDecoder.decode(response.checksumSHA256()))
-    } match {
-      case Failure(exception) => IO.raiseError(exception)
-      case Success(checksum)  => IO.pure(checksum)
-    }
-  }
+      .compile
+      .drain
 
   override def bucketExists(bucket: String): IO[Boolean] = {
     listObjectsV2(bucket)

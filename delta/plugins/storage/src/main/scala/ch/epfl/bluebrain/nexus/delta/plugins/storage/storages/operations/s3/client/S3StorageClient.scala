@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
@@ -43,21 +43,15 @@ trait S3StorageClient {
   def uploadFile(
       fileData: Stream[IO, Byte],
       bucket: String,
-      key: String
-  ): IO[UploadMetadata]
+      key: String,
+      contentLength: Long
+  ): IO[Unit]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
   def bucketExists(bucket: String): IO[Boolean]
 }
 
 object S3StorageClient {
-
-  case class UploadMetadata(checksum: String, fileSize: Long)
-  case class HeadObject(
-      fileSize: Long,
-      contentType: Option[String],
-      sha256Checksum: Option[String]
-  )
 
   def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
     case Some(cfg) =>

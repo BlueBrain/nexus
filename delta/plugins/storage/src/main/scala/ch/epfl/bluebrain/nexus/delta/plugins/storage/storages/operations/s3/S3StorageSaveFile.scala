@@ -10,12 +10,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.UploadMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import fs2.Stream
 
@@ -41,19 +39,21 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
 
   private def storeFile(
       bucket: String,
-      path: Uri,
+      location: Uri,
       uuid: UUID,
       entity: BodyPartEntity
   ): IO[FileStorageMetadata] = {
     val fileData: Stream[IO, Byte] = convertStream(entity.dataBytes)
-    val key                        = path.toString()
+    val key                        = location.toString()
     (for {
-      _              <- log(bucket, key, s"Checking for object existence")
-      _              <- validateObjectDoesNotExist(bucket, key)
-      _              <- log(bucket, key, s"Beginning upload")
-      uploadMetadata <- s3StorageClient.uploadFile(fileData, bucket, key)
-      _              <- log(bucket, key, s"Finished upload. Digest: ${uploadMetadata.checksum}")
-      attr            = fileMetadata(path, uuid, uploadMetadata)
+      _             <- log(bucket, key, s"Checking for object existence")
+      _             <- validateObjectDoesNotExist(bucket, key)
+      _             <- log(bucket, key, s"Beginning upload")
+      contentLength <- IO.fromOption(entity.contentLengthOption)(ContentLengthIsMissing)
+      (duration, _) <- s3StorageClient.uploadFile(fileData, bucket, key, contentLength).timed
+      _             <- log(bucket, key, s"Finished upload for $location after ${duration.toSeconds} seconds.")
+      headResponse  <- s3StorageClient.headObject(bucket, key)
+      attr           = fileMetadata(location, uuid, headResponse)
     } yield attr)
       .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError { err => UnexpectedSaveError(key, err.getMessage) }
@@ -62,12 +62,12 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
   private def fileMetadata(
       location: Uri,
       uuid: UUID,
-      uploadMetadata: UploadMetadata
+      headResponse: HeadObject
   ): FileStorageMetadata =
     FileStorageMetadata(
       uuid = uuid,
-      bytes = uploadMetadata.fileSize,
-      digest = Digest.ComputedDigest(DigestAlgorithm.SHA256, uploadMetadata.checksum),
+      bytes = headResponse.fileSize,
+      digest = headResponse.digest,
       origin = Client,
       location = location,
       path = location.path

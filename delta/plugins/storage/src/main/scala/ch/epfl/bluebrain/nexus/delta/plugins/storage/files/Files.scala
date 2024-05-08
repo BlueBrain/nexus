@@ -555,7 +555,7 @@ final class Files(
   private[files] def updateAttributes(f: FileState, storage: Storage): IO[Unit] = {
     val attr = f.attributes
     for {
-      _        <- IO.raiseWhen(f.attributes.digest.computed)(DigestAlreadyComputed(f.id))
+      _        <- IO.raiseUnless(f.attributes.digest == Digest.NotComputedDigest)(DigestAlreadyComputed(f.id))
       newAttr  <- fetchAttributes(storage, attr, f.id)
       mediaType = attr.mediaType orElse Some(newAttr.mediaType)
       command   = UpdateFileAttributes(f.id, f.project, mediaType, newAttr.bytes, newAttr.digest, f.rev, f.updatedBy)

@@ -40,7 +40,7 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes = contents.getBytes(StandardCharsets.UTF_8)
     val key   = genString()
-    client.uploadFile(Stream.fromIterator[IO](bytes.iterator, 16), bucket, key) >> test(key)
+    client.uploadFile(Stream.fromIterator[IO](bytes.iterator, 16), bucket, key, bytes.length.toLong) >> test(key)
   }
 
 }
