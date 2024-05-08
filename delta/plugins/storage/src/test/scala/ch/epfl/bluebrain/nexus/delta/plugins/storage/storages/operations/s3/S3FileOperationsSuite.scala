@@ -86,7 +86,7 @@ class S3FileOperationsSuite
       val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
       val entity        = HttpEntity(content)
 
-      val location          = expectedLocation(project, filename)
+      val location         = expectedLocation(project, filename)
       val expectedMetadata =
         FileStorageMetadata(
           randomUuid,
