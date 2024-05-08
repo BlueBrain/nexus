@@ -31,15 +31,13 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
   private lazy val gitlabPrStore = ScopedEventStore[Iri, PullRequestEvent](
     PullRequest.entityType,
     PullRequestEvent.serializer,
-    queryConfig,
-    xas
+    queryConfig
   )
 
   private lazy val githubPrStore = ScopedEventStore[Iri, PullRequestEvent](
     EntityType("github"),
     PullRequestEvent.serializer,
-    queryConfig,
-    xas
+    queryConfig
   )
 
   private val id1 = nxv + "id1"

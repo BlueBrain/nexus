@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Serializer, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Serializer}
 import doobie._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 
@@ -38,17 +37,17 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
   /**
     * Fetches the history for the event up to the provided revision
     */
-  def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E]
+  def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[ConnectionIO, E]
 
   /**
     * Fetches the history for the event up to the provided revision
     */
-  def history(ref: ProjectRef, id: Id, to: Int): Stream[IO, E] = history(ref, id, Some(to))
+  def history(ref: ProjectRef, id: Id, to: Int): Stream[ConnectionIO, E] = history(ref, id, Some(to))
 
   /**
     * Fetches the history for the global event up to the last existing revision
     */
-  def history(ref: ProjectRef, id: Id): Stream[IO, E] = history(ref, id, None)
+  def history(ref: ProjectRef, id: Id): Stream[ConnectionIO, E] = history(ref, id, None)
 }
 
 object ScopedEventStore {
@@ -56,8 +55,7 @@ object ScopedEventStore {
   def apply[Id, E <: ScopedEvent](
       tpe: EntityType,
       serializer: Serializer[Id, E],
-      config: QueryConfig,
-      xas: Transactors
+      config: QueryConfig
   ): ScopedEventStore[Id, E] =
     new ScopedEventStore[Id, E] {
       implicit val putId: Put[Id]   = serializer.putId
@@ -89,7 +87,7 @@ object ScopedEventStore {
       override def save(event: E, init: PartitionInit): doobie.ConnectionIO[Unit] =
         init.initializePartition("scoped_events") >> insertEvent(event)
 
-      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E] = {
+      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[ConnectionIO, E] = {
         val select =
           fr"SELECT value FROM scoped_events" ++
             Fragments.whereAndOpt(
@@ -101,7 +99,7 @@ object ScopedEventStore {
             ) ++
             fr"ORDER BY rev"
 
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
+        select.query[E].streamWithChunkSize(config.batchSize)
       }
     }
 }
