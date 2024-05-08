@@ -451,7 +451,7 @@ object FileEvent {
   private object FileExtraFields {
     def fromEvent(event: FileEvent): FileExtraFields =
       event match {
-        case c: FileCreated if c.attributes.digest != Digest.NotComputedDigest =>
+        case c: FileCreated if c.attributes.digest.computed =>
           FileExtraFields(
             c.storage.iri,
             c.storageType,
@@ -460,7 +460,7 @@ object FileEvent {
             c.attributes.mediaType,
             Some(c.attributes.origin)
           )
-        case c: FileCreated                                                    =>
+        case c: FileCreated                                 =>
           FileExtraFields(
             c.storage.iri,
             c.storageType,
@@ -469,7 +469,7 @@ object FileEvent {
             None,
             Some(c.attributes.origin)
           )
-        case u: FileUpdated if u.attributes.digest != Digest.NotComputedDigest =>
+        case u: FileUpdated if u.attributes.digest.computed =>
           FileExtraFields(
             u.storage.iri,
             u.storageType,
@@ -478,7 +478,7 @@ object FileEvent {
             u.attributes.mediaType,
             Some(u.attributes.origin)
           )
-        case u: FileUpdated                                                    =>
+        case u: FileUpdated                                 =>
           FileExtraFields(
             u.storage.iri,
             u.storageType,
@@ -487,7 +487,7 @@ object FileEvent {
             None,
             Some(u.attributes.origin)
           )
-        case fau: FileAttributesUpdated                                        =>
+        case fau: FileAttributesUpdated                     =>
           FileExtraFields(
             fau.storage.iri,
             fau.storageType,
@@ -496,15 +496,15 @@ object FileEvent {
             fau.mediaType,
             Some(FileAttributesOrigin.Storage)
           )
-        case fcmu: FileCustomMetadataUpdated                                   =>
+        case fcmu: FileCustomMetadataUpdated                =>
           FileExtraFields(fcmu.storage.iri, fcmu.storageType, None, None, None, None)
-        case fta: FileTagAdded                                                 =>
+        case fta: FileTagAdded                              =>
           FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None)
-        case ftd: FileTagDeleted                                               =>
+        case ftd: FileTagDeleted                            =>
           FileExtraFields(ftd.storage.iri, ftd.storageType, None, None, None, None)
-        case fd: FileDeprecated                                                =>
+        case fd: FileDeprecated                             =>
           FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None)
-        case fud: FileUndeprecated                                             =>
+        case fud: FileUndeprecated                          =>
           FileExtraFields(fud.storage.iri, fud.storageType, None, None, None, None)
       }
 
