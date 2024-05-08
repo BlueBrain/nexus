@@ -38,8 +38,7 @@ object PullRequest {
     val store = ScopedEventStore[Iri, PullRequestEvent](
       PullRequest.entityType,
       PullRequestEvent.serializer,
-      QueryConfig(10, RefreshStrategy.Stop),
-      xas
+      QueryConfig(10, RefreshStrategy.Stop)
     )
     populateWith.traverse(store.unsafeSave).transact(xas.write).as(store)
   }

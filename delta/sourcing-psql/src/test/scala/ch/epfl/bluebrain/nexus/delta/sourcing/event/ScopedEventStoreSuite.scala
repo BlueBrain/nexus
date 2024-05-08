@@ -51,14 +51,14 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("Fetch all events for a given id") {
-    store.history(project1, id1).assert(event1, event2, event3)
+    store.history(project1, id1).transact(xas.read).assert(event1, event2, event3)
   }
 
   test("Fetch all events for a given id up to revision 2") {
-    store.history(project1, id1, 2).assert(event1, event2)
+    store.history(project1, id1, 2).transact(xas.read).assert(event1, event2)
   }
 
   test("Get an empty stream for an unknown (project, id)") {
-    store.history(project2, id2, 2).assertEmpty
+    store.history(project2, id2, 2).transact(xas.read).assertEmpty
   }
 }
