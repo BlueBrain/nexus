@@ -55,7 +55,7 @@ object LocalStackS3StorageClient {
           defaultBucket = defaultBucket,
           prefix = Some(prefix)
         )
-        (S3StorageClient.unsafe(client, conf.defaultEndpoint, conf.prefixUri), client, conf)
+        (S3StorageClient.unsafe(client), client, conf)
       }
     }
 

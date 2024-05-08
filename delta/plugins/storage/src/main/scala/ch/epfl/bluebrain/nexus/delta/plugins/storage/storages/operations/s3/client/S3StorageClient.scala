@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
@@ -49,15 +48,11 @@ trait S3StorageClient {
 
   def objectExists(bucket: String, key: String): IO[Boolean]
   def bucketExists(bucket: String): IO[Boolean]
-
-  def baseEndpoint: Uri
-
-  def prefix: Uri
 }
 
 object S3StorageClient {
 
-  case class UploadMetadata(checksum: String, fileSize: Long, location: Uri)
+  case class UploadMetadata(checksum: String, fileSize: Long)
   case class HeadObject(
       fileSize: Long,
       contentType: Option[String],
@@ -73,12 +68,12 @@ object S3StorageClient {
             AwsBasicCredentials.create(cfg.defaultAccessKey.value, cfg.defaultSecretKey.value)
           )
         }
-      resource(URI.create(cfg.defaultEndpoint.toString()), cfg.prefixUri, creds)
+      resource(URI.create(cfg.defaultEndpoint.toString()), creds)
 
     case None => Resource.pure(S3StorageClientDisabled)
   }
 
-  def resource(endpoint: URI, prefix: Uri, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
+  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
     Interpreter[IO]
       .S3AsyncClientOpResource(
         S3AsyncClient
@@ -88,10 +83,10 @@ object S3StorageClient {
           .forcePathStyle(true)
           .region(Region.US_EAST_1)
       )
-      .map(new S3StorageClientImpl(_, endpoint.toString, prefix.toString))
+      .map(new S3StorageClientImpl(_))
 
-  def unsafe(client: S3AsyncClientOp[IO], defaultEndpoint: Uri, prefix: Uri): S3StorageClient =
-    new S3StorageClientImpl(client, defaultEndpoint.toString, prefix)
+  def unsafe(client: S3AsyncClientOp[IO]): S3StorageClient =
+    new S3StorageClientImpl(client)
 
   def disabled: S3StorageClient = S3StorageClientDisabled
 }

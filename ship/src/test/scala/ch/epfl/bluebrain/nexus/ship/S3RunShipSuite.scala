@@ -40,29 +40,26 @@ class S3RunShipSuite
     val importFilePath = Path("/import/file-events-import.json")
     val gif            = Path("gpfs/cat_scream.gif")
 
-    val importBucket = "nexus-ship-production"
-    val targetBucket = "nexus-delta-production"
-    val shipConfig   = inputConfig.copy(importBucket = importBucket, targetBucket = targetBucket)
+    val importBucket      = "nexus-ship-production"
+    val targetBucket      = "nexus-delta-production"
+    val updatedFileConfig = inputConfig.files.copy(importBucket = importBucket, targetBucket = targetBucket)
+    val shipConfig        = inputConfig.copy(files = updatedFileConfig)
 
-    {
-      for {
-        _     <- uploadFileToS3(fs2S3client, importBucket, importFilePath)
-        _     <- uploadFileToS3(fs2S3client, importBucket, gif)
-        _     <- createBucket(fs2S3client, targetBucket)
-        events = EventStreamer.s3eventStreamer(s3Client, importBucket).stream(importFilePath, Offset.start)
-        _     <- RunShip(events, s3Client, shipConfig, xas).map(_.progress(EntityType("file")).success == 1L)
-        _     <- fs2S3client.getObjectAttributes(
-                   GetObjectAttributesRequest
-                     .builder()
-                     .bucket(targetBucket)
-                     .key(gif.toString)
-                     .objectAttributesWithStrings(java.util.List.of("Checksum"))
-                     .build()
-                 )
-      } yield ()
-    }.accepted
-
-    println(123)
+    for {
+      _     <- uploadFileToS3(fs2S3client, importBucket, importFilePath)
+      _     <- uploadFileToS3(fs2S3client, importBucket, gif)
+      _     <- createBucket(fs2S3client, targetBucket)
+      events = EventStreamer.s3eventStreamer(s3Client, importBucket).stream(importFilePath, Offset.start)
+      _     <- RunShip(events, s3Client, shipConfig, xas).map(_.progress(EntityType("file")).success == 1L)
+      _     <- fs2S3client.getObjectAttributes(
+                 GetObjectAttributesRequest
+                   .builder()
+                   .bucket(targetBucket)
+                   .key(gif.toString)
+                   .objectAttributesWithStrings(java.util.List.of("Checksum"))
+                   .build()
+               )
+    } yield ()
   }
 
   test("Run import from S3 providing a directory") {

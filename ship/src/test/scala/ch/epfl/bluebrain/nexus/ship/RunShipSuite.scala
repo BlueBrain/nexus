@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
@@ -121,8 +120,6 @@ object RunShipSuite {
     ): IO[CopyObjectResponse] =
       IO.raiseError(new NotImplementedError("copyObject is not implemented"))
 
-    override def baseEndpoint: Uri = Uri.apply("http://localhost:4566")
-
     override def uploadFile(
         fileData: fs2.Stream[IO, Byte],
         bucket: String,
@@ -135,8 +132,6 @@ object RunShipSuite {
 
     override def bucketExists(bucket: String): IO[Boolean] =
       IO.raiseError(new NotImplementedError("bucketExists is not implemented"))
-
-    override def prefix: Uri = throw new NotImplementedError("prefix is not implemented")
 
     override def copyObjectMultiPart(
         sourceBucket: String,

@@ -47,9 +47,12 @@ object S3FileOperations {
   private val log       = Logger[S3FileOperations]
   private val ChunkSize = 8 * 1024
 
-  def mk(client: S3StorageClient)(implicit as: ActorSystem, uuidf: UUIDF): S3FileOperations = new S3FileOperations {
+  def mk(client: S3StorageClient, locationGenerator: S3LocationGenerator)(implicit
+      as: ActorSystem,
+      uuidf: UUIDF
+  ): S3FileOperations = new S3FileOperations {
 
-    private lazy val saveFile = new S3StorageSaveFile(client)
+    private lazy val saveFile = new S3StorageSaveFile(client, locationGenerator)
 
     override def checkBucketExists(bucket: String): IO[Unit] = {
       client.bucketExists(bucket).flatMap { exists =>

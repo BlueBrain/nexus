@@ -11,7 +11,7 @@ final case class OrganizationCreationConfig(values: Map[Label, String])
 
 object OrganizationCreationConfig {
 
-  implicit final val quotasConfigReader: ConfigReader[OrganizationCreationConfig] = {
+  implicit final val organizationCreationConfigReader: ConfigReader[OrganizationCreationConfig] = {
     implicit val mapReader: ConfigReader[Map[Label, String]] =
       genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
     deriveReader[OrganizationCreationConfig]

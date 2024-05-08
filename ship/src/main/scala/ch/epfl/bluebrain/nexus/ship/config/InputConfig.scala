@@ -20,10 +20,8 @@ final case class InputConfig(
     viewDefaults: ViewDefaults,
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
-    importBucket: String,
-    targetBucket: String,
-    disableResourceValidation: Boolean,
-    skipFileEvents: Boolean
+    files: FileProcessingConfig,
+    disableResourceValidation: Boolean
 )
 
 object InputConfig {
@@ -36,6 +34,4 @@ object InputConfig {
     )
 
   implicit final val runConfigReader: ConfigReader[InputConfig] = deriveReader[InputConfig]
-    .ensure(_.importBucket.nonEmpty, _ => "importBucket cannot be empty")
-    .ensure(_.targetBucket.nonEmpty, _ => "targetBucket cannot be empty")
 }

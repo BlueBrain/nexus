@@ -53,12 +53,12 @@ class FileProcessor private (
     event match {
       case e: FileCreated               =>
         if (e.attributes.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
+          fileCopier.copyFile(e.project, e.attributes) >>
             files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
         } else IO.unit
       case e: FileUpdated               =>
         if (e.attributes.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.attributes.path, e.attributes.bytes) >>
+          fileCopier.copyFile(e.project, e.attributes) >>
             // format: off
             files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
           // format: on
@@ -114,20 +114,19 @@ object FileProcessor {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): EventProcessor[FileEvent] = if (config.skipFileEvents) noop
+  )(implicit jsonLdApi: JsonLdApi): EventProcessor[FileEvent] = if (config.files.skipFileEvents) noop
   else {
 
     val storages = StorageWiring.storages(fetchContext, rcr, config, clock, xas)
 
-    val fe = new FetchStorage {
+    val fe         = new FetchStorage {
       override def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] =
         storages.flatMap(_.fetch(id, project))
 
       override def fetchDefault(project: ProjectRef): IO[StorageResource] =
         storages.flatMap(_.fetchDefault(project))
     }
-
-    val fileCopier = FileCopier(s3Client, config.importBucket, config.targetBucket)
+    val fileCopier = FileCopier(s3Client, config.files)
 
     val files =
       new Files(
