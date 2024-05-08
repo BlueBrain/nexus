@@ -10,11 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
-import pureconfig.ConfigReader.Result
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
-import pureconfig.{ConfigConvert, ConfigObjectCursor, ConfigReader}
+import pureconfig.{ConfigConvert, ConfigReader}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -75,31 +74,8 @@ object StoragesConfig {
 
   object StorageTypeConfig {
 
-    final case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
+    final private case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
       val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
-    }
-
-    final case class DigestNotSupportedOnS3(digestAlgorithm: DigestAlgorithm) extends FailureReason {
-      val description: String = s"Digest algorithm '${digestAlgorithm.value}' is not supported on S3"
-    }
-
-    private def assertValidS3Algorithm(
-        digestAlgorithm: DigestAlgorithm,
-        amazonCursor: ConfigObjectCursor
-    ): Result[Unit] = {
-      digestAlgorithm.value match {
-        case "SHA-256" | "SHA-1" => Right(())
-        case _                   =>
-          Left(
-            ConfigReaderFailures(
-              ConvertFailure(
-                DigestNotSupportedOnS3(digestAlgorithm),
-                None,
-                amazonCursor.atKeyOrUndefined("digest-algorithm").path
-              )
-            )
-          )
-      }
     }
 
     implicit val storageTypeConfigReader: ConfigReader[StorageTypeConfig] = ConfigReader.fromCursor { cursor =>
@@ -118,7 +94,6 @@ object StoragesConfig {
         amazonEnabledCursor <- amazonCursor.atKey("enabled")
         amazonEnabled       <- amazonEnabledCursor.asBoolean
         amazon              <- ConfigReader[S3StorageConfig].from(amazonCursor)
-        _                   <- assertValidS3Algorithm(amazon.digestAlgorithm, amazonCursor)
         remoteCursor        <- obj.atKeyOrUndefined("remote-disk").asObjectCursor
         remoteEnabledCursor <- remoteCursor.atKey("enabled")
         remoteEnabled       <- remoteEnabledCursor.asBoolean
@@ -173,8 +148,6 @@ object StoragesConfig {
   /**
     * Amazon S3 compatible storage configuration
     *
-    * @param digestAlgorithm
-    *   algorithm for checksum calculation
     * @param defaultEndpoint
     *   the default endpoint of the current storage
     * @param useDefaultCredentialProvider
@@ -199,7 +172,6 @@ object StoragesConfig {
     *   global prefix prepended to the path of all saved S3 files
     */
   final case class S3StorageConfig(
-      digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: Uri,
       useDefaultCredentialProvider: Boolean,
       defaultAccessKey: Secret[String],

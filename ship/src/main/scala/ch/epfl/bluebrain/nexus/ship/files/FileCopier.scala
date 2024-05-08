@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.ship.files
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm
 
 trait FileCopier {
 
@@ -24,9 +23,9 @@ object FileCopier {
 
       // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
       if (fileSize >= FIVE_GB)
-        s3StorageClient.copyObjectMultiPart(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void
+        s3StorageClient.copyObjectMultiPart(importBucket, key, targetBucket, key).void
       else
-        s3StorageClient.copyObject(importBucket, key, targetBucket, key, ChecksumAlgorithm.SHA256).void
+        s3StorageClient.copyObject(importBucket, key, targetBucket, key).void
     }
 
   def apply(): FileCopier =

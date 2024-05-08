@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions
 import ch.epfl.bluebrain.nexus.testkit.Generators
@@ -45,7 +44,6 @@ object LocalStackS3StorageClient {
         val creds                  = localstack.staticCredentialsProvider.resolveCredentials()
         val (accessKey, secretKey) = (creds.accessKeyId(), creds.secretAccessKey())
         val conf: S3StorageConfig  = S3StorageConfig(
-          digestAlgorithm = DigestAlgorithm.default,
           defaultEndpoint = Uri(localstack.endpointOverride(LocalStackS3.ServiceType).toString),
           useDefaultCredentialProvider = false,
           defaultAccessKey = Secret(accessKey),
