@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -146,6 +145,8 @@ object StorageFileRejection {
           s"File cannot be saved on path '$path' for unexpected reasons. Details '$details'"
         )
 
+    final case class BucketAccessDenied(bucket: String, key: String, details: String)
+        extends SaveFileRejection(s"Access denied to bucket $bucket at key $key")
   }
 
   /**
@@ -196,9 +197,6 @@ object StorageFileRejection {
   sealed abstract class RegisterFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object RegisterFileRejection {
-    final case class MissingS3Attributes(missingAttributes: NonEmptyList[String])
-        extends RegisterFileRejection(s"Missing attributes from S3: ${missingAttributes.toList.mkString(", ")}")
-
     final case class InvalidContentType(received: String)
         extends RegisterFileRejection(s"Invalid content type returned from S3: $received")
 
