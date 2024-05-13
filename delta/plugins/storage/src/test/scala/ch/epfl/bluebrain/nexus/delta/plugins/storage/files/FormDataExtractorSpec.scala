@@ -96,6 +96,20 @@ class FormDataExtractorSpec
       consume(contents.dataBytes) shouldEqual content
     }
 
+    "be extracted with the default filename when none is provided" in {
+      val entity = createEntity("file", NoContentType, None)
+
+      val filename = extractor(iri, entity, 250).accepted.filename
+      filename shouldEqual "file"
+    }
+
+    "be extracted with the default filename when an empty string is provided" in {
+      val entity = createEntity("file", NoContentType, Some(""))
+
+      val filename = extractor(iri, entity, 250).accepted.filename
+      filename shouldEqual "file"
+    }
+
     "be extracted with the provided content type header" in {
       val entity                                                   = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
       val UploadedFileInformation(filename, contentType, contents) =
