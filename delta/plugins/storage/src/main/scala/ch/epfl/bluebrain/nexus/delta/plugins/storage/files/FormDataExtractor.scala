@@ -49,7 +49,8 @@ case class UploadedFileInformation(
 
 object FormDataExtractor {
 
-  private val FileFieldName: String = "file"
+  private val FileFieldName: String   = "file"
+  private val defaultFilename: String = "file"
 
   private val defaultContentType: ContentType.Binary = ContentTypes.`application/octet-stream`
 
@@ -125,7 +126,7 @@ object FormDataExtractor {
 
       private def extractFile(part: FormData.BodyPart): Future[Option[UploadedFileInformation]] = part match {
         case part if part.name == FileFieldName =>
-          val filename    = part.filename.getOrElse("file")
+          val filename    = part.filename.filterNot(_.isEmpty).getOrElse(defaultFilename)
           val contentType = detectContentType(filename, part.entity.contentType)
 
           Future(
