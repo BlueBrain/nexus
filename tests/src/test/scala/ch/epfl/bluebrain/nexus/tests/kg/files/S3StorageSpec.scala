@@ -5,7 +5,7 @@ import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, locationWithFilename, mediaType => mediaTypeField}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ShouldMatchers.convertToAnyShouldWrapper
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
@@ -223,6 +223,7 @@ class S3StorageSpec extends StorageSpec {
              )((json, response) => {
                response.status shouldEqual StatusCodes.Created
                json should have(filenameField(name))
+               json should have(locationWithFilename(UrlUtils.encode(name)))
              })
         _ <- assertThereIsAFileInS3WithFilename(UrlUtils.encode(name))
       } yield {
