@@ -210,33 +210,42 @@ class S3StorageSpec extends StorageSpec {
 
   "Filenames with url-encodable characters" should {
     "have an appropriate filename in S3" in {
-      val id   = genId()
+
       val name = "name with spaces.txt"
 
-      for {
-        _ <- deltaClient.uploadFile[Json](
-               s"/files/$projectRef/$id?storage=nxv:$storageId",
-               "file contents",
-               ContentTypes.`text/plain(UTF-8)`,
-               name,
-               Coyote
-             )((json, response) => {
-               response.status shouldEqual StatusCodes.Created
-               json should have(filenameField(name))
-               json should have(locationWithFilename(UrlUtils.encode(name)))
-             })
-        _ <- assertThereIsAFileInS3WithFilename(UrlUtils.encode(name))
-      } yield {
-        succeed
-      }
+      val location = uploadAFileWithName(name)
+      location should endWith(UrlUtils.encode(name))
+
+      assertThereIsAFileInS3WithAtLocation(location)
     }
   }
 
-  private def assertThereIsAFileInS3WithFilename(filename: String) = {
+  private def uploadAFileWithName(name: String): String = {
+    val id               = genId()
+    val (json, response) = deltaClient
+      .uploadFileWithMetadata(
+        s"/files/$projectRef/$id?storage=nxv:$storageId",
+        "file contents",
+        ContentTypes.`text/plain(UTF-8)`,
+        name,
+        Coyote,
+        None,
+        None,
+        Map.empty
+      )
+      .accepted
+
+    response.status shouldEqual StatusCodes.Created
+    json should have(filenameField(name))
+    json.hcursor.downField("_location").as[String].getOrElse(fail("file has no _location field"))
+  }
+
+  private def assertThereIsAFileInS3WithAtLocation(location: String): Assertion = {
     s3Client
       .listObjectsV2(ListObjectsV2Request.builder.bucket(bucket).prefix(s"myprefix/$projectRef/files").build)
       .map(_.contents.asScala.map(_.key()))
-      .map(keys => exactly(1, keys) should endWith(filename))
+      .map(keys => keys should contain(location))
+      .accepted
   }
 
   private def registrationResponse(id: String, digestValue: String, location: String): Json =
