@@ -17,4 +17,15 @@ object JsonMatchers {
       actual.orNull
     )
   }
+
+  def fieldThatEndsWith(key: String, expectedEnding: String): HavePropertyMatcher[Json, String] = HavePropertyMatcher {
+    json =>
+      val actual = json.hcursor.downField(key).as[String].toOption
+      HavePropertyMatchResult(
+        actual.exists(_.endsWith(expectedEnding)),
+        key,
+        "ends with " + expectedEnding,
+        actual.orNull
+      )
+  }
 }
