@@ -154,6 +154,8 @@ object StorageFileRejection {
           s"File cannot be saved on path '$path' for unexpected reasons. Details '$details'"
         )
 
+    final case class BucketAccessDenied(bucket: String, key: String, details: String)
+        extends SaveFileRejection(s"Access denied to bucket $bucket at key $key")
   }
 
   /**

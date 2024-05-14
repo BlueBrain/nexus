@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileEvent, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileEvent, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -49,36 +49,53 @@ class FileProcessor private (
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
 
+    def getCustomMetadata(attributes: FileAttributes) = {
+      val keywords = attributes.keywords
+      FileCustomMetadata(
+        attributes.name,
+        attributes.description,
+        Option.unless(keywords.isEmpty)(keywords)
+      )
+    }
+
+    val fileId = FileId(event.id, project)
+
     // TODO: Remove the 5_000_000_000L limit when the multipart works correctly
+    // TODO: Remove the check for empty filename when that is handled
     event match {
       case e: FileCreated               =>
-        if (e.attributes.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.project, e.attributes) >>
-            files.registerFile(FileId(e.id, project), None, None, e.attributes.path, e.tag, e.attributes.mediaType)
-        } else IO.unit
+        val attrs          = e.attributes
+        val customMetadata = Some(getCustomMetadata(attrs))
+        IO.whenA(attrs.bytes < 5_000_000_000L && attrs.filename.nonEmpty) {
+          fileCopier.copyFile(e.project, attrs) >>
+            files.registerFile(fileId, None, customMetadata, attrs.path, e.tag, attrs.mediaType).void
+        }
       case e: FileUpdated               =>
-        if (e.attributes.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.project, e.attributes) >>
-            // format: off
-            files.updateRegisteredFile(FileId(e.id, project), None, None, cRev, e.attributes.path, e.tag, e.attributes.mediaType)
-          // format: on
-        } else IO.unit
+        val attrs          = e.attributes
+        val customMetadata = Some(getCustomMetadata(attrs))
+        IO.whenA(attrs.bytes < 5_000_000_000L && attrs.filename.nonEmpty) {
+          fileCopier.copyFile(e.project, attrs) >>
+            files.updateRegisteredFile(fileId, None, customMetadata, cRev, attrs.path, e.tag, attrs.mediaType).void
+        }
       case e: FileCustomMetadataUpdated =>
-        files.updateMetadata(FileId(e.id, project), cRev, e.metadata, e.tag)
+        files.updateMetadata(fileId, cRev, e.metadata, e.tag)
       case _: FileAttributesUpdated     => IO.unit
       case e: FileTagAdded              =>
-        files.tag(FileId(e.id, project), e.tag, e.targetRev, cRev)
+        files.tag(fileId, e.tag, e.targetRev, cRev)
       case e: FileTagDeleted            =>
-        files.deleteTag(FileId(e.id, project), e.tag, cRev)
-      case e: FileDeprecated            =>
-        files.deprecate(FileId(e.id, project), cRev)
-      case e: FileUndeprecated          =>
-        files.undeprecate(FileId(e.id, project), cRev)
+        files.deleteTag(fileId, e.tag, cRev)
+      case _: FileDeprecated            =>
+        files.deprecate(fileId, cRev)
+      case _: FileUndeprecated          =>
+        files.undeprecate(fileId, cRev)
     }
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
       case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+      case f: FileNotFound          =>
+        // TODO: Remove this redemption when empty filenames are handled correctly
+        logger.warn(f)(s"The file ${f.id} in project ${f.project} does not exist.").as(ImportStatus.Dropped)
       case n: NoSuchKeyException    =>
         event match {
           // format: off

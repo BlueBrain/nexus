@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.{BodyPartEntity, StatusCodes, Uri}
 import akka.stream.scaladsl.Source
 import akka.stream.{Graph, SourceShape}
 import akka.util.ByteString
@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import fs2.Stream
+import software.amazon.awssdk.services.s3.model.S3Exception
 
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -61,8 +62,10 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
     } yield attr)
       .onError(e => logger.error(e)("Unexpected error when storing file"))
       .adaptError {
-        case err: SaveFileRejection => err
-        case err                    => UnexpectedSaveError(key, err.getMessage)
+        case e: SaveFileRejection                                               => e
+        case e: S3Exception if e.statusCode() == StatusCodes.Forbidden.intValue =>
+          BucketAccessDenied(bucket, key, e.getMessage)
+        case e                                                                  => UnexpectedSaveError(key, e.getMessage)
       }
   }
 

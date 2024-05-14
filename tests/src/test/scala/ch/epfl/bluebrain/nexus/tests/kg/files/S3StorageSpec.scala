@@ -4,7 +4,9 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits.toTraverseOps
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, locationWithFilename, mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ShouldMatchers.convertToAnyShouldWrapper
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
@@ -26,7 +28,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
-import java.net.URI
+import java.net.{URI, URLEncoder}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.MessageDigest
@@ -206,6 +208,46 @@ class S3StorageSpec extends StorageSpec {
           response.status shouldEqual StatusCodes.BadRequest
       }
     }
+  }
+
+  "Filenames with url-encodable characters" should {
+    "have an appropriate filename in S3" in {
+
+      val name = "name with spaces.txt"
+
+      val location = uploadAFileWithName(name)
+      location should endWith(UrlUtils.encode(name))
+
+      assertThereIsAFileInS3WithAtLocation(location)
+    }
+  }
+
+  private def uploadAFileWithName(name: String): String = {
+    val id               = genId()
+    val (json, response) = deltaClient
+      .uploadFileWithMetadata(
+        s"/files/$projectRef/$id?storage=nxv:$storageId",
+        "file contents",
+        ContentTypes.`text/plain(UTF-8)`,
+        name,
+        Coyote,
+        None,
+        None,
+        Map.empty
+      )
+      .accepted
+
+    response.status shouldEqual StatusCodes.Created
+    json should have(filenameField(name))
+    json.hcursor.downField("_location").as[String].getOrElse(fail("file has no _location field"))
+  }
+
+  private def assertThereIsAFileInS3WithAtLocation(location: String): Assertion = {
+    s3Client
+      .listObjectsV2(ListObjectsV2Request.builder.bucket(bucket).prefix(s"myprefix/$projectRef/files").build)
+      .map(_.contents.asScala.map(_.key()))
+      .map(keys => keys should contain(location))
+      .accepted
   }
 
   private def registrationResponse(id: String, digestValue: String, location: String): Json =

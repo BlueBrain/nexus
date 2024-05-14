@@ -269,20 +269,21 @@ object FileRejection {
 
   implicit final val fileRejectionHttpResponseFields: HttpResponseFields[FileRejection] =
     HttpResponseFields.fromStatusAndHeaders {
-      case RevisionNotFound(_, _)                                          => (StatusCodes.NotFound, Seq.empty)
-      case TagNotFound(_)                                                  => (StatusCodes.NotFound, Seq.empty)
-      case FileNotFound(_, _)                                              => (StatusCodes.NotFound, Seq.empty)
-      case ResourceAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
-      case IncorrectRev(_, _)                                              => (StatusCodes.Conflict, Seq.empty)
-      case FileTooLarge(_)                                                 => (StatusCodes.PayloadTooLarge, Seq.empty)
-      case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
-      case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
+      case RevisionNotFound(_, _)                                             => (StatusCodes.NotFound, Seq.empty)
+      case TagNotFound(_)                                                     => (StatusCodes.NotFound, Seq.empty)
+      case FileNotFound(_, _)                                                 => (StatusCodes.NotFound, Seq.empty)
+      case ResourceAlreadyExists(_, _)                                        => (StatusCodes.Conflict, Seq.empty)
+      case IncorrectRev(_, _)                                                 => (StatusCodes.Conflict, Seq.empty)
+      case FileTooLarge(_)                                                    => (StatusCodes.PayloadTooLarge, Seq.empty)
+      case WrappedAkkaRejection(rej)                                          => (rej.status, rej.headers)
+      case WrappedStorageRejection(rej)                                       => (rej.status, rej.headers)
       // If this happens it signifies a system problem rather than the user having made a mistake
-      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.InternalServerError, Seq.empty)
-      case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
-      case CopyRejection(_, _, _, rejection)                               => (rejection.status, Seq.empty)
-      case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
-      case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
-      case _                                                               => (StatusCodes.BadRequest, Seq.empty)
+      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))           => (StatusCodes.InternalServerError, Seq.empty)
+      case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_))    => (StatusCodes.Conflict, Seq.empty)
+      case SaveRejection(_, _, SaveFileRejection.BucketAccessDenied(_, _, _)) => (StatusCodes.Forbidden, Seq.empty)
+      case CopyRejection(_, _, _, rejection)                                  => (rejection.status, Seq.empty)
+      case FetchRejection(_, _, _)                                            => (StatusCodes.InternalServerError, Seq.empty)
+      case SaveRejection(_, _, _)                                             => (StatusCodes.InternalServerError, Seq.empty)
+      case _                                                                  => (StatusCodes.BadRequest, Seq.empty)
     }
 }
