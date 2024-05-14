@@ -1,10 +1,15 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Hex
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -13,33 +18,59 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Statistics
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, getDistinctOrgProjects, noopS3Client}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
+import fs2.Stream
 import fs2.io.file.Path
-import munit.AnyFixture
-import software.amazon.awssdk.services.s3.model.{CompleteMultipartUploadResponse, CopyObjectResponse, ListObjectsV2Response}
+import io.circe.optics.JsonPath.root
+import munit.{AnyFixture, Location}
 
-import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
-class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixtures {
+class RunShipSuite
+    extends NexusSuite
+    with Doobie.Fixture
+    with LocalStackS3StorageClient.Fixture
+    with ShipConfigFixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest, localStackS3Client)
   private lazy val xas                           = doobieTruncateAfterTest()
+  private lazy val (s3Client, underlying, _)     = localStackS3Client()
+
+  private val importBucket = inputConfig.files.importBucket
+  private val targetBucket = inputConfig.files.targetBucket
+
+  private val fileContent   = "File content"
+  private val contentLength = fileContent.length.toLong
+  private val fileDigest    =
+    ComputedDigest(DigestAlgorithm.SHA256, Hex.valueOf(DigestAlgorithm.SHA256.digest.digest(fileContent.getBytes)))
 
   private def asPath(path: String): IO[Path] = loader.absolutePath(path).map(Path(_))
 
   private def eventsStream(path: String, offset: Offset = Offset.start) =
     asPath(path).map { path =>
-      EventStreamer.localStreamer.stream(path, offset)
+      Stream.eval(LocalStackS3StorageClient.createBucket(underlying, importBucket)) >>
+        Stream.eval(LocalStackS3StorageClient.createBucket(underlying, targetBucket)) >>
+        EventStreamer.localStreamer.stream(path, offset).evalTap { row =>
+          IO.whenA(row.`type` == Files.entityType) {
+            root.attributes.path.string
+              .getOption(row.value)
+              .traverse { path =>
+                val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
+                s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, path, contentLength)
+              }
+              .void
+          }
+        }
     }
 
   test("Run import by providing the path to a file") {
     for {
       events <- eventsStream("import/import.json")
-      _      <- RunShip(events, noopS3Client, inputConfig, xas).assertEquals(expectedImportReport)
+      _      <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
       _      <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
       _      <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
       _      <- checkFor("storage", nxv + "defaultS3Storage", xas).assertEquals(1)
@@ -49,7 +80,7 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
   test("Run import by providing the path to a directory") {
     for {
       events <- eventsStream("import/multi-part-import")
-      _      <- RunShip(events, noopS3Client, inputConfig, xas).assertEquals(expectedImportReport)
+      _      <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
     } yield ()
   }
 
@@ -57,7 +88,7 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
     val start = Offset.at(2)
     for {
       events <- eventsStream("import/two-projects.json", offset = start)
-      _      <- RunShip(events, noopS3Client, inputConfig, xas).map { report =>
+      _      <- RunShip(events, s3Client, inputConfig, xas).map { report =>
                   assert(report.offset == Offset.at(2L))
                   assert(thereIsOneProjectEventIn(report))
                 }
@@ -72,7 +103,7 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
     )
     for {
       events <- eventsStream("import/import.json")
-      _      <- RunShip(events, noopS3Client, configWithProjectMapping, xas)
+      _      <- RunShip(events, s3Client, configWithProjectMapping, xas)
       _      <- getDistinctOrgProjects(xas).map { project =>
                   assertEquals(project, target)
                 }
@@ -81,6 +112,25 @@ class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixture
 
   private def thereIsOneProjectEventIn(report: ImportReport) =
     report.progress == Map(Projects.entityType -> Statistics(1L, 0L))
+
+  test("Import files in S3 and in the primary store") {
+    for {
+      events <- eventsStream("import/file-import.json")
+      _      <- RunShip(events, s3Client, inputConfig, xas)
+      // File with an old path to be rewritten
+      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path", xas).assertEquals(1)
+      _      <- assertHeadResponse("/prefix/public/sscx/files/0/a/7/9/a/d/1/d/002_160120B3_OH.nwb")
+      // File with a blank filename
+      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename", xas).assertEquals(1)
+      _      <- assertHeadResponse("/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file")
+    } yield ()
+  }
+
+  private def assertHeadResponse(key: String)(implicit location: Location) =
+    s3Client.headObject(targetBucket, key).map { head =>
+      assertEquals(head.fileSize, contentLength)
+      assertEquals(head.digest, fileDigest)
+    }
 
 }
 
@@ -99,53 +149,6 @@ object RunShipSuite {
          | WHERE type = $entityType
          | AND id = ${id.toString}
        """.stripMargin.query[Int].unique.transact(xas.read)
-
-  private val noopS3Client = new S3StorageClient {
-    override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
-      IO.raiseError(new NotImplementedError("listObjectsV2 is not implemented"))
-
-    override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
-      IO.raiseError(new NotImplementedError("listObjectsV2 is not implemented"))
-
-    override def readFile(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
-      fs2.Stream.empty
-
-    override def headObject(bucket: String, key: String): IO[HeadObject] =
-      IO.raiseError(new NotImplementedError("headObject is not implemented"))
-
-    override def copyObject(
-        sourceBucket: String,
-        sourceKey: String,
-        destinationBucket: String,
-        destinationKey: String
-    ): IO[CopyObjectResponse] =
-      IO.raiseError(new NotImplementedError("copyObject is not implemented"))
-
-    override def uploadFile(
-        fileData: fs2.Stream[IO, ByteBuffer],
-        bucket: String,
-        key: String,
-        contentLength: Long
-    ): IO[Unit] =
-      IO.raiseError(new NotImplementedError("uploadFile is not implemented"))
-
-    override def objectExists(bucket: String, key: String): IO[Boolean] =
-      IO.raiseError(new NotImplementedError("objectExists is not implemented"))
-
-    override def bucketExists(bucket: String): IO[Boolean] =
-      IO.raiseError(new NotImplementedError("bucketExists is not implemented"))
-
-    override def copyObjectMultiPart(
-        sourceBucket: String,
-        sourceKey: String,
-        destinationBucket: String,
-        destinationKey: String
-    ): IO[CompleteMultipartUploadResponse] =
-      IO.raiseError(new NotImplementedError("copyObjectMultiPart is not implemented"))
-
-    override def readFileMultipart(bucket: String, fileKey: String): fs2.Stream[IO, Byte] =
-      fs2.Stream.empty
-  }
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory
   val expectedImportReport: ImportReport = ImportReport(
