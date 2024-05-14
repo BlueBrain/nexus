@@ -21,6 +21,7 @@ import fs2.io.file.Path
 import munit.AnyFixture
 import software.amazon.awssdk.services.s3.model.{CompleteMultipartUploadResponse, CopyObjectResponse, ListObjectsV2Response}
 
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class RunShipSuite extends NexusSuite with Doobie.Fixture with ShipConfigFixtures {
@@ -121,7 +122,7 @@ object RunShipSuite {
       IO.raiseError(new NotImplementedError("copyObject is not implemented"))
 
     override def uploadFile(
-        fileData: fs2.Stream[IO, Byte],
+        fileData: fs2.Stream[IO, ByteBuffer],
         bucket: String,
         key: String,
         contentLength: Long

@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.headers.{`Content-Length`, Accept}
 import akka.http.scaladsl.model.{ContentType, MediaRange}
-import akka.http.scaladsl.server.Directives.{optionalHeaderValueByName, provide, reject}
+import akka.http.scaladsl.server.Directives.{extractRequestEntity, optionalHeaderValueByName, provide, reject}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
@@ -96,10 +96,10 @@ final class FilesRoutes(
                       )
                     },
                     // Create a file without id segment
-                    (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
+                    uploadRequest { request =>
                       emit(
                         Created,
-                        files.create(storage, project, entity, tag, metadata).index(mode).attemptNarrow[FileRejection]
+                        files.create(storage, project, request, tag).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
@@ -136,14 +136,13 @@ final class FilesRoutes(
                                     )
                                   },
                                   // Update a file
-                                  (requestEntityPresent & extractRequestEntity & extractFileMetadata) {
-                                    (entity, metadata) =>
-                                      emit(
-                                        files
-                                          .update(fileId, storage, rev, entity, tag, metadata)
-                                          .index(mode)
-                                          .attemptNarrow[FileRejection]
-                                      )
+                                  (requestEntityPresent & uploadRequest) { request =>
+                                    emit(
+                                      files
+                                        .update(fileId, storage, rev, request, tag)
+                                        .index(mode)
+                                        .attemptNarrow[FileRejection]
+                                    )
                                   },
                                   // Update custom metadata
                                   (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
@@ -178,11 +177,11 @@ final class FilesRoutes(
                                   )
                                 },
                                 // Create a file with id segment
-                                (extractRequestEntity & extractFileMetadata) { (entity, metadata) =>
+                                uploadRequest { request =>
                                   emit(
                                     Created,
                                     files
-                                      .create(fileId, storage, entity, tag, metadata)
+                                      .create(fileId, storage, request, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
@@ -362,14 +361,34 @@ object FilesRoutes {
     * the `x-nxs-file-metadata` header. In case the decoding fails, a [[MalformedHeaderRejection]] is returned.
     */
   def extractFileMetadata: Directive1[Option[FileCustomMetadata]] =
-    optionalHeaderValueByName("x-nxs-file-metadata").flatMap {
+    optionalHeaderValueByName(NexusHeaders.fileMetadata).flatMap {
       case Some(metadata) =>
         val md = parser.parse(metadata).flatMap(_.as[FileCustomMetadata])
         md match {
           case Right(value) => provide(Some(value))
-          case Left(err)    => reject(MalformedHeaderRejection("x-nxs-file-metadata", err.getMessage))
+          case Left(err)    => reject(MalformedHeaderRejection(NexusHeaders.fileMetadata, err.getMessage))
         }
       case None           => provide(Some(FileCustomMetadata.empty))
+    }
+
+  def fileContentLength: Directive1[Option[Long]] = {
+    optionalHeaderValueByName(NexusHeaders.fileContentLength).flatMap {
+      case Some(value) =>
+        value.toLongOption match {
+          case None =>
+            val msg =
+              s"Invalid '${NexusHeaders.fileContentLength}' header value '$value', expected a Long value."
+            reject(MalformedHeaderRejection(`Content-Length`.name, msg))
+          case v    => provide(v)
+        }
+      case None        => provide(None)
+    }
+  }
+
+  def uploadRequest: Directive1[FileUploadRequest] =
+    (extractRequestEntity & extractFileMetadata & fileContentLength).tflatMap {
+      case (entity, customMetadata, contentLength) =>
+        provide(FileUploadRequest(entity, customMetadata, contentLength))
     }
 
   final case class LinkFileRequest(

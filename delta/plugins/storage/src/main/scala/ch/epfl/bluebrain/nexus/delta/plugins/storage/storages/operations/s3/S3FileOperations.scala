@@ -29,7 +29,8 @@ trait S3FileOperations {
   def save(
       storage: S3Storage,
       filename: String,
-      entity: BodyPartEntity
+      entity: BodyPartEntity,
+      contentLength: Long
   ): IO[FileStorageMetadata]
 
   def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
@@ -71,8 +72,14 @@ object S3FileOperations {
         IO.raiseError(UnexpectedFetchError(path.toString, err.getMessage))
       }
 
-    override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.save(storage, filename, entity)
+    override def save(
+        storage: S3Storage,
+        filename: String,
+        entity: BodyPartEntity,
+        contentLength: Long
+    ): IO[FileStorageMetadata] = {
+      saveFile.save(storage, filename, entity, contentLength)
+    }
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
       registerInternal(client, bucket, path)

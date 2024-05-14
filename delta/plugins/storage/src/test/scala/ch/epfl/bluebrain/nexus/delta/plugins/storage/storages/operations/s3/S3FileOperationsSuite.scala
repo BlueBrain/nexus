@@ -81,16 +81,17 @@ class S3FileOperationsSuite
       val project = ProjectRef.unsafe("org", "project")
       val storage = S3Storage(iri, project, storageValue, Json.obj())
 
-      val filename = "myfile.txt"
-      val content  = genString()
-      val digest   = makeDigest(content)
-      val entity   = HttpEntity(content)
+      val filename      = "myfile.txt"
+      val content       = genString()
+      val contentLength = content.length.toLong
+      val digest        = makeDigest(content)
+      val entity        = HttpEntity(content)
 
       val location         = expectedLocation(project, filename)
       val expectedMetadata =
         FileStorageMetadata(
           randomUuid,
-          content.length.toLong,
+          contentLength,
           digest,
           FileAttributesOrigin.Client,
           location,
@@ -98,7 +99,7 @@ class S3FileOperationsSuite
         )
 
       val result = for {
-        storageMetadata <- fileOps.save(storage, filename, entity)
+        storageMetadata <- fileOps.save(storage, filename, entity, contentLength)
         _                = assertEquals(storageMetadata, expectedMetadata)
         source          <- fileOps.fetch(bucket, storageMetadata.path)
       } yield consume(source)

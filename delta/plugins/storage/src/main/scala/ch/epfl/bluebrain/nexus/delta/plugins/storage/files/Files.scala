@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{BodyPartEntity, ContentType, HttpEntity, Uri}
+import akka.http.scaladsl.model.{ContentType, Uri}
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -72,26 +72,23 @@ final class Files(
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
-    * @param entity
-    *   the http FormData entity
+    * @param uploadRequest
+    *   the upload request containing the form data entity
     * @param tag
     *   the optional tag this file is being created with, attached to the current revision
-    * @param metadata
-    *   the optional custom metadata provided by the user
     */
   def create(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      entity: HttpEntity,
-      tag: Option[UserTag],
-      metadata: Option[FileCustomMetadata]
+      uploadRequest: FileUploadRequest,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      attributes            <- saveFileToStorage(iri, entity, storage, metadata)
+      attributes            <- saveFileToStorage(iri, storage, uploadRequest)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
@@ -103,25 +100,22 @@ final class Files(
     *   the file identifier to expand as the iri of the file
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param entity
-    *   the http FormData entity
+    * @param uploadRequest
+    *   the upload request containing the form data entity
     * @param tag
     *   the optional tag this file is being created with, attached to the current revision
-    * @param metadata
-    *   the optional custom metadata provided by the user
     */
   def create(
       id: FileId,
       storageId: Option[IdSegment],
-      entity: HttpEntity,
-      tag: Option[UserTag],
-      metadata: Option[FileCustomMetadata]
+      uploadRequest: FileUploadRequest,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       _                     <- test(CreateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      metadata              <- saveFileToStorage(iri, entity, storage, metadata)
+      metadata              <- saveFileToStorage(iri, storage, uploadRequest)
       res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
@@ -186,22 +180,23 @@ final class Files(
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param rev
     *   the current revision of the file
-    * @param entity
+    * @param uploadRequest
     *   the http FormData entity
+    * @param tag
+    *   the optional tag this file link is being updated with, attached to the current revision
     */
   def update(
       id: FileId,
       storageId: Option[IdSegment],
       rev: Int,
-      entity: HttpEntity,
-      tag: Option[UserTag],
-      metadata: Option[FileCustomMetadata]
+      uploadRequest: FileUploadRequest,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      attributes            <- saveFileToStorage(iri, entity, storage, metadata)
+      attributes            <- saveFileToStorage(iri, storage, uploadRequest)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateFile")
@@ -511,29 +506,15 @@ final class Files(
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
-  private def saveFileToStorage(
-      iri: Iri,
-      entity: HttpEntity,
-      storage: Storage,
-      fileMetadata: Option[FileCustomMetadata]
-  ): IO[FileAttributes] =
+  private def saveFileToStorage(iri: Iri, storage: Storage, uploadRequest: FileUploadRequest): IO[FileAttributes] = {
     for {
-      info            <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
-      description      = FileDescription.from(info, fileMetadata)
-      storageMetadata <- saveFile(iri, storage, description, info.contents)
+      info            <- formDataExtractor(iri, uploadRequest.entity, storage.storageValue.maxFileSize)
+      description      = FileDescription.from(info, uploadRequest.metadata)
+      storageMetadata <- fileOperations.save(storage, info.filename, info.contents, uploadRequest.contentLength)
     } yield FileAttributes.from(description, storageMetadata)
+  }.adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
-  private def saveFile(
-      iri: Iri,
-      storage: Storage,
-      metadata: FileDescription,
-      source: BodyPartEntity
-  ): IO[FileStorageMetadata]                                                    =
-    fileOperations
-      .save(storage, metadata.filename, source)
-      .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
-
-  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri] =
+  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[Iri]                                   =
     Storages.expandIri(segment, pc).adaptError { case s: StorageRejection =>
       WrappedStorageRejection(s)
     }

@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import eu.timepit.refined.types.all.NonEmptyString
 import fs2.Stream
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
@@ -294,7 +296,7 @@ class S3StorageSpec extends StorageSpec {
               expectOk
             }
         _             <- deltaClient.get[ByteString](s"/files/$projectRef/$id", Coyote, acceptAll) {
-                           filesDsl.expectFileContentAndMetadata(
+                           expectFileContent(
                              filename,
                              ContentTypes.`text/plain(UTF-8)`,
                              fileContent
@@ -307,6 +309,29 @@ class S3StorageSpec extends StorageSpec {
                            json should have(digestField("SHA-256", expectedDigest))
                          }
       } yield assertion
+    }
+  }
+
+  "Uploading a large file" should {
+    "succeed" ignore {
+      val content = {
+        val sb = new StringBuilder
+        (1 to 100_000_000).foreach(_ => sb.append('1'))
+        sb.toString()
+      }
+      val fileInput = FileInput(
+        "large-text-file",
+        "large-text-file",
+        ContentTypes.`text/plain(UTF-8)`,
+        content
+      )
+      for {
+        _ <- IO.println("Starting the upload")
+        _ <- deltaClient.uploadFile(projectRef, storageId, fileInput, None) { expectCreated }
+        _ <- deltaClient.get[ByteString](s"/files/$projectRef/${fileInput.fileId}", Coyote, acceptAll) {
+               expectOk
+             }
+      } yield succeed
     }
   }
 }

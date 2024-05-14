@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, SchemaPayload}
 import io.circe.Json
@@ -94,15 +95,17 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     }
 
     "add additional resources" in {
-      val resourcePayload        = SimpleResource.sourcePayload(5).accepted
-      val schemaPayload          = SchemaPayload.loadSimple().accepted
-      val resolverPayload        =
+      val resourcePayload             = SimpleResource.sourcePayload(5).accepted
+      val schemaPayload               = SchemaPayload.loadSimple().accepted
+      val resolverPayload             =
         jsonContentOf(
           "kg/resources/cross-project-resolver.json",
           replacements(Bojack, "project" -> ref2): _*
         )
-      val aggregateSparqlPayload =
+      val aggregateSparqlPayload      =
         jsonContentOf("kg/views/agg-sparql-view.json", "project1" -> ref1, "project2" -> ref2)
+
+      implicit val identity: Identity = Bojack
 
       for {
         _ <- deltaClient.put[Json](s"/resources/$ref1/_/resource11", resourcePayload, Bojack)(expectCreated)
@@ -116,20 +119,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
                ref1 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
                ref2 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
              )
-        _ <- deltaClient.uploadFile[Json](
-               s"/files/$ref1/attachment.json",
-               "some file content",
-               ContentTypes.`application/json`,
-               "attachment.json",
-               Bojack
-             )(expectCreated)
-        _ <- deltaClient.uploadFile[Json](
-               s"/files/$ref2/attachment.json",
-               "some file content",
-               ContentTypes.`application/json`,
-               "attachment.json",
-               Bojack
-             )(expectCreated)
+        _ <- deltaClient.uploadFile(ref1, None, FileInput.randomTextFile, None)(expectCreated)
+        _ <- deltaClient.uploadFile(ref2, None, FileInput.randomTextFile, None)(expectCreated)
       } yield succeed
     }
   }

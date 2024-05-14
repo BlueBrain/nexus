@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, NexusHeaders}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -168,7 +168,8 @@ class FilesRoutesSpec
   }
 
   def postFileWithMetadata(path: String, entity: RequestEntity, metadata: Json): HttpRequest = {
-    val headers = `Content-Type`(`multipart/form-data`) :: RawHeader("x-nxs-file-metadata", metadata.noSpaces) :: Nil
+    val headers =
+      `Content-Type`(`multipart/form-data`) :: RawHeader(NexusHeaders.fileMetadata, metadata.noSpaces) :: Nil
     Post(path, entity).withHeaders(headers)
   }
 
@@ -181,7 +182,8 @@ class FilesRoutesSpec
   }
 
   def putFileWithMetadata(path: String, entity: RequestEntity, metadata: Json): HttpRequest = {
-    val headers = `Content-Type`(`multipart/form-data`) :: RawHeader("x-nxs-file-metadata", metadata.noSpaces) :: Nil
+    val headers =
+      `Content-Type`(`multipart/form-data`) :: RawHeader(NexusHeaders.fileMetadata, metadata.noSpaces) :: Nil
     Put(path, entity).withHeaders(headers)
   }
 
@@ -408,7 +410,7 @@ class FilesRoutesSpec
     "fail to update custom metadata without permission" in {
       givenAFile { id =>
         val metadata = genCustomMetadata()
-        val headers  = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        val headers  = RawHeader(NexusHeaders.fileMetadata, metadata.asJson.noSpaces)
         Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> routes ~> check {
           response.shouldBeForbidden
         }
@@ -419,8 +421,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         val metadata = genCustomMetadata()
         val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
-
-        val headers = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        val headers  = RawHeader(NexusHeaders.fileMetadata, metadata.asJson.noSpaces)
         Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should have(description(metadata.description.get))
@@ -435,7 +436,7 @@ class FilesRoutesSpec
         val metadata = genCustomMetadata()
         val userTag  = UserTag.unsafe("mytag")
 
-        val headers = RawHeader("x-nxs-file-metadata", metadata.asJson.noSpaces)
+        val headers = RawHeader(NexusHeaders.fileMetadata, metadata.asJson.noSpaces)
         Put(s"/v1/files/org/proj/$id?rev=1&tag=${userTag.value}").withHeaders(headers) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           Get(s"/v1/files/org/proj/$id?tag=${userTag.value}") ~> Accept(
@@ -468,7 +469,7 @@ class FilesRoutesSpec
         val invalidKey      = Label.unsafe("!@#$%^&")
         val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
 
-        val headers = RawHeader("x-nxs-file-metadata", invalidMetadata.asJson.noSpaces)
+        val headers = RawHeader(NexusHeaders.fileMetadata, invalidMetadata.asJson.noSpaces)
         Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual

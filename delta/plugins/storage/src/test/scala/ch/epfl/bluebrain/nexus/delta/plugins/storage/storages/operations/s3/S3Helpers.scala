@@ -8,6 +8,7 @@ import fs2.Stream
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest}
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters.ListHasAsScala
 
@@ -40,7 +41,7 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes = contents.getBytes(StandardCharsets.UTF_8)
     val key   = genString()
-    client.uploadFile(Stream.fromIterator[IO](bytes.iterator, 16), bucket, key, bytes.length.toLong) >> test(key)
+    client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes)), bucket, key, bytes.length.toLong) >> test(key)
   }
 
 }

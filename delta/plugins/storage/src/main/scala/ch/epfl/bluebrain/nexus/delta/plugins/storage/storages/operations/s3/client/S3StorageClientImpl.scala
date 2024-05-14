@@ -15,7 +15,6 @@ import org.reactivestreams.Subscriber
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.model._
 
-import java.lang
 import java.nio.ByteBuffer
 import java.util.Optional
 import scala.jdk.CollectionConverters._
@@ -134,13 +133,13 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   }
 
   override def uploadFile(
-      fileData: Stream[IO, Byte],
+      fileData: Stream[IO, ByteBuffer],
       bucket: String,
       key: String,
       contentLengthValue: Long
   ): IO[Unit] =
     Stream
-      .resource(fileData.chunks.map { chunk => ByteBuffer.wrap(chunk.toArray) }.toUnicastPublisher)
+      .resource(fileData.toUnicastPublisher)
       .evalMap { publisher =>
         val request = PutObjectRequest
           .builder()
@@ -150,7 +149,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
           .key(key)
           .build()
         val body    = new AsyncRequestBody {
-          override def contentLength(): Optional[lang.Long]            = Optional.of(contentLengthValue)
+          override def contentLength(): Optional[java.lang.Long]       = Optional.of(contentLengthValue)
           override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit = publisher.subscribe(s)
         }
         client.putObject(request, body)

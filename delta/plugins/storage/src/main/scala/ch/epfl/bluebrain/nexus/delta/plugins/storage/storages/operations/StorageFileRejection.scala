@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.NexusHeaders
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 
@@ -140,9 +141,9 @@ object StorageFileRejection {
     /**
       * Rejection returned when a file can not be saved because content-length is not provided
       */
-    final case object ContentLengthIsMissing
+    final case object FileContentLengthIsMissing
         extends SaveFileRejection(
-          s"Content length must be supplied."
+          s"'${NexusHeaders.fileContentLength}' must be supplied when uploading a file to a S3 storage."
         )
 
     /**
