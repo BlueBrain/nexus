@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpResponse, StatusCodes}
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
@@ -29,16 +30,13 @@ class MultiFetchSpec extends BaseIntegrationSpec {
 
     val resourcePayload = SimpleResource.sourcePayload(5).accepted
 
+    implicit val identity: Identity = Bob
+    val file                        = FileInput("nxv:file", "attachment.json", ContentTypes.`application/json`, """{ "content": "json" }""")
+
     val createResources = for {
       // Creation
       _ <- deltaClient.put[Json](s"/resources/$ref11/_/nxv:resource", resourcePayload, Bob)(expectCreated)
-      _ <- deltaClient.uploadFile[Json](
-             s"/files/$ref12/nxv:file",
-             """{ "content": "json" }""",
-             ContentTypes.`application/json`,
-             "attachment.json",
-             Bob
-           )(expectCreated)
+      _ <- deltaClient.uploadFile(ref12, None, file, None)(expectCreated)
       // Tag
       _ <- deltaClient.post[Json](s"/resources/$ref11/_/nxv:resource/tags?rev=1", tag("v1.0.0", 1), Bob)(expectCreated)
     } yield ()

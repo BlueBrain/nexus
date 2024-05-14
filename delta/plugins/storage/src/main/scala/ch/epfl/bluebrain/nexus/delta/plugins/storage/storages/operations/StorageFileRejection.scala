@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.NexusHeaders
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 
@@ -138,6 +139,14 @@ object StorageFileRejection {
         )
 
     /**
+      * Rejection returned when a file can not be saved because content-length is not provided
+      */
+    final case object FileContentLengthIsMissing
+        extends SaveFileRejection(
+          s"'${NexusHeaders.fileContentLength}' must be supplied when uploading a file to a S3 storage."
+        )
+
+    /**
       * Rejection returned when a storage cannot save a file due to an unexpected reason
       */
     final case class UnexpectedSaveError(path: String, details: String)
@@ -197,8 +206,6 @@ object StorageFileRejection {
   sealed abstract class RegisterFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object RegisterFileRejection {
-    final case class InvalidContentType(received: String)
-        extends RegisterFileRejection(s"Invalid content type returned from S3: $received")
 
     final case class InvalidPath(path: Uri.Path)
         extends RegisterFileRejection(s"An S3 path must contain at least the filename. Path was $path")

@@ -3,13 +3,15 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model._
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
@@ -17,6 +19,8 @@ import io.circe.optics.JsonPath.root
 import org.scalatest.Assertion
 
 abstract class StorageSpec extends BaseIntegrationSpec {
+
+  implicit val currentUser: Identity.UserCredentials = Coyote
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
 
@@ -68,12 +72,13 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "An empty file" should {
 
     "be successfully uploaded" in {
-      filesDsl.uploadFile(emptyTextFile, projectRef, storageId, None)(expectCreated)
+      val emptyFile = emptyTextFile.copy(metadata = None)
+      deltaClient.uploadFile(projectRef, storageId, emptyFile, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
-        filesDsl.expectFileContentAndMetadata("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
+        expectFileContent("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
       }
     }
   }
@@ -81,18 +86,18 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A json file" should {
 
     "be uploaded" in {
-      filesDsl.uploadFile(jsonFileNoContentType, projectRef, storageId, None)(expectCreated)
+      deltaClient.uploadFile(projectRef, storageId, jsonFileNoContentType, None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        filesDsl.expectFileContentAndMetadata("attachment.json", ContentTypes.`application/json`, jsonFileContent)
+        expectFileContent("attachment.json", ContentTypes.`application/json`, jsonFileContent)
       }
     }
 
     "be downloaded as gzip" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, gzipHeaders) {
-        filesDsl.expectFileContentAndMetadata(
+        expectFileContent(
           "attachment.json",
           ContentTypes.`application/json`,
           jsonFileContent,
@@ -102,12 +107,13 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
 
     "be updated" in {
-      filesDsl.uploadFile(updatedJsonFileWithContentType, projectRef, storageId, Some(1))(expectOk)
+      val updatedFile = updatedJsonFileWithContentType.copy(metadata = None)
+      deltaClient.uploadFile(projectRef, storageId, updatedFile, Some(1))(expectOk)
     }
 
     "download the updated file" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        filesDsl.expectFileContentAndMetadata(
+        expectFileContent(
           "attachment.json",
           ContentTypes.`application/json`,
           updatedJsonFileContent
@@ -117,7 +123,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "download the previous revision" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json?rev=1", Coyote, acceptAll) {
-        filesDsl.expectFileContentAndMetadata(
+        expectFileContent(
           "attachment.json",
           ContentTypes.`application/json`,
           jsonFileContent
@@ -160,12 +166,12 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A file without extension" should {
 
     "be uploaded" in {
-      filesDsl.uploadFile(textFileNoContentType, projectRef, storageId, None)(expectCreated)
+      deltaClient.uploadFile(projectRef, storageId, textFileNoContentType.copy(metadata = None), None)(expectCreated)
     }
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment2", Coyote, acceptAll) {
-        filesDsl.expectFileContentAndMetadata(
+        expectFileContent(
           textFileNoContentType.filename,
           ContentTypes.`application/octet-stream`,
           textFileNoContentType.contents
@@ -175,32 +181,17 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   }
 
   "Uploading a file against a unknown storage" should {
-
-    val textFileContent = "text file"
-
     "fail" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/attachment3?storage=nxv:wrong-id",
-        textFileContent,
-        ContentTypes.NoContentType,
-        "attachment2",
-        Coyote
-      ) { expectNotFound }
+      deltaClient.uploadFile(projectRef, "wrong-id", randomTextFile, None) { expectNotFound }
     }
   }
 
   "Uploading a file against a storage with custom permissions" should {
 
-    val textFileContent = "text file"
-
-    def uploadStorageWithCustomPermissions: ((Json, HttpResponse) => Assertion) => IO[Assertion] =
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/attachment3?storage=nxv:${storageId}2",
-        textFileContent,
-        ContentTypes.NoContentType,
-        "attachment2",
-        Coyote
-      )
+    def uploadStorageWithCustomPermissions: ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
+      val file = FileInput("attachment3", "attachment2", ContentTypes.NoContentType, "text file")
+      deltaClient.uploadFile(projectRef, s"${storageId}2", file, None)
+    }
 
     "fail without these custom permissions" in {
       uploadStorageWithCustomPermissions { expectForbidden }
@@ -315,14 +306,15 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "Upload files with the .custom extension" should {
     val fileContent = "file content"
 
-    def uploadCustomFile(id: String, contentType: ContentType): ((Json, HttpResponse) => Assertion) => IO[Assertion] =
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/$id?storage=nxv:$storageId",
-        fileContent,
-        contentType,
-        "file.custom",
-        Coyote
+    def uploadCustomFile(id: String, contentType: ContentType): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
+      val file = FileInput(id, "file.custom", contentType, fileContent)
+      deltaClient.uploadFile(
+        projectRef,
+        storageId,
+        file,
+        None
       )
+    }
 
     def assertContentType(id: String, expectedContentType: String) =
       deltaClient.get[Json](s"/files/$projectRef/attachment:$id", Coyote) { (json, response) =>
@@ -350,12 +342,12 @@ abstract class StorageSpec extends BaseIntegrationSpec {
   "A custom binary file" should {
     "not be downloadable compressed" in {
       for {
-        _ <- filesDsl.uploadFile(customBinaryContent, projectRef, storageId, None)(expectCreated)
+        _ <- deltaClient.uploadFile(projectRef, storageId, customBinaryContent, None)(expectCreated)
         _ <- deltaClient
                .get[ByteString](s"/files/$projectRef/attachment:${customBinaryContent.fileId}", Coyote, gzipHeaders) {
-                 filesDsl.expectFileContentAndMetadata(
+                 expectFileContent(
                    customBinaryContent.filename,
-                   customBinaryContent.ct,
+                   customBinaryContent.contentType,
                    customBinaryContent.contents,
                    compressed = false // the response should not be compressed despite the gzip headers
                  )
@@ -371,15 +363,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     }
 
     "reject uploading a new file against the deprecated storage" in {
-      deltaClient.uploadFile[Json](
-        s"/files/$projectRef/${genString()}?storage=nxv:$storageId",
-        "",
-        ContentTypes.NoContentType,
-        "attachment3",
-        Coyote
-      ) {
-        expectBadRequest
-      }
+      deltaClient.uploadFile(projectRef, storageId, randomTextFile, None) { expectBadRequest }
     }
 
     "fetch metadata" in {
@@ -410,15 +394,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     "allow uploading a file again" in {
       val undeprecateStorage = deltaClient
         .putEmptyBody[Json](s"/storages/$projectRef/nxv:$storageId/undeprecate?rev=2", Coyote) { expectOk }
-      val uploadFile         = deltaClient.uploadFile[Json](
-        s"/files/$projectRef/${genString()}?storage=nxv:$storageId",
-        "",
-        ContentTypes.NoContentType,
-        "attachment3",
-        Coyote
-      ) {
-        expectCreated
-      }
+      val uploadFile         = deltaClient.uploadFile(projectRef, storageId, randomTextFile, None) { expectCreated }
       undeprecateStorage >> uploadFile
     }
 

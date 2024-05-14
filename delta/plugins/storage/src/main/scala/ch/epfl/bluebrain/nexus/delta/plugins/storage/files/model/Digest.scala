@@ -8,7 +8,7 @@ import io.circe.{Encoder, JsonObject}
   * A digest value
   */
 sealed trait Digest extends Product with Serializable {
-  def computed: Boolean
+  def computed: Boolean = this != Digest.NotComputedDigest
 }
 
 object Digest {
@@ -21,19 +21,23 @@ object Digest {
     * @param value
     *   the actual value of the digest of the file
     */
-  final case class ComputedDigest(algorithm: DigestAlgorithm, value: String) extends Digest {
-    override val computed: Boolean = true
-  }
+  final case class ComputedDigest(algorithm: DigestAlgorithm, value: String) extends Digest
 
   /**
     * A digest that does not yield a value because it is still being computed
     */
-  final case object NotComputedDigest extends Digest {
-    override val computed: Boolean = false
-  }
+  final case object NoDigest extends Digest
+
+  val none: Digest = NoDigest
+
+  /**
+    * A digest that does not yield a value because it is still being computed
+    */
+  final case object NotComputedDigest extends Digest
 
   implicit val digestEncoder: Encoder.AsObject[Digest] = Encoder.encodeJsonObject.contramapObject {
     case ComputedDigest(algorithm, value) => JsonObject("_algorithm" -> algorithm.asJson, "_value" -> value.asJson)
     case NotComputedDigest                => JsonObject("_value" -> "".asJson)
+    case NoDigest                         => JsonObject("_value" -> "".asJson)
   }
 }

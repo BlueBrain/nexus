@@ -8,24 +8,18 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.RegisterFileRejection.InvalidContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.HeadObject
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
-import org.apache.commons.codec.binary.Hex
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.Base64
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success, Try}
 
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
@@ -35,7 +29,8 @@ trait S3FileOperations {
   def save(
       storage: S3Storage,
       filename: String,
-      entity: BodyPartEntity
+      entity: BodyPartEntity,
+      contentLength: Long
   ): IO[FileStorageMetadata]
 
   def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
@@ -77,8 +72,14 @@ object S3FileOperations {
         IO.raiseError(UnexpectedFetchError(path.toString, err.getMessage))
       }
 
-    override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.save(storage, filename, entity)
+    override def save(
+        storage: S3Storage,
+        filename: String,
+        entity: BodyPartEntity,
+        contentLength: Long
+    ): IO[FileStorageMetadata] = {
+      saveFile.save(storage, filename, entity, contentLength)
+    }
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
       registerInternal(client, bucket, path)
@@ -98,51 +99,21 @@ object S3FileOperations {
       log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
     }
 
-  private def parseContentType(raw: Option[String]): IO[Option[ContentType]] = {
-    raw match {
-      case Some(value) =>
-        ContentType.parse(value) match {
-          case Left(_)      => IO.raiseError(InvalidContentType(value))
-          case Right(value) => IO.pure(Some(value))
-        }
-      case None        => IO.none
-    }
-  }
-
   private def mkS3Metadata(path: Uri.Path, resp: HeadObject)(implicit
       uuidf: UUIDF
   ) =
     for {
-      uuid        <- uuidf()
-      contentType <- parseContentType(resp.contentType)
-      checksum    <- checksumFrom(resp)
+      uuid <- uuidf()
     } yield S3FileMetadata(
-      contentType,
+      resp.contentType,
       FileStorageMetadata(
         uuid,
         resp.fileSize,
-        checksum,
+        resp.digest,
         FileAttributesOrigin.External,
         Uri(path.toString()),
         path
       )
     )
-
-  private def checksumFrom(response: HeadObject) = IO.fromOption {
-    response.sha256Checksum
-      .map { checksum =>
-        Try {
-          Base64.getDecoder.decode(checksum)
-        } match {
-          case Failure(_)            => Digest.NotComputedDigest
-          case Success(decodedValue) =>
-            Digest.ComputedDigest(
-              DigestAlgorithm.default,
-              Hex.encodeHexString(decodedValue)
-            )
-        }
-
-      }
-  }(new IllegalArgumentException("Missing checksum"))
 
 }

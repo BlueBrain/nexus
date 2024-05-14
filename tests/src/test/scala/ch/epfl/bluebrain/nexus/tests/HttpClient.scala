@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings, RawHeader}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
@@ -14,8 +14,9 @@ import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, metadataHeader, rdfApplicationSqlQuery, tokensMap}
+import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import io.circe.Json
 import io.circe.parser._
 import io.circe.syntax._
@@ -33,6 +34,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     materializer: Materializer,
     ec: ExecutionContext
 ) extends Matchers
+    with CirceUnmarshalling
     with AppendedClues {
 
   private def fromFuture[A](future: => Future[A]) = IO.fromFuture { IO.delay(future) }
@@ -60,7 +62,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
 
   def postJson(url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (Json, HttpResponse) => Assertion
-  )(implicit um: FromEntityUnmarshaller[Json]): IO[Assertion] =
+  ): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
   def postIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
@@ -69,9 +71,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     body.flatMap(body => requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse))
   }
 
-  def putJsonAndStatus(url: String, body: Json, identity: Identity)(implicit
-      um: FromEntityUnmarshaller[Json]
-  ): IO[(Json, StatusCode)] = {
+  def putJsonAndStatus(url: String, body: Json, identity: Identity): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(PUT, url, Some(body), identity, jsonHeaders)
   }
 
@@ -119,15 +119,19 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     )
   }
 
-  def uploadFile[A](
-      requestPath: String,
-      fileContents: String,
-      contentType: ContentType,
-      fileName: String,
-      identity: Identity,
-      extraHeaders: Seq[HttpHeader] = jsonHeaders
-  )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
-    def buildClue(a: A, response: HttpResponse) =
+  def uploadFile(project: String, storage: String, file: FileInput, rev: Option[Int])(
+      assertResponse: (Json, HttpResponse) => Assertion
+  )(implicit identity: Identity): IO[Assertion] =
+    uploadFile(project, Some(storage), file, rev)(assertResponse)
+
+  def uploadFile(project: String, storage: Option[String], file: FileInput, rev: Option[Int])(
+      assertResponse: (Json, HttpResponse) => Assertion
+  )(implicit identity: Identity): IO[Assertion] = {
+    val storageParam                               = storage.map { s => s"storage=nxv:$s" }
+    val revParam                                   = rev.map { r => s"&rev=$r" }
+    val params                                     = (storageParam ++ revParam).mkString("?", "&", "")
+    val requestPath                                = s"/files/$project/${file.fileId}$params"
+    def buildClue(a: Json, response: HttpResponse) =
       s"""
          |Endpoint: PUT $requestPath
          |Identity: $identity
@@ -138,57 +142,26 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
          |$a
          |""".stripMargin
 
+    val metadataHeader          = file.metadata.map { m =>
+      val json = Json.obj("name" := m.name, "description" := m.description, "keywords" := m.keywords)
+      RawHeader("x-nxs-file-metadata", json.noSpaces)
+    }
+    val fileContentLengthHeader = RawHeader("x-nxs-file-content-length", file.contentLength.toString)
+
     request(
       PUT,
       requestPath,
-      Some(fileContents),
+      Some(file.contents),
       identity,
       (s: String) => {
-        val entity = HttpEntity(contentType, s.getBytes)
-        FormData(BodyPart.Strict("file", entity, Map("filename" -> fileName))).toEntity()
+        val entity = HttpEntity(file.contentType, s.getBytes)
+        FormData(BodyPart.Strict("file", entity, Map("filename" -> file.filename))).toEntity()
       },
-      (a: A, response: HttpResponse) => {
+      (a: Json, response: HttpResponse) => {
         assertDeltaNodeHeader(response)
         assertResponse(a, response) withClue buildClue(a, response)
       },
-      extraHeaders
-    )
-  }
-
-  def uploadFileWithMetadata(
-      requestPath: String,
-      fileContents: String,
-      contentType: ContentType,
-      fileName: String,
-      identity: Identity,
-      description: Option[String],
-      name: Option[String],
-      keywords: Map[String, String]
-  )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, HttpResponse)] = {
-
-    val metadata = Json
-      .obj(
-        "name"        -> name.asJson,
-        "description" -> description.asJson,
-        "keywords"    -> keywords.asJson
-      )
-
-    request[Json, String, (Json, HttpResponse)](
-      PUT,
-      requestPath,
-      Some(fileContents),
-      identity,
-      (s: String) => {
-        FormData(
-          BodyPart.Strict(
-            "file",
-            HttpEntity(contentType, s.getBytes),
-            Map("filename" -> fileName)
-          )
-        ).toEntity()
-      },
-      (json: Json, response: HttpResponse) => (json, response),
-      jsonHeaders :+ metadataHeader(metadata)
+      jsonHeaders ++ metadataHeader ++ Some(fileContentLengthHeader)
     )
   }
 
@@ -211,15 +184,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestJson(GET, url, None, identity, (a: A, _: HttpResponse) => a, jsonHeaders)
   }
 
-  def getJsonAndStatus(url: String, identity: Identity)(implicit
-      um: FromEntityUnmarshaller[Json]
-  ): IO[(Json, StatusCode)] = {
+  def getJsonAndStatus(url: String, identity: Identity): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(GET, url, None, identity, jsonHeaders)
   }
 
-  def deleteJsonAndStatus(url: String, identity: Identity)(implicit
-      um: FromEntityUnmarshaller[Json]
-  ): IO[(Json, StatusCode)] = {
+  def deleteJsonAndStatus(url: String, identity: Identity): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(DELETE, url, None, identity, jsonHeaders)
   }
 
@@ -290,7 +259,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       body: Option[Json],
       identity: Identity,
       extraHeaders: Seq[HttpHeader]
-  )(implicit um: FromEntityUnmarshaller[Json]): IO[(Json, StatusCode)] =
+  ): IO[(Json, StatusCode)] =
     request[Json, Json, (Json, StatusCode)](
       method,
       url,
@@ -411,8 +380,6 @@ object HttpClient {
   val acceptZip: Seq[Accept] = Seq(Accept(MediaTypes.`application/zip`, MediaTypes.`application/json`))
 
   val jsonHeaders: Seq[HttpHeader] = Accept(MediaTypes.`application/json`) :: Nil
-
-  def metadataHeader(metadata: Json): HttpHeader = RawHeader("x-nxs-file-metadata", metadata.noSpaces)
 
   val rdfApplicationSqlQuery: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("sparql-query", `UTF-8`)

@@ -22,14 +22,14 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.ElasticSearchViewsDsl
-import ch.epfl.bluebrain.nexus.tests.kg.files.{FilesDsl, StoragesDsl}
+import ch.epfl.bluebrain.nexus.tests.kg.files.StoragesDsl
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import org.scalactic.source.Position
 import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.scalatest.wordspec.AsyncWordSpecLike
 
 import scala.concurrent.duration._
@@ -74,7 +74,6 @@ trait BaseIntegrationSpec
   val permissionDsl         = new PermissionDsl(deltaClient)
   val adminDsl              = new AdminDsl(deltaClient, config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
-  val filesDsl              = new FilesDsl(deltaClient)
   val storagesDsl           = new StoragesDsl(deltaClient)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)

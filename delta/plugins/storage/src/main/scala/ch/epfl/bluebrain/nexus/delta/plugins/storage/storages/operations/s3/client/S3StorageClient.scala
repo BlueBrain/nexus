@@ -2,15 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient.{HeadObject, UploadMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
+import software.amazon.awssdk.core.checksums.ChecksumValidation
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
+import software.amazon.awssdk.core.interceptor.SdkExecutionAttribute
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
+import java.nio.ByteBuffer
 
 trait S3StorageClient {
 
@@ -41,23 +45,17 @@ trait S3StorageClient {
   ): IO[CompleteMultipartUploadResponse]
 
   def uploadFile(
-      fileData: Stream[IO, Byte],
+      fileData: Stream[IO, ByteBuffer],
       bucket: String,
-      key: String
-  ): IO[UploadMetadata]
+      key: String,
+      contentLength: Long
+  ): IO[Unit]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
   def bucketExists(bucket: String): IO[Boolean]
 }
 
 object S3StorageClient {
-
-  case class UploadMetadata(checksum: String, fileSize: Long)
-  case class HeadObject(
-      fileSize: Long,
-      contentType: Option[String],
-      sha256Checksum: Option[String]
-  )
 
   def resource(s3Config: Option[S3StorageConfig]): Resource[IO, S3StorageClient] = s3Config match {
     case Some(cfg) =>
@@ -73,17 +71,24 @@ object S3StorageClient {
     case None => Resource.pure(S3StorageClientDisabled)
   }
 
-  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] =
+  def resource(endpoint: URI, credentialProvider: AwsCredentialsProvider): Resource[IO, S3StorageClient] = {
+    val overrideConfigurationBuilder =
+      ClientOverrideConfiguration
+        .builder()
+        // Disable checksum for streaming operations
+        .putExecutionAttribute(SdkExecutionAttribute.HTTP_RESPONSE_CHECKSUM_VALIDATION, ChecksumValidation.FORCE_SKIP)
     Interpreter[IO]
       .S3AsyncClientOpResource(
         S3AsyncClient
           .builder()
           .credentialsProvider(credentialProvider)
           .endpointOverride(endpoint)
+          .overrideConfiguration(overrideConfigurationBuilder.build())
           .forcePathStyle(true)
           .region(Region.US_EAST_1)
       )
       .map(new S3StorageClientImpl(_))
+  }
 
   def unsafe(client: S3AsyncClientOp[IO]): S3StorageClient =
     new S3StorageClientImpl(client)
