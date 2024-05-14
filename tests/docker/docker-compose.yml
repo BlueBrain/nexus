@@ -138,7 +138,7 @@ services:
       - ./config:/config
 
   postgres:
-    image: library/postgres:15.6
+    image: library/postgres:15.7
     ports:
       - 5432:5432
     environment:
