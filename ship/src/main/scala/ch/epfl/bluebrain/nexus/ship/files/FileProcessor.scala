@@ -61,21 +61,22 @@ class FileProcessor private (
     val fileId = FileId(event.id, project)
 
     // TODO: Remove the 5_000_000_000L limit when the multipart works correctly
-    // TODO: Remove the check for empty filename when that is handled
     event match {
       case e: FileCreated               =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
-        IO.whenA(attrs.bytes < 5_000_000_000L && attrs.filename.nonEmpty) {
-          fileCopier.copyFile(e.project, attrs) >>
-            files.registerFile(fileId, None, customMetadata, attrs.path, e.tag, attrs.mediaType).void
+        IO.whenA(attrs.bytes < 5_000_000_000L) {
+          fileCopier.copyFile(e.project, attrs).flatMap { newPath =>
+            files.registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType).void
+          }
         }
       case e: FileUpdated               =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
-        IO.whenA(attrs.bytes < 5_000_000_000L && attrs.filename.nonEmpty) {
-          fileCopier.copyFile(e.project, attrs) >>
-            files.updateRegisteredFile(fileId, None, customMetadata, cRev, attrs.path, e.tag, attrs.mediaType).void
+        IO.whenA(attrs.bytes < 5_000_000_000L) {
+          fileCopier.copyFile(e.project, attrs).flatMap { newPath =>
+            files.registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType).void
+          }
         }
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(fileId, cRev, e.metadata, e.tag)

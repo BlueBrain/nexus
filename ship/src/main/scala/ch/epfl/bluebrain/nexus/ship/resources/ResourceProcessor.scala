@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.resources
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
@@ -23,6 +24,7 @@ class ResourceProcessor private (
     resources: Resources,
     projectMapper: ProjectMapper,
     sourcePatcher: SourcePatcher,
+    resourceTypesToIgnore: Set[Iri],
     clock: EventClock
 ) extends EventProcessor[ResourceEvent] {
 
@@ -46,28 +48,31 @@ class ResourceProcessor private (
       def toIdSegment: IdSegment = IdSegmentRef(ref).value
     }
 
-    event match {
-      case e: ResourceCreated       =>
-        sourcePatcher(e.source).flatMap { patched =>
-          resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
-        }
-      case e: ResourceUpdated       =>
-        sourcePatcher(e.source).flatMap { patched =>
-          resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
-        }
-      case e: ResourceSchemaUpdated =>
-        resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
-      case e: ResourceRefreshed     =>
-        resources.refresh(e.id, project, e.schema.toIdSegment.some)
-      case e: ResourceTagAdded      =>
-        resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
-      case e: ResourceTagDeleted    =>
-        resources.deleteTag(e.id, project, None, e.tag, cRev)
-      case e: ResourceDeprecated    =>
-        resources.deprecate(e.id, project, None, cRev)
-      case e: ResourceUndeprecated  =>
-        resources.undeprecate(e.id, project, None, cRev)
-    }
+    val skip = resourceTypesToIgnore.nonEmpty && event.types.intersect(resourceTypesToIgnore).nonEmpty
+    if (!skip) {
+      event match {
+        case e: ResourceCreated       =>
+          sourcePatcher(e.source).flatMap { patched =>
+            resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
+          }
+        case e: ResourceUpdated       =>
+          sourcePatcher(e.source).flatMap { patched =>
+            resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
+          }
+        case e: ResourceSchemaUpdated =>
+          resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
+        case e: ResourceRefreshed     =>
+          resources.refresh(e.id, project, e.schema.toIdSegment.some)
+        case e: ResourceTagAdded      =>
+          resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
+        case e: ResourceTagDeleted    =>
+          resources.deleteTag(e.id, project, None, e.tag, cRev)
+        case e: ResourceDeprecated    =>
+          resources.deprecate(e.id, project, None, cRev)
+        case e: ResourceUndeprecated  =>
+          resources.undeprecate(e.id, project, None, cRev)
+      }
+    } else IO.unit
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
@@ -89,10 +94,11 @@ object ResourceProcessor {
       projectMapper: ProjectMapper,
       fetchContext: FetchContext,
       sourcePatcher: SourcePatcher,
+      resourceTypesToIgnore: Set[Iri],
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, projectMapper, sourcePatcher, clock)
+    new ResourceProcessor(resources, projectMapper, sourcePatcher, resourceTypesToIgnore, clock)
   }
 
 }

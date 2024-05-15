@@ -42,7 +42,8 @@ class S3RunShipSuite
 
     val importBucket      = "nexus-ship-production"
     val targetBucket      = "nexus-delta-production"
-    val updatedFileConfig = inputConfig.files.copy(importBucket = importBucket, targetBucket = targetBucket)
+    val updatedFileConfig =
+      inputConfig.files.copy(importBucket = importBucket, targetBucket = targetBucket, enableTargetRewrite = false)
     val shipConfig        = inputConfig.copy(files = updatedFileConfig)
 
     for {

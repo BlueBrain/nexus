@@ -5,12 +5,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.stream.Materializer
 import akka.util.ByteString
-import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient}
-import io.circe.Json
-import org.apache.commons.codec.Charsets
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -19,56 +13,14 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.concurrent.ExecutionContext
 
-class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: ExecutionContext)
-    extends CirceUnmarshalling
-    with Matchers
-    with OptionValues
-    with ScalaFutures {
+object FilesAssertions extends Matchers with OptionValues with ScalaFutures {
 
-  def uploadFile(
-      fileInput: FileInput,
-      projRef: String,
-      storage: String,
-      rev: Option[Int]
-  ): ((Json, HttpResponse) => Assertion) => IO[Assertion] = {
-    val revString = rev.map(r => s"&rev=$r").getOrElse("")
-    deltaClient.uploadFile[Json](
-      s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
-      fileInput.contents,
-      fileInput.ct,
-      fileInput.filename,
-      Coyote
-    )
-  }
-
-  def uploadFileWithMetadata(
-      fileInput: FileInput,
-      projRef: String,
-      storage: String,
-      rev: Option[Int],
-      keywords: Map[String, String],
-      description: Option[String],
-      name: Option[String]
-  ): IO[(Json, HttpResponse)] = {
-    val revString = rev.map(r => s"&rev=$r").getOrElse("")
-    deltaClient.uploadFileWithMetadata(
-      s"/files/$projRef/${fileInput.fileId}?storage=nxv:$storage$revString",
-      fileInput.contents,
-      fileInput.ct,
-      fileInput.filename,
-      Coyote,
-      description,
-      name,
-      keywords
-    )
-  }
-
-  def expectFileContentAndMetadata(
+  def expectFileContent(
       expectedFilename: String,
       expectedContentType: ContentType,
       expectedContent: String,
       compressed: Boolean = false
-  ): (ByteString, HttpResponse) => Assertion =
+  )(implicit mat: Materializer, ec: ExecutionContext): (ByteString, HttpResponse) => Assertion =
     (content: ByteString, response: HttpResponse) => {
       response.status shouldEqual StatusCodes.OK
       dispositionType(response) shouldEqual ContentDispositionTypes.attachment
@@ -103,6 +55,6 @@ class FilesDsl(deltaClient: HttpClient)(implicit mat: Materializer, ec: Executio
   private def httpEncodings(response: HttpResponse): Seq[HttpEncoding] =
     response.header[`Content-Encoding`].value.encodings
 
-  private def decodeGzip(input: ByteString): String =
+  private def decodeGzip(input: ByteString)(implicit mat: Materializer, ec: ExecutionContext): String =
     Coders.Gzip.decode(input).map(_.utf8String).futureValue
 }

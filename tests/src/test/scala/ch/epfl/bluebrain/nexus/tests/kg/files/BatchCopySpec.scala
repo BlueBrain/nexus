@@ -10,14 +10,17 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{description => de
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.kg.files.BatchCopySpec.{CopyStorageType, Response, StorageDetails}
+import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, Optics}
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import org.scalatest.Assertion
 
 class BatchCopySpec extends BaseIntegrationSpec {
+
+  implicit val currentUser: Identity.UserCredentials = Coyote
 
   "Batch copying files" should {
     val validStorageTypes = List(CopyStorageType.Disk, CopyStorageType.Remote)
@@ -92,9 +95,11 @@ class BatchCopySpec extends BaseIntegrationSpec {
       genString(),
       ContentTypes.`text/plain(UTF-8)`,
       genString(),
-      Map(genString() -> genString()),
-      genString(),
-      genString()
+      CustomMetadata(
+        genString(),
+        genString(),
+        Map(genString() -> genString())
+      )
     )
 
   def mkPayload(sourceProjRef: String, sourceFiles: List[FileInput]): Json = {
@@ -103,17 +108,7 @@ class BatchCopySpec extends BaseIntegrationSpec {
   }
 
   def uploadFile(file: FileInput, storage: StorageDetails): IO[Assertion] =
-    filesDsl
-      .uploadFileWithMetadata(
-        file,
-        storage.projRef,
-        storage.storageId,
-        None,
-        file.keywords,
-        Some(file.description),
-        Some(file.name)
-      )
-      .map { case (_, response) => response.status shouldEqual StatusCodes.Created }
+    deltaClient.uploadFile(storage.projRef, storage.storageId, file, None) { expectCreated }
 
   def copyFilesAndCheckSavedResourcesAndContents(
       sourceProjRef: String,
@@ -135,11 +130,15 @@ class BatchCopySpec extends BaseIntegrationSpec {
     } yield succeed
   }
 
-  def checkFileContentsAreCopiedCorrectly(destProjRef: String, sourceFiles: List[FileInput], ids: List[String]) =
-    ids.zip(sourceFiles).traverse { case (destId, FileInput(_, filename, contentType, contents, _, _, _)) =>
+  private def checkFileContentsAreCopiedCorrectly(
+      destProjRef: String,
+      sourceFiles: List[FileInput],
+      ids: List[String]
+  ) =
+    ids.zip(sourceFiles).traverse { case (destId, file) =>
       deltaClient
         .get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(destId)}", Coyote, acceptAll) {
-          filesDsl.expectFileContentAndMetadata(filename, contentType, contents)
+          expectFileContent(file.filename, file.contentType, file.contents)
         }
     }
 
@@ -150,12 +149,16 @@ class BatchCopySpec extends BaseIntegrationSpec {
   ): IO[Assertion] = {
     ids
       .zip(sourceFiles)
-      .parTraverse { case (id, FileInput(_, _, _, _, keywords, description, name)) =>
+      .parTraverse { case (id, file) =>
+        val metadata    = file.metadata.value
+        val name        = metadata.name.value
+        val description = metadata.description.value
+        val keywords    = metadata.keywords
         deltaClient.get[Json](s"/files/$destProjRef/${UrlUtils.encode(id)}", Coyote) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          json should have(keywordsField(keywords))
-          json should have(descriptionField(description))
           json should have(nameField(name))
+          json should have(descriptionField(description))
+          json should have(keywordsField(keywords))
         }
       }
       .map(_ => succeed)

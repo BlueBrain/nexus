@@ -117,7 +117,12 @@ object StorageWiring {
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
-    override def save(storage: S3Storage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
+    override def save(
+        storage: S3Storage,
+        filename: String,
+        entity: BodyPartEntity,
+        contentLength: Long
+    ): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =

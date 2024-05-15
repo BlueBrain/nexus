@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
-import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, MediaTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, projections}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, Json}
-import org.scalactic.source.Position
 import org.scalatest.Assertion
 
 class RemoteStorageSpec extends StorageSpec {
@@ -82,16 +82,9 @@ class RemoteStorageSpec extends StorageSpec {
     } yield succeed
   }
 
-  def putFile(name: String, content: String, storageId: String)(implicit position: Position) = {
-    deltaClient.uploadFile[Json](
-      s"/files/$projectRef/test-resource:$name?storage=nxv:${storageId}",
-      content,
-      MediaTypes.`text/plain`.toContentType(HttpCharsets.`UTF-8`),
-      name,
-      Coyote
-    ) { (_, response) =>
-      response.status shouldEqual StatusCodes.Created
-    }
+  def putFile(name: String, content: String, storageId: String) = {
+    val file = FileInput(s"test-resource:$name", name, ContentTypes.`text/plain(UTF-8)`, content)
+    deltaClient.uploadFile(projectRef, storageId, file, None) { expectCreated }
   }
 
   def randomString(length: Int) = {
@@ -398,15 +391,10 @@ class RemoteStorageSpec extends StorageSpec {
 
       // get progress prior to updating the file
       deltaClient.get[Json]("/supervision/projections", Coyote) { (json1, _) =>
+        val file = FileInput("file.txt", "file.txt", ContentTypes.`application/json`, s"""{ "json": "content"}""")
         eventually {
           // update the file
-          deltaClient.uploadFile[Json](
-            s"/files/$projectRef/file.txt?storage=nxv:${storageId}2&rev=2",
-            s"""{ "json": "content"}""",
-            ContentTypes.`application/json`,
-            "file.txt",
-            Coyote
-          ) { (_, _) =>
+          deltaClient.uploadFile(projectRef, s"${storageId}2", file, Some(2)) { (_, _) =>
             eventually {
               // get progress after the file update and compare
               deltaClient.get[Json]("/supervision/projections", Coyote) { (json2, _) =>

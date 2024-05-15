@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
@@ -22,10 +23,8 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
-import org.apache.commons.codec.binary.Hex
 
 import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import scala.concurrent.duration.{Duration, DurationInt}
 
 class S3FileOperationsSuite
@@ -48,8 +47,9 @@ class S3FileOperationsSuite
   private lazy val locationGenerator = new S3LocationGenerator(conf.prefixUri)
   private lazy val fileOps           = S3FileOperations.mk(s3StorageClient, locationGenerator)
 
-  private def makeContentHash(algorithm: DigestAlgorithm, content: String) = {
-    Hex.encodeHexString(MessageDigest.getInstance(algorithm.value).digest(content.getBytes(StandardCharsets.UTF_8)))
+  private def makeDigest(content: String): ComputedDigest = {
+    val value = Hex.valueOf(DigestAlgorithm.SHA256.digest.digest(content.getBytes(StandardCharsets.UTF_8)))
+    ComputedDigest(DigestAlgorithm.SHA256, value)
   }
 
   private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
@@ -83,22 +83,23 @@ class S3FileOperationsSuite
 
       val filename      = "myfile.txt"
       val content       = genString()
-      val hashOfContent = makeContentHash(DigestAlgorithm.default, content)
+      val contentLength = content.length.toLong
+      val digest        = makeDigest(content)
       val entity        = HttpEntity(content)
 
       val location         = expectedLocation(project, filename)
       val expectedMetadata =
         FileStorageMetadata(
           randomUuid,
-          content.length.toLong,
-          ComputedDigest(DigestAlgorithm.default, hashOfContent),
+          contentLength,
+          digest,
           FileAttributesOrigin.Client,
           location,
           location.path
         )
 
       val result = for {
-        storageMetadata <- fileOps.save(storage, filename, entity)
+        storageMetadata <- fileOps.save(storage, filename, entity, contentLength)
         _                = assertEquals(storageMetadata, expectedMetadata)
         source          <- fileOps.fetch(bucket, storageMetadata.path)
       } yield consume(source)

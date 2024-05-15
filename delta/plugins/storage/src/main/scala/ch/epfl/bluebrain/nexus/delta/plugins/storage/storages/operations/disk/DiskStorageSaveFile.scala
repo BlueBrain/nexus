@@ -7,6 +7,7 @@ import akka.stream.scaladsl.{FileIO, Sink}
 import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -79,7 +80,7 @@ final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
         digest.update(currentBytes.asByteBuffer)
         digest
       }
-      .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, dig.digest.map("%02x".format(_)).mkString)))
+      .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, Hex.valueOf(dig.digest))))
 }
 
 object DiskStorageSaveFile {

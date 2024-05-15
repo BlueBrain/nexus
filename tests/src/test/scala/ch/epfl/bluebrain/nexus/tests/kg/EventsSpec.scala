@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 
@@ -101,55 +102,44 @@ class EventsSpec extends BaseIntegrationSpec {
            |  "this": ["is", "a", "test", "attachment", "2"]
            |}""".stripMargin
 
+      implicit val identity: Identity = BugsBunny
+
       for {
         //ResourceCreated event
-        _       <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
-        _       <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
+        _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { (_, response) =>
+                        response.status shouldEqual StatusCodes.Created
+                      }
+        _          <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { (_, response) =>
+                        response.status shouldEqual StatusCodes.Created
+                      }
         //ResourceUpdated event
-        payload <- SimpleResource.sourcePayload(resourceId, 5)
-        _       <- deltaClient.put[Json](
-                     s"/resources/$id/_/test-resource:1?rev=1",
-                     payload,
-                     BugsBunny
-                   ) { (_, response) =>
-                     response.status shouldEqual StatusCodes.OK
-                   }
+        payload    <- SimpleResource.sourcePayload(resourceId, 5)
+        _          <- deltaClient.put[Json](
+                        s"/resources/$id/_/test-resource:1?rev=1",
+                        payload,
+                        BugsBunny
+                      ) { (_, response) =>
+                        response.status shouldEqual StatusCodes.OK
+                      }
         //ResourceTagAdded event
-        _       <- deltaClient.post[Json](
-                     s"/resources/$id/_/test-resource:1/tags?rev=2",
-                     tag("v1.0.0", 1),
-                     BugsBunny
-                   ) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
+        _          <- deltaClient.post[Json](
+                        s"/resources/$id/_/test-resource:1/tags?rev=2",
+                        tag("v1.0.0", 1),
+                        BugsBunny
+                      ) { (_, response) =>
+                        response.status shouldEqual StatusCodes.Created
+                      }
         // ResourceDeprecated event
-        _       <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { (_, response) =>
-                     response.status shouldEqual StatusCodes.OK
-                   }
+        _          <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { (_, response) =>
+                        response.status shouldEqual StatusCodes.OK
+                      }
         //FileCreated event
-        _       <- deltaClient.uploadFile[Json](
-                     s"/files/$id/attachment.json",
-                     fileContent,
-                     ContentTypes.`application/json`,
-                     "attachment.json",
-                     BugsBunny
-                   ) { (_, response) =>
-                     response.status shouldEqual StatusCodes.Created
-                   }
+        fileCreated = FileInput("attachment.json", "attachment.json", ContentTypes.`application/json`, fileContent)
+        _          <- deltaClient.uploadFile(id, None, fileCreated, None) { expectCreated }
         //FileUpdated event
-        _       <- deltaClient.uploadFile[Json](
-                     s"/files/$id/attachment.json?rev=1",
-                     updatedFileContent,
-                     ContentTypes.`application/json`,
-                     "attachment.json",
-                     BugsBunny
-                   ) { (_, response) =>
-                     response.status shouldEqual StatusCodes.OK
-                   }
+        fileUpdated =
+          FileInput("attachment.json", "attachment.json", ContentTypes.`application/json`, updatedFileContent)
+        _          <- deltaClient.uploadFile(id, None, fileUpdated, Some(1)) { expectOk }
       } yield succeed
     }
 

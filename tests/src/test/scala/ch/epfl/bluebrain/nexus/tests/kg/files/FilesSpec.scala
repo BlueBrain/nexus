@@ -6,10 +6,12 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{description => descriptionField, keywords, name => nameField}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.`@id`
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput.CustomMetadata
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.Assertion
@@ -197,77 +199,29 @@ class FilesSpec extends BaseIntegrationSpec {
   }
 
   private def givenAFileWithBrainRegion(brainRegion: String): String = {
-    val id     = genString()
-    val fullId = deltaClient
-      .uploadFileWithMetadata(
-        s"/files/$org/$project/$id",
-        "file content",
-        ContentTypes.`text/plain(UTF-8)`,
-        s"$id.json",
-        Writer,
-        None,
-        None,
-        Map("brainRegion" -> brainRegion)
-      )
-      .map { case (json, response) =>
-        response.status shouldEqual StatusCodes.Created
-        json should have(keywords("brainRegion" -> brainRegion))
-        extractId(json)
-      }
-      .accepted
-
+    val id       = genString()
+    val metadata = CustomMetadata(None, None, Map("brainRegion" -> brainRegion))
+    val file     = FileInput(id, s"$id.json", ContentTypes.`text/plain(UTF-8)`, "file content", metadata)
+    val fullId   = uploadFile(file, _ should have(keywords("brainRegion" -> brainRegion)))
     eventually { assertFileIsInListing(id) }
-
     fullId
   }
 
   private def givenAFileWithName(name: String): String = {
-    val id     = genString()
-    val fullId = deltaClient
-      .uploadFileWithMetadata(
-        s"/files/$org/$project/$id",
-        "file content",
-        ContentTypes.`text/plain(UTF-8)`,
-        s"$id.json",
-        Writer,
-        None,
-        Some(name),
-        Map.empty
-      )
-      .map { case (json, response) =>
-        response.status shouldEqual StatusCodes.Created
-        json should have(nameField(name))
-        extractId(json)
-      }
-      .accepted
-
+    val id       = genString()
+    val metadata = CustomMetadata(Some(name), None, Map.empty)
+    val file     = FileInput(id, s"$id.json", ContentTypes.`text/plain(UTF-8)`, "file content", metadata)
+    val fullId   = uploadFile(file, _ should have(nameField(name)))
     eventually { assertFileIsInListing(id) }
-
     fullId
   }
 
   private def givenAFileWithDescription(description: String): String = {
-    val id     = genString()
-    val fullId = deltaClient
-      .uploadFileWithMetadata(
-        s"/files/$org/$project/$id",
-        "file content",
-        ContentTypes.`text/plain(UTF-8)`,
-        s"$id.json",
-        Writer,
-        Some(description),
-        None,
-        Map.empty
-      )
-      .map { case (json, response) =>
-        response.status shouldEqual StatusCodes.Created
-        json should have(descriptionField(description))
-        extractId(json)
-      }
-      .accepted
-
+    val id       = genString()
+    val metadata = CustomMetadata(None, Some(description), Map.empty)
+    val file     = FileInput(id, s"$id.json", ContentTypes.`text/plain(UTF-8)`, "file content", metadata)
+    val fullId   = uploadFile(file, _ should have(descriptionField(description)))
     eventually { assertFileIsInListing(id) }
-
     fullId
   }
 
@@ -277,20 +231,26 @@ class FilesSpec extends BaseIntegrationSpec {
 
   /** Provides a file in the default storage */
   private def givenAFile(assertion: String => Assertion): Assertion = {
-    val id = genString()
-    deltaClient
-      .uploadFile[Json](
-        s"/files/$projectRef/$id",
-        "file content",
-        ContentTypes.`text/plain(UTF-8)`,
-        s"$id.txt",
-        Writer
-      ) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
-      .accepted
+    val id   = genString()
+    val file = FileInput(id, s"$id.json", ContentTypes.`text/plain(UTF-8)`, "file content")
+    uploadFile(file, _ => succeed)
     eventually { assertFileIsInListing(id) }
     assertion(id)
+  }
+
+  private def uploadFile(file: FileInput, assertJson: Json => Assertion) = {
+    implicit val identity: Identity = Writer
+    val fullId                      = {
+      for {
+        _    <- deltaClient.uploadFile(projectRef, None, file, None) { case (json, response) =>
+                  response.status shouldEqual StatusCodes.Created
+                  assertJson(json)
+                }
+        json <- deltaClient.getJson(s"/files/$projectRef/${file.fileId}", Writer)
+      } yield extractId(json)
+    }.accepted
+
+    fullId
   }
 
   private def deprecateFile(id: String, rev: Int): Assertion =
