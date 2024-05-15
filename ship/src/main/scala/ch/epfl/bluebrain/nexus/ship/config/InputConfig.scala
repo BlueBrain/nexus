@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -21,7 +22,8 @@ final case class InputConfig(
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
     files: FileProcessingConfig,
-    disableResourceValidation: Boolean
+    disableResourceValidation: Boolean,
+    resourceTypesToIgnore: Set[Iri]
 )
 
 object InputConfig {
@@ -32,6 +34,9 @@ object InputConfig {
     genericMapReader(str =>
       ProjectRef.parse(str).leftMap(e => CannotConvert(str, classOf[ProjectRef].getSimpleName, e))
     )
+
+  implicit private val iriConfigReader: ConfigReader[Iri] =
+    ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
 
   implicit final val runConfigReader: ConfigReader[InputConfig] = deriveReader[InputConfig]
 }

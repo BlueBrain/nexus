@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.uploadFileToS3
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -75,6 +76,14 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
     for {
       config <- ShipConfig.load(None).map(_.input)
       _       = assertEquals(config.files.targetBucket, inputConfig.files.targetBucket)
+    } yield ()
+  }
+
+  test("Should read the resource types to ignore") {
+    for {
+      externalConfigPath <- loader.absolutePath("config/external.conf")
+      config             <- ShipConfig.load(Some(Path(externalConfigPath)))
+      _                   = assertEquals(config.input.resourceTypesToIgnore, Set(iri"https://some.resource.type"))
     } yield ()
   }
 

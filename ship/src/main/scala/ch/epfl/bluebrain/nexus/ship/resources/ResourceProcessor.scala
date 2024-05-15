@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.resources
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
@@ -24,6 +24,7 @@ class ResourceProcessor private (
     resources: Resources,
     projectMapper: ProjectMapper,
     sourcePatcher: SourcePatcher,
+    resourceTypesToIgnore: Set[Iri],
     clock: EventClock
 ) extends EventProcessor[ResourceEvent] {
 
@@ -47,9 +48,8 @@ class ResourceProcessor private (
       def toIdSegment: IdSegment = IdSegmentRef(ref).value
     }
 
-    val viewType = nxv + "View"
-    // TODO: We are currently ignoring views registered as generic resources; check what we want to do
-    if (!event.types.contains(viewType)) {
+    val skip = resourceTypesToIgnore.nonEmpty && event.types.intersect(resourceTypesToIgnore).nonEmpty
+    if (!skip) {
       event match {
         case e: ResourceCreated       =>
           sourcePatcher(e.source).flatMap { patched =>
@@ -94,10 +94,11 @@ object ResourceProcessor {
       projectMapper: ProjectMapper,
       fetchContext: FetchContext,
       sourcePatcher: SourcePatcher,
+      resourceTypesToIgnore: Set[Iri],
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, projectMapper, sourcePatcher, clock)
+    new ResourceProcessor(resources, projectMapper, sourcePatcher, resourceTypesToIgnore, clock)
   }
 
 }
