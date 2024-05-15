@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, ContentType, Uri}
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
 import cats.syntax.all._
@@ -60,20 +59,18 @@ object S3FileOperations {
 
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
       IO.delay {
-        Source.fromGraph(
-          StreamConverter(
-            client
-              .readFile(
-                bucket,
-                URLDecoder.decode(path.toString, UTF_8.toString)
-              )
-              .groupWithin(ChunkSize, 1.second)
-              .map(bytes => ByteString(bytes.toArray))
-              .adaptError {
-                case _: NoSuchKeyException => FetchFileRejection.FileNotFound(path.toString)
-                case err                   => UnexpectedFetchError(path.toString, err.getMessage)
-              }
-          )
+        StreamConverter(
+          client
+            .readFile(
+              bucket,
+              URLDecoder.decode(path.toString, UTF_8.toString)
+            )
+            .groupWithin(ChunkSize, 1.second)
+            .map(bytes => ByteString(bytes.toArray))
+            .adaptError {
+              case _: NoSuchKeyException => FetchFileRejection.FileNotFound(path.toString)
+              case err                   => UnexpectedFetchError(path.toString, err.getMessage)
+            }
         )
       }
 
