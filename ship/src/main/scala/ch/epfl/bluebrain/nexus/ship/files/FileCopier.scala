@@ -13,7 +13,7 @@ import scala.concurrent.duration.DurationInt
 
 trait FileCopier {
 
-  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[Unit]
+  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[Uri.Path]
 
 }
 
@@ -30,28 +30,36 @@ object FileCopier {
     val importBucket      = config.importBucket
     val targetBucket      = config.targetBucket
     val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Uri.Empty))
-    (project: ProjectRef, attributes: FileAttributes) =>
-      {
-        val origin  = attributes.path.toString
-        val target  = if (config.enableTargetRewrite) {
-          locationGenerator.file(project, attributes.uuid, attributes.filename).toString
-        } else {
-          origin
-        }
-        val FIVE_GB = 5_000_000_000L
+    (project: ProjectRef, attributes: FileAttributes) => {
+      val origin          = attributes.path
+      val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
+      val target          = if (config.enableTargetRewrite) {
+        locationGenerator.file(project, attributes.uuid, patchedFileName).path
+      } else {
+        if (attributes.filename.isEmpty) {
+          origin ?/ patchedFileName
+        } else origin
+      }
+      val FIVE_GB         = 5_000_000_000L
 
-        // TODO: Check if we only use SHA256 or not? If not we need to pass the right algo
+      val originKey = origin.toString
+      val targetKey = target.toString
+
+      def copy = {
         if (attributes.bytes >= FIVE_GB)
-          s3StorageClient.copyObjectMultiPart(importBucket, origin, targetBucket, target).void
+          s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey).void
         else
-          s3StorageClient.copyObject(importBucket, origin, targetBucket, target).void
-      }.timed.flatMap { case (duration, _) =>
+          s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey).void
+      }
+
+      copy.timed.flatMap { case (duration, _) =>
         IO.whenA(duration > longCopyThreshold)(
           logger.info(s"Copy file ${attributes.path} of size ${attributes.bytes} took ${duration.toSeconds} seconds.")
-        )
+        ).as(target)
       }
+    }
   }
 
-  def apply(): FileCopier = (_: ProjectRef, _: FileAttributes) => IO.unit
+  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.pure(attributes.path)
 
 }
