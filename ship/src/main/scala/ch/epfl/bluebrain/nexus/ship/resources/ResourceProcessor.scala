@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.resources
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
@@ -18,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
-
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.schema
 
 class ResourceProcessor private (
     resources: Resources,
@@ -48,8 +47,7 @@ class ResourceProcessor private (
       def toIdSegment: IdSegment = IdSegmentRef(ref).value
     }
 
-    val viewType = schema.iri
-
+    val viewType = nxv + "View"
     // TODO: We are currently ignoring views registered as generic resources; check what we want to do
     if (!event.types.contains(viewType)) {
       event match {
