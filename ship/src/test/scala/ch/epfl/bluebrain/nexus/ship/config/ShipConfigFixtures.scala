@@ -63,7 +63,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         skipFileEvents = false,
         enableTargetRewrite = true
       ),
-      disableResourceValidation = false
+      disableResourceValidation = false,
+      Set.empty
     )
 
 }
