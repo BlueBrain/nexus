@@ -4,6 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CancelEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileEvent, FileId}
@@ -75,12 +76,14 @@ class FileProcessor private (
         val customMetadata = Some(getCustomMetadata(attrs))
         IO.whenA(attrs.bytes < 5_000_000_000L) {
           fileCopier.copyFile(e.project, attrs).flatMap { newPath =>
-            files.registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType).void
+            files.updateRegisteredFile(fileId, None, customMetadata, cRev, newPath, e.tag, attrs.mediaType).void
           }
         }
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(fileId, cRev, e.metadata, e.tag)
-      case _: FileAttributesUpdated     => IO.unit
+      case e: FileAttributesUpdated     =>
+        val reason = "`FileAttributesUpdated` are events related to deprecated remote storages."
+        files.cancelEvent(CancelEvent(e.id, e.project, reason, cRev, e.subject))
       case e: FileTagAdded              =>
         files.tag(fileId, e.tag, e.targetRev, cRev)
       case e: FileTagDeleted            =>
@@ -89,6 +92,7 @@ class FileProcessor private (
         files.deprecate(fileId, cRev)
       case _: FileUndeprecated          =>
         files.undeprecate(fileId, cRev)
+      case _: FileCancelledEvent        => IO.unit // Not present in the export anyway
     }
   }.redeemWith(
     {

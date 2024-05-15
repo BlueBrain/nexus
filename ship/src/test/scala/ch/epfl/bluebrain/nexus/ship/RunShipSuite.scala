@@ -118,8 +118,9 @@ class RunShipSuite
       events <- eventsStream("import/file-import.json")
       _      <- RunShip(events, s3Client, inputConfig, xas)
       // File with an old path to be rewritten
-      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path", xas).assertEquals(1)
+      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path", xas).assertEquals(3)
       _      <- assertHeadResponse("/prefix/public/sscx/files/0/a/7/9/a/d/1/d/002_160120B3_OH.nwb")
+      _      <- assertHeadResponse("/prefix/public/sscx/files/8/9/5/4/c/3/e/c/002_160120B3_OH_updated.nwb")
       // File with a blank filename
       _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename", xas).assertEquals(1)
       _      <- assertHeadResponse("/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file")
@@ -127,10 +128,13 @@ class RunShipSuite
   }
 
   private def assertHeadResponse(key: String)(implicit location: Location) =
-    s3Client.headObject(targetBucket, key).map { head =>
-      assertEquals(head.fileSize, contentLength)
-      assertEquals(head.digest, fileDigest)
-    }
+    s3Client
+      .headObject(targetBucket, key)
+      .map { head =>
+        assertEquals(head.fileSize, contentLength)
+        assertEquals(head.digest, fileDigest)
+      }
+      .onError { _ => s3Client.listObjectsV2(targetBucket).flatMap { l => IO.println(l.contents()) } }
 
 }
 

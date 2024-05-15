@@ -108,6 +108,14 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           FileUndeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
       }
 
+      "create a new event from a CancelEventCommand command" in {
+        val current       = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
+        val command       = CancelEvent(id, projectRef, "Some reason", 2, alice)
+        val expectedEvent =
+          FileCancelledEvent(id, projectRef, storageRef, DiskStorageType, "Some reason", 3, epoch, alice)
+        evaluate(clock)(Some(current), command).accepted shouldEqual expectedEvent
+      }
+
       "reject with IncorrectRev" in {
         val current  = FileGen.state(id, projectRef, storageRef, attributes)
         val commands = List(
@@ -115,7 +123,8 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
-          DeprecateFile(id, projectRef, 2, alice)
+          DeprecateFile(id, projectRef, 2, alice),
+          CancelEvent(id, projectRef, "Some reason", 2, alice)
         )
         forAll(commands) { cmd =>
           evaluate(clock)(Some(current), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
@@ -137,7 +146,8 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
-          DeprecateFile(id, projectRef, 2, alice)
+          DeprecateFile(id, projectRef, 2, alice),
+          CancelEvent(id, projectRef, "Some reason", 2, alice)
         )
         forAll(commands) { cmd =>
           evaluate(clock)(None, cmd).rejectedWith[FileNotFound]
@@ -244,6 +254,19 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         next(Some(current), event).value shouldEqual current.copy(
           rev = 2,
           deprecated = false,
+          updatedAt = time2,
+          updatedBy = alice
+        )
+      }
+
+      "from a new FileCancelled event" in {
+        val event   = FileCancelledEvent(id, projectRef, storageRef, DiskStorageType, "Some reason", 2, time2, alice)
+        val current = FileGen.state(id, projectRef, storageRef, attributes, deprecated = true)
+
+        next(None, event) shouldEqual None
+
+        next(Some(current), event).value shouldEqual current.copy(
+          rev = 2,
           updatedAt = time2,
           updatedBy = alice
         )

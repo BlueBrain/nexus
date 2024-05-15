@@ -75,6 +75,7 @@ object EventMetric {
   val TagDeleted: Label   = Label.unsafe("TagDeleted")
   val Deprecated: Label   = Label.unsafe("Deprecated")
   val Undeprecated: Label = Label.unsafe("Undeprecated")
+  val Cancelled: Label    = Label.unsafe("Cancelled")
 
   /**
     * Metric extracted from an event independent from an org/project
