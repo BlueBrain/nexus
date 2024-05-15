@@ -19,6 +19,8 @@ import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
 import io.circe.Decoder
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.schema
+
 class ResourceProcessor private (
     resources: Resources,
     projectMapper: ProjectMapper,
@@ -46,28 +48,33 @@ class ResourceProcessor private (
       def toIdSegment: IdSegment = IdSegmentRef(ref).value
     }
 
-    event match {
-      case e: ResourceCreated       =>
-        sourcePatcher(e.source).flatMap { patched =>
-          resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
-        }
-      case e: ResourceUpdated       =>
-        sourcePatcher(e.source).flatMap { patched =>
-          resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
-        }
-      case e: ResourceSchemaUpdated =>
-        resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
-      case e: ResourceRefreshed     =>
-        resources.refresh(e.id, project, e.schema.toIdSegment.some)
-      case e: ResourceTagAdded      =>
-        resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
-      case e: ResourceTagDeleted    =>
-        resources.deleteTag(e.id, project, None, e.tag, cRev)
-      case e: ResourceDeprecated    =>
-        resources.deprecate(e.id, project, None, cRev)
-      case e: ResourceUndeprecated  =>
-        resources.undeprecate(e.id, project, None, cRev)
-    }
+    val viewType = schema.iri
+
+    // TODO: We are currently ignoring views registered as generic resources; check what we want to do
+    if (!event.types.contains(viewType)) {
+      event match {
+        case e: ResourceCreated       =>
+          sourcePatcher(e.source).flatMap { patched =>
+            resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
+          }
+        case e: ResourceUpdated       =>
+          sourcePatcher(e.source).flatMap { patched =>
+            resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
+          }
+        case e: ResourceSchemaUpdated =>
+          resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
+        case e: ResourceRefreshed     =>
+          resources.refresh(e.id, project, e.schema.toIdSegment.some)
+        case e: ResourceTagAdded      =>
+          resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
+        case e: ResourceTagDeleted    =>
+          resources.deleteTag(e.id, project, None, e.tag, cRev)
+        case e: ResourceDeprecated    =>
+          resources.deprecate(e.id, project, None, cRev)
+        case e: ResourceUndeprecated  =>
+          resources.undeprecate(e.id, project, None, cRev)
+      }
+    } else IO.unit
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
