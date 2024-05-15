@@ -134,7 +134,6 @@ class RunShipSuite
         assertEquals(head.fileSize, contentLength)
         assertEquals(head.digest, fileDigest)
       }
-      .onError { _ => s3Client.listObjectsV2(targetBucket).flatMap { l => IO.println(l.contents()) } }
 
 }
 
