@@ -14,8 +14,8 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait S3Helpers { self: Generators =>
 
-  def givenAnS3Bucket(
-      test: String => IO[Unit]
+  def givenAnS3Bucket[A](
+      test: String => IO[A]
   )(implicit client: S3StorageClient, fs2Client: S3AsyncClientOp[IO]): IO[Unit] = {
     val bucket = genString()
     fs2Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build) >>

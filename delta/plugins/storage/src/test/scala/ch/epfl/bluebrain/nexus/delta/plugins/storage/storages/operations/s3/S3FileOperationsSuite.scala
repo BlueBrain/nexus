@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3St
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, UUIDFFixtures}
@@ -98,13 +99,21 @@ class S3FileOperationsSuite
           location.path
         )
 
-      val result = for {
+      for {
         storageMetadata <- fileOps.save(storage, filename, entity, contentLength)
         _                = assertEquals(storageMetadata, expectedMetadata)
         source          <- fileOps.fetch(bucket, storageMetadata.path)
-      } yield consume(source)
+        _               <- consumeIO(source).assertEquals(content)
+      } yield ()
+    }
+  }
 
-      assertIO(result, content)
+  test("Fail to fetch a missing file from a bucket") {
+    givenAnS3Bucket { bucket =>
+      fileOps
+        .fetch(bucket, Uri.Path("/xxx/missing-file"))
+        .flatMap(consumeIO(_))
+        .intercept[FetchFileRejection.FileNotFound]
     }
   }
 
@@ -114,14 +123,13 @@ class S3FileOperationsSuite
       givenAFileInABucket(bucket, fileContents) { key =>
         val path = Uri.Path(key)
 
-        val result = for {
+        for {
           storageMetadata <- fileOps.register(bucket, path)
           _                = assertEquals(storageMetadata.metadata.path, path)
           _                = assertEquals(storageMetadata.metadata.location, Uri(key))
           source          <- fileOps.fetch(bucket, path)
-        } yield consume(source)
-
-        assertIO(result, fileContents)
+          _               <- consumeIO(source).assertEquals(fileContents)
+        } yield ()
       }
     }
   }
