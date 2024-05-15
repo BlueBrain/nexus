@@ -102,18 +102,14 @@ class S3FileOperationsSuite
       for {
         storageMetadata <- fileOps.save(storage, filename, entity, contentLength)
         _                = assertEquals(storageMetadata, expectedMetadata)
-        source          <- fileOps.fetch(bucket, storageMetadata.path)
-        _               <- consumeIO(source).assertEquals(content)
+        _               <- fetchFileContent(bucket, storageMetadata.path).assertEquals(content)
       } yield ()
     }
   }
 
   test("Fail to fetch a missing file from a bucket") {
     givenAnS3Bucket { bucket =>
-      fileOps
-        .fetch(bucket, Uri.Path("/xxx/missing-file"))
-        .flatMap(consumeIO(_))
-        .intercept[FetchFileRejection.FileNotFound]
+      fetchFileContent(bucket, Uri.Path("/xxx/missing-file")).intercept[FetchFileRejection.FileNotFound]
     }
   }
 
@@ -127,10 +123,12 @@ class S3FileOperationsSuite
           storageMetadata <- fileOps.register(bucket, path)
           _                = assertEquals(storageMetadata.metadata.path, path)
           _                = assertEquals(storageMetadata.metadata.location, Uri(key))
-          source          <- fileOps.fetch(bucket, path)
-          _               <- consumeIO(source).assertEquals(fileContents)
+          _               <- fetchFileContent(bucket, path).assertEquals(fileContents)
         } yield ()
       }
     }
   }
+
+  private def fetchFileContent(bucket: String, path: Uri.Path) =
+    fileOps.fetch(bucket, path).flatMap { source => consumeIO(source) }
 }
