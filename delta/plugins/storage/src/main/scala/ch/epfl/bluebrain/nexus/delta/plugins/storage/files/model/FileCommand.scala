@@ -214,4 +214,20 @@ object FileCommand {
     *   the identity associated to this command
     */
   final case class UndeprecateFile(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends FileCommand
+
+  /**
+    * Command to express an event which was dropped during a rewrite of the file history
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param reason
+    *   the reason for cancelling the event
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
+    */
+  final case class CancelEvent(id: Iri, project: ProjectRef, reason: String, rev: Int, subject: Subject)
+      extends FileCommand
 }
