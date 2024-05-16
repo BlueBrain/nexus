@@ -81,6 +81,7 @@ class RunShipSuite
     for {
       events <- eventsStream("import/multi-part-import")
       _      <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
+      _      <- new DroppedEventStore(xas).count.assertEquals(1L)
     } yield ()
   }
 

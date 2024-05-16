@@ -72,9 +72,11 @@ object RunShip {
                     fileProcessor                = FileProcessor(fetchContext, s3Client, projectMapper, rcr, config, eventClock, xas)
                     // format: on
           _                           <- logger.info("Starting import")
+          droppedEventStore            = new DroppedEventStore(xas)
           report                      <- EventProcessor
                                            .run(
                                              eventsStream,
+                                             droppedEventStore,
                                              projectProcessor,
                                              resolverProcessor,
                                              schemaProcessor,
