@@ -18,6 +18,9 @@ object UrlUtils extends UrlUtils {
   def decode(url: String): String =
     URLDecoder.decode(url, StandardCharsets.UTF_8.name())
 
+  def decode(uri: Uri): String =
+    URLDecoder.decode(uri.toString(), StandardCharsets.UTF_8.name())
+
   def decode(path: Uri.Path): String =
     URLDecoder.decode(path.toString(), StandardCharsets.UTF_8.name())
 }

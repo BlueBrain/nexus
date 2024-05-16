@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,13 +17,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Statistics
-import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, getDistinctOrgProjects}
+import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, fetchFileAttributes, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import doobie.Get
 import doobie.implicits._
 import fs2.Stream
 import fs2.io.file.Path
@@ -118,22 +123,40 @@ class RunShipSuite
 
   test("Import files in S3 and in the primary store") {
     for {
-      events <- eventsStream("import/file-import.json")
-      _      <- RunShip(events, s3Client, inputConfig, xas)
+      events               <- eventsStream("import/file-import.json")
+      _                    <- RunShip(events, s3Client, inputConfig, xas)
+      project               = ProjectRef.unsafe("public", "sscx")
       // File with an old path to be rewritten
-      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path", xas).assertEquals(3)
-      _      <- assertHeadResponse("/prefix/public/sscx/files/0/a/7/9/a/d/1/d/002_160120B3_OH.nwb")
-      _      <- assertHeadResponse("/prefix/public/sscx/files/8/9/5/4/c/3/e/c/002_160120B3_OH_updated.nwb")
+      oldPathFileId         = iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path"
+      oldPathLocationRev1   = "/prefix/public/sscx/files/0/a/7/9/a/d/1/d/002_160120B3_OH.nwb"
+      oldPathLocationRev2   = "/prefix/public/sscx/files/8/9/5/4/c/3/e/c/002_160120B3_OH_updated.nwb"
+      _                    <- checkFor("file", oldPathFileId, xas).assertEquals(3)
+      _                    <- assertS3Object(oldPathLocationRev1)
+      _                    <- assertS3Object(oldPathLocationRev2)
+      _                    <- assertFileAttributes(project, oldPathFileId)(oldPathLocationRev2, "002_160120B3_OH_updated.nwb")
       // File with a blank filename
-      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename", xas).assertEquals(1)
-      _      <- assertHeadResponse("/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file")
-      // File with a blank filename
-      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/special-chars-filename", xas).assertEquals(1)
-      _      <- assertHeadResponse("/prefix/public/sscx/files/1/2/3/4/5/6/7/8/special [file].json")
+      blankFilenameId       = iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename"
+      blankFilenameLocation = "/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file"
+      _                    <- checkFor("file", blankFilenameId, xas).assertEquals(1)
+      _                    <- assertS3Object(blankFilenameLocation)
+      _                    <- assertFileAttributes(project, blankFilenameId)(blankFilenameLocation, "file")
+      // File with special characters in the filename
+      specialCharsId        = iri"https://bbp.epfl.ch/neurosciencegraph/data/special-chars-filename"
+      specialCharsLocation  = "/prefix/public/sscx/files/1/2/3/4/5/6/7/8/special [file].json"
+      _                    <- checkFor("file", specialCharsId, xas).assertEquals(1)
+      _                    <- assertS3Object(specialCharsLocation)
+      _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json")
     } yield ()
   }
 
-  private def assertHeadResponse(key: String)(implicit location: Location): IO[Unit] =
+  private def assertFileAttributes(project: ProjectRef, id: Iri)(expectedLocation: String, expectedFileName: String) =
+    fetchFileAttributes(project, id, xas).map { attributes =>
+      assertEquals(UrlUtils.decode(attributes.location), expectedLocation)
+      assertEquals(UrlUtils.decode(attributes.path), expectedLocation)
+      assertEquals(attributes.filename, expectedFileName)
+    }
+
+  private def assertS3Object(key: String)(implicit location: Location): IO[Unit] =
     s3Client
       .headObject(targetBucket, key)
       .map { head =>
@@ -163,8 +186,18 @@ object RunShipSuite {
     sql"""
          | SELECT COUNT(*) FROM scoped_events 
          | WHERE type = $entityType
-         | AND id = ${id.toString}
+         | AND id = $id
        """.stripMargin.query[Int].unique.transact(xas.read)
+
+  def fetchFileAttributes(project: ProjectRef, id: Iri, xas: Transactors): IO[FileAttributes] = {
+    implicit val getValue: Get[FileState] = FileState.serializer.getValue
+    ScopedStateGet
+      .latest[Iri, FileState](Files.entityType, project, id)
+      .transact(xas.read)
+      .flatMap { stateOpt =>
+        IO.fromOption(stateOpt.map(_.attributes))(FileNotFound(id, project))
+      }
+  }
 
   // The expected import report for the import.json file, as well as for the /import/multi-part-import directory
   val expectedImportReport: ImportReport = ImportReport(
