@@ -20,7 +20,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow => AkkaFlow, Keep, Sink => AkkaSink, Source => AkkaSource}
+import akka.stream.scaladsl.{Flow => AkkaFlow, Keep, Sink => AkkaSink}
 import akka.testkit._
 import cats.effect.IO
 import fs2._
@@ -59,7 +59,7 @@ class StreamConverterSpec
     "propagate elements and completion from stream to source" in {
       val probe  = TestProbe()
       val stream = Stream.emits(numbers).onFinalize[IO](IO(probe.ref ! Success(Done)))
-      val source = AkkaSource.fromGraph(StreamConverter(stream))
+      val source = StreamConverter(stream)
 
       source.toMat(AkkaSink.seq)(Keep.right).run().await should be(numbers)
       probe.expectMsg(Success(Done))
@@ -67,7 +67,7 @@ class StreamConverterSpec
 
     "propagate errors from stream to source" in {
       val stream = Stream.raiseError[IO](error)
-      val source = AkkaSource.fromGraph(StreamConverter(stream))
+      val source = StreamConverter(stream)
 
       expectError(source.toMat(AkkaSink.seq)(Keep.right).run().await)
     }
@@ -75,7 +75,7 @@ class StreamConverterSpec
     "propagate cancellation from source to stream (on source completion)" in {
       val probe  = TestProbe()
       val stream = Stream.emits(numbers).onFinalize[IO](IO(probe.ref ! Success(Done)))
-      val source = AkkaSource.fromGraph(StreamConverter(stream))
+      val source = StreamConverter(stream)
 
       source.via(AkkaFlow[Int].take(9)).toMat(AkkaSink.seq)(Keep.right).run().await should be(numbers.take(9))
       probe.expectMsg(Success(Done))
@@ -84,7 +84,7 @@ class StreamConverterSpec
     "propagate cancellation from source to stream (on source error)" in {
       val probe  = TestProbe()
       val stream = Stream.emits(numbers).onFinalize[IO](IO(probe.ref ! Success(Done)))
-      val source = AkkaSource.fromGraph(StreamConverter(stream))
+      val source = StreamConverter(stream)
 
       expectError(source.toMat(AkkaSink.foreach(_ => throw error))(Keep.right).run().await)
       probe.expectMsg(Success(Done))

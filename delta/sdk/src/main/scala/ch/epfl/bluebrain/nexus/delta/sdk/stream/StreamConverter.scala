@@ -51,7 +51,7 @@ object StreamConverter {
       }
   }
 
-  def apply[A](stream: Stream[IO, A]): Graph[SourceShape[A], NotUsed] = {
+  def apply[A](stream: Stream[IO, A]): AkkaSource[A, Any] = {
     val source = AkkaSource.queue[A](0, OverflowStrategy.backpressure)
     // A sink that runs an FS2 publisherStream when consuming the publisher actor (= materialized value) of source
     val sink   = AkkaSink.foreach[SourceQueueWithComplete[A]] { p =>

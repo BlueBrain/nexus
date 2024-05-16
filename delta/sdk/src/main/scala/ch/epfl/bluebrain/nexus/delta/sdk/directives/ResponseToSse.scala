@@ -5,13 +5,12 @@ import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.scaladsl.Source
 import cats.effect.IO
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import DeltaDirectives.emit
-import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.ServerSentEventStream
@@ -37,9 +36,7 @@ object ResponseToSse {
           case Right(stream)               =>
             complete(
               OK,
-              Source
-                .fromGraph[ServerSentEvent, Any](StreamConverter.apply(stream))
-                .keepAlive(10.seconds, () => ServerSentEvent.heartbeat)
+              StreamConverter.apply(stream).keepAlive(10.seconds, () => ServerSentEvent.heartbeat)
             )
         }
     }
