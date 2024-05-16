@@ -9,7 +9,7 @@ import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
@@ -48,7 +48,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
       entity: BodyPartEntity,
       contentLength: Long
   ): IO[FileStorageMetadata] = {
-    val key = location.toString()
+    val key = UrlUtils.decode(location.path)
     (for {
       _             <- log(bucket, key, s"Checking for object existence")
       _             <- validateObjectDoesNotExist(bucket, key)
