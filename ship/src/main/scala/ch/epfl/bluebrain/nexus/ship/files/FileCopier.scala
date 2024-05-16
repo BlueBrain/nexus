@@ -14,7 +14,7 @@ import scala.concurrent.duration.DurationInt
 
 trait FileCopier {
 
-  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[Uri.Path]
+  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[Option[Uri.Path]]
 
 }
 
@@ -51,16 +51,25 @@ object FileCopier {
           s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey).void
         else
           s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey).void
-      }
-
-      copy.timed.flatMap { case (duration, _) =>
+      }.timed.flatMap { case (duration, _) =>
         IO.whenA(duration > longCopyThreshold)(
           logger.info(s"Copy file ${attributes.path} of size ${attributes.bytes} took ${duration.toSeconds} seconds.")
-        ).as(target)
+        )
       }
+
+      for {
+        isObject <- s3StorageClient.objectExists(importBucket, originKey)
+        isFolder <-
+          if (isObject) IO.pure(false) else s3StorageClient.listObjectsV2(importBucket, originKey).map(_.hasContents)
+        _        <- IO.whenA(isObject) { copy }
+        _        <- IO.whenA(isFolder) { logger.info(s"$target has been found to be a folder, skipping the file copy...") }
+        _        <- IO.whenA(!isFolder && !isObject) {
+                      logger.error(s"$target is neither an object or folder, something is wrong.")
+                    }
+      } yield Option.when(isObject)(target)
     }
   }
 
-  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.pure(attributes.path)
+  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.some(attributes.path)
 
 }
