@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
@@ -29,6 +30,7 @@ import munit.{AnyFixture, Location}
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
+import scala.jdk.CollectionConverters._
 
 class RunShipSuite
     extends NexusSuite
@@ -59,8 +61,9 @@ class RunShipSuite
             root.attributes.path.string
               .getOption(row.value)
               .traverse { path =>
+                val decodedPath     = UrlUtils.decode(path)
                 val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
-                s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, path, contentLength)
+                s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, decodedPath, contentLength)
               }
               .void
           }
@@ -124,15 +127,25 @@ class RunShipSuite
       // File with a blank filename
       _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename", xas).assertEquals(1)
       _      <- assertHeadResponse("/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file")
+      // File with a blank filename
+      _      <- checkFor("file", iri"https://bbp.epfl.ch/neurosciencegraph/data/special-chars-filename", xas).assertEquals(1)
+      _      <- assertHeadResponse("/prefix/public/sscx/files/1/2/3/4/5/6/7/8/special [file].json")
     } yield ()
   }
 
-  private def assertHeadResponse(key: String)(implicit location: Location) =
+  private def assertHeadResponse(key: String)(implicit location: Location): IO[Unit] =
     s3Client
       .headObject(targetBucket, key)
       .map { head =>
         assertEquals(head.fileSize, contentLength)
         assertEquals(head.digest, fileDigest)
+      }
+      .recoverWith { e =>
+        s3Client.listObjectsV2(targetBucket).map { listResponse =>
+          val keys    = listResponse.contents().asScala.map(_.key())
+          val message = s"$key could not be found in target bucket. Did you mean: ${keys.mkString("'", "','", "'")} ?"
+          fail(message, e)
+        }
       }
 
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.files
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3LocationGenerator
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
@@ -42,8 +43,8 @@ object FileCopier {
       }
       val FIVE_GB         = 5_000_000_000L
 
-      val originKey = origin.toString
-      val targetKey = target.toString
+      val originKey = UrlUtils.decode(origin)
+      val targetKey = UrlUtils.decode(target)
 
       def copy = {
         if (attributes.bytes >= FIVE_GB)
