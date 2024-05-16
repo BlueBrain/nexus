@@ -123,6 +123,9 @@ object StorageWiring {
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =
       S3FileOperations.registerInternal(s3Client, bucket, path)(UUIDF.random)
+
+    override def delegate(storage: S3Storage, filename: String): IO[S3FileOperations.S3DelegationMetadata] =
+      IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
   }
 
 }

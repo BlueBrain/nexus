@@ -7,12 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileContentLengthIsMissing
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{DelegateFileOperation, FetchAttributeRejection, MoveFileRejection, RegisterFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, MoveFileRejection, RegisterFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.{S3DelegationMetadata, S3FileMetadata}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -32,6 +34,8 @@ trait FileOperations extends StorageAccess {
   def register(storage: Storage, path: Uri.Path): IO[S3FileMetadata]
 
   def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]
+
+  def delegate(storage: Storage, filename: String): IO[S3DelegationMetadata]
 }
 
 object FileOperations {
@@ -80,6 +84,12 @@ object FileOperations {
       storage match {
         case s: S3Storage => s3FileOps.register(s.value.bucket, path)
         case s            => IO.raiseError(RegisterFileRejection.UnsupportedOperation(s.tpe))
+      }
+
+    override def delegate(storage: Storage, filename: String): IO[S3DelegationMetadata] =
+      storage match {
+        case s: S3Storage => s3FileOps.delegate(s, filename)
+        case s            => IO.raiseError(DelegateFileOperation.UnsupportedOperation(s.tpe))
       }
   }
 

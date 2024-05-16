@@ -146,6 +146,18 @@ final class Files(
     } yield res
   }.span("createLink")
 
+  def delegate(projectRef: ProjectRef, description: FileDescription)(implicit caller: Caller) = {
+    for {
+      pc                 <- fetchContext.onCreate(projectRef)
+      iri                <- generateId(pc)
+      _                  <-
+        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
+      storage            <- fetchDefaultStorage(projectRef)
+      _                  <- validateAuth(projectRef, storage.value.storageValue.writePermission)
+      delegationMetadata <- fileOperations.delegate(storage.value, description.filename)
+    } yield delegationMetadata
+  }.span("delegate")
+
   /**
     * Create a new file linking it from an existing file in a storage
     *
@@ -496,12 +508,14 @@ final class Files(
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(ref).adaptError { case e: StorageRejection =>
-                       WrappedStorageRejection(e)
-                     }
+          storage <- fetchDefaultStorage(ref)
           _       <- validateAuth(ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
+
+  private def fetchDefaultStorage(ref: ProjectRef) = storages.fetchDefault(ref).adaptError { case e: StorageRejection =>
+    WrappedStorageRejection(e)
+  }
 
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))

@@ -214,4 +214,12 @@ object StorageFileRejection {
         extends MoveFileRejection(s"Registering a file in-place is not supported for storages of type '${tpe.iri}'")
   }
 
+  sealed abstract class DelegateFileOperation(loggedDetails: String) extends StorageFileRejection(loggedDetails)
+
+  object DelegateFileOperation {
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends MoveFileRejection(
+          s"Delegating a file to be uploaded externally is not supported for storages of type '${tpe.iri}'"
+        )
+  }
 }
