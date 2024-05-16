@@ -320,6 +320,37 @@ object FileEvent {
       subject: Subject
   ) extends FileEvent
 
+  /**
+    * Event for the undeprecation of a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
+    * @param reason
+    *   the reason for cancelling the event
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
+    */
+  final case class FileCancelledEvent(
+      id: Iri,
+      project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
+      reason: String,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends FileEvent
+
   val serializer: Serializer[Iri, FileEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                        = Serializer.circeConfiguration
@@ -360,6 +391,7 @@ object FileEvent {
             case _: FileTagDeleted            => TagDeleted
             case _: FileDeprecated            => Deprecated
             case _: FileUndeprecated          => Undeprecated
+            case _: FileCancelledEvent        => Cancelled
           },
           event.id,
           Set(nxvFile),
@@ -506,6 +538,8 @@ object FileEvent {
           FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None)
         case fud: FileUndeprecated                          =>
           FileExtraFields(fud.storage.iri, fud.storageType, None, None, None, None)
+        case fce: FileCancelledEvent                        =>
+          FileExtraFields(fce.storage.iri, fce.storageType, None, None, None, None)
       }
 
     implicit val fileExtraFieldsEncoder: Encoder.AsObject[FileExtraFields] =

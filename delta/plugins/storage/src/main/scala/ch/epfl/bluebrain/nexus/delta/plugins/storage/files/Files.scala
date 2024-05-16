@@ -550,6 +550,8 @@ final class Files(
       .adaptError { case e: FetchAttributeRejection => FetchAttributesRejection(fileId, storage.id, e) }
   }
 
+  def cancelEvent(command: CancelEvent): IO[Unit] = log.evaluate(command.project, command.id, command).void
+
 }
 
 object Files {
@@ -613,6 +615,10 @@ object Files {
       s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def cancelEvent(e: FileCancelledEvent): Option[FileState] = state.map { s =>
+      s.copy(rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
       case e: FileCreated               => created(e)
       case e: FileUpdated               => updated(e)
@@ -622,6 +628,7 @@ object Files {
       case e: FileTagDeleted            => tagDeleted(e)
       case e: FileDeprecated            => deprecated(e)
       case e: FileUndeprecated          => undeprecated(e)
+      case e: FileCancelledEvent        => cancelEvent(e)
     }
   }
 
@@ -716,6 +723,15 @@ object Files {
         clock.realTimeInstant.map(FileUndeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
+    def cancelEvent(c: CancelEvent) = state match {
+      case None                      => IO.raiseError(FileNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s)                   =>
+        clock.realTimeInstant.map(
+          FileCancelledEvent(c.id, c.project, s.storage, s.storageType, c.reason, s.rev + 1, _, c.subject)
+        )
+    }
+
     cmd match {
       case c: CreateFile               => create(c)
       case c: UpdateFile               => update(c)
@@ -725,6 +741,7 @@ object Files {
       case c: DeleteFileTag            => deleteTag(c)
       case c: DeprecateFile            => deprecate(c)
       case c: UndeprecateFile          => undeprecate(c)
+      case c: CancelEvent              => cancelEvent(c)
     }
   }
 
