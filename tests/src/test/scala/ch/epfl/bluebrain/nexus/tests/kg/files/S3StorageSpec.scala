@@ -217,9 +217,10 @@ class S3StorageSpec extends StorageSpec {
       deltaClient.uploadFile(projectRef, storageId, file, None) { case (json, response) =>
         response.status shouldEqual StatusCodes.Created
         json should have(filenameField(name))
-        val locationValue = location.getOption(json).value
+        val locationValue  = location.getOption(json).value
         locationValue should endWith(UrlUtils.encode(name))
-        assertThereIsAFileInS3WithAtLocation(locationValue)
+        val decodeLocation = UrlUtils.decode(locationValue)
+        assertThereIsAFileInS3WithAtLocation(decodeLocation)
       }
     }
   }

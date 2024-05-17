@@ -6,7 +6,7 @@ import akka.util.ByteString
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
@@ -19,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
@@ -61,10 +59,7 @@ object S3FileOperations {
       IO.delay {
         StreamConverter(
           client
-            .readFile(
-              bucket,
-              URLDecoder.decode(path.toString, UTF_8.toString)
-            )
+            .readFile(bucket, UrlUtils.decode(path))
             .groupWithin(ChunkSize, 1.second)
             .map(bytes => ByteString(bytes.toArray))
             .adaptError {
@@ -93,7 +88,7 @@ object S3FileOperations {
   ): IO[S3FileMetadata] = {
     for {
       _        <- log.debug(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
-      resp     <- client.headObject(bucket, path.toString())
+      resp     <- client.headObject(bucket, UrlUtils.decode(path))
       metadata <- mkS3Metadata(path, resp)
     } yield metadata
   }
