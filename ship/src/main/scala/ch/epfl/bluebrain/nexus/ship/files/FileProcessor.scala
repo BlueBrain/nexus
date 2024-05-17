@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
 class FileProcessor private (
     files: Files,
@@ -63,56 +62,51 @@ class FileProcessor private (
 
     // TODO: Remove the 5_000_000_000L limit when the multipart works correctly
     event match {
-      case e: FileCreated               =>
+      case e: FileCreated if e.attributes.bytes < 5_000_000_000L =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
-        IO.whenA(attrs.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.project, attrs).flatMap { newPath =>
-            files.registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType).void
-          }
+        fileCopier.copyFile(e.project, attrs).flatMap {
+          case Some(newPath) =>
+            files
+              .registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType)
+              .as(ImportStatus.Success)
+          case None          => IO.pure(ImportStatus.Dropped)
         }
-      case e: FileUpdated               =>
+      case _: FileCreated                                        => IO.pure(ImportStatus.Dropped)
+      case e: FileUpdated if e.attributes.bytes < 5_000_000_000L =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
-        IO.whenA(attrs.bytes < 5_000_000_000L) {
-          fileCopier.copyFile(e.project, attrs).flatMap { newPath =>
-            files.updateRegisteredFile(fileId, None, customMetadata, cRev, newPath, e.tag, attrs.mediaType).void
-          }
+        fileCopier.copyFile(e.project, attrs).flatMap {
+          case Some(newPath) =>
+            files
+              .updateRegisteredFile(fileId, None, customMetadata, cRev, newPath, e.tag, attrs.mediaType)
+              .as(ImportStatus.Success)
+          case None          => IO.pure(ImportStatus.Dropped)
         }
-      case e: FileCustomMetadataUpdated =>
-        files.updateMetadata(fileId, cRev, e.metadata, e.tag)
-      case e: FileAttributesUpdated     =>
+      case _: FileUpdated                                        => IO.pure(ImportStatus.Dropped)
+      case e: FileCustomMetadataUpdated                          =>
+        files.updateMetadata(fileId, cRev, e.metadata, e.tag).as(ImportStatus.Success)
+      case e: FileAttributesUpdated                              =>
         val reason = "`FileAttributesUpdated` are events related to deprecated remote storages."
-        files.cancelEvent(CancelEvent(e.id, e.project, reason, cRev, e.subject))
-      case e: FileTagAdded              =>
-        files.tag(fileId, e.tag, e.targetRev, cRev)
-      case e: FileTagDeleted            =>
-        files.deleteTag(fileId, e.tag, cRev)
-      case _: FileDeprecated            =>
-        files.deprecate(fileId, cRev)
-      case _: FileUndeprecated          =>
-        files.undeprecate(fileId, cRev)
-      case _: FileCancelledEvent        => IO.unit // Not present in the export anyway
+        files.cancelEvent(CancelEvent(e.id, e.project, reason, cRev, e.subject)).as(ImportStatus.Success)
+      case e: FileTagAdded                                       =>
+        files.tag(fileId, e.tag, e.targetRev, cRev).as(ImportStatus.Success)
+      case e: FileTagDeleted                                     =>
+        files.deleteTag(fileId, e.tag, cRev).as(ImportStatus.Success)
+      case _: FileDeprecated                                     =>
+        files.deprecate(fileId, cRev).as(ImportStatus.Success)
+      case _: FileUndeprecated                                   =>
+        files.undeprecate(fileId, cRev).as(ImportStatus.Success)
+      case _: FileCancelledEvent                                 => IO.pure(ImportStatus.Dropped) // Not present in the export anyway
     }
-  }.redeemWith(
-    {
-      case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
-      case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
-      case f: FileNotFound          =>
-        // TODO: Remove this redemption when empty filenames are handled correctly
-        logger.warn(f)(s"The file ${f.id} in project ${f.project} does not exist.").as(ImportStatus.Dropped)
-      case n: NoSuchKeyException    =>
-        event match {
-          // format: off
-          case e: FileCreated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
-          case e: FileUpdated => logger.error(n)(s"The file ${e.id} in project ${e.project} at path ${e.attributes.path} does not exist in the source bucket. ").as(ImportStatus.Dropped)
-          case e              => logger.error(n)(s"This error should not occur as event for file ${e.id} at rev ${e.rev} is not moving any file.").as(ImportStatus.Dropped)
-          // format: on
-        }
-      case other                    => IO.raiseError(other)
-    },
-    _ => IO.pure(ImportStatus.Success)
-  )
+  }.recoverWith {
+    case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
+    case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+    case f: FileNotFound          =>
+      // TODO: Remove this redemption when empty filenames are handled correctly
+      logger.warn(f)(s"The file ${f.id} in project ${f.project} does not exist.").as(ImportStatus.Dropped)
+    case other                    => IO.raiseError(other)
+  }
 
 }
 

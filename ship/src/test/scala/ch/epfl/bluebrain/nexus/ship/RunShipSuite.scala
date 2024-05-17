@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -30,6 +30,7 @@ import doobie.Get
 import doobie.implicits._
 import fs2.Stream
 import fs2.io.file.Path
+import io.circe.Json
 import io.circe.optics.JsonPath.root
 import munit.{AnyFixture, Location}
 
@@ -57,22 +58,31 @@ class RunShipSuite
 
   private def asPath(path: String): IO[Path] = loader.absolutePath(path).map(Path(_))
 
+  private def uploadFile(path: String) = {
+    val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
+    s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, path, contentLength)
+  }
+
+  private def decodedFilePath(json: Json) = root.attributes.path.string.getOption(json).map(UrlUtils.decode)
+  private def fileContentType             = root.attributes.mediaType.string.getOption(_)
+
+  private def generatePhysicalFile(row: RowEvent) =
+    IO.whenA(row.`type` == Files.entityType) {
+      (decodedFilePath(row.value), fileContentType(row.value)) match {
+        case (Some(path), Some(contentType)) if contentType == "application/x-directory" =>
+          uploadFile(s"$path/config.txt") // Generate a folder with a config file
+        case (Some(path), _) =>
+          // Generate a file
+          uploadFile(path)
+        case _               => IO.unit
+      }
+    }
+
   private def eventsStream(path: String, offset: Offset = Offset.start) =
     asPath(path).map { path =>
       Stream.eval(LocalStackS3StorageClient.createBucket(underlying, importBucket)) >>
         Stream.eval(LocalStackS3StorageClient.createBucket(underlying, targetBucket)) >>
-        EventStreamer.localStreamer.stream(path, offset).evalTap { row =>
-          IO.whenA(row.`type` == Files.entityType) {
-            root.attributes.path.string
-              .getOption(row.value)
-              .traverse { path =>
-                val decodedPath     = UrlUtils.decode(path)
-                val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
-                s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, decodedPath, contentLength)
-              }
-              .void
-          }
-        }
+        EventStreamer.localStreamer.stream(path, offset).evalTap { row => generatePhysicalFile(row) }
     }
 
   test("Run import by providing the path to a file") {
@@ -125,7 +135,7 @@ class RunShipSuite
   test("Import files in S3 and in the primary store") {
     for {
       events               <- eventsStream("import/file-import.json")
-      _                    <- RunShip(events, s3Client, inputConfig, xas)
+      report               <- RunShip(events, s3Client, inputConfig, xas)
       project               = ProjectRef.unsafe("public", "sscx")
       // File with an old path to be rewritten
       oldPathFileId         = iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path"
@@ -147,6 +157,14 @@ class RunShipSuite
       _                    <- checkFor("file", specialCharsId, xas).assertEquals(1)
       _                    <- assertS3Object(specialCharsLocation)
       _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json")
+      // Directory, should be skipped
+      directoryId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/directory"
+      _                    <- checkFor("file", directoryId, xas).assertEquals(0)
+      // Summary S3 check, 4 objects should have been imported in total
+      _                    <- s3Client.listObjectsV2(targetBucket).map(_.keyCount().intValue()).assertEquals(4)
+      // Summary report check, only the directory event should have been skipped
+      _                     = assertEquals(report.progress(Files.entityType).success, 5L)
+      _                     = assertEquals(report.progress(Files.entityType).dropped, 1L)
     } yield ()
   }
 
