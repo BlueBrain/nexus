@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
@@ -34,15 +34,17 @@ trait S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CopyObjectResponse]
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit]
 
   def copyObjectMultiPart(
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CompleteMultipartUploadResponse]
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit]
 
   def uploadFile(
       fileData: Stream[IO, ByteBuffer],

@@ -44,4 +44,18 @@ trait S3Helpers { self: Generators =>
     client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes)), bucket, key, bytes.length.toLong) >> test(key)
   }
 
+  def givenFilesInABucket(bucket: String, contents1: String, contents2: String)(
+      test: (String, String) => IO[Unit]
+  )(implicit client: S3StorageClient): IO[Unit] = {
+    val bytes1 = contents1.getBytes(StandardCharsets.UTF_8)
+    val key1   = genString()
+    val bytes2 = contents2.getBytes(StandardCharsets.UTF_8)
+    val key2   = genString()
+    for {
+      _ <- client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes1)), bucket, key1, bytes1.length.toLong)
+      _ <- client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes2)), bucket, key2, bytes2.length.toLong)
+      _ <- test(key1, key2)
+    } yield ()
+  }
+
 }

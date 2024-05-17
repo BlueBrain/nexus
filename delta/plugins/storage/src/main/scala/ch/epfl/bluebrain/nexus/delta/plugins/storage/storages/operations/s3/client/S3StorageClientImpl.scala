@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
+import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.S3
@@ -57,34 +58,56 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CopyObjectResponse] =
-    client.copyObject(
-      CopyObjectRequest
-        .builder()
-        .sourceBucket(sourceBucket)
-        .sourceKey(sourceKey)
-        .destinationBucket(destinationBucket)
-        .destinationKey(destinationKey)
-        .checksumAlgorithm(checksumAlgorithm)
-        .build()
-    )
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit] =
+    approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
+      IO.whenA(approved) {
+        val requestBuilder     = CopyObjectRequest
+          .builder()
+          .sourceBucket(sourceBucket)
+          .sourceKey(sourceKey)
+          .destinationBucket(destinationBucket)
+          .destinationKey(destinationKey)
+          .checksumAlgorithm(checksumAlgorithm)
+        val requestWithOptions = options.newContentType.fold(requestBuilder) { contentType =>
+          requestBuilder
+            .contentType(contentType.value)
+            .metadataDirective(MetadataDirective.REPLACE)
+        }
+        client.copyObject(requestWithOptions.build()).void
+      }
+    }
 
   def copyObjectMultiPart(
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CompleteMultipartUploadResponse] = {
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit] =
+    approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
+      IO.whenA(approved) {
+        copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.newContentType)
+      }
+    }
+
+  private def copyObjectMultiPart(
+      sourceBucket: String,
+      sourceKey: String,
+      destinationBucket: String,
+      destinationKey: String,
+      newContentType: Option[ContentType]
+  ): IO[Unit] = {
     val partSize = 5_000_000_000L // 5GB
     for {
       // Initiate the multipart upload
-      createMultipartUploadResponse   <-
-        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey, checksumAlgorithm))
+      createMultipartUploadResponse <-
+        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey, newContentType))
       // Get the object size
-      objectSize                      <- headObject(sourceBucket, sourceKey).map(_.fileSize)
+      objectSize                    <- headObject(sourceBucket, sourceKey).map(_.fileSize)
       // Copy the object using 5 MB parts
-      completedParts                  <- {
+      completedParts                <- {
         val uploadParts = (0L until objectSize by partSize).zipWithIndex.map { case (start, partNumber) =>
           val lastByte              = Math.min(start + partSize - 1, objectSize - 1)
           val uploadPartCopyRequest = UploadPartCopyRequest.builder
@@ -109,17 +132,22 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
         uploadParts.toList.sequence
       }
       // Complete the upload request
-      completeMultipartUploadResponse <-
-        client.completeMultipartUpload(
-          CompleteMultipartUploadRequest.builder
-            .bucket(destinationBucket)
-            .key(destinationKey)
-            .uploadId(createMultipartUploadResponse.uploadId)
-            .multipartUpload(CompletedMultipartUpload.builder.parts(completedParts.asJava).build)
-            .build
-        )
-    } yield completeMultipartUploadResponse
+      _                             <- client.completeMultipartUpload(
+                                         CompleteMultipartUploadRequest.builder
+                                           .bucket(destinationBucket)
+                                           .key(destinationKey)
+                                           .uploadId(createMultipartUploadResponse.uploadId)
+                                           .multipartUpload(CompletedMultipartUpload.builder.parts(completedParts.asJava).build)
+                                           .build
+                                       )
+    } yield ()
   }
+
+  private def approveCopy(destinationBucket: String, destinationKey: String, overwriteEnabled: Boolean) =
+    if (overwriteEnabled)
+      IO.pure(true)
+    else
+      objectExists(destinationBucket, destinationKey).map { exists => !exists }
 
   override def objectExists(bucket: String, key: String): IO[Boolean] = {
     headObject(bucket, key)
@@ -177,11 +205,13 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       .build()
   }
 
-  private def createMultipartUploadRequest(bucket: String, fileKey: String, checksumAlgorithm: ChecksumAlgorithm) =
-    CreateMultipartUploadRequest.builder
-      .bucket(bucket)
-      .key(fileKey)
-      .checksumAlgorithm(checksumAlgorithm)
-      .build
+  private def createMultipartUploadRequest(bucket: String, fileKey: String, newContentType: Option[ContentType]) = {
+    val requestBuilder     =
+      CreateMultipartUploadRequest.builder.bucket(bucket).key(fileKey).checksumAlgorithm(checksumAlgorithm)
+    val requestWithOptions = newContentType.fold(requestBuilder) { contentType =>
+      requestBuilder.contentType(contentType.value)
+    }
+    requestWithOptions.build
+  }
 
 }

@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
+import ch.epfl.bluebrain.nexus.ship.files.FileCopier.CopyResult.{CopySkipped, CopySuccess}
 import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.logger
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
@@ -66,22 +67,22 @@ class FileProcessor private (
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
-          case Some(newPath) =>
+          case CopySuccess(newPath) =>
             files
               .registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType)
               .as(ImportStatus.Success)
-          case None          => IO.pure(ImportStatus.Dropped)
+          case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
       case _: FileCreated                                        => IO.pure(ImportStatus.Dropped)
       case e: FileUpdated if e.attributes.bytes < 5_000_000_000L =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
-          case Some(newPath) =>
+          case CopySuccess(newPath) =>
             files
               .updateRegisteredFile(fileId, None, customMetadata, cRev, newPath, e.tag, attrs.mediaType)
               .as(ImportStatus.Success)
-          case None          => IO.pure(ImportStatus.Dropped)
+          case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
       case _: FileUpdated                                        => IO.pure(ImportStatus.Dropped)
       case e: FileCustomMetadataUpdated                          =>

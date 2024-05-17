@@ -5,16 +5,18 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3LocationGenerator
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.ship.config.FileProcessingConfig
+import ch.epfl.bluebrain.nexus.ship.files.FileCopier.CopyResult
+import ch.epfl.bluebrain.nexus.ship.files.FileCopier.CopyResult.{CopySkipped, CopySuccess}
 
 import scala.concurrent.duration.DurationInt
 
 trait FileCopier {
 
-  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[Option[Uri.Path]]
+  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[CopyResult]
 
 }
 
@@ -23,6 +25,16 @@ object FileCopier {
   private val logger = Logger[FileCopier.type]
 
   private val longCopyThreshold = 5.seconds
+
+  sealed trait CopyResult extends Product with Serializable
+
+  object CopyResult {
+
+    final case class CopySuccess(newPath: Uri.Path) extends CopyResult
+
+    final case object CopySkipped extends CopyResult
+
+  }
 
   def apply(
       s3StorageClient: S3StorageClient,
@@ -46,11 +58,13 @@ object FileCopier {
       val originKey = UrlUtils.decode(origin)
       val targetKey = UrlUtils.decode(target)
 
+      val copyOptions = CopyOptions(overwriteTarget = false, attributes.mediaType)
+
       def copy = {
         if (attributes.bytes >= FIVE_GB)
-          s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey).void
+          s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey, copyOptions)
         else
-          s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey).void
+          s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey, copyOptions)
       }.timed.flatMap { case (duration, _) =>
         IO.whenA(duration > longCopyThreshold)(
           logger.info(s"Copy file ${attributes.path} of size ${attributes.bytes} took ${duration.toSeconds} seconds.")
@@ -66,10 +80,10 @@ object FileCopier {
         _        <- IO.whenA(!isFolder && !isObject) {
                       logger.error(s"$target is neither an object or folder, something is wrong.")
                     }
-      } yield Option.when(isObject)(target)
+      } yield if (isObject) CopySuccess(target) else CopySkipped
     }
   }
 
-  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.some(attributes.path)
+  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.pure(CopySuccess(attributes.path))
 
 }
