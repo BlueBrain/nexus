@@ -31,34 +31,39 @@ object EventProcessor {
 
   private val logger = Logger[EventProcessor.type]
 
-  def run(eventStream: Stream[IO, RowEvent], processors: EventProcessor[_]*): IO[ImportReport] = {
+  def run(
+      eventStream: Stream[IO, RowEvent],
+      droppedEventStore: DroppedEventStore,
+      processors: EventProcessor[_]*
+  ): IO[ImportReport] = {
     val processorsMap = processors.foldLeft(Map.empty[EntityType, EventProcessor[_]]) { (acc, processor) =>
       acc + (processor.resourceType -> processor)
     }
-    eventStream
-      .evalScan(ImportReport.start) { case (report, event) =>
-        val processed = report.progress.foldLeft(0L) { case (acc, (_, stats)) => acc + stats.success + stats.dropped }
-        processorsMap.get(event.`type`) match {
-          case Some(processor) =>
-            IO.whenA(processed % 1000 == 0)(logger.info(s"Current progress is: ${report.progress}")) >>
-              processor
-                .evaluate(event)
-                .map { status =>
-                  report + (event, status)
-                }
-                .onError { err =>
-                  logger.error(err)(
-                    s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
-                  )
-                }
-          case None            =>
-            logger.warn(s"No processor is provided for '${event.`type`}', skipping...") >>
-              IO.pure(report + (event, ImportStatus.Dropped))
+    // Truncating dropped events from previous run before running the stream
+    droppedEventStore.truncate >>
+      eventStream
+        .evalScan(ImportReport.start) { case (report, event) =>
+          val processed = report.progress.foldLeft(0L) { case (acc, (_, stats)) => acc + stats.success + stats.dropped }
+          processorsMap.get(event.`type`) match {
+            case Some(processor) =>
+              for {
+                _      <- IO.whenA(processed % 1000 == 0)(logger.info(s"Current progress is: ${report.progress}"))
+                status <- processor.evaluate(event).onError { err =>
+                            val message =
+                              s"Error while processing event with offset '${event.ordering.value}' with processor '${event.`type`}'."
+                            logger.error(err)(message)
+                          }
+                _      <- IO.whenA(status == ImportStatus.Dropped)(droppedEventStore.save(event))
+              } yield report + (event, status)
+            case None            =>
+              logger.warn(s"No processor is provided for '${event.`type`}', skipping...") >>
+                droppedEventStore.save(event) >>
+                IO.pure(report + (event, ImportStatus.Dropped))
+          }
         }
-      }
-      .compile
-      .lastOrError
-      .flatTap { report => logger.info(report.show) }
+        .compile
+        .lastOrError
+        .flatTap { report => logger.info(report.show) }
   }
 
 }
