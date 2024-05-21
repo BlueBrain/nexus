@@ -137,6 +137,11 @@ CONSTRUCT {
                                                   :maxValue    ?subjectWeightMaxValue  ;
                                                   :label       ?subjectWeightLabel     .
 
+
+  # Object of study
+  ?alias :objectOfStudy     ?objectOfStudy        .
+                            ?objectOfStudy        :identifier  ?objectOfStudy      ;
+                                                  :label       ?objectOfStudyLabel .
   # Properties specific to types
 
   ## Bouton density
@@ -450,6 +455,14 @@ CONSTRUCT {
       ?source            schema:identifier  ?sourceIdentifier           .
       ?sourceIdentifier  schema:propertyID  ?sourceIdentifierPropertyId ;
                          schema:value       ?sourceIdentifierValue      .
+    } .
+  } .
+
+  # ObjectofStudy
+  OPTIONAL {
+    ?id  nsg:objectOfStudy ?objectOfStudy .
+    OPTIONAL {
+      ?objectOfStudy  rdfs:label  ?objectOfStudyLabel .
     } .
   } .
 
