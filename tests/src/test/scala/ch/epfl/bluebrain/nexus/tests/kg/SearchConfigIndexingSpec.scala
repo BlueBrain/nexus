@@ -35,6 +35,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
   private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
   private val emodelId             = "https://bbp.epfl.ch/data/emodel"
+  private val memodelId             = "https://bbp.epfl.ch/data/memodel"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -49,6 +50,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "layer-thickness.json",
     "bouton-density.json",
     "detailed-circuit.json",
+    "memodel.json",
     "emodel/emodel.json",
     "features/axon-annotation.json",
     "features/apical-dendrite-annotation.json",
@@ -1048,6 +1050,20 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       assertOneSource(queryField(emodelId, "generation")) { json =>
         json shouldEqual expected
       }
+    }
+  }
+
+  "have the correct memodel information" in {
+    val expected =
+      json"""{
+                 "memodel": {
+                    "neuronMorphology": { "@id" : "https://bbp.epfl.ch/data/neuron-morphology", "name" : "sm080522a1-5_idA" },
+                    "emodelResource": { "@id" : "https://bbp.epfl.ch/data/neuron-morphology", "name" : "EM__fa285b7__dSTUT__15"}
+                  }
+                }"""
+
+    assertOneSource(queryField(memodelId, "memodel")) { json =>
+      json shouldEqual expected
     }
   }
 

@@ -213,6 +213,13 @@ CONSTRUCT {
                                ?emodel  :score            ?emodelScore ;
                                         :neuronMorphology ?emodelMorphologyId .
                                                           ?emodelMorphologyId :name ?emodelMorphologyName .
+
+  ## MEModels
+  ?alias :memodel              ?memodel  .
+                               ?memodel  :emodelResource         ?memodelEModelId     .
+                                                                 ?memodelEModelId     :name ?memodelEModelName     .
+                                         :neuronMorphology       ?memodelMorphologyId .
+                                                                 ?memodelMorphologyId :name ?memodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -714,4 +721,23 @@ CONSTRUCT {
                                            schema:name ?emodelMorphologyName .
       } .
    }
+   # MEModels
+      OPTIONAL {
+         ?id a nsg:MEModel .
+
+         BIND(BNODE(CONCAT(STR(?id), '/memodel')) as ?memodel ) .
+
+         OPTIONAL {
+           ?id schema:hasPart ?memodelMorphologyId .
+                    # info about the morphology
+                    ?memodelMorphologyId  a nsg:NeuronMorphology            ;
+                                          schema:name ?memodelMorphologyName .
+         } .
+         OPTIONAL {
+           ?id schema:hasPart ?memodelEModelId .
+                    # info about the EModel
+                    ?memodelEModelId  a nsg:EModel                   ;
+                                      schema:name ?memodelEModelName .
+         } .
+      }
 }
