@@ -4,7 +4,7 @@
     "Entity",
     "MEModel"
   ],
-  "@id": ":whttps://bbp.epfl.ch/data/memodel",
+  "@id": "https://bbp.epfl.ch/data/memodel",
   "description": "me-model with status antonel",
   "hasPart": [
     {
