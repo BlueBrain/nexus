@@ -61,9 +61,8 @@ class FileProcessor private (
 
     val fileId = FileId(event.id, project)
 
-    // TODO: Remove the 5_000_000_000L limit when the multipart works correctly
     event match {
-      case e: FileCreated if e.attributes.bytes < 5_000_000_000L =>
+      case e: FileCreated               =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
@@ -73,8 +72,7 @@ class FileProcessor private (
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
-      case _: FileCreated                                        => IO.pure(ImportStatus.Dropped)
-      case e: FileUpdated if e.attributes.bytes < 5_000_000_000L =>
+      case e: FileUpdated               =>
         val attrs          = e.attributes
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
@@ -84,21 +82,20 @@ class FileProcessor private (
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
-      case _: FileUpdated                                        => IO.pure(ImportStatus.Dropped)
-      case e: FileCustomMetadataUpdated                          =>
+      case e: FileCustomMetadataUpdated =>
         files.updateMetadata(fileId, cRev, e.metadata, e.tag).as(ImportStatus.Success)
-      case e: FileAttributesUpdated                              =>
+      case e: FileAttributesUpdated     =>
         val reason = "`FileAttributesUpdated` are events related to deprecated remote storages."
         files.cancelEvent(CancelEvent(e.id, e.project, reason, cRev, e.subject)).as(ImportStatus.Success)
-      case e: FileTagAdded                                       =>
+      case e: FileTagAdded              =>
         files.tag(fileId, e.tag, e.targetRev, cRev).as(ImportStatus.Success)
-      case e: FileTagDeleted                                     =>
+      case e: FileTagDeleted            =>
         files.deleteTag(fileId, e.tag, cRev).as(ImportStatus.Success)
-      case _: FileDeprecated                                     =>
+      case _: FileDeprecated            =>
         files.deprecate(fileId, cRev).as(ImportStatus.Success)
-      case _: FileUndeprecated                                   =>
+      case _: FileUndeprecated          =>
         files.undeprecate(fileId, cRev).as(ImportStatus.Success)
-      case _: FileCancelledEvent                                 => IO.pure(ImportStatus.Dropped) // Not present in the export anyway
+      case _: FileCancelledEvent        => IO.pure(ImportStatus.Dropped) // Not present in the export anyway
     }
   }.recoverWith {
     case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
