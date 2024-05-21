@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes.DelegationResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
@@ -148,14 +149,14 @@ final class Files(
 
   def delegate(projectRef: ProjectRef, description: FileDescription)(implicit caller: Caller) = {
     for {
-      pc                 <- fetchContext.onCreate(projectRef)
-      iri                <- generateId(pc)
-      _                  <-
+      pc       <- fetchContext.onCreate(projectRef)
+      iri      <- generateId(pc)
+      _        <-
         test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
-      storage            <- fetchDefaultStorage(projectRef)
-      _                  <- validateAuth(projectRef, storage.value.storageValue.writePermission)
-      delegationMetadata <- fileOperations.delegate(storage.value, description.filename)
-    } yield delegationMetadata
+      storage  <- fetchDefaultStorage(projectRef)
+      _        <- validateAuth(projectRef, storage.value.storageValue.writePermission)
+      metadata <- fileOperations.delegate(storage.value, description.filename)
+    } yield DelegationResponse(metadata.bucket, iri, metadata.path)
   }.span("delegate")
 
   /**
