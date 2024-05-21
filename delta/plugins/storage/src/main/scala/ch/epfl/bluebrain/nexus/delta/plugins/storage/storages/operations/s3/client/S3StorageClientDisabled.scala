@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.HeadObject
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.Stream
 import software.amazon.awssdk.services.s3.model._
@@ -24,8 +24,9 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CopyObjectResponse] = raiseDisabledErr
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit] = raiseDisabledErr
 
   override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
 
@@ -42,8 +43,9 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       sourceBucket: String,
       sourceKey: String,
       destinationBucket: String,
-      destinationKey: String
-  ): IO[CompleteMultipartUploadResponse] = raiseDisabledErr
+      destinationKey: String,
+      options: CopyOptions
+  ): IO[Unit] = raiseDisabledErr
 
   override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = throw disabledErr
 }

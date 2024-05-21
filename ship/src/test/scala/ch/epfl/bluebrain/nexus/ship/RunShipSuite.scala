@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
+import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -133,6 +134,7 @@ class RunShipSuite
     report.progress == Map(Projects.entityType -> Statistics(1L, 0L))
 
   test("Import files in S3 and in the primary store") {
+    val textPlain = MediaTypes.`text/plain`.withMissingCharset
     for {
       events               <- eventsStream("import/file-import.json")
       report               <- RunShip(events, s3Client, inputConfig, xas)
@@ -141,21 +143,22 @@ class RunShipSuite
       oldPathFileId         = iri"https://bbp.epfl.ch/neurosciencegraph/data/old-path"
       oldPathLocationRev1   = "/prefix/public/sscx/files/0/a/7/9/a/d/1/d/002_160120B3_OH.nwb"
       oldPathLocationRev2   = "/prefix/public/sscx/files/8/9/5/4/c/3/e/c/002_160120B3_OH_updated.nwb"
+      oldPathContentType    = ContentType.parse("application/nwb").toOption
       _                    <- checkFor("file", oldPathFileId, xas).assertEquals(3)
-      _                    <- assertS3Object(oldPathLocationRev1)
-      _                    <- assertS3Object(oldPathLocationRev2)
+      _                    <- assertS3Object(oldPathLocationRev1, oldPathContentType)
+      _                    <- assertS3Object(oldPathLocationRev2, oldPathContentType)
       _                    <- assertFileAttributes(project, oldPathFileId)(oldPathLocationRev2, "002_160120B3_OH_updated.nwb")
       // File with a blank filename
       blankFilenameId       = iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename"
       blankFilenameLocation = "/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file"
       _                    <- checkFor("file", blankFilenameId, xas).assertEquals(1)
-      _                    <- assertS3Object(blankFilenameLocation)
+      _                    <- assertS3Object(blankFilenameLocation, Some(textPlain))
       _                    <- assertFileAttributes(project, blankFilenameId)(blankFilenameLocation, "file")
       // File with special characters in the filename
       specialCharsId        = iri"https://bbp.epfl.ch/neurosciencegraph/data/special-chars-filename"
       specialCharsLocation  = "/prefix/public/sscx/files/1/2/3/4/5/6/7/8/special [file].json"
       _                    <- checkFor("file", specialCharsId, xas).assertEquals(1)
-      _                    <- assertS3Object(specialCharsLocation)
+      _                    <- assertS3Object(specialCharsLocation, Some(textPlain))
       _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json")
       // Directory, should be skipped
       directoryId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/directory"
@@ -175,12 +178,13 @@ class RunShipSuite
       assertEquals(attributes.filename, expectedFileName)
     }
 
-  private def assertS3Object(key: String)(implicit location: Location): IO[Unit] =
+  private def assertS3Object(key: String, contentType: Option[ContentType])(implicit location: Location): IO[Unit] =
     s3Client
       .headObject(targetBucket, key)
       .map { head =>
         assertEquals(head.fileSize, contentLength)
         assertEquals(head.digest, fileDigest)
+        assertEquals(head.contentType, contentType)
       }
       .recoverWith { e =>
         s3Client.listObjectsV2(targetBucket).map { listResponse =>
