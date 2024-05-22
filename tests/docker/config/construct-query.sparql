@@ -137,6 +137,11 @@ CONSTRUCT {
                                                   :maxValue    ?subjectWeightMaxValue  ;
                                                   :label       ?subjectWeightLabel     .
 
+
+  # Object of study
+  ?alias :objectOfStudy     ?objectOfStudyId        .
+                            ?objectOfStudyId        :identifier  ?objectOfStudyId      ;
+                                                    :label       ?objectOfStudyLabel   .
   # Properties specific to types
 
   ## Bouton density
@@ -213,6 +218,13 @@ CONSTRUCT {
                                ?emodel  :score            ?emodelScore ;
                                         :neuronMorphology ?emodelMorphologyId .
                                                           ?emodelMorphologyId :name ?emodelMorphologyName .
+
+  ## MEModels
+  ?alias :memodel              ?memodel  .
+                               ?memodel  :emodelResource         ?memodelEModelId     .
+                                                                 ?memodelEModelId     :name ?memodelEModelName     .
+                               ?memodel  :neuronMorphology       ?memodelMorphologyId .
+                                                                 ?memodelMorphologyId :name ?memodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -443,6 +455,14 @@ CONSTRUCT {
       ?source            schema:identifier  ?sourceIdentifier           .
       ?sourceIdentifier  schema:propertyID  ?sourceIdentifierPropertyId ;
                          schema:value       ?sourceIdentifierValue      .
+    } .
+  } .
+
+  # ObjectofStudy
+  OPTIONAL {
+    ?id  nsg:objectOfStudy ?objectOfStudyId .
+    OPTIONAL {
+      ?objectOfStudyId  rdfs:label  ?objectOfStudyLabel .
     } .
   } .
 
@@ -707,11 +727,30 @@ CONSTRUCT {
       OPTIONAL {
         ?followedWorkflow schema:hasPart ?emodelConfig .
 
-        ?emodelConfig a bmo:EModelConfiguration   ;
+        ?emodelConfig a bmo:EModelConfiguration       ;
                       bmo:uses ?emodelMorphologyId    .
                       # info about the morphology
                       ?emodelMorphologyId  a nsg:NeuronMorphology            ;
                                            schema:name ?emodelMorphologyName .
       } .
+   }
+   # MEModels
+   OPTIONAL {
+       ?id a nsg:MEModel .
+
+       BIND(BNODE(CONCAT(STR(?id), '/memodel')) as ?memodel ) .
+
+       OPTIONAL {
+         ?id schema:hasPart ?memodelMorphologyId .
+                  # info about the morphology
+                  ?memodelMorphologyId  a nsg:NeuronMorphology             ;
+                                        schema:name ?memodelMorphologyName .
+       } .
+       OPTIONAL {
+         ?id schema:hasPart ?memodelEModelId .
+                  # info about the EModel
+                  ?memodelEModelId  a nsg:EModel                   ;
+                                    schema:name ?memodelEModelName .
+       } .
    }
 }
