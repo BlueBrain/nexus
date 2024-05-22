@@ -1,0 +1,22 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Entity",
+    "MEModel"
+  ],
+  "@id": "https://bbp.epfl.ch/data/memodel",
+  "description": "me-model with status antonel",
+  "hasPart": [
+    {
+      "@id": "https://bbp.epfl.ch/data/emodel",
+      "@type": "EModel"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+      "@type": "NeuronMorphology"
+    }
+  ],
+  "name": "me-model with status",
+  "status": "initalized",
+  "validated": false
+}
