@@ -223,7 +223,7 @@ CONSTRUCT {
   ?alias :memodel              ?memodel  .
                                ?memodel  :emodelResource         ?memodelEModelId     .
                                                                  ?memodelEModelId     :name ?memodelEModelName     .
-                                         :neuronMorphology       ?memodelMorphologyId .
+                               ?memodel  :neuronMorphology       ?memodelMorphologyId .
                                                                  ?memodelMorphologyId :name ?memodelMorphologyName .
 } WHERE {
   VALUES ?id { {resource_id} } .
@@ -727,7 +727,7 @@ CONSTRUCT {
       OPTIONAL {
         ?followedWorkflow schema:hasPart ?emodelConfig .
 
-        ?emodelConfig a bmo:EModelConfiguration   ;
+        ?emodelConfig a bmo:EModelConfiguration       ;
                       bmo:uses ?emodelMorphologyId    .
                       # info about the morphology
                       ?emodelMorphologyId  a nsg:NeuronMorphology            ;
