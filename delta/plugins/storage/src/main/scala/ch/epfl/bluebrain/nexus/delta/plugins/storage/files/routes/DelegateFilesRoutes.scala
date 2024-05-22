@@ -16,17 +16,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.{CirceMarshalling, CirceUnmarshal
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 final class DelegateFilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     files: Files,
+    tokenIssuer: TokenIssuer,
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri
@@ -54,15 +56,17 @@ final class DelegateFilesRoutes(
     }
 
   private def emitWithAuthHeader(resp: IO[Either[FileRejection, DelegationResponse]]): Route = {
-    val ioFinal = resp.map {
+    val ioFinal = resp.flatMap {
       case Left(value)  =>
         complete(
-          implicitly[HttpResponseFields[FileRejection]].statusFrom(value),
+          FileRejection.fileRejectionHttpResponseFields.statusFrom(value),
           FileRejection.fileRejectionEncoder.apply(value)
-        )
+        ).pure[IO]
       case Right(value) =>
-        val sig = value.signature()
-        complete(OK, headers = Seq(Authorization(OAuth2BearerToken(sig))), value)
+        for {
+          sig   <- tokenIssuer.issueJWSToken(value.asJson)
+          route <- IO(complete(OK, headers = Seq(Authorization(OAuth2BearerToken(sig))), value))
+        } yield route
     }
     onSuccess(ioFinal.unsafeToFuture())(identity)
   }
@@ -70,20 +74,12 @@ final class DelegateFilesRoutes(
 
 object DelegateFilesRoutes {
 
-  final case class DelegationResponse(bucket: String, id: Iri, path: Uri) {
-    def signature(): String = ???
-  }
+  final case class DelegationResponse(bucket: String, id: Iri, path: Uri)
 
   object DelegationResponse {
-    implicit val enc: Encoder[DelegationResponse] = {
-      import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-      deriveEncoder
-    }
+    implicit val enc: Encoder[DelegationResponse] = deriveEncoder
   }
 
   implicit private val config: Configuration = Configuration.default
-  implicit val dec: Decoder[FileDescription] = {
-    import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-    deriveConfiguredDecoder[FileDescription]
-  }
+  implicit val dec: Decoder[FileDescription] = deriveConfiguredDecoder[FileDescription]
 }
