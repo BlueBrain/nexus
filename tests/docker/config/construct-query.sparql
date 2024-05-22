@@ -139,9 +139,9 @@ CONSTRUCT {
 
 
   # Object of study
-  ?alias :objectOfStudy     ?objectOfStudy        .
-                            ?objectOfStudy        :identifier  ?objectOfStudyId      ;
-                                                  :label       ?objectOfStudyLabel .
+  ?alias :objectOfStudy     ?objectOfStudyId        .
+                            ?objectOfStudyId        :identifier  ?objectOfStudyId      ;
+                                                    :label       ?objectOfStudyLabel   .
   # Properties specific to types
 
   ## Bouton density
