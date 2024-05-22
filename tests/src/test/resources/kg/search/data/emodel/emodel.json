@@ -15,6 +15,10 @@
       }
     }
   },
+  "objectOfStudy": {
+    "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+    "label": "Single Cell"
+  },
   "name": "EM__fa285b7__dSTUT__15",
   "score": 47.566230109706076,
   "seed": 15
