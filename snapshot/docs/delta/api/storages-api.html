@@ -345,7 +345,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;volume&quot;: &quot;{volume}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
-  &quot;capacity&quot;: &quot;{capacity}&quot;,
   &quot;maxFileSize&quot;: {max_file_size}
 }
 </code></pre>
@@ -355,7 +354,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{volume}</code>: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-volume</code> (<code>/tmp</code>).</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-write-permission</code> (<code>files/write</code>).</li>
-  <li><code>{capacity}</code>: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-capacity</code> (None).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-max-file-size</code> (10G).</li>
 </ul>
 <h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
@@ -386,8 +384,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
-  &quot;endpoint&quot;: &quot;{endpoint}&quot;,
-  &quot;region&quot;: &quot;{region}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
   &quot;maxFileSize&quot;: {max_file_size}
@@ -396,8 +392,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>&hellip;where</p>
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
-  <li><code>{endpoint}</code>: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-endpoint</code>.</li>
-  <li><code>{region}</code>: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-max-file-size</code> (10G).</li>

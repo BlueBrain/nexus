@@ -7,6 +7,7 @@
       "@type": "@id"
     },
     "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",
+    "_numberOfParts": "https://bluebrain.github.io/nexus/vocabulary/numberOfParts",
     "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",
     "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
