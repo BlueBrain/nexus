@@ -1,16 +1,25 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidFileId
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, File, FileAttributes, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.ProjectMapper
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import io.circe.Json
+
+import java.util.UUID
 
 class DistributionPatcherSuite extends NexusSuite {
 
@@ -22,6 +31,9 @@ class DistributionPatcherSuite extends NexusSuite {
   private val prefix          = Label.unsafe("v1")
   private val originalBaseUri = BaseUri(uri"http://bbp.epfl.ch/nexus", prefix)
   private val targetBaseUri   = BaseUri(uri"https://www.openbrainplatform.org/api/nexus", prefix)
+
+  private val location = Uri("/actual/path/file.txt")
+  private val path     = Uri.Path("/actual/path/file.txt")
 
   private val validFileSelfUri = buildFileSelfUri(project1, resourceIri).accessUri(originalBaseUri)
 
@@ -37,9 +49,38 @@ class DistributionPatcherSuite extends NexusSuite {
       }
   }
 
-  private val patcherNoProjectMapping   = new DistributionPatcher(fileSelf, ProjectMapper(Map.empty), targetBaseUri)
+  val fileResolver = (id: FileId) =>
+    id match {
+      case FileId(id, project) if project == project1 && id == IdSegmentRef(ResourceRef.Latest(resourceIri)) =>
+        IO.pure(
+          File(
+            resourceIri,
+            targetProject1,
+            Revision(resourceIri, 1),
+            StorageType.S3Storage,
+            FileAttributes(
+              UUID.randomUUID(),
+              location,
+              path,
+              "file.txt",
+              None,
+              Map.empty,
+              None,
+              None,
+              0,
+              Digest.NotComputedDigest,
+              FileAttributesOrigin.Storage
+            ),
+            Tags.empty
+          )
+        )
+      case _                                                                                                 => IO.raiseError(FileNotFound(Iri.unsafe(id.id.value.asString), id.project))
+    }
+
+  private val patcherNoProjectMapping   =
+    new DistributionPatcher(fileSelf, ProjectMapper(Map.empty), targetBaseUri, fileResolver)
   private val patcherWithProjectMapping =
-    new DistributionPatcher(fileSelf, ProjectMapper(Map(project1 -> targetProject1)), targetBaseUri)
+    new DistributionPatcher(fileSelf, ProjectMapper(Map(project1 -> targetProject1)), targetBaseUri, fileResolver)
 
   test("Do nothing on a distribution payload without fields to patch") {
     val input = json"""{ "anotherField": "XXX" }"""
@@ -106,6 +147,33 @@ class DistributionPatcherSuite extends NexusSuite {
     val expectedContentUri = buildFileSelfUri(project1, resourceIri).accessUri(targetBaseUri)
     val expected           = json"""{ "distribution": [{ "contentUrl": "$expectedContentUri" }] }"""
     patcherNoProjectMapping.singleOrArray(input).assertEquals(expected)
+  }
+
+  test("Patch a file location based on what the resource says") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "$validFileSelfUri",
+          "atLocation": {
+            "location": "/old/path/file.txt"
+          }
+        }
+      }"""
+
+    patcherNoProjectMapping
+      .singleOrArray(input)
+      .map(distributionLocation)
+      .assertEquals("/actual/path/file.txt")
+  }
+
+  private def distributionLocation(json: Json): String = {
+    json.hcursor
+      .downField("distribution")
+      .downField("atLocation")
+      .downField("location")
+      .as[String]
+      .toOption
+      .getOrElse(fail("location was not present"))
   }
 
 }
