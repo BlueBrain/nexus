@@ -40,7 +40,7 @@ final class DistributionPatcher(
     val locationModification: IO[Json => Json] = fetchFileResource(fileId).attempt.map {
       case Right(file) =>
         logger.info(s"File '$file' fetched successfully")
-        setLocation(file.attributes.location.toString())
+        setLocation(file.attributes.path.toString())
       case Left(e)     =>
         logger.error(e)(s"File '$fileId' could not be fetched")
         identity

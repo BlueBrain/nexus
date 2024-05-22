@@ -32,7 +32,7 @@ class DistributionPatcherSuite extends NexusSuite {
   private val originalBaseUri = BaseUri(uri"http://bbp.epfl.ch/nexus", prefix)
   private val targetBaseUri   = BaseUri(uri"https://www.openbrainplatform.org/api/nexus", prefix)
 
-  private val location = Uri("/actual/path/file.txt")
+  private val location = Uri("s3://bucket-name/actual/path/file.txt")
   private val path     = Uri.Path("/actual/path/file.txt")
 
   private val validFileSelfUri = buildFileSelfUri(project1, resourceIri).accessUri(originalBaseUri)
