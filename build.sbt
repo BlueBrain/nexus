@@ -912,7 +912,6 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,
-    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
     "io.kamon" %% "kamon-logback"        % kamonVersion,
     "io.kamon" %% "kamon-prometheus"     % kamonVersion,
     "io.kamon" %% "kamon-scala-future"   % kamonVersion,

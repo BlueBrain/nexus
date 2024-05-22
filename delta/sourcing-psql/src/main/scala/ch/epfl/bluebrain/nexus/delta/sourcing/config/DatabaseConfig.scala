@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAcce
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
   * Database configuration
   * @param read
@@ -22,6 +24,8 @@ import pureconfig.generic.semiauto.deriveReader
   *   The database password
   * @param tablesAutocreate
   *   When true it creates the tables on service boot
+  * @param slowQueryThreshold
+  *   Threshold allowing to trigger a warning log when a query execution time reaches this limit
   * @param cache
   *   The cache configuration for the partitions cache
   */
@@ -33,6 +37,7 @@ final case class DatabaseConfig(
     username: String,
     password: Secret[String],
     tablesAutocreate: Boolean,
+    slowQueryThreshold: FiniteDuration,
     cache: CacheConfig
 )
 
