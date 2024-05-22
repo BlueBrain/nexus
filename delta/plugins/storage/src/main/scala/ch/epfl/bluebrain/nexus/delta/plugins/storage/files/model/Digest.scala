@@ -24,6 +24,18 @@ object Digest {
   final case class ComputedDigest(algorithm: DigestAlgorithm, value: String) extends Digest
 
   /**
+    * A digest as provided by S3 when the file is uploaded in parts.
+    *
+    * @param algorithm
+    *   the algorithm used in order to compute the digest
+    * @param value
+    *   the actual value of the digest of the file
+    * @param numberOfParts
+    *   the number of parts the digest was computed from
+    */
+  final case class MultiPartDigest(algorithm: DigestAlgorithm, value: String, numberOfParts: Int) extends Digest
+
+  /**
     * A digest that does not yield a value because it is still being computed
     */
   final case object NoDigest extends Digest
@@ -36,8 +48,10 @@ object Digest {
   final case object NotComputedDigest extends Digest
 
   implicit val digestEncoder: Encoder.AsObject[Digest] = Encoder.encodeJsonObject.contramapObject {
-    case ComputedDigest(algorithm, value) => JsonObject("_algorithm" -> algorithm.asJson, "_value" -> value.asJson)
-    case NotComputedDigest                => JsonObject("_value" -> "".asJson)
-    case NoDigest                         => JsonObject("_value" -> "".asJson)
+    case ComputedDigest(algorithm, value)                 => JsonObject("_algorithm" -> algorithm.asJson, "_value" -> value.asJson)
+    case MultiPartDigest(algorithm, value, numberOfParts) =>
+      JsonObject("_algorithm" -> algorithm.asJson, "_value" -> value.asJson, "_numberOfParts" -> numberOfParts.asJson)
+    case NotComputedDigest                                => JsonObject("_value" -> "".asJson)
+    case NoDigest                                         => JsonObject("_value" -> "".asJson)
   }
 }

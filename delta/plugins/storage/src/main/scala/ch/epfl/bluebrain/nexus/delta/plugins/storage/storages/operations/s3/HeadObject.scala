@@ -17,12 +17,21 @@ object HeadObject {
       // It is highly likely for S3 to return an erroneous value here
       ContentType.parse(value).toOption
     }
-    val digestValue = Option(response.checksumSHA256).map { encodedChecksum =>
-      Hex.valueOf(Base64.getDecoder.decode(encodedChecksum))
-    }
-    val digest      = digestValue.fold(Digest.none) { value =>
-      ComputedDigest(DigestAlgorithm.SHA256, value)
-    }
+
+    val digest = Option(response.checksumSHA256())
+      .map { encodedChecksum =>
+        val multiPartDigest = """^(.*)-(\d+)$""".r
+        encodedChecksum match {
+          case multiPartDigest(value, parts) =>
+            val digestValue = Hex.valueOf(Base64.getDecoder.decode(value))
+            Digest.MultiPartDigest(DigestAlgorithm.SHA256, digestValue, parts.toInt)
+          case _                             =>
+            val digestValue = Hex.valueOf(Base64.getDecoder.decode(encodedChecksum))
+            ComputedDigest(DigestAlgorithm.SHA256, digestValue)
+        }
+      }
+      .getOrElse(Digest.none)
+
     HeadObject(
       response.contentLength(),
       contentType,

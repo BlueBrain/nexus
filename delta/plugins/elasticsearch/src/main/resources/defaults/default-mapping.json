@@ -179,6 +179,9 @@
         },
         "_value": {
           "type": "keyword"
+        },
+        "_numberOfParts": {
+          "type": "long"
         }
       }
     },
