@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
 import eu.timepit.refined.refineMV
@@ -21,6 +22,8 @@ import java.util.Optional
 import scala.jdk.CollectionConverters._
 
 final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) extends S3StorageClient {
+
+  private val logger = Logger[S3StorageClientImpl]
 
   override def listObjectsV2(bucket: String): IO[ListObjectsV2Response] =
     client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
@@ -132,6 +135,9 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
         uploadParts.toList.sequence
       }
       // Complete the upload request
+      _                             <- logger.info(
+                                         s"Completing multipart upload for $destinationBucket/$destinationKey. The parts are: $completedParts"
+                                       )
       _                             <- client.completeMultipartUpload(
                                          CompleteMultipartUploadRequest.builder
                                            .bucket(destinationBucket)

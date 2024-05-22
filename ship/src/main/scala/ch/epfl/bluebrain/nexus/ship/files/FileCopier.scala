@@ -61,9 +61,10 @@ object FileCopier {
       val copyOptions = CopyOptions(overwriteTarget = false, attributes.mediaType)
 
       def copy = {
-        if (attributes.bytes >= FIVE_GB)
-          s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey, copyOptions)
-        else
+        if (attributes.bytes >= FIVE_GB) {
+          logger.info(s"Attempting to copy a large file from $importBucket/$originKey to $targetBucket/$targetKey") >>
+            s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey, copyOptions)
+        } else
           s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey, copyOptions)
       }.timed.flatMap { case (duration, _) =>
         IO.whenA(duration > longCopyThreshold)(
