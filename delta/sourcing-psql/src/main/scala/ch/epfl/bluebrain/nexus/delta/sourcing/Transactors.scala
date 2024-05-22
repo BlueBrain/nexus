@@ -95,6 +95,7 @@ object Transactors {
       username,
       Secret(password),
       tablesAutocreate = false,
+      5.seconds,
       CacheConfig(500, 10.minutes)
     )
     init(databaseConfig)
@@ -103,6 +104,7 @@ object Transactors {
   def init(
       config: DatabaseConfig
   ): Resource[IO, Transactors] = {
+
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
         ec         <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
@@ -118,7 +120,7 @@ object Transactors {
                         ds.setReadOnly(readOnly)
                         ds
                       })(ds => IO.delay(ds.close()))
-      } yield HikariTransactor[IO](dataSource, ec, None)
+      } yield HikariTransactor[IO](dataSource, ec, Some(QueryLogHandler(poolName, config.slowQueryThreshold)))
     }
 
     val transactors = for {

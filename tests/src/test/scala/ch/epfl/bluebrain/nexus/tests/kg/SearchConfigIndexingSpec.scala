@@ -1053,7 +1053,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
   }
 
-    "have the correct configuration for a simulation campaign" in {
+  "have the correct configuration for a simulation campaign" in {
     val query    = queryField(emodelId, "objectOfStudy")
     val expected =
       json"""{
