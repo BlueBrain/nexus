@@ -35,7 +35,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
   private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
   private val emodelId             = "https://bbp.epfl.ch/data/emodel"
-  private val memodelId             = "https://bbp.epfl.ch/data/memodel"
+  private val memodelId            = "https://bbp.epfl.ch/data/memodel"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -1050,6 +1050,22 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       assertOneSource(queryField(emodelId, "generation")) { json =>
         json shouldEqual expected
       }
+    }
+  }
+
+    "have the correct configuration for a simulation campaign" in {
+    val query    = queryField(emodelId, "objectOfStudy")
+    val expected =
+      json"""{
+                "objectOfStudy" : {
+                  "@id" : "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+                  "identifier" : "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+                  "label" : "Single Cell"
+                }
+               }"""
+
+    assertOneSource(query) { json =>
+      json should equalIgnoreArrayOrder(expected)
     }
   }
 

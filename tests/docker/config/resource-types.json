@@ -17,6 +17,7 @@
   "https://neuroshapes.org/DetailedCircuit",
   "https://neuroshapes.org/EdgeCollection",
   "https://neuroshapes.org/EModel",
+  "https://neuroshapes.org/MEModel",
   "https://neuroshapes.org/EModelScript",
   "https://neuroshapes.org/ImageStack",
   "https://neuroshapes.org/GeneExpressionVolumetricDataLayer",

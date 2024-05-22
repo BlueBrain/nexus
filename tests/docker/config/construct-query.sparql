@@ -140,7 +140,7 @@ CONSTRUCT {
 
   # Object of study
   ?alias :objectOfStudy     ?objectOfStudy        .
-                            ?objectOfStudy        :identifier  ?objectOfStudy      ;
+                            ?objectOfStudy        :identifier  ?objectOfStudyId      ;
                                                   :label       ?objectOfStudyLabel .
   # Properties specific to types
 
@@ -460,9 +460,9 @@ CONSTRUCT {
 
   # ObjectofStudy
   OPTIONAL {
-    ?id  nsg:objectOfStudy ?objectOfStudy .
+    ?id  nsg:objectOfStudy ?objectOfStudyId .
     OPTIONAL {
-      ?objectOfStudy  rdfs:label  ?objectOfStudyLabel .
+      ?objectOfStudyId  rdfs:label  ?objectOfStudyLabel .
     } .
   } .
 
@@ -735,22 +735,22 @@ CONSTRUCT {
       } .
    }
    # MEModels
-      OPTIONAL {
-         ?id a nsg:MEModel .
+   OPTIONAL {
+       ?id a nsg:MEModel .
 
-         BIND(BNODE(CONCAT(STR(?id), '/memodel')) as ?memodel ) .
+       BIND(BNODE(CONCAT(STR(?id), '/memodel')) as ?memodel ) .
 
-         OPTIONAL {
-           ?id schema:hasPart ?memodelMorphologyId .
-                    # info about the morphology
-                    ?memodelMorphologyId  a nsg:NeuronMorphology            ;
-                                          schema:name ?memodelMorphologyName .
-         } .
-         OPTIONAL {
-           ?id schema:hasPart ?memodelEModelId .
-                    # info about the EModel
-                    ?memodelEModelId  a nsg:EModel                   ;
-                                      schema:name ?memodelEModelName .
-         } .
-      }
+       OPTIONAL {
+         ?id schema:hasPart ?memodelMorphologyId .
+                  # info about the morphology
+                  ?memodelMorphologyId  a nsg:NeuronMorphology             ;
+                                        schema:name ?memodelMorphologyName .
+       } .
+       OPTIONAL {
+         ?id schema:hasPart ?memodelEModelId .
+                  # info about the EModel
+                  ?memodelEModelId  a nsg:EModel                   ;
+                                    schema:name ?memodelEModelName .
+       } .
+   }
 }
