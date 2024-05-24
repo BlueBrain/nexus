@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceU
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.ProjectMapper
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import io.circe.optics.JsonPath.root
 import io.circe.syntax.KeyOps
 
@@ -63,9 +63,10 @@ final class DistributionPatcher(
   }
 
   private def setContentUrl(newContentUrl: String) = root.contentUrl.string.replace(newContentUrl)
-  private def setLocation(newLocation: String)     = root.atLocation.location.string.replace(newLocation)
+  private def setLocation(newLocation: String)     = (json: Json) =>
+    json.deepMerge(Json.obj("atLocation" := Json.obj("location" := newLocation)))
   private def setContentSize(newSize: Long)        = (json: Json) =>
-    json.deepMerge(JsonObject("contentSize" := JsonObject("unitCode" := "bytes", "value" := newSize)).toJson)
+    json.deepMerge(Json.obj("contentSize" := Json.obj("unitCode" := "bytes", "value" := newSize)))
 
   private def toS3Location: Json => Json           = root.atLocation.store.json.replace(targetStorage)
 

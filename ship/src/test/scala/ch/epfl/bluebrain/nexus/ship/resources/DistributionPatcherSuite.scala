@@ -177,7 +177,21 @@ class DistributionPatcherSuite extends NexusSuite {
       .assertEquals("/actual/path/file.txt")
   }
 
-  test("Patch a file location based on what the resource says") {
+  test("Patch a file location based on what the resource says when no existing location present") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}"
+        }
+      }"""
+
+    patcher
+      .singleOrArray(input)
+      .map(distributionLocation)
+      .assertEquals("/actual/path/file.txt")
+  }
+
+  test("Patch a file size based on what the resource says") {
     val input =
       json"""{
         "distribution": {
