@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceU
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.ProjectMapper
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
 import io.circe.syntax.KeyOps
 
@@ -34,19 +34,19 @@ final class DistributionPatcher(
   }(_)
 
   private def modificationsForFile(project: ProjectRef, resourceRef: ResourceRef): IO[Json => Json] = {
-    val targetProject                          = projectMapper.map(project)
-    val fileId                                 = FileId(IdSegmentRef(resourceRef), targetProject)
-    val newContentUrl                          = ResourceUris("files", targetProject, resourceRef.original).accessUri(targetBase).toString()
-    val locationModification: IO[Json => Json] = fetchFileResource(fileId).attempt.map {
+    val targetProject                                = projectMapper.map(project)
+    val fileId                                       = FileId(IdSegmentRef(resourceRef), targetProject)
+    val newContentUrl                                = ResourceUris("files", targetProject, resourceRef.original).accessUri(targetBase).toString()
+    val fileAttributeModifications: IO[Json => Json] = fetchFileResource(fileId).attempt.map {
       case Right(file) =>
         logger.info(s"File '$file' fetched successfully")
-        setLocation(file.attributes.location.toString())
+        setLocation(file.attributes.location.toString()).andThen(setContentSize(file.attributes.bytes))
       case Left(e)     =>
         logger.error(e)(s"File '$fileId' could not be fetched")
         identity
     }
 
-    locationModification.map(modification => modification.andThen(setContentUrl(newContentUrl)))
+    fileAttributeModifications.map(_.andThen(setContentUrl(newContentUrl)))
   }
 
   private[resources] def single(json: Json): IO[Json] = {
@@ -64,8 +64,10 @@ final class DistributionPatcher(
 
   private def setContentUrl(newContentUrl: String) = root.contentUrl.string.replace(newContentUrl)
   private def setLocation(newLocation: String)     = root.atLocation.location.string.replace(newLocation)
+  private def setContentSize(newSize: Long)        = (json: Json) =>
+    json.deepMerge(JsonObject("contentSize" := JsonObject("unitCode" := "bytes", "value" := newSize)).toJson)
 
-  private def toS3Location: Json => Json = root.atLocation.store.json.replace(targetStorage)
+  private def toS3Location: Json => Json           = root.atLocation.store.json.replace(targetStorage)
 
   private def extractIds(json: Json): IO[Option[(ProjectRef, ResourceRef)]] = {
     root.contentUrl.string.getOption(json).flatTraverse { contentUrl =>
