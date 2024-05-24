@@ -40,21 +40,27 @@ class DistributionPatcherSuite extends NexusSuite {
   private val size     = 420469L
   private val digest   = "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
 
-  private def sourceFileSelf(project: ProjectRef, id: Iri)      = fileSelfFor(project, id, sourceBaseUri)
-  private def destinationFileSelf(project: ProjectRef, id: Iri) = fileSelfFor(project, id, destinationBaseUri)
-
-  private def fileSelfFor(project: ProjectRef, id: Iri, baseUri: BaseUri) =
-    ResourceUris("files", project, id).accessUri(baseUri)
+  private def sourceFileSelf(project: ProjectRef, id: Iri)      = ResourceUris("files", project, id).accessUri(sourceBaseUri)
+  private def destinationFileSelf(project: ProjectRef, id: Iri) =
+    ResourceUris("files", project, id).accessUri(destinationBaseUri)
 
   private val fileSelf = new FileSelf {
     override def parse(input: IriOrBNode.Iri): IO[(ProjectRef, ResourceRef)] = {
-      input.path.map(_.split("/").filter(_.nonEmpty)).getOrElse(Array.empty) match {
-        case Array("nexus", "v1", "files", org, project, id) =>
-          IO.pure(ProjectRef.unsafe(org, project) -> ResourceRef.Latest(Iri.unsafe(UrlUtils.decode(id))))
-        case _                                               =>
-          IO.raiseError(InvalidFileId(input))
+      val path = if (input.startsWith(sourceBaseUri.iriEndpoint)) {
+        IO.pure(input.stripPrefix(sourceBaseUri.iriEndpoint))
+      } else if (input.startsWith(destinationBaseUri.iriEndpoint)) {
+        IO.pure(input.stripPrefix(destinationBaseUri.iriEndpoint))
+      } else {
+        IO.raiseError(InvalidFileId(input))
       }
-
+      path
+        .map(_.split("/").filter(_.nonEmpty).toList)
+        .flatMap {
+          case "files" :: org :: project :: id :: Nil =>
+            IO.pure(ProjectRef.unsafe(org, project) -> ResourceRef.Latest(Iri.unsafe(UrlUtils.decode(id))))
+          case _                                      =>
+            IO.raiseError(InvalidFileId(input))
+        }
     }
   }
 
@@ -132,14 +138,14 @@ class DistributionPatcherSuite extends NexusSuite {
   }
 
   test("Patch a valid file self on a distribution without project mapping") {
-    val input    = json"""{ "contentUrl": "${fileSelfFor(projectNoMapping, resource1, sourceBaseUri)}" }"""
-    val expected = json"""{ "contentUrl": "${fileSelfFor(projectNoMapping, resource1, destinationBaseUri)}" }"""
+    val input    = json"""{ "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}" }"""
+    val expected = json"""{ "contentUrl": "${destinationFileSelf(projectNoMapping, resource1)}" }"""
     patcher.single(input).assertEquals(expected)
   }
 
   test("Patch a valid file self on a distribution with project mapping") {
-    val input              = json"""{ "contentUrl": "${fileSelfFor(projectWithMapping, resource1, sourceBaseUri)}" }"""
-    val expectedContentUri = fileSelfFor(mappedProject, resource1, destinationBaseUri).toString()
+    val input              = json"""{ "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" }"""
+    val expectedContentUri = destinationFileSelf(mappedProject, resource1).toString()
     patcher.single(input).map(contentUrl).assertEquals(expectedContentUri)
   }
 
