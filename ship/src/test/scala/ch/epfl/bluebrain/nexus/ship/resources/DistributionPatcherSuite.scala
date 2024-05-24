@@ -181,14 +181,12 @@ class DistributionPatcherSuite extends NexusSuite {
     val input =
       json"""{
         "distribution": {
-          "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}",
-          "contentSize": {}
+          "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}"
         }
       }"""
 
     patcher
       .singleOrArray(input)
-      .flatTap(bob => IO.delay(println(bob)))
       .map(distrubutionContentSize)
       .assertEquals(jobj"""{"unitCode": "bytes", "value": $size}""")
   }
