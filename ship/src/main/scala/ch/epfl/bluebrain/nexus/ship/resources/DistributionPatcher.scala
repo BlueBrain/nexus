@@ -5,16 +5,17 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, MultiPartDigest, NoDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, File, FileId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.defaultS3StorageId
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.ProjectMapper
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
-import io.circe.Json
+import io.circe.{Encoder, Json, JsonObject}
 import io.circe.optics.JsonPath.root
-import io.circe.syntax.KeyOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 
 final class DistributionPatcher(
     fileSelfParser: FileSelf,
@@ -40,7 +41,9 @@ final class DistributionPatcher(
     val fileAttributeModifications: IO[Json => Json] = fetchFileResource(fileId).attempt.map {
       case Right(file) =>
         logger.info(s"File '$file' fetched successfully")
-        setLocation(file.attributes.location.toString()).andThen(setContentSize(file.attributes.bytes))
+        setLocation(file.attributes.location.toString())
+          .andThen(setContentSize(file.attributes.bytes))
+          .andThen(setDigest(file.attributes.digest))
       case Left(e)     =>
         logger.error(e)(s"File '$fileId' could not be fetched")
         identity
@@ -67,8 +70,9 @@ final class DistributionPatcher(
     json.deepMerge(Json.obj("atLocation" := Json.obj("location" := newLocation)))
   private def setContentSize(newSize: Long)        = (json: Json) =>
     json.deepMerge(Json.obj("contentSize" := Json.obj("unitCode" := "bytes", "value" := newSize)))
+  private def setDigest(digest: Digest)            = (json: Json) => json.deepMerge(Json.obj("digest" := digest))
 
-  private def toS3Location: Json => Json           = root.atLocation.store.json.replace(targetStorage)
+  private def toS3Location: Json => Json = root.atLocation.store.json.replace(targetStorage)
 
   private def extractIds(json: Json): IO[Option[(ProjectRef, ResourceRef)]] = {
     root.contentUrl.string.getOption(json).flatTraverse { contentUrl =>
@@ -92,6 +96,14 @@ final class DistributionPatcher(
 
   private def parseAsUri(string: String): IO[Uri] =
     IO.fromEither(UriUtils.uri(string).leftMap(new IllegalArgumentException(_)))
+
+  implicit private val digestEncoder: Encoder.AsObject[Digest] = Encoder.encodeJsonObject.contramapObject {
+    case ComputedDigest(algorithm, value)                 => JsonObject("algorithm" -> algorithm.asJson, "value" -> value.asJson)
+    case MultiPartDigest(algorithm, value, numberOfParts) =>
+      JsonObject("algorithm" -> algorithm.asJson, "value" -> value.asJson, "numberOfParts" -> numberOfParts.asJson)
+    case NotComputedDigest                                => JsonObject("value" -> "".asJson)
+    case NoDigest                                         => JsonObject("value" -> "".asJson)
+  }
 
 }
 

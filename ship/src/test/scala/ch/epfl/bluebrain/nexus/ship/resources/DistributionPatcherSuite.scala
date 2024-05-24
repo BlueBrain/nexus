@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.Inval
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, File, FileAttributes, FileId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -38,6 +38,7 @@ class DistributionPatcherSuite extends NexusSuite {
   private val location = Uri("/actual/path/file.txt")
   private val path     = Uri.Path("/actual/path/file.txt")
   private val size     = 420469L
+  private val digest   = "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
 
   private def sourceFileSelf(project: ProjectRef, id: Iri)      = fileSelfFor(project, id, sourceBaseUri)
   private def destinationFileSelf(project: ProjectRef, id: Iri) = fileSelfFor(project, id, destinationBaseUri)
@@ -76,7 +77,10 @@ class DistributionPatcherSuite extends NexusSuite {
               None,
               None,
               size,
-              Digest.NotComputedDigest,
+              Digest.ComputedDigest(
+                DigestAlgorithm.SHA256,
+                "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
+              ),
               FileAttributesOrigin.Storage
             ),
             Tags.empty
@@ -205,6 +209,23 @@ class DistributionPatcherSuite extends NexusSuite {
       .assertEquals(jobj"""{"unitCode": "bytes", "value": $size}""")
   }
 
+  test("Patch a file digest based on what the resource says") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}"
+        }
+      }"""
+
+    patcher
+      .singleOrArray(input)
+      .map(distrubutionDigest)
+      .assertEquals(jobj"""{
+                            "algorithm": "SHA-256",
+                            "value": "${digest}"
+                          }""")
+  }
+
   private def distrubutionContentSize(json: Json): JsonObject = {
     json.hcursor
       .downField("distribution")
@@ -212,6 +233,15 @@ class DistributionPatcherSuite extends NexusSuite {
       .as[JsonObject]
       .toOption
       .getOrElse(fail("contentSize was not present"))
+  }
+
+  private def distrubutionDigest(json: Json): JsonObject = {
+    json.hcursor
+      .downField("distribution")
+      .downField("digest")
+      .as[JsonObject]
+      .toOption
+      .getOrElse(fail("digest was not present"))
   }
 
   private def distributionLocation(json: Json): String = {
