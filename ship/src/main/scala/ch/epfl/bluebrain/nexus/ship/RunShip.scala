@@ -63,7 +63,7 @@ object RunShip {
                     resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
                     schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, eventClock)
                     fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
-                    sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri)
+                    sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri, fetchContext, eventClock, xas, config)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, config.resourceTypesToIgnore, eventClock)
                     viewPatcher                  = new ViewPatcher(config.projectMapping)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
