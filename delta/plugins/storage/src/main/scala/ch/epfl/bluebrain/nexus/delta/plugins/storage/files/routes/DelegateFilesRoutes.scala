@@ -9,12 +9,12 @@ import cats.effect.unsafe.implicits.global
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.{CirceMarshalling, CirceUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.generic.extras.Configuration
@@ -28,18 +28,15 @@ final class DelegateFilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     files: Files,
-    tokenIssuer: TokenIssuer,
-    schemeDirectives: DeltaSchemeDirectives
+    tokenIssuer: TokenIssuer
 )(implicit
     baseUri: BaseUri
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with CirceMarshalling { self =>
 
-  import schemeDirectives._
-
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
+    baseUriPrefix(baseUri.prefix) {
       pathPrefix("delegate" / "files") {
         extractCaller { implicit caller =>
           projectRef { project =>

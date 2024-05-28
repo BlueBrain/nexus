@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, FilesRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, TokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
@@ -269,6 +269,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering,
         fusionConfig
       )
+  }
+
+  make[Option[DelegateFilesRoutes]].from {
+    (
+        cfg: StorageTypeConfig,
+        identities: Identities,
+        aclCheck: AclCheck,
+        files: Files,
+        baseUri: BaseUri
+    ) =>
+      cfg.amazon.flatMap(_.delegation).map { delegationCfg =>
+        val tokenIssuer = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
+        new DelegateFilesRoutes(identities, aclCheck, files, tokenIssuer)(baseUri)
+      }
   }
 
   make[BatchFilesRoutes].from {
