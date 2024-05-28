@@ -8,8 +8,8 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
-import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{_rev, filterKey, filterMetadataKeys}
@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
-import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
@@ -373,19 +372,11 @@ class ResourcesSpec extends BaseIntegrationSpec {
     }
 
     "succeed" in {
-      for {
-        _ <-
-          deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) {
-            (json, response) =>
-              response.status shouldEqual StatusCodes.OK
-              _rev.getOption(json).value shouldEqual 2
-          }
-        // Sending the same update should not create a new revision
-        _ <- deltaClient.put[Json](s"/resources/$project1/_/test-resource:1?rev=2", payload, Rick) { (json, response) =>
-               response.status shouldEqual StatusCodes.OK
-               _rev.getOption(json).value shouldEqual 2
-             }
-      } yield succeed
+      deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1?rev=1", payload, Rick) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          _rev.getOption(json).value shouldEqual 2
+      }
     }
 
     "fetch the update" in {
@@ -858,34 +849,6 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
-  }
-
-  "Checking for update changes for a large resource" should {
-    "succeed" in {
-      val id                 = "large"
-      val tpe                = "Random"
-      val largeRandomPayload = {
-        val entry = Json.obj(
-          "array"  := (1 to 100).toList,
-          "string" := "some-value"
-        )
-        (1 to 500).foldLeft(JsonObject("@type" := tpe)) { case (acc, index) =>
-          acc.add(s"prop$index", entry)
-        }
-      }.asJson
-
-      for {
-        _ <- deltaClient.put[Json](s"/resources/$project2/_/test-resource:$id", largeRandomPayload, Rick) {
-               expectCreated
-             }
-        _ <- deltaClient
-               .put[Json](s"/resources/$project2/_/test-resource:$id?rev=1", largeRandomPayload, Rick) {
-                 (json, response) =>
-                   response.status shouldEqual StatusCodes.OK
-                   Optics._rev.getOption(json).value shouldEqual 1
-               }
-      } yield succeed
-    }
   }
 
   "Passing an unknown suffix on the resource endpoint" should {

@@ -205,6 +205,26 @@ object ResourceEvent {
 
   }
 
+  /**
+    * Event representing a change of schema for a resource
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schema
+    *   the schema used to constrain the resource
+    * @param schemaProject
+    *   the project where the schema belongs
+    * @param types
+    *   the collection of known resource types
+    * @param rev
+    *   the resource revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
   final case class ResourceSchemaUpdated(
       id: Iri,
       project: ProjectRef,
@@ -213,7 +233,8 @@ object ResourceEvent {
       types: Set[Iri],
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends ResourceEvent
 
   /**

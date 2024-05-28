@@ -28,15 +28,16 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val jsonld           = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
 
   // format: off
-  private val created        = ResourceCreated(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, instant, subject, None)
+  private val schemaRev = Revision(schemas.resources, 1)
+  private val created        = ResourceCreated(projectRef, schemaRev, projectRef, jsonld, instant, subject, None)
   private val createdWithTag = created.copy(tag = Some(tag))
-  private val updated        = ResourceUpdated(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, 2, instant, subject, Some(tag))
-  private val refreshed      = ResourceRefreshed(projectRef, Revision(schemas.resources, 1), projectRef, jsonld, 2, instant, subject)
-  private val tagged         = ResourceTagAdded(myId, projectRef, types, 1, UserTag.unsafe("mytag"), 3, instant, subject)
+  private val updated        = ResourceUpdated(projectRef, schemaRev, projectRef, jsonld, 2, instant, subject, Some(tag))
+  private val refreshed      = ResourceRefreshed(projectRef, schemaRev, projectRef, jsonld, 2, instant, subject)
+  private val tagged         = ResourceTagAdded(myId, projectRef, types, 1, tag, 3, instant, subject)
   private val deprecated     = ResourceDeprecated(myId, projectRef, types, 4, instant, subject)
   private val undeprecated   = ResourceUndeprecated(myId, projectRef, types, 5, instant, subject)
   private val tagDeleted     = ResourceTagDeleted(myId, projectRef, types, tag, 5, instant, subject)
-  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, 6, instant, subject)
+  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, schemaRev, projectRef, types, 6, instant, subject, Some(tag))
   // format: on
 
   private val resourcesMapping = List(
