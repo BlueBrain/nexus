@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -16,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.{CirceMarshalling, CirceUnmarshal
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.generic.semiauto.deriveEncoder
@@ -35,16 +36,20 @@ final class DelegateFilesRoutes(
     with CirceUnmarshalling
     with CirceMarshalling { self =>
 
+  private val logger = Logger[DelegateFilesRoutes]
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("delegate" / "files") {
         extractCaller { implicit caller =>
           projectRef { project =>
             (pathEndOrSingleSlash & post) {
-              entity(as[FileDescription]) { desc =>
-                emitWithAuthHeader(
-                  files.delegate(project, desc).attemptNarrow[FileRejection]
-                )
+              parameter("storage".as[IdSegment].?) { storageId =>
+                entity(as[FileDescription]) { desc =>
+                  emitWithAuthHeader(
+                    files.delegate(project, desc, storageId).attemptNarrow[FileRejection]
+                  )
+                }
               }
             }
           }
@@ -61,8 +66,11 @@ final class DelegateFilesRoutes(
         ).pure[IO]
       case Right(value) =>
         for {
-          sig   <- tokenIssuer.issueJWSToken(value.asJson)
-          route <- IO(complete(OK, headers = Seq(Authorization(OAuth2BearerToken(sig))), value))
+          _         <- logger.info(s"Generated S3 delegation details: $value")
+          signature <- tokenIssuer.issueJWSToken(value.asJson)
+          authHeader = RawHeader("X-Delta-Delegation-Signature", signature)
+          _         <- logger.info(s"Returning auth header with payload signature: $authHeader")
+          route     <- IO(complete(OK, headers = Seq(authHeader), value))
         } yield route
     }
     onSuccess(ioFinal.unsafeToFuture())(identity)

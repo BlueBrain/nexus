@@ -363,4 +363,29 @@ class S3StorageSpec extends StorageSpec {
       } yield succeed
     }
   }
+
+  s"Delegate S3 file upload" should {
+    "succeed validation, returning a header with the returned payload's signature" in {
+      val filename = genString()
+      val payload  = Json.obj("filename" -> Json.fromString(filename))
+
+      for {
+        assertion <- deltaClient.post[Json](s"/delegate/files/$projectRef?storage=nxv:$storageId", payload, Coyote) {
+                       (json, response) =>
+                         response.status shouldEqual StatusCodes.OK
+                         response.headers.map(_.name()) should contain("X-Delta-Delegation-Signature")
+                         checkDelegationValidationResponse(json)
+                     }
+      } yield assertion
+    }
+  }
+
+  def checkDelegationValidationResponse(json: Json): Assertion = {
+    val expectedIdSegment  = s"/resources/$orgId/$projId/_/"
+    val expectedPathPrefix = s"${s3Config.prefix}/$orgId/$projId/files"
+
+    json.hcursor.get[String]("id").toOption.get should include(expectedIdSegment)
+    json.hcursor.get[String]("path").toOption.get should startWith(expectedPathPrefix)
+    json.hcursor.get[String]("bucket").toOption.get shouldBe bucket
+  }
 }

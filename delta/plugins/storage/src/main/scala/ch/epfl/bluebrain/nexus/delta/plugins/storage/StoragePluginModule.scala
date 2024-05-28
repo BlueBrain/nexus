@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.server.{Route, RouteResult}
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -20,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOpe
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, StoragePermissionProviderImpl, Storages, StoragesStatistics}
@@ -50,6 +51,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
+
+import scala.concurrent.Future
 
 /**
   * Storages and Files wiring
@@ -376,5 +379,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (batchFileRoutes: BatchFilesRoutes) =>
     PriorityRoute(priority, batchFileRoutes.routes, requiresStrictEntity = false)
+  }
+
+  many[PriorityRoute].add { (maybeDelegationRoutes: Option[DelegateFilesRoutes]) =>
+    PriorityRoute(
+      priority,
+      maybeDelegationRoutes
+        .map(_.routes)
+        .getOrElse[Route](_ => Future.successful(RouteResult.Complete(HttpResponse(StatusCodes.NotFound)))),
+      requiresStrictEntity = false
+    )
   }
 }

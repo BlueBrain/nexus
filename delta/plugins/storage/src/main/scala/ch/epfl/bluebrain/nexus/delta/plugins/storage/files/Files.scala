@@ -147,15 +147,16 @@ final class Files(
     } yield res
   }.span("createLink")
 
-  def delegate(projectRef: ProjectRef, description: FileDescription)(implicit caller: Caller) = {
+  def delegate(projectRef: ProjectRef, description: FileDescription, storageId: Option[IdSegment])(implicit
+      caller: Caller
+  ): IO[DelegationResponse] = {
     for {
-      pc       <- fetchContext.onCreate(projectRef)
-      iri      <- generateId(pc)
-      _        <-
+      pc           <- fetchContext.onCreate(projectRef)
+      iri          <- generateId(pc)
+      _            <-
         test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
-      storage  <- fetchDefaultStorage(projectRef)
-      _        <- validateAuth(projectRef, storage.value.storageValue.writePermission)
-      metadata <- fileOperations.delegate(storage.value, description.filename)
+      (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      metadata     <- fileOperations.delegate(storage, description.filename)
     } yield DelegationResponse(metadata.bucket, iri, metadata.path)
   }.span("delegate")
 
