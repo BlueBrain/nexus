@@ -72,7 +72,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
           .sourceKey(sourceKey)
           .destinationBucket(destinationBucket)
           .destinationKey(destinationKey)
-          .checksumAlgorithm(ChecksumAlgorithm.SHA256)
+          .checksumAlgorithm(checksumAlgorithm)
         val requestWithOptions = options.newContentType.fold(requestBuilder) { contentType =>
           requestBuilder
             .contentType(contentType.value)

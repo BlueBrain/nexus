@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.ship.storages
 
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.StorageScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{RemoteDiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.S3StorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
@@ -118,12 +118,7 @@ object StorageWiring {
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
-    override def save(
-        storage: S3Storage,
-        filename: String,
-        entity: BodyPartEntity,
-        contentLength: Long
-    ): IO[FileStorageMetadata] =
+    override def save(uploading: S3UploadingFile): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =
