@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.StorageScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.S3StorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
@@ -89,7 +90,7 @@ object StorageWiring {
     override def fetch(path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
 
-    override def save(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
+    override def save(uploading: DiskUploadingFile): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
   }
 
@@ -100,7 +101,7 @@ object StorageWiring {
     override def fetch(folder: Label, path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
 
-    override def save(storage: RemoteDiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
+    override def save(uploading: RemoteUploadingFile): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
 
     override def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =

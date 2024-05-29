@@ -1,18 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, Storage, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientDisabled
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 object FileOperationsMock {
@@ -31,34 +33,25 @@ object FileOperationsMock {
     )
 
   def unimplemented: FileOperations = new FileOperations {
-    def validateStorageAccess(storage: StorageValue): IO[Unit]                                    = ???
-    def save(
-        storage: Storage,
-        filename: String,
-        entity: BodyPartEntity,
-        contentLength: Option[Long]
-    ): IO[FileStorageMetadata]                                                                    = ???
-    def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]   = ???
-    def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                       = ???
-    def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] = ???
-    def register(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]           = ???
+    def validateStorageAccess(storage: StorageValue): IO[Unit]                                                      = ???
+    def save(storage: Storage, info: UploadedFileInformation, contentLength: Option[Long]): IO[FileStorageMetadata] =
+      ???
+    def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]                     = ???
+    def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                                         = ???
+    def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]                   = ???
+    def register(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                             = ???
   }
 
   def diskUnimplemented: DiskFileOperations = new DiskFileOperations {
-    def checkVolumeExists(path: AbsolutePath): IO[Unit]                                                       = ???
-    def fetch(path: Uri.Path): IO[AkkaSource]                                                                 = ???
-    def save(storage: Storage.DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = ???
+    def checkVolumeExists(path: AbsolutePath): IO[Unit]             = ???
+    def fetch(path: Uri.Path): IO[AkkaSource]                       = ???
+    def save(uploading: DiskUploadingFile): IO[FileStorageMetadata] = ???
   }
 
   def s3Unimplemented: S3FileOperations = new S3FileOperations {
     def checkBucketExists(bucket: String): IO[Unit]                                   = ???
     def fetch(bucket: String, path: Uri.Path): IO[AkkaSource]                         = ???
-    def save(
-        storage: Storage.S3Storage,
-        filename: String,
-        entity: BodyPartEntity,
-        contentLength: Long
-    ): IO[FileStorageMetadata]                                                        = ???
+    def save(uploading: S3UploadingFile): IO[FileStorageMetadata]                     = ???
     def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] = ???
   }
 }

@@ -510,7 +510,7 @@ final class Files(
     for {
       info            <- formDataExtractor(iri, uploadRequest.entity, storage.storageValue.maxFileSize)
       description      = FileDescription.from(info, uploadRequest.metadata)
-      storageMetadata <- fileOperations.save(storage, info.filename, info.contents, uploadRequest.contentLength)
+      storageMetadata <- fileOperations.save(storage, info, uploadRequest.contentLength)
     } yield FileAttributes.from(description, storageMetadata)
   }.adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 

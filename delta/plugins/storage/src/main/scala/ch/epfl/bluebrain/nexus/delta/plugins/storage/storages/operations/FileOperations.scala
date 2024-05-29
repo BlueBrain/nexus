@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileContentLengthIsMissing
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, MoveFileRejection, RegisterFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
@@ -20,8 +21,7 @@ import java.util.UUID
 trait FileOperations extends StorageAccess {
   def save(
       storage: Storage,
-      filename: String,
-      entity: BodyPartEntity,
+      info: UploadedFileInformation,
       contentLength: Option[Long]
   ): IO[FileStorageMetadata]
 
@@ -49,17 +49,13 @@ object FileOperations {
 
     override def save(
         storage: Storage,
-        filename: String,
-        entity: BodyPartEntity,
+        info: UploadedFileInformation,
         contentLength: Option[Long]
     ): IO[FileStorageMetadata] =
-      storage match {
-        case s: DiskStorage       => diskFileOps.save(s, filename, entity)
-        case s: S3Storage         =>
-          IO.fromOption(contentLength)(FileContentLengthIsMissing).flatMap { contentLength =>
-            s3FileOps.save(s, filename, entity, contentLength)
-          }
-        case s: RemoteDiskStorage => remoteDiskFileOps.save(s, filename, entity)
+      IO.fromEither(UploadingFile(storage, info, contentLength)).flatMap {
+        case d: DiskUploadingFile   => diskFileOps.save(d)
+        case r: RemoteUploadingFile => remoteDiskFileOps.save(r)
+        case s: S3UploadingFile     => s3FileOps.save(s)
       }
 
     override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {

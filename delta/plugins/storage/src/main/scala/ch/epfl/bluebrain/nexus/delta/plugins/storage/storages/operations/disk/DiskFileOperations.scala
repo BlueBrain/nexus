@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.FileIO
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedLocationFormat
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 
 import java.nio.file.Files
@@ -20,7 +20,7 @@ trait DiskFileOperations {
 
   def fetch(path: Uri.Path): IO[AkkaSource]
 
-  def save(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata]
+  def save(uploading: DiskUploadingFile): IO[FileStorageMetadata]
 }
 
 object DiskFileOperations {
@@ -52,7 +52,6 @@ object DiskFileOperations {
         }
     )
 
-    override def save(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] =
-      saveFile.apply(storage, filename, entity)
+    override def save(uploading: DiskUploadingFile): IO[FileStorageMetadata] = saveFile.apply(uploading)
   }
 }
