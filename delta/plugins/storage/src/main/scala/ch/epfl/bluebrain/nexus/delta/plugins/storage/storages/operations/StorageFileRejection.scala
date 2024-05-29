@@ -218,7 +218,7 @@ object StorageFileRejection {
 
   object DelegateFileOperation {
     final case class UnsupportedOperation(tpe: StorageType)
-        extends MoveFileRejection(
+        extends DelegateFileOperation(
           s"Delegating a file to be uploaded externally is not supported for storages of type '${tpe.iri}'"
         )
   }
