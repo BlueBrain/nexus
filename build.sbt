@@ -745,8 +745,8 @@ lazy val ship = project
     moduleName               := "nexus-ship",
     Test / parallelExecution := false
   )
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .settings(shared, compilation, servicePackaging, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk                  % "compile->compile;test->test",
     blazegraphPlugin     % "compile->compile",
