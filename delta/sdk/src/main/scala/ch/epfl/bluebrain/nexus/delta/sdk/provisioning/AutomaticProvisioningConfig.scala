@@ -43,17 +43,11 @@ object AutomaticProvisioningConfig {
       Permission(str).leftMap(err => CannotConvert(str, classOf[Permission].getSimpleName, err.getMessage))
     )
 
-  implicit private val iriConfigReader: ConfigReader[Iri] =
-    ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
-
   implicit private val mapReader: ConfigReader[Map[Label, Label]] =
     genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
 
-  implicit private val prefixIriReader: ConfigReader[PrefixIri] = ConfigReader.fromString { str =>
-    (for {
-      iri       <- Iri(str)
-      prefixIri <- PrefixIri(iri).leftMap(_.getMessage)
-    } yield prefixIri).leftMap(e => CannotConvert(str, classOf[PrefixIri].getSimpleName, e))
+  implicit private val prefixIriReader: ConfigReader[PrefixIri] = ConfigReader[Iri].emap { iri =>
+    PrefixIri(iri).leftMap { e => CannotConvert(iri.toString, classOf[PrefixIri].getSimpleName, e.getMessage) }
   }
 
   implicit private val apiMappingsReader: ConfigReader[ApiMappings] = ConfigReader[Map[String, Iri]].map(ApiMappings(_))

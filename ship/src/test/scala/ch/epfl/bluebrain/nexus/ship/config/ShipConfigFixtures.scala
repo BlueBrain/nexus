@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageFixtures, StoragesConfig}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, uriStringContextSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
@@ -63,6 +63,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         skipFileEvents = false,
         enableTargetRewrite = true
       ),
+      IriPatcherConfig(enabled = false, iri"https://bbp.epfl.ch/", iri"https:/openbrainplatform.com/"),
       disableResourceValidation = false,
       Set.empty
     )
