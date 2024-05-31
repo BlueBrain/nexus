@@ -66,7 +66,7 @@ object RunShip {
                     fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
                     sourcePatcher                = SourcePatcher(fileSelf, projectMapper, targetBaseUri, fetchContext, eventClock, xas, config)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, config.resourceTypesToIgnore, eventClock)
-                    viewPatcher                  = new ViewPatcher(config.projectMapping)
+                    viewPatcher                  = new ViewPatcher(projectMapper, iriPatcher)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
                     compositeViewsProcessor      = CompositeViewProcessor(fetchContext, rcr, projectMapper, eventLogConfig, eventClock, xas)

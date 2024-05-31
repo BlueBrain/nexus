@@ -133,9 +133,9 @@ object ElasticSearchViewState {
 
   implicit val serializer: Serializer[Iri, ElasticSearchViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration                       = Serializer.circeConfiguration
-    implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
-    implicit val codec: Codec.AsObject[ElasticSearchViewState]      = deriveConfiguredCodec[ElasticSearchViewState]
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database._
+    implicit val configuration: Configuration                  = Serializer.circeConfiguration
+    implicit val codec: Codec.AsObject[ElasticSearchViewState] = deriveConfiguredCodec[ElasticSearchViewState]
     Serializer.dropNullsInjectType()
   }
 }
