@@ -8,16 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.UUIDFFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.Json
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Paths}
@@ -35,16 +31,15 @@ class DiskStorageSaveFileSpec
   private val fileOps = DiskFileOperations.mk
 
   "A DiskStorage saving operations" should {
-    val iri     = iri"http://localhost/disk"
     val project = ProjectRef.unsafe("org", "project")
-    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, 10)
-    val storage = DiskStorage(iri, project, value, Json.obj())
     val content = "file content"
     val entity  = HttpEntity(content)
 
+    val uploading = DiskUploadingFile(project, volume, DigestAlgorithm.default, "myfile.txt", entity)
+
     "save a file to a volume" in {
 
-      val metadata = fileOps.save(storage, "myfile.txt", entity).accepted
+      val metadata = fileOps.save(uploading).accepted
 
       Files.readString(file.value) shouldEqual content
 
@@ -63,7 +58,7 @@ class DiskStorageSaveFileSpec
     }
 
     "fail attempting to save the same file again" in {
-      fileOps.save(storage, "myfile.txt", entity).rejectedWith[ResourceAlreadyExists]
+      fileOps.save(uploading).rejectedWith[ResourceAlreadyExists]
     }
   }
 

@@ -19,8 +19,8 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
   private val anotherContent       = "Another content"
   private val anotherContentLength = anotherContent.length.toLong
 
-  private val defaultS3ContentType = ContentTypes.`application/octet-stream`
-  private val contentType          = ContentTypes.`application/json`
+  private val expectedContentType = ContentTypes.`text/plain(UTF-8)`
+  private val contentType         = ContentTypes.`application/json`
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
 
@@ -34,7 +34,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           head <- s3StorageClient.headObject(bucket, newKey)
         } yield {
           assertEquals(head.fileSize, contentLength)
-          assertEquals(head.contentType, Some(defaultS3ContentType))
+          assertEquals(head.contentType, Some(expectedContentType))
         }
       }
     }
@@ -66,7 +66,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
         } yield {
           val clue = "The file should not have been overwritten"
           assertEquals(head.fileSize, anotherContentLength, clue)
-          assertEquals(head.contentType, Some(defaultS3ContentType), clue)
+          assertEquals(head.contentType, Some(expectedContentType), clue)
         }
       }
     }

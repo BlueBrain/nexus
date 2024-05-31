@@ -323,8 +323,8 @@ object Resources {
       s.copy(rev = e.rev, tags = s.tags - e.tag, updatedAt = e.instant, updatedBy = e.subject)
     }
 
-    def resourceSchemaUpdated(e: ResourceSchemaUpdated): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, schema = e.schema, schemaProject = e.schemaProject, updatedAt = e.instant, updatedBy = e.subject)
+    def resourceSchemaUpdated(e: ResourceSchemaUpdated): Option[ResourceState] = state.map { s =>
+      s.copy(rev = e.rev, schema = e.schema, schemaProject = e.schemaProject, tags = s.tags ++ Tags(e.tag, e.rev), updatedAt = e.instant, updatedBy = e.subject)
     }
     // format: on
 
@@ -417,13 +417,29 @@ object Resources {
 
     def update(u: UpdateResource) = {
 
-      def onChange(state: ResourceState) = {
+      def validateWithSchema(state: ResourceState) = {
         val schemaClaim = SchemaClaim.onUpdate(u.project, u.schemaOpt, ResourceRef.Latest(state.schema.iri), u.caller)
+        validate(u.jsonld, schemaClaim, u.projectContext.enforceSchema)
+      }
+
+      def updateEvent(state: ResourceState) =
         for {
-          (schemaRev, schemaProject) <- validate(u.jsonld, schemaClaim, u.projectContext.enforceSchema)
+          (schemaRev, schemaProject) <- validateWithSchema(state)
           time                       <- clock.realTimeInstant
         } yield ResourceUpdated(u.project, schemaRev, schemaProject, u.jsonld, state.rev + 1, time, u.subject, u.tag)
-      }
+
+      def updateSchema(state: ResourceState) =
+        for {
+          (schemaRev, schemaProject) <- validateWithSchema(state)
+          time                       <- clock.realTimeInstant
+          sameSchema                  = schemaRev.original == state.schema.original && schemaProject == state.schemaProject
+          schemaUpdatedEvent          = {
+            val types   = u.jsonld.types
+            val nextRev = state.rev + 1
+            ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, nextRev, time, u.subject, u.tag)
+          }
+          event                      <- if (!sameSchema) IO.pure(schemaUpdatedEvent) else fallbackToTag(state)
+        } yield event
 
       // If there is no changes but a tag is provided, we still apply it
       def fallbackToTag(state: ResourceState) =
@@ -435,7 +451,15 @@ object Resources {
       for {
         state          <- stateWhereResourceIsEditable(u)
         changeDetected <- detectChange(u.jsonld, state)
-        event          <- if (u.schemaOpt.isDefined || changeDetected) onChange(state) else fallbackToTag(state)
+        event          <-
+          (changeDetected, u.schemaOpt.isDefined) match {
+            // Changes have been detected
+            case (true, _)      => updateEvent(state)
+            // No changes but the schema may have been updated
+            case (false, true)  => updateSchema(state)
+            // No changes and no schema has been provided
+            case (false, false) => fallbackToTag(state)
+          }
       } yield event
     }
 
@@ -446,8 +470,9 @@ object Resources {
         schemaClaim                 = SchemaClaim.onUpdate(u.project, u.schemaRef, state.schema, u.caller)
         (schemaRev, schemaProject) <- validate(stateJsonLd, schemaClaim, u.projectContext.enforceSchema)
         types                       = state.expanded.getTypes.getOrElse(Set.empty)
+        nextRev                     = state.rev + 1
         time                       <- clock.realTimeInstant
-      } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, state.rev + 1, time, u.subject)
+      } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, nextRev, time, u.subject, None)
     }
 
     def refresh(r: RefreshResource) = {
@@ -528,10 +553,11 @@ object Resources {
       ResourceState.serializer,
       Tagger[ResourceEvent](
         {
-          case r: ResourceCreated  => r.tag.map(t => t -> r.rev)
-          case r: ResourceUpdated  => r.tag.map(t => t -> r.rev)
-          case r: ResourceTagAdded => Some(r.tag -> r.targetRev)
-          case _                   => None
+          case r: ResourceCreated       => r.tag.map(t => t -> r.rev)
+          case r: ResourceUpdated       => r.tag.map(t => t -> r.rev)
+          case r: ResourceTagAdded      => Some(r.tag -> r.targetRev)
+          case r: ResourceSchemaUpdated => r.tag.map(t => t -> r.rev)
+          case _                        => None
         },
         {
           case r: ResourceTagDeleted => Some(r.tag)

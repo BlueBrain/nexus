@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{checksumAlgorithm, CopyOptions, HeadObject, PutObjectRequest}
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.aws.s3.S3
@@ -167,26 +167,17 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   }
 
   override def uploadFile(
-      fileData: Stream[IO, ByteBuffer],
-      bucket: String,
-      key: String,
-      contentLengthValue: Long
+      put: PutObjectRequest,
+      fileData: Stream[IO, ByteBuffer]
   ): IO[Unit] =
     Stream
       .resource(fileData.toUnicastPublisher)
       .evalMap { publisher =>
-        val request = PutObjectRequest
-          .builder()
-          .bucket(bucket)
-          .checksumAlgorithm(checksumAlgorithm)
-          .contentLength(contentLengthValue)
-          .key(key)
-          .build()
-        val body    = new AsyncRequestBody {
-          override def contentLength(): Optional[java.lang.Long]       = Optional.of(contentLengthValue)
+        val body = new AsyncRequestBody {
+          override def contentLength(): Optional[java.lang.Long]       = Optional.of(put.contentLength)
           override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit = publisher.subscribe(s)
         }
-        client.putObject(request, body)
+        client.putObject(put.asAws, body)
       }
       .compile
       .drain

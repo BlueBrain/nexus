@@ -13,5 +13,6 @@
     "realm": "myrealm",
     "@type": "User"
   },
+  "tag": "mytag",
   "@type": "ResourceSchemaUpdated"
 }

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest}
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
@@ -17,8 +17,6 @@ import java.net.URI
 import java.nio.ByteBuffer
 
 trait S3StorageClient {
-
-  final val checksumAlgorithm: ChecksumAlgorithm = ChecksumAlgorithm.SHA256
 
   def listObjectsV2(bucket: String): IO[ListObjectsV2Response]
 
@@ -47,10 +45,8 @@ trait S3StorageClient {
   ): IO[Unit]
 
   def uploadFile(
-      fileData: Stream[IO, ByteBuffer],
-      bucket: String,
-      key: String,
-      contentLength: Long
+      put: PutObjectRequest,
+      fileData: Stream[IO, ByteBuffer]
   ): IO[Unit]
 
   def objectExists(bucket: String, key: String): IO[Boolean]

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -113,23 +113,36 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
           )
       }
 
-      "create a tag event from a UpdateResource command when no changes are detected and a tag is provided" in {
-        val schema  = Latest(schemas.resources)
-        val current = ResourceGen.currentState(projectRef, jsonld, schema)
+      "create a schema updated event from a UpdateResource command when no changes are detected and a new schema is provided" in {
+        val schema        = Latest(schemas.resources)
+        val newSchema     = ResourceRef.Revision(nxv + "new-schema", 1)
+        val current       = ResourceGen.currentState(projectRef, jsonld, schema)
+        val expectedEvent =
+          ResourceSchemaUpdated(myId, projectRef, newSchema, projectRef, jsonld.types, 2, epoch, subject, Some(tag))
+        eval(
+          Some(current),
+          UpdateResource(projectRef, projectContext, Some(newSchema), jsonld, 1, caller, Some(tag))
+        ).accepted shouldEqual expectedEvent
+      }
+
+      "create a tag event from a UpdateResource command when no changes are detected and the same schema is provided" in {
+        val schema        = ResourceRef.Revision(nxv + "schema", 1)
+        val current       = ResourceGen.currentState(projectRef, jsonld, schema)
+        val expectedEvent = ResourceTagAdded(myId, projectRef, jsonld.types, 1, tag, 2, epoch, subject)
+        eval(
+          Some(current),
+          UpdateResource(projectRef, projectContext, Some(schema), jsonld, 1, caller, Some(tag))
+        ).accepted shouldEqual expectedEvent
+      }
+
+      "create a tag event from a UpdateResource command when no changes are detected, no schema is given, and a tag is provided" in {
+        val schema        = Latest(schemas.resources)
+        val current       = ResourceGen.currentState(projectRef, jsonld, schema)
+        val expectedEvent = ResourceTagAdded(myId, projectRef, jsonld.types, 1, tag, 2, epoch, subject)
         eval(
           Some(current),
           UpdateResource(projectRef, projectContext, None, jsonld, 1, caller, Some(tag))
-        ).accepted shouldEqual
-          ResourceTagAdded(
-            myId,
-            projectRef,
-            jsonld.types,
-            1,
-            tag,
-            2,
-            epoch,
-            subject
-          )
+        ).accepted shouldEqual expectedEvent
       }
 
       "create a new event from a RefreshResource command on a new remote context" in {

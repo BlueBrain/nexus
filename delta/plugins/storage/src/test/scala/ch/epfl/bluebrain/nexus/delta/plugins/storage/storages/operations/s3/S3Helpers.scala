@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
+import akka.http.scaladsl.model.ContentTypes
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
@@ -41,7 +42,8 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes = contents.getBytes(StandardCharsets.UTF_8)
     val key   = genString()
-    client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes)), bucket, key, bytes.length.toLong) >> test(key)
+    val put   = PutObjectRequest(bucket, key, ContentTypes.`text/plain(UTF-8)`, bytes.length.toLong)
+    client.uploadFile(put, Stream.emit(ByteBuffer.wrap(bytes))) >> test(key)
   }
 
   def givenFilesInABucket(bucket: String, contents1: String, contents2: String)(
@@ -49,11 +51,13 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes1 = contents1.getBytes(StandardCharsets.UTF_8)
     val key1   = genString()
+    val put1   = PutObjectRequest(bucket, key1, ContentTypes.`text/plain(UTF-8)`, bytes1.length.toLong)
     val bytes2 = contents2.getBytes(StandardCharsets.UTF_8)
     val key2   = genString()
+    val put2   = PutObjectRequest(bucket, key2, ContentTypes.`text/plain(UTF-8)`, bytes2.length.toLong)
     for {
-      _ <- client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes1)), bucket, key1, bytes1.length.toLong)
-      _ <- client.uploadFile(Stream.emit(ByteBuffer.wrap(bytes2)), bucket, key2, bytes2.length.toLong)
+      _ <- client.uploadFile(put1, Stream.emit(ByteBuffer.wrap(bytes1)))
+      _ <- client.uploadFile(put2, Stream.emit(ByteBuffer.wrap(bytes2)))
       _ <- test(key1, key2)
     } yield ()
   }

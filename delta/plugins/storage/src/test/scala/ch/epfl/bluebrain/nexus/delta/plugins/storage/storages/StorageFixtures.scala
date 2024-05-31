@@ -25,8 +25,8 @@ trait StorageFixtures extends CirceLiteral {
   val s3Id = nxv + "s3-storage"
   val rdId = nxv + "remote-disk-storage"
 
-  private val diskVolume = AbsolutePath(Files.createTempDirectory("disk")).toOption.get
-  private val tmpVolume  = AbsolutePath(Paths.get("/tmp")).toOption.get
+  private val diskVolume      = AbsolutePath(Files.createTempDirectory("disk")).toOption.get
+  val tmpVolume: AbsolutePath = AbsolutePath(Paths.get("/tmp")).toOption.get
 
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
