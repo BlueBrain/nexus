@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import akka.http.scaladsl.model.{ContentType, MediaTypes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, MediaTypes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.Computed
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{LocalStackS3StorageClient, PutObjectRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -61,7 +61,8 @@ class RunShipSuite
 
   private def uploadFile(path: String) = {
     val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
-    s3Client.uploadFile(Stream.emit(contentAsBuffer), importBucket, path, contentLength)
+    val put             = PutObjectRequest(importBucket, path, ContentTypes.`application/octet-stream`, contentLength)
+    s3Client.uploadFile(put, Stream.emit(contentAsBuffer))
   }
 
   private def decodedFilePath(json: Json) = root.attributes.path.string.getOption(json).map(UrlUtils.decode)

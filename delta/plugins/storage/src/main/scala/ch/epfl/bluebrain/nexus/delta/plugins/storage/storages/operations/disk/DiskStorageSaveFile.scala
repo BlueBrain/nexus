@@ -12,11 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -32,11 +31,11 @@ final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
-  def apply(storage: DiskStorage, filename: String, entity: BodyPartEntity): IO[FileStorageMetadata] = {
+  def apply(uploading: DiskUploadingFile): IO[FileStorageMetadata] = {
     for {
       uuid                     <- uuidf()
-      (fullPath, relativePath) <- initLocation(storage.project, storage.value, uuid, filename)
-      (size, digest)           <- storeFile(storage, entity, fullPath)
+      (fullPath, relativePath) <- initLocation(uploading, uuid)
+      (size, digest)           <- storeFile(uploading.entity, uploading.algorithm, fullPath)
     } yield FileStorageMetadata(
       uuid = uuid,
       bytes = size,
@@ -48,11 +47,11 @@ final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
   }
 
   @SuppressWarnings(Array("IsInstanceOf"))
-  private def storeFile(storage: DiskStorage, entity: BodyPartEntity, fullPath: Path): IO[(Long, Digest)] = {
+  private def storeFile(entity: BodyPartEntity, algorithm: DigestAlgorithm, fullPath: Path): IO[(Long, Digest)] = {
     IO.fromFuture(
       IO.delay(
         entity.dataBytes.runWith(
-          SinkUtils.combineMat(digestSink(storage.value.algorithm), FileIO.toPath(fullPath, openOpts)) {
+          SinkUtils.combineMat(digestSink(algorithm), FileIO.toPath(fullPath, openOpts)) {
             case (digest, ioResult) if fullPath.toFile.exists() =>
               Future.successful(ioResult.count -> digest)
             case _                                              =>
@@ -85,27 +84,25 @@ final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
 
 object DiskStorageSaveFile {
   def initLocation(
-      project: ProjectRef,
-      disk: DiskStorageValue,
-      uuid: UUID,
-      filename: String
+      upload: DiskUploadingFile,
+      uuid: UUID
   ): IO[(Path, Path)] =
     for {
-      (resolved, relative) <- computeLocation(project, disk, uuid, filename)
+      (resolved, relative) <- computeLocation(upload.project, upload.volume, upload.filename, uuid)
       dir                   = resolved.getParent
       _                    <- IO.blocking(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
     } yield resolved -> relative
 
   def computeLocation(
       project: ProjectRef,
-      disk: DiskStorageValue,
-      uuid: UUID,
-      filename: String
+      volume: AbsolutePath,
+      filename: String,
+      uuid: UUID
   ): IO[(Path, Path)] = {
     val relativePath = intermediateFolders(project, uuid, filename)
     for {
       relative <- IO.delay(Paths.get(relativePath)).adaptError(wrongPath(relativePath, _))
-      resolved <- IO.delay(disk.volume.value.resolve(relative)).adaptError(wrongPath(relativePath, _))
+      resolved <- IO.delay(volume.value.resolve(relative)).adaptError(wrongPath(relativePath, _))
     } yield resolved -> relative
   }
 

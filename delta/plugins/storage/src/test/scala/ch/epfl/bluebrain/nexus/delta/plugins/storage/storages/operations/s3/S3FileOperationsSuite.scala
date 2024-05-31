@@ -1,27 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpEntity, Uri}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, UUIDFFixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, uriSyntax}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import io.circe.Json
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
 
@@ -70,23 +68,15 @@ class S3FileOperationsSuite
 
   test("Save and fetch an object in a bucket") {
     givenAnS3Bucket { bucket =>
-      val storageValue = S3StorageValue(
-        default = false,
-        bucket = bucket,
-        readPermission = read,
-        writePermission = write,
-        maxFileSize = 20
-      )
-
-      val iri     = iri"http://localhost/s3"
       val project = ProjectRef.unsafe("org", "project")
-      val storage = S3Storage(iri, project, storageValue, Json.obj())
 
       val filename      = "myfile.txt"
       val content       = genString()
+      val contentType   = ContentTypes.`text/plain(UTF-8)`
       val contentLength = content.length.toLong
       val digest        = makeDigest(content)
       val entity        = HttpEntity(content)
+      val uploading     = S3UploadingFile(project, bucket, filename, contentType, contentLength, entity)
 
       val location         = expectedLocation(project, filename)
       val expectedMetadata =
@@ -100,8 +90,11 @@ class S3FileOperationsSuite
         )
 
       for {
-        storageMetadata <- fileOps.save(storage, filename, entity, contentLength)
+        storageMetadata <- fileOps.save(uploading)
         _                = assertEquals(storageMetadata, expectedMetadata)
+        headObject      <- s3StorageClient.headObject(bucket, UrlUtils.decode(storageMetadata.path))
+        _                = assertEquals(headObject.digest, digest)
+        _                = assertEquals(headObject.contentType, Some(contentType))
         _               <- fetchFileContent(bucket, storageMetadata.path).assertEquals(content)
       } yield ()
     }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.Stream
 import software.amazon.awssdk.services.s3.model._
@@ -31,10 +31,8 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
   override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
 
   override def uploadFile(
-      fileData: Stream[IO, ByteBuffer],
-      bucket: String,
-      key: String,
-      contentLength: Long
+      putObjectRequest: PutObjectRequest,
+      data: Stream[IO, ByteBuffer]
   ): IO[Unit] = raiseDisabledErr
 
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
