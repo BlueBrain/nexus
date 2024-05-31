@@ -7,12 +7,19 @@ import ch.epfl.bluebrain.nexus.ship.config.IriPatcherConfig
   * Patch the iri by replacing the original prefix by the target one
   */
 trait IriPatcher {
+
+  def enabled: Boolean
+
   def apply(original: Iri): Iri
 }
 
 object IriPatcher {
 
-  val noop: IriPatcher = (original: Iri) => original
+  val noop: IriPatcher = new IriPatcher {
+    override def enabled: Boolean = false
+
+    override def apply(original: Iri): Iri = original
+  }
 
   def apply(originalPrefix: Iri, targetPrefix: Iri): IriPatcher = new IriPatcher {
     private val originalPrefixAsString = originalPrefix.toString
@@ -24,6 +31,8 @@ object IriPatcher {
       } else
         original
     }
+
+    override def enabled: Boolean = true
   }
 
   def apply(config: IriPatcherConfig): IriPatcher =
