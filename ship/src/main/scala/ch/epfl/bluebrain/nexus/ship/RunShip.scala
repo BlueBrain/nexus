@@ -65,7 +65,7 @@ object RunShip {
           projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, config, eventClock, xas)(targetBaseUri, jsonLdApi)
           resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
           schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, sourcePatcher, eventClock)
-                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, config.resourceTypesToIgnore, eventClock)
+                    resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, iriPatcher, config.resourceTypesToIgnore, eventClock)
                     viewPatcher                  = new ViewPatcher(projectMapper, iriPatcher)
                     esViewsProcessor             = ElasticSearchViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
                     bgViewsProcessor             = BlazegraphViewProcessor(fetchContext, rcr, projectMapper, viewPatcher, eventLogConfig, eventClock, xas)
