@@ -6,6 +6,7 @@ on:
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/plugins/**'
       - 'delta/sourcing-psql/**'
       - 'delta/testkit/**'
       - 'build.sbt'

@@ -37,14 +37,15 @@ object RunShip {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     for {
       report <- {
-        val orgProvider            =
+        val orgProvider                     =
           OrganizationProvider(config.eventLog, config.serviceAccount.value, xas, clock)(uuidF)
-        val fetchContext           = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
-        val originalProjectContext = new OriginalProjectContext(xas)
-        val eventLogConfig         = config.eventLog
-        val originalBaseUri        = config.originalBaseUri
-        val targetBaseUri          = config.targetBaseUri
-        val projectMapper          = ProjectMapper(config.projectMapping)
+        val fetchContext                    = FetchContext(ApiMappings.empty, xas, Quotas.disabled)
+        val originalProjectContext          = new OriginalProjectContext(xas)
+        val eventLogConfig                  = config.eventLog
+        val originalBaseUri                 = config.originalBaseUri
+        val targetBaseUri                   = config.targetBaseUri
+        val projectMapper                   = ProjectMapper(config.projectMapping)
+        implicit val iriPatcher: IriPatcher = IriPatcher(config.iriPatcher)
         for {
           // Provision organizations
           _                           <- orgProvider.create(config.organizations.values)

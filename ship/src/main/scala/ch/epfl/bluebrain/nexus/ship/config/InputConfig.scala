@@ -22,6 +22,7 @@ final case class InputConfig(
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
     files: FileProcessingConfig,
+    iriPatcher: IriPatcherConfig,
     disableResourceValidation: Boolean,
     resourceTypesToIgnore: Set[Iri]
 )
@@ -34,9 +35,6 @@ object InputConfig {
     genericMapReader(str =>
       ProjectRef.parse(str).leftMap(e => CannotConvert(str, classOf[ProjectRef].getSimpleName, e))
     )
-
-  implicit private val iriConfigReader: ConfigReader[Iri] =
-    ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
 
   implicit final val runConfigReader: ConfigReader[InputConfig] = deriveReader[InputConfig]
 }

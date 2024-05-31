@@ -3,12 +3,14 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.ship.EventProcessor.logger
 import fs2.Stream
 import io.circe.Decoder
+import io.circe.optics.JsonPath.root
 
 /**
   * Process events for the defined resource type
@@ -21,10 +23,14 @@ trait EventProcessor[Event <: ScopedEvent] {
 
   def evaluate(event: Event): IO[ImportStatus]
 
-  def evaluate(event: RowEvent): IO[ImportStatus] =
-    IO.fromEither(decoder.decodeJson(event.value))
+  def evaluate(event: RowEvent)(implicit iriPatcher: IriPatcher): IO[ImportStatus] = {
+    val value                            = event.value
+    def patchEventId(idAsString: String) = Iri(idAsString).map(iriPatcher(_).toString).getOrElse(idAsString)
+    val patchedValue                     = root.id.string.modify { patchEventId }(value)
+    IO.fromEither(decoder.decodeJson(patchedValue))
       .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
       .flatMap(evaluate)
+  }
 }
 
 object EventProcessor {
@@ -35,7 +41,7 @@ object EventProcessor {
       eventStream: Stream[IO, RowEvent],
       droppedEventStore: DroppedEventStore,
       processors: EventProcessor[_]*
-  ): IO[ImportReport] = {
+  )(implicit iriPatcher: IriPatcher): IO[ImportReport] = {
     val processorsMap = processors.foldLeft(Map.empty[EntityType, EventProcessor[_]]) { (acc, processor) =>
       acc + (processor.resourceType -> processor)
     }

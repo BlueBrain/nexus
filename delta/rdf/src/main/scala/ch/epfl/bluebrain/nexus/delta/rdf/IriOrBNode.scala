@@ -3,12 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Order
-
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import io.circe.{Codec, Decoder, Encoder, KeyDecoder, KeyEncoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
+import pureconfig.ConfigReader
+
+import pureconfig.error.CannotConvert
 
 import java.util.UUID
 import scala.annotation.tailrec
@@ -356,6 +359,9 @@ object IriOrBNode {
 
     implicit final val iriOrdering: Ordering[Iri] = Ordering.by(_.toString)
     implicit final val iriOrder: Order[Iri]       = Order.fromOrdering
+
+    implicit val iriConfigReader: ConfigReader[Iri] =
+      ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
   }
 
   /**
