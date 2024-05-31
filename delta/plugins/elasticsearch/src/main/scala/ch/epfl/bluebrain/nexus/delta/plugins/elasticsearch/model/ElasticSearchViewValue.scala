@@ -11,14 +11,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Codec, Encoder, Json, JsonObject}
 
 /**
   * Enumeration of ElasticSearch values.
@@ -207,6 +210,11 @@ object ElasticSearchViewValue {
       )
       deriveConfiguredEncoder[ElasticSearchViewValue]
     }
+  }
+
+  object Database {
+    implicit val configuration: Configuration                       = Serializer.circeConfiguration
+    implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
   }
 
 }
