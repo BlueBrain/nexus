@@ -7,14 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidFileId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, File, FileAttributes, FileId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.ProjectMapper
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -64,36 +63,29 @@ class DistributionPatcherSuite extends NexusSuite {
     }
   }
 
-  val fileResolver = (id: FileId) =>
-    id match {
-      case FileId(id, project) if project == mappedProject && id == IdSegmentRef(ResourceRef.Latest(resource1)) =>
-        IO.pure(
-          File(
-            resource1,
-            mappedProject,
-            Revision(resource1, 1),
-            StorageType.S3Storage,
-            FileAttributes(
-              UUID.randomUUID(),
-              location,
-              path,
-              "file.txt",
-              None,
-              Map.empty,
-              None,
-              None,
-              size,
-              Digest.ComputedDigest(
-                DigestAlgorithm.SHA256,
-                "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
-              ),
-              FileAttributesOrigin.Storage
-            ),
-            Tags.empty
-          )
+  private def fileResolver(project: ProjectRef, resourceRef: ResourceRef) = (project, resourceRef) match {
+    case (`mappedProject`, ResourceRef.Latest(`resource1`)) =>
+      val digest = Digest.ComputedDigest(
+        DigestAlgorithm.SHA256,
+        "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
+      )
+      IO.pure(
+        FileAttributes(
+          UUID.randomUUID(),
+          location,
+          path,
+          "file.txt",
+          None,
+          Map.empty,
+          None,
+          None,
+          size,
+          digest,
+          FileAttributesOrigin.Storage
         )
-      case _                                                                                                    => IO.raiseError(FileNotFound(Iri.unsafe(id.id.value.asString), id.project))
-    }
+      )
+    case (p, r)                                             => IO.raiseError(FileNotFound(r.original, p))
+  }
 
   private val patcher =
     new DistributionPatcher(
@@ -237,7 +229,6 @@ class DistributionPatcherSuite extends NexusSuite {
       .downField("distribution")
       .downField("contentSize")
       .as[JsonObject]
-      .toOption
       .getOrElse(fail("contentSize was not present"))
   }
 
@@ -246,7 +237,6 @@ class DistributionPatcherSuite extends NexusSuite {
       .downField("distribution")
       .downField("digest")
       .as[JsonObject]
-      .toOption
       .getOrElse(fail("digest was not present"))
   }
 
@@ -256,7 +246,6 @@ class DistributionPatcherSuite extends NexusSuite {
       .downField("atLocation")
       .downField("location")
       .as[String]
-      .toOption
       .getOrElse(fail("location was not present"))
   }
 
@@ -264,7 +253,6 @@ class DistributionPatcherSuite extends NexusSuite {
     json.hcursor
       .downField("contentUrl")
       .as[String]
-      .toOption
       .getOrElse(fail("contentUrl was not present"))
   }
 
@@ -272,7 +260,6 @@ class DistributionPatcherSuite extends NexusSuite {
     json.hcursor
       .downField("distribution")
       .as[JsonObject]
-      .toOption
       .getOrElse(fail("distribution was not present"))
       .toJson
   }

@@ -14,11 +14,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.ship._
+import ch.epfl.bluebrain.nexus.ship.resources.SourcePatcher
 import ch.epfl.bluebrain.nexus.ship.schemas.SchemaProcessor.logger
 import io.circe.Decoder
 
-class SchemaProcessor private (schemas: Schemas, projectMapper: ProjectMapper, clock: EventClock)
-    extends EventProcessor[SchemaEvent] {
+class SchemaProcessor private (
+    schemas: Schemas,
+    projectMapper: ProjectMapper,
+    sourcePatcher: SourcePatcher,
+    clock: EventClock
+) extends EventProcessor[SchemaEvent] {
 
   override def resourceType: EntityType = Schemas.entityType
 
@@ -38,8 +43,14 @@ class SchemaProcessor private (schemas: Schemas, projectMapper: ProjectMapper, c
     val project             = projectMapper.map(event.project)
 
     event match {
-      case e: SchemaCreated      => schemas.create(e.id, project, e.source)
-      case e: SchemaUpdated      => schemas.update(e.id, project, cRev, e.source)
+      case e: SchemaCreated      =>
+        sourcePatcher(e.source).flatMap { patched =>
+          schemas.create(e.id, project, patched)
+        }
+      case e: SchemaUpdated      =>
+        sourcePatcher(e.source).flatMap { patched =>
+          schemas.update(e.id, project, cRev, patched)
+        }
       case e: SchemaRefreshed    => schemas.refresh(e.id, project)
       case e: SchemaTagAdded     => schemas.tag(e.id, project, e.tag, e.targetRev, cRev)
       case e: SchemaTagDeleted   => schemas.deleteTag(e.id, project, e.tag, cRev)
@@ -70,10 +81,11 @@ object SchemaProcessor {
       schemaImports: SchemaImports,
       rcr: ResolverContextResolution,
       projectMapper: ProjectMapper,
+      sourcePatcher: SourcePatcher,
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): SchemaProcessor = {
     val schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
-    new SchemaProcessor(schemas, projectMapper, clock)
+    new SchemaProcessor(schemas, projectMapper, sourcePatcher, clock)
   }
 
 }

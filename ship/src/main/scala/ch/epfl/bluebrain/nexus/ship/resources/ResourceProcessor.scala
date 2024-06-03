@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.ResourceLog
@@ -14,16 +14,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, ProjectMapper}
+import ch.epfl.bluebrain.nexus.ship._
 import io.circe.Decoder
 
 class ResourceProcessor private (
     resources: Resources,
     projectMapper: ProjectMapper,
     sourcePatcher: SourcePatcher,
+    iriPatcher: IriPatcher,
     resourceTypesToIgnore: Set[Iri],
     clock: EventClock
 ) extends EventProcessor[ResourceEvent] {
@@ -44,8 +46,9 @@ class ResourceProcessor private (
     val cRev                = event.rev - 1
     val project             = projectMapper.map(event.project)
 
-    implicit class ResourceRefOps(ref: ResourceRef) {
-      def toIdSegment: IdSegment = IdSegmentRef(ref).value
+    def patchSchema(resourceRef: Revision) = {
+      val patched = iriPatcher(resourceRef.iri)
+      Revision(patched, resourceRef.rev)
     }
 
     val skip = resourceTypesToIgnore.nonEmpty && event.types.intersect(resourceTypesToIgnore).nonEmpty
@@ -53,16 +56,20 @@ class ResourceProcessor private (
       event match {
         case e: ResourceCreated       =>
           sourcePatcher(e.source).flatMap { patched =>
-            resources.create(e.id, project, e.schema.toIdSegment, patched, e.tag)
+            val patchedSchema = patchSchema(e.schema)
+            resources.create(e.id, project, patchedSchema, patched, e.tag)
           }
         case e: ResourceUpdated       =>
           sourcePatcher(e.source).flatMap { patched =>
-            resources.update(e.id, project, e.schema.toIdSegment.some, cRev, patched, e.tag)
+            val patchedSchema = IdSegment.refToIriSegment(patchSchema(e.schema))
+            resources.update(e.id, project, patchedSchema.some, cRev, patched, e.tag)
           }
         case e: ResourceSchemaUpdated =>
-          resources.updateAttachedSchema(e.id, project, e.schema.toIdSegment)
+          val patchedSchema = patchSchema(e.schema)
+          resources.updateAttachedSchema(e.id, project, patchedSchema)
         case e: ResourceRefreshed     =>
-          resources.refresh(e.id, project, e.schema.toIdSegment.some)
+          val patchedSchema = IdSegment.refToIriSegment(patchSchema(e.schema))
+          resources.refresh(e.id, project, patchedSchema.some)
         case e: ResourceTagAdded      =>
           resources.tag(e.id, project, None, e.tag, e.targetRev, cRev)
         case e: ResourceTagDeleted    =>
@@ -94,11 +101,12 @@ object ResourceProcessor {
       projectMapper: ProjectMapper,
       fetchContext: FetchContext,
       sourcePatcher: SourcePatcher,
+      iriPatcher: IriPatcher,
       resourceTypesToIgnore: Set[Iri],
       clock: EventClock
   )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
-    new ResourceProcessor(resources, projectMapper, sourcePatcher, resourceTypesToIgnore, clock)
+    new ResourceProcessor(resources, projectMapper, sourcePatcher, iriPatcher, resourceTypesToIgnore, clock)
   }
 
 }
