@@ -29,7 +29,7 @@ class ViewPatcherSuite extends NexusSuite {
 
   private val targetProject = ProjectRef.unsafe("new-org", "new-project2")
 
-  private val iriPatcher    = IriPatcher(originalPrefix, targetPrefix)
+  private val iriPatcher    = IriPatcher(originalPrefix, targetPrefix, Map.empty)
   private val projectMapper = ProjectMapper(Map(project2 -> targetProject))
   private val viewPatcher   = new ViewPatcher(projectMapper, iriPatcher)
 
