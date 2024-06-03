@@ -337,8 +337,8 @@ class S3StorageSpec extends StorageSpec {
     }
   }
 
-  "Uploading a large file" should {
-    "succeed" ignore {
+  "Uploading and downloading a large file" should {
+    "succeed" in {
       val content = {
         val sb = new StringBuilder
         (1 to 100_000_000).foreach(_ => sb.append('1'))
@@ -351,11 +351,15 @@ class S3StorageSpec extends StorageSpec {
         content
       )
       for {
-        _ <- IO.println("Starting the upload")
-        _ <- deltaClient.uploadFile(projectRef, storageId, fileInput, None) { expectCreated }
-        _ <- deltaClient.get[ByteString](s"/files/$projectRef/${fileInput.fileId}", Coyote, acceptAll) {
-               expectOk
-             }
+        _           <- IO.println("Starting the upload")
+        startUpload <- IO.delay(System.currentTimeMillis())
+        _           <- deltaClient.uploadFile(projectRef, storageId, fileInput, None) { expectCreated }.timed
+        endUpload   <- IO.delay(System.currentTimeMillis())
+        _           <- IO.println(s"End of upload after ${endUpload - startUpload}")
+        _           <- IO.println("Starting the download")
+        _           <- deltaClient.get[ByteString](s"/files/$projectRef/${fileInput.fileId}", Coyote, acceptAll) { expectOk }
+        endDownload <- IO.delay(System.currentTimeMillis())
+        _           <- IO.println(s"End of download after ${endDownload - endUpload}")
       } yield succeed
     }
   }

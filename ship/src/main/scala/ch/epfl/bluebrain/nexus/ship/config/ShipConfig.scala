@@ -6,13 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import com.typesafe.config.Config
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import fs2.io.file.Path
 import pureconfig.ConfigReader
 import pureconfig.backend.ConfigFactoryWrapper
 import pureconfig.error.ConfigReaderException
 import pureconfig.generic.semiauto.deriveReader
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
 final case class ShipConfig(database: DatabaseConfig, s3: S3Config, input: InputConfig)
@@ -28,7 +29,7 @@ object ShipConfig {
     externalConfig.flatMap(mergeFromConfig)
   }
 
-  def merge(externalConfigStream: Stream[IO, Byte]): IO[(ShipConfig, Config)] = {
+  def merge(externalConfigStream: Stream[IO, ByteBuffer]): IO[(ShipConfig, Config)] = {
     val externalConfig = configFromStream(externalConfigStream)
     externalConfig.flatMap(mergeFromConfig)
   }
@@ -51,9 +52,9 @@ object ShipConfig {
     * Loads a config from a stream. Taken from
     * https://github.com/pureconfig/pureconfig/tree/master/modules/fs2/src/main/scala/pureconfig/module/fs2
     */
-  private def configFromStream(configStream: Stream[IO, Byte]): IO[Config] =
+  private def configFromStream(configStream: Stream[IO, ByteBuffer]): IO[Config] =
     for {
-      bytes         <- configStream.compile.to(Array)
+      bytes         <- configStream.flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))).compile.to(Array)
       string         = new String(bytes, UTF_8)
       configOrError <- IO.delay(ConfigFactoryWrapper.parseString(string))
       config        <- IO.fromEither(configOrError.leftMap(ConfigReaderException[Config]))

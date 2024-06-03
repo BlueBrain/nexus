@@ -16,7 +16,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
 
   override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] = raiseDisabledErr
 
-  override def readFile(bucket: String, fileKey: String): Stream[IO, Byte] = Stream.raiseError[IO](disabledErr)
+  override def readFile(bucket: String, fileKey: String): Stream[IO, ByteBuffer] = Stream.raiseError[IO](disabledErr)
 
   override def headObject(bucket: String, key: String): IO[HeadObject] = raiseDisabledErr
 
