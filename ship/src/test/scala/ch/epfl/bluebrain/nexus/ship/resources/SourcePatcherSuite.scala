@@ -25,7 +25,7 @@ class SourcePatcherSuite extends NexusSuite {
   test("Patch iris in original payload") {
     val originalPrefix = iri"https://bbp.epfl.ch/"
     val targetPrefix   = iri"https://openbrainplatform.com/"
-    val iriPatcher     = IriPatcher(originalPrefix, targetPrefix)
+    val iriPatcher     = IriPatcher(originalPrefix, targetPrefix, Map.empty)
     val template       = "payload/sample-neuromorphology-entity.json"
     for {
       originalPayload <- loader.jsonContentOf(template, "prefix" -> originalPrefix)

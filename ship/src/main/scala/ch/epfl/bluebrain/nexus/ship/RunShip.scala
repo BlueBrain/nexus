@@ -45,7 +45,7 @@ object RunShip {
         val originalBaseUri                 = config.originalBaseUri
         val targetBaseUri                   = config.targetBaseUri
         val projectMapper                   = ProjectMapper(config.projectMapping)
-        implicit val iriPatcher: IriPatcher = IriPatcher(config.iriPatcher)
+        implicit val iriPatcher: IriPatcher = IriPatcher(config.iriPatcher, config.projectMapping)
         for {
           // Provision organizations
           _                           <- orgProvider.create(config.organizations.values)

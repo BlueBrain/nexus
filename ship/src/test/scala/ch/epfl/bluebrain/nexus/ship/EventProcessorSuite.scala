@@ -29,7 +29,7 @@ class EventProcessorSuite extends NexusSuite {
   }
 
   test("Replace the original id in the value and pass it down") {
-    implicit val iriPatcher     = IriPatcher(iri"https://bbp.epfl.ch/", iri"https://openbrainplatform.com/")
+    implicit val iriPatcher     = IriPatcher(iri"https://bbp.epfl.ch/", iri"https://openbrainplatform.com/", Map.empty)
     val project                 = ProjectRef.unsafe("org", "proj")
     val originalId              = iri"https://bbp.epfl.ch/pr1"
     val expectedId              = iri"https://openbrainplatform.com/pr1"
