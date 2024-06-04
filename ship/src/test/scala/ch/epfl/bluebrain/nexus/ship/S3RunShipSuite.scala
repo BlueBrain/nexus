@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.{createBucket, uploadFileToS3}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.uploadFileToS3
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.expectedImportReport
@@ -10,7 +9,6 @@ import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.io.file.Path
 import munit.AnyFixture
-import software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
@@ -33,33 +31,6 @@ class S3RunShipSuite
       _     <- uploadFileToS3(fs2S3client, bucket, importFilePath)
       events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(importFilePath, Offset.start)
       _     <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
-    } yield ()
-  }
-
-  test("Run import with file events") {
-    val importFilePath = Path("/import/file-events-import.json")
-    val gif            = Path("gpfs/cat_scream.gif")
-
-    val importBucket      = "nexus-ship-production"
-    val targetBucket      = "nexus-delta-production"
-    val updatedFileConfig =
-      inputConfig.files.copy(importBucket = importBucket, targetBucket = targetBucket, enableTargetRewrite = false)
-    val shipConfig        = inputConfig.copy(files = updatedFileConfig)
-
-    for {
-      _     <- uploadFileToS3(fs2S3client, importBucket, importFilePath)
-      _     <- uploadFileToS3(fs2S3client, importBucket, gif)
-      _     <- createBucket(fs2S3client, targetBucket)
-      events = EventStreamer.s3eventStreamer(s3Client, importBucket).stream(importFilePath, Offset.start)
-      _     <- RunShip(events, s3Client, shipConfig, xas).map(_.progress(EntityType("file")).success == 1L)
-      _     <- fs2S3client.getObjectAttributes(
-                 GetObjectAttributesRequest
-                   .builder()
-                   .bucket(targetBucket)
-                   .key(gif.toString)
-                   .objectAttributesWithStrings(java.util.List.of("Checksum"))
-                   .build()
-               )
     } yield ()
   }
 

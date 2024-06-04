@@ -9,8 +9,7 @@ final case class FileProcessingConfig(
     importBucket: String,
     targetBucket: String,
     prefix: Option[Uri],
-    skipFileEvents: Boolean,
-    enableTargetRewrite: Boolean
+    skipFileEvents: Boolean
 )
 
 object FileProcessingConfig {
