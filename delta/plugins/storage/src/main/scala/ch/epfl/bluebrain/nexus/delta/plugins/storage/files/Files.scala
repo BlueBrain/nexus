@@ -157,7 +157,7 @@ final class Files(
         test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
       (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
       metadata     <- fileOperations.delegate(storage, description.filename)
-    } yield DelegationResponse(metadata.bucket, iri, metadata.path)
+    } yield DelegationResponse(metadata.bucket, iri, metadata.path, description.metadata)
   }.span("delegate")
 
   /**

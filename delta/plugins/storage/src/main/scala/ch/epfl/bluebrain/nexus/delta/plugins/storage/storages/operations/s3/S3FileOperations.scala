@@ -13,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.{S3DelegationMetadata, S3FileMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
 trait S3FileOperations {
@@ -29,7 +29,7 @@ trait S3FileOperations {
 
   def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
 
-  def delegate(storage: S3Storage, filename: String): IO[S3DelegationMetadata]
+  def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata]
 }
 
 object S3FileOperations {
@@ -69,9 +69,9 @@ object S3FileOperations {
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
       registerInternal(client, bucket, path)
 
-    override def delegate(storage: S3Storage, filename: String): IO[S3DelegationMetadata] =
+    override def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata] =
       uuidf().map { uuid =>
-        S3DelegationMetadata(storage.value.bucket, locationGenerator.file(storage.project, uuid, filename))
+        S3DelegationMetadata(bucket, locationGenerator.file(project, uuid, filename))
       }
   }
 

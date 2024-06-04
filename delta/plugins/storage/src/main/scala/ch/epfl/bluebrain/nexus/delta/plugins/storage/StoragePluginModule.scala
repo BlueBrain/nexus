@@ -280,11 +280,24 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         files: Files,
-        baseUri: BaseUri
+        schemeDirectives: DeltaSchemeDirectives,
+        indexingAction: AggregateIndexingAction,
+        shift: File.Shift,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering,
+        showLocation: ShowFileLocation
     ) =>
       cfg.amazon.flatMap(_.delegation).map { delegationCfg =>
         val tokenIssuer = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
-        new DelegateFilesRoutes(identities, aclCheck, files, tokenIssuer)(baseUri)
+        new DelegateFilesRoutes(
+          identities,
+          aclCheck,
+          files,
+          tokenIssuer,
+          indexingAction(_, _, _)(shift),
+          schemeDirectives
+        )(baseUri, cr, ordering, showLocation)
       }
   }
 
