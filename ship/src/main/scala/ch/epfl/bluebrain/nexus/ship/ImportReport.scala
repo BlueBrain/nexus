@@ -45,9 +45,8 @@ object ImportReport {
   implicit val reportEncoder: Encoder[ImportReport] = deriveEncoder[ImportReport]
 
   implicit val showReport: Show[ImportReport] = (report: ImportReport) => {
-    val header  = s"Type\tSuccess\tDropped\n"
-    val details = report.progress.foldLeft(header) { case (acc, (entityType, count)) =>
-      acc ++ s"$entityType\t${count.success}\t${count.dropped}\n"
+    val details = report.progress.foldLeft("Details: ") { case (acc, (entityType, count)) =>
+      acc ++ s"$entityType\t${count.success}\t${count.dropped} ,"
     }
 
     val offsetValue     = report.offset.value
