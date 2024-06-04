@@ -19,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
-import scala.concurrent.duration.DurationInt
-
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
 
@@ -34,8 +32,7 @@ trait S3FileOperations {
 object S3FileOperations {
   final case class S3FileMetadata(contentType: Option[ContentType], metadata: FileStorageMetadata)
 
-  private val log       = Logger[S3FileOperations]
-  private val ChunkSize = 8 * 1024
+  private val log = Logger[S3FileOperations]
 
   def mk(client: S3StorageClient, locationGenerator: S3LocationGenerator)(implicit
       as: ActorSystem,
@@ -55,8 +52,7 @@ object S3FileOperations {
         StreamConverter(
           client
             .readFile(bucket, UrlUtils.decode(path))
-            .groupWithin(ChunkSize, 1.second)
-            .map(bytes => ByteString(bytes.toArray))
+            .map(bytes => ByteString(bytes))
             .adaptError {
               case _: NoSuchKeyException => FetchFileRejection.FileNotFound(path.toString)
               case err                   => UnexpectedFetchError(path.toString, err.getMessage)
