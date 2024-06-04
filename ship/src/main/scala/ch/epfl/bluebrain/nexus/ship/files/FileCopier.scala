@@ -46,13 +46,7 @@ object FileCopier {
     (project: ProjectRef, attributes: FileAttributes) => {
       val origin          = attributes.path
       val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
-      val target          = if (config.enableTargetRewrite) {
-        locationGenerator.file(project, attributes.uuid, patchedFileName).path
-      } else {
-        if (attributes.filename.isEmpty) {
-          origin ?/ patchedFileName
-        } else origin
-      }
+      val target          = locationGenerator.file(project, attributes.uuid, patchedFileName).path
       val FIVE_GB         = 5_000_000_000L
 
       val originKey = UrlUtils.decode(origin)

@@ -60,8 +60,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         importBucket,
         targetBucket,
         Some(uri"/prefix"),
-        skipFileEvents = false,
-        enableTargetRewrite = true
+        skipFileEvents = false
       ),
       IriPatcherConfig(enabled = false, iri"https://bbp.epfl.ch/", iri"https:/openbrainplatform.com/"),
       disableResourceValidation = false,
