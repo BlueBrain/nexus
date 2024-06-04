@@ -452,7 +452,7 @@ object CompositeViews {
       CompositeViewState.serializer,
       state =>
         Some(
-          state.value.sources.value.foldLeft(Set.empty[DependsOn]) {
+          state.value.sources.foldLeft(Set.empty[DependsOn]) {
             case (acc, _: ProjectSource)       => acc
             case (acc, s: CrossProjectSource)  => acc + DependsOn(s.project, Projects.encodeId(s.project))
             case (acc, _: RemoteProjectSource) => acc
