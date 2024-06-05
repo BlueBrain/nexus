@@ -53,27 +53,36 @@ abstract class FetchContext { self =>
 object FetchContext {
 
   def apply(dam: ApiMappings, xas: Transactors, quotas: Quotas): FetchContext = {
-    def fetchProject(ref: ProjectRef) = {
+    def fetchProject(ref: ProjectRef, onWrite: Boolean) = {
       implicit val putId: Put[ProjectRef]      = ProjectState.serializer.putId
       implicit val getValue: Get[ProjectState] = ProjectState.serializer.getValue
+      val xa                                   = if (onWrite) xas.write else xas.read
       ScopedStateGet
         .latest[ProjectRef, ProjectState](Projects.entityType, ref, ref)
-        .transact(xas.read)
+        .transact(xa)
         .map(_.map(_.toResource(dam)))
     }
 
-    apply(
-      FetchActiveOrganization(xas).apply(_).void,
-      dam,
-      fetchProject,
-      quotas
-    )
+    val fetchActiveOrg = FetchActiveOrganization(xas).apply(_).void
+    apply(fetchActiveOrg, dam, fetchProject, quotas)
   }
 
+  /**
+    * Constructs a fetch context
+    * @param fetchActiveOrg
+    *   fetches the org and makes sure it exists and is not deprecated
+    * @param dam
+    *   the default api mappings defined by Nexus
+    * @param fetchProject
+    *   fetches the project in read / write context. The write context is more consistent as it points to the primary
+    *   node while the read one can point to replicas and can suffer from replication delays
+    * @param quotas
+    *   the quotes
+    */
   def apply(
       fetchActiveOrg: Label => IO[Unit],
       dam: ApiMappings,
-      fetchProject: ProjectRef => IO[Option[ProjectResource]],
+      fetchProject: (ProjectRef, Boolean) => IO[Option[ProjectResource]],
       quotas: Quotas
   ): FetchContext =
     new FetchContext {
@@ -81,14 +90,14 @@ object FetchContext {
       override def defaultApiMappings: ApiMappings = dam
 
       override def onRead(ref: ProjectRef): IO[ProjectContext] =
-        fetchProject(ref).flatMap {
+        fetchProject(ref, false).flatMap {
           case None                                             => IO.raiseError(ProjectNotFound(ref))
           case Some(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
           case Some(project)                                    => IO.pure(project.value.context)
         }
 
       private def onWrite(ref: ProjectRef) =
-        fetchProject(ref).flatMap {
+        fetchProject(ref, true).flatMap {
           case None                                             => IO.raiseError(ProjectNotFound(ref))
           case Some(project) if project.value.markedForDeletion => IO.raiseError(ProjectIsMarkedForDeletion(ref))
           case Some(project) if project.deprecated              => IO.raiseError(ProjectIsDeprecated(ref))
