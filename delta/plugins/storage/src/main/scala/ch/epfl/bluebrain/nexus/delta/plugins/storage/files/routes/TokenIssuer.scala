@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{InvalidJWSPayload, JWSSignatureExpired}
 import com.nimbusds.jose.crypto.{RSASSASigner, RSASSAVerifier}
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.util.JSONObjectUtils
@@ -34,16 +35,14 @@ class TokenIssuer(key: RSAKey, tokenValidity: FiniteDuration)(implicit clock: Cl
   def verifyJWSPayload(payload: Json): IO[Json] =
     for {
       jwsObject       <- IO.delay(JWSObjectJSON.parse(payload.toString()))
-      sig             <- IO.fromOption(jwsObject.getSignatures.asScala.headOption)(new Exception("Signature missing"))
+      sig             <- IO.fromOption(jwsObject.getSignatures.asScala.headOption)(InvalidJWSPayload)
       _               <- IO.delay(sig.verify(verifier))
-      _               <- log.info(s"Signature verified against payload")
       objectPayload    = jwsObject.getPayload.toString
-      _               <- log.info(s"Object payload is $objectPayload")
       originalPayload <- IO.fromEither(parser.parse(objectPayload))
-      _               <- log.info(s"Original payload parsed: $originalPayload")
+      _               <- log.info(s"Original payload parsed for token: $originalPayload")
       now             <- clock.realTimeInstant
       exp             <- IO.delay(sig.getHeader.getCustomParam("exp").asInstanceOf[Long])
-      _               <- IO.raiseWhen(now.getEpochSecond > exp)(new Exception("Token has expired"))
+      _               <- IO.raiseWhen(now.getEpochSecond > exp)(JWSSignatureExpired(originalPayload))
     } yield originalPayload
 
   private def mkJWSHeader(expSeconds: Long): JWSHeader =

@@ -437,6 +437,12 @@ Request
 Response
 :   @@snip [listed.json](assets/files/listed.json)
 
+## Delegation & Registration
+To support files stored in the cloud, delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through delta is inefficient and expensive. 
+
+There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path with its standard format. 
+
+
 ## Server Sent Events
 
 From Delta 1.5, it is possible to fetch SSEs for all files or just files
