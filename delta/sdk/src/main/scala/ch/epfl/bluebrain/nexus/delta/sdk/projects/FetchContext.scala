@@ -63,7 +63,7 @@ object FetchContext {
         .map(_.map(_.toResource(dam)))
     }
 
-    val fetchActiveOrg = FetchActiveOrganization(xas).apply(_).void
+    val fetchActiveOrg: Label => IO[Unit] = FetchActiveOrganization(xas).apply(_).void
     apply(fetchActiveOrg, dam, fetchProject, quotas)
   }
 
