@@ -12,12 +12,15 @@ import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys, location
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
+import ch.epfl.bluebrain.nexus.tests.kg.files.S3StorageSpec.DelegationResponse
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import eu.timepit.refined.types.all.NonEmptyString
 import fs2.Stream
 import fs2.aws.s3.models.Models.{BucketName, FileKey}
 import fs2.aws.s3.{AwsRequestModifier, S3}
-import io.circe.Json
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Json}
+import io.circe.jawn.parseByteBuffer
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.laserdisc.pure.s3.tagless.Interpreter
 import org.apache.commons.codec.binary.Hex
@@ -28,6 +31,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
 import java.net.URI
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.MessageDigest
@@ -233,7 +237,7 @@ class S3StorageSpec extends StorageSpec {
       .accepted
   }
 
-  private def registrationResponse(id: String, digestValue: String, location: String): Json =
+  private def registrationResponse(id: String, digestValue: String, location: String, filename: String): Json =
     jsonContentOf(
       "kg/files/registration-metadata.json",
       replacements(
@@ -243,7 +247,8 @@ class S3StorageSpec extends StorageSpec {
         "self"        -> fileSelf(projectRef, id),
         "projId"      -> s"$projectRef",
         "digestValue" -> digestValue,
-        "location"    -> location
+        "location"    -> location,
+        "filename"    -> filename
       ): _*
     )
 
@@ -276,7 +281,8 @@ class S3StorageSpec extends StorageSpec {
                        filterMetadataKeys(json) shouldEqual registrationResponse(
                          fullId,
                          logoSha256HexDigest,
-                         location = path
+                         location = path,
+                         filename = logoFilename
                        )
                      }
       } yield assertion
@@ -363,4 +369,57 @@ class S3StorageSpec extends StorageSpec {
       } yield succeed
     }
   }
+
+  s"Delegate S3 file upload" should {
+    "succeed using JWS protocol with flattened serialization" in {
+      val filename = genString()
+      val payload  = Json.obj("filename" -> Json.fromString(filename))
+
+      for {
+        jwsPayload                                  <-
+          deltaClient
+            .postAndReturn[Json](s"/delegate/files/$projectRef/validate?storage=nxv:$storageId", payload, Coyote) {
+              expectOk
+            }
+        resp                                        <- parseDelegationResponse(jwsPayload)
+        DelegationResponse(id, path, returnedBucket) = resp
+        _                                            = returnedBucket shouldEqual bucket
+        _                                           <- uploadLogoFileToS3(path)
+        _                                           <- deltaClient.post[Json](s"/delegate/files/$projectRef?storage=nxv:$storageId", jwsPayload, Coyote) {
+                                                         expectCreated
+                                                       }
+        encodedId                                    = UrlUtils.encode(id)
+        filename                                     = path.split("/").last
+        assertion                                   <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
+                                                         response.status shouldEqual StatusCodes.OK
+                                                         val expected = registrationResponse(
+                                                           id,
+                                                           logoSha256HexDigest,
+                                                           location = path,
+                                                           filename = filename
+                                                         )
+                                                         val actual   = filterMetadataKeys(json)
+                                                         actual shouldEqual expected
+                                                       }
+      } yield assertion
+    }
+  }
+
+  def parseDelegationResponse(jwsPayload: Json): IO[DelegationResponse] = IO.fromEither {
+    for {
+      encodedPayload <- jwsPayload.hcursor.get[String]("payload")
+      decodedPayload  = Base64.getDecoder.decode(encodedPayload)
+      jsonPayload    <- parseByteBuffer(ByteBuffer.wrap(decodedPayload))
+      resp           <- jsonPayload.as[DelegationResponse]
+    } yield resp
+  }
+}
+
+object S3StorageSpec {
+
+  final case class DelegationResponse(id: String, path: String, bucket: String)
+  object DelegationResponse {
+    implicit val dec: Decoder[DelegationResponse] = deriveDecoder
+  }
+
 }
