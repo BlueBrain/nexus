@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes.DelegationResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
@@ -145,6 +146,19 @@ final class Files(
       res <- createLink(iri, projectRef, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
+
+  def delegate(projectRef: ProjectRef, description: FileDescription, storageId: Option[IdSegment])(implicit
+      caller: Caller
+  ): IO[DelegationResponse] = {
+    for {
+      pc           <- fetchContext.onCreate(projectRef)
+      iri          <- generateId(pc)
+      _            <-
+        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
+      (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      metadata     <- fileOperations.delegate(storage, description.filename)
+    } yield DelegationResponse(metadata.bucket, iri, metadata.path, description.metadata)
+  }.span("delegate")
 
   /**
     * Create a new file linking it from an existing file in a storage
@@ -496,12 +510,14 @@ final class Files(
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(ref).adaptError { case e: StorageRejection =>
-                       WrappedStorageRejection(e)
-                     }
+          storage <- fetchDefaultStorage(ref)
           _       <- validateAuth(ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
+
+  private def fetchDefaultStorage(ref: ProjectRef) = storages.fetchDefault(ref).adaptError { case e: StorageRejection =>
+    WrappedStorageRejection(e)
+  }
 
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
     aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))

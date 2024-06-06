@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
-import io.circe.{Encoder, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * Enumeration of File rejection types.
@@ -231,6 +231,10 @@ object FileRejection {
         s"Linking or registering a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
       )
 
+  final case object InvalidJWSPayload extends FileRejection("Signature missing, flattened JWS format expected")
+
+  final case class JWSSignatureExpired(payload: Json) extends FileRejection(s"Token expired for payload: $payload")
+
   final case class CopyRejection(
       sourceProj: ProjectRef,
       destProject: ProjectRef,
@@ -281,6 +285,7 @@ object FileRejection {
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))           => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_))    => (StatusCodes.Conflict, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.BucketAccessDenied(_, _, _)) => (StatusCodes.Forbidden, Seq.empty)
+      case JWSSignatureExpired(_)                                             => (StatusCodes.Forbidden, Seq.empty)
       case CopyRejection(_, _, _, rejection)                                  => (rejection.status, Seq.empty)
       case FetchRejection(_, _, _)                                            => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                             => (StatusCodes.InternalServerError, Seq.empty)

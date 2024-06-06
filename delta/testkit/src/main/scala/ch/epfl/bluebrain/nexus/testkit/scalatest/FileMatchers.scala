@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest
 
-import ch.epfl.bluebrain.nexus.testkit.scalatest.JsonMatchers.{field, fieldThatEndsWith}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.JsonMatchers.field
 import io.circe.Json
 import io.circe.syntax.KeyOps
 import org.scalatest.matchers.HavePropertyMatcher
@@ -22,7 +22,4 @@ object FileMatchers {
     field("_digest", Json.obj("_algorithm" := algo, "_value" := value))
 
   def filename(expected: String): HavePropertyMatcher[Json, String]        = field("_filename", expected)
-
-  def locationWithFilename(expected: String): HavePropertyMatcher[Json, String] =
-    fieldThatEndsWith("_location", expected)
 }
