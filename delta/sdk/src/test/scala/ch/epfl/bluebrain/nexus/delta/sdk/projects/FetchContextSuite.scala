@@ -59,7 +59,7 @@ class FetchContextSuite extends NexusSuite {
   private def fetchContext(quotasResources: Boolean, quotasEvents: Boolean) = FetchContext(
     fetchActiveOrganization,
     ApiMappings.empty,
-    fetchProject,
+    (project: ProjectRef, _: Boolean) => fetchProject(project),
     quotas(quotasResources, quotasEvents)
   )
 
