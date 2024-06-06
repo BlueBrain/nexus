@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 
@@ -123,6 +123,13 @@ object StorageWiring {
 
     override def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =
       S3FileOperations.registerInternal(s3Client, bucket, path)(UUIDF.random)
+
+    override def delegate(
+        bucket: String,
+        project: ProjectRef,
+        filename: String
+    ): IO[S3FileOperations.S3DelegationMetadata] =
+      IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
   }
 
 }
