@@ -87,7 +87,7 @@ object RunShip {
                                              compositeViewsProcessor,
                                              fileProcessor
                                            )
-          _                           <- logger.info(s"Import finished. Report: $report")
+          _                           <- logger.info(s"Import finished.")
         } yield report
       }
     } yield report
