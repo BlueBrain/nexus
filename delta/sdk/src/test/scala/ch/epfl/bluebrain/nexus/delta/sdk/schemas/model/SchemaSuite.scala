@@ -11,21 +11,21 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class SchemaSuite extends NexusSuite with Fixtures {
 
-  private  val project                = ProjectRef.unsafe("org", "proj")
+  private val project = ProjectRef.unsafe("org", "proj")
 
   test("Extract as a graph the content of the schema, removing the duplicates") {
     for {
-      entitySource <- loader.jsonContentOf("schemas/entity.json")
-      entityExpanded  <- ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json"))
-      entityExpandedGraphSize <- IO.fromEither(entityExpanded.toGraph.map(_.getDefaultGraphSize))
-      entityCompacted <- entityExpanded.toCompacted(entitySource.topContextValueOrEmpty)
-      licenseExpanded <- ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json"))
+      entitySource             <- loader.jsonContentOf("schemas/entity.json")
+      entityExpanded           <- ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json"))
+      entityExpandedGraphSize  <- IO.fromEither(entityExpanded.toGraph.map(_.getDefaultGraphSize))
+      entityCompacted          <- entityExpanded.toCompacted(entitySource.topContextValueOrEmpty)
+      licenseExpanded          <- ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json"))
       licenseExpandedGraphSize <- IO.fromEither(licenseExpanded.toGraph.map(_.getDefaultGraphSize))
     } yield {
-      val id = iri"https://neuroshapes.org/commons/entity"
+      val id        = iri"https://neuroshapes.org/commons/entity"
       val expandeds = NonEmptyList.of(entityExpanded, licenseExpanded, entityExpanded)
-      val schema = Schema(id, project, Tags.empty, entitySource, entityCompacted, expandeds)
-      assertEquals(schema.shapes.getDefaultGraphSize , entityExpandedGraphSize + licenseExpandedGraphSize)
+      val schema    = Schema(id, project, Tags.empty, entitySource, entityCompacted, expandeds)
+      assertEquals(schema.shapes.getDefaultGraphSize, entityExpandedGraphSize + licenseExpandedGraphSize)
     }
   }
 
