@@ -60,6 +60,8 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     */
   def isEmpty: Boolean = value.isEmpty
 
+  def getDefaultGraphSize: Int = value.getDefaultGraph.size()
+
   /**
     * Returns a subgraph retaining all the triples that satisfy the provided predicate.
     */

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
@@ -61,9 +62,17 @@ final case class Schema(
   lazy val ontologies: Graph = graph(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema))
 
   private def graph(filteredTypes: Set[Iri] => Boolean): Graph = {
-    implicit val api: JsonLdApi = JsonLdJavaApi.lenient
-    val filtered                = expanded.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
-    val triples                 = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
+    implicit val api: JsonLdApi                         = JsonLdJavaApi.lenient
+    val init: (Set[IriOrBNode], Vector[ExpandedJsonLd]) = (Set.empty[IriOrBNode], Vector.empty[ExpandedJsonLd])
+    val (_, filtered)                                   = expanded.foldLeft(init) {
+      case ((seen, acc), expanded)
+          if !seen.contains(expanded.rootId) && expanded.cursor.getTypes.exists(filteredTypes) =>
+        val updatedSeen = seen + expanded.rootId
+        val updatedAcc  = acc :+ expanded
+        updatedSeen -> updatedAcc
+      case ((seen, acc), _) => seen -> acc
+    }
+    val triples                                         = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
     Graph.empty(id).add(triples)
   }
 
