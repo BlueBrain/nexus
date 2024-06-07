@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
@@ -104,7 +104,7 @@ final class DelegateFilesRoutes(
           delegationResponse.metadata,
           delegationResponse.path.path,
           None,
-          None
+          delegationResponse.mediaType
         )
       _                  <- index(project, fileResource, mode)
     } yield fileResource
@@ -113,7 +113,7 @@ final class DelegateFilesRoutes(
 
 object DelegateFilesRoutes {
 
-  final case class DelegationResponse(bucket: String, id: Iri, path: Uri, metadata: Option[FileCustomMetadata])
+  final case class DelegationResponse(bucket: String, id: Iri, path: Uri, metadata: Option[FileCustomMetadata], mediaType: Option[ContentType])
 
   object DelegationResponse {
     implicit val enc: Encoder[DelegationResponse] = deriveEncoder
