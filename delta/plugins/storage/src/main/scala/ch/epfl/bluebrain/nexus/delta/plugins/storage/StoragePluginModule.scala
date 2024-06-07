@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
-import akka.http.scaladsl.server.{Route, RouteResult}
+import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, TokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig.DelegationConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -49,10 +49,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 
-import scala.concurrent.Future
+import java.security.interfaces.RSAPrivateCrtKey
+import scala.concurrent.duration.DurationInt
 
 /**
   * Storages and Files wiring
@@ -274,7 +276,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[Option[DelegateFilesRoutes]].from {
+  make[DelegateFilesRoutes].from {
     (
         cfg: StorageTypeConfig,
         identities: Identities,
@@ -288,17 +290,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering: JsonKeyOrdering,
         showLocation: ShowFileLocation
     ) =>
-      cfg.amazon.flatMap(_.delegation).map { delegationCfg =>
-        val tokenIssuer = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
-        new DelegateFilesRoutes(
-          identities,
-          aclCheck,
-          files,
-          tokenIssuer,
-          indexingAction(_, _, _)(shift),
-          schemeDirectives
-        )(baseUri, cr, ordering, showLocation)
-      }
+      val delegationCfg = cfg.amazon
+        .flatMap(_.delegation)
+        .getOrElse(
+          DelegationConfig(new RSAKeyGenerator(2048).generate().toRSAPrivateKey.asInstanceOf[RSAPrivateCrtKey], 3.days)
+        )
+      val tokenIssuer   = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
+      new DelegateFilesRoutes(
+        identities,
+        aclCheck,
+        files,
+        tokenIssuer,
+        indexingAction(_, _, _)(shift),
+        schemeDirectives
+      )(baseUri, cr, ordering, showLocation)
   }
 
   make[BatchFilesRoutes].from {
@@ -394,13 +399,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, batchFileRoutes.routes, requiresStrictEntity = false)
   }
 
-  many[PriorityRoute].add { (maybeDelegationRoutes: Option[DelegateFilesRoutes]) =>
-    PriorityRoute(
-      priority,
-      maybeDelegationRoutes
-        .map(_.routes)
-        .getOrElse[Route](_ => Future.successful(RouteResult.Complete(HttpResponse(StatusCodes.NotFound)))),
-      requiresStrictEntity = false
-    )
+  many[PriorityRoute].add { (delegationRoutes: DelegateFilesRoutes) =>
+    PriorityRoute(priority, delegationRoutes.routes, requiresStrictEntity = false)
   }
 }
