@@ -41,7 +41,7 @@ class TokenIssuerSuite extends CatsEffectSuite with Generators {
 
   test("JWS verification fails if token is expired") {
     val tokenIssuer     = new TokenIssuer(rsaJWK, tokenValidity = 0.seconds)
-    val returnedPayload = DelegationResponse(genString(), iri"potato", Uri(genString()), None)
+    val returnedPayload = DelegationResponse(genString(), iri"potato", Uri(genString()), None, None)
 
     val program = for {
       jwsPayload <- tokenIssuer.issueJWSPayload(returnedPayload.asJson)

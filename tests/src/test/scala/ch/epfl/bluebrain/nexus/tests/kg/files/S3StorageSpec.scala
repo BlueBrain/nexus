@@ -237,7 +237,13 @@ class S3StorageSpec extends StorageSpec {
       .accepted
   }
 
-  private def registrationResponse(id: String, digestValue: String, location: String, filename: String): Json =
+  private def registrationResponse(
+      id: String,
+      digestValue: String,
+      location: String,
+      filename: String,
+      mediaType: String
+  ): Json =
     jsonContentOf(
       "kg/files/registration-metadata.json",
       replacements(
@@ -248,7 +254,8 @@ class S3StorageSpec extends StorageSpec {
         "projId"      -> s"$projectRef",
         "digestValue" -> digestValue,
         "location"    -> location,
-        "filename"    -> filename
+        "filename"    -> filename,
+        "mediaType"   -> mediaType
       ): _*
     )
 
@@ -282,7 +289,8 @@ class S3StorageSpec extends StorageSpec {
                          fullId,
                          logoSha256HexDigest,
                          location = path,
-                         filename = logoFilename
+                         filename = logoFilename,
+                         mediaType = "image/png"
                        )
                      }
       } yield assertion
@@ -372,8 +380,18 @@ class S3StorageSpec extends StorageSpec {
 
   s"Delegate S3 file upload" should {
     "succeed using JWS protocol with flattened serialization" in {
-      val filename = genString()
-      val payload  = Json.obj("filename" -> Json.fromString(filename))
+      val filename               = genString()
+      val (name, desc, keywords) = (genString(), genString(), Json.obj(genString() := genString()))
+      val metadata               =
+        json"""
+          {
+            "name": "$name",
+            "description": "$desc",
+            "keywords": $keywords
+          }
+            """
+      val payload                =
+        Json.obj("filename" -> Json.fromString(filename), "metadata" -> metadata, "mediaType" := "image/dan")
 
       for {
         jwsPayload                                  <-
@@ -390,14 +408,16 @@ class S3StorageSpec extends StorageSpec {
                                                        }
         encodedId                                    = UrlUtils.encode(id)
         filename                                     = path.split("/").last
+        expectedMetadata                             = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
         assertion                                   <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
                                                          response.status shouldEqual StatusCodes.OK
                                                          val expected = registrationResponse(
                                                            id,
                                                            logoSha256HexDigest,
                                                            location = path,
-                                                           filename = filename
-                                                         )
+                                                           filename = filename,
+                                                           mediaType = "image/dan"
+                                                         ).deepMerge(expectedMetadata)
                                                          val actual   = filterMetadataKeys(json)
                                                          actual shouldEqual expected
                                                        }
