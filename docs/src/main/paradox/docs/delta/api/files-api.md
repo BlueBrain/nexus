@@ -32,11 +32,7 @@ When using the endpoints described on this page, the responses will contain glob
 - `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
 - `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
 
-<a id="custom-file-metadata">
-
 ## Custom file metadata
-
-</a>
 
 When creating file resources, users can optionally provide custom metadata to be indexed and therefore searchable.
 
@@ -64,7 +60,7 @@ This part can contain the following disposition parameters:
 
 **Headers:**
 
-- `x-nxs-file-metadata`: an optional JSON object containing one or more of fields described in [custom file metadata](#custom-file-metadata).
+- `x-nxs-file-metadata`: an optional JSON object containing one or more of fields described in @ref:[custom file metadata](#custom-file-metadata).
 - `x-nxs-file-content-length`: the size of the uploaded file:
   - mandatory to upload to a S3 storage
   - ignored for other types of storage
@@ -136,7 +132,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
-- `{metadata}`: JSON Object - Optional, see [custom file metadata](#custom-file-metadata).
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 **Example**
 
@@ -173,7 +169,7 @@ When not specified, the default storage of the project is used.
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
-- `{metadata}`: JSON Object - Optional, see [custom file metadata](#custom-file-metadata).
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 **Example**
 
@@ -462,7 +458,7 @@ POST /v1/files/{org_label}/{project_label}/register/{file_id}?storage={storageId
 
 - `{path}`: String - the relative path to the file from the root of S3.
 - `{mediaType}`: String - Optional @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the file type. If omitted this will be inferred by S3.
-- `{metadata}`: JSON Object - Optional, see [custom file metadata](#custom-file-metadata).
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 ### Delegating file uploads
 
@@ -485,7 +481,7 @@ POST /v1/delegate/files/{org_label}/{project_label}/validate?storage={storageId}
 
 - `{filename}`: String - mandatory name given to the file within the generated path.
 - `{mediaType}`: String - Optional @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the file type. If omitted this will be inferred by S3.
-- `{metadata}`: JSON Object - Optional, see [custom file metadata](#custom-file-metadata).
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 It then generates the following details for the file:
 
