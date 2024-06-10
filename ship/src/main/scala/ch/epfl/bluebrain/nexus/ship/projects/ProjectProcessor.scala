@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.NotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext, ProjectEvent, ProjectFields, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectBase, ProjectContext, ProjectEvent, ProjectFields, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsImpl, ValidateProjectDeletion}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -17,13 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.error.ShipError.ProjectDeletionIsNotAllowed
-import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.logger
+import ch.epfl.bluebrain.nexus.ship.projects.ProjectProcessor.{logger, patchFields}
 import io.circe.Decoder
 
 final class ProjectProcessor private (
     projects: Projects,
     originalProjectContext: OriginalProjectContext,
     projectMapper: ProjectMapper,
+    iriPatcher: IriPatcher,
     clock: EventClock,
     uuidF: EventUUIDF,
     scopeInitializer: ScopeInitializer
@@ -42,27 +43,28 @@ final class ProjectProcessor private (
 
   private def evaluateInternal(event: ProjectEvent): IO[ImportStatus] = {
     implicit val s: Subject = event.subject
-    val projectRef          = projectMapper.map(event.project)
+    val originalProjectRef  = event.project
+    val targetProjectRef    = projectMapper.map(event.project)
     val cRev                = event.rev - 1
 
     event match {
       case ProjectCreated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
-        val fields  = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
-        val context = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
-        originalProjectContext.save(projectRef, context) >>
-          projects.create(projectRef, fields) >>
-          scopeInitializer.initializeProject(projectRef)
+        val fields          = patchFields(iriPatcher)(description, base, vocab, apiMappings, enforceSchema)
+        val originalContext = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
+        originalProjectContext.save(originalProjectRef, originalContext) >>
+          projects.create(targetProjectRef, fields) >>
+          scopeInitializer.initializeProject(targetProjectRef)
       case ProjectUpdated(_, _, _, _, _, description, apiMappings, base, vocab, enforceSchema, _, _) =>
-        val fields  = ProjectFields(description, apiMappings, Some(base), Some(vocab), enforceSchema)
-        val context = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
-        originalProjectContext.save(projectRef, context) >>
-          projects.update(projectRef, cRev, fields)
+        val fields          = patchFields(iriPatcher)(description, base, vocab, apiMappings, enforceSchema)
+        val originalContext = ProjectContext(apiMappings, ProjectBase.unsafe(base.value), vocab.value, enforceSchema)
+        originalProjectContext.save(originalProjectRef, originalContext) >>
+          projects.update(targetProjectRef, cRev, fields)
       case _: ProjectDeprecated                                                                      =>
-        projects.deprecate(projectRef, cRev)
+        projects.deprecate(targetProjectRef, cRev)
       case _: ProjectUndeprecated                                                                    =>
-        projects.undeprecate(projectRef, cRev)
+        projects.undeprecate(targetProjectRef, cRev)
       case _: ProjectMarkedForDeletion                                                               =>
-        IO.raiseError(ProjectDeletionIsNotAllowed(projectRef))
+        IO.raiseError(ProjectDeletionIsNotAllowed(targetProjectRef))
     }
   }.redeemWith(
     {
@@ -76,13 +78,28 @@ final class ProjectProcessor private (
 
 object ProjectProcessor {
 
-  private val logger      = Logger[ProjectProcessor]
+  private val logger = Logger[ProjectProcessor]
+
+  private[projects] def patchFields(iriPatcher: IriPatcher)(
+      description: Option[String],
+      base: PrefixIri,
+      vocab: PrefixIri,
+      apiMappings: ApiMappings,
+      enforceSchema: Boolean
+  ) = {
+    val patchedBase        = base.copy(iriPatcher(base.value))
+    val patchedVocab       = vocab.copy(iriPatcher(vocab.value))
+    val patchedApiMappings = ApiMappings(apiMappings.value.map { case (key, value) => key -> iriPatcher(value) })
+    ProjectFields(description, patchedApiMappings, Some(patchedBase), Some(patchedVocab), enforceSchema)
+  }
+
   def apply(
       fetchActiveOrg: FetchActiveOrganization,
       fetchContext: FetchContext,
       rcr: ResolverContextResolution,
       originalProjectContext: OriginalProjectContext,
       projectMapper: ProjectMapper,
+      iriPatcher: IriPatcher,
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
@@ -104,6 +121,6 @@ object ProjectProcessor {
         xas,
         clock
       )(base, uuidF)
-      new ProjectProcessor(projects, originalProjectContext, projectMapper, clock, uuidF, initializer)
+      new ProjectProcessor(projects, originalProjectContext, projectMapper, iriPatcher, clock, uuidF, initializer)
     }
 }

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.defaultS3StorageId
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.ship.ProjectMapper
+import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
 import io.circe.optics.JsonPath.root
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -20,6 +20,7 @@ import io.circe.{Encoder, Json, JsonObject}
 final class DistributionPatcher(
     fileSelfParser: FileSelf,
     projectMapper: ProjectMapper,
+    iriPatcher: IriPatcher,
     targetBase: BaseUri,
     fetchFileAttributes: (ProjectRef, ResourceRef) => IO[FileAttributes]
 ) {
@@ -34,21 +35,24 @@ final class DistributionPatcher(
     }
   }(_)
 
-  private def modificationsForFile(project: ProjectRef, resourceRef: ResourceRef): IO[Json => Json] = {
-    val targetProject                                = projectMapper.map(project)
-    val newContentUrl                                = ResourceUris("files", targetProject, resourceRef.original).accessUri(targetBase).toString()
-    val fileAttributeModifications: IO[Json => Json] = fetchFileAttributes(targetProject, resourceRef).attempt.flatMap {
-      case Right(attributes) =>
-        logger.debug(s"File '$resourceRef' in project '$project' fetched successfully") >>
-          IO.pure(
-            setLocation(attributes.location.toString())
-              .andThen(setContentSize(attributes.bytes))
-              .andThen(setDigest(attributes.digest))
-          )
-      case Left(e)           =>
-        logger.error(e)(s"File '$resourceRef' in project '$project' could not be fetched") >>
-          IO.pure(identity)
-    }
+  private def modificationsForFile(originalProject: ProjectRef, resourceRef: ResourceRef): IO[Json => Json] = {
+    val targetProject                                = projectMapper.map(originalProject)
+    val patchedResourceRef                           = iriPatcher(resourceRef)
+    val newContentUrl                                =
+      ResourceUris("files", targetProject, patchedResourceRef.original).accessUri(targetBase).toString()
+    val fileAttributeModifications: IO[Json => Json] =
+      fetchFileAttributes(targetProject, patchedResourceRef).attempt.flatMap {
+        case Right(attributes) =>
+          logger.debug(s"File '$patchedResourceRef' in project '$targetProject' fetched successfully") >>
+            IO.pure(
+              setLocation(attributes.location.toString())
+                .andThen(setContentSize(attributes.bytes))
+                .andThen(setDigest(attributes.digest))
+            )
+        case Left(e)           =>
+          logger.error(e)(s"File '$patchedResourceRef' in project '$targetProject' could not be fetched") >>
+            IO.pure(identity)
+      }
 
     fileAttributeModifications.map(_.andThen(setContentUrl(newContentUrl)))
   }
