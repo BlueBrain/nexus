@@ -113,7 +113,13 @@ final class DelegateFilesRoutes(
 
 object DelegateFilesRoutes {
 
-  final case class DelegationResponse(bucket: String, id: Iri, path: Uri, metadata: Option[FileCustomMetadata], mediaType: Option[ContentType])
+  final case class DelegationResponse(
+      bucket: String,
+      id: Iri,
+      path: Uri,
+      metadata: Option[FileCustomMetadata],
+      mediaType: Option[ContentType]
+  )
 
   object DelegationResponse {
     implicit val enc: Encoder[DelegationResponse] = deriveEncoder

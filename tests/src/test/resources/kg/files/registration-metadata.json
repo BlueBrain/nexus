@@ -17,7 +17,7 @@
   },
   "_filename": "{{filename}}",
   "_location": "{{location}}",
-  "_mediaType": "image/png",
+  "_mediaType": "{{mediaType}}",
   "_origin" : "External",
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",

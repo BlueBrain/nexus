@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.ship
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig.ProjectMapping
 import ch.epfl.bluebrain.nexus.ship.config.IriPatcherConfig
 
@@ -12,6 +14,13 @@ trait IriPatcher {
   def enabled: Boolean
 
   def apply(original: Iri): Iri
+
+  def apply(resourceRef: ResourceRef): ResourceRef =
+    resourceRef match {
+      case Latest(iri)           => Latest(apply(iri))
+      case Revision(_, iri, rev) => Revision(apply(iri), rev)
+      case Tag(_, iri, tag)      => Tag(apply(iri), tag)
+    }
 }
 
 object IriPatcher {

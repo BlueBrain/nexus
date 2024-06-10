@@ -11,11 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.ship.ProjectMapper
+import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
 
@@ -27,8 +26,10 @@ class DistributionPatcherSuite extends NexusSuite {
   private val mappedProject      = ProjectRef.unsafe("obp", "proj1")
   private val projectNoMapping   = ProjectRef.unsafe("bbp", "proj2")
 
-  private val resource1: Iri = nxv + "resource1"
-  private val resource2: Iri = nxv + "resource2"
+  private val resource1: Iri        = iri"https://bbp.epfl.ch/data/bbp/proj1/id1"
+  private val patchedResource1: Iri = iri"https://openbrainplatform.com/data/obp/proj1/id1"
+  private val resource2: Iri        = iri"https://bbp.epfl.ch/data/id2"
+  private val patchedResource2: Iri = iri"https://openbrainplatform.com/data/id2"
 
   private val prefix             = Label.unsafe("v1")
   private val sourceBaseUri      = BaseUri(uri"http://bbp.epfl.ch/nexus", prefix)
@@ -64,7 +65,7 @@ class DistributionPatcherSuite extends NexusSuite {
   }
 
   private def fileResolver(project: ProjectRef, resourceRef: ResourceRef) = (project, resourceRef) match {
-    case (`mappedProject`, ResourceRef.Latest(`resource1`)) =>
+    case (`mappedProject`, ResourceRef.Latest(`patchedResource1`)) =>
       val digest = Digest.ComputedDigest(
         DigestAlgorithm.SHA256,
         "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
@@ -84,16 +85,15 @@ class DistributionPatcherSuite extends NexusSuite {
           FileAttributesOrigin.Storage
         )
       )
-    case (p, r)                                             => IO.raiseError(FileNotFound(r.original, p))
+    case (p, r)                                                    => IO.raiseError(FileNotFound(r.original, p))
   }
 
-  private val patcher =
-    new DistributionPatcher(
-      fileSelf,
-      ProjectMapper(Map(projectWithMapping -> mappedProject)),
-      destinationBaseUri,
-      fileResolver
-    )
+  private val originalPrefix = iri"https://bbp.epfl.ch/"
+  private val targetPrefix   = iri"https://openbrainplatform.com/"
+  private val projectMapping = Map(projectWithMapping -> mappedProject)
+  private val iriPatcher     = IriPatcher(originalPrefix, targetPrefix, projectMapping)
+  private val patcher        =
+    new DistributionPatcher(fileSelf, ProjectMapper(projectMapping), iriPatcher, destinationBaseUri, fileResolver)
 
   test("Do nothing on a distribution payload without fields to patch") {
     val input = json"""{ "anotherField": "XXX" }"""
@@ -131,13 +131,13 @@ class DistributionPatcherSuite extends NexusSuite {
 
   test("Patch a valid file self on a distribution without project mapping") {
     val input    = json"""{ "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}" }"""
-    val expected = json"""{ "contentUrl": "${destinationFileSelf(projectNoMapping, resource1)}" }"""
+    val expected = json"""{ "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource1)}" }"""
     patcher.single(input).assertEquals(expected)
   }
 
   test("Patch a valid file self on a distribution with project mapping") {
     val input              = json"""{ "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" }"""
-    val expectedContentUri = destinationFileSelf(mappedProject, resource1).toString()
+    val expectedContentUri = destinationFileSelf(mappedProject, patchedResource1).toString()
     patcher.single(input).map(contentUrl).assertEquals(expectedContentUri)
   }
 
@@ -152,13 +152,13 @@ class DistributionPatcherSuite extends NexusSuite {
       .singleOrArray(input)
       .map(distribution)
       .map(contentUrl)
-      .assertEquals(destinationFileSelf(mappedProject, resource1).toString())
+      .assertEquals(destinationFileSelf(mappedProject, patchedResource1).toString())
   }
 
   test("Patch a valid file self on a distribution as an array") {
     val input    = json"""{ "distribution": [{ "contentUrl": "${sourceFileSelf(projectNoMapping, resource2)}" }] }"""
     val expected =
-      json"""{ "distribution": [{ "contentUrl": "${destinationFileSelf(projectNoMapping, resource2)}" }] }"""
+      json"""{ "distribution": [{ "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource2)}" }] }"""
     patcher.singleOrArray(input).assertEquals(expected)
   }
 
