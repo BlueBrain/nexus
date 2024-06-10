@@ -182,6 +182,33 @@ This configuration tells Delta to log into the `internal` realm (which should ha
 }
 ```
 
+#### S3 storage configuration
+
+Delta's S3 storage integration supports users uploading files to S3 independently and then registering them within Delta.
+
+However, Delta is still responsible for the structure of the bucket so it issues a path to clients via the delegation validation endpoint (TODO link). This involves signing and later verifying a payload using JWS.
+
+To support this functionality Delta must be configured with an RSA private key:
+```hocon
+      amazon {
+        enabled = true
+        default-endpoint = "http://s3.localhost.localstack.cloud:4566"
+        default-access-key = "MY_ACCESS_KEY"
+        default-secret-key = "CHUTCHUT"
+        default-bucket = "mydefaultbucket"
+        prefix = "myprefix"
+        delegation {
+            private-key = "${rsa-private-key-new-lines-removed}"
+            token-duration = "3 days"
+        }
+      }
+```
+
+To generate such a key in the correct format follow these steps:
+1. Generate RSA key: `openssl genrsa -out private_key.pem 2048`
+2. Convert to PKCS#8 format: `openssl pkcs8 -topk8 -inform PEM -outform PEM -in private_key.pem -out private_key_pkcs8.pem -nocrypt`
+3. Remove line breaks, copy secret: `cat private_key_pkcs8.pem | tr -d '\n' | pbcopy`
+
 ### Archive plugin configuration
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.

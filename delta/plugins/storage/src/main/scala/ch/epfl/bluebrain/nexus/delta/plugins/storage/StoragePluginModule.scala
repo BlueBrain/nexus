@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, FilesRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, TokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig.DelegationConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -20,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOpe
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, StoragePermissionProviderImpl, Storages, StoragesStatistics}
@@ -48,8 +49,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
+
+import java.security.interfaces.RSAPrivateCrtKey
+import scala.concurrent.duration.DurationInt
 
 /**
   * Storages and Files wiring
@@ -271,6 +276,36 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[DelegateFilesRoutes].from {
+    (
+        cfg: StorageTypeConfig,
+        identities: Identities,
+        aclCheck: AclCheck,
+        files: Files,
+        schemeDirectives: DeltaSchemeDirectives,
+        indexingAction: AggregateIndexingAction,
+        shift: File.Shift,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering,
+        showLocation: ShowFileLocation
+    ) =>
+      val delegationCfg = cfg.amazon
+        .flatMap(_.delegation)
+        .getOrElse(
+          DelegationConfig(new RSAKeyGenerator(2048).generate().toRSAPrivateKey.asInstanceOf[RSAPrivateCrtKey], 3.days)
+        )
+      val tokenIssuer   = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
+      new DelegateFilesRoutes(
+        identities,
+        aclCheck,
+        files,
+        tokenIssuer,
+        indexingAction(_, _, _)(shift),
+        schemeDirectives
+      )(baseUri, cr, ordering, showLocation)
+  }
+
   make[BatchFilesRoutes].from {
     (
         showLocation: ShowFileLocation,
@@ -362,5 +397,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (batchFileRoutes: BatchFilesRoutes) =>
     PriorityRoute(priority, batchFileRoutes.routes, requiresStrictEntity = false)
+  }
+
+  many[PriorityRoute].add { (delegationRoutes: DelegateFilesRoutes) =>
+    PriorityRoute(priority, delegationRoutes.routes, requiresStrictEntity = false)
   }
 }

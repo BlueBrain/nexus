@@ -31,7 +31,7 @@ object ValidateAggregate {
       references.map { v => v.project -> v.viewId },
       missing => ifUnknown(missing.map { case (p, id) => ViewRef(p, id) }),
       xas
-    ) >> references.value.toList
+    ) >> references.toList
       .foldLeftM(references.length) { (acc, ref) =>
         EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).map { r =>
           acc + r.size

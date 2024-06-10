@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{checksumAlgorithm, CopyOptions, HeadObject, PutObjectRequest}
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
+import fs2.Stream
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
 import fs2.interop.reactivestreams.{PublisherOps, _}
-import fs2.{Chunk, Stream}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import org.reactivestreams.Subscriber
 import software.amazon.awssdk.core.async.AsyncRequestBody
@@ -31,11 +31,10 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
     client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
 
-  override def readFile(bucket: String, fileKey: String): Stream[IO, Byte] = {
+  override def readFile(bucket: String, fileKey: String): Stream[IO, ByteBuffer] =
     Stream
       .eval(client.getObject(getObjectRequest(bucket, fileKey), new Fs2StreamAsyncResponseTransformer))
-      .flatMap(_.toStreamBuffered[IO](2).flatMap(bb => Stream.chunk(Chunk.byteBuffer(bb))))
-  }
+      .flatMap(_.toStreamBuffered[IO](2))
 
   override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = {
     val bucketName           = BucketName(NonEmptyString.unsafeFrom(bucket))

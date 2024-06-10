@@ -53,7 +53,8 @@ object LocalStackS3StorageClient {
           showLocation = false,
           defaultMaxFileSize = 1,
           defaultBucket = defaultBucket,
-          prefix = Some(prefix)
+          prefix = Some(prefix),
+          delegation = None
         )
         (S3StorageClient.unsafe(client), client, conf)
       }

@@ -13,13 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.{S3DelegationMetadata, S3FileMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
-
-import scala.concurrent.duration.DurationInt
 
 trait S3FileOperations {
   def checkBucketExists(bucket: String): IO[Unit]
@@ -29,13 +28,15 @@ trait S3FileOperations {
   def save(uploading: S3UploadingFile): IO[FileStorageMetadata]
 
   def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
+
+  def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata]
 }
 
 object S3FileOperations {
   final case class S3FileMetadata(contentType: Option[ContentType], metadata: FileStorageMetadata)
+  final case class S3DelegationMetadata(bucket: String, path: Uri)
 
-  private val log       = Logger[S3FileOperations]
-  private val ChunkSize = 8 * 1024
+  private val log = Logger[S3FileOperations]
 
   def mk(client: S3StorageClient, locationGenerator: S3LocationGenerator)(implicit
       as: ActorSystem,
@@ -55,8 +56,7 @@ object S3FileOperations {
         StreamConverter(
           client
             .readFile(bucket, UrlUtils.decode(path))
-            .groupWithin(ChunkSize, 1.second)
-            .map(bytes => ByteString(bytes.toArray))
+            .map(bytes => ByteString(bytes))
             .adaptError {
               case _: NoSuchKeyException => FetchFileRejection.FileNotFound(path.toString)
               case err                   => UnexpectedFetchError(path.toString, err.getMessage)
@@ -69,6 +69,10 @@ object S3FileOperations {
     override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
       registerInternal(client, bucket, path)
 
+    override def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata] =
+      uuidf().map { uuid =>
+        S3DelegationMetadata(bucket, locationGenerator.file(project, uuid, filename))
+      }
   }
 
   def registerInternal(client: S3StorageClient, bucket: String, path: Uri.Path)(implicit

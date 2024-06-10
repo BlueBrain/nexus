@@ -45,14 +45,14 @@ object ImportReport {
   implicit val reportEncoder: Encoder[ImportReport] = deriveEncoder[ImportReport]
 
   implicit val showReport: Show[ImportReport] = (report: ImportReport) => {
-    val header  = s"Type\tSuccess\tDropped\n"
-    val details = report.progress.foldLeft(header) { case (acc, (entityType, count)) =>
-      acc ++ s"$entityType\t${count.success}\t${count.dropped}\n"
+    val details = report.progress.foldLeft("Details: ") { case (acc, (entityType, count)) =>
+      acc ++ s"$entityType\t${count.success}\t${count.dropped} ,"
     }
 
+    val offsetValue     = report.offset.value
     val aggregatedCount = report.progress.values.reduceOption(_ |+| _).getOrElse(Statistics(0L, 0L))
     val global          =
-      s"${aggregatedCount.success} events were imported up to offset ${report.offset} (${aggregatedCount.dropped} have been dropped)."
+      s"${aggregatedCount.success} events were imported up to offset/instant $offsetValue / ${report.instant} (${aggregatedCount.dropped} have been dropped)."
     s"$global\n$details"
   }
 }

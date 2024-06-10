@@ -32,7 +32,7 @@ trait StorageFixtures extends CirceLiteral {
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig("localhost", useDefaultCredentialProvider = false, Secret("my_key"), Secret("my_secret_key"),
-      permissions.read, permissions.write, showLocation = false, 60, defaultBucket = "potato", prefix = None)),
+      permissions.read, permissions.write, showLocation = false, 60, defaultBucket = "potato", prefix = None, delegation = None)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), Anonymous, permissions.read, permissions.write, showLocation = false, 70, 50.millis)),
   )
   implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation

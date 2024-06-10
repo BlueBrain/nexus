@@ -15,7 +15,7 @@
     "_algorithm": "SHA-256",
     "_value": "{{digestValue}}"
   },
-  "_filename": "nexus-logo.png",
+  "_filename": "{{filename}}",
   "_location": "{{location}}",
   "_mediaType": "image/png",
   "_origin" : "External",
