@@ -58,7 +58,8 @@ object SourcePatcher {
       }
     }.map(_.attributes)
 
-    val distributionPatcher = new DistributionPatcher(fileSelfParser, projectMapper, targetBase, fetchFileAttributes)
+    val distributionPatcher =
+      new DistributionPatcher(fileSelfParser, projectMapper, iriPatcher, targetBase, fetchFileAttributes)
     new SourcePatcher(distributionPatcher, iriPatcher)
   }
 
