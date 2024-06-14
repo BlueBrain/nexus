@@ -37,6 +37,7 @@ When using the endpoints described on this page, the responses will contain glob
 When creating file resources, users can optionally provide custom metadata to be indexed and therefore searchable.
 
 This takes the form of a `metadata` field containing a JSON Object with one or more of the following fields:
+
 - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
 - `description`: a string that describes the file. It will be indexed in the full-text search.
 - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
@@ -437,9 +438,9 @@ Response
 :   @@snip [listed.json](assets/files/listed.json)
 
 ## Delegation & Registration (S3 only)
-To support files stored in the cloud, delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through delta is inefficient and expensive. 
+To support files stored in the cloud, Delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through Delta using HTTP is inefficient and expensive. 
 
-There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path with its standard format.
+There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path in its standard format.
 
 ### Register external file
 
@@ -460,11 +461,19 @@ POST /v1/files/{org_label}/{project_label}/register/{file_id}?storage={storageId
 - `{mediaType}`: String - Optional @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the file type. If omitted this will be inferred by S3.
 - `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
+**Example**
+
+Request
+:   @@snip [register-post.sh](assets/files/register-post.sh)
+
+Response
+:   @@snip [register-post.json](assets/files/register-post.json)
+
 ### Delegating file uploads
 
-Users can use delegation for file which cannot be uploaded through Delta (e.g. large files). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta register this file with the same metadata that was initially validated. The three steps are outlined in detail below. 
+Users can use delegation for files that cannot be uploaded through Delta (e.g. large files). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below. 
 
-#### 1. Generate path for file delegation
+#### 1. Validate and generate path for file delegation
 
 Delta accepts and validates the following payload. 
 
@@ -495,9 +504,9 @@ It then generates the following details for the file:
  }
 ```
 
-The user is expected to upload their file to `path` within `bucket`. The `id` is reserved for when the file resource is created. `mediaType` and `metadata` are what the user specified.
+The user is expected to upload their file to `path` within `bucket`. The `id` is reserved for when the file resource is created. `mediaType` and `metadata` are what the user specified in the request.
 
-This payload is then signed using the [flattened JWS serialization format](https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.1) to ensure that Delta has validated and generated the correct data. This same payload will be passed when creating the file resource.
+This payload is then signed using the [flattened JWS serialization format](https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.2) to ensure that Delta has validated and generated the correct data. This same payload will be passed when creating the file resource.
 
 ```json
  {
@@ -507,7 +516,15 @@ This payload is then signed using the [flattened JWS serialization format](https
  }
 ```
 
-The `payload` field can be base64 decoded to access the generated file details. Note that `protected` contains an expiry field `exp` with the datetime at which this signature will expire (in epoch seconds).  
+The `payload` field can be base64 decoded to access the generated file details. Note that `protected` contains an expiry field `exp` with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.
+
+**Example**
+
+Request
+:   @@snip [delegate-validate-post.sh](assets/files/delegate-validate-post.sh)
+
+Response
+:   @@snip [delegate-validate-post.json](assets/files/delegate-validate-post.json)
 
 #### 2. Upload file to S3
 
@@ -527,6 +544,14 @@ POST /v1/delegate/files/{org_label}/{project_label}?storage={storageId}
 ```
 
 Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.
+
+**Example**
+
+Request
+:   @@snip [delegate-create-post.sh](assets/files/delegate-create-post.sh)
+
+Response
+:   @@snip [delegate-create-post.json](assets/files/delegate-create-post.json)
 
 ## Server Sent Events
 
