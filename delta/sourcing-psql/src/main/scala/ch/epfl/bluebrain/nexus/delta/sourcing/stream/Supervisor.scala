@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.{Fiber, IO, Resource}
-
-import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
+import cats.effect._
+import cats.effect.std.Semaphore
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
@@ -16,9 +17,6 @@ import fs2.concurrent.SignallingRef
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
-import cats.effect.Ref
-import cats.effect.std.Semaphore
-import cats.implicits._
 
 /**
   * Supervises the execution of projections based on a defined [[ExecutionStrategy]] that describes whether projections
@@ -119,7 +117,6 @@ object Supervisor {
   )
 
   private[sourcing] val watchRestartMetadata = ProjectionMetadata("system", "watch-restarts", None, None)
-  private[sourcing] val purgeRestartMetadata = ProjectionMetadata("system", "purge-projection-restarts", None, None)
 
   /**
     * Constructs a new [[Supervisor]] instance using the provided `store` and `cfg`.
@@ -147,7 +144,6 @@ object Supervisor {
         supervisor      =
           new Impl(projections, projectionErrors.saveFailedElems, cfg, semaphore, mapRef, signal, supervisionRef)
         _              <- watchRestarts(supervisor, projections)
-        _              <- purgeRestarts(supervisor, projections, cfg.deleteExpiredEvery)
         _              <- log.info("Delta supervisor is up")
       } yield supervisor
 
@@ -224,21 +220,6 @@ object Supervisor {
             }
       )
     )
-  }
-
-  private def purgeRestarts(supervisor: Supervisor, projections: Projections, deleteExpiredEvery: FiniteDuration) = {
-    val stream = Stream
-      .awakeEvery[IO](deleteExpiredEvery)
-      .evalTap(_ => projections.deleteExpiredRestarts())
-      .drain
-    supervisor
-      .run(
-        CompiledProjection.fromStream(
-          purgeRestartMetadata,
-          ExecutionStrategy.TransientSingleNode,
-          _ => stream
-        )
-      )
   }
 
   final private case class Supervised(

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.entityType
@@ -8,14 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PurgeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import fs2.Stream
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
@@ -98,33 +98,11 @@ object CompositeRestartStore {
     * Register the task to delete expired restarts in the supervisor
     * @param store
     *   the store
-    * @param supervisor
-    *   the supervisor
     * @param config
     *   the projection config
     */
-  def deleteExpired(
+  def purgeExpiredRestarts(
       store: CompositeRestartStore,
-      supervisor: Supervisor,
-      config: ProjectionConfig,
-      clock: Clock[IO]
-  ): IO[Unit] = {
-    val deleteExpiredRestarts =
-      clock.realTimeInstant.flatMap { now =>
-        store.deleteExpired(now.minusMillis(config.restartTtl.toMillis))
-      }
-    supervisor
-      .run(
-        CompiledProjection.fromStream(
-          purgeCompositeRestartMetadata,
-          ExecutionStrategy.TransientSingleNode,
-          _ =>
-            Stream
-              .awakeEvery[IO](config.deleteExpiredEvery)
-              .evalTap(_ => deleteExpiredRestarts)
-              .drain
-        )
-      )
-      .void
-  }
+      config: PurgeConfig
+  ): PurgeProjection = PurgeProjection(purgeCompositeRestartMetadata, config, store.deleteExpired)
 }

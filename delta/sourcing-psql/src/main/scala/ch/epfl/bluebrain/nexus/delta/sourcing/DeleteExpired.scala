@@ -1,22 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{Clock, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired.logger
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PurgeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import doobie.implicits._
 import doobie.postgres.implicits._
-import fs2.Stream
+
+import java.time.Instant
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 /**
   * Allow to delete expired ephemeral states
   */
-final class DeleteExpired private[sourcing] (xas: Transactors, clock: Clock[IO]) {
+final class DeleteExpired private[sourcing] (xas: Transactors) {
 
-  def apply(): IO[Unit] = {
+  def apply(instant: Instant): IO[Unit] = {
     for {
-      instant <- clock.realTimeInstant
       deleted <- sql"""
                   | DELETE FROM public.ephemeral_states
                   | WHERE expires < $instant
@@ -32,18 +34,12 @@ object DeleteExpired {
   private val metadata: ProjectionMetadata = ProjectionMetadata("system", "delete-expired", None, None)
 
   /**
-    * Creates a [[DeleteExpired]] instance and schedules in the supervisor the deletion of expired ephemeral states
+    * Creates a [[PurgeProjection]] instance so that it can be scheduled in the supervisor
     */
-  def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]): IO[DeleteExpired] = {
-    val deleteExpired = new DeleteExpired(xas, clock)
-
-    val stream = Stream
-      .awakeEvery[IO](config.deleteExpiredEvery)
-      .evalTap(_ => deleteExpired())
-      .drain
-
-    val deleteExpiredProjection =
-      CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream)
-    supervisor.run(deleteExpiredProjection).as(deleteExpired)
+  def apply(deleteExpiredEvery: FiniteDuration, xas: Transactors): PurgeProjection = {
+    // The ttl is defined in the ephemeral state via the expire column
+    val purgeConfig   = PurgeConfig(deleteExpiredEvery, 0.second)
+    val deleteExpired = new DeleteExpired(xas)
+    PurgeProjection(metadata, purgeConfig, deleteExpired.apply)
   }
 }

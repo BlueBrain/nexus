@@ -28,13 +28,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgr
 import io.circe.JsonObject
 
 import java.time.Instant
-import scala.concurrent.duration._
 
 class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
+  private lazy val projections      = Projections(xas, queryConfig, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
