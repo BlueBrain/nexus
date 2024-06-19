@@ -17,5 +17,5 @@ class RemoteStorageContainer(storageVersion: String, rootVolume: Path)
   addEnv("CONFIG_FORCE_app_storage_root__volume", "/app")
   withCopyToContainer(MountableFile.forHostPath(rootVolume.toString, Integer.getInteger("777")), "/app")
   addExposedPort(8080)
-  setWaitStrategy(Wait.forLogMessage(".*Bound\\sto\\s0\\.0\\.0\\.0.*", 1))
+  setWaitStrategy(Wait.forLogMessage(".*Bound\\sto.*", 1))
 }
