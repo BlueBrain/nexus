@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with Doobie.Fixture with Doobie.Assertions {
 
@@ -26,6 +25,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
 
   private lazy val xas = doobie()
 
+  private val start                                    = Instant.EPOCH
   implicit private lazy val mutableClock: MutableClock = mutableClockFixture()
 
   private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop), mutableClock)
@@ -48,7 +48,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
 
   private val entityType                                          = EntityType("Test")
   private def createFailedElem(project: ProjectRef, offset: Long) =
-    FailedElem(entityType, id, Some(project), Instant.EPOCH.plusSeconds(offset), Offset.at(offset), error, rev)
+    FailedElem(entityType, id, Some(project), start.plusSeconds(offset), Offset.at(offset), error, rev)
 
   private val fail1 = createFailedElem(project1, 1L)
   private val fail2 = createFailedElem(project1, 2L)
@@ -56,11 +56,9 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   private val fail4 = createFailedElem(project1, 4L)
   private val fail5 = createFailedElem(project2, 5L)
 
-  private def assertSave(metadata: ProjectionMetadata, failed: FailedElem) =
-    for {
-      _ <- mutableClock.set(failed.instant)
-      _ <- store.save(metadata, List(failed))
-    } yield ()
+  private def saveFailedElem(metadata: ProjectionMetadata, failed: FailedElem) =
+    mutableClock.set(failed.instant) >>
+      store.save(metadata, List(failed))
 
   private def assertStream(metadata: ProjectionMetadata, offset: Offset, expected: List[FailedElem])(implicit
       loc: Location
@@ -97,11 +95,11 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
 
   test("Insert several failures") {
     for {
-      _ <- assertSave(metadata11, fail1)
-      _ <- assertSave(metadata12, fail2)
-      _ <- assertSave(metadata12, fail3)
-      _ <- assertSave(metadata12, fail4)
-      _ <- assertSave(metadata21, fail5)
+      _ <- saveFailedElem(metadata11, fail1)
+      _ <- saveFailedElem(metadata12, fail2)
+      _ <- saveFailedElem(metadata12, fail3)
+      _ <- saveFailedElem(metadata12, fail4)
+      _ <- saveFailedElem(metadata21, fail5)
     } yield ()
   }
 
@@ -174,20 +172,15 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
     store.count(project1, projection12, between).assertEquals(1L)
   }
 
-  test("Purge failures after predefined ttl") {
-    val failedElemTtl     = 14.days
-    val purgeElemFailures = new PurgeElemFailures(xas, failedElemTtl, mutableClock)
-
-    def timeTravel(duration: FiniteDuration) = mutableClock.set(Instant.EPOCH.plusMillis(duration.toMillis))
+  test("Purge failures before given instant") {
+    val purgeElemFailures = new PurgeElemFailures(xas)
 
     for {
       _ <- store.count.assertEquals(5L)
-      _ <- timeTravel(failedElemTtl - 500.millis)
-      _ <- purgeElemFailures()
-      // no elements are deleted after 13 days
+      _ <- purgeElemFailures(start.minusMillis(500L))
+      // no elements are deleted before the start instant
       _ <- store.count.assertEquals(5L)
-      _ <- timeTravel(failedElemTtl + 10.seconds)
-      _ <- purgeElemFailures()
+      _ <- purgeElemFailures(start.plusSeconds(10L))
       // all elements were deleted after 14 days
       _ <- store.count.assertEquals(0L)
     } yield ()

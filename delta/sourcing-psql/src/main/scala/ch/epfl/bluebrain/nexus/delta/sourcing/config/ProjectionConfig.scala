@@ -25,6 +25,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the life span of projection errors in database
   * @param restartTtl
   *   the life span of projection restarts
+  * @param tombstoneTtl
+  *   the life span of tombstones
   * @param query
   *   a configuration for how to interact with the underlying store
   */
@@ -36,8 +38,15 @@ final case class ProjectionConfig(
     deleteExpiredEvery: FiniteDuration,
     failedElemTtl: FiniteDuration,
     restartTtl: FiniteDuration,
+    tombstoneTtl: FiniteDuration,
     query: QueryConfig
-)
+) {
+
+  def failedElemPurge: PurgeConfig = PurgeConfig(deleteExpiredEvery, failedElemTtl)
+  def restartPurge: PurgeConfig    = PurgeConfig(deleteExpiredEvery, restartTtl)
+  def tombstonePurge: PurgeConfig  = PurgeConfig(deleteExpiredEvery, tombstoneTtl)
+
+}
 
 object ProjectionConfig {
   implicit final val projectionConfigReader: ConfigReader[ProjectionConfig] =

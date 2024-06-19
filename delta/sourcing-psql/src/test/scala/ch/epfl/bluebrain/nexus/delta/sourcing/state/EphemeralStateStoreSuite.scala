@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
-import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.implicits._
 import munit.AnyFixture
@@ -37,7 +36,7 @@ class EphemeralStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobi
   private val m2       = nxv + "m2"
   private val message2 = MessageState(m2, project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
 
-  private lazy val deleteExpired = new DeleteExpired(xas, FixedClock.atInstant(Instant.EPOCH.plusSeconds(6L)))
+  private lazy val deleteExpired = new DeleteExpired(xas)
 
   test("save the states") {
     for {
@@ -55,8 +54,9 @@ class EphemeralStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobi
   }
 
   test("delete expired state " + m1) {
+    val threshold = Instant.EPOCH.plusSeconds(6L)
     for {
-      _ <- deleteExpired()
+      _ <- deleteExpired(threshold)
       _ <- store.get(project1, m1).assertEquals(None)
       _ <- store.get(project1, m2).assertEquals(Some(message2))
     } yield ()

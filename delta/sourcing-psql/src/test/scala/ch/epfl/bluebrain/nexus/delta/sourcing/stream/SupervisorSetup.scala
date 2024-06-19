@@ -34,6 +34,7 @@ object SupervisorSetup {
       10.millis,
       14.days,
       1.second,
+      14.days,
       defaultQueryConfig
     )
     resource(config, clock)
@@ -44,7 +45,7 @@ object SupervisorSetup {
       clock: Clock[IO]
   ): Resource[IO, SupervisorSetup] =
     Doobie.resource().flatMap { xas =>
-      val projections      = Projections(xas, config.query, config.restartTtl, clock)
+      val projections      = Projections(xas, config.query, clock)
       val projectionErrors = ProjectionErrors(xas, config.query, clock)
       Supervisor(projections, projectionErrors, config).map(s => SupervisorSetup(s, projections, projectionErrors))
     }

@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
@@ -139,28 +140,30 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[CompositeProjections].fromEffect {
+  make[CompositeRestartStore].from { (xas: Transactors) =>
+    new CompositeRestartStore(xas)
+  }
+
+  make[CompositeProjections].from {
     (
-        supervisor: Supervisor,
-        xas: Transactors,
+        compositeRestartStore: CompositeRestartStore,
         config: CompositeViewsConfig,
         projectionConfig: ProjectionConfig,
-        clock: Clock[IO]
+        clock: Clock[IO],
+        xas: Transactors
     ) =>
-      val compositeRestartStore = new CompositeRestartStore(xas)
-      val compositeProjections  =
-        CompositeProjections(
-          compositeRestartStore,
-          xas,
-          projectionConfig.query,
-          projectionConfig.batch,
-          config.restartCheckInterval,
-          clock
-        )
+      CompositeProjections(
+        compositeRestartStore,
+        xas,
+        projectionConfig.query,
+        projectionConfig.batch,
+        config.restartCheckInterval,
+        clock
+      )
+  }
 
-      CompositeRestartStore
-        .deleteExpired(compositeRestartStore, supervisor, projectionConfig, clock)
-        .as(compositeProjections)
+  many[PurgeProjection].add { (compositeRestartStore: CompositeRestartStore, projectionConfig: ProjectionConfig) =>
+    CompositeRestartStore.purgeExpiredRestarts(compositeRestartStore, projectionConfig.restartPurge)
   }
 
   make[CompositeSpaces].from {

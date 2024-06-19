@@ -22,11 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 
 import java.time.Instant
-import scala.concurrent.duration._
 
 class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures {
 
-  private lazy val projections      = Projections(xas, queryConfig, 1.hour, clock)
+  private lazy val projections      = Projections(xas, queryConfig, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   private val myId         = nxv + "myid"

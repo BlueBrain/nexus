@@ -1,16 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{PurgeConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
 
-import scala.concurrent.duration.FiniteDuration
+import java.time.Instant
 
 trait Projections {
 
@@ -81,7 +82,7 @@ trait Projections {
   /**
     * Deletes projection restarts older than the configured period
     */
-  def deleteExpiredRestarts(): IO[Unit]
+  def deleteExpiredRestarts(instant: Instant): IO[Unit]
 
   /**
     * Returns the statistics for the given projection in the given project
@@ -98,7 +99,7 @@ trait Projections {
 
 object Projections {
 
-  def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration, clock: Clock[IO]): Projections =
+  def apply(xas: Transactors, config: QueryConfig, clock: Clock[IO]): Projections =
     new Projections {
       private val projectionStore        = ProjectionStore(xas, config, clock)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
@@ -122,10 +123,7 @@ object Projections {
 
       override def acknowledgeRestart(id: Offset): IO[Unit] = projectionRestartStore.acknowledge(id)
 
-      override def deleteExpiredRestarts(): IO[Unit] =
-        clock.realTimeInstant.flatMap { now =>
-          projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
-        }
+      override def deleteExpiredRestarts(instant: Instant): IO[Unit] = projectionRestartStore.deleteExpired(instant)
 
       override def statistics(
           project: ProjectRef,
@@ -138,4 +136,8 @@ object Projections {
             StreamingQuery.remaining(project, selectFilter, current.fold(Offset.start)(_.offset), xas)
         } yield ProgressStatistics(current, remaining)
     }
+
+  val purgeRestartMetadata                                                                 = ProjectionMetadata("system", "purge-projection-restarts", None, None)
+  def purgeExpiredRestarts(projections: Projections, config: PurgeConfig): PurgeProjection =
+    PurgeProjection(purgeRestartMetadata, config, projections.deleteExpiredRestarts)
 }

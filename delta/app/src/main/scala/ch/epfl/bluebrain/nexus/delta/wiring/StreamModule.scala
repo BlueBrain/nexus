@@ -5,8 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef
 
@@ -41,7 +43,7 @@ object StreamModule extends ModuleDef {
   }
 
   make[Projections].from { (xas: Transactors, cfg: ProjectionConfig, clock: Clock[IO]) =>
-    Projections(xas, cfg.query, cfg.restartTtl, clock)
+    Projections(xas, cfg.query, clock)
   }
 
   make[ProjectionErrors].from { (xas: Transactors, clock: Clock[IO], cfg: ProjectionConfig) =>
@@ -53,17 +55,23 @@ object StreamModule extends ModuleDef {
         projections: Projections,
         projectionErrors: ProjectionErrors,
         cfg: ProjectionConfig
-    ) =>
-      Supervisor(projections, projectionErrors, cfg)
+    ) => Supervisor(projections, projectionErrors, cfg)
   }
 
-  make[DeleteExpired].fromEffect {
-    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]) =>
-      DeleteExpired(supervisor, config, xas, clock)
+  make[PurgeProjectionCoordinator.type].fromEffect {
+    (supervisor: Supervisor, clock: Clock[IO], projections: Set[PurgeProjection]) =>
+      PurgeProjectionCoordinator(supervisor, clock, projections)
   }
 
-  make[PurgeElemFailures].fromEffect {
-    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO]) =>
-      PurgeElemFailures(supervisor, config, xas, clock)
+  many[PurgeProjection].add { (config: ProjectionConfig, xas: Transactors) =>
+    DeleteExpired(config.deleteExpiredEvery, xas)
+  }
+
+  many[PurgeProjection].add { (config: ProjectionConfig, xas: Transactors) =>
+    PurgeElemFailures(config.failedElemPurge, xas)
+  }
+
+  many[PurgeProjection].add { (config: ProjectionConfig, xas: Transactors) =>
+    TombstoneStore.deleteExpired(config.tombstonePurge, xas)
   }
 }
