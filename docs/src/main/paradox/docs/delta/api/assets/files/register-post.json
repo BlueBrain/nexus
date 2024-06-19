@@ -1,0 +1,34 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id" : "http://delta:8080/v1/resources/hkrxvoxdyiiev1p/03vctrp70usfehq/_/iwa41vwspwke6nx",
+  "@type" : "File",
+  "_bytes" : 29625,
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/files.json",
+  "_createdAt" : "2024-06-14T12:44:36.525177Z",
+  "_createdBy" : "http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv",
+  "_deprecated" : false,
+  "_digest" : {
+    "_algorithm" : "SHA-256",
+    "_value" : "05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87"
+  },
+  "_filename" : "myfile.png",
+  "_incoming" : "http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/incoming",
+  "_location" : "relative/path/to/myfile.png",
+  "_mediaType" : "image/png",
+  "_origin" : "External",
+  "_outgoing" : "http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/outgoing",
+  "_project" : "http://delta:8080/v1/projects/hkrxvoxdyiiev1p/03vctrp70usfehq",
+  "_rev" : 1,
+  "_self" : "http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx",
+  "_storage" : {
+    "@id" : "https://bluebrain.github.io/nexus/vocabulary/mys3storage",
+    "@type" : "S3Storage",
+    "_rev" : 3
+  },
+  "_updatedAt" : "2024-06-14T12:44:36.525177Z",
+  "_updatedBy" : "http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv",
+  "_uuid" : "79695062-ecbb-42dc-a62d-61c2c02be129"
+}

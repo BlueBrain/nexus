@@ -32,6 +32,15 @@ When using the endpoints described on this page, the responses will contain glob
 - `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
 - `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
 
+## Custom file metadata
+
+When creating file resources, users can optionally provide custom metadata to be indexed and therefore searchable.
+
+This takes the form of a `metadata` field containing a JSON Object with one or more of the following fields:
+
+- `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
+- `description`: a string that describes the file. It will be indexed in the full-text search.
+- `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
 
 ## Indexing
 
@@ -52,10 +61,7 @@ This part can contain the following disposition parameters:
 
 **Headers:**
 
-- `x-nxs-file-metadata`: an optional JSON object containing one or more of the following fields:
-  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
-  - `description`: a string that describes the file. It will be indexed in the full-text search.
-  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+- `x-nxs-file-metadata`: an optional JSON object containing one or more of fields described in @ref:[custom file metadata](#custom-file-metadata).
 - `x-nxs-file-content-length`: the size of the uploaded file:
   - mandatory to upload to a S3 storage
   - ignored for other types of storage
@@ -127,10 +133,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
-- `{metadata}`: JSON Object - optional object containing one or more of the following fields:
-  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
-  - `description`: a string that describes the file. It will be indexed in the full-text search.
-  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 **Example**
 
@@ -167,10 +170,7 @@ When not specified, the default storage of the project is used.
 - `{filename}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
 - `{tagName}` an optional label given to the linked file resource on its first revision.
-- `{metadata}`: JSON Object - optional object containing one or more of the following fields:
-  - `name`: a string which is a descriptive name for the file. It will be indexed in the full-text search.
-  - `description`: a string that describes the file. It will be indexed in the full-text search.
-  - `keywords`: a JSON object with `Label` keys and `string` values. These keywords will be indexed and can be used to search for the file.
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
 
 **Example**
 
@@ -437,11 +437,121 @@ Request
 Response
 :   @@snip [listed.json](assets/files/listed.json)
 
-## Delegation & Registration
-To support files stored in the cloud, delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through delta is inefficient and expensive. 
+## Delegation & Registration (S3 only)
+To support files stored in the cloud, Delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through Delta using HTTP is inefficient and expensive. 
 
-There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path with its standard format. 
+There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path in its standard format.
 
+### Register external file
+
+This endpoint accepts a path and creates a new file resource based on an existing S3 file. 
+
+```
+POST /v1/files/{org_label}/{project_label}/register/{file_id}?storage={storageId}&tag={tagName}
+  {
+    "path": "{path}",
+    "mediaType": "{mediaType}",
+    "metadata": {metadata}
+  }
+```
+
+... where
+
+- `{path}`: String - the relative path to the file from the root of S3.
+- `{mediaType}`: String - Optional @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the file type. If omitted this will be inferred by S3.
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
+
+**Example**
+
+Request
+:   @@snip [register-post.sh](assets/files/register-post.sh)
+
+Response
+:   @@snip [register-post.json](assets/files/register-post.json)
+
+### Delegating file uploads
+
+Users can use delegation for files that cannot be uploaded through Delta (e.g. large files). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below. 
+
+#### 1. Validate and generate path for file delegation
+
+Delta accepts and validates the following payload. 
+
+```
+POST /v1/delegate/files/{org_label}/{project_label}/validate?storage={storageId}
+  {
+    "filename": "{filename}",
+    "mediaType": "{mediaType}",
+    "metadata": {metadata}
+  }
+```
+
+... where
+
+- `{filename}`: String - mandatory name given to the file within the generated path.
+- `{mediaType}`: String - Optional @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the file type. If omitted this will be inferred by S3.
+- `{metadata}`: JSON Object - Optional, see @ref:[custom file metadata](#custom-file-metadata).
+
+It then generates the following details for the file:
+
+```json
+ {
+    "bucket": "<s3 bucket>",
+    "id": "<file resource identifier>",
+    "path": "<path from s3 root>",
+    "mediaType": "<user provided mediaType>",
+    "metadata": {}
+ }
+```
+
+The user is expected to upload their file to `path` within `bucket`. The `id` is reserved for when the file resource is created. `mediaType` and `metadata` are what the user specified in the request.
+
+This payload is then signed using the [flattened JWS serialization format](https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.2) to ensure that Delta has validated and generated the correct data. This same payload will be passed when creating the file resource.
+
+```json
+ {
+    "payload": "<base64 encoded payload contents>",
+    "protected": "<integrity-protected header contents>",
+    "signature": "<signature contents>"
+ }
+```
+
+The `payload` field can be base64 decoded to access the generated file details. Note that `protected` contains an expiry field `exp` with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.
+
+**Example**
+
+Request
+:   @@snip [delegate-validate-post.sh](assets/files/delegate-validate-post.sh)
+
+Response
+:   @@snip [delegate-validate-post.json](assets/files/delegate-validate-post.json)
+
+#### 2. Upload file to S3
+
+Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.
+
+#### 3. Create delegated file resource
+
+Once the file has been uploaded to S3 at the specified path, the file resource can be created. The payload can be passed back exactly as it was returned in the previous step.
+
+```
+POST /v1/delegate/files/{org_label}/{project_label}?storage={storageId}
+   {
+      "payload": "<base64 encoded payload contents>",
+      "protected": "<integrity-protected header contents>",
+      "signature": "<signature contents>"
+   }
+```
+
+Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.
+
+**Example**
+
+Request
+:   @@snip [delegate-create-post.sh](assets/files/delegate-create-post.sh)
+
+Response
+:   @@snip [delegate-create-post.json](assets/files/delegate-create-post.json)
 
 ## Server Sent Events
 
