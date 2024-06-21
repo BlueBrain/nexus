@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -90,12 +90,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[HttpClient].named("http-query-client").from {
-    (
-        cfg: BlazegraphViewsConfig,
-        as: ActorSystem[Nothing]
-    ) =>
-      HttpClient()(cfg.queryClient, as.classicSystem)
+  make[HttpClient].named("http-query-client").from { (as: ActorSystem[Nothing]) =>
+    val httpConfig = HttpClientConfig.noRetry(false)
+    HttpClient()(httpConfig, as.classicSystem)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
