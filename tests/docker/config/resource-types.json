@@ -53,6 +53,7 @@
   "https://bbp.epfl.ch/ontologies/core/bmo/SimulationCampaignExecution",
   "https://neuroshapes.org/SimWriterConfiguration",
   "https://neuroshapes.org/SingleCellSimulationTrace",
+  "https://bbp.epfl.ch/ontologies/core/bmo/SingleNeuronSimulation",
   "https://neuroshapes.org/SoftwareAgent",
   "https://neuroshapes.org/SubCellularModel",
   "https://neuroshapes.org/SubCellularModelScript",

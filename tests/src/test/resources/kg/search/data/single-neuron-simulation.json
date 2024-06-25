@@ -1,0 +1,30 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Entity",
+    "SingleNeuronSimulation"
+  ],
+  "@id": "https://bbp.epfl.ch/data/synapse/single-neuron-simulation",
+  "description": "Simulation with IV protocol",
+  "distribution": {
+    "@type": "DataDownload",
+    "contentSize": {
+      "unitCode": "bytes",
+      "value": 923
+    },
+    "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp/somefile",
+    "digest": {
+      "algorithm": "SHA-256",
+      "value": "deb3898b8a7b9b5d54206180f5131e3fc240aee218ede21b2e028ee66b70dfca"
+    },
+    "encodingFormat": "application/json",
+    "name": "single-neuron-simulation.json"
+  },
+  "injectionLocation": "dendrite.01B",
+  "name": "example-single-cell-sim",
+  "used": {
+    "@id": "https://bbp.epfl.ch/data/emodel",
+    "@type": "EModel"
+  },
+  "recordingLocation": ["dendrite.01A", "dendrite.01B"]
+}
