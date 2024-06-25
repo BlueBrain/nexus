@@ -26,7 +26,9 @@ trait EventProcessor[Event <: ScopedEvent] {
   def evaluate(event: RowEvent)(implicit iriPatcher: IriPatcher): IO[ImportStatus] = {
     val value                            = event.value
     def patchEventId(idAsString: String) = Iri(idAsString).map(iriPatcher(_).toString).getOrElse(idAsString)
-    val patchedValue                     = root.id.string.modify { patchEventId }(value)
+    def updateIdToPatchedVersion         = root.id.string.modify { patchEventId }
+    def removeSourceMetadata             = root.source.obj.modify(_.filterKeys(!_.startsWith("_")))
+    val patchedValue                     = updateIdToPatchedVersion.andThen(removeSourceMetadata)(value)
     IO.fromEither(decoder.decodeJson(patchedValue))
       .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
       .flatMap(evaluate)

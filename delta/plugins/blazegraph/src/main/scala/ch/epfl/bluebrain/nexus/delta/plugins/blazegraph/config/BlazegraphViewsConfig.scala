@@ -25,8 +25,6 @@ import scala.concurrent.duration._
   *   the Blazegraph HTTP endpoint credentials
   * @param indexingClient
   *   configuration of the indexing Blazegraph client
-  * @param queryClient
-  *   configuration of the query Blazegraph client
   * @param queryTimeout
   *   the Blazegraph query timeout
   * @param slowQueries
@@ -52,7 +50,6 @@ final case class BlazegraphViewsConfig(
     base: Uri,
     credentials: Option[Credentials],
     indexingClient: HttpClientConfig,
-    queryClient: HttpClientConfig,
     queryTimeout: Duration,
     slowQueries: SlowQueriesConfig,
     eventLog: EventLogConfig,
