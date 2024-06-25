@@ -178,6 +178,9 @@
       "properties": {
         "value": { "type": "double" }
       }
+    },
+    "validated": {
+      "type": "boolean"
     }
   }
 }

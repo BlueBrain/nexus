@@ -225,6 +225,7 @@ CONSTRUCT {
                                                                  ?memodelEModelId     :name ?memodelEModelName     .
                                ?memodel  :neuronMorphology       ?memodelMorphologyId .
                                                                  ?memodelMorphologyId :name ?memodelMorphologyName .
+                               ?memodel  :validated              ?memodelValidated ;
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -752,5 +753,7 @@ CONSTRUCT {
                   ?memodelEModelId  a nsg:EModel                   ;
                                     schema:name ?memodelEModelName .
        } .
+
+       OPTIONAL { ?id  bmo:validated ?memodelValidated   . } .
    }
 }
