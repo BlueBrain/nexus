@@ -1074,7 +1074,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       json"""{
                  "memodel": {
                     "neuronMorphology": { "@id" : "https://bbp.epfl.ch/data/neuron-morphology", "name" : "sm080522a1-5_idA" },
-                    "emodelResource": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"}
+                    "emodelResource": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"},
+                    "validated": false
                   }
                 }"""
 
