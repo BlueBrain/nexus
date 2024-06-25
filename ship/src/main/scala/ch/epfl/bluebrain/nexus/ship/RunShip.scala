@@ -63,7 +63,7 @@ object RunShip {
           fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
           sourcePatcher                = SourcePatcher(fileSelf, projectMapper, iriPatcher, targetBaseUri, eventClock, xas, config)
           projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, iriPatcher, config, eventClock, xas)(targetBaseUri, jsonLdApi)
-          resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, eventLogConfig, eventClock, xas)
+          resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, iriPatcher, eventLogConfig, eventClock, xas)
           schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, sourcePatcher, eventClock)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, iriPatcher, config.resourceTypesToIgnore, eventClock)
                     viewPatcher                  = new ViewPatcher(projectMapper, iriPatcher)
