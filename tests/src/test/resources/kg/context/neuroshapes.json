@@ -2183,6 +2183,9 @@
     "SingleCellTraceGeneration": {
       "@id": "nsg:SingleCellTraceGeneration"
     },
+    "SingleNeuronSimulation": {
+      "@id": "bmo:SingleNeuronSimulation"
+    },
     "Slice": {
       "@id": "nsg:Slice"
     },
@@ -3511,6 +3514,9 @@
     },
     "imports": {
       "@id": "owl:imports"
+    },
+    "injectionLocation": {
+      "@id": "bmo:injectionLocation"
     },
     "inScheme": {
       "@id": "skos:inScheme"

@@ -225,7 +225,14 @@ CONSTRUCT {
                                                                  ?memodelEModelId     :name ?memodelEModelName     .
                                ?memodel  :neuronMorphology       ?memodelMorphologyId .
                                                                  ?memodelMorphologyId :name ?memodelMorphologyName .
-                               ?memodel  :validated              ?memodelValidated ;
+                               ?memodel  :validated              ?memodelValidated .
+
+  ## SingleNeuronSimulations
+  ?alias :singleNeuronSimulation  ?singleNeuronSimulation  .
+                                  ?singleNeuronSimulation  :injectionLocation                ?injectionLocation .
+                                  ?singleNeuronSimulation  :recordingLocation                ?recordingLocation .
+                                  ?singleNeuronSimulation  :emodel                           ?singleNeuronSimulationEmodelId .
+                                                           ?singleNeuronSimulationEmodelId   :name ?singleNeuronSimulationEmodelName .
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -756,4 +763,19 @@ CONSTRUCT {
 
        OPTIONAL { ?id  bmo:validated ?memodelValidated   . } .
    }
+
+   # SingleNeuronSimulation
+  OPTIONAL {
+      ?id a bmo:SingleNeuronSimulation .
+
+      BIND(BNODE(CONCAT(STR(?id), '/singleNeuronSimulation')) as ?singleNeuronSimulation ) .
+
+      OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
+      OPTIONAL { ?id  nsg:recordingLocation ?recordingLocation  . } .
+
+      OPTIONAL {
+        ?id                                 prov:used    ?singleNeuronSimulationEmodelId .
+        ?singleNeuronSimulationEmodelId     schema:name  ?singleNeuronSimulationEmodelName .
+      } .
+  }
 }

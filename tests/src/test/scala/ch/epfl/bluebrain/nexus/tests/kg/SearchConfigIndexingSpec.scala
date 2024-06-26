@@ -22,20 +22,21 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val projId1 = genId()
   private val id1     = s"$orgId/$projId1"
 
-  private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
-  private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
-  private val traceId              = "https://bbp.epfl.ch/data/trace"
-  private val curatedTraceId       = "https://bbp.epfl.ch/data/curated-trace"
-  private val unassessedTraceId    = "https://bbp.epfl.ch/data/unassessed-trace"
-  private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
-  private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
-  private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
-  private val simulationId         = "https://bbp.epfl.ch/data/simulation"
-  private val synapseId            = "https://bbp.epfl.ch/data/synapse"
-  private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
-  private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
-  private val emodelId             = "https://bbp.epfl.ch/data/emodel"
-  private val memodelId            = "https://bbp.epfl.ch/data/memodel"
+  private val neuronMorphologyId       = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val neuronDensityId          = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId                  = "https://bbp.epfl.ch/data/trace"
+  private val curatedTraceId           = "https://bbp.epfl.ch/data/curated-trace"
+  private val unassessedTraceId        = "https://bbp.epfl.ch/data/unassessed-trace"
+  private val layerThicknessId         = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId          = "https://bbp.epfl.ch/data/bouton-density"
+  private val simulationCampaignId     = "https://bbp.epfl.ch/data/simulation-campaign"
+  private val simulationId             = "https://bbp.epfl.ch/data/simulation"
+  private val synapseId                = "https://bbp.epfl.ch/data/synapse"
+  private val synapseTwoPathwaysId     = "https://bbp.epfl.ch/data/synapse-two-pathways"
+  private val detailedCircuitId        = "https://bbp.epfl.ch/data/detailed-circuit"
+  private val emodelId                 = "https://bbp.epfl.ch/data/emodel"
+  private val memodelId                = "https://bbp.epfl.ch/data/memodel"
+  private val singleNeuronSimulationId = "https://bbp.epfl.ch/data/synapse/single-neuron-simulation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -61,7 +62,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "simulations/simulation-campaign-execution.json",
     "simulations/simulation-campaign.json",
     "simulations/simulation.json",
-    "simulations/analysis-report-simulation.json"
+    "simulations/analysis-report-simulation.json",
+    "single-neuron-simulation.json"
   )
   private val otherResources = List(
     "article.json",
@@ -1080,6 +1082,21 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                 }"""
 
     assertOneSource(queryField(memodelId, "memodel")) { json =>
+      json shouldEqual expected
+    }
+  }
+
+  "have the correct single neuron simulation information" in {
+    val expected =
+      json"""{
+                 "singleNeuronSimulation": {
+                    "injectionLocation": "dendrite.01B",
+                    "recordingLocation": ["dendrite.01A", "dendrite.01B"],
+                    "emodel": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"}
+                  }
+                }"""
+
+    assertOneSource(queryField(singleNeuronSimulationId, "singleNeuronSimulation")) { json =>
       json shouldEqual expected
     }
   }
