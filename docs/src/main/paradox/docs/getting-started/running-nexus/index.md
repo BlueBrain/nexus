@@ -32,7 +32,7 @@ can disappear anytime.
 #### Docker
 
 Regardless of your OS, make sure to run a recent version of the Docker Engine. 
-This was tested with version **20.10.23**.
+This was tested with version **26.0.0**.
 The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the @link:[official Docker Desktop documentation](https://docs.docker.com/desktop/) for detailed installation steps.
 
 Command
@@ -45,7 +45,7 @@ Example
 :
 ```shell
 $ docker --version
-Docker version 20.10.23, build 7155243
+Docker version 26.0.0, build 2ae903e86c
 ```
 
 #### Memory and CPU limits
@@ -117,7 +117,7 @@ $ curl http://localhost/v1/version | jq
   "dependencies": {
     "blazegraph": "2.1.6-SNAPSHOT",
     "elasticsearch": "8.14.1",
-    "postgres": "15.7"
+    "postgres": "16.3"
   },
   "environment": "dev",
   "plugins": {
