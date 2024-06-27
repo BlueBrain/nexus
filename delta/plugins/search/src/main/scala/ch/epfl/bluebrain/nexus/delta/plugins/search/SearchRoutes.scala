@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirect
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
@@ -32,6 +33,10 @@ class SearchRoutes(
 
   import baseUri.prefixSegment
 
+  private val addProjectParam = "addProject"
+
+  private def additionalProjects = parameter(addProjectParam.as[ProjectRef].*)
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("search") {
@@ -44,8 +49,14 @@ class SearchRoutes(
                   pathEndOrSingleSlash {
                     emit(search.query(payload, qp).attemptNarrow[SearchRejection])
                   },
-                  (pathPrefix("suite") & label & pathEndOrSingleSlash) { suite =>
-                    emit(search.query(suite, payload, qp).attemptNarrow[SearchRejection])
+                  (pathPrefix("suite") & label & additionalProjects & pathEndOrSingleSlash) {
+                    (suite, additionalProjects) =>
+                      val filteredQp = qp.filterNot { case (key, _) => key == addProjectParam }
+                      emit(
+                        search
+                          .query(suite, additionalProjects.toSet, payload, filteredQp)
+                          .attemptNarrow[SearchRejection]
+                      )
                   }
                 )
               }

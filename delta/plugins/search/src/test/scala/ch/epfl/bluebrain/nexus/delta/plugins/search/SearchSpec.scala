@@ -24,13 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
@@ -61,12 +61,12 @@ class SearchSpec
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
   private val bob: Caller            = Caller(User("Bob", realm), Set(User("Bob", realm), Group("users", realm)))
 
-  private val project1        = ProjectGen.project("org", "proj")
-  private val project2        = ProjectGen.project("org2", "proj2")
+  private val project1        = ProjectRef.unsafe("org", "proj")
+  private val project2        = ProjectRef.unsafe("org2", "proj2")
   private val queryPermission = Permission.unsafe("views/query")
 
   private val aclCheck = AclSimpleCheck(
-    (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
+    (alice.subject, AclAddress.Project(project1), Set(queryPermission)),
     (bob.subject, AclAddress.Root, Set(queryPermission))
   ).accepted
 
@@ -91,7 +91,7 @@ class SearchSpec
 
   private val compViewProj1   = CompositeView(
     nxv + "searchView",
-    project1.ref,
+    project1,
     NonEmptyList.of(
       ProjectSource(nxv + "searchSource", UUID.randomUUID(), IriFilter.None, IriFilter.None, None, false)
     ),
@@ -102,7 +102,7 @@ class SearchSpec
     Json.obj(),
     Instant.EPOCH
   )
-  private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
+  private val compViewProj2   = compViewProj1.copy(project = project2, uuid = UUID.randomUUID())
   private val projectionProj1 = TargetProjection(esProjection, compViewProj1)
   private val projectionProj2 = TargetProjection(esProjection, compViewProj2)
 
@@ -111,10 +111,12 @@ class SearchSpec
   private val listViews: ListProjections = () => IO.pure(projections)
 
   private val allSuite   = Label.unsafe("allSuite")
+  private val proj1Suite = Label.unsafe("proj1Suite")
   private val proj2Suite = Label.unsafe("proj2Suite")
   private val allSuites  = Map(
-    allSuite   -> Set(project1.ref, project2.ref),
-    proj2Suite -> Set(project2.ref)
+    allSuite   -> Set(project1, project2),
+    proj1Suite -> Set(project1),
+    proj2Suite -> Set(project2)
   )
 
   private val tpe1 = nxv + "Type1"
@@ -139,6 +141,23 @@ class SearchSpec
       .rightValue
   }
 
+  val project1Documents = createDocuments(projectionProj1).toSet
+  val project2Documents = createDocuments(projectionProj2).toSet
+  val allDocuments      = project1Documents ++ project2Documents
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchAction]) { (bulk, p) =>
+      val index   = projectionIndex(p.projection, p.view.uuid, prefix)
+      esClient.createIndex(index, Some(mappings), None).accepted
+      val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
+        ElasticSearchAction.Index(index, idx.toString, json)
+      }
+      bulk ++ newBulk
+    }
+    esClient.bulk(bulkSeq, Refresh.WaitFor).void.accepted
+  }
+
   private val prefix = "prefix"
 
   "Search" should {
@@ -146,22 +165,6 @@ class SearchSpec
 
     val matchAll     = jobj"""{"size": 100}"""
     val noParameters = Query.Empty
-
-    val project1Documents = createDocuments(projectionProj1).toSet
-    val project2Documents = createDocuments(projectionProj2).toSet
-    val allDocuments      = project1Documents ++ project2Documents
-
-    "index documents" in {
-      val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchAction]) { (bulk, p) =>
-        val index   = projectionIndex(p.projection, p.view.uuid, prefix)
-        esClient.createIndex(index, Some(mappings), None).accepted
-        val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
-          ElasticSearchAction.Index(index, idx.toString, json)
-        }
-        bulk ++ newBulk
-      }
-      esClient.bulk(bulkSeq, Refresh.WaitFor).accepted
-    }
 
     "search all indices accordingly to Bob's full access" in {
       val results = search.query(matchAll, noParameters)(bob).accepted
@@ -174,7 +177,7 @@ class SearchSpec
     }
 
     "search within an unknown suite" in {
-      search.query(Label.unsafe("xxx"), matchAll, noParameters)(bob).rejectedWith[UnknownSuite]
+      search.query(Label.unsafe("xxx"), Set.empty, matchAll, noParameters)(bob).rejectedWith[UnknownSuite]
     }
 
     List(
@@ -182,7 +185,7 @@ class SearchSpec
       (proj2Suite, project2Documents)
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Bob's full access" in {
-        val results = search.query(suite, matchAll, noParameters)(bob).accepted
+        val results = search.query(suite, Set.empty, matchAll, noParameters)(bob).accepted
         extractSources(results).toSet shouldEqual expected
       }
     }
@@ -192,9 +195,24 @@ class SearchSpec
       (proj2Suite, Set.empty)
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Alice's restricted access" in {
-        val results = search.query(suite, matchAll, noParameters)(alice).accepted
+        val results = search.query(suite, Set.empty, matchAll, noParameters)(alice).accepted
         extractSources(results).toSet shouldEqual expected
       }
+    }
+
+    "Search on proj2Suite and add project1 as an extra project accordingly to Bob's full access" in {
+      val results = search.query(proj2Suite, Set(project1), matchAll, noParameters)(bob).accepted
+      extractSources(results).toSet shouldEqual allDocuments
+    }
+
+    "Search on proj1Suite and add project2 as an extra project accordingly to Alice's restricted access" in {
+      val results = search.query(proj1Suite, Set(project2), matchAll, noParameters)(alice).accepted
+      extractSources(results).toSet shouldEqual project1Documents
+    }
+
+    "Search on proj2Suite and add project1 as an extra project accordingly to Alice's restricted access" in {
+      val results = search.query(proj2Suite, Set(project1), matchAll, noParameters)(alice).accepted
+      extractSources(results).toSet shouldEqual project1Documents
     }
   }
 }
