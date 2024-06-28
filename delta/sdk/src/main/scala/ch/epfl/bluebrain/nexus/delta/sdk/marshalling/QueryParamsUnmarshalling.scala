@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider.A
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import io.circe.parser.parse
@@ -21,7 +21,7 @@ import io.circe.parser.parse
 trait QueryParamsUnmarshalling {
 
   /**
-    * Unmarsaller to transform a String to Iri
+    * Unmarshaller to transform a String to Iri
     */
   implicit val iriFromStringUnmarshaller: FromStringUnmarshaller[Iri] =
     Unmarshaller.strict[String, Iri] { string =>
@@ -32,7 +32,7 @@ trait QueryParamsUnmarshalling {
     }
 
   /**
-    * Unmarsaller to transform a String to an IriBase
+    * Unmarshaller to transform a String to an IriBase
     */
   val iriBaseFromStringUnmarshallerNoExpansion: FromStringUnmarshaller[IriBase] =
     iriFromStringUnmarshaller.map(IriBase)
@@ -44,7 +44,7 @@ trait QueryParamsUnmarshalling {
     expandIriFromStringUnmarshaller(useVocab = true).map(IriVocab)
 
   /**
-    * Unmarsaller to transform a String to an IriBase
+    * Unmarshaller to transform a String to an IriBase
     */
   implicit def iriBaseFromStringUnmarshaller(implicit pc: ProjectContext): FromStringUnmarshaller[IriBase] =
     expandIriFromStringUnmarshaller(useVocab = false).map(IriBase)
@@ -71,7 +71,7 @@ trait QueryParamsUnmarshalling {
     )
 
   /**
-    * Unmarsaller to transform a String to Label
+    * Unmarshaller to transform a String to Label
     */
   implicit def labelFromStringUnmarshaller: FromStringUnmarshaller[Label] =
     Unmarshaller.strict[String, Label] { string =>
@@ -81,8 +81,16 @@ trait QueryParamsUnmarshalling {
       }
     }
 
+  implicit def projectRefFromStringUnmarshaller: FromStringUnmarshaller[ProjectRef] =
+    Unmarshaller.strict[String, ProjectRef] { string =>
+      ProjectRef.parse(string) match {
+        case Right(iri) => iri
+        case Left(err)  => throw new IllegalArgumentException(err)
+      }
+    }
+
   /**
-    * Unmarsaller to transform a String to TagLabel
+    * Unmarshaller to transform a String to TagLabel
     */
   implicit def tagLabelFromStringUnmarshaller: FromStringUnmarshaller[UserTag] =
     Unmarshaller.strict[String, UserTag] { string =>
@@ -109,7 +117,7 @@ trait QueryParamsUnmarshalling {
     }
 
   /**
-    * Unmarsaller to transform an Iri to a Subject
+    * Unmarshaller to transform an Iri to a Subject
     */
   implicit def subjectFromIriUnmarshaller(implicit base: BaseUri): Unmarshaller[Iri, Subject] =
     Unmarshaller.strict[Iri, Subject] { iri =>
@@ -120,13 +128,13 @@ trait QueryParamsUnmarshalling {
     }
 
   /**
-    * Unmarsaller to transform a String to a Subject
+    * Unmarshaller to transform a String to a Subject
     */
   implicit def subjectFromStringUnmarshaller(implicit base: BaseUri): FromStringUnmarshaller[Subject] =
     iriFromStringUnmarshaller.andThen(subjectFromIriUnmarshaller)
 
   /**
-    * Unmarsaller to transform a String to an IdSegment
+    * Unmarshaller to transform a String to an IdSegment
     */
   implicit val idSegmentFromStringUnmarshaller: FromStringUnmarshaller[IdSegment] =
     Unmarshaller.strict[String, IdSegment](IdSegment.apply)

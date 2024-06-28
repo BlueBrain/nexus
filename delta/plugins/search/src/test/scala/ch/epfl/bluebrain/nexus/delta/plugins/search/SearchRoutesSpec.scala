@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -24,10 +25,11 @@ class SearchRoutesSpec extends BaseRouteSpec {
       IO.raiseWhen(payload.isEmpty)(unknownSuite).as(payload.asJson)
     }
 
-    override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
+    override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
         caller: Caller
     ): IO[Json] =
-      IO.raiseWhen(payload.isEmpty)(unknownSuite).as(Json.obj(suite.value -> payload.asJson))
+      IO.raiseWhen(payload.isEmpty)(unknownSuite)
+        .as(Json.obj(suite.value -> payload.asJson, "addProjects" -> additionalProjects.asJson))
   }
 
   private val fields = Json.obj("fields" := true)
@@ -68,11 +70,16 @@ class SearchRoutesSpec extends BaseRouteSpec {
     "fetch a result related to a search in a suite" in {
       val searchSuiteName = "public"
       val payload         = Json.obj("searchSuite" := true)
+      val project1        = ProjectRef.unsafe("org", "proj")
+      val project2        = ProjectRef.unsafe("org", "proj2")
+      val projects        = Set(project1, project2)
+      val queryParams     =
+        s"?addProject=${UrlUtils.encode(project1.toString)}&addProject=${UrlUtils.encode(project2.toString)}"
 
-      Post(s"/v1/search/query/suite/$searchSuiteName", payload.toEntity) ~> routes ~> check {
-        val expectedResponse = Json.obj(searchSuiteName -> payload)
+      Post(s"/v1/search/query/suite/$searchSuiteName$queryParams", payload.toEntity) ~> routes ~> check {
+        val expectedResponse = Json.obj(searchSuiteName -> payload, "addProjects" -> projects.asJson)
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual expectedResponse
+        response.asJson should equalIgnoreArrayOrder(expectedResponse)
       }
     }
 

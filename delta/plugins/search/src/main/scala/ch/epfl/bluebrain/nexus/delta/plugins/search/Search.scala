@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.{Json, JsonObject}
 
 trait Search {
@@ -36,7 +36,9 @@ trait Search {
     * @param payload
     *   the query payload
     */
-  def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
+  def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
+      caller: Caller
+  ): IO[Json]
 }
 
 object Search {
@@ -106,11 +108,12 @@ object Search {
       override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =
         query(_ => true, payload, qp)
 
-      override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
+      override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
           caller: Caller
       ): IO[Json] = {
-        IO.fromOption(suites.get(suite))(UnknownSuite(suite)).flatMap { projects =>
-          def predicate(p: TargetProjection): Boolean = projects.contains(p.view.project)
+        IO.fromOption(suites.get(suite))(UnknownSuite(suite)).flatMap { suiteProjects =>
+          val allProjects                             = suiteProjects ++ additionalProjects
+          def predicate(p: TargetProjection): Boolean = allProjects.contains(p.view.project)
           query(predicate(_), payload, qp)
         }
       }

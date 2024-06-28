@@ -47,12 +47,14 @@ Nexus Delta allows to configure multiple search suites under @link:[`plugins.sea
 When querying using a suite, the query is only performed on the underlying Elasticsearch indices of the projects in the suite.
 
 ```
-POST /v1/search/query/suite/{suiteName}
+POST /v1/search/query/suite/{suiteName}?addProject={project}
 {payload}
 ```
 ... where:
 
 * `{suiteName}` is the name of the suite
+* `{project}`: Project - can be used to extend the scope of the suite by providing other projects under the format `org/project`. This parameter can appear
+  multiple times, expanding further the scope of the search.
 * `{payload}` is a @link:[Elasticsearch query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html){ open=new }
 and the response is forwarded from the underlying Elasticsearch indices.
 
