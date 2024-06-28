@@ -24,7 +24,7 @@
   },
   "expanded": {
     "@id": "nxv:wrong",
-    "@type": "Custom",
+    "@type": "schema:Custom",
     "bool": false,
     "number": "wrong",
     "nxv:name": "Alex"

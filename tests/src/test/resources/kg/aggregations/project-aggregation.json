@@ -17,7 +17,7 @@
         },
         {
           "doc_count" : 2,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+          "key" : "http://schema.org/TestResource"
         },
         {
           "doc_count" : 1,

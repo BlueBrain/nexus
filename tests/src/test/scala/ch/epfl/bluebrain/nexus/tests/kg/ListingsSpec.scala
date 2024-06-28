@@ -38,7 +38,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
   private val resource11Id = s"${config.deltaUri}/resources/$proj11/_/resource11"
 
-  private val resourceType = s"https://bluebrain.github.io/nexus/vocabulary/Type-${UUID.randomUUID()}"
+  private val resourceType = s"http://schema.org/Type-${UUID.randomUUID()}"
 
   override def beforeAll(): Unit = {
     super.beforeAll()

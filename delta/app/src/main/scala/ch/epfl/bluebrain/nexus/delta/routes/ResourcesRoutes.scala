@@ -59,6 +59,10 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
+  private val nonGenericResourceCandidate: PartialFunction[ResourceRejection, Boolean] = {
+    case _: ResourceNotFound | _: InvalidSchemaRejection | _: ReservedResourceTypes => true
+  }
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
@@ -76,6 +80,7 @@ final class ResourcesRoutes(
                         .flatTap(index(project, _, mode))
                         .map(_.void)
                         .attemptNarrow[ResourceRejection]
+                        .rejectWhen(nonGenericResourceCandidate)
                     )
                   }
               },
@@ -93,7 +98,7 @@ final class ResourcesRoutes(
                             .flatTap(index(project, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
-                            .rejectOn[InvalidSchemaRejection]
+                            .rejectWhen(nonGenericResourceCandidate)
                         )
                       }
                   },
@@ -114,7 +119,7 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
-                                      .rejectOn[InvalidSchemaRejection]
+                                      .rejectWhen(nonGenericResourceCandidate)
                                   )
                                 case (Some(rev), source, tag) =>
                                   // Update a resource
@@ -124,7 +129,7 @@ final class ResourcesRoutes(
                                       .flatTap(index(project, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
-                                      .rejectWhen { case _: ResourceNotFound | _: InvalidSchemaRejection => true }
+                                      .rejectWhen(nonGenericResourceCandidate)
                                   )
                               }
                             }

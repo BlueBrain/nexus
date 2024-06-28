@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -79,6 +80,14 @@ object ResourceRejection {
     */
   final case class ReservedResourceId(id: Iri)
       extends ResourceRejection(s"Resource identifier '$id' is reserved for the platform.")
+
+  /**
+    * Rejection returned when attempting to create/update a resource with a reserved id.
+    */
+  final case class ReservedResourceTypes(types: Set[Iri])
+      extends ResourceRejection(
+        s"At least one of the types ${types.mkString("'", "', '", "'")} is starting with ${Vocabulary.nxv.base} which is reserved  for non-generic resources."
+      )
 
   /**
     * Rejection returned when attempting to update a resource with an id that doesn't exist.

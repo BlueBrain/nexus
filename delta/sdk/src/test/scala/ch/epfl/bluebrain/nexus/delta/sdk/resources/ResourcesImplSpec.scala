@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -59,10 +60,11 @@ class ResourcesImplSpec
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
+  private val schemaOrg         = Vocabulary.schema
   private val org               = Label.unsafe("myorg")
-  private val am                = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am                = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person, "schema" -> schemaOrg.base))
   private val projBase          = nxv.base
-  private val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
+  private val project           = ProjectGen.project("myorg", "myproject", base = projBase, vocab = schemaOrg.base, mappings = am)
   private val projectDeprecated = ProjectGen.project("myorg", "myproject2")
   private val projectRef        = project.ref
   private val allApiMappings    = am + Resources.mappings
@@ -127,7 +129,7 @@ class ResourcesImplSpec
     // format: on
     val resourceSchema    = Latest(schemas.resources)
     val myId2             = nxv + "myid2" // Resource created against the schema1 with id present on the payload
-    val types             = Set(nxv + "Custom")
+    val types             = Set(schemaOrg + "Custom")
     val source            = jsonContentOf("resources/resource.json", "id" -> myId)
     def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
     val tag               = UserTag.unsafe("tag")
@@ -215,13 +217,13 @@ class ResourcesImplSpec
       "succeed with payload without @context" in {
         val payload        = json"""{ "@type": "Person", "name": "Alice"}"""
         val payloadWithCtx =
-          payload.addContext(json"""{"@context": {"@vocab": "${nxv.base}","@base": "${nxv.base}"}}""")
+          payload.addContext(json"""{"@context": {"@vocab": "${schemaOrg.base}","@base": "${nxv.base}"}}""")
         val schemaRev      = Revision(resourceSchema.iri, 1)
         val expectedData   =
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(myId7, projectRef, schemas.resources, payload, None).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, Set(nxv + "Person"), subject = subject)
+          ResourceGen.resourceFor(expectedData, Set(schema.Person), subject = subject)
       }
 
       "succeed with the id present on the payload and pointing to another resource in its context" in {
@@ -437,7 +439,7 @@ class ResourcesImplSpec
       val refreshSource = json"""{
                                     "@context": [
                                       "$contextId",
-                                      { "@vocab": "https://bluebrain.github.io/nexus/vocabulary/" }
+                                      { "@vocab": "${schemaOrg.base}" }
                                     ],
                                     "@type": "Person",
                                     "name": "Alex"

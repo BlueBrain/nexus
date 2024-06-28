@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.kamonComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.SubmitOnDefinedSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, InvalidSchemaRejection, NoTargetedNode, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
@@ -63,7 +64,9 @@ object ValidateResource {
           enforceSchema: Boolean
       ): IO[ValidationResult] = {
         val submitOnDefinedSchema: SubmitOnDefinedSchema = resolveSchema(_, _, _).flatMap(apply(jsonld, _))
-        assertNotReservedId(jsonld.id) >> schemaClaim.validate(enforceSchema)(submitOnDefinedSchema)
+        assertNotReservedId(jsonld.id) >>
+          assertNotReservedTypes(jsonld.types) >>
+          schemaClaim.validate(enforceSchema)(submitOnDefinedSchema)
       }
 
       def apply(jsonld: JsonLdAssembly, schema: ResourceF[Schema]): IO[ValidationResult] = {
@@ -94,6 +97,10 @@ object ValidateResource {
 
       private def assertNotReservedId(resourceId: Iri) = {
         IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))
+      }
+
+      private def assertNotReservedTypes(types: Set[Iri]) = {
+        IO.raiseWhen(types.exists(_.startsWith(Vocabulary.nxv.base)))(ReservedResourceTypes(types))
       }
 
       private def resolveSchema(project: ProjectRef, schema: ResourceRef, caller: Caller) = {

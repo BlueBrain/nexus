@@ -132,6 +132,18 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
+    "fail if the type belongs to the Nexus vocabulary" in {
+      val payload = SimpleResource
+        .sourcePayloadWithType("nxv:Schema", 42)
+        .accepted
+
+      deltaClient.post[Json](s"/resources/$project2/_/", payload, Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
+        json should have(`@type`("ReservedResourceTypes"))
+        response.headers should not contain varyHeader
+      }
+    }
+
     "succeed if the payload can be validated by the schema" in {
       for {
         payload            <- SimpleResource.sourcePayload(resource1Id, 5)
