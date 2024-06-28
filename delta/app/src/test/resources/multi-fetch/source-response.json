@@ -6,10 +6,11 @@
       "project": "org/proj1",
       "value": {
         "@context": {
-          "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+          "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+          "schema" : "http://schema.org/"
         },
         "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
-        "@type": "Custom",
+        "@type": "schema:Custom",
         "bool": false,
         "name": "Alex",
         "number": 24

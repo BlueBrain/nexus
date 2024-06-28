@@ -3,7 +3,8 @@
     "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
     {
       "this": "https://dev.nexus.test.com/test-schema/shapes/",
-      "other": "https://some.other.prefix.com/"
+      "other": "https://some.other.prefix.com/",
+      "schema" : "http://schema.org/"
     }
   ],
 

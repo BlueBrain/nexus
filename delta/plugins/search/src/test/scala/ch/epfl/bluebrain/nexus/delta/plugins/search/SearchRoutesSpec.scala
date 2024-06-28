@@ -34,10 +34,11 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   private val fields = Json.obj("fields" := true)
 
-  private val publicProjects = Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2"))
+  private val multiProjects  = Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2"))
+  private val singleProjects = Set(ProjectRef.unsafe("org3", "project3"))
   private val suites         = Map(
-    Label.unsafe("public")  -> publicProjects,
-    Label.unsafe("private") -> Set(ProjectRef.unsafe("org3", "project3"))
+    Label.unsafe("multi")  -> multiProjects,
+    Label.unsafe("single") -> singleProjects
   )
 
   private lazy val routes = Route.seal(
@@ -83,7 +84,7 @@ class SearchRoutesSpec extends BaseRouteSpec {
     }
 
     "fail for an invalid payload during a search in a suite" in {
-      val searchSuiteName = "public"
+      val searchSuiteName = "multi"
       val payload         = Json.obj()
       Post(s"/v1/search/query/suite/$searchSuiteName", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -97,11 +98,19 @@ class SearchRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "fetch a suite" in {
-      Get(s"/v1/search/suites/public") ~> routes ~> check {
+    "fetch a suite with several projects" in {
+      Get(s"/v1/search/suites/multi") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should have(name("public"))
-        response.asJson should have(projects(publicProjects))
+        response.asJson should have(name("multi"))
+        response.asJson should have(projects(multiProjects))
+      }
+    }
+
+    "fetch a suite with a single project" in {
+      Get(s"/v1/search/suites/single") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should have(name("single"))
+        response.asJson should have(projects(singleProjects))
       }
     }
 

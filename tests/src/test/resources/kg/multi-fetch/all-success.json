@@ -7,9 +7,10 @@
       "value" : {
         "@context" : {
           "nxv" : "https://bluebrain.github.io/nexus/vocabulary/",
-          "other" : "https://some.other.prefix.com/"
+          "other" : "https://some.other.prefix.com/",
+          "schema" : "http://schema.org/"
         },
-        "@type" : "nxv:TestResource",
+        "@type" : "schema:TestResource",
         "nullValue" : null,
         "other:priority" : 5,
         "other:projects" : [

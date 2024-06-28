@@ -6,10 +6,11 @@
     "_source": {
       "@context": {
         "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-        "other": "https://some.other.prefix.com/"
+        "other": "https://some.other.prefix.com/",
+        "schema" : "http://schema.org/"
       },
       "@id": "https://dev.nexus.test.com/simplified-resource/1",
-      "@type": "nxv:TestResource",
+      "@type": "schema:TestResource",
       "other:priority": 3,
       "other:projects": [
         "testProject",
@@ -17,7 +18,7 @@
       ]
     },
     "_types": [
-      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+      "http://schema.org/TestResource"
     ],
     "_rev": 1,
     "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",

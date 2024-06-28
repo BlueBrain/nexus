@@ -1,12 +1,13 @@
 {
   "@context": [
     {
-      "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+      "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+      "schema" : "http://schema.org/"
     },
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "{{id}}",
-  "@type": "Custom",
+  "@type": "schema:Custom",
   "bool": false,
   "name": "Alex",
   "number": 24,

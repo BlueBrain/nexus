@@ -8,7 +8,7 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaOrg, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
@@ -54,7 +54,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   private val asReader = addCredentials(OAuth2BearerToken("reader"))
   private val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
-  private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
+  private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schemaOrg.Person)
   private val projBase     = nxv.base
   private val project      = ProjectGen.resourceFor(
     ProjectGen.project(
@@ -69,7 +69,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   private val projectRef   = project.value.ref
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
-  private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val schema2      = SchemaGen.schema(schemaOrg.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema3      = SchemaGen.schema(nxv + "otherSchema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val tag          = UserTag.unsafe("mytag")
 
@@ -137,7 +137,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
 
   private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
-  private val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
+  private val resourceCtx =
+    json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}", "schema" : "${schemaOrg.base}"}]}"""
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -492,7 +493,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
       givenAResource { id =>
         Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          val meta = standardWriterMetadata(id, tpe = "Custom")
+          val meta = standardWriterMetadata(id, tpe = "schema:Custom")
           response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
           response.headers should contain(varyHeader)
         }
@@ -508,7 +509,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
           s"/v1/resources/myorg/myproject/_/$id?rev=1",
           s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag"
         )
-        val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "Custom")
+        val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "schema:Custom")
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
@@ -534,7 +535,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
         Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
           response.asJson shouldEqual
             payloadWithNullField(id).dropNullValues
-              .deepMerge(standardWriterMetadata(id, tpe = "Custom"))
+              .deepMerge(standardWriterMetadata(id, tpe = "schema:Custom"))
               .deepMerge(resourceCtx)
         }
       }
@@ -795,7 +796,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
       rev: Int = 1,
       schema: Iri = schemas.resources,
       deprecated: Boolean = false,
-      tpe: String = (nxv + "Custom").toString
+      tpe: String = (schemaOrg + "Custom").toString
   ) =
     resourceMetadata(
       projectRef,

@@ -2,12 +2,13 @@
   "@context": [
     {
       "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-      "other": "https://some.other.prefix.com/"
+      "other": "https://some.other.prefix.com/",
+      "schema" : "http://schema.org/"
     },
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "{{resourceId}}",
-  "@type": "nxv:TestResource",
+  "@type": "schema:TestResource",
   "_constrainedBy": "https://dev.nexus.test.com/test-schema",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

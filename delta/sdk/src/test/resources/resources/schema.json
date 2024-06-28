@@ -1,6 +1,7 @@
 {
   "@context": {
-      "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "schema": "http://schema.org/"
   },
   "@type": "Schema",
   "@id": "nxv:myschema",
@@ -9,7 +10,7 @@
       "@id": "nxv:MyShape",
       "@type": "NodeShape",
       "nodeKind": "sh:BlankNodeOrIRI",
-      "targetClass": "nxv:Custom",
+      "targetClass": "schema:Custom",
       "property": [
         {
           "@id": "nxv:NameProperty",
