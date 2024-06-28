@@ -28,10 +28,11 @@ That means that when those get updated, the resources importing them must be als
 
 @@@
 
-@@@ note { .warning title="JSON payloads" }
+@@@ note { .warning title="Reserved types and fields" }
 
-The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
+A generic resource can not have a type belonging to the Nexus vocabulary (https://bluebrain.github.io/nexus/vocabulary/).
 
+Moreover it can not include any field starting with underscore (_) at the root level as these fields are reserved for Nexus metadata.
 @@@
 
 ## Nexus metadata

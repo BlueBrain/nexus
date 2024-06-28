@@ -1,7 +1,8 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "other": "https://some.other.prefix.com/"
+    "other": "https://some.other.prefix.com/",
+    "schema" : "http://schema.org/"
   },
   {{#resourceId}}
   "@id": "{{resourceId}}",
@@ -9,7 +10,7 @@
   {{#if resourceType}}
   "@type": "{{resourceType}}",
   {{else}}
-  "@type": "nxv:TestResource",
+  "@type": "schema:TestResource",
   {{/if}}
   "other:priority": {{priority}},
   "other:projects": [

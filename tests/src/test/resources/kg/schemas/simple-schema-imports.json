@@ -1,6 +1,7 @@
 {
   "@context": {
-    "other": "https://some.other.prefix.com/"
+    "other": "https://some.other.prefix.com/",
+    "schema" : "http://schema.org/"
   },
   "@id": "https://dev.nexus.test.com/test-schema-imports",
   "imports": [
@@ -11,7 +12,7 @@
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNodeOrIRI",
       "targetClass": [
-        "nxv:TestResource"
+        "schema:TestResource"
       ],
       "property": [
         {

@@ -4,7 +4,8 @@
   "compacted": {
     "@context": [
       {
-        "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+        "schema" : "http://schema.org/"
       },
       "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
       "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json"
@@ -36,7 +37,7 @@
             "path": "nxv:bool"
           }
         ],
-        "targetClass": "nxv:Custom"
+        "targetClass": "schema:Custom"
       }
     ]
   },
@@ -118,7 +119,7 @@
           ],
           "http://www.w3.org/ns/shacl#targetClass": [
             {
-              "@id": "https://bluebrain.github.io/nexus/vocabulary/Custom"
+              "@id": "http://schema.org/Custom"
             }
           ]
         }

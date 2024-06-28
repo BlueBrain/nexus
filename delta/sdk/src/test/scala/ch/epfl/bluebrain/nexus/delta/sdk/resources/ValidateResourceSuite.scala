@@ -119,6 +119,17 @@ class ValidateResourceSuite extends NexusSuite {
     } yield ()
   }
 
+  test("Reject a resource when one type is starting with the Nexus vocabulary") {
+    val forbiddenType        = nxv + "Forbidden"
+    val forbiddenTypePayload = json"""{ "@type": "$forbiddenType" } """
+    for {
+      jsonLd     <- jsonLdWithId(validResourceId, _.deepMerge(forbiddenTypePayload))
+      schemaClaim = SchemaClaim.onCreate(project, schemaRef, caller)
+      _          <- validateResource(jsonLd, schemaClaim, enforceSchema = false)
+                      .interceptEquals(ReservedResourceTypes(Set(forbiddenType)))
+    } yield ()
+  }
+
   test("Reject a resource with no schema and schema enforcement is enabled") {
     for {
       jsonLd     <- validResource
