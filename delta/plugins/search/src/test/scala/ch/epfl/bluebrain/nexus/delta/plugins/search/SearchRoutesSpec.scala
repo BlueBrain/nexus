@@ -32,10 +32,11 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   private val fields = Json.obj("fields" := true)
 
-  private val publicProjects = Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2"))
-  private val suites         = Map(
+  private val publicProjects  = Set(ProjectRef.unsafe("org", "project"), ProjectRef.unsafe("org2", "project2"))
+  private val privateProjects = Set(ProjectRef.unsafe("org3", "project3"))
+  private val suites          = Map(
     Label.unsafe("public")  -> publicProjects,
-    Label.unsafe("private") -> Set(ProjectRef.unsafe("org3", "project3"))
+    Label.unsafe("private") -> privateProjects
   )
 
   private lazy val routes = Route.seal(
@@ -90,11 +91,19 @@ class SearchRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "fetch a suite" in {
+    "fetch a suite with several projects" in {
       Get(s"/v1/search/suites/public") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should have(name("public"))
         response.asJson should have(projects(publicProjects))
+      }
+    }
+
+    "fetch a suite with a single project" in {
+      Get(s"/v1/search/suites/private") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should have(name("private"))
+        response.asJson should have(projects(privateProjects))
       }
     }
 
