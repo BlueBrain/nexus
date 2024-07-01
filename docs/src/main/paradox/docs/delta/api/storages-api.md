@@ -32,6 +32,8 @@ local file-system structure and that Nexus has read and write access to the targ
 ```json
 {
   "@type": "DiskStorage",
+  "name": "{name}",
+  "description": "{description}",
   "default": "{default}",
   "volume": "{volume}",
   "readPermission": "{read_permission}",
@@ -42,6 +44,8 @@ local file-system structure and that Nexus has read and write access to the targ
 
 ...where
 
+- `{name}`: String - A name for this storage. This field is optional.
+- `{description}`: String - A description for this storage. This field is optional.
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{volume}`: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-volume` (`/tmp`).
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-read-permission` (`resources/read`).
@@ -68,6 +72,8 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 ```json
 {
   "@type": "RemoteDiskStorage",
+  "name": "{name}",
+  "description": "{description}",
   "default": "{default}",
   "folder": "{folder}",
   "readPermission": "{read_permission}",
@@ -78,6 +84,8 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 ...where
 
+- `{name}`: String - A name for this storage. This field is optional.
+- `{description}`: String - A description for this storage. This field is optional.
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
@@ -93,6 +101,9 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 ```json
 {
   "@type": "S3Storage",
+  "name": "{name}",
+  "description": "{description}",
+  "bucket": "{name}",
   "default": "{default}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -102,6 +113,9 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 ...where
 
+- `{name}`: String - A name for this storage. This field is optional.
+- `{description}`: String - A description for this storage. This field is optional.
+- `{bucket}`: String -The AWS S3 bucket this storage points to. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-endpoint`.
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
