@@ -10,7 +10,7 @@ import io.circe.syntax.EncoderOps
 
 final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
 
-  private def patchBlazegraphViewResourceTypes(input: Json): Json =
+  private def patchGenericViewResourceTypes(input: Json): Json =
     root.resourceTypes.arr.each.modify(patchResourceType)(input)
 
   private def patchResourceType(json: Json) =
@@ -28,12 +28,29 @@ final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
   }
 
   def patchBlazegraphViewSource(input: Json): Json = {
-    patchBlazegraphViewResourceTypes(
+    patchGenericViewResourceTypes(
       patchAggregateViewSource(input)
     )
   }
 
-  def patchAggregateViewSource(input: Json): Json =
+  def patchElasticSearchViewSource(input: Json): Json = {
+    patchPipelineResourceTypes(
+      patchGenericViewResourceTypes(
+        patchAggregateViewSource(input)
+      )
+    )
+  }
+
+  private def patchPipelineResourceTypes(input: Json): Json = {
+    root.pipeline.each.config.each.`https://bluebrain.github.io/nexus/vocabulary/types`.each.`@id`.string
+      .modify(patchStringIri)(input)
+  }
+
+  private def patchStringIri(stringIri: String): String = {
+    Iri.apply(stringIri).map(iriPatcher.apply).map(_.toString).getOrElse(stringIri)
+  }
+
+  private def patchAggregateViewSource(input: Json): Json =
     root.views.each.obj.modify { view =>
       view
         .mapAllKeys("project", patchProject)
