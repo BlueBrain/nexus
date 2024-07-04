@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.ship.views
 
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.Database._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.EncoderOps
@@ -40,6 +43,25 @@ class ViewPatcherSuite extends NexusSuite {
     val expectedAggregated = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(expectedView1, expectedView2))
     val result             = viewPatcher.patchAggregateViewSource(viewAsJson).as[ElasticSearchViewValue]
     assertEquals(result, Right(expectedAggregated))
+  }
+
+  test("Patch a blazegraph view's resource types") {
+    val view: BlazegraphViewValue = IndexingBlazegraphViewValue(resourceTypes =
+      IriFilter.fromSet(Set(iri"https://bbp.epfl.ch/resource1", iri"https://bbp.epfl.ch/resource2"))
+    )
+
+    val patchedView = viewPatcher.patchBlazegraphViewSource(view.asJson).as[BlazegraphViewValue]
+
+    assertEquals(
+      patchedView,
+      Right(
+        IndexingBlazegraphViewValue(resourceTypes =
+          IriFilter.fromSet(
+            Set(iri"https://openbrainplatform.com/resource1", iri"https://openbrainplatform.com/resource2")
+          )
+        )
+      )
+    )
   }
 
 }

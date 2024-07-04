@@ -48,14 +48,14 @@ class BlazegraphViewProcessor private (
         e.id match {
           case id if id == defaultViewId => IO.unit // the default view is created on project creation
           case _                         =>
-            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
             views(event.uuid).flatMap(_.create(e.id, project, patchedSource))
         }
       case e: BlazegraphViewUpdated      =>
         e.id match {
           case id if id == defaultViewId => IO.unit
           case _                         =>
-            val patchedSource = viewPatcher.patchAggregateViewSource(e.source)
+            val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
             views(event.uuid).flatMap(_.update(e.id, project, cRev, patchedSource))
         }
       case e: BlazegraphViewDeprecated   =>

@@ -8,13 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.d
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Encoder, Json}
 
 /**
   * Enumeration of Blazegraph view values.
@@ -150,4 +152,8 @@ object BlazegraphViewValue {
   ): JsonLdDecoder[BlazegraphViewValue] =
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
 
+  object Database {
+    implicit private val configuration: extras.Configuration    = Serializer.circeConfiguration
+    implicit val bgvvCodec: Codec.AsObject[BlazegraphViewValue] = deriveConfiguredCodec[BlazegraphViewValue]
+  }
 }

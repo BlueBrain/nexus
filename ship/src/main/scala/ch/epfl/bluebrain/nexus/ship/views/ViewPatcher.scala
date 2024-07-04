@@ -10,6 +10,29 @@ import io.circe.syntax.EncoderOps
 
 final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
 
+  private def patchBlazegraphViewResourceTypes(input: Json): Json =
+    root.resourceTypes.arr.each.modify(patchResourceType)(input)
+
+  private def patchResourceType(json: Json) =
+    patchIri(json)
+      .getOrElse(
+        throw new IllegalArgumentException(s"Invalid resource type found in Blazegraph view resource types: $json")
+      )
+
+  private def patchIri(json: Json) = {
+    json
+      .as[Iri]
+      .map { iri =>
+        iriPatcher(iri).asJson
+      }
+  }
+
+  def patchBlazegraphViewSource(input: Json): Json = {
+    patchBlazegraphViewResourceTypes(
+      patchAggregateViewSource(input)
+    )
+  }
+
   def patchAggregateViewSource(input: Json): Json =
     root.views.each.obj.modify { view =>
       view
@@ -26,11 +49,7 @@ final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
       .getOrElse(throw new IllegalArgumentException(s"Invalid project ref found in aggregate view source: $json"))
 
   private def patchViewId(json: Json) =
-    json
-      .as[Iri]
-      .map { iri =>
-        iriPatcher(iri).asJson
-      }
+    patchIri(json)
       .getOrElse(throw new IllegalArgumentException(s"Invalid view id found in aggregate view source: $json"))
 
 }
