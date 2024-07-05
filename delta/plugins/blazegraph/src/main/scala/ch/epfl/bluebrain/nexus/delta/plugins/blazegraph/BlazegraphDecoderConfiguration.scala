@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 
-private[blazegraph] object BlazegraphDecoderConfiguration {
+object BlazegraphDecoderConfiguration {
 
   def apply(implicit jsonLdApi: JsonLdApi, rcr: RemoteContextResolution): IO[Configuration] = for {
     contextValue  <- IO.delay { ContextValue(contexts.blazegraph) }

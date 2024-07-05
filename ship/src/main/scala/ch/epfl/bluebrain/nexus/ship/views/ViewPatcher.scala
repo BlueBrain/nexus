@@ -10,7 +10,47 @@ import io.circe.syntax.EncoderOps
 
 final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
 
-  def patchAggregateViewSource(input: Json): Json =
+  private def patchGenericViewResourceTypes(input: Json): Json =
+    root.resourceTypes.arr.each.modify(patchResourceType)(input)
+
+  private def patchResourceType(json: Json) =
+    patchIri(json)
+      .getOrElse(
+        throw new IllegalArgumentException(s"Invalid resource type found in Blazegraph view resource types: $json")
+      )
+
+  private def patchIri(json: Json) = {
+    json
+      .as[Iri]
+      .map { iri =>
+        iriPatcher(iri).asJson
+      }
+  }
+
+  def patchBlazegraphViewSource(input: Json): Json = {
+    patchGenericViewResourceTypes(
+      patchAggregateViewSource(input)
+    )
+  }
+
+  def patchElasticSearchViewSource(input: Json): Json = {
+    patchPipelineResourceTypes(
+      patchGenericViewResourceTypes(
+        patchAggregateViewSource(input)
+      )
+    )
+  }
+
+  private def patchPipelineResourceTypes(input: Json): Json = {
+    root.pipeline.each.config.each.`https://bluebrain.github.io/nexus/vocabulary/types`.each.`@id`.string
+      .modify(patchStringIri)(input)
+  }
+
+  private def patchStringIri(stringIri: String): String = {
+    Iri.apply(stringIri).map(iriPatcher.apply).map(_.toString).getOrElse(stringIri)
+  }
+
+  private def patchAggregateViewSource(input: Json): Json =
     root.views.each.obj.modify { view =>
       view
         .mapAllKeys("project", patchProject)
@@ -26,11 +66,7 @@ final class ViewPatcher(projectMapper: ProjectMapper, iriPatcher: IriPatcher) {
       .getOrElse(throw new IllegalArgumentException(s"Invalid project ref found in aggregate view source: $json"))
 
   private def patchViewId(json: Json) =
-    json
-      .as[Iri]
-      .map { iri =>
-        iriPatcher(iri).asJson
-      }
+    patchIri(json)
       .getOrElse(throw new IllegalArgumentException(s"Invalid view id found in aggregate view source: $json"))
 
 }

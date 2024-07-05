@@ -213,7 +213,7 @@ object ElasticSearchViewValue {
   }
 
   object Database {
-    implicit val configuration: Configuration                       = Serializer.circeConfiguration
+    implicit private val configuration: Configuration               = Serializer.circeConfiguration
     implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
   }
 
