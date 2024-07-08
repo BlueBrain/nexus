@@ -171,6 +171,11 @@
     "curated": {
       "type": "boolean"
     },
+    "emodel": {
+      "properties": {
+        "score": { "type": "double" }
+      }
+    },
     "preSynapticPathway": { "type": "nested" },
     "postSynapticPathway": { "type": "nested" },
     "featureSeries": {
