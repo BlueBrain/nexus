@@ -4,9 +4,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, BlazegraphViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -45,29 +45,15 @@ class BlazegraphViewProcessor private (
     val project             = projectMapper.map(event.project)
     event match {
       case e: BlazegraphViewCreated      =>
-        e.id match {
-          case id if id == defaultViewId => IO.unit // the default view is created on project creation
-          case _                         =>
-            val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
-            views(event.uuid).flatMap(_.create(e.id, project, patchedSource))
-        }
+        val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
+        views(event.uuid).flatMap(_.create(e.id, project, patchedSource))
       case e: BlazegraphViewUpdated      =>
-        e.id match {
-          case id if id == defaultViewId => IO.unit
-          case _                         =>
-            val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
-            views(event.uuid).flatMap(_.update(e.id, project, cRev, patchedSource))
-        }
+        val patchedSource = viewPatcher.patchBlazegraphViewSource(e.source)
+        views(event.uuid).flatMap(_.update(e.id, project, cRev, patchedSource))
       case e: BlazegraphViewDeprecated   =>
-        e.id match {
-          case id if id == defaultViewId => IO.unit
-          case _                         => views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
-        }
+        views(event.uuid).flatMap(_.deprecate(e.id, project, cRev))
       case e: BlazegraphViewUndeprecated =>
-        e.id match {
-          case id if id == defaultViewId => IO.unit
-          case _                         => views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
-        }
+        views(event.uuid).flatMap(_.undeprecate(e.id, project, cRev))
       case _: BlazegraphViewTagAdded     => IO.unit // TODO: Can we tag?
     }
   }.redeemWith(
