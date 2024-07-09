@@ -27,7 +27,7 @@ trait EventProcessor[Event <: ScopedEvent] {
   def evaluate(event: RowEvent)(implicit iriPatcher: IriPatcher): IO[ImportStatus] =
     if (defaultViewIds.contains(event.id)) {
       logger
-        .info(s"Default views is created on project creation and search updates are handled separately")
+        .info(s"Default views re created on project creation and search updates are handled separately")
         .as(ImportStatus.Success)
     } else {
       val value                            = event.value
