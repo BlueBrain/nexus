@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, OpenIdAuthServ
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -48,10 +49,11 @@ object IdentitiesModule extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
+        projectProvisioning: ProjectProvisioning,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering)
+    ) => new IdentitiesRoutes(identities, aclCheck, projectProvisioning)(baseUri, cr, ordering)
 
   }
 
