@@ -123,13 +123,12 @@ object ProjectsModule extends ModuleDef {
         aclCheck: AclCheck,
         projects: Projects,
         projectsStatistics: ProjectsStatistics,
-        projectProvisioning: ProjectProvisioning,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics)(
         baseUri,
         config.projects,
         cr,

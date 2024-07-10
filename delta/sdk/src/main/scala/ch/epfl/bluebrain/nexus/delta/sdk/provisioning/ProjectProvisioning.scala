@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
 import cats.effect.IO
-
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import cats.implicits._
 
 /**
   * Automatic project provisioning for users.
@@ -30,6 +30,8 @@ trait ProjectProvisioning {
 }
 
 object ProjectProvisioning {
+
+  private val logger = Logger[ProjectProvisioning]
 
   /**
     * Rejection signalling that project provisioning failed.
@@ -75,6 +77,7 @@ object ProjectProvisioning {
     ): IO[Unit] = {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
       for {
+        _ <- logger.info(s"Starting provisioning project for user ${user.subject}")
         _ <- appendAcls(acl)
                .recoverWith {
                  case _: AclRejection.IncorrectRev       => IO.unit
@@ -89,6 +92,7 @@ object ProjectProvisioning {
                .void
                .recoverWith { case _: ProjectAlreadyExists => IO.unit }
                .adaptError { case r: ProjectRejection => UnableToCreateProject(r) }
+        _ <- logger.info(s"Provisioning project for user ${user.subject} succeeded.")
       } yield ()
     }
 
