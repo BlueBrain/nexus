@@ -97,61 +97,65 @@ class DistributionPatcherSuite extends NexusSuite {
 
   test("Do nothing on a distribution payload without fields to patch") {
     val input = json"""{ "anotherField": "XXX" }"""
-    patcher.single(input).assertEquals(input)
+    patcher.patchAll(input).assertEquals(input)
   }
 
   test("Patch location on a distribution to point to the new unique S3 storage") {
     val input    =
       json"""{
-              "atLocation": {
-                "store": {
-                  "@id": "https://bbp.epfl.ch/remote-disk-storage",
-                  "@type": "RemoteDiskStorage",
-                  "_rev": 3
+               "distribution": {
+                "atLocation": {
+                  "store": {
+                    "@id": "https://bbp.epfl.ch/remote-disk-storage",
+                    "@type": "RemoteDiskStorage",
+                    "_rev": 3
+                  }
                 }
               }
             }"""
     val expected =
       json"""{
-            "atLocation": {
-              "store": {
-                "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultS3Storage",
-                "@type": "S3Storage",
-                "_rev": 1
-              }
-            }
-          }"""
-    patcher.single(input).assertEquals(expected)
+             "distribution": {
+               "atLocation": {
+                 "store": {
+                  "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultS3Storage",
+                  "@type": "S3Storage",
+                  "_rev": 1
+                 }
+               }
+             }
+           }"""
+    patcher.patchAll(input).assertEquals(expected)
   }
 
   test("Patching an invalid file self should preserve the initial value") {
-    val input = json"""{ "contentUrl": "xxx" }"""
-    patcher.single(input).assertEquals(input)
+    val input = json"""{ "distribution": { "contentUrl": "xxx" } }"""
+    patcher.patchAll(input).assertEquals(input)
   }
 
   test("Patch a valid file self on a distribution without project mapping") {
-    val input    = json"""{ "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}" }"""
-    val expected = json"""{ "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource1)}" }"""
-    patcher.single(input).assertEquals(expected)
+    val input    = json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}" } }"""
+    val expected =
+      json"""{ "distribution": { "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource1)}" } }"""
+    patcher.patchAll(input).assertEquals(expected)
   }
 
   test("Patch a valid file self on a distribution with project mapping") {
-    val input              = json"""{ "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" }"""
+    val input              = json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" } }"""
     val expectedContentUri = destinationFileSelf(mappedProject, patchedResource1).toString()
-    patcher.single(input).map(contentUrl).assertEquals(expectedContentUri)
+    patcher.patchAll(input).map(distributionContentUrl).assertEquals(expectedContentUri)
   }
 
   test("Patch an invalid distribution self should preserve the initial value") {
     val input = json"""{ "distribution":"xxx" }"""
-    patcher.singleOrArray(input).assertEquals(input)
+    patcher.patchAll(input).assertEquals(input)
   }
 
   test("Patch a valid file self on a distribution as an object") {
     val input = json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" } }"""
     patcher
-      .singleOrArray(input)
-      .map(distribution)
-      .map(contentUrl)
+      .patchAll(input)
+      .map(distributionContentUrl)
       .assertEquals(destinationFileSelf(mappedProject, patchedResource1).toString())
   }
 
@@ -159,7 +163,7 @@ class DistributionPatcherSuite extends NexusSuite {
     val input    = json"""{ "distribution": [{ "contentUrl": "${sourceFileSelf(projectNoMapping, resource2)}" }] }"""
     val expected =
       json"""{ "distribution": [{ "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource2)}" }] }"""
-    patcher.singleOrArray(input).assertEquals(expected)
+    patcher.patchAll(input).assertEquals(expected)
   }
 
   test("Patch a file location based on what the resource says") {
@@ -174,7 +178,7 @@ class DistributionPatcherSuite extends NexusSuite {
       }"""
 
     patcher
-      .singleOrArray(input)
+      .patchAll(input)
       .map(distributionLocation)
       .assertEquals("/actual/path/file.txt")
   }
@@ -188,7 +192,7 @@ class DistributionPatcherSuite extends NexusSuite {
       }"""
 
     patcher
-      .singleOrArray(input)
+      .patchAll(input)
       .map(distributionLocation)
       .assertEquals("/actual/path/file.txt")
   }
@@ -202,8 +206,8 @@ class DistributionPatcherSuite extends NexusSuite {
       }"""
 
     patcher
-      .singleOrArray(input)
-      .map(distrubutionContentSize)
+      .patchAll(input)
+      .map(distributionContentSize)
       .assertEquals(jobj"""{"unitCode": "bytes", "value": $size}""")
   }
 
@@ -216,7 +220,7 @@ class DistributionPatcherSuite extends NexusSuite {
       }"""
 
     patcher
-      .singleOrArray(input)
+      .patchAll(input)
       .map(distrubutionDigest)
       .assertEquals(jobj"""{
                             "algorithm": "SHA-256",
@@ -224,7 +228,22 @@ class DistributionPatcherSuite extends NexusSuite {
                           }""")
   }
 
-  private def distrubutionContentSize(json: Json): JsonObject = {
+  test("Patch a hasPart without distribution should preserve the initial value") {
+    val input = json"""{ "hasPart": [{ "@id":"xxx" }] }"""
+    patcher.patchAll(input).assertEquals(input)
+  }
+
+  test("Patch a hasPart without distribution with a valid self should preserve the initial value") {
+    val input    =
+      json"""{ "hasPart": [{ "distribution": { "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}" } }] }"""
+    val expected = json"""{ "hasPart": [{ "distribution": { "contentUrl": "${destinationFileSelf(
+      projectNoMapping,
+      patchedResource1
+    )}" } }] }"""
+    patcher.patchAll(input).assertEquals(expected)
+  }
+
+  private def distributionContentSize(json: Json): JsonObject = {
     json.hcursor
       .downField("distribution")
       .downField("contentSize")
@@ -249,19 +268,12 @@ class DistributionPatcherSuite extends NexusSuite {
       .getOrElse(fail("location was not present"))
   }
 
-  private def contentUrl(json: Json): String = {
+  private def distributionContentUrl(json: Json): String = {
     json.hcursor
+      .downField("distribution")
       .downField("contentUrl")
       .as[String]
       .getOrElse(fail("contentUrl was not present"))
-  }
-
-  private def distribution(json: Json): Json = {
-    json.hcursor
-      .downField("distribution")
-      .as[JsonObject]
-      .getOrElse(fail("distribution was not present"))
-      .toJson
   }
 
 }

@@ -21,7 +21,7 @@ final class SourcePatcher(distributionPatcher: DistributionPatcher, iriPatcher: 
 
   def apply(json: Json): IO[Json] =
     distributionPatcher
-      .singleOrArray(json)
+      .patchAll(json)
       .map(removeEmptyIds)
       .map(patchIris(_, iriPatcher))
 

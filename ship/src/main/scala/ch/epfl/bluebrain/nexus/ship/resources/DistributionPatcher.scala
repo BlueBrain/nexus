@@ -25,10 +25,19 @@ final class DistributionPatcher(
     fetchFileAttributes: (ProjectRef, ResourceRef) => IO[FileAttributes]
 ) {
 
+  def patchAll: Json => IO[Json] = patchInRoot(_).flatMap(patchInHasPart)
+
+  private def patchInHasPart: Json => IO[Json] = root.hasPart.json.modifyA { json =>
+    json.asArray match {
+      case Some(array) => array.parTraverse(patchInRoot).map(Json.arr(_: _*))
+      case None        => patchInRoot(json)
+    }
+  }(_)
+
   /**
     * Distribution may be defined as an object or as an array in original payloads
     */
-  def singleOrArray: Json => IO[Json] = root.distribution.json.modifyA { json =>
+  private def patchInRoot: Json => IO[Json] = root.distribution.json.modifyA { json =>
     json.asArray match {
       case Some(array) => array.parTraverse(single).map(Json.arr(_: _*))
       case None        => single(json)
