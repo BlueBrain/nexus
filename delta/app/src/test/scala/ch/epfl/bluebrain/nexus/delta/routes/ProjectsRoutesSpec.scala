@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConfig, ProjectProvisioning}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -38,8 +37,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
   private val orgUuid = UUID.randomUUID()
 
-  private val provisionedRealm = Label.unsafe("realm2")
-
   private val userWithWritePermission             = User("userWithWritePermission", Label.unsafe(genString()))
   private val userWithCreatePermission            = User("userWithCreatePermission", Label.unsafe(genString()))
   private val userWithReadPermission              = User("userWithReadPermission", Label.unsafe(genString()))
@@ -48,9 +45,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   private val userWithReadSingleProjectPermission =
     User("userWithReadSingleProjectPermission", Label.unsafe(genString()))
 
-  private val superUser       = User("superUser", Label.unsafe(genString()))
-  private val provisionedUser = User("user1", provisionedRealm)
-  private val invalidUser     = User("!@#%^", provisionedRealm)
+  private val superUser = User("superUser", Label.unsafe(genString()))
 
   private val org1     = Label.unsafe("org1")
   private val org2     = Label.unsafe("org2")
@@ -64,18 +59,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     case `org2`     => IO.raiseError(OrganizationIsDeprecated(org2))
     case other      => IO.raiseError(OrganizationNotFound(other))
   }
-
-  private val provisioningConfig = AutomaticProvisioningConfig(
-    enabled = true,
-    permissions = Set(resources.read, resources.write, projectsPermissions.read),
-    enabledRealms = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
-    ProjectFields(
-      Some("Auto provisioned project"),
-      ApiMappings.empty,
-      Some(PrefixIri.unsafe(iri"http://example.com/base/")),
-      Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
-    )
-  )
 
   implicit private val projectsConfig: ProjectsConfig = ProjectsConfig(eventLogConfig, pagination, deletionConfig)
 
@@ -97,23 +80,19 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       AclAddress.Root,
       Set(projectsPermissions.create, projectsPermissions.read, projectsPermissions.write, projectsPermissions.delete)
     ),
-    (provisionedUser, AclAddress.Root, Set(projectsPermissions.read)),
-    (invalidUser, AclAddress.Root, Set.empty),
     (alice, AclAddress.Root, Set(projectsPermissions.create)),
     (userWithReadSingleProjectPermission, AclAddress.Project(ref), Set(projectsPermissions.read))
   )
 
-  private lazy val projects     =
+  private lazy val projects =
     ProjectsImpl(fetchOrg, _ => IO.unit, ScopeInitializer.noop, defaultApiMappings, eventLogConfig, xas, clock)
-  private lazy val provisioning =
-    ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
-  private lazy val routes       = Route.seal(
+
+  private lazy val routes = Route.seal(
     ProjectsRoutes(
       identities,
       aclCheck,
       projects,
-      projectsStatistics,
-      provisioning
+      projectsStatistics
     )
   )
 
@@ -121,12 +100,12 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   val base  = "https://localhost/base/"
   val vocab = "https://localhost/voc/"
 
-  val payload = jsonContentOf("projects/create.json", "description" -> desc, "base" -> base, "vocab" -> vocab)
+  private val payload = jsonContentOf("projects/create.json", "description" -> desc, "base" -> base, "vocab" -> vocab)
 
-  val payloadUpdated =
+  private val payloadUpdated =
     jsonContentOf("projects/create.json", "description" -> "New description", "base" -> base, "vocab" -> vocab)
 
-  val anotherPayload = jsonContentOf("projects/create.json", "description" -> desc)
+  private val anotherPayload = jsonContentOf("projects/create.json", "description" -> desc)
 
   "A project route" should {
 
@@ -451,23 +430,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
           "eventsCount" : 10,
           "resourcesCount" : 10
         }"""
-      }
-    }
-
-    "provision project for user when listing" in {
-      Get("/v1/projects/users-org") ~> as(provisionedUser) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson.asObject.value("_total").value.asNumber.value.toInt.value shouldEqual 1
-      }
-
-      Get("/v1/projects/users-org/user1") ~> as(provisionedUser) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return error when failed to provision project" in {
-      Get("/v1/projects/users-org") ~> as(invalidUser) ~> routes ~> check {
-        status shouldEqual StatusCodes.InternalServerError
       }
     }
 
