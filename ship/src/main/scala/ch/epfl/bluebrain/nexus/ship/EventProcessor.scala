@@ -4,10 +4,11 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
-import ch.epfl.bluebrain.nexus.ship.EventProcessor.logger
+import ch.epfl.bluebrain.nexus.ship.EventProcessor.{defaultViewIds, logger}
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.optics.JsonPath.root
@@ -23,21 +24,33 @@ trait EventProcessor[Event <: ScopedEvent] {
 
   def evaluate(event: Event): IO[ImportStatus]
 
-  def evaluate(event: RowEvent)(implicit iriPatcher: IriPatcher): IO[ImportStatus] = {
-    val value                            = event.value
-    def patchEventId(idAsString: String) = Iri(idAsString).map(iriPatcher(_).toString).getOrElse(idAsString)
-    def updateIdToPatchedVersion         = root.id.string.modify { patchEventId }
-    def removeSourceMetadata             = root.source.obj.modify(_.filterKeys(!_.startsWith("_")))
-    val patchedValue                     = updateIdToPatchedVersion.andThen(removeSourceMetadata)(value)
-    IO.fromEither(decoder.decodeJson(patchedValue))
-      .onError(err => logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}"))
-      .flatMap(evaluate)
-  }
+  def evaluate(event: RowEvent)(implicit iriPatcher: IriPatcher): IO[ImportStatus] =
+    if (defaultViewIds.contains(event.id)) {
+      logger
+        .info(s"Default views re created on project creation and search updates are handled separately")
+        .as(ImportStatus.Success)
+    } else {
+      val value                            = event.value
+      def patchEventId(idAsString: String) = Iri(idAsString).map(iriPatcher(_).toString).getOrElse(idAsString)
+      def updateIdToPatchedVersion         = root.id.string.modify { patchEventId }
+      def removeSourceMetadata             = root.source.obj.modify(_.filterKeys(!_.startsWith("_")))
+      val patchedValue                     = updateIdToPatchedVersion.andThen(removeSourceMetadata)(value)
+      IO.fromEither(decoder.decodeJson(patchedValue))
+        .onError(err =>
+          logger.error(err)(s"Error while attempting to decode $resourceType at offset ${event.ordering}")
+        )
+        .flatMap(evaluate)
+    }
 }
 
 object EventProcessor {
 
   private val logger = Logger[EventProcessor.type]
+
+  private val defaultElasticsearchViewId = ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
+  private val defaultBlazegraphViewId    = ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
+  private val searchViewId: Iri          = nxv + "searchView"
+  private val defaultViewIds             = Set(defaultElasticsearchViewId, defaultBlazegraphViewId, searchViewId)
 
   def run(
       eventStream: Stream[IO, RowEvent],
