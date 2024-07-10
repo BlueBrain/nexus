@@ -2,18 +2,18 @@ package ch.epfl.bluebrain.nexus.ship.resources
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidFileId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
@@ -44,25 +44,21 @@ class DistributionPatcherSuite extends NexusSuite {
   private def destinationFileSelf(project: ProjectRef, id: Iri) =
     ResourceUris("files", project, id).accessUri(destinationBaseUri)
 
-  private val fileSelf = new FileSelf {
-    override def parse(input: IriOrBNode.Iri): IO[(ProjectRef, ResourceRef)] = {
-      val path = if (input.startsWith(sourceBaseUri.iriEndpoint)) {
-        IO.pure(input.stripPrefix(sourceBaseUri.iriEndpoint))
-      } else if (input.startsWith(destinationBaseUri.iriEndpoint)) {
-        IO.pure(input.stripPrefix(destinationBaseUri.iriEndpoint))
-      } else {
-        IO.raiseError(InvalidFileId(input))
-      }
-      path
-        .map(_.split("/").filter(_.nonEmpty).toList)
-        .flatMap {
-          case "files" :: org :: project :: id :: Nil =>
-            IO.pure(ProjectRef.unsafe(org, project) -> ResourceRef.Latest(Iri.unsafe(UrlUtils.decode(id))))
-          case _                                      =>
-            IO.raiseError(InvalidFileId(input))
-        }
-    }
+  private val projectContext = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)
+
+  private val fetchContext = new FetchContext {
+    override def defaultApiMappings: ApiMappings = ApiMappings.empty
+
+    override def onRead(ref: ProjectRef): IO[ProjectContext] = IO.pure(projectContext)
+
+    override def onCreate(ref: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectContext] =
+      IO.pure(projectContext)
+
+    override def onModify(ref: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectContext] =
+      IO.pure(projectContext)
   }
+
+  private val fileSelf = FileSelf(fetchContext)(sourceBaseUri)
 
   private def fileResolver(project: ProjectRef, resourceRef: ResourceRef) = (project, resourceRef) match {
     case (`mappedProject`, ResourceRef.Latest(`patchedResource1`)) =>
@@ -144,6 +140,24 @@ class DistributionPatcherSuite extends NexusSuite {
     val input              = json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}" } }"""
     val expectedContentUri = destinationFileSelf(mappedProject, patchedResource1).toString()
     patcher.patchAll(input).map(distributionContentUrl).assertEquals(expectedContentUri)
+  }
+
+  test("Patch a valid file self with a rev on a distribution") {
+    val input    = json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}?rev=2" } }"""
+    val expected =
+      json"""{ "distribution": { "contentUrl": "${destinationFileSelf(projectNoMapping, patchedResource1)}?rev=2" } }"""
+    patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test("Patch a valid file self with a tag on a distribution") {
+    val input    =
+      json"""{ "distribution": { "contentUrl": "${sourceFileSelf(projectNoMapping, resource1)}?tag=v1.0" } }"""
+    val expected =
+      json"""{ "distribution": { "contentUrl": "${destinationFileSelf(
+        projectNoMapping,
+        patchedResource1
+      )}?tag=v1.0" } }"""
+    patcher.patchAll(input).assertEquals(expected)
   }
 
   test("Patch an invalid distribution self should preserve the initial value") {

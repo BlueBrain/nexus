@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.defaultS3StorageId
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
@@ -47,8 +48,7 @@ final class DistributionPatcher(
   private def modificationsForFile(originalProject: ProjectRef, resourceRef: ResourceRef): IO[Json => Json] = {
     val targetProject                                = projectMapper.map(originalProject)
     val patchedResourceRef                           = iriPatcher(resourceRef)
-    val newContentUrl                                =
-      ResourceUris("files", targetProject, patchedResourceRef.original).accessUri(targetBase).toString()
+    val newContentUrl                                = createContentUrl(targetProject, patchedResourceRef)
     val fileAttributeModifications: IO[Json => Json] =
       fetchFileAttributes(targetProject, patchedResourceRef).attempt.flatMap {
         case Right(attributes) =>
@@ -63,11 +63,19 @@ final class DistributionPatcher(
             IO.pure(identity)
       }
 
-    fileAttributeModifications.map(_.andThen(setContentUrl(newContentUrl)))
+    fileAttributeModifications.map(_.andThen(setContentUrl(newContentUrl.toString())))
+  }
+
+  private def createContentUrl(project: ProjectRef, resourceRef: ResourceRef): Uri = {
+    val withoutVersioning = ResourceUris("files", project, resourceRef.iri).accessUri(targetBase)
+    resourceRef match {
+      case Latest(_)           => withoutVersioning
+      case Revision(_, _, rev) => withoutVersioning.withQuery(Uri.Query("rev" -> rev.toString))
+      case Tag(_, _, tag)      => withoutVersioning.withQuery(Uri.Query("tag" -> tag.toString))
+    }
   }
 
   private[resources] def single(json: Json): IO[Json] = {
-
     for {
       ids                    <- extractIds(json)
       fileBasedModifications <- ids match {
