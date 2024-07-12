@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -126,6 +127,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
   )
+
+  make[JWSPayloadHelper].from { config: AppConfig =>
+    JWSPayloadHelper(config.jws)
+  }
+
   make[ActorSystem[Nothing]].fromResource { () =>
     val make    = IO.delay(
       ActorSystem[Nothing](

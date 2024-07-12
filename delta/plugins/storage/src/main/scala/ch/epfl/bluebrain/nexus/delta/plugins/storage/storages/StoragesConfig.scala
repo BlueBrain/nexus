@@ -3,8 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.TokenIssuer
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig.DelegationConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
@@ -12,14 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
-import com.nimbusds.jose.jwk.RSAKey
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
-import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigConvert, ConfigReader}
 
-import java.security.interfaces.RSAPrivateCrtKey
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -186,21 +181,9 @@ object StoragesConfig {
       showLocation: Boolean,
       defaultMaxFileSize: Long,
       defaultBucket: String,
-      prefix: Option[Uri],
-      delegation: Option[DelegationConfig]
+      prefix: Option[Uri]
   ) extends StorageTypeEntryConfig {
     val prefixUri: Uri = prefix.getOrElse(Uri.Empty)
-  }
-
-  object S3StorageConfig {
-    final case class DelegationConfig(privateKey: RSAPrivateCrtKey, tokenDuration: FiniteDuration) {
-      val rsaKey: RSAKey = TokenIssuer.generateRSAKeyFromPrivate(privateKey)
-    }
-
-    implicit val delegationReader: ConfigReader[DelegationConfig] = deriveReader
-
-    implicit private val privateKeyConvert: ConfigConvert[RSAPrivateCrtKey] =
-      ConfigConvert.viaStringTry[RSAPrivateCrtKey](TokenIssuer.parseRSAPrivateKey, _.toString)
   }
 
   /**
