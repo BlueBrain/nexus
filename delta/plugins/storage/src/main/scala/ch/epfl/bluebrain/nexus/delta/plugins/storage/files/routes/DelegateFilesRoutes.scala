@@ -27,13 +27,14 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, Json}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 final class DelegateFilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     files: Files,
-    tokenIssuer: TokenIssuer,
+    jwsPayloadHelper: JWSPayloadHelper,
     index: IndexingAction.Execute[File],
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
@@ -84,7 +85,7 @@ final class DelegateFilesRoutes(
   ) =
     for {
       delegationResp <- files.delegate(project, desc, storageId)
-      jwsPayload     <- tokenIssuer.issueJWSPayload(delegationResp.asJson)
+      jwsPayload     <- jwsPayloadHelper.sign(delegationResp.asJson)
     } yield jwsPayload
 
   private def registerDelegatedFile(
@@ -94,7 +95,7 @@ final class DelegateFilesRoutes(
       mode: IndexingMode
   )(implicit c: Caller): IO[FileResource] =
     for {
-      originalPayload    <- tokenIssuer.verifyJWSPayload(jwsPayload)
+      originalPayload    <- jwsPayloadHelper.verify(jwsPayload)
       delegationResponse <- IO.fromEither(originalPayload.as[DelegationResponse])
       fileId              = FileId(delegationResponse.id, project)
       fileResource       <-

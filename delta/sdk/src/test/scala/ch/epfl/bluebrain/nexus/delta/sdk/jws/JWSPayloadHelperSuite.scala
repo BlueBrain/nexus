@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
+package ch.epfl.bluebrain.nexus.delta.sdk.jws
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.JWSSignatureExpired
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes.DelegationResponse
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.jws.RSAUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSError.JWSSignatureExpired
+import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper.JWSPayloadHelperImpl
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -16,17 +15,17 @@ import munit.CatsEffectSuite
 import java.util.Base64
 import scala.concurrent.duration.DurationInt
 
-class TokenIssuerSuite extends CatsEffectSuite with Generators {
+class JWSPayloadHelperSuite extends CatsEffectSuite with Generators {
 
   val rsaJWK: RSAKey = new RSAKeyGenerator(2048).generate()
 
   test("JWS verification successfully round trips for identical payloads") {
-    val tokenIssuer     = new TokenIssuer(rsaJWK, tokenValidity = 100.seconds)
+    val helper          = new JWSPayloadHelperImpl(rsaJWK, tokenValidity = 100.seconds)
     val returnedPayload = genPayload()
 
     for {
-      jwsPayload          <- tokenIssuer.issueJWSPayload(returnedPayload.asJson)
-      parsedSignedPayload <- tokenIssuer.verifyJWSPayload(jwsPayload)
+      jwsPayload          <- helper.sign(returnedPayload.asJson)
+      parsedSignedPayload <- helper.verify(jwsPayload)
     } yield assertEquals(parsedSignedPayload, returnedPayload.asJson)
   }
 
@@ -40,16 +39,16 @@ class TokenIssuerSuite extends CatsEffectSuite with Generators {
           """
 
   test("JWS verification fails if token is expired") {
-    val tokenIssuer     = new TokenIssuer(rsaJWK, tokenValidity = 0.seconds)
-    val returnedPayload = DelegationResponse(genString(), iri"potato", Uri(genString()), None, None)
+    val helper        = new JWSPayloadHelperImpl(rsaJWK, tokenValidity = 0.seconds)
+    val payloadToSign = json"""{ "content": "Some content"}"""
 
     val program = for {
-      jwsPayload <- tokenIssuer.issueJWSPayload(returnedPayload.asJson)
+      jwsPayload <- helper.sign(payloadToSign)
       _          <- IO.sleep(1.second)
-      _          <- tokenIssuer.verifyJWSPayload(jwsPayload)
+      _          <- helper.verify(jwsPayload)
     } yield ()
 
-    program.intercept[JWSSignatureExpired]
+    program.intercept[JWSSignatureExpired.type]
   }
 
   test("Parsing RSA private key and JWS verification succeed") {
@@ -59,11 +58,11 @@ class TokenIssuerSuite extends CatsEffectSuite with Generators {
     val returnedPayload  = genPayload()
 
     for {
-      parsedPrivateKey <- IO.fromTry(TokenIssuer.parseRSAPrivateKey(rawKey))
-      rsaKey            = TokenIssuer.generateRSAKeyFromPrivate(parsedPrivateKey)
-      tokenIssuer       = new TokenIssuer(rsaKey, tokenValidity = 100.seconds)
-      jwsPayload       <- tokenIssuer.issueJWSPayload(returnedPayload.asJson)
-      _                <- tokenIssuer.verifyJWSPayload(jwsPayload)
+      parsedPrivateKey <- IO.fromTry(RSAUtils.parseRSAPrivateKey(rawKey))
+      rsaKey            = RSAUtils.generateRSAKeyFromPrivate(parsedPrivateKey)
+      tokenIssuer       = new JWSPayloadHelperImpl(rsaKey, tokenValidity = 100.seconds)
+      jwsPayload       <- tokenIssuer.sign(returnedPayload.asJson)
+      _                <- tokenIssuer.verify(jwsPayload)
     } yield ()
   }
 }

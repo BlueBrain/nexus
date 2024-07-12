@@ -43,8 +43,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       showLocation = true,
       10737418240L,
       defaultBucket = targetBucket,
-      prefix = None,
-      delegation = None
+      prefix = None
     )
 
   def inputConfig: InputConfig =

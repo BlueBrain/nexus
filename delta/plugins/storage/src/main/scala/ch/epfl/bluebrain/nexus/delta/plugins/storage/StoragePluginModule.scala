@@ -10,10 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, TokenIssuer}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig.DelegationConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
@@ -39,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
@@ -49,12 +49,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-
-import java.security.interfaces.RSAPrivateCrtKey
-import scala.concurrent.duration.DurationInt
 
 /**
   * Storages and Files wiring
@@ -278,8 +274,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[DelegateFilesRoutes].from {
     (
-        cfg: StorageTypeConfig,
         identities: Identities,
+        jwsPayloadHelper: JWSPayloadHelper,
         aclCheck: AclCheck,
         files: Files,
         schemeDirectives: DeltaSchemeDirectives,
@@ -290,17 +286,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering: JsonKeyOrdering,
         showLocation: ShowFileLocation
     ) =>
-      val delegationCfg = cfg.amazon
-        .flatMap(_.delegation)
-        .getOrElse(
-          DelegationConfig(new RSAKeyGenerator(2048).generate().toRSAPrivateKey.asInstanceOf[RSAPrivateCrtKey], 3.days)
-        )
-      val tokenIssuer   = new TokenIssuer(delegationCfg.rsaKey, delegationCfg.tokenDuration)
       new DelegateFilesRoutes(
         identities,
         aclCheck,
         files,
-        tokenIssuer,
+        jwsPayloadHelper,
         indexingAction(_, _, _)(shift),
         schemeDirectives
       )(baseUri, cr, ordering, showLocation)
