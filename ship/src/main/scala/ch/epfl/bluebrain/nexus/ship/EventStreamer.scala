@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.utils.StreamingUtils
 import ch.epfl.bluebrain.nexus.ship.EventStreamer.logger
 import fs2.io.file.{Files, Path}
 import fs2.{text, Stream}
@@ -57,6 +58,7 @@ object EventStreamer {
                    .readFileMultipart(bucket, path.toString)
                    .through(text.utf8.decode)
                    .through(text.lines)
+                   .filter(_.nonEmpty)
       } yield lines
 
     override def fileList(path: Path): IO[List[Path]] =
@@ -73,7 +75,7 @@ object EventStreamer {
   def localStreamer: EventStreamer = new EventStreamer {
 
     override def streamLines(path: Path): Stream[IO, String] =
-      Files[IO].readUtf8Lines(path)
+      StreamingUtils.readLines(path)
 
     override def fileList(path: Path): IO[List[Path]] =
       Files[IO].list(path).compile.toList

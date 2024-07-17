@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.exporter
 
 import cats.effect.IO
-import cats.effect.kernel.Clock
 import cats.effect.std.Semaphore
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -10,14 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.Exporter.ExportResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.utils.StreamingUtils
 import doobie.Fragments
 import doobie.implicits._
 import doobie.util.query.Query0
 import fs2.Stream
-import fs2.io.file.{Files, Path}
+import fs2.io.file._
 import io.circe.syntax.EncoderOps
-
-import java.time.Instant
 
 trait Exporter {
 
@@ -29,15 +27,16 @@ object Exporter {
 
   private val logger = Logger[Exporter]
 
-  final case class ExportResult(json: Path, success: Path, start: Instant, end: Instant)
+  private val fileFormat = "%09d"
 
-  def apply(config: ExportConfig, clock: Clock[IO], xas: Transactors): IO[Exporter] =
-    Semaphore[IO](config.permits.toLong).map(new ExporterImpl(config, _, clock, xas))
+  final case class ExportResult(targetDirectory: Path, success: Path)
 
-  private class ExporterImpl(config: ExportConfig, semaphore: Semaphore[IO], clock: Clock[IO], xas: Transactors)
-      extends Exporter {
+  def apply(config: ExportConfig, xas: Transactors): IO[Exporter] =
+    Semaphore[IO](config.permits.toLong).map(new ExporterImpl(config, _, xas))
 
-    val queryConfig = QueryConfig(config.batchSize, RefreshStrategy.Stop)
+  private class ExporterImpl(config: ExportConfig, semaphore: Semaphore[IO], xas: Transactors) extends Exporter {
+
+    private val queryConfig = QueryConfig(config.batchSize, RefreshStrategy.Stop)
     override def events(query: ExportEventQuery): IO[ExportResult] = {
       val projectFilter     = Fragments.orOpt(
         query.projects.map { project => sql"(org = ${project.organization} and project = ${project.project})" }
@@ -51,35 +50,43 @@ object Exporter {
              |""".stripMargin.query[RowEvent]
 
       val exportIO = for {
-        start          <- clock.realTimeInstant
         _              <- logger.info(s"Starting export for projects ${query.projects} from offset ${query.offset}")
         targetDirectory = config.target / query.output.value
         _              <- Files[IO].createDirectory(targetDirectory)
-        exportFile      = targetDirectory / s"$start.json"
-        _              <- exportToFile(q, query.offset, exportFile)
-        end            <- clock.realTimeInstant
-        exportSuccess   = targetDirectory / s"$start.success"
+        exportDuration <- exportToFile(q, query.offset, targetDirectory)
+        exportSuccess   = targetDirectory / s"${paddedOffset(query.offset)}.success"
         _              <- writeSuccessFile(query, exportSuccess)
         _              <-
           logger.info(
-            s"Export for projects ${query.projects} from offset' ${query.offset}' after ${end.getEpochSecond - start.getEpochSecond} seconds."
+            s"Export for projects ${query.projects} from offset' ${query.offset.value}' after ${exportDuration.toSeconds} seconds."
           )
-      } yield ExportResult(exportFile, exportSuccess, start, end)
+      } yield ExportResult(targetDirectory, exportSuccess)
 
       semaphore.permit.use { _ => exportIO }
     }
 
-    private def exportToFile(query: Offset => Query0[RowEvent], start: Offset, targetFile: Path) = {
-      StreamingQuery[RowEvent](start, query, _.ordering, queryConfig, xas)
-        .map(_.asJson.noSpaces)
-        .intersperse("\n")
-        .through(Files[IO].writeUtf8(targetFile))
+    private def exportToFile(query: Offset => Query0[RowEvent], start: Offset, targetDirectory: Path) =
+      Stream
+        .eval(IO.ref(start))
+        .flatMap { offsetRef =>
+          def computePath = offsetRef.get.map { o =>
+            targetDirectory / s"${paddedOffset(o)}.json"
+          }
+
+          StreamingQuery[RowEvent](start, query, _.ordering, queryConfig, xas)
+            .evalTap { rowEvent => offsetRef.set(rowEvent.ordering) }
+            .map(_.asJson.noSpaces)
+            .through(StreamingUtils.writeRotate(computePath, config.limitPerFile))
+        }
         .compile
         .drain
-    }
+        .timed
+        .map(_._1)
 
     private def writeSuccessFile(query: ExportEventQuery, targetFile: Path) =
       Stream(query.asJson.toString()).through(Files[IO].writeUtf8(targetFile)).compile.drain
+
+    private def paddedOffset(offset: Offset) = fileFormat.format(offset.value)
   }
 
 }

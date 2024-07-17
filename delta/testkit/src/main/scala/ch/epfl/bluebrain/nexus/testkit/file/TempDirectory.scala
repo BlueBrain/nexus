@@ -12,7 +12,7 @@ object TempDirectory {
     val tempDirectory: IOFixture[Path] =
       ResourceSuiteLocalFixture(
         "tempDirectory",
-        Resource.make(Files[IO].createTempDirectory)(Files[IO].deleteRecursively)
+        Resource.make(Files[IO].createTempDirectory)(_ => IO.unit)
       )
   }
 
