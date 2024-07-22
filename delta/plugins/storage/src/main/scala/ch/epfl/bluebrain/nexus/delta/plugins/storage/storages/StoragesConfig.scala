@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -181,9 +182,9 @@ object StoragesConfig {
       showLocation: Boolean,
       defaultMaxFileSize: Long,
       defaultBucket: String,
-      prefix: Option[Uri]
+      prefix: Option[Path]
   ) extends StorageTypeEntryConfig {
-    val prefixUri: Uri = prefix.getOrElse(Uri.Empty)
+    val prefixPath: Path = prefix.getOrElse(Path.Empty)
   }
 
   /**

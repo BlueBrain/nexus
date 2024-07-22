@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -74,7 +74,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[S3LocationGenerator].from { (cfg: StoragePluginConfig) =>
-    val prefix: Uri = cfg.storages.storageTypeConfig.amazon.flatMap(_.prefix).getOrElse(Uri.Empty)
+    val prefix: Path = cfg.storages.storageTypeConfig.amazon.flatMap(_.prefix).getOrElse(Path.Empty)
     new S3LocationGenerator(prefix)
   }
 

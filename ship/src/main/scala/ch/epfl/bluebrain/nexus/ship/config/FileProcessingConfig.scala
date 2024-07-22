@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import pureconfig.ConfigReader
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import pureconfig.generic.semiauto.deriveReader
@@ -8,7 +8,7 @@ import pureconfig.generic.semiauto.deriveReader
 final case class FileProcessingConfig(
     importBucket: String,
     targetBucket: String,
-    prefix: Option[Uri],
+    prefix: Option[Path],
     skipFileEvents: Boolean
 )
 

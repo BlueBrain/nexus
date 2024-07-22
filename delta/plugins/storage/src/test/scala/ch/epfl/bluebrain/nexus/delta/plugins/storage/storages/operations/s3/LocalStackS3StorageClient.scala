@@ -53,7 +53,7 @@ object LocalStackS3StorageClient {
           showLocation = false,
           defaultMaxFileSize = 1,
           defaultBucket = defaultBucket,
-          prefix = Some(prefix)
+          prefix = Some(Uri.Path(prefix))
         )
         (S3StorageClient.unsafe(client), client, conf)
       }

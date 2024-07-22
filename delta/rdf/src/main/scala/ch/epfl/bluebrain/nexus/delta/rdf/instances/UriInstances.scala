@@ -30,6 +30,11 @@ trait UriInstances {
       .toEither
       .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
   )
+
+  implicit val pathConfigReader: ConfigReader[Uri.Path] = ConfigReader.fromString(str =>
+    Try(Uri.Path(str)).toEither
+      .leftMap(err => CannotConvert(str, classOf[Uri.Path].getSimpleName, err.getMessage))
+  )
 }
 
 object UriInstances extends UriInstances
