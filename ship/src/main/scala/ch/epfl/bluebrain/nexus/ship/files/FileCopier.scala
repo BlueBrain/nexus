@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.files
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -42,7 +43,7 @@ object FileCopier {
   ): FileCopier = {
     val importBucket      = config.importBucket
     val targetBucket      = config.targetBucket
-    val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Uri.Empty))
+    val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Path.Empty))
     (project: ProjectRef, attributes: FileAttributes) => {
       val origin          = attributes.path
       val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
