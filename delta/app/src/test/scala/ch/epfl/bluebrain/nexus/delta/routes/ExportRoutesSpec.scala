@@ -15,8 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.{ExportEventQuery, Export
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import fs2.io.file.Path
 
-import java.time.Instant
-
 class ExportRoutesSpec extends BaseRouteSpec {
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -31,7 +29,7 @@ class ExportRoutesSpec extends BaseRouteSpec {
 
   private val exporter = new Exporter {
     override def events(query: ExportEventQuery): IO[ExportResult] =
-      exportTrigger.set(true).as(ExportResult(Path("json"), Path("Success"), Instant.EPOCH, Instant.EPOCH))
+      exportTrigger.set(true).as(ExportResult(Path("target"), Path("success")))
   }
 
   private lazy val routes = Route.seal(

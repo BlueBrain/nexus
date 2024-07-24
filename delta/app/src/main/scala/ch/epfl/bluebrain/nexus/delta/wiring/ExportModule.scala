@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -16,8 +15,8 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 // $COVERAGE-OFF$
 object ExportModule extends ModuleDef {
 
-  make[Exporter].fromEffect { (config: AppConfig, clock: Clock[IO], xas: Transactors) =>
-    Exporter(config.`export`, clock, xas)
+  make[Exporter].fromEffect { (config: AppConfig, xas: Transactors) =>
+    Exporter(config.`export`, xas)
   }
 
   make[ExportRoutes].from {

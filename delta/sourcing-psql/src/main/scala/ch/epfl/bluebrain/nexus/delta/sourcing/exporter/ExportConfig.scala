@@ -5,7 +5,7 @@ import pureconfig.ConfigConvert.catchReadError
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigConvert, ConfigReader}
 
-final case class ExportConfig(batchSize: Int, permits: Int, target: Path)
+final case class ExportConfig(batchSize: Int, limitPerFile: Int, permits: Int, target: Path)
 
 object ExportConfig {
 
