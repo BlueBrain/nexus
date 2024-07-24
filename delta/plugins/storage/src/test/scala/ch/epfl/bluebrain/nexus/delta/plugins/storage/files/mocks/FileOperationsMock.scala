@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
@@ -30,7 +31,7 @@ object FileOperationsMock {
     FileOperations.mk(
       DiskFileOperations.mk,
       RemoteDiskFileOperations.mk(RemoteDiskStorageClientDisabled),
-      S3FileOperations.mk(S3StorageClient.disabled, new S3LocationGenerator(Uri.Empty))
+      S3FileOperations.mk(S3StorageClient.disabled, new S3LocationGenerator(Path.Empty))
     )
 
   def unimplemented: FileOperations = new FileOperations {

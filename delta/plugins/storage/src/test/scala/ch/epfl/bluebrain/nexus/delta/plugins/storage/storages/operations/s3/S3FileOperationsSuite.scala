@@ -43,7 +43,7 @@ class S3FileOperationsSuite
     localStackS3Client()
   implicit private lazy val as: ActorSystem                                                                            = actorSystem()
 
-  private lazy val locationGenerator = new S3LocationGenerator(conf.prefixUri)
+  private lazy val locationGenerator = new S3LocationGenerator(conf.prefixPath)
   private lazy val fileOps           = S3FileOperations.mk(s3StorageClient, locationGenerator)
 
   private def makeDigest(content: String): ComputedDigest = {
@@ -54,7 +54,8 @@ class S3FileOperationsSuite
   private def expectedPath(proj: ProjectRef, filename: String): Uri.Path =
     Uri.Path(s"$proj/files/${randomUuid.toString.takeWhile(_ != '-').mkString("/")}/$filename")
 
-  private def expectedLocation(proj: ProjectRef, filename: String): Uri = conf.prefixUri / expectedPath(proj, filename)
+  private def expectedLocation(proj: ProjectRef, filename: String): Uri =
+    Uri.Empty / conf.prefixPath / expectedPath(proj, filename)
 
   test("List objects in an existing bucket") {
     givenAnS3Bucket { bucket =>

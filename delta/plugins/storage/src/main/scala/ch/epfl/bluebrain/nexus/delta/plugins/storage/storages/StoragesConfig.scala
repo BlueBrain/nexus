@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -181,9 +182,9 @@ object StoragesConfig {
       showLocation: Boolean,
       defaultMaxFileSize: Long,
       defaultBucket: String,
-      prefix: Option[Uri]
+      prefix: Option[Path]
   ) extends StorageTypeEntryConfig {
-    val prefixUri: Uri = prefix.getOrElse(Uri.Empty)
+    val prefixPath: Path = prefix.getOrElse(Path.Empty)
   }
 
   /**
@@ -218,13 +219,16 @@ object StoragesConfig {
   implicit private val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
 
+  implicit private val pathConverter: ConfigConvert[Path] =
+    ConfigConvert.viaString[Path](catchReadError(Path(_)), _.toString)
+
   implicit private val permissionConverter: ConfigConvert[Permission] =
     ConfigConvert.viaString[Permission](optF(Permission(_).toOption), _.toString)
 
   implicit private val digestAlgConverter: ConfigConvert[DigestAlgorithm] =
     ConfigConvert.viaString[DigestAlgorithm](optF(DigestAlgorithm(_)), _.toString)
 
-  implicit private val pathConverter: ConfigConvert[AbsolutePath] =
+  implicit private val absolutePathConverter: ConfigConvert[AbsolutePath] =
     ConfigConvert.viaString[AbsolutePath](
       str => AbsolutePath(str).leftMap(err => CannotConvert(str, "AbsolutePath", err)),
       _.toString

@@ -231,7 +231,7 @@ class S3StorageSpec extends StorageSpec {
 
   private def assertThereIsAFileInS3WithAtLocation(location: String): Assertion = {
     s3Client
-      .listObjectsV2(ListObjectsV2Request.builder.bucket(bucket).prefix(s"myprefix/$projectRef/files").build)
+      .listObjectsV2(ListObjectsV2Request.builder.bucket(bucket).prefix(s"/myprefix/$projectRef/files").build)
       .map(_.contents.asScala.map(_.key()))
       .map(keys => keys should contain(location))
       .accepted
