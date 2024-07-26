@@ -99,7 +99,10 @@ class FileProcessor private (
     }
   }.recoverWith {
     case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
-    case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+    case i: IncorrectRev          =>
+      logger
+        .warn(i)(s"An incorrect revision has been provided for '${event.id}' in project '${event.project}'")
+        .as(ImportStatus.Dropped)
     case f: FileNotFound          =>
       // TODO: Remove this redemption when empty filenames are handled correctly
       logger.warn(f)(s"The file ${f.id} in project ${f.project} does not exist.").as(ImportStatus.Dropped)
