@@ -83,7 +83,10 @@ class ResourceProcessor private (
   }.redeemWith(
     {
       case a: ResourceAlreadyExists => logger.warn(a)("The resource already exists").as(ImportStatus.Dropped)
-      case i: IncorrectRev          => logger.warn(i)("An incorrect revision has been provided").as(ImportStatus.Dropped)
+      case i: IncorrectRev          =>
+        logger
+          .warn(i)(s"An incorrect revision has been provided for '${event.id}' in project '${event.project}'")
+          .as(ImportStatus.Dropped)
       case other                    => IO.raiseError(other)
     },
     _ => IO.pure(ImportStatus.Success)
