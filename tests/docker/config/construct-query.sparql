@@ -332,7 +332,7 @@ CONSTRUCT {
   }
     
   OPTIONAL {
-    ?id nsg:annotation / nsg:hasBody ?curatedAnnotation .
+    ?id nsg:annotation / nsg:hasBody ?simulationReadyAnnotation .
     BIND(
       IF(
          ?simulationReadyAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady>,
