@@ -36,7 +36,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val detailedCircuitId        = "https://bbp.epfl.ch/data/detailed-circuit"
   private val emodelId                 = "https://bbp.epfl.ch/data/emodel"
   private val memodelId                = "https://bbp.epfl.ch/data/memodel"
-  private val simulationMEmodelId      = "https://bbp.epfl.ch/data/simulation-ready-memodel"
+  private val simulationReadymemodelId = "https://bbp.epfl.ch/data/simulation-ready-memodel"
   private val singleNeuronSimulationId = "https://bbp.epfl.ch/data/synapse/single-neuron-simulation"
 
   // the resources that should appear in the search index
@@ -1089,12 +1089,12 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   }
 
   "have simulationReady field true if curated" in {
-      val query = queryField(simulationMEmodelId, "simulationReady")
+      val query = queryField(simulationReadymemodelId, "simulationReady")
 
       assertOneSource(query) { json =>
         json shouldBe json"""{ "simulationReady": true }"""
       }
-    }
+  }
 
 
   "have the correct single neuron simulation information" in {
