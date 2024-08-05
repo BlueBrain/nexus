@@ -1,0 +1,42 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@type": [
+    "Entity",
+    "MEModel"
+  ],
+  "@id": "https://bbp.epfl.ch/data/simulation-ready-memodel",
+  "annotation": {
+    "@type": [
+      "QualityAnnotation",
+      "Annotation"
+    ],
+    "hasBody": {
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady",
+      "@type": [
+        "AnnotationBody",
+        "DataScope"
+      ],
+      "label": "Simulation Ready"
+    },
+    "motivatedBy": {
+      "@id": "quality:Assessment",
+      "@type": "Motivation"
+    },
+    "name": "Data usage scope annotation",
+    "note": "Dataset can be used to simulate single cell MEModels."
+  },
+  "description": "me-model with status antonel",
+  "hasPart": [
+    {
+      "@id": "https://bbp.epfl.ch/data/emodel",
+      "@type": "EModel"
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/neuron-morphology",
+      "@type": "NeuronMorphology"
+    }
+  ],
+  "name": "me-model with status",
+  "status": "initalized",
+  "validated": false
+}
