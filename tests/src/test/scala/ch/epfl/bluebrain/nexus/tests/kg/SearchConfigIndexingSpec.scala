@@ -1089,13 +1089,12 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   }
 
   "have simulationReady field true if curated" in {
-      val query = queryField(simulationReadymemodelId, "simulationReady")
+    val query = queryField(simulationReadymemodelId, "simulationReady")
 
-      assertOneSource(query) { json =>
-        json shouldBe json"""{ "simulationReady": true }"""
-      }
+    assertOneSource(query) { json =>
+      json shouldBe json"""{ "simulationReady": true }"""
+    }
   }
-
 
   "have the correct single neuron simulation information" in {
     val expected =
