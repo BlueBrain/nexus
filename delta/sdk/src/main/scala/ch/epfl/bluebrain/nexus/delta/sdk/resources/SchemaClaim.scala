@@ -3,9 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.SchemaIsMandatory
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 /**
@@ -16,31 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
   */
 sealed trait SchemaClaim {
 
-  /**
-    * Validate the claim
-    * @param enforceSchema
-    *   to ban unconstrained resources
-    * @param submitOnDefinedSchema
-    *   the function to call when a schema is defined
-    */
-  def validate(enforceSchema: Boolean)(submitOnDefinedSchema: SubmitOnDefinedSchema): IO[ValidationResult] =
-    this match {
-      case CreateWithSchema(project, schema, caller) =>
-        submitOnDefinedSchema(project, schema, caller)
-      case CreateUnconstrained(project)              =>
-        onUnconstrained(project, enforceSchema)
-      case UpdateToSchema(project, schema, caller)   =>
-        submitOnDefinedSchema(project, schema, caller)
-      case UpdateToUnconstrained(project)            =>
-        onUnconstrained(project, enforceSchema)
-      case KeepUnconstrained(project)                =>
-        IO.pure(NoValidation(project))
-    }
-
   def project: ProjectRef
-
-  private def onUnconstrained(project: ProjectRef, enforceSchema: Boolean) =
-    IO.raiseWhen(enforceSchema)(SchemaIsMandatory(project)).as(NoValidation(project))
 
 }
 
@@ -52,16 +25,16 @@ object SchemaClaim {
     def schemaRef: ResourceRef
   }
 
-  final private case class CreateWithSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
+  final case class CreateWithSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
       extends DefinedSchemaClaim
-  final private case class CreateUnconstrained(project: ProjectRef) extends SchemaClaim
+  final case class CreateUnconstrained(project: ProjectRef) extends SchemaClaim
 
-  final private case class UpdateToSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
+  final case class UpdateToSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
       extends DefinedSchemaClaim
 
-  final private case class UpdateToUnconstrained(project: ProjectRef) extends SchemaClaim
+  final case class UpdateToUnconstrained(project: ProjectRef) extends SchemaClaim
 
-  final private case class KeepUnconstrained(project: ProjectRef) extends SchemaClaim
+  final case class KeepUnconstrained(project: ProjectRef) extends SchemaClaim
 
   private def isUnconstrained(schema: ResourceRef): Boolean = schema.iri == schemas.resources
 

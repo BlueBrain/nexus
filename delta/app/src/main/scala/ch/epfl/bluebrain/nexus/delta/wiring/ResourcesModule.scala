@@ -37,8 +37,10 @@ object ResourcesModule extends ModuleDef {
     ResourceResolution.schemaResource(aclCheck, resolvers, fetchSchema, excludeDeprecated = false)
   }
 
-  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], validateShacl: ValidateShacl) =>
-    ValidateResource(resourceResolution, validateShacl)
+  make[ValidateResource].from {
+    (resourceResolution: ResourceResolution[Schema], validateShacl: ValidateShacl, config: ResourcesConfig) =>
+      val schemaClaimResolver = SchemaClaimResolver(resourceResolution, config.schemaEnforcement)
+      ValidateResource(schemaClaimResolver, validateShacl)
   }
 
   make[ResourcesConfig].from { (config: AppConfig) => config.resources }

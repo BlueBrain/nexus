@@ -64,7 +64,6 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         skipFileEvents = false
       ),
       IriPatcherConfig(enabled = false, iri"https://bbp.epfl.ch/", iri"https:/openbrainplatform.com/"),
-      disableResourceValidation = false,
       Set.empty
     )
 

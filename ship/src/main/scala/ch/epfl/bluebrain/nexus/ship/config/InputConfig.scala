@@ -23,7 +23,6 @@ final case class InputConfig(
     storages: StoragesConfig,
     files: FileProcessingConfig,
     iriPatcher: IriPatcherConfig,
-    disableResourceValidation: Boolean,
     resourceTypesToIgnore: Set[Iri]
 )
 

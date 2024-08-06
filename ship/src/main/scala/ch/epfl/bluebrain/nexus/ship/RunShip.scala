@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -54,9 +53,8 @@ object RunShip {
                     // Wiring
                     eventClock                  <- EventClock.init()
                     remoteContextResolution     <- ContextWiring.remoteContextResolution
-                    validateShacl               <- ValidateShacl(remoteContextResolution)
                     (schemaLog, fetchSchema)     = SchemaWiring(config.eventLog, eventClock, xas)
-                    (resourceLog, fetchResource) = ResourceWiring(fetchContext, fetchSchema, validateShacl, config, eventClock, xas)
+                    (resourceLog, fetchResource) = ResourceWiring(fetchSchema, config, eventClock, xas)
                     rcr                          = ContextWiring.resolverContextResolution(fetchResource, fetchContext, remoteContextResolution, eventLogConfig, eventClock, xas)
                     schemaImports                = SchemaWiring.schemaImports(fetchResource, fetchSchema, fetchContext, eventLogConfig, eventClock, xas)
                     // Processors
