@@ -38,8 +38,9 @@ class S3RunShipSuite
     val directoryPath = Path("/import/multi-part-import")
     for {
       _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002163821.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002408475.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/004900000.json"))
       _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002163821.success"))
-      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/04900000.json"))
       events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(directoryPath, Offset.start)
       _     <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
     } yield ()

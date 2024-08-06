@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.ship
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -23,28 +22,17 @@ trait EventStreamer {
 
   protected def isDirectory(path: Path): IO[Boolean]
 
-  private def streamFromFile(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
-    val fileNameAsOffset = FileUtils
-      .filenameWithoutExtension(path.fileName.toString)
-      .flatMap(_.toLongOption.map(Offset.at))
-
-    if (fileNameAsOffset.exists(_ >= fromOffset)) {
-      streamLines(path).zipWithIndex
-        .evalMap { case (line, index) =>
-          IO.fromEither(decode[RowEvent](line)).onError { err =>
-            logger.error(err)(s"Error parsing to event at line $index")
-          }
+  private def streamFromFile(path: Path, fromOffset: Offset): Stream[IO, RowEvent] =
+    streamLines(path).zipWithIndex
+      .evalMap { case (line, index) =>
+        IO.fromEither(decode[RowEvent](line)).onError { err =>
+          logger.error(err)(s"Error parsing to event at line $index")
         }
-        .filter { event => event.ordering.value >= fromOffset.value }
-    } else {
-      Stream.eval(logger.info(s"File $path is ignored for offset ${fromOffset.value}")).drain
-    }
-  }
+      }
+      .filter { event => event.ordering.value >= fromOffset.value }
 
   private def streamFromDirectory(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
-    val sortedImportFiles = fileList(path)
-      .map(_.filter(_.extName.equals(".json")))
-      .map(_.sortBy(_.fileName.toString))
+    val sortedImportFiles = fileList(path).map(DirectoryReader(_, fromOffset))
     Stream.evals(sortedImportFiles).flatMap(streamFromFile(_, fromOffset))
   }
 

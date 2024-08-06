@@ -57,7 +57,7 @@ class RunShipSuite
   private val fileDigest    =
     ComputedDigest(DigestAlgorithm.SHA256, Hex.valueOf(DigestAlgorithm.SHA256.digest.digest(fileContent.getBytes)))
 
-  private def asPath(path: String): IO[Path] = loader.absolutePath(path).map(Path(_))
+  private def asPath(path: String): IO[Path] = loader.absoluteFs2Path(path)
 
   private def uploadFile(path: String) = {
     val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
