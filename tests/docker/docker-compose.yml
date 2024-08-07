@@ -159,7 +159,7 @@ services:
       - ./config:/config
 
   localstack:
-    image: localstack/localstack:3.5
+    image: localstack/localstack:3.6
     environment:
       AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
       AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
