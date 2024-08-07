@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.server.Directives.concat
 import akka.http.scaladsl.model.Uri.Path
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
@@ -272,6 +273,26 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[LinkFilesRoutes].from {
+    (
+        showLocation: ShowFileLocation,
+        identities: Identities,
+        aclCheck: AclCheck,
+        files: Files,
+        indexingAction: AggregateIndexingAction,
+        shift: File.Shift,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      new LinkFilesRoutes(identities, aclCheck, files, indexingAction(_, _, _)(shift))(
+        baseUri,
+        cr,
+        ordering,
+        showLocation
+      )
+  }
+
   make[DelegateFilesRoutes].from {
     (
         identities: Identities,
@@ -381,15 +402,17 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
     PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)
   }
-  many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
-    PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
-  }
-
-  many[PriorityRoute].add { (batchFileRoutes: BatchFilesRoutes) =>
-    PriorityRoute(priority, batchFileRoutes.routes, requiresStrictEntity = false)
-  }
-
-  many[PriorityRoute].add { (delegationRoutes: DelegateFilesRoutes) =>
-    PriorityRoute(priority, delegationRoutes.routes, requiresStrictEntity = false)
+  many[PriorityRoute].add {
+    (
+        fileRoutes: FilesRoutes,
+        batchFileRoutes: BatchFilesRoutes,
+        linkFileRoutes: LinkFilesRoutes,
+        delegationRoutes: DelegateFilesRoutes
+    ) =>
+      PriorityRoute(
+        priority,
+        concat(fileRoutes.routes, linkFileRoutes.routes, batchFileRoutes.routes, delegationRoutes.routes),
+        requiresStrictEntity = false
+      )
   }
 }

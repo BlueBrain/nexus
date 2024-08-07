@@ -18,7 +18,7 @@
   "_filename": "{{filename}}",
   "_location": "{{location}}",
   "_mediaType": "{{mediaType}}",
-  "_origin" : "External",
+  "_origin" : "Link",
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
   "_self": "{{self}}",
