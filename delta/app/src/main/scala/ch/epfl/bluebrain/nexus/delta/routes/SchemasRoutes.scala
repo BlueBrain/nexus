@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaScheme
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
@@ -72,9 +72,13 @@ final class SchemasRoutes(
   private def emitMetadataOrReject(io: IO[SchemaResource]): Route =
     emit(io.map(_.void).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
 
-  private def emitSource(io: IO[SchemaResource]): Route = {
+  private def emitSource(io: IO[SchemaResource], annotate: Boolean): Route = {
     implicit val source: Printer = sourcePrinter
-    emit(io.map(_.value.source).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
+    emit(
+      io.map { resource => AnnotatedSource.when(annotate)(resource, resource.value.source) }
+        .attemptNarrow[SchemaRejection]
+        .rejectOn[SchemaNotFound]
+    )
   }
 
   private def emitTags(io: IO[SchemaResource]): Route =
@@ -139,10 +143,11 @@ final class SchemasRoutes(
                     }
                   },
                   // Fetch a schema original source
-                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                    authorizeFor(ref, Read).apply {
-                      emitSource(schemas.fetch(id, ref))
-                    }
+                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & annotateSource) {
+                    (id, annotate) =>
+                      authorizeFor(ref, Read).apply {
+                        emitSource(schemas.fetch(id, ref), annotate)
+                      }
                   },
                   pathPrefix("tags") {
                     concat(

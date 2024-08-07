@@ -253,14 +253,18 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/schemas/{org_label}/{project_label}/{schema_id}/source?rev={rev}&tag={tag}
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/source?rev={rev}&tag={tag}&annotate={annotate}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{annotate}`: Boolean - annotate the response with the schema metadata.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+If `{annotate}` is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence.
+The context in the original payload is also amended with the metadata context.
 
 **Example**
 

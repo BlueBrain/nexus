@@ -341,6 +341,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         }
       }
     }
+
     "fetch a schema original payload by rev or tag" in {
       val endpoints = List(
         "/v1/schemas/myorg/myproject/myid2/source",
@@ -356,6 +357,38 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual payloadNoId
           }
+        }
+      }
+    }
+
+    "fetch an annotated schema original payload" in {
+
+      Get("/v1/schemas/myorg/myproject/myid2/source?annotate=true") ~> asReader ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "schemas/schema-payload-with-metadata.json",
+          "id"   -> myId2,
+          "self" -> ResourceUris.schema(projectRef, myId2).accessUri,
+          "rev"  -> 2
+        )
+      }
+    }
+
+    "fetch an annotated schema original payload by rev or tag" in {
+      val endpoints = List(
+        "/v1/schemas/myorg/myproject/myid2/source?rev=1&annotate=true",
+        "/v1/schemas/myorg/myproject/myid2/source?tag=mytag&annotate=true"
+      )
+
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf(
+            "schemas/schema-payload-with-metadata.json",
+            "id"   -> myId2,
+            "self" -> ResourceUris.schema(projectRef, myId2).accessUri,
+            "rev"  -> 1
+          )
         }
       }
     }

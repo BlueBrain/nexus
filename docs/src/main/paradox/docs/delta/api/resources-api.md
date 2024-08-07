@@ -339,7 +339,7 @@ where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
-- `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.
+- `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources and schemas. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
 

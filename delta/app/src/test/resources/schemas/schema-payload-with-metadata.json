@@ -1,0 +1,50 @@
+{
+  "@context": [
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "schema": "http://schema.org/"
+    },
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "{{id}}",
+  "@type": "Schema",
+  "shapes": [
+    {
+      "@id": "nxv:MyShape",
+      "@type": "NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "property": [
+        {
+          "@id": "nxv:NameProperty",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "path": "nxv:name"
+        },
+        {
+          "@id": "nxv:NumberProperty",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "path": "nxv:number"
+        },
+        {
+          "@id": "nxv:PathProperty",
+          "datatype": "xsd:boolean",
+          "minCount": 1,
+          "path": "nxv:bool"
+        }
+      ],
+      "targetClass": "schema:Custom"
+    }
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/realms/wonderland/users/writer",
+  "_deprecated": false,
+  "_incoming": "http://localhost/v1/schemas/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid2/incoming",
+  "_outgoing": "http://localhost/v1/schemas/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid2/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproject",
+  "_rev": {{rev}},
+  "_self": "{{self}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/realms/wonderland/users/writer"
+}

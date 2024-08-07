@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
@@ -193,6 +194,25 @@ class SchemasSpec extends BaseIntegrationSpec {
         _       <- deltaClient.get[Json](s"/schemas/$project/$id", Rick) { (json, response) =>
                      response.status shouldEqual StatusCodes.OK
                      json.hcursor.downField("_deprecated").as[Boolean].toOption shouldEqual Some(false)
+                   }
+      } yield succeed
+    }
+
+    "fetch the original payload for a user with access" in {
+      val id = genId()
+      for {
+        payload <- SchemaPayloads.simple(id)
+        _       <- deltaClient.post[Json](s"/schemas/$project", payload, Rick) { expectCreated }
+        // Forbidden for anonymous
+        _       <- deltaClient.get[Json](s"/schemas/$project/$id/source", Anonymous) { expectForbidden }
+        // Granted for the user with the read permission
+        _       <- deltaClient.get[Json](s"/schemas/$project/$id/source", Rick) { (json, response) =>
+                     response.status shouldEqual StatusCodes.OK
+                     json shouldEqual payload
+                   }
+        _       <- deltaClient.get[Json](s"/schemas/$project/$id/source?annotate=true", Rick) { (json, response) =>
+                     response.status shouldEqual StatusCodes.OK
+                     json.asObject.value.keys should contain allOf ("_createdAt", "_updatedAt", "@id", "@type")
                    }
       } yield succeed
     }
