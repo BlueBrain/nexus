@@ -26,7 +26,7 @@ class S3RunShipSuite
   private lazy val (s3Client, fs2S3client, _)    = localStackS3Client()
 
   test("Run import from S3 providing a single file") {
-    val importFilePath = Path("/import/import.json")
+    val importFilePath = Path("/import/single/00263821.json")
     for {
       _     <- uploadFileToS3(fs2S3client, bucket, importFilePath)
       events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(importFilePath, Offset.start)
@@ -37,9 +37,10 @@ class S3RunShipSuite
   test("Run import from S3 providing a directory") {
     val directoryPath = Path("/import/multi-part-import")
     for {
-      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.json"))
-      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-05T14:38:31.165389Z.success"))
-      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/2024-04-06T11:34:31.165389Z.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002163821.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002408475.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/004900000.json"))
+      _     <- uploadFileToS3(fs2S3client, bucket, Path("/import/multi-part-import/002163821.success"))
       events = EventStreamer.s3eventStreamer(s3Client, bucket).stream(directoryPath, Offset.start)
       _     <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
     } yield ()
