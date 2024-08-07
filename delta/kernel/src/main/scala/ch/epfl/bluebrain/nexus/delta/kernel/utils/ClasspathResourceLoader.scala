@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handlebarsExpander
+import fs2.io.file.Path
 import fs2.text
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject}
@@ -20,6 +21,8 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     ).rethrow
       .map(_.getPath)
   }
+
+  final def absoluteFs2Path(resourcePath: String) = absolutePath(resourcePath).map(Path(_))
 
   /**
     * Loads the content of the argument classpath resource as an [[InputStream]].

@@ -57,7 +57,7 @@ class RunShipSuite
   private val fileDigest    =
     ComputedDigest(DigestAlgorithm.SHA256, Hex.valueOf(DigestAlgorithm.SHA256.digest.digest(fileContent.getBytes)))
 
-  private def asPath(path: String): IO[Path] = loader.absolutePath(path).map(Path(_))
+  private def asPath(path: String): IO[Path] = loader.absoluteFs2Path(path)
 
   private def uploadFile(path: String) = {
     val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
@@ -89,7 +89,7 @@ class RunShipSuite
 
   test("Run import by providing the path to a file") {
     for {
-      events <- eventsStream("import/import.json")
+      events <- eventsStream("import/single/00263821.json")
       _      <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
       _      <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
       _      <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
@@ -108,7 +108,7 @@ class RunShipSuite
   test("Test the increment") {
     val start = Offset.at(2)
     for {
-      events <- eventsStream("import/two-projects.json", offset = start)
+      events <- eventsStream("import/two-projects/000000001.json", offset = start)
       _      <- RunShip(events, s3Client, inputConfig, xas).map { report =>
                   assert(report.offset == Offset.at(2L))
                   assert(thereIsOneProjectEventIn(report))
@@ -123,7 +123,7 @@ class RunShipSuite
       projectMapping = Map(original -> target)
     )
     for {
-      events <- eventsStream("import/import.json")
+      events <- eventsStream("import/single/00263821.json")
       _      <- RunShip(events, s3Client, configWithProjectMapping, xas)
       _      <- getDistinctOrgProjects(xas).map { project =>
                   assertEquals(project, target)
@@ -137,7 +137,7 @@ class RunShipSuite
   test("Import files in S3 and in the primary store") {
     val textPlain = MediaTypes.`text/plain`.withMissingCharset
     for {
-      events               <- eventsStream("import/file-import.json")
+      events               <- eventsStream("import/file-import/000000001.json")
       report               <- RunShip(events, s3Client, inputConfig, xas)
       project               = ProjectRef.unsafe("public", "sscx")
       // File with an old path to be rewritten
@@ -223,7 +223,7 @@ object RunShipSuite {
       }
   }
 
-  // The expected import report for the import.json file, as well as for the /import/multi-part-import directory
+  // The expected import report for the 00263821.json file, as well as for the /import/multi-part-import directory
   val expectedImportReport: ImportReport = ImportReport(
     Offset.at(9999999L),
     Instant.parse("2099-12-31T22:59:59.999Z"),

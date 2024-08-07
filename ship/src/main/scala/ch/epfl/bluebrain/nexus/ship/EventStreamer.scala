@@ -32,9 +32,7 @@ trait EventStreamer {
       .filter { event => event.ordering.value >= fromOffset.value }
 
   private def streamFromDirectory(path: Path, fromOffset: Offset): Stream[IO, RowEvent] = {
-    val sortedImportFiles = fileList(path)
-      .map(_.filter(_.extName.equals(".json")))
-      .map(_.sortBy(_.fileName.toString))
+    val sortedImportFiles = fileList(path).map(DirectoryReader(_, fromOffset))
     Stream.evals(sortedImportFiles).flatMap(streamFromFile(_, fromOffset))
   }
 

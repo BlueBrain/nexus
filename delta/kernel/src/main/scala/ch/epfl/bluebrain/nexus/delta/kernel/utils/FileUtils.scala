@@ -12,4 +12,11 @@ object FileUtils {
     }
   }
 
+  def filenameWithoutExtension(filename: String): Option[String] = {
+    val lastDotIndex = filename.lastIndexOf('.')
+    Option.when(lastDotIndex > 0) {
+      filename.substring(0, lastDotIndex)
+    }
+  }
+
 }
