@@ -214,7 +214,8 @@ final class ResourcesRoutes(
                                   .fetch(resourceRef, project, schemaOpt)
                                   .map { resource =>
                                     AnnotatedSource.when(annotate)(resource, resource.value.source)
-                                  }.attemptNarrow[ResourceRejection]
+                                  }
+                                  .attemptNarrow[ResourceRejection]
                                   .rejectOn[ResourceNotFound]
                               )
                             }

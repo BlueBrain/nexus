@@ -369,7 +369,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
           "schemas/schema-payload-with-metadata.json",
           "id"   -> myId2,
           "self" -> ResourceUris.schema(projectRef, myId2).accessUri,
-          "rev" -> 2
+          "rev"  -> 2
         )
       }
     }
@@ -387,7 +387,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
             "schemas/schema-payload-with-metadata.json",
             "id"   -> myId2,
             "self" -> ResourceUris.schema(projectRef, myId2).accessUri,
-            "rev" -> 1
+            "rev"  -> 1
           )
         }
       }

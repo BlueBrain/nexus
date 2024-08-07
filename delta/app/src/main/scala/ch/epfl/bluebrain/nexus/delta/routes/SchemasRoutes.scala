@@ -75,9 +75,10 @@ final class SchemasRoutes(
   private def emitSource(io: IO[SchemaResource], annotate: Boolean): Route = {
     implicit val source: Printer = sourcePrinter
     emit(
-      io.map { resource =>AnnotatedSource.when(annotate)(resource, resource.value.source) }
+      io.map { resource => AnnotatedSource.when(annotate)(resource, resource.value.source) }
         .attemptNarrow[SchemaRejection]
-        .rejectOn[SchemaNotFound])
+        .rejectOn[SchemaNotFound]
+    )
   }
 
   private def emitTags(io: IO[SchemaResource]): Route =
@@ -142,10 +143,11 @@ final class SchemasRoutes(
                     }
                   },
                   // Fetch a schema original source
-                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & annotateSource) { (id, annotate) =>
-                    authorizeFor(ref, Read).apply {
-                      emitSource(schemas.fetch(id, ref), annotate)
-                    }
+                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & annotateSource) {
+                    (id, annotate) =>
+                      authorizeFor(ref, Read).apply {
+                        emitSource(schemas.fetch(id, ref), annotate)
+                      }
                   },
                   pathPrefix("tags") {
                     concat(
