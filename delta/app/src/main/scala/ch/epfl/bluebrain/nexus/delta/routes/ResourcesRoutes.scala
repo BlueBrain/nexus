@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -210,22 +209,14 @@ final class ResourcesRoutes(
                           authorizeFor(project, Read).apply {
                             annotateSource { annotate =>
                               implicit val source: Printer = sourcePrinter
-                              if (annotate) {
-                                emit(
-                                  resources
-                                    .fetch(resourceRef, project, schemaOpt)
-                                    .map(asSourceWithMetadata)
-                                    .attemptNarrow[ResourceRejection]
-                                )
-                              } else {
-                                emit(
-                                  resources
-                                    .fetch(resourceRef, project, schemaOpt)
-                                    .map(_.value.source)
-                                    .attemptNarrow[ResourceRejection]
-                                    .rejectOn[ResourceNotFound]
-                                )
-                              }
+                              emit(
+                                resources
+                                  .fetch(resourceRef, project, schemaOpt)
+                                  .map { resource =>
+                                    AnnotatedSource.when(annotate)(resource, resource.value.source)
+                                  }.attemptNarrow[ResourceRejection]
+                                  .rejectOn[ResourceNotFound]
+                              )
                             }
                           }
                       },
