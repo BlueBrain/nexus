@@ -6,15 +6,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FormDataExtractor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.{failingDiskFileOperations, failingRemoteDiskFileOperations, registerS3FileOperationOnly}
+import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.{failingDiskFileOperations, failingRemoteDiskFileOperations, linkS3FileOperationOnly}
 
 object FileWiring {
 
-  def registerOperationOnly(s3StorageClient: S3StorageClient): FileOperations =
+  def linkOperationOnly(s3StorageClient: S3StorageClient): FileOperations =
     FileOperations.mk(
       failingDiskFileOperations,
       failingRemoteDiskFileOperations,
-      registerS3FileOperationOnly(s3StorageClient)
+      linkS3FileOperationOnly(s3StorageClient)
     )
 
   def failingFormDataExtractor: FormDataExtractor =

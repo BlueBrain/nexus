@@ -273,7 +273,7 @@ class FilesRoutesSpec
             {
               "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
               "@type" : "InvalidFilePath",
-              "reason" : "Linking or registering a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+              "reason" : "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
             }
               """
       }

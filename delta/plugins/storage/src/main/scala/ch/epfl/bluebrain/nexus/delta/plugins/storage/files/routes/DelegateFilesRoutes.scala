@@ -68,7 +68,7 @@ final class DelegateFilesRoutes(
                   entity(as[Json]) { jwsPayload =>
                     emit(
                       Created,
-                      registerDelegatedFile(jwsPayload, project, storageId, mode)
+                      linkDelegatedFile(jwsPayload, project, storageId, mode)
                         .attemptNarrow[FileRejection]: ResponseToJsonLd
                     )
                   }
@@ -88,7 +88,7 @@ final class DelegateFilesRoutes(
       jwsPayload     <- jwsPayloadHelper.sign(delegationResp.asJson)
     } yield jwsPayload
 
-  private def registerDelegatedFile(
+  private def linkDelegatedFile(
       jwsPayload: Json,
       project: ProjectRef,
       storageId: Option[IdSegment],
@@ -98,15 +98,8 @@ final class DelegateFilesRoutes(
       originalPayload    <- jwsPayloadHelper.verify(jwsPayload)
       delegationResponse <- IO.fromEither(originalPayload.as[DelegationResponse])
       fileId              = FileId(delegationResponse.id, project)
-      fileResource       <-
-        files.registerFile(
-          fileId,
-          storageId,
-          delegationResponse.metadata,
-          delegationResponse.path.path,
-          None,
-          delegationResponse.mediaType
-        )
+      request             = FileLinkRequest(delegationResponse.path.path, delegationResponse.mediaType, delegationResponse.metadata)
+      fileResource       <- files.linkFile(fileId, storageId, request, None)
       _                  <- index(project, fileResource, mode)
     } yield fileResource
 

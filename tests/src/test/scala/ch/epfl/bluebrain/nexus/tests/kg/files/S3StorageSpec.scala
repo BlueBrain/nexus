@@ -245,7 +245,7 @@ class S3StorageSpec extends StorageSpec {
       mediaType: String
   ): Json =
     jsonContentOf(
-      "kg/files/registration-metadata.json",
+      "kg/files/linked-metadata.json",
       replacements(
         Coyote,
         "id"          -> id,
@@ -271,7 +271,18 @@ class S3StorageSpec extends StorageSpec {
     Stream.fromIterator[IO](content.iterator, 16).through(uploadPipe).compile.drain.as(sha256Base64Encoded)
   }
 
-  s"Registering an S3 file in-place" should {
+  s"Linking an S3 file in-place" should {
+
+    def createFileLink(id: String, storageId: String, payload: Json) =
+      deltaClient.put[Json](s"/link/files/$projectRef/$id?storage=nxv:$storageId", payload, Coyote) {
+        expectCreated
+      }
+
+    def updateFileLink(id: String, storageId: String, rev: Int, payload: Json) =
+      deltaClient.put[Json](s"/link/files/$projectRef/$id?rev=$rev&storage=nxv:$storageId", payload, Coyote) {
+        expectOk
+      }
+
     "succeed" in {
       val id      = genId()
       val path    = s"$id/nexus-logo.png"
@@ -279,9 +290,7 @@ class S3StorageSpec extends StorageSpec {
 
       for {
         _         <- uploadLogoFileToS3(path)
-        _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
-                       (_, response) => response.status shouldEqual StatusCodes.Created
-                     }
+        _         <- createFileLink(id, storageId, payload)
         fullId     = s"$attachmentPrefix$id"
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
@@ -303,9 +312,7 @@ class S3StorageSpec extends StorageSpec {
 
       for {
         _         <- uploadLogoFileToS3(path)
-        _         <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", payload, Coyote) {
-                       (_, response) => response.status shouldEqual StatusCodes.Created
-                     }
+        _         <- createFileLink(id, storageId, payload)
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
                        json should have(mediaTypeField("image/dan"))
@@ -325,15 +332,9 @@ class S3StorageSpec extends StorageSpec {
 
       for {
         _             <- uploadLogoFileToS3(originalPath)
-        _             <- deltaClient.put[Json](s"/files/$projectRef/register/$id?storage=nxv:$storageId", originalPayload, Coyote) {
-                           (_, response) => response.status shouldEqual StatusCodes.Created
-                         }
+        _             <- createFileLink(id, storageId, originalPayload)
         s3Digest      <- uploadFileBytesToS3(fileContent.getBytes(StandardCharsets.UTF_8), updatedPath)
-        _             <-
-          deltaClient
-            .put[Json](s"/files/$projectRef/register-update/$id?rev=1&storage=nxv:$storageId", updatedPayload, Coyote) {
-              expectOk
-            }
+        _             <- updateFileLink(id, storageId, 1, updatedPayload)
         _             <- deltaClient.get[ByteString](s"/files/$projectRef/$id", Coyote, acceptAll) {
                            expectFileContent(
                              filename,

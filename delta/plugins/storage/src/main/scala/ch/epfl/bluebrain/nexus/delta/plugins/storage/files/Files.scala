@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{ContentType, Uri}
+import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -133,7 +133,7 @@ final class Files(
     * @param tag
     *   the optional tag this file link is being created with, attached to the current revision
     */
-  def createLink(
+  def createLegacyLink(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       description: FileDescription,
@@ -143,22 +143,9 @@ final class Files(
     for {
       pc  <- fetchContext.onCreate(projectRef)
       iri <- generateId(pc)
-      res <- createLink(iri, projectRef, pc, storageId, description, path, tag)
+      res <- createLegacyLink(iri, projectRef, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
-
-  def delegate(projectRef: ProjectRef, description: FileDescription, storageId: Option[IdSegment])(implicit
-      caller: Caller
-  ): IO[DelegationResponse] = {
-    for {
-      pc           <- fetchContext.onCreate(projectRef)
-      iri          <- generateId(pc)
-      _            <-
-        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
-      (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      metadata     <- fileOperations.delegate(storage, description.filename)
-    } yield DelegationResponse(metadata.bucket, iri, metadata.path, description.metadata, description.mediaType)
-  }.span("delegate")
 
   /**
     * Create a new file linking it from an existing file in a storage
@@ -172,7 +159,7 @@ final class Files(
     * @param tag
     *   the optional tag this file link is being created with, attached to the current revision
     */
-  def createLink(
+  def createLegacyLink(
       id: FileId,
       storageId: Option[IdSegment],
       description: FileDescription,
@@ -181,9 +168,31 @@ final class Files(
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc) <- id.expandIri(fetchContext.onCreate)
-      res       <- createLink(iri, id.project, pc, storageId, description, path, tag)
+      res       <- createLegacyLink(iri, id.project, pc, storageId, description, path, tag)
     } yield res
   }.span("createLink")
+
+  /**
+    * Grants a delegation to create the physical file on the given storage
+    * @param projectRef
+    *   the project where the file will belong
+    * @param description
+    *   a description of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    */
+  def delegate(projectRef: ProjectRef, description: FileDescription, storageId: Option[IdSegment])(implicit
+      caller: Caller
+  ): IO[DelegationResponse] = {
+    for {
+      pc           <- fetchContext.onCreate(projectRef)
+      iri          <- generateId(pc)
+      _            <-
+        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
+      (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      metadata     <- fileOperations.delegate(storage, description.filename)
+    } yield DelegationResponse(metadata.bucket, iri, metadata.path, description.metadata, description.mediaType)
+  }.span("delegate")
 
   /**
     * Update an existing file
@@ -227,21 +236,19 @@ final class Files(
     } yield res
   }.span("updateFileMetadata")
 
-  def registerFile(
+  def linkFile(
       id: FileId,
       storageId: Option[IdSegment],
-      metadata: Option[FileCustomMetadata],
-      path: Uri.Path,
-      tag: Option[UserTag],
-      mediaType: Option[ContentType]
+      linkRequest: FileLinkRequest,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onCreate)
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      s3Metadata            <- fileOperations.register(storage, path)
-      filename              <- IO.fromOption(path.lastSegment)(InvalidFilePath)
+      s3Metadata            <- fileOperations.link(storage, linkRequest.path)
+      filename              <- IO.fromOption(linkRequest.path.lastSegment)(InvalidFilePath)
       attr                   = FileAttributes.from(
-                                 FileDescription(filename, mediaType.orElse(s3Metadata.contentType), metadata),
+                                 FileDescription(filename, linkRequest.mediaType.orElse(s3Metadata.contentType), linkRequest.metadata),
                                  s3Metadata.metadata
                                )
       res                   <- eval(
@@ -256,25 +263,23 @@ final class Files(
                                  )
                                )
     } yield res
-  }.span("registerFile")
+  }.span("linkFile")
 
-  def updateRegisteredFile(
+  def updateLinkedFile(
       id: FileId,
       storageId: Option[IdSegment],
-      metadata: Option[FileCustomMetadata],
       rev: Int,
-      path: Uri.Path,
-      tag: Option[UserTag],
-      mediaType: Option[ContentType]
+      linkRequest: FileLinkRequest,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      s3Metadata            <- fileOperations.register(storage, path)
-      filename              <- IO.fromOption(path.lastSegment)(InvalidFilePath)
+      s3Metadata            <- fileOperations.link(storage, linkRequest.path)
+      filename              <- IO.fromOption(linkRequest.path.lastSegment)(InvalidFilePath)
       attr                   = FileAttributes.from(
-                                 FileDescription(filename, mediaType.orElse(s3Metadata.contentType), metadata),
+                                 FileDescription(filename, linkRequest.mediaType.orElse(s3Metadata.contentType), linkRequest.metadata),
                                  s3Metadata.metadata
                                )
       res                   <- eval(
@@ -290,7 +295,7 @@ final class Files(
                                  )
                                )
     } yield res
-  }.span("updateRegisteredFile")
+  }.span("updateLinkedFile")
 
   /**
     * Update a new file linking it from an existing file in a storage
@@ -304,7 +309,7 @@ final class Files(
     * @param path
     *   the path where the file is located inside the storage
     */
-  def updateLink(
+  def updateLegacyLink(
       id: FileId,
       storageId: Option[IdSegment],
       description: FileDescription,
@@ -316,7 +321,7 @@ final class Files(
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
-      metadata              <- linkFile(storage, path, description.filename, iri)
+      metadata              <- legacyLinkFile(storage, path, description.filename, iri)
       res                   <- eval(
                                  UpdateFile(
                                    iri,
@@ -453,7 +458,7 @@ final class Files(
     }
   }
 
-  private def createLink(
+  private def createLegacyLink(
       iri: Iri,
       ref: ProjectRef,
       pc: ProjectContext,
@@ -465,7 +470,7 @@ final class Files(
     for {
       _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, ref, pc)
-      storageMetadata       <- linkFile(storage, path, description.filename, iri)
+      storageMetadata       <- legacyLinkFile(storage, path, description.filename, iri)
       res                   <- eval(
                                  CreateFile(
                                    iri,
@@ -483,7 +488,7 @@ final class Files(
                                )
     } yield res
 
-  private def linkFile(
+  private def legacyLinkFile(
       storage: Storage,
       path: Uri.Path,
       filename: String,

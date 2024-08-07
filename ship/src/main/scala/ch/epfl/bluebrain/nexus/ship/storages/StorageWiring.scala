@@ -111,7 +111,7 @@ object StorageWiring {
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
   }
 
-  def registerS3FileOperationOnly(s3Client: S3StorageClient): S3FileOperations = new S3FileOperations {
+  def linkS3FileOperationOnly(s3Client: S3StorageClient): S3FileOperations = new S3FileOperations {
     override def checkBucketExists(bucket: String): IO[Unit] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
@@ -121,8 +121,8 @@ object StorageWiring {
     override def save(uploading: S3UploadingFile): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
-    override def register(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =
-      S3FileOperations.registerInternal(s3Client, bucket, path)(UUIDF.random)
+    override def link(bucket: String, path: Uri.Path): IO[S3FileOperations.S3FileMetadata] =
+      S3FileOperations.linkInternal(s3Client, bucket, path)(UUIDF.random)
 
     override def delegate(
         bucket: String,

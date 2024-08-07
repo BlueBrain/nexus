@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CancelEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileEvent, FileId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileEvent, FileId, FileLinkRequest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -67,8 +67,9 @@ class FileProcessor private (
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
+            val linkRequest = FileLinkRequest(newPath, attrs.mediaType, customMetadata)
             files
-              .registerFile(fileId, None, customMetadata, newPath, e.tag, attrs.mediaType)
+              .linkFile(fileId, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
@@ -77,8 +78,9 @@ class FileProcessor private (
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
+            val linkRequest = FileLinkRequest(newPath, attrs.mediaType, customMetadata)
             files
-              .updateRegisteredFile(fileId, None, customMetadata, cRev, newPath, e.tag, attrs.mediaType)
+              .updateLinkedFile(fileId, None, cRev, linkRequest, e.tag)
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
@@ -152,7 +154,7 @@ object FileProcessor {
         alwaysAuthorize,
         fetchContext,
         fe,
-        registerOperationOnly(s3Client)
+        linkOperationOnly(s3Client)
       )(FailingUUID)
 
     new FileProcessor(files, projectMapper, fileCopier, clock)
