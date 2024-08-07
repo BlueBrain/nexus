@@ -281,6 +281,7 @@ object FileRejection {
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))           => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_))    => (StatusCodes.Conflict, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.BucketAccessDenied(_, _, _)) => (StatusCodes.Forbidden, Seq.empty)
+      case SaveRejection(_, _, SaveFileRejection.FileContentLengthIsMissing)  => (StatusCodes.BadRequest, Seq.empty)
       case CopyRejection(_, _, _, rejection)                                  => (rejection.status, Seq.empty)
       case FetchRejection(_, _, _)                                            => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                             => (StatusCodes.InternalServerError, Seq.empty)
