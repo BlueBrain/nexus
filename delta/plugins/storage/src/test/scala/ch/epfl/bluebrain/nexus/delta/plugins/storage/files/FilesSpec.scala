@@ -289,7 +289,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if no write permissions" in {
         files
-          .createLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
+          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
           .rejectedWith[AuthorizationFailed]
       }
 
@@ -307,7 +307,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
           mkResource(file2, projectRef, remoteRev, attr, storageType = RemoteStorageType, tags = Tags(tag -> 1))
 
         val result    = files
-          .createLink(fileId("file2"), Some(remoteId), description("myfile.txt"), path, Some(tag))
+          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), path, Some(tag))
           .accepted
         val fileByTag = files.fetch(FileId("file2", tag, projectRef)).accepted
 
@@ -322,7 +322,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val id   = fileId(genString())
         val path = Uri.Path(s"my/file-5.txt")
 
-        files.createLink(id, Some(remoteId), fileDescription, path, None).accepted
+        files.createLegacyLink(id, Some(remoteId), fileDescription, path, None).accepted
         val fetchedFile = files.fetch(id).accepted
 
         fetchedFile.value.attributes.name should contain(name)
@@ -332,14 +332,14 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if file id already exists" in {
         files
-          .createLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
+          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
           .rejected shouldEqual
           ResourceAlreadyExists(file2, projectRef)
       }
 
       "reject if storage does not exist" in {
         files
-          .createLink(fileId("file3"), Some(storage), description("myfile.txt"), Uri.Path.Empty, None)
+          .createLegacyLink(fileId("file3"), Some(storage), description("myfile.txt"), Uri.Path.Empty, None)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storageIri, projectRef))
       }
@@ -347,13 +347,13 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
         files
-          .createLink(None, projectRef, description("myfile.txt"), Uri.Path.Empty, None)
+          .createLegacyLink(None, projectRef, description("myfile.txt"), Uri.Path.Empty, None)
           .rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
         files
-          .createLink(Some(remoteId), deprecatedProject.ref, description("myfile.txt"), Uri.Path.Empty, None)
+          .createLegacyLink(Some(remoteId), deprecatedProject.ref, description("myfile.txt"), Uri.Path.Empty, None)
           .rejectedWith[ProjectIsDeprecated]
       }
     }
@@ -512,7 +512,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
             tags = Tags(tag -> 1, newTag -> 3)
           )
         val actual   = files
-          .updateLink(
+          .updateLegacyLink(
             fileId("file2"),
             Some(remoteId),
             description("file-4.txt", `text/plain(UTF-8)`),
@@ -536,11 +536,11 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val originalFileDescription = description("file-6.txt")
         val updatedFileDescription  = descriptionWithMetadata("file-6.txt", name, desc, keywords)
 
-        files.createLink(id, Some(remoteId), originalFileDescription, path, None).accepted
+        files.createLegacyLink(id, Some(remoteId), originalFileDescription, path, None).accepted
 
         val fetched = files.fetch(id).accepted
         files.updateAttributes(fetched.id, projectRef).accepted
-        files.updateLink(id, Some(remoteId), updatedFileDescription, path, 2, None)
+        files.updateLegacyLink(id, Some(remoteId), updatedFileDescription, path, 2, None)
 
         eventually {
           files.fetch(id).map { fetched =>
@@ -554,20 +554,20 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if file doesn't exists" in {
         files
-          .updateLink(fileIdIri(nxv + "other"), None, description("myfile.txt"), Uri.Path.Empty, 1, None)
+          .updateLegacyLink(fileIdIri(nxv + "other"), None, description("myfile.txt"), Uri.Path.Empty, 1, None)
           .rejectedWith[FileNotFound]
       }
 
       "reject if digest is not computed" in {
         files
-          .updateLink(fileId("file2"), None, description("myfile.txt"), Uri.Path.Empty, 3, None)
+          .updateLegacyLink(fileId("file2"), None, description("myfile.txt"), Uri.Path.Empty, 3, None)
           .rejectedWith[DigestNotComputed]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .updateLink(fileId("file1"), Some(storage), description("myfile.txt"), Uri.Path.Empty, 2, None)
+          .updateLegacyLink(fileId("file1"), Some(storage), description("myfile.txt"), Uri.Path.Empty, 2, None)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -576,13 +576,20 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
         files
-          .updateLink(FileId(file1, projectRef), None, description("myfile.txt"), Uri.Path.Empty, 2, None)
+          .updateLegacyLink(FileId(file1, projectRef), None, description("myfile.txt"), Uri.Path.Empty, 2, None)
           .rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
         files
-          .updateLink(FileId(file1, deprecatedProject.ref), None, description("myfile.txt"), Uri.Path.Empty, 2, None)
+          .updateLegacyLink(
+            FileId(file1, deprecatedProject.ref),
+            None,
+            description("myfile.txt"),
+            Uri.Path.Empty,
+            2,
+            None
+          )
           .rejectedWith[ProjectIsDeprecated]
       }
     }

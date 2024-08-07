@@ -107,14 +107,14 @@ class S3FileOperationsSuite
     }
   }
 
-  test("register and fetch an existing S3 file") {
+  test("Link and fetch an existing S3 file") {
     givenAnS3Bucket { bucket =>
       val fileContents = genString()
       givenAFileInABucket(bucket, fileContents) { key =>
         val path = Uri.Path(key)
 
         for {
-          storageMetadata <- fileOps.register(bucket, path)
+          storageMetadata <- fileOps.link(bucket, path)
           _                = assertEquals(storageMetadata.metadata.path, path)
           _                = assertEquals(storageMetadata.metadata.location, Uri(key))
           _               <- fetchFileContent(bucket, path).assertEquals(fileContents)

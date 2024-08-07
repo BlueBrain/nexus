@@ -203,15 +203,15 @@ object StorageFileRejection {
 
   }
 
-  sealed abstract class RegisterFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
+  sealed abstract class LinkFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
-  object RegisterFileRejection {
+  object LinkFileRejection {
 
     final case class InvalidPath(path: Uri.Path)
-        extends RegisterFileRejection(s"An S3 path must contain at least the filename. Path was $path")
+        extends LinkFileRejection(s"An S3 path must contain at least the filename. Path was $path")
 
     final case class UnsupportedOperation(tpe: StorageType)
-        extends MoveFileRejection(s"Registering a file in-place is not supported for storages of type '${tpe.iri}'")
+        extends MoveFileRejection(s"Linking a file in-place is not supported for storages of type '${tpe.iri}'")
   }
 
   sealed abstract class DelegateFileOperation(loggedDetails: String) extends StorageFileRejection(loggedDetails)

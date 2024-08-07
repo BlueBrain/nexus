@@ -27,7 +27,7 @@ trait S3FileOperations {
 
   def save(uploading: S3UploadingFile): IO[FileStorageMetadata]
 
-  def register(bucket: String, path: Uri.Path): IO[S3FileMetadata]
+  def link(bucket: String, path: Uri.Path): IO[S3FileMetadata]
 
   def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata]
 }
@@ -66,8 +66,8 @@ object S3FileOperations {
 
     override def save(uploading: S3UploadingFile): IO[FileStorageMetadata] = saveFile.save(uploading)
 
-    override def register(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
-      registerInternal(client, bucket, path)
+    override def link(bucket: String, path: Uri.Path): IO[S3FileMetadata] =
+      linkInternal(client, bucket, path)
 
     override def delegate(bucket: String, project: ProjectRef, filename: String): IO[S3DelegationMetadata] =
       uuidf().map { uuid =>
@@ -75,7 +75,7 @@ object S3FileOperations {
       }
   }
 
-  def registerInternal(client: S3StorageClient, bucket: String, path: Uri.Path)(implicit
+  def linkInternal(client: S3StorageClient, bucket: String, path: Uri.Path)(implicit
       uuidF: UUIDF
   ): IO[S3FileMetadata] = {
     for {
@@ -99,7 +99,7 @@ object S3FileOperations {
         uuid,
         resp.fileSize,
         resp.digest,
-        FileAttributesOrigin.External,
+        FileAttributesOrigin.Link,
         Uri(path.toString()),
         path
       )

@@ -228,7 +228,7 @@ object FileRejection {
     */
   final case object InvalidFilePath
       extends FileRejection(
-        s"Linking or registering a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+        s"Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
       )
 
   final case class CopyRejection(

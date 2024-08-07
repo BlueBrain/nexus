@@ -94,19 +94,20 @@ object FileAttributes {
   object FileAttributesOrigin {
     final case object Client extends FileAttributesOrigin
 
-    final case object Storage  extends FileAttributesOrigin
-    final case object External extends FileAttributesOrigin
+    final case object Storage extends FileAttributesOrigin
+    final case object Link    extends FileAttributesOrigin
 
     implicit val fileAttributesEncoder: Encoder[FileAttributesOrigin] = Encoder.encodeString.contramap {
-      case Client   => "Client"
-      case Storage  => "Storage"
-      case External => "External"
+      case Client  => "Client"
+      case Storage => "Storage"
+      case Link    => "Link"
     }
 
     implicit val fileAttributesDecoder: Decoder[FileAttributesOrigin] = Decoder.decodeString.emap {
       case "Client"   => Right(Client)
       case "Storage"  => Right(Storage)
-      case "External" => Right(External)
+      case "External" => Right(Link)
+      case "Link"     => Right(Link)
       case str        => Left(s"'$str' is not a 'FileAttributesOrigin'")
     }
   }
