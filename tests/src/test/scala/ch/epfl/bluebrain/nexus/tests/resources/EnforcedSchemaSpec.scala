@@ -78,8 +78,16 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
   private def updateResourceSchema(id: String, schema: String) =
     deltaClient.put[Json](s"/resources/$project/${UrlUtils.encode(schema)}/$id/update-schema", Json.Null, Rick)(_)
 
+  private val contextPayload = json"""{ "@context": { "@base": "http://example.com/base/" } }"""
+
+  private val whitelistedResourcePayload = json"""{
+                "@context": { "schema" : "http://schema.org/" },
+                 "@type": ["schema:Book", "schema:Chapter"],
+                 "schema:headline": "1984"
+              }"""
+
   "Creating a resource" should {
-    "fail if no schema is provided" in {
+    "fail if no schema is provided for a non-whitelisted resource" in {
       for {
         payload <- SimpleResource.sourcePayload("xxx", 5)
         _       <- deltaClient.post[Json](s"/resources/$project/_/", payload, Rick) { failOnMissingSchema }
@@ -94,6 +102,24 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
                    }
       } yield succeed
     }
+
+    "succeed for a context (aka a resource with no type)" in {
+      deltaClient.post[Json](s"/resources/$project/_/", contextPayload, Rick) { expectCreated }
+    }
+
+    "succeed for a resource where all types are whitelisted" in {
+      deltaClient.post[Json](s"/resources/$project/_/", whitelistedResourcePayload, Rick) { expectCreated }
+    }
+
+    "fails for a resource where a type is not whitelisted" in {
+      val payload =
+        json"""{
+                "@context": { "schema" : "http://schema.org/" },
+                 "@type": ["schema:Book", "schema:ComicStory"],
+                 "schema:headline": "1984"
+              }"""
+      deltaClient.post[Json](s"/resources/$project/_/", payload, Rick) { failOnMissingSchema }
+    }
   }
 
   "Updating a validated resource" should {
@@ -103,6 +129,20 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
         id             <- createValidatedResource
         updatedPayload <- SimpleResource.sourcePayload(id, 5)
         _              <- updateResource(id, unconstrainedSchema, updatedPayload) { failOnMissingSchema }
+      } yield succeed
+    }
+
+    "succeed when setting it as unconstrained for a whitelisted type" in {
+      for {
+        id <- createValidatedResource
+        _  <- updateResource(id, unconstrainedSchema, whitelistedResourcePayload) { expectOk }
+      } yield succeed
+    }
+
+    "succeed when setting it as unconstrained for a context" in {
+      for {
+        id <- createValidatedResource
+        _  <- updateResource(id, unconstrainedSchema, contextPayload) { expectOk }
       } yield succeed
     }
 

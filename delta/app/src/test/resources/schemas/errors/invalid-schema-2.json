@@ -7,19 +7,6 @@
   "reason": "Schema 'https://bluebrain.github.io/nexus/vocabulary/pretendschema' could not be resolved in 'myorg/myproject'",
   "report": {
     "history": [
-      {
-        "rejections": [
-          {
-            "cause": {
-              "@type": "ResourceNotFound",
-              "reason": "The resource was not found in project 'myorg/myproject'."
-            },
-            "project": "myorg/myproject"
-          }
-        ],
-        "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project",
-        "success": false
-      }
     ]
   }
 }

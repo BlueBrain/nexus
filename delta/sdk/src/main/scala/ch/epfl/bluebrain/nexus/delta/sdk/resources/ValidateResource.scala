@@ -7,21 +7,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.kamonComponent
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.SubmitOnDefinedSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 
 /**
   * Allows to validate the resource:
   *   - Validate it against the provided schema
   *   - Checking if the provided resource id is not reserved
+  *   - Checking if the provided resource types are not reserved
   */
 trait ValidateResource {
 
@@ -54,7 +52,7 @@ trait ValidateResource {
 object ValidateResource {
 
   def apply(
-      resourceResolution: ResourceResolution[Schema],
+      schemaClaimResolver: SchemaClaimResolver,
       validateShacl: ValidateShacl
   ): ValidateResource =
     new ValidateResource {
@@ -63,10 +61,12 @@ object ValidateResource {
           schemaClaim: SchemaClaim,
           enforceSchema: Boolean
       ): IO[ValidationResult] = {
-        val submitOnDefinedSchema: SubmitOnDefinedSchema = resolveSchema(_, _, _).flatMap(apply(jsonld, _))
         assertNotReservedId(jsonld.id) >>
           assertNotReservedTypes(jsonld.types) >>
-          schemaClaim.validate(enforceSchema)(submitOnDefinedSchema)
+          schemaClaimResolver(schemaClaim, jsonld.types, enforceSchema).flatMap {
+            case Some(schema) => apply(jsonld, schema)
+            case None         => IO.pure(NoValidation(schemaClaim.project))
+          }
       }
 
       def apply(jsonld: JsonLdAssembly, schema: ResourceF[Schema]): IO[ValidationResult] = {
@@ -91,26 +91,12 @@ object ValidateResource {
           ResourceShaclEngineRejection(jsonld.id, schemaRef, e)
         }.span("validateShacl")
 
-      private def assertNotDeprecated(schema: ResourceF[Schema]) = {
-        IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))
-      }
-
       private def assertNotReservedId(resourceId: Iri) = {
         IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))
       }
 
       private def assertNotReservedTypes(types: Set[Iri]) = {
         IO.raiseWhen(types.exists(_.startsWith(Vocabulary.nxv.base)))(ReservedResourceTypes(types))
-      }
-
-      private def resolveSchema(project: ProjectRef, schema: ResourceRef, caller: Caller) = {
-        resourceResolution
-          .resolve(schema, project)(caller)
-          .flatMap { result =>
-            val invalidSchema = result.leftMap(InvalidSchemaRejection(schema, project, _))
-            IO.fromEither(invalidSchema)
-          }
-          .flatTap(schema => assertNotDeprecated(schema))
       }
     }
 }

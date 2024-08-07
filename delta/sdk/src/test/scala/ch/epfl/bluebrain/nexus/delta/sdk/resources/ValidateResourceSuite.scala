@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig.SchemaEnforcementConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -51,17 +52,11 @@ class ValidateResourceSuite extends NexusSuite {
   private val schema    = schemaValue(schemaId)
     .map(SchemaGen.resourceFor(_))
 
-  private val deprecatedSchemaId  = nxv + "deprecated"
-  private val deprecatedSchemaRef = ResourceRef.Revision(deprecatedSchemaId, 1)
-  private val deprecatedSchema    = schemaValue(deprecatedSchemaId)
-    .map(SchemaGen.resourceFor(_).copy(deprecated = true))
-
   private val unconstrained = ResourceRef.Revision(schemas.resources, 1)
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchF[Schema] = {
-    case (ref, p) if ref.iri == schemaId && p == project           => schema.map(Some(_))
-    case (ref, p) if ref.iri == deprecatedSchemaId && p == project => deprecatedSchema.map(Some(_))
-    case _                                                         => IO.none
+    case (ref, p) if ref.iri == schemaId && p == project => schema.map(Some(_))
+    case _                                               => IO.none
   }
   private val schemaResolution: ResourceResolution[Schema]             =
     ResourceResolutionGen.singleInProject(project, fetchSchema)
@@ -80,7 +75,10 @@ class ValidateResourceSuite extends NexusSuite {
   private val validResourceId = nxv + "valid"
   private val validResource   = jsonLdWithId(validResourceId, identity)
 
-  private val validateResource = ValidateResource(schemaResolution, ValidateShacl(rcr).accepted)
+  private val schemaEnforcementConfig = SchemaEnforcementConfig(Set.empty, allowNoTypes = false)
+  private val schemaClaimResolver     = SchemaClaimResolver(schemaResolution, schemaEnforcementConfig)
+
+  private val validateResource = ValidateResource(schemaClaimResolver, ValidateShacl(rcr).accepted)
 
   private def assertResult(result: ValidationResult, expectedProject: ProjectRef, expectedSchema: ResourceRef.Revision)(
       implicit loc: Location
@@ -154,16 +152,6 @@ class ValidateResourceSuite extends NexusSuite {
       jsonLd     <- validResource
       schemaClaim = SchemaClaim.onCreate(project, unknownSchema, caller)
       _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(expectedError)
-    } yield ()
-  }
-
-  test("Reject a resource when the resolved schema is deprecated") {
-    for {
-      jsonLd     <- validResource
-      schemaClaim = SchemaClaim.onCreate(project, deprecatedSchemaRef, caller)
-      _          <- validateResource(jsonLd, schemaClaim, enforceSchema = true).interceptEquals(
-                      SchemaIsDeprecated(deprecatedSchemaId)
-                    )
     } yield ()
   }
 

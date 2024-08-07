@@ -4,21 +4,18 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaOrg, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -26,19 +23,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, Printer}
 import org.scalatest.Assertion
 
 import java.util.UUID
 
-class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
+class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture with CatsIOValues {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -54,9 +50,9 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
   private val asReader = addCredentials(OAuth2BearerToken("reader"))
   private val asWriter = addCredentials(OAuth2BearerToken("writer"))
 
-  private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schemaOrg.Person)
-  private val projBase     = nxv.base
-  private val project      = ProjectGen.resourceFor(
+  private val am         = ApiMappings("nxv" -> nxv.base, "Person" -> schemaOrg.Person)
+  private val projBase   = nxv.base
+  private val project    = ProjectGen.resourceFor(
     ProjectGen.project(
       "myorg",
       "myproject",
@@ -66,12 +62,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
       mappings = am + Resources.mappings
     )
   )
-  private val projectRef   = project.value.ref
-  private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
-  private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
-  private val schema2      = SchemaGen.schema(schemaOrg.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
-  private val schema3      = SchemaGen.schema(nxv + "otherSchema", project.value.ref, schemaSource.removeKeys(keywords.id))
-  private val tag          = UserTag.unsafe("mytag")
+  private val projectRef = project.value.ref
+  private val schema1    = nxv + "myschema"
+  private val schema2    = nxv + "otherSchema"
+  private val tag        = UserTag.unsafe("mytag")
 
   private val myId                            = nxv + "myid" // Resource created against no schema with id present on the payload
   private def encodeWithBase(id: String)      = UrlUtils.encode((nxv + id).toString)
@@ -89,27 +83,13 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  private val fetchSchema: (ResourceRef, ProjectRef) => FetchF[Schema] = {
-    case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
-    case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
-    case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
-    case _                                 => IO.none
-  }
-
-  private val validator: ValidateResource                          = ValidateResource(
-    ResourceResolutionGen.singleInProject(projectRef, fetchSchema),
-    ValidateShacl(rcr).accepted
-  )
+  private val validateResource                                     = validateFor(Set((projectRef, schema1), (projectRef, schema2)))
   private val fetchContext                                         = FetchContextDummy(List(project.value))
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
-    val resourceDef = Resources.definition(validator, DetectChange(enabled = true), clock)
-    val scopedLog   = ScopedEventLog(
-      resourceDef,
-      ResourcesConfig(eventLogConfig, decodingOption, skipUpdateNoChange = true).eventLog,
-      xas
-    )
+    val resourceDef = Resources.definition(validateResource, DetectChange(enabled = true), clock)
+    val scopedLog   = ScopedEventLog(resourceDef, eventLogConfig, xas)
 
     val resources = ResourcesImpl(
       scopedLog,
@@ -158,7 +138,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "create a resource" in {
       val endpoints = List(
         ("/v1/resources/myorg/myproject", schemas.resources),
-        ("/v1/resources/myorg/myproject/myschema", schema1.id)
+        ("/v1/resources/myorg/myproject/myschema", schema1)
       )
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
@@ -172,7 +152,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "create a tagged resource" in {
       val endpoints           = List(
         ("/v1/resources/myorg/myproject?tag=mytag", schemas.resources),
-        ("/v1/resources/myorg/myproject/myschema?tag=mytag", schema1.id)
+        ("/v1/resources/myorg/myproject/myschema?tag=mytag", schema1)
       )
       val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
@@ -188,7 +168,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "create a resource with an authenticated user and provided id" in {
       val endpoints = List(
         ((id: String) => s"/v1/resources/myorg/myproject/_/$id", schemas.resources),
-        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id", schema1.id)
+        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id", schema1)
       )
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
@@ -202,7 +182,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "create a tagged resource with an authenticated user and provided id" in {
       val endpoints           = List(
         ((id: String) => s"/v1/resources/myorg/myproject/_/$id?tag=mytag", schemas.resources),
-        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag", schema1.id)
+        ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag", schema1)
       )
       val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
@@ -225,17 +205,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
           response.asJson shouldEqual
             jsonContentOf("resources/errors/already-exists.json", "id" -> (nxv + id), "project" -> "myorg/myproject")
         }
-      }
-    }
-
-    "fail to create a resource that does not validate against a schema" in {
-      val payloadFailingSchemaConstraints = payloadWithoutId.replaceKeyWithValue("number", "wrong")
-      Put(
-        "/v1/resources/myorg/myproject/nxv:myschema/wrong",
-        payloadFailingSchemaConstraints.toEntity
-      ) ~> asWriter ~> routes ~> check {
-        response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("resources/errors/invalid-resource.json")
       }
     }
 
@@ -296,7 +265,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
         forAll(endpoints) { case (endpoint, rev) =>
           Put(s"$endpoint?rev=$rev", payloadUpdated(id).toEntity(Printer.noSpaces)) ~> asWriter ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual standardWriterMetadata(id, rev = rev + 1, schema1.id)
+            response.asJson shouldEqual standardWriterMetadata(id, rev = rev + 1, schema1)
           }
         }
       }
@@ -341,7 +310,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
         forAll(endpoints) { endpoint =>
           Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> asWriter ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual standardWriterMetadata(id, rev = 1, schema = schema1.id)
+            response.asJson shouldEqual standardWriterMetadata(id, rev = 1, schema = schema1)
           }
         }
       }
@@ -384,7 +353,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
       givenAResourceWithSchema("myschema") { id =>
         Put(s"/v1/resources/$projectRef/otherSchema/$id/update-schema") ~> asWriter ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
-          response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema3.id.toString)
+          response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema2.toString)
         }
       }
     }
@@ -509,7 +478,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with CatsIOValues {
           s"/v1/resources/myorg/myproject/_/$id?rev=1",
           s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag"
         )
-        val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "schema:Custom")
+        val meta      = standardWriterMetadata(id, schema = schema1, tpe = "schema:Custom")
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK

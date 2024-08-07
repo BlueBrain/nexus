@@ -40,6 +40,8 @@ CONSTRUCT {
                                                   :idLabel     ?sTypeIdLabel .
   ?alias  :curated         ?curated               .
 
+  ?alias  :simulationReady ?simulationReady       .
+
   ## Atlas
   ?alias  :coordinatesInBrainAtlas  ?coordinates     .
                                     ?coordinates     :valueX      ?valueX       ;
@@ -326,6 +328,17 @@ CONSTRUCT {
          true,
          IF(?curatedAnnotation = <https://neuroshapes.org/Unassessed>, false, ?undefined)
       ) AS ?curated
+    )
+  }
+    
+  OPTIONAL {
+    ?id nsg:annotation / nsg:hasBody ?simulationReadyAnnotation .
+    BIND(
+      IF(
+         ?simulationReadyAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady>,
+         true,
+         false
+      ) AS ?simulationReady
     )
   }
 
