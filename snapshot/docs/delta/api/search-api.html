@@ -313,12 +313,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>&hellip; where <code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</p>
 <h2><a href="#query-a-suite" name="query-a-suite" class="anchor"><span class="anchor-link"></span></a>Query a suite</h2>
 <p>Nexus Delta allows to configure multiple search suites under <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/search/src/main/resources/search.conf" title="`plugins.search.suites`"><code>plugins.search.suites</code></a>. Each suite is composed of one or more projects. When querying using a suite, the query is only performed on the underlying Elasticsearch indices of the projects in the suite.</p>
-<pre><code>POST /v1/search/query/suite/{suiteName}
+<pre><code>POST /v1/search/query/suite/{suiteName}?addProject={project}
 {payload}
 </code></pre>
 <p>&hellip; where:</p>
 <ul>
   <li><code>{suiteName}</code> is the name of the suite</li>
+  <li><code>{project}</code>: Project - can be used to extend the scope of the suite by providing other projects under the format <code>org/project</code>. This parameter can appear  multiple times, expanding further the scope of the search.</li>
   <li><code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</li>
 </ul>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
