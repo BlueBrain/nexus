@@ -237,31 +237,23 @@ final class Files(
   }.span("updateFileMetadata")
 
   def linkFile(
-      id: FileId,
+      id: Option[IdSegment],
+      project: ProjectRef,
       storageId: Option[IdSegment],
       linkRequest: FileLinkRequest,
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      (iri, pc)             <- id.expandIri(fetchContext.onCreate)
-      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, id.project, pc)
+      projectContext        <- fetchContext.onCreate(project)
+      iri                   <- id.fold(generateId(projectContext)) { FileId.iriExpander(_, projectContext) }
+      (storageRef, storage) <- fetchAndValidateActiveStorage(storageId, project, projectContext)
       s3Metadata            <- fileOperations.link(storage, linkRequest.path)
       filename              <- IO.fromOption(linkRequest.path.lastSegment)(InvalidFilePath)
       attr                   = FileAttributes.from(
                                  FileDescription(filename, linkRequest.mediaType.orElse(s3Metadata.contentType), linkRequest.metadata),
                                  s3Metadata.metadata
                                )
-      res                   <- eval(
-                                 CreateFile(
-                                   iri,
-                                   id.project,
-                                   storageRef,
-                                   storage.tpe,
-                                   attr,
-                                   caller.subject,
-                                   tag
-                                 )
-                               )
+      res                   <- eval(CreateFile(iri, project, storageRef, storage.tpe, attr, caller.subject, tag))
     } yield res
   }.span("linkFile")
 

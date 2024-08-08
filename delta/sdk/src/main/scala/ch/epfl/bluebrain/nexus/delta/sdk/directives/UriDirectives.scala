@@ -126,6 +126,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       }
     }
 
+  def noRev: Directive0 = noParameter("rev")
+
   /**
     * Consumes a path Segment and parse it into an [[IdSegment]]
     */
@@ -174,6 +176,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
         )
       )
   }
+
+  val revParam: Directive[Tuple1[Int]] = parameter("rev".as[Int])
 
   /**
     * Creates optional [[UserTag]] from `tag` query param.
