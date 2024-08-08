@@ -24,18 +24,20 @@ import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.{Json, JsonObject}
-import org.scalatest.{Assertion, DoNotDiscover}
+import org.scalatest.Assertion
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 
-@DoNotDiscover
-class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
+class ElasticSearchClientSpec
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
     with CatsEffectSpec
+    with ElasticSearchDocker
     with ScalaTestElasticSearchClientSetup
     with CirceLiteral
     with Eventually {
+
+  override val docker: ElasticSearchDocker = this
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
   implicit val baseUri: BaseUri                        = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -283,5 +285,14 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
         } yield ()
       }.accepted
     }
+
+    "create a point in time for the given index" in {
+      val index = IndexLabel.unsafe(genString())
+      for {
+        _   <- esClient.createIndex(index)
+        pit <- esClient.createPointInTime(index, 30.seconds)
+        _   <- esClient.deletePointInTime(pit)
+      } yield ()
+    }.accepted
   }
 }

@@ -60,6 +60,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val searchPath                                            = "_search"
   private val source                                                = "_source"
   private val mapping                                               = "_mapping"
+  private val pit                                                   = "_pit"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
@@ -515,6 +516,32 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def mapping(index: IndexLabel): IO[Json] =
     client.toJson(Get(endpoint / index.value / mapping).withHttpCredentials)
+
+  /**
+    * Creates a point-in-time to be used in further searches
+    *
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
+    * @param index
+    *   the target index
+    * @param keepAlive
+    *   extends the time to live of the corresponding point in time
+    */
+  def createPointInTime(index: IndexLabel, keepAlive: FiniteDuration): IO[PointInTime] = {
+    val pitEndpoint = (endpoint / index.value / pit).withQuery(Uri.Query("keep_alive" -> s"${keepAlive.toSeconds}s"))
+    client.fromJsonTo[PointInTime](Post(pitEndpoint).withHttpCredentials)
+  }
+
+  /**
+    * Deletes the given point-in-time
+    *
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
+    */
+  def deletePointInTime(pointInTime: PointInTime): IO[Unit] =
+    client.run(Delete(endpoint / pit, pointInTime.asJson).withHttpCredentials) {
+      case resp if resp.status.isSuccess() => discardEntity(resp)
+    }
 
   private def discardEntity(resp: HttpResponse) =
     IO.delay(resp.discardEntityBytes()) >> IO.unit
