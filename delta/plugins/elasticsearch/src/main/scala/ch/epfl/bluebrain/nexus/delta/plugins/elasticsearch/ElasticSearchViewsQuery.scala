@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, PointInTime}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{View, ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Allows operations on Elasticsearch views
@@ -60,6 +62,30 @@ trait ElasticSearchViewsQuery {
       caller: Caller
   ): IO[Json] =
     this.query(view.viewId, view.project, query, qp)
+
+  /**
+    * Creates a point-in-time to be used in further searches
+    *
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
+    * @param id
+    *   the target view
+    * @param project
+    *   project reference in which the view is
+    * @param keepAlive
+    *   extends the time to live of the corresponding point in time
+    */
+  def createPointInTime(id: IdSegment, project: ProjectRef, keepAlive: FiniteDuration)(implicit
+      caller: Caller
+  ): IO[PointInTime]
+
+  /**
+    * Deletes the given point-in-time
+    *
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
+    */
+  def deletePointInTime(pointInTime: PointInTime)(implicit caller: Caller): IO[Unit]
 
   /**
     * Fetch the elasticsearch mapping of the provided view
@@ -117,22 +143,41 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       project: ProjectRef
   )(implicit caller: Caller): IO[Json] =
     for {
-      _      <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
-      view   <- viewStore.fetch(id, project)
-      idx    <- indexOrError(view, id)
-      search <- client.mapping(IndexLabel.unsafe(idx)).adaptError { case e: HttpClientError =>
-                  WrappedElasticSearchClientError(e)
-                }
-    } yield search
+      _       <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
+      view    <- viewStore.fetch(id, project)
+      index   <- indexOrError(view, id)
+      mapping <- client.mapping(index).adaptError { case e: HttpClientError =>
+                   WrappedElasticSearchClientError(e)
+                 }
+    } yield mapping
 
-  private def indexOrError(view: View, id: IdSegment): IO[String] = view match {
-    case IndexingView(_, index, _) => index.pure[IO]
+  override def createPointInTime(id: IdSegment, project: ProjectRef, keepAlive: FiniteDuration)(implicit
+      caller: Caller
+  ): IO[PointInTime] =
+    for {
+      _     <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
+      view  <- viewStore.fetch(id, project)
+      index <- indexOrError(view, id)
+      pit   <- client.createPointInTime(index, keepAlive).adaptError { case e: HttpClientError =>
+                 WrappedElasticSearchClientError(e)
+               }
+    } yield pit
+
+  override def deletePointInTime(pointInTime: PointInTime)(implicit caller: Caller): IO[Unit] =
+    client.deletePointInTime(pointInTime).adaptError { case e: HttpClientError =>
+      WrappedElasticSearchClientError(e)
+    }
+
+  private def indexOrError(view: View, id: IdSegment): IO[IndexLabel] = view match {
+    case IndexingView(_, index, _) => IO.fromEither(IndexLabel(index))
     case _: AggregateView          =>
-      DifferentElasticSearchViewType(
-        id.toString,
-        ElasticSearchViewType.AggregateElasticSearch,
-        ElasticSearchViewType.ElasticSearch
-      ).raiseError[IO, String]
+      IO.raiseError(
+        DifferentElasticSearchViewType(
+          id.toString,
+          ElasticSearchViewType.AggregateElasticSearch,
+          ElasticSearchViewType.ElasticSearch
+        )
+      )
   }
 
 }

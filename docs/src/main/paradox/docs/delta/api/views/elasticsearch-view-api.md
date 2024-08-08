@@ -341,6 +341,41 @@ Payload
 Response
 :   @@snip [search-results.json](../assets/views/elasticsearch/search-results.json)
 
+## Create a point in time
+
+Creates a point in time on the underlying index of the view to be used in further search requests.
+
+@link:[See the Elasticsearch documentation for more details](https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html)
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/_pit?keep_alive={keep_alive}
+  {...}
+```
+
+where ...
+
+- `{keep_alive}`: Number - the time to live in seconds of the corresponding point in time.
+
+Request
+:   @@snip [pit.sh](../assets/views/elasticsearch/pit.sh)
+
+Response
+:   @@snip [pit-response.json](../assets/views/elasticsearch/pit-response.json)
+
+## Delete a point in time
+
+Closes a point in time on the underlying index of the view when it is no longer used.
+
+@link:[See the Elasticsearch documentation for more details](https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html)
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/_pit
+  {...}
+```
+
+Request
+:   @@snip [delete-pit.sh](../assets/views/elasticsearch/delete-pit.sh)
+
 ## Fetch Elasticsearch mapping
 
 ```

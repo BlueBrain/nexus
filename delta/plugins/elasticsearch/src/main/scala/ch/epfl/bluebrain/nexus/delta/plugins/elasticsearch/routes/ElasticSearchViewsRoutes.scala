@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.PointInTime
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -22,7 +23,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject, Printer}
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 
 /**
   * The elasticsearch views routes
@@ -153,6 +158,23 @@ final class ElasticSearchViewsRoutes(
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
                     emit(viewsQuery.query(id, project, query, qp).attemptNarrow[ElasticSearchViewRejection])
                   }
+                },
+                // Create a point in time for the given view
+                (pathPrefix("_pit") & parameter("keep_alive".as[Long]) & post & pathEndOrSingleSlash) { keepAlive =>
+                  val keepAliveDuration = Duration(keepAlive, TimeUnit.SECONDS)
+                  emit(
+                    viewsQuery
+                      .createPointInTime(id, project, keepAliveDuration)
+                      .map(_.asJson)
+                      .attemptNarrow[ElasticSearchViewRejection]
+                  )
+                },
+                // Delete a point in time
+                (pathPrefix("_pit") & entity(as[PointInTime]) & delete & pathEndOrSingleSlash) { pit =>
+                  emit(
+                    StatusCodes.NoContent,
+                    viewsQuery.deletePointInTime(pit).attemptNarrow[ElasticSearchViewRejection]
+                  )
                 },
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>

@@ -37,6 +37,7 @@ import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
+import scala.concurrent.duration._
 
 class ElasticSearchViewsQuerySuite
     extends NexusSuite
@@ -378,6 +379,29 @@ class ElasticSearchViewsQuerySuite
   test("Obtaining the mapping with views/write permission should succeed") {
     implicit val caller: Caller = alice
     viewsQuery.mapping(view1Proj1.viewId, project1.ref)
+  }
+
+  test("Creating a point in time without permission should fail") {
+    implicit val caller: Caller = anon
+    viewsQuery
+      .createPointInTime(view1Proj1.viewId, project1.ref, 30.seconds)
+      .intercept[AuthorizationFailed]
+  }
+
+  test("Creating a point in time for a view that doesn't exist in the project should fail") {
+    implicit val caller: Caller = alice
+    viewsQuery
+      .createPointInTime(view1Proj2.viewId, project1.ref, 30.seconds)
+      .interceptEquals(ViewNotFound(view1Proj2.viewId, project1.ref))
+  }
+
+  test("Creating and deleting a point in time with the right access should succeed") {
+    implicit val caller: Caller = alice
+    viewsQuery
+      .createPointInTime(view1Proj1.viewId, project1.ref, 30.seconds)
+      .flatMap { pit =>
+        viewsQuery.deletePointInTime(pit)
+      }
   }
 }
 

@@ -355,6 +355,20 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       }
     }
 
+    "create a point in time" in {
+      Post("/v1/views/myorg/myproject/myid2/_pit?keep_alive=30") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"id" : "xxx"}"""
+      }
+    }
+
+    "delete a point in time" in {
+      val pit = json"""{"id" : "xxx"}"""
+      Delete("/v1/views/myorg/myproject/myid2/_pit", pit) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.NoContent
+      }
+    }
+
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       Get("/v1/views/myorg/myproject/myid") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
