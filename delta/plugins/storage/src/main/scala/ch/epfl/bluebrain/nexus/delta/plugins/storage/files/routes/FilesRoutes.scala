@@ -33,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{parser, Decoder}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 /**
   * The files routes
@@ -64,7 +63,6 @@ final class FilesRoutes(
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling { self =>
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
   def routes: Route =
@@ -75,179 +73,172 @@ final class FilesRoutes(
             implicit class IndexOps(io: IO[FileResource]) {
               def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(project, _, m))
             }
-
             concat(
               (pathEndOrSingleSlash & post & noParameter("rev") & parameter(
                 "storage".as[IdSegment].?
               ) & indexingMode & tagParam) { (storage, mode, tag) =>
-                operationName(s"$prefixSegment/files/{org}/{project}") {
-                  concat(
-                    // Link a file without id segment
-                    entity(as[LinkFileRequest]) { linkRequest =>
-                      emit(
-                        Created,
-                        fileDescriptionFromRequest(linkRequest)
-                          .flatMap { desc =>
-                            files
-                              .createLegacyLink(storage, project, desc, linkRequest.path, tag)
-                              .index(mode)
-                          }
-                          .attemptNarrow[FileRejection]
-                      )
-                    },
-                    // Create a file without id segment
-                    uploadRequest { request =>
-                      emit(
-                        Created,
-                        files.create(storage, project, request, tag).index(mode).attemptNarrow[FileRejection]
-                      )
-                    }
-                  )
-                }
+                concat(
+                  // Link a file without id segment
+                  entity(as[LinkFileRequest]) { linkRequest =>
+                    emit(
+                      Created,
+                      fileDescriptionFromRequest(linkRequest)
+                        .flatMap { desc =>
+                          files
+                            .createLegacyLink(storage, project, desc, linkRequest.path, tag)
+                            .index(mode)
+                        }
+                        .attemptNarrow[FileRejection]
+                    )
+                  },
+                  // Create a file without id segment
+                  uploadRequest { request =>
+                    emit(
+                      Created,
+                      files.create(storage, project, request, tag).index(mode).attemptNarrow[FileRejection]
+                    )
+                  }
+                )
               },
               (idSegment & indexingMode) { (id, mode) =>
                 val fileId = FileId(id, project)
                 concat(
                   pathEndOrSingleSlash {
-                    operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
-                      concat(
-                        (put & pathEndOrSingleSlash) {
-                          concat(
-                            parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) {
-                              case (rev, storage, tag) =>
-                                concat(
-                                  // Update a Link
-                                  entity(as[LinkFileRequest]) { linkRequest =>
-                                    emit(
-                                      fileDescriptionFromRequest(linkRequest)
-                                        .flatMap { description =>
-                                          files
-                                            .updateLegacyLink(
-                                              fileId,
-                                              storage,
-                                              description,
-                                              linkRequest.path,
-                                              rev,
-                                              tag
-                                            )
-                                            .index(mode)
-                                        }
-                                        .attemptNarrow[FileRejection]
-                                    )
-                                  },
-                                  // Update a file
-                                  (requestEntityPresent & uploadRequest) { request =>
-                                    emit(
-                                      files
-                                        .update(fileId, storage, rev, request, tag)
-                                        .index(mode)
-                                        .attemptNarrow[FileRejection]
-                                    )
-                                  },
-                                  // Update custom metadata
-                                  (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
-                                    case Some(FileCustomMetadata.empty) =>
-                                      emit(
-                                        IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
-                                      )
-                                    case Some(metadata)                 =>
-                                      emit(
-                                        files
-                                          .updateMetadata(fileId, rev, metadata, tag)
-                                          .index(mode)
-                                          .attemptNarrow[FileRejection]
-                                      )
-                                    case None                           => reject
-                                  }
-                                )
-                            },
-                            parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
+                    concat(
+                      (put & pathEndOrSingleSlash) {
+                        concat(
+                          parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) {
+                            case (rev, storage, tag) =>
                               concat(
-                                // Link a file with id segment
+                                // Update a Link
                                 entity(as[LinkFileRequest]) { linkRequest =>
                                   emit(
-                                    Created,
                                     fileDescriptionFromRequest(linkRequest)
                                       .flatMap { description =>
                                         files
-                                          .createLegacyLink(fileId, storage, description, linkRequest.path, tag)
+                                          .updateLegacyLink(
+                                            fileId,
+                                            storage,
+                                            description,
+                                            linkRequest.path,
+                                            rev,
+                                            tag
+                                          )
                                           .index(mode)
                                       }
                                       .attemptNarrow[FileRejection]
                                   )
                                 },
-                                // Create a file with id segment
-                                uploadRequest { request =>
+                                // Update a file
+                                (requestEntityPresent & uploadRequest) { request =>
                                   emit(
-                                    Created,
                                     files
-                                      .create(fileId, storage, request, tag)
+                                      .update(fileId, storage, rev, request, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
+                                },
+                                // Update custom metadata
+                                (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
+                                  case Some(FileCustomMetadata.empty) =>
+                                    emit(
+                                      IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
+                                    )
+                                  case Some(metadata)                 =>
+                                    emit(
+                                      files
+                                        .updateMetadata(fileId, rev, metadata, tag)
+                                        .index(mode)
+                                        .attemptNarrow[FileRejection]
+                                    )
+                                  case None                           => reject
                                 }
                               )
-                            }
-                          )
-                        },
-                        // Deprecate a file
-                        (delete & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(project, Write).apply {
-                            emit(
-                              files
-                                .deprecate(fileId, rev)
-                                .index(mode)
-                                .attemptNarrow[FileRejection]
-                                .rejectOn[FileNotFound]
+                          },
+                          parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
+                            concat(
+                              // Link a file with id segment
+                              entity(as[LinkFileRequest]) { linkRequest =>
+                                emit(
+                                  Created,
+                                  fileDescriptionFromRequest(linkRequest)
+                                    .flatMap { description =>
+                                      files
+                                        .createLegacyLink(fileId, storage, description, linkRequest.path, tag)
+                                        .index(mode)
+                                    }
+                                    .attemptNarrow[FileRejection]
+                                )
+                              },
+                              // Create a file with id segment
+                              uploadRequest { request =>
+                                emit(
+                                  Created,
+                                  files
+                                    .create(fileId, storage, request, tag)
+                                    .index(mode)
+                                    .attemptNarrow[FileRejection]
+                                )
+                              }
                             )
                           }
-                        },
-
-                        // Fetch a file
-                        (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(project, id, fetch(FileId(id, project)))
-                        }
-                      )
-                    }
-                  },
-                  pathPrefix("tags") {
-                    operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
-                      concat(
-                        // Fetch a file tags
-                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(project, Read)) { id =>
-                          emit(
-                            fetchMetadata(FileId(id, project))
-                              .map(_.value.tags)
-                              .attemptNarrow[FileRejection]
-                              .rejectOn[FileNotFound]
-                          )
-                        },
-                        // Tag a file
-                        (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
-                          authorizeFor(project, Write).apply {
-                            entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(
-                                Created,
-                                files.tag(fileId, tag, tagRev, rev).index(mode).attemptNarrow[FileRejection]
-                              )
-                            }
-                          }
-                        },
-                        // Delete a tag
-                        (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
-                          project,
-                          Write
-                        )) { (tag, rev) =>
+                        )
+                      },
+                      // Deprecate a file
+                      (delete & parameter("rev".as[Int])) { rev =>
+                        authorizeFor(project, Write).apply {
                           emit(
                             files
-                              .deleteTag(fileId, tag, rev)
+                              .deprecate(fileId, rev)
                               .index(mode)
                               .attemptNarrow[FileRejection]
                               .rejectOn[FileNotFound]
                           )
                         }
-                      )
-                    }
+                      },
+
+                      // Fetch a file
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(project, id, fetch(FileId(id, project)))
+                      }
+                    )
+                  },
+                  pathPrefix("tags") {
+                    concat(
+                      // Fetch a file tags
+                      (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(project, Read)) { id =>
+                        emit(
+                          fetchMetadata(FileId(id, project))
+                            .map(_.value.tags)
+                            .attemptNarrow[FileRejection]
+                            .rejectOn[FileNotFound]
+                        )
+                      },
+                      // Tag a file
+                      (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
+                        authorizeFor(project, Write).apply {
+                          entity(as[Tag]) { case Tag(tagRev, tag) =>
+                            emit(
+                              Created,
+                              files.tag(fileId, tag, tagRev, rev).index(mode).attemptNarrow[FileRejection]
+                            )
+                          }
+                        }
+                      },
+                      // Delete a tag
+                      (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
+                        project,
+                        Write
+                      )) { (tag, rev) =>
+                        emit(
+                          files
+                            .deleteTag(fileId, tag, rev)
+                            .index(mode)
+                            .attemptNarrow[FileRejection]
+                            .rejectOn[FileNotFound]
+                        )
+                      }
+                    )
                   },
                   (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
                     authorizeFor(project, Write).apply {
