@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.DelegateFilesRoutes.DelegationResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
@@ -174,6 +173,8 @@ final class Files(
 
   /**
     * Grants a delegation to create the physical file on the given storage
+    * @param id
+    *   the file identifier to expand as the iri of the file, generated if none is provided
     * @param projectRef
     *   the project where the file will belong
     * @param description
@@ -181,18 +182,24 @@ final class Files(
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     */
-  def delegate(projectRef: ProjectRef, description: FileDescription, storageId: Option[IdSegment])(implicit
+  def createDelegate(
+      id: Option[IdSegment],
+      projectRef: ProjectRef,
+      description: FileDescription,
+      storageId: Option[IdSegment],
+      tag: Option[UserTag]
+  )(implicit
       caller: Caller
-  ): IO[DelegationResponse] = {
+  ): IO[FileDelegationRequest] = {
     for {
       pc           <- fetchContext.onCreate(projectRef)
-      iri          <- generateId(pc)
+      iri          <- id.fold(generateId(pc)) { FileId.iriExpander(_, pc) }
       _            <-
         test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
       (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
       metadata     <- fileOperations.delegate(storage, description.filename)
-    } yield DelegationResponse(metadata.bucket, iri, metadata.path, description.metadata, description.mediaType)
-  }.span("delegate")
+    } yield FileDelegationRequest(storage.id, metadata.bucket, projectRef, iri, metadata.path, description, tag)
+  }.span("createDelegate")
 
   /**
     * Update an existing file
