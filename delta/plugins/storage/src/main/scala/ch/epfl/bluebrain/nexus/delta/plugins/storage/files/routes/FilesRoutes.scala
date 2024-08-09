@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResourc
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import FileUriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -28,8 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{parser, Decoder}
@@ -74,9 +74,7 @@ final class FilesRoutes(
               def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(project, _, m))
             }
             concat(
-              (pathEndOrSingleSlash & post & noParameter("rev") & parameter(
-                "storage".as[IdSegment].?
-              ) & indexingMode & tagParam) { (storage, mode, tag) =>
+              (pathEndOrSingleSlash & post & noRev & storageParam & indexingMode & tagParam) { (storage, mode, tag) =>
                 concat(
                   // Link a file without id segment
                   entity(as[LinkFileRequest]) { linkRequest =>
@@ -107,55 +105,54 @@ final class FilesRoutes(
                     concat(
                       (put & pathEndOrSingleSlash) {
                         concat(
-                          parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) {
-                            case (rev, storage, tag) =>
-                              concat(
-                                // Update a Link
-                                entity(as[LinkFileRequest]) { linkRequest =>
+                          (revParam & storageParam & tagParam) { case (rev, storage, tag) =>
+                            concat(
+                              // Update a Link
+                              entity(as[LinkFileRequest]) { linkRequest =>
+                                emit(
+                                  fileDescriptionFromRequest(linkRequest)
+                                    .flatMap { description =>
+                                      files
+                                        .updateLegacyLink(
+                                          fileId,
+                                          storage,
+                                          description,
+                                          linkRequest.path,
+                                          rev,
+                                          tag
+                                        )
+                                        .index(mode)
+                                    }
+                                    .attemptNarrow[FileRejection]
+                                )
+                              },
+                              // Update a file
+                              (requestEntityPresent & uploadRequest) { request =>
+                                emit(
+                                  files
+                                    .update(fileId, storage, rev, request, tag)
+                                    .index(mode)
+                                    .attemptNarrow[FileRejection]
+                                )
+                              },
+                              // Update custom metadata
+                              (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
+                                case Some(FileCustomMetadata.empty) =>
                                   emit(
-                                    fileDescriptionFromRequest(linkRequest)
-                                      .flatMap { description =>
-                                        files
-                                          .updateLegacyLink(
-                                            fileId,
-                                            storage,
-                                            description,
-                                            linkRequest.path,
-                                            rev,
-                                            tag
-                                          )
-                                          .index(mode)
-                                      }
-                                      .attemptNarrow[FileRejection]
+                                    IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
                                   )
-                                },
-                                // Update a file
-                                (requestEntityPresent & uploadRequest) { request =>
+                                case Some(metadata)                 =>
                                   emit(
                                     files
-                                      .update(fileId, storage, rev, request, tag)
+                                      .updateMetadata(fileId, rev, metadata, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
-                                },
-                                // Update custom metadata
-                                (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
-                                  case Some(FileCustomMetadata.empty) =>
-                                    emit(
-                                      IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
-                                    )
-                                  case Some(metadata)                 =>
-                                    emit(
-                                      files
-                                        .updateMetadata(fileId, rev, metadata, tag)
-                                        .index(mode)
-                                        .attemptNarrow[FileRejection]
-                                    )
-                                  case None                           => reject
-                                }
-                              )
+                                case None                           => reject
+                              }
+                            )
                           },
-                          parameters("storage".as[IdSegment].?, "tag".as[UserTag].?) { case (storage, tag) =>
+                          (storageParam & tagParam) { case (storage, tag) =>
                             concat(
                               // Link a file with id segment
                               entity(as[LinkFileRequest]) { linkRequest =>
@@ -185,7 +182,7 @@ final class FilesRoutes(
                         )
                       },
                       // Deprecate a file
-                      (delete & parameter("rev".as[Int])) { rev =>
+                      (delete & revParam) { rev =>
                         authorizeFor(project, Write).apply {
                           emit(
                             files
@@ -215,7 +212,7 @@ final class FilesRoutes(
                         )
                       },
                       // Tag a file
-                      (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
+                      (post & revParam & pathEndOrSingleSlash) { rev =>
                         authorizeFor(project, Write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
@@ -226,7 +223,7 @@ final class FilesRoutes(
                         }
                       },
                       // Delete a tag
-                      (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
+                      (tagLabel & delete & revParam & pathEndOrSingleSlash & authorizeFor(
                         project,
                         Write
                       )) { (tag, rev) =>
@@ -240,7 +237,7 @@ final class FilesRoutes(
                       }
                     )
                   },
-                  (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
+                  (pathPrefix("undeprecate") & put & revParam) { rev =>
                     authorizeFor(project, Write).apply {
                       emit(
                         files

@@ -69,7 +69,7 @@ class FileProcessor private (
           case CopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, attrs.mediaType, customMetadata)
             files
-              .linkFile(fileId, None, linkRequest, e.tag)
+              .linkFile(Some(event.id), project, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }

@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 
 class LinkFilesRoutes(identities: Identities, aclCheck: AclCheck, files: Files, index: IndexingAction.Execute[File])(
     implicit
@@ -28,6 +28,9 @@ class LinkFilesRoutes(identities: Identities, aclCheck: AclCheck, files: Files, 
     with CirceUnmarshalling {
   self =>
 
+  private def onCreationDirective =
+    noRev & storageParam & tagParam & indexingMode & pathEndOrSingleSlash & entity(as[FileLinkRequest])
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("link" / "files") {
@@ -37,24 +40,29 @@ class LinkFilesRoutes(identities: Identities, aclCheck: AclCheck, files: Files, 
               def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(project, _, m))
             }
             concat(
+              // Link a file without an id segment
+              (onCreationDirective & post) { (storage, tag, mode, request) =>
+                emit(
+                  Created,
+                  files
+                    .linkFile(None, project, storage, request, tag)
+                    .index(mode)
+                    .attemptNarrow[FileRejection]
+                )
+              },
               // Link a file with id segment
-              (put & idSegment & indexingMode & pathEndOrSingleSlash) { (id, mode) =>
-                (noParameter("rev") & parameters("storage".as[IdSegment].?, "tag".as[UserTag].?)) { (storage, tag) =>
-                  entity(as[FileLinkRequest]) { request =>
-                    val fileId = FileId(id, project)
-                    emit(
-                      Created,
-                      files
-                        .linkFile(fileId, storage, request, tag)
-                        .index(mode)
-                        .attemptNarrow[FileRejection]
-                    )
-                  }
-                }
+              (idSegment & onCreationDirective & put) { (id, storage, tag, mode, request) =>
+                emit(
+                  Created,
+                  files
+                    .linkFile(Some(id), project, storage, request, tag)
+                    .index(mode)
+                    .attemptNarrow[FileRejection]
+                )
               },
               // Update a linked file
               (put & idSegment & indexingMode & pathEndOrSingleSlash) { (id, mode) =>
-                parameters("rev".as[Int], "storage".as[IdSegment].?, "tag".as[UserTag].?) { (rev, storage, tag) =>
+                (revParam & storageParam & tagParam) { (rev, storage, tag) =>
                   entity(as[FileLinkRequest]) { request =>
                     val fileId = FileId(id, project)
                     emit(

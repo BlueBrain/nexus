@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
+import ch.epfl.bluebrain.nexus.tests.Optics
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys, location}
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -202,9 +203,9 @@ class S3StorageSpec extends StorageSpec {
   s"Linking in S3" should {
     "be rejected" in {
       val payload = Json.obj(
-        "filename"  -> Json.fromString("logo.png"),
-        "path"      -> Json.fromString(logoKey),
-        "mediaType" -> Json.fromString("image/png")
+        "filename"  := "logo.png",
+        "path"      := logoKey,
+        "mediaType" := "image/png"
       )
       deltaClient.put[Json](s"/files/$projectRef/logo.png?storage=nxv:${storageId}2", payload, Coyote) {
         (_, response) =>
@@ -237,7 +238,7 @@ class S3StorageSpec extends StorageSpec {
       .accepted
   }
 
-  private def registrationResponse(
+  private def linkedFileResponse(
       id: String,
       digestValue: String,
       location: String,
@@ -271,7 +272,12 @@ class S3StorageSpec extends StorageSpec {
     Stream.fromIterator[IO](content.iterator, 16).through(uploadPipe).compile.drain.as(sha256Base64Encoded)
   }
 
-  s"Linking an S3 file in-place" should {
+  s"Linking an S3 file" should {
+
+    def createFileLinkNoId(storageId: String, payload: Json) =
+      deltaClient.postAndReturn[Json](s"/link/files/$projectRef?storage=nxv:$storageId", payload, Coyote) {
+        expectCreated
+      }
 
     def createFileLink(id: String, storageId: String, payload: Json) =
       deltaClient.put[Json](s"/link/files/$projectRef/$id?storage=nxv:$storageId", payload, Coyote) {
@@ -283,10 +289,32 @@ class S3StorageSpec extends StorageSpec {
         expectOk
       }
 
-    "succeed" in {
+    "succeed without providing an id" in {
+      val path    = s"${genId()}/nexus-logo.png"
+      val payload = Json.obj("path" := path)
+
+      for {
+        _         <- uploadLogoFileToS3(path)
+        json      <- createFileLinkNoId(storageId, payload)
+        id         = Optics.`@id`.getOption(json).value
+        encodedId  = UrlUtils.encode(id)
+        assertion <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       filterMetadataKeys(json) shouldEqual linkedFileResponse(
+                         id,
+                         logoSha256HexDigest,
+                         location = path,
+                         filename = logoFilename,
+                         mediaType = "image/png"
+                       )
+                     }
+      } yield assertion
+    }
+
+    "succeed providing an id" in {
       val id      = genId()
       val path    = s"$id/nexus-logo.png"
-      val payload = Json.obj("path" -> Json.fromString(path))
+      val payload = Json.obj("path" := path)
 
       for {
         _         <- uploadLogoFileToS3(path)
@@ -294,7 +322,7 @@ class S3StorageSpec extends StorageSpec {
         fullId     = s"$attachmentPrefix$id"
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
-                       filterMetadataKeys(json) shouldEqual registrationResponse(
+                       filterMetadataKeys(json) shouldEqual linkedFileResponse(
                          fullId,
                          logoSha256HexDigest,
                          location = path,
@@ -412,7 +440,7 @@ class S3StorageSpec extends StorageSpec {
         expectedMetadata                             = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
         assertion                                   <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
                                                          response.status shouldEqual StatusCodes.OK
-                                                         val expected = registrationResponse(
+                                                         val expected = linkedFileResponse(
                                                            id,
                                                            logoSha256HexDigest,
                                                            location = path,

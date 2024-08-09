@@ -299,7 +299,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         jwsPayloadHelper: JWSPayloadHelper,
         aclCheck: AclCheck,
         files: Files,
-        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
@@ -312,8 +311,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         files,
         jwsPayloadHelper,
-        indexingAction(_, _, _)(shift),
-        schemeDirectives
+        indexingAction(_, _, _)(shift)
       )(baseUri, cr, ordering, showLocation)
   }
 

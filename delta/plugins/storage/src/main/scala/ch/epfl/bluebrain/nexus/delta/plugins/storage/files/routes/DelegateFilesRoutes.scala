@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.{CirceMarshalling, CirceUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives, ResponseToJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, ResponseToJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
@@ -25,6 +25,7 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax.EncoderOps
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
 import io.circe.{Decoder, Encoder, Json}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
@@ -35,8 +36,7 @@ final class DelegateFilesRoutes(
     aclCheck: AclCheck,
     files: Files,
     jwsPayloadHelper: JWSPayloadHelper,
-    index: IndexingAction.Execute[File],
-    schemeDirectives: DeltaSchemeDirectives
+    index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -46,8 +46,6 @@ final class DelegateFilesRoutes(
     with CirceUnmarshalling
     with CirceMarshalling { self =>
 
-  import schemeDirectives._
-
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("delegate" / "files") {
@@ -56,7 +54,7 @@ final class DelegateFilesRoutes(
             concat(
               pathPrefix("validate") {
                 (pathEndOrSingleSlash & post) {
-                  parameter("storage".as[IdSegment].?) { storageId =>
+                  storageParam { storageId =>
                     entity(as[FileDescription]) { desc =>
                       emit(OK, validateFileDetails(project, storageId, desc).attemptNarrow[FileRejection])
                     }
@@ -64,7 +62,7 @@ final class DelegateFilesRoutes(
                 }
               },
               (pathEndOrSingleSlash & post) {
-                (parameter("storage".as[IdSegment].?) & indexingMode) { (storageId, mode) =>
+                (storageParam & indexingMode) { (storageId, mode) =>
                   entity(as[Json]) { jwsPayload =>
                     emit(
                       Created,
@@ -97,9 +95,8 @@ final class DelegateFilesRoutes(
     for {
       originalPayload    <- jwsPayloadHelper.verify(jwsPayload)
       delegationResponse <- IO.fromEither(originalPayload.as[DelegationResponse])
-      fileId              = FileId(delegationResponse.id, project)
       request             = FileLinkRequest(delegationResponse.path.path, delegationResponse.mediaType, delegationResponse.metadata)
-      fileResource       <- files.linkFile(fileId, storageId, request, None)
+      fileResource       <- files.linkFile(Some(delegationResponse.id), project, storageId, request, None)
       _                  <- index(project, fileResource, mode)
     } yield fileResource
 

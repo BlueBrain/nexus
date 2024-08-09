@@ -60,11 +60,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
-  def postJson(url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
-      assertResponse: (Json, HttpResponse) => Assertion
-  ): IO[Assertion] =
-    requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
-
   def postIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
