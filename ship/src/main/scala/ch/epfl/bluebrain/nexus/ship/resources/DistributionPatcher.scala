@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ContentType, Uri}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -56,6 +56,7 @@ final class DistributionPatcher(
             IO.pure(
               setLocation(attributes.location.toString())
                 .andThen(setContentSize(attributes.bytes))
+                .andThen(setEncodingFormat(attributes.mediaType))
                 .andThen(setDigest(attributes.digest))
             )
         case Left(e)           =>
@@ -87,12 +88,17 @@ final class DistributionPatcher(
     }
   }
 
-  private def setContentUrl(newContentUrl: String) = root.contentUrl.string.replace(newContentUrl)
-  private def setLocation(newLocation: String)     = (json: Json) =>
+  private def setContentUrl(newContentUrl: String)                = root.contentUrl.string.replace(newContentUrl)
+  private def setLocation(newLocation: String)                    = (json: Json) =>
     json.deepMerge(Json.obj("atLocation" := Json.obj("location" := newLocation)))
-  private def setContentSize(newSize: Long)        = (json: Json) =>
+  private def setContentSize(newSize: Long)                       = (json: Json) =>
     json.deepMerge(Json.obj("contentSize" := Json.obj("unitCode" := "bytes", "value" := newSize)))
-  private def setDigest(digest: Digest)            = (json: Json) => json.deepMerge(Json.obj("digest" := digest))
+  private def setEncodingFormat(contentType: Option[ContentType]) = (json: Json) =>
+    contentType.fold(json) { ct =>
+      json.deepMerge(Json.obj("encodingFormat" := ct.mediaType.value))
+    }
+
+  private def setDigest(digest: Digest) = (json: Json) => json.deepMerge(Json.obj("digest" := digest))
 
   private def toS3Location: Json => Json = root.atLocation.store.json.replace(targetStorage)
 

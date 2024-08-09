@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship.resources
 
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ContentTypes, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -72,7 +72,7 @@ class DistributionPatcherSuite extends NexusSuite {
           location,
           path,
           "file.txt",
-          None,
+          Some(ContentTypes.`text/plain(UTF-8)`),
           Map.empty,
           None,
           None,
@@ -197,6 +197,21 @@ class DistributionPatcherSuite extends NexusSuite {
       .assertEquals("/actual/path/file.txt")
   }
 
+  test("Patch a encoding format based on what the file says") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "${sourceFileSelf(projectWithMapping, resource1)}",
+          "encodingFormat": "text/csv"
+        }
+      }"""
+
+    patcher
+      .patchAll(input)
+      .map(distributionEncodingFormat)
+      .assertEquals("text/plain")
+  }
+
   test("Patch a file location based on what the resource says when no existing location present") {
     val input =
       json"""{
@@ -288,6 +303,14 @@ class DistributionPatcherSuite extends NexusSuite {
       .downField("contentUrl")
       .as[String]
       .getOrElse(fail("contentUrl was not present"))
+  }
+
+  private def distributionEncodingFormat(json: Json): String = {
+    json.hcursor
+      .downField("distribution")
+      .downField("encodingFormat")
+      .as[String]
+      .getOrElse(fail("encodingFormat was not present"))
   }
 
 }

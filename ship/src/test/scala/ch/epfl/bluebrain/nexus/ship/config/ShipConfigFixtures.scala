@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageFixtures, StoragesConfig}
@@ -61,7 +62,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         importBucket,
         targetBucket,
         Some(Uri.Path("/prefix")),
-        skipFileEvents = false
+        skipFileEvents = false,
+        MediaTypeDetectorConfig()
       ),
       IriPatcherConfig(enabled = false, iri"https://bbp.epfl.ch/", iri"https:/openbrainplatform.com/"),
       Set.empty
