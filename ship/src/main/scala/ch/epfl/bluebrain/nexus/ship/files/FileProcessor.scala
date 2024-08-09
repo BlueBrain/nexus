@@ -1,13 +1,16 @@
 package ch.epfl.bluebrain.nexus.ship.files
 
+import akka.http.scaladsl.model.{ContentType, HttpCharsets}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CancelEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileEvent, FileId, FileLinkRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -22,7 +25,7 @@ import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.CopyResult.{CopySkipped, CopySuccess}
-import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.logger
+import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{logger, patchMediaType}
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
@@ -32,7 +35,8 @@ class FileProcessor private (
     projectMapper: ProjectMapper,
     fileCopier: FileCopier,
     clock: EventClock
-) extends EventProcessor[FileEvent] {
+)(implicit mediaTypeDetector: MediaTypeDetectorConfig)
+    extends EventProcessor[FileEvent] {
 
   override def resourceType: EntityType = Files.entityType
 
@@ -67,7 +71,8 @@ class FileProcessor private (
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
-            val linkRequest = FileLinkRequest(newPath, attrs.mediaType, customMetadata)
+            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
+            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .linkFile(Some(event.id), project, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
@@ -78,7 +83,8 @@ class FileProcessor private (
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
-            val linkRequest = FileLinkRequest(newPath, attrs.mediaType, customMetadata)
+            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
+            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .updateLinkedFile(fileId, None, cRev, linkRequest, e.tag)
               .as(ImportStatus.Success)
@@ -116,6 +122,16 @@ class FileProcessor private (
 object FileProcessor {
 
   private val logger = Logger[FileProcessor]
+
+  def patchMediaType(
+      filename: String,
+      original: Option[ContentType]
+  )(implicit mediaTypeDetector: MediaTypeDetectorConfig): Option[ContentType] =
+    FileUtils
+      .extension(filename)
+      .flatMap(mediaTypeDetector.find)
+      .map(ContentType(_, () => HttpCharsets.`UTF-8`))
+      .orElse(original)
 
   private val noop = new EventProcessor[FileEvent] {
     override def resourceType: EntityType = Files.entityType
@@ -157,7 +173,7 @@ object FileProcessor {
         linkOperationOnly(s3Client)
       )(FailingUUID)
 
-    new FileProcessor(files, projectMapper, fileCopier, clock)
+    new FileProcessor(files, projectMapper, fileCopier, clock)(config.files.mediaTypeDetector)
   }
 
 }

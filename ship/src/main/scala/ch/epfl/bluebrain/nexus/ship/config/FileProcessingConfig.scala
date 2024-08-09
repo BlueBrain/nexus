@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
 import akka.http.scaladsl.model.Uri.Path
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import pureconfig.ConfigReader
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import pureconfig.generic.semiauto.deriveReader
@@ -9,7 +10,8 @@ final case class FileProcessingConfig(
     importBucket: String,
     targetBucket: String,
     prefix: Option[Path],
-    skipFileEvents: Boolean
+    skipFileEvents: Boolean,
+    mediaTypeDetector: MediaTypeDetectorConfig
 )
 
 object FileProcessingConfig {
