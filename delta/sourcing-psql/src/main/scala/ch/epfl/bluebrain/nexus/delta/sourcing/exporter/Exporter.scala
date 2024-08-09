@@ -27,7 +27,7 @@ object Exporter {
 
   private val logger = Logger[Exporter]
 
-  private val fileFormat = "%09d"
+  private val fileFormat = "%012d"
 
   final case class ExportResult(targetDirectory: Path, success: Path)
 
