@@ -425,14 +425,14 @@ class S3StorageSpec extends StorageSpec {
       for {
         jwsPayload                                  <-
           deltaClient
-            .postAndReturn[Json](s"/delegate/files/$projectRef/validate?storage=nxv:$storageId", payload, Coyote) {
+            .postAndReturn[Json](s"/delegate/files/$projectRef/generate?storage=nxv:$storageId", payload, Coyote) {
               expectOk
             }
         resp                                        <- parseDelegationResponse(jwsPayload)
         DelegationResponse(id, path, returnedBucket) = resp
         _                                            = returnedBucket shouldEqual bucket
         _                                           <- uploadLogoFileToS3(path)
-        _                                           <- deltaClient.post[Json](s"/delegate/files/$projectRef?storage=nxv:$storageId", jwsPayload, Coyote) {
+        _                                           <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) {
                                                          expectCreated
                                                        }
         encodedId                                    = UrlUtils.encode(id)

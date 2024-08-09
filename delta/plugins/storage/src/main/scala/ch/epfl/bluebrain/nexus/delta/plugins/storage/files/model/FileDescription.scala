@@ -3,6 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.ContentType
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
+import io.circe.Codec
+import io.circe.generic.extras.Configuration
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 case class FileDescription(
     filename: String,
@@ -38,5 +42,8 @@ object FileDescription {
       ).some
     )
   }
+
+  implicit private val config: Configuration                = Configuration.default
+  implicit val fileDescriptionCodec: Codec[FileDescription] = deriveConfiguredCodec[FileDescription]
 
 }
