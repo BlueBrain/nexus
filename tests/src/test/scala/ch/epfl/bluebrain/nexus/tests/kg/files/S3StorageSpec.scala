@@ -7,6 +7,7 @@ import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys, location}
@@ -57,8 +58,7 @@ class S3StorageSpec extends StorageSpec {
   private val logoSha256Base64Digest = "Bb9EKBAhO55f7NUkLu/v8fPSB5E4YclmWMdcz1iZfoc="
   private val logoSha256HexDigest    = Hex.encodeHexString(Base64.getDecoder.decode(logoSha256Base64Digest))
 
-  val s3Endpoint: String       = "http://s3.localhost.localstack.cloud:4566"
-  val s3BucketEndpoint: String = s"http://s3.localhost.localstack.cloud:4566/$bucket"
+  private val s3Endpoint: String = "http://s3.localhost.localstack.cloud:4566"
 
   private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
     case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))
@@ -408,6 +408,35 @@ class S3StorageSpec extends StorageSpec {
   }
 
   s"Delegate S3 file upload" should {
+
+    val delegateUrl = s"/delegate/files/generate/$projectRef/?storage=nxv:$storageId"
+
+    def delegateUriWithId(id: String) =
+      s"/delegate/files/generate/$projectRef/${UrlUtils.encode(id)}?storage=nxv:$storageId"
+
+    "fail to generate a delegation token without id without the appropriate permissions" in {
+      val payload = json"""{ "filename":  "my-file.jpg"}"""
+      deltaClient.post[Json](delegateUrl, payload, Anonymous) { expectForbidden }
+    }
+
+    "fail to generate a delegation token with id without the appropriate permissions" in {
+      val id      = s"https://bbp.epfl.ch/data/${genString()}"
+      val payload = json"""{ "filename":  "my-file.jpg"}"""
+      deltaClient.put[Json](delegateUriWithId(id), payload, Anonymous) { expectForbidden }
+    }
+
+    "generate the payload by providing the id" in {
+      val id      = s"https://bbp.epfl.ch/data/${genString()}"
+      val payload = json"""{ "filename":  "my-file.jpg"}"""
+      deltaClient.put[Json](delegateUriWithId(id), payload, Coyote) { case (jwsPayload, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val delegateResponse = parseDelegationResponse(jwsPayload)
+        delegateResponse.id shouldEqual id
+        delegateResponse.bucket shouldEqual bucket
+        delegateResponse.project shouldEqual projectRef
+      }
+    }
+
     "succeed using JWS protocol with flattened serialization" in {
       val filename               = genString()
       val (name, desc, keywords) = (genString(), genString(), Json.obj(genString() := genString()))
@@ -423,50 +452,44 @@ class S3StorageSpec extends StorageSpec {
         Json.obj("filename" -> Json.fromString(filename), "metadata" -> metadata, "mediaType" := "image/dan")
 
       for {
-        jwsPayload                                  <-
-          deltaClient
-            .postAndReturn[Json](s"/delegate/files/$projectRef/generate?storage=nxv:$storageId", payload, Coyote) {
-              expectOk
-            }
-        resp                                        <- parseDelegationResponse(jwsPayload)
-        DelegationResponse(id, path, returnedBucket) = resp
-        _                                            = returnedBucket shouldEqual bucket
-        _                                           <- uploadLogoFileToS3(path)
-        _                                           <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) {
-                                                         expectCreated
-                                                       }
-        encodedId                                    = UrlUtils.encode(id)
-        filename                                     = path.split("/").last
-        expectedMetadata                             = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
-        assertion                                   <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
-                                                         response.status shouldEqual StatusCodes.OK
-                                                         val expected = linkedFileResponse(
-                                                           id,
-                                                           logoSha256HexDigest,
-                                                           location = path,
-                                                           filename = filename,
-                                                           mediaType = "image/dan"
-                                                         ).deepMerge(expectedMetadata)
-                                                         val actual   = filterMetadataKeys(json)
-                                                         actual shouldEqual expected
-                                                       }
+        jwsPayload      <- deltaClient.postAndReturn[Json](delegateUrl, payload, Coyote) { expectOk }
+        delegateResponse = parseDelegationResponse(jwsPayload)
+        _                = delegateResponse.bucket shouldEqual bucket
+        _                = delegateResponse.project shouldEqual projectRef
+        _               <- uploadLogoFileToS3(delegateResponse.path)
+        _               <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) { expectCreated }
+        encodedId        = UrlUtils.encode(delegateResponse.id)
+        filename         = delegateResponse.path.split("/").last
+        expectedMetadata = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
+        assertion       <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
+                             response.status shouldEqual StatusCodes.OK
+                             val expected = linkedFileResponse(
+                               delegateResponse.id,
+                               logoSha256HexDigest,
+                               location = delegateResponse.path,
+                               filename = filename,
+                               mediaType = "image/dan"
+                             ).deepMerge(expectedMetadata)
+                             val actual   = filterMetadataKeys(json)
+                             actual shouldEqual expected
+                           }
       } yield assertion
     }
   }
 
-  def parseDelegationResponse(jwsPayload: Json): IO[DelegationResponse] = IO.fromEither {
+  def parseDelegationResponse(jwsPayload: Json): DelegationResponse = {
     for {
       encodedPayload <- jwsPayload.hcursor.get[String]("payload")
       decodedPayload  = Base64.getDecoder.decode(encodedPayload)
       jsonPayload    <- parseByteBuffer(ByteBuffer.wrap(decodedPayload))
       resp           <- jsonPayload.as[DelegationResponse]
     } yield resp
-  }
+  }.rightValue
 }
 
 object S3StorageSpec {
 
-  final case class DelegationResponse(id: String, path: String, bucket: String)
+  final case class DelegationResponse(id: String, project: String, path: String, bucket: String)
   object DelegationResponse {
     implicit val dec: Decoder[DelegationResponse] = deriveDecoder
   }

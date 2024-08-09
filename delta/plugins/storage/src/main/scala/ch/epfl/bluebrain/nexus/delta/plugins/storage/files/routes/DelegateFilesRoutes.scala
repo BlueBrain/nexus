@@ -45,11 +45,21 @@ final class DelegateFilesRoutes(
       pathPrefix("delegate" / "files") {
         extractCaller { implicit caller =>
           concat(
-            (projectRef & pathPrefix("generate") & storageParam & tagParam & pathEndOrSingleSlash & post) {
-              (project, storageId, tag) =>
-                entity(as[FileDescription]) { desc =>
-                  emit(OK, validateFileDetails(project, storageId, desc, tag).attemptNarrow[FileRejection])
+            (pathPrefix("generate") & projectRef) { project =>
+              concat(
+                // Delegate a file without id segment
+                (pathEndOrSingleSlash & post & storageParam & tagParam & noRev) { case (storageId, tag) =>
+                  entity(as[FileDescription]) { desc =>
+                    emit(OK, validateFileDetails(None, project, storageId, desc, tag).attemptNarrow[FileRejection])
+                  }
+                },
+                // Delegate a file without id segment
+                (idSegment & pathEndOrSingleSlash & put & storageParam & tagParam & noRev) { (id, storageId, tag) =>
+                  entity(as[FileDescription]) { desc =>
+                    emit(OK, validateFileDetails(Some(id), project, storageId, desc, tag).attemptNarrow[FileRejection])
+                  }
                 }
+              )
             },
             (pathPrefix("submit") & put & pathEndOrSingleSlash & entity(as[Json]) & indexingMode) {
               (jwsPayload, mode) =>
@@ -64,13 +74,14 @@ final class DelegateFilesRoutes(
     }
 
   private def validateFileDetails(
+      id: Option[IdSegment],
       project: ProjectRef,
       storageId: Option[IdSegment],
       desc: FileDescription,
       tag: Option[UserTag]
   )(implicit c: Caller) =
     for {
-      delegationRequest <- files.delegate(project, desc, storageId, tag)
+      delegationRequest <- files.createDelegate(id, project, desc, storageId, tag)
       jwsPayload        <- jwsPayloadHelper.sign(delegationRequest.asJson)
     } yield jwsPayload
 

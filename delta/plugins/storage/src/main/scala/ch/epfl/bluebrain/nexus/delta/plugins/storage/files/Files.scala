@@ -173,6 +173,8 @@ final class Files(
 
   /**
     * Grants a delegation to create the physical file on the given storage
+    * @param id
+    *   the file identifier to expand as the iri of the file, generated if none is provided
     * @param projectRef
     *   the project where the file will belong
     * @param description
@@ -180,7 +182,8 @@ final class Files(
     * @param storageId
     *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     */
-  def delegate(
+  def createDelegate(
+      id: Option[IdSegment],
       projectRef: ProjectRef,
       description: FileDescription,
       storageId: Option[IdSegment],
@@ -190,12 +193,13 @@ final class Files(
   ): IO[FileDelegationRequest] = {
     for {
       pc           <- fetchContext.onCreate(projectRef)
-      iri          <- generateId(pc)
-      _            <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = tag))
+      iri          <- id.fold(generateId(pc)) { FileId.iriExpander(_, pc) }
+      _            <-
+        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
       (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
       metadata     <- fileOperations.delegate(storage, description.filename)
     } yield FileDelegationRequest(storage.id, metadata.bucket, projectRef, iri, metadata.path, description, tag)
-  }.span("delegate")
+  }.span("createDelegate")
 
   /**
     * Update an existing file
