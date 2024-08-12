@@ -38,7 +38,7 @@ object FileOperationsMock {
     def validateStorageAccess(storage: StorageValue): IO[Unit]                                                      = ???
     def save(storage: Storage, info: UploadedFileInformation, contentLength: Option[Long]): IO[FileStorageMetadata] =
       ???
-    def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]                     = ???
+    def legacyLink(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]               = ???
     def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]                                         = ???
     def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]                   = ???
     def link(storage: Storage, path: Uri.Path): IO[S3FileOperations.S3FileMetadata]                                 = ???

@@ -104,7 +104,11 @@ object StorageWiring {
     override def save(uploading: RemoteUploadingFile): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
 
-    override def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
+    override def legacyLink(
+        storage: RemoteDiskStorage,
+        sourcePath: Uri.Path,
+        filename: String
+    ): IO[FileStorageMetadata] =
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
 
     override def fetchAttributes(folder: Label, path: Uri.Path): IO[ComputedFileAttributes] =

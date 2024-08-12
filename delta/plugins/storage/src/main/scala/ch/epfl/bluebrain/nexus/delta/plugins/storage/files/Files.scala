@@ -524,7 +524,7 @@ final class Files(
       filename: String,
       fileId: Iri
   ): IO[FileStorageMetadata] =
-    fileOperations.link(storage, path, filename).adaptError { case e: StorageFileRejection =>
+    fileOperations.legacyLink(storage, path, filename).adaptError { case e: StorageFileRejection =>
       LinkRejection(fileId, storage.id, e)
     }
 

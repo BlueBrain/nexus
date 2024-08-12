@@ -57,7 +57,7 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
   "RemoteDiskStorage linking operations" should {
 
     "succeed" in {
-      fileOps.link(storage, Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
+      fileOps.legacyLink(storage, Uri.Path("my/file-2.txt"), filename).accepted shouldEqual
         FileStorageMetadata(
           fixedUuid,
           12,
@@ -69,7 +69,7 @@ class RemoteStorageLinkFileSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fail linking a file that does not exist" in {
-      fileOps.link(storage, Uri.Path("my/file-40.txt"), filename).rejectedWith[FileNotFound]
+      fileOps.legacyLink(storage, Uri.Path("my/file-40.txt"), filename).rejectedWith[FileNotFound]
     }
   }
 }

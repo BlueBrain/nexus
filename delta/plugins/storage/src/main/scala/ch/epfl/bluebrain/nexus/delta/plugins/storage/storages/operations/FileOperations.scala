@@ -27,7 +27,7 @@ trait FileOperations extends StorageAccess {
 
   def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]
 
-  def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
+  def legacyLink(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
 
   def link(storage: Storage, path: Uri.Path): IO[S3FileMetadata]
 
@@ -66,9 +66,9 @@ object FileOperations {
       case s: RemoteDiskStorage => remoteDiskFileOps.fetch(s.value.folder, attributes.path)
     }
 
-    override def link(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
+    override def legacyLink(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
       storage match {
-        case storage: RemoteDiskStorage => remoteDiskFileOps.link(storage, sourcePath, filename)
+        case storage: RemoteDiskStorage => remoteDiskFileOps.legacyLink(storage, sourcePath, filename)
         case s                          => IO.raiseError(MoveFileRejection.UnsupportedOperation(s.tpe))
       }
 
