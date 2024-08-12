@@ -23,7 +23,7 @@ import java.util.UUID
 trait RemoteDiskFileOperations {
   def checkFolderExists(folder: Label): IO[Unit]
 
-  def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
+  def legacyLink(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata]
 
   def fetch(folder: Label, path: Uri.Path): IO[AkkaSource]
 
@@ -53,7 +53,11 @@ object RemoteDiskFileOperations {
           attr                    <- client.createFile(uploading.folder, destinationPath, uploading.entity)
         } yield metadataFromAttributes(attr, uuid, destinationPath, FileAttributesOrigin.Client)
 
-      override def link(storage: RemoteDiskStorage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
+      override def legacyLink(
+          storage: RemoteDiskStorage,
+          sourcePath: Uri.Path,
+          filename: String
+      ): IO[FileStorageMetadata] =
         for {
           (uuid, destinationPath) <- generateRandomPath(storage.project, filename)
           attr                    <- client.moveFile(storage.value.folder, sourcePath, destinationPath)
