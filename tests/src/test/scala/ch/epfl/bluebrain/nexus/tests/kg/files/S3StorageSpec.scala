@@ -3,44 +3,26 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
-import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics
 import ch.epfl.bluebrain.nexus.tests.Optics.{error, filterMetadataKeys, location}
-import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
-import ch.epfl.bluebrain.nexus.tests.kg.files.S3StorageSpec.DelegationResponse
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
-import eu.timepit.refined.types.all.NonEmptyString
-import fs2.Stream
-import fs2.aws.s3.models.Models.{BucketName, FileKey}
-import fs2.aws.s3.{AwsRequestModifier, S3}
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{Decoder, Json}
-import io.circe.jawn.parseByteBuffer
+import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
-import io.laserdisc.pure.s3.tagless.Interpreter
+import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import org.apache.commons.codec.binary.Hex
 import org.scalatest.Assertion
-import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
 
-import java.net.URI
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-import java.security.MessageDigest
 import java.util.Base64
 import scala.jdk.CollectionConverters._
 
-class S3StorageSpec extends StorageSpec {
+class S3StorageSpec extends StorageSpec with S3ClientFixtures {
 
   override def storageName: String = "s3"
 
@@ -48,66 +30,20 @@ class S3StorageSpec extends StorageSpec {
 
   override def storageId: String = "mys3storage"
 
-  override def locationPrefix: Option[String] = Some(s3Config.prefix)
+  override def locationPrefix: Option[String] = Some(storageConfig.s3.prefix)
 
-  val s3Config: S3Config = storageConfig.s3
+  private val bucket = genId()
 
-  private val bucket                 = genId()
-  private val logoFilename           = "nexus-logo.png"
-  private val logoKey                = s"some/path/to/$logoFilename"
-  private val logoSha256Base64Digest = "Bb9EKBAhO55f7NUkLu/v8fPSB5E4YclmWMdcz1iZfoc="
-  private val logoSha256HexDigest    = Hex.encodeHexString(Base64.getDecoder.decode(logoSha256Base64Digest))
-
-  private val s3Endpoint: String = "http://s3.localhost.localstack.cloud:4566"
-
-  private val credentialsProvider = (s3Config.accessKey, s3Config.secretKey) match {
-    case (Some(ak), Some(sk)) => StaticCredentialsProvider.create(AwsBasicCredentials.create(ak, sk))
-    case _                    => AnonymousCredentialsProvider.create()
-  }
-
-  private val s3Client = Interpreter[IO]
-    .S3AsyncClientOpResource(
-      S3AsyncClient
-        .builder()
-        .credentialsProvider(credentialsProvider)
-        .endpointOverride(new URI(s3Endpoint))
-        .forcePathStyle(true)
-        .region(Region.US_EAST_1)
-    )
-    .allocated
-    .map(_._1)
-    .accepted
-
-  private val s3 = S3.create(s3Client)
+  implicit private val s3Client: S3AsyncClientOp[IO] = createS3Client.accepted
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    (createBucket(bucket) >> uploadLogoFileToS3(logoKey)).accepted
+    (createBucket(bucket) >> uploadLogoFileToS3(bucket, logoKey)).accepted
     ()
   }
 
-  private def createBucket(b: String): IO[CreateBucketResponse] =
-    s3Client.createBucket(CreateBucketRequest.builder.bucket(b).build)
-
-  private def uploadLogoFileToS3(key: String): IO[PutObjectResponse] = s3Client.putObject(
-    PutObjectRequest.builder
-      .bucket(bucket)
-      .key(key)
-      .checksumAlgorithm(ChecksumAlgorithm.SHA256)
-      .checksumSHA256(logoSha256Base64Digest)
-      .build,
-    Paths.get(getClass.getResource("/kg/files/nexus-logo.png").toURI)
-  )
-
   override def afterAll(): Unit = {
-    val cleanup: IO[Unit] = for {
-      resp   <- s3Client.listObjects(ListObjectsRequest.builder.bucket(bucket).build)
-      objects = resp.contents.asScala.toList
-      _      <- objects.traverse(obj => s3Client.deleteObject(DeleteObjectRequest.builder.bucket(bucket).key(obj.key).build))
-      _      <- s3Client.deleteBucket(DeleteBucketRequest.builder.bucket(bucket).build)
-    } yield ()
-
-    cleanup.accepted
+    cleanupBucket(bucket).accepted
 
     super.afterAll()
   }
@@ -238,40 +174,6 @@ class S3StorageSpec extends StorageSpec {
       .accepted
   }
 
-  private def linkedFileResponse(
-      id: String,
-      digestValue: String,
-      location: String,
-      filename: String,
-      mediaType: String
-  ): Json =
-    jsonContentOf(
-      "kg/files/linked-metadata.json",
-      replacements(
-        Coyote,
-        "id"          -> id,
-        "storageId"   -> storageId,
-        "self"        -> fileSelf(projectRef, id),
-        "projId"      -> s"$projectRef",
-        "digestValue" -> digestValue,
-        "location"    -> location,
-        "filename"    -> filename,
-        "mediaType"   -> mediaType
-      ): _*
-    )
-
-  private def uploadFileBytesToS3(content: Array[Byte], path: String): IO[String] = {
-    val sha256Base64Encoded                  = new String(
-      Base64.getEncoder.encode(MessageDigest.getInstance("SHA-256").digest(content)),
-      StandardCharsets.UTF_8
-    )
-    val modifier: AwsRequestModifier.Upload1 = (b: PutObjectRequest.Builder) =>
-      b.checksumAlgorithm(ChecksumAlgorithm.SHA256).checksumSHA256(sha256Base64Encoded)
-    val uploadPipe                           =
-      s3.uploadFile(BucketName(NonEmptyString.unsafeFrom(bucket)), FileKey(NonEmptyString.unsafeFrom(path)), modifier)
-    Stream.fromIterator[IO](content.iterator, 16).through(uploadPipe).compile.drain.as(sha256Base64Encoded)
-  }
-
   s"Linking an S3 file" should {
 
     def createFileLinkNoId(storageId: String, payload: Json) =
@@ -294,14 +196,16 @@ class S3StorageSpec extends StorageSpec {
       val payload = Json.obj("path" := path)
 
       for {
-        _         <- uploadLogoFileToS3(path)
+        _         <- uploadLogoFileToS3(bucket, path)
         json      <- createFileLinkNoId(storageId, payload)
         id         = Optics.`@id`.getOption(json).value
         encodedId  = UrlUtils.encode(id)
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
                        filterMetadataKeys(json) shouldEqual linkedFileResponse(
+                         projectRef,
                          id,
+                         storageId,
                          logoSha256HexDigest,
                          location = path,
                          filename = logoFilename,
@@ -317,13 +221,15 @@ class S3StorageSpec extends StorageSpec {
       val payload = Json.obj("path" := path)
 
       for {
-        _         <- uploadLogoFileToS3(path)
+        _         <- uploadLogoFileToS3(bucket, path)
         _         <- createFileLink(id, storageId, payload)
         fullId     = s"$attachmentPrefix$id"
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
                        filterMetadataKeys(json) shouldEqual linkedFileResponse(
+                         projectRef,
                          fullId,
+                         storageId,
                          logoSha256HexDigest,
                          location = path,
                          filename = logoFilename,
@@ -339,7 +245,7 @@ class S3StorageSpec extends StorageSpec {
       val payload = Json.obj("path" := path, "mediaType" := "image/dan")
 
       for {
-        _         <- uploadLogoFileToS3(path)
+        _         <- uploadLogoFileToS3(bucket, path)
         _         <- createFileLink(id, storageId, payload)
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
@@ -359,9 +265,9 @@ class S3StorageSpec extends StorageSpec {
         Json.obj("path" -> Json.fromString(updatedPath), "mediaType" := "text/plain; charset=UTF-8")
 
       for {
-        _             <- uploadLogoFileToS3(originalPath)
+        _             <- uploadLogoFileToS3(bucket, originalPath)
         _             <- createFileLink(id, storageId, originalPayload)
-        s3Digest      <- uploadFileBytesToS3(fileContent.getBytes(StandardCharsets.UTF_8), updatedPath)
+        s3Digest      <- putFile(bucket, updatedPath, fileContent)
         _             <- updateFileLink(id, storageId, 1, updatedPayload)
         _             <- deltaClient.get[ByteString](s"/files/$projectRef/$id", Coyote, acceptAll) {
                            expectFileContent(
@@ -407,91 +313,27 @@ class S3StorageSpec extends StorageSpec {
     }
   }
 
-  s"Delegate S3 file upload" should {
-
-    val delegateUrl = s"/delegate/files/generate/$projectRef/?storage=nxv:$storageId"
-
-    def delegateUriWithId(id: String) =
-      s"/delegate/files/generate/$projectRef/${UrlUtils.encode(id)}?storage=nxv:$storageId"
-
-    "fail to generate a delegation token without id without the appropriate permissions" in {
-      val payload = json"""{ "filename":  "my-file.jpg"}"""
-      deltaClient.post[Json](delegateUrl, payload, Anonymous) { expectForbidden }
-    }
-
-    "fail to generate a delegation token with id without the appropriate permissions" in {
-      val id      = s"https://bbp.epfl.ch/data/${genString()}"
-      val payload = json"""{ "filename":  "my-file.jpg"}"""
-      deltaClient.put[Json](delegateUriWithId(id), payload, Anonymous) { expectForbidden }
-    }
-
-    "generate the payload by providing the id" in {
-      val id      = s"https://bbp.epfl.ch/data/${genString()}"
-      val payload = json"""{ "filename":  "my-file.jpg"}"""
-      deltaClient.put[Json](delegateUriWithId(id), payload, Coyote) { case (jwsPayload, response) =>
-        response.status shouldEqual StatusCodes.OK
-        val delegateResponse = parseDelegationResponse(jwsPayload)
-        delegateResponse.id shouldEqual id
-        delegateResponse.bucket shouldEqual bucket
-        delegateResponse.project shouldEqual projectRef
-      }
-    }
-
-    "succeed using JWS protocol with flattened serialization" in {
-      val filename               = genString()
-      val (name, desc, keywords) = (genString(), genString(), Json.obj(genString() := genString()))
-      val metadata               =
-        json"""
-          {
-            "name": "$name",
-            "description": "$desc",
-            "keywords": $keywords
-          }
-            """
-      val payload                =
-        Json.obj("filename" -> Json.fromString(filename), "metadata" -> metadata, "mediaType" := "image/dan")
-
-      for {
-        jwsPayload      <- deltaClient.postAndReturn[Json](delegateUrl, payload, Coyote) { expectOk }
-        delegateResponse = parseDelegationResponse(jwsPayload)
-        _                = delegateResponse.bucket shouldEqual bucket
-        _                = delegateResponse.project shouldEqual projectRef
-        _               <- uploadLogoFileToS3(delegateResponse.path)
-        _               <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) { expectCreated }
-        encodedId        = UrlUtils.encode(delegateResponse.id)
-        filename         = delegateResponse.path.split("/").last
-        expectedMetadata = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
-        assertion       <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
-                             response.status shouldEqual StatusCodes.OK
-                             val expected = linkedFileResponse(
-                               delegateResponse.id,
-                               logoSha256HexDigest,
-                               location = delegateResponse.path,
-                               filename = filename,
-                               mediaType = "image/dan"
-                             ).deepMerge(expectedMetadata)
-                             val actual   = filterMetadataKeys(json)
-                             actual shouldEqual expected
-                           }
-      } yield assertion
-    }
-  }
-
-  def parseDelegationResponse(jwsPayload: Json): DelegationResponse = {
-    for {
-      encodedPayload <- jwsPayload.hcursor.get[String]("payload")
-      decodedPayload  = Base64.getDecoder.decode(encodedPayload)
-      jsonPayload    <- parseByteBuffer(ByteBuffer.wrap(decodedPayload))
-      resp           <- jsonPayload.as[DelegationResponse]
-    } yield resp
-  }.rightValue
-}
-
-object S3StorageSpec {
-
-  final case class DelegationResponse(id: String, project: String, path: String, bucket: String)
-  object DelegationResponse {
-    implicit val dec: Decoder[DelegationResponse] = deriveDecoder
-  }
-
+  private def linkedFileResponse(
+      projectRef: String,
+      id: String,
+      storageId: String,
+      digestValue: String,
+      location: String,
+      filename: String,
+      mediaType: String
+  ): Json =
+    jsonContentOf(
+      "kg/files/linked-metadata.json",
+      replacements(
+        Coyote,
+        "id"          -> id,
+        "storageId"   -> storageId,
+        "self"        -> fileSelf(projectRef, id),
+        "projId"      -> s"$projectRef",
+        "digestValue" -> digestValue,
+        "location"    -> location,
+        "filename"    -> filename,
+        "mediaType"   -> mediaType
+      ): _*
+    )
 }

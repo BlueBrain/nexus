@@ -4,8 +4,9 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileLinkRequest, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -47,17 +48,24 @@ final class DelegateFilesRoutes(
           concat(
             (pathPrefix("generate") & projectRef) { project =>
               concat(
-                // Delegate a file without id segment
+                // Delegate a file creation without id segment
                 (pathEndOrSingleSlash & post & storageParam & tagParam & noRev) { case (storageId, tag) =>
                   entity(as[FileDescription]) { desc =>
-                    emit(OK, validateFileDetails(None, project, storageId, desc, tag).attemptNarrow[FileRejection])
+                    emit(OK, createDelegation(None, project, storageId, desc, tag).attemptNarrow[FileRejection])
                   }
                 },
-                // Delegate a file without id segment
-                (idSegment & pathEndOrSingleSlash & put & storageParam & tagParam & noRev) { (id, storageId, tag) =>
+                // Delegate a file creation without id segment
+                (idSegment & pathEndOrSingleSlash & put & storageParam & noRev & tagParam) { (id, storageId, tag) =>
                   entity(as[FileDescription]) { desc =>
-                    emit(OK, validateFileDetails(Some(id), project, storageId, desc, tag).attemptNarrow[FileRejection])
+                    emit(OK, createDelegation(Some(id), project, storageId, desc, tag).attemptNarrow[FileRejection])
                   }
+                },
+                // Delegate a file creation without id segment
+                (idSegment & pathEndOrSingleSlash & put & storageParam & revParam & tagParam) {
+                  (id, storageId, rev, tag) =>
+                    entity(as[FileDescription]) { desc =>
+                      emit(OK, updateDelegation(id, project, rev, storageId, desc, tag).attemptNarrow[FileRejection])
+                    }
                 }
               )
             },
@@ -73,37 +81,45 @@ final class DelegateFilesRoutes(
       }
     }
 
-  private def validateFileDetails(
+  private def createDelegation(
       id: Option[IdSegment],
       project: ProjectRef,
       storageId: Option[IdSegment],
       desc: FileDescription,
       tag: Option[UserTag]
   )(implicit c: Caller) =
-    for {
-      delegationRequest <- files.createDelegate(id, project, desc, storageId, tag)
-      jwsPayload        <- jwsPayloadHelper.sign(delegationRequest.asJson)
-    } yield jwsPayload
+    files.createDelegate(id, project, desc, storageId, tag).flatMap { request =>
+      jwsPayloadHelper.sign(request.asJson)
+    }
+
+  private def updateDelegation(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Int,
+      storageId: Option[IdSegment],
+      desc: FileDescription,
+      tag: Option[UserTag]
+  )(implicit c: Caller) =
+    files.updateDelegate(id, project, rev, desc, storageId, tag).flatMap { request =>
+      jwsPayloadHelper.sign(request.asJson)
+    }
 
   private def linkDelegatedFile(
       jwsPayload: Json,
       mode: IndexingMode
   )(implicit c: Caller): IO[FileResource] =
-    for {
-      originalPayload   <- jwsPayloadHelper.verify(jwsPayload)
-      delegationRequest <- IO.fromEither(originalPayload.as[FileDelegationRequest])
-      linkRequest        = FileLinkRequest(
-                             delegationRequest.path.path,
-                             delegationRequest.description.mediaType,
-                             delegationRequest.description.metadata
-                           )
-      fileResource      <- files.linkFile(
-                             Some(delegationRequest.id),
-                             delegationRequest.project,
-                             Some(delegationRequest.storageId),
-                             linkRequest,
-                             delegationRequest.tag
-                           )
-      _                 <- index(delegationRequest.project, fileResource, mode)
-    } yield fileResource
+    jwsPayloadHelper
+      .verifyAs[FileDelegationRequest](jwsPayload)
+      .flatMap {
+        case FileDelegationCreationRequest(project, id, targetLocation, description, tag)    =>
+          val linkRequest = FileLinkRequest(targetLocation.path.path, description.mediaType, description.metadata)
+          files.linkFile(Some(id), project, Some(targetLocation.storageId), linkRequest, tag)
+        case FileDelegationUpdateRequest(project, id, rev, targetLocation, description, tag) =>
+          val fileId      = FileId(id, project)
+          val linkRequest = FileLinkRequest(targetLocation.path.path, description.mediaType, description.metadata)
+          files.updateLinkedFile(fileId, rev, Some(targetLocation.storageId), linkRequest, tag)
+      }
+      .flatTap { fileResource =>
+        index(fileResource.value.project, fileResource, mode)
+      }
 }

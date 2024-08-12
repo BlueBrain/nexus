@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDelegationRequest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.{S3DelegationMetadata, S3FileMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.S3FileMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
@@ -33,7 +33,7 @@ trait FileOperations extends StorageAccess {
 
   def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes]
 
-  def delegate(storage: Storage, filename: String): IO[S3DelegationMetadata]
+  def delegate(storage: Storage, filename: String): IO[FileDelegationRequest.TargetLocation]
 }
 
 object FileOperations {
@@ -84,9 +84,12 @@ object FileOperations {
         case s            => IO.raiseError(LinkFileRejection.UnsupportedOperation(s.tpe))
       }
 
-    override def delegate(storage: Storage, filename: String): IO[S3DelegationMetadata] =
+    override def delegate(storage: Storage, filename: String): IO[FileDelegationRequest.TargetLocation] =
       storage match {
-        case s: S3Storage => s3FileOps.delegate(s.value.bucket, s.project, filename)
+        case s: S3Storage =>
+          s3FileOps.delegate(s.value.bucket, s.project, filename).map { metadata =>
+            FileDelegationRequest.TargetLocation(storage.id, metadata.bucket, metadata.path)
+          }
         case s            => IO.raiseError(DelegateFileOperation.UnsupportedOperation(s.tpe))
       }
   }
