@@ -86,7 +86,7 @@ class FileProcessor private (
             val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
             val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
-              .updateLinkedFile(fileId, None, cRev, linkRequest, e.tag)
+              .updateLinkedFile(fileId, cRev, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }

@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
@@ -192,14 +193,44 @@ final class Files(
       caller: Caller
   ): IO[FileDelegationRequest] = {
     for {
-      pc           <- fetchContext.onCreate(projectRef)
-      iri          <- id.fold(generateId(pc)) { FileId.iriExpander(_, pc) }
-      _            <-
-        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag = None))
-      (_, storage) <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
-      metadata     <- fileOperations.delegate(storage, description.filename)
-    } yield FileDelegationRequest(storage.id, metadata.bucket, projectRef, iri, metadata.path, description, tag)
+      pc             <- fetchContext.onCreate(projectRef)
+      iri            <- id.fold(generateId(pc)) { FileId.iriExpander(_, pc) }
+      _              <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
+      (_, storage)   <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      targetLocation <- fileOperations.delegate(storage, description.filename)
+    } yield FileDelegationCreationRequest(projectRef, iri, targetLocation, description, tag)
   }.span("createDelegate")
+
+  /**
+    * Grants a delegation to create the physical file on the given storage
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file will belong
+    * @param rev
+    *   the current revision of the file
+    * @param description
+    *   a description of the file
+    */
+  def updateDelegate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Int,
+      description: FileDescription,
+      storageId: Option[IdSegment],
+      tag: Option[UserTag]
+  )(implicit
+      caller: Caller
+  ): IO[FileDelegationRequest] = {
+    for {
+      pc             <- fetchContext.onModify(projectRef)
+      iri            <- FileId.iriExpander(id, pc)
+      _              <-
+        test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
+      (_, storage)   <- fetchAndValidateActiveStorage(storageId, projectRef, pc)
+      targetLocation <- fileOperations.delegate(storage, description.filename)
+    } yield FileDelegationUpdateRequest(projectRef, iri, rev, targetLocation, description, tag)
+  }.span("updateDelegate")
 
   /**
     * Update an existing file
@@ -266,8 +297,8 @@ final class Files(
 
   def updateLinkedFile(
       id: FileId,
-      storageId: Option[IdSegment],
       rev: Int,
+      storageId: Option[IdSegment],
       linkRequest: FileLinkRequest,
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {

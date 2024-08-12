@@ -67,7 +67,7 @@ class LinkFilesRoutes(identities: Identities, aclCheck: AclCheck, files: Files, 
                     val fileId = FileId(id, project)
                     emit(
                       files
-                        .updateLinkedFile(fileId, storage, rev, request, tag)
+                        .updateLinkedFile(fileId, rev, storage, request, tag)
                         .index(mode)
                         .attemptNarrow[FileRejection]
                     )

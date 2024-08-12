@@ -42,11 +42,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion]
 
-  protected def fileSelf(project: String, id: String): String = {
-    val uri = Uri(s"${config.deltaUri}/files/$project")
-    uri.copy(path = uri.path / id).toString
-  }
-
   private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
 
   override def beforeAll(): Unit = {

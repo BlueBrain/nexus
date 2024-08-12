@@ -28,4 +28,9 @@ trait SelfFixture {
     uri.copy(path = uri.path / id).toString
   }
 
+  def fileSelf(project: String, id: String)(implicit config: TestsConfig): String = {
+    val uri = Uri(s"${config.deltaUri}/files/$project")
+    uri.copy(path = uri.path / id).toString
+  }
+
 }

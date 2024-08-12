@@ -7,7 +7,7 @@ import com.nimbusds.jose.crypto.{RSASSASigner, RSASSAVerifier}
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.util.JSONObjectUtils
 import com.nimbusds.jose.{JWSAlgorithm, JWSHeader, JWSObjectJSON, Payload}
-import io.circe.{parser, Json, Printer}
+import io.circe.{parser, Decoder, Json, Printer}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.ListHasAsScala
@@ -17,6 +17,10 @@ sealed trait JWSPayloadHelper {
   def sign(payloadToSign: Json): IO[Json]
 
   def verify(payload: Json): IO[Json]
+
+  def verifyAs[A: Decoder](payload: Json): IO[A] = verify(payload).flatMap { originalPayload =>
+    IO.fromEither(originalPayload.as[A])
+  }
 }
 
 object JWSPayloadHelper {
@@ -51,7 +55,7 @@ object JWSPayloadHelper {
         _               <- IO.delay(sig.verify(verifier))
         objectPayload    = jwsObject.getPayload.toString
         originalPayload <- IO.fromEither(parser.parse(objectPayload))
-        _               <- log.info(s"Original payload parsed for token: $originalPayload")
+        _               <- log.debug(s"Original payload parsed for token: $originalPayload")
         now             <- clock.realTimeInstant
         exp             <- IO.delay(sig.getHeader.getCustomParam("exp").asInstanceOf[Long])
         _               <- IO.raiseWhen(now.getEpochSecond > exp)(JWSSignatureExpired)

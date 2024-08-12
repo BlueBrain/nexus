@@ -80,6 +80,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[A] =
     requestAssertAndReturn(POST, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
 
+  def putAndReturn[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (A, HttpResponse) => Assertion
+  )(implicit um: FromEntityUnmarshaller[A]): IO[A] =
+    requestAssertAndReturn(PUT, url, Some(body), identity, extraHeaders)(assertResponse).map(_._1)
+
   /** Put with no body */
   def putEmptyBody[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
