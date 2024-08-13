@@ -152,6 +152,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         metricEncoders: Set[ScopedEventMetricEncoder[_]],
         xas: Transactors,
         supervisor: Supervisor,
+        projections: Projections,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
         files: ElasticSearchFiles
@@ -159,6 +160,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       EventMetricsProjection(
         metricEncoders,
         supervisor,
+        projections,
         client,
         xas,
         config.batch,
