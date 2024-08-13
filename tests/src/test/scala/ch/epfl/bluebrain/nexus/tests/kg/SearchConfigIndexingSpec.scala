@@ -22,23 +22,23 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val projId1 = genId()
   private val id1     = s"$orgId/$projId1"
 
-  private val neuronMorphologyId                  = "https://bbp.epfl.ch/data/neuron-morphology"
-  private val simulationReadyNeuronMorphologyId   = "https://bbp.epfl.ch/data/simulation-ready-neuron-morphology"
-  private val neuronDensityId                     = "https://bbp.epfl.ch/data/neuron-density"
-  private val traceId                             = "https://bbp.epfl.ch/data/trace"
-  private val curatedTraceId                      = "https://bbp.epfl.ch/data/curated-trace"
-  private val unassessedTraceId                   = "https://bbp.epfl.ch/data/unassessed-trace"
-  private val layerThicknessId                    = "https://bbp.epfl.ch/data/layer-thickness"
-  private val boutonDensityId                     = "https://bbp.epfl.ch/data/bouton-density"
-  private val simulationCampaignId                = "https://bbp.epfl.ch/data/simulation-campaign"
-  private val simulationId                        = "https://bbp.epfl.ch/data/simulation"
-  private val synapseId                           = "https://bbp.epfl.ch/data/synapse"
-  private val synapseTwoPathwaysId                = "https://bbp.epfl.ch/data/synapse-two-pathways"
-  private val detailedCircuitId                   = "https://bbp.epfl.ch/data/detailed-circuit"
-  private val emodelId                            = "https://bbp.epfl.ch/data/emodel"
-  private val memodelId                           = "https://bbp.epfl.ch/data/memodel"
-  private val analysisSuitablememodelId           = "https://bbp.epfl.ch/data/analysis-suitable-memodel"
-  private val singleNeuronSimulationId            = "https://bbp.epfl.ch/data/synapse/single-neuron-simulation"
+  private val neuronMorphologyId                = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val simulationReadyNeuronMorphologyId = "https://bbp.epfl.ch/data/simulation-ready-neuron-morphology"
+  private val neuronDensityId                   = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId                           = "https://bbp.epfl.ch/data/trace"
+  private val curatedTraceId                    = "https://bbp.epfl.ch/data/curated-trace"
+  private val unassessedTraceId                 = "https://bbp.epfl.ch/data/unassessed-trace"
+  private val layerThicknessId                  = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId                   = "https://bbp.epfl.ch/data/bouton-density"
+  private val simulationCampaignId              = "https://bbp.epfl.ch/data/simulation-campaign"
+  private val simulationId                      = "https://bbp.epfl.ch/data/simulation"
+  private val synapseId                         = "https://bbp.epfl.ch/data/synapse"
+  private val synapseTwoPathwaysId              = "https://bbp.epfl.ch/data/synapse-two-pathways"
+  private val detailedCircuitId                 = "https://bbp.epfl.ch/data/detailed-circuit"
+  private val emodelId                          = "https://bbp.epfl.ch/data/emodel"
+  private val memodelId                         = "https://bbp.epfl.ch/data/memodel"
+  private val analysisSuitablememodelId         = "https://bbp.epfl.ch/data/analysis-suitable-memodel"
+  private val singleNeuronSimulationId          = "https://bbp.epfl.ch/data/synapse/single-neuron-simulation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -398,12 +398,12 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     }
 
     "have simulationReady field true if annotation is present" in {
-    val query = queryField(simulationReadyNeuronMorphologyId, "simulationReady")
+      val query = queryField(simulationReadyNeuronMorphologyId, "simulationReady")
 
-    assertOneSource(query) { json =>
-      json shouldBe json"""{ "simulationReady": true }"""
+      assertOneSource(query) { json =>
+        json shouldBe json"""{ "simulationReady": true }"""
+      }
     }
-  }
 
     "have the correct mType property" in {
       val query    = queryField(traceId, "mType")
