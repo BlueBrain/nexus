@@ -334,10 +334,11 @@ CONSTRUCT {
   }
     
   OPTIONAL {
-    ?id nsg:annotation / nsg:hasBody ?simulationReadyAnnotation .
+    ?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady> / rdfs:label ?simulationLabel .
+    
     BIND(
       IF(
-         ?simulationReadyAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady>,
+         ?simulationLabel !=  " ",
          true,
          false
       ) AS ?simulationReady
@@ -345,10 +346,10 @@ CONSTRUCT {
   }
 
   OPTIONAL {
-    ?id nsg:annotation / nsg:hasBody ?analysisSuitableAnnotation .
+    ?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable> / rdfs:label ?analysisLabel .
     BIND(
       IF(
-         ?analysisSuitableAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable>,
+         ?analysisLabel != " ",
          true,
          false
       ) AS ?analysisSuitable
