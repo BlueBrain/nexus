@@ -1,6 +1,6 @@
 curl -X POST \
    -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/delegate/files/myorg/myproject?storage=mys3storage" -d \
+   "http://localhost:8080/v1/delegate/files/submit" -d \
    '{
       "protected" : "eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0",
       "payload" : "eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ",
