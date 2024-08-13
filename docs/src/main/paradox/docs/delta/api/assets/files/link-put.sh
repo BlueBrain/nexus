@@ -1,8 +1,8 @@
-curl -X POST \
+curl -X PUT \
    -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/delegate/files/myorg/myproject/validate?storage=mys3storage" -d \
+   "http://localhost:8080/v1/link/files/myorg/myproject/fileid?storage=mys3storage" -d \
    '{
-      "filename": "myfile.png",
+      "path": "relative/path/to/myfile.png",
       "mediaType": "image/png",
       "metadata": {
         "name": "My File",

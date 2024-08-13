@@ -1,8 +1,8 @@
 curl -X POST \
    -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/files/myorg/myproject/register/myfile?storage=mys3storage" -d \
+   "http://localhost:8080/v1/delegate/generate/files/myorg/myproject?storage=mys3storage" -d \
    '{
-      "path": "relative/path/to/myfile.png",
+      "filename": "myfile.png",
       "mediaType": "image/png",
       "metadata": {
         "name": "My File",
