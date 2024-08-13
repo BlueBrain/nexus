@@ -308,7 +308,7 @@ This release contains bugfixes and minor improvements:
 
 - Nexus client
 - Indexing data in other systems
-- @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)
+- Remote storages
 
 ### New features / enhancements
 

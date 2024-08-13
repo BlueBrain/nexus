@@ -3,21 +3,20 @@
     "https://bluebrain.github.io/nexus/contexts/storages-metadata.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
+  "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/s3",
   "@type": [
     "Storage",
-    "RemoteDiskStorage"
+    "S3Storage"
   ],
-  "_algorithm": "SHA-256",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
   "_createdAt": "2021-05-11T12:22:19.195Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
   "_deprecated": true,
-  "_incoming": "http://localhost:8080/v1/storages/myorg/myproject/remote/incoming",
-  "_outgoing": "http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing",
+  "_incoming": "http://localhost:8080/v1/storages/myorg/myproject/s3/incoming",
+  "_outgoing": "http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing",
   "_project": "http://localhost:8080/v1/projects/myorg/myproject",
   "_rev": 4,
-  "_self": "http://localhost:8080/v1/storages/myorg/myproject/remote",
+  "_self": "http://localhost:8080/v1/storages/myorg/myproject/s3",
   "_updatedAt": "2021-05-11T12:29:27.821Z",
   "_updatedBy": "http://localhost:8080/v1/anonymous"
 }
