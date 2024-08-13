@@ -19,9 +19,6 @@
                 },
                 {
                     "node": "this:S3Storage"
-                },
-                {
-                    "node": "this:RemoteDiskStorage"
                 }
             ]
         },
@@ -61,78 +58,6 @@
                     "description": "The volume on the local file system where the files are going to be stored",
                     "datatype": "xsd:string",
                     "minCount": 1,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:readPermission",
-                    "name": "readPermission",
-                    "description": "The permission required in order to download a file from this storage",
-                    "datatype": "xsd:string",
-                    "minCount": 0,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:writePermission",
-                    "name": "writePermission",
-                    "description": "The permission required in order to upload a file to this storage",
-                    "datatype": "xsd:string",
-                    "minCount": 0,
-                    "maxCount": 1
-                }
-            ]
-        },
-        {
-            "@id": "this:RemoteDiskStorage",
-            "nodeKind": "sh:BlankNodeOrIRI",
-            "sh:closed": true,
-            "property": [
-                {
-                    "path": "rdf:type",
-                    "name": "RDF type RemoteDiskStorage",
-                    "description": "The RemoteDiskStorage RDF type.",
-                    "nodeKind": "sh:IRI",
-                    "sh:hasValue": {
-                        "@id": "nxv:RemoteDiskStorage"
-                    }
-                },
-                {
-                    "path": "nxv:maxFileSize",
-                    "name": "maxFileSize",
-                    "description": "the maximum file size for uploaded entities",
-                    "datatype": "xsd:long",
-                    "minCount": 0,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:default",
-                    "name": "default",
-                    "description": "Flag to determine whether or not the storage is a default storage",
-                    "datatype": "xsd:boolean",
-                    "minCount": 1,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:folder",
-                    "name": "folder",
-                    "description": "The remote storage folder (similar concept to bucket in the S3)",
-                    "datatype": "xsd:string",
-                    "minCount": 1,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:endpoint",
-                    "name": "endpoint",
-                    "description": "The endpoint to communicate with the remote storage",
-                    "datatype": "xsd:string",
-                    "minCount": 0,
-                    "maxCount": 1
-                },
-                {
-                    "path": "nxv:credentials",
-                    "name": "credentials",
-                    "description": "The remote storage optional Bearer Token",
-                    "datatype": "xsd:string",
-                    "minCount": 0,
                     "maxCount": 1
                 },
                 {

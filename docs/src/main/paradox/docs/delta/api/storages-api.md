@@ -52,46 +52,6 @@ local file-system structure and that Nexus has read and write access to the targ
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-write-permission` (`files/write`).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-max-file-size` (10G).
 
-### Remote disk storage
-
-@@@ warning
-The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.
-@@@
-
-This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system.
-This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph,
-Gluster, GPFS, Lustre, ...) that you don't want to mount directly on the system where Nexus Delta runs.
-
-While there's no formal specification for this service, you can check out or deploy our own implementation:
-@link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/$git.branch$/storage){ open=new }.
-
-In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be set to `true`.
-@ref:[More information about configuration](../../getting-started/running-nexus/configuration/index.md#remote-storage-configuration)
-
-
-```json
-{
-  "@type": "RemoteDiskStorage",
-  "name": "{name}",
-  "description": "{description}",
-  "default": "{default}",
-  "folder": "{folder}",
-  "readPermission": "{read_permission}",
-  "writePermission": "{write_permission}",
-  "maxFileSize": {max_file_size}
-}
-```
-
-...where
-
-- `{name}`: String - A name for this storage. This field is optional.
-- `{description}`: String - A description for this storage. This field is optional.
-- `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
-- `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
-- `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).
-- `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-max-file-size` (10G).
-
 ### Amazon S3 compatible storage
 
 This storage type allows the use of an internal or external blob-store that is compatible with the Amazon S3 API.

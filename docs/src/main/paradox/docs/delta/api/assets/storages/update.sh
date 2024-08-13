@@ -1,8 +1,8 @@
 curl -X PUT \
    -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/storages/myorg/myproject/remote?rev=1" -d \
+   "http://localhost:8080/v1/storages/myorg/myproject/s3?rev=1" -d \
     '{
-        "@type": "RemoteDiskStorage",
+        "@type": "S3Storage",
         "default": false,
-        "folder": "test-updated"
+        "bucket": "test-updated"
     }'
