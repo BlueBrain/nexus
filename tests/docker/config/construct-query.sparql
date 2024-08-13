@@ -346,7 +346,7 @@ CONSTRUCT {
   OPTIONAL {
     BIND(
       IF(
-         EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady> .},
+         EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable> .},
          true,
          false
       ) AS ?analysisSuitable
