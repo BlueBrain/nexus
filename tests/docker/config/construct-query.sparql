@@ -40,7 +40,9 @@ CONSTRUCT {
                                                   :idLabel     ?sTypeIdLabel .
   ?alias  :curated         ?curated               .
 
-  ?alias  :simulationReady ?simulationReady       .
+  ?alias  :simulationReady  ?simulationReady      .
+
+  ?alias  :analysisSuitable ?analysisSuitable     .
 
   ## Atlas
   ?alias  :coordinatesInBrainAtlas  ?coordinates     .
@@ -332,13 +334,22 @@ CONSTRUCT {
   }
     
   OPTIONAL {
-    ?id nsg:annotation / nsg:hasBody ?simulationReadyAnnotation .
     BIND(
       IF(
-         ?simulationReadyAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady>,
+         EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady> .},
          true,
          false
       ) AS ?simulationReady
+    )
+  }
+
+  OPTIONAL {
+    BIND(
+      IF(
+         EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable> .},
+         true,
+         false
+      ) AS ?analysisSuitable
     )
   }
 
