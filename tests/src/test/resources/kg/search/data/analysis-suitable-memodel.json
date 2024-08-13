@@ -4,26 +4,26 @@
     "Entity",
     "MEModel"
   ],
-  "@id": "https://bbp.epfl.ch/data/simulation-ready-memodel",
+  "@id": "https://bbp.epfl.ch/data/analysis-suitable-memodel",
   "annotation": {
     "@type": [
       "QualityAnnotation",
       "Annotation"
     ],
     "hasBody": {
-      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady",
+      "@id": "https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable",
       "@type": [
         "AnnotationBody",
         "DataScope"
       ],
-      "label": "Simulation Ready"
+      "label": "Analysis Suitable"
     },
     "motivatedBy": {
       "@id": "quality:Assessment",
       "@type": "Motivation"
     },
     "name": "Data usage scope annotation",
-    "note": "Dataset can be used to simulate single cell MEModels."
+    "note": "Analysis can be run on this model."
   },
   "description": "me-model with status antonel",
   "hasPart": [
