@@ -40,7 +40,9 @@ CONSTRUCT {
                                                   :idLabel     ?sTypeIdLabel .
   ?alias  :curated         ?curated               .
 
-  ?alias  :simulationReady ?simulationReady       .
+  ?alias  :simulationReady  ?simulationReady      .
+
+  ?alias  :analysisSuitable ?analysisSuitable     .
 
   ## Atlas
   ?alias  :coordinatesInBrainAtlas  ?coordinates     .
@@ -339,6 +341,17 @@ CONSTRUCT {
          true,
          false
       ) AS ?simulationReady
+    )
+  }
+
+  OPTIONAL {
+    ?id nsg:annotation / nsg:hasBody ?analysisSuitableAnnotation .
+    BIND(
+      IF(
+         ?analysisSuitableAnnotation = <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable>,
+         true,
+         false
+      ) AS ?analysisSuitable
     )
   }
 
