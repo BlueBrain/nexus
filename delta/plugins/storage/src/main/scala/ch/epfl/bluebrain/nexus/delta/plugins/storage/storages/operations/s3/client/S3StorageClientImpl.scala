@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{checksumAlgorithm, CopyOptions, HeadObject, PutObjectRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{PutObjectRequest, _}
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
@@ -62,9 +62,9 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[Unit] =
+  ): IO[CopyResult] =
     approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
-      IO.whenA(approved) {
+      if (approved) {
         val requestBuilder     = CopyObjectRequest
           .builder()
           .sourceBucket(sourceBucket)
@@ -77,8 +77,8 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
             .contentType(contentType.value)
             .metadataDirective(MetadataDirective.REPLACE)
         }
-        client.copyObject(requestWithOptions.build()).void
-      }
+        client.copyObject(requestWithOptions.build()).as(CopyResult.Success)
+      } else IO.pure(CopyResult.AlreadyExists)
     }
 
   def copyObjectMultiPart(
@@ -87,11 +87,13 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[Unit] =
+  ): IO[CopyResult] =
     approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
-      IO.whenA(approved) {
-        copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.newContentType)
-      }
+      if (approved) {
+        copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.newContentType).as(
+          CopyResult.Success
+        )
+      } else IO.pure(CopyResult.AlreadyExists)
     }
 
   private def copyObjectMultiPart(
@@ -180,6 +182,20 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       }
       .compile
       .drain
+
+  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[Unit] = {
+    val requestBuilder = CopyObjectRequest
+      .builder()
+      .sourceBucket(bucket)
+      .sourceKey(key)
+      .destinationBucket(bucket)
+      .destinationKey(key)
+      .checksumAlgorithm(checksumAlgorithm)
+      .contentType(contentType.value)
+      .metadataDirective(MetadataDirective.REPLACE)
+
+    client.copyObject(requestBuilder.build()).void
+  }
 
   override def bucketExists(bucket: String): IO[Boolean] = {
     listObjectsV2(bucket)

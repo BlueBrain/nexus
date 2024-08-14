@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 import akka.http.scaladsl.model.ContentTypes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, LocalStackS3StorageClient, S3Helpers}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, CopyResult, LocalStackS3StorageClient, S3Helpers}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
@@ -30,9 +30,10 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
       givenAFileInABucket(bucket, fileContents) { key =>
         val newKey = genString()
         for {
-          _    <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
-          head <- s3StorageClient.headObject(bucket, newKey)
+          result <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
+          head   <- s3StorageClient.headObject(bucket, newKey)
         } yield {
+          assertEquals(result, CopyResult.Success)
           assertEquals(head.fileSize, contentLength)
           assertEquals(head.contentType, Some(expectedContentType))
         }
@@ -46,9 +47,10 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
       givenAFileInABucket(bucket, fileContents) { key =>
         val newKey = genString()
         for {
-          _    <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
-          head <- s3StorageClient.headObject(bucket, newKey)
+          result <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
+          head   <- s3StorageClient.headObject(bucket, newKey)
         } yield {
+          assertEquals(result, CopyResult.Success)
           assertEquals(head.fileSize, contentLength)
           assertEquals(head.contentType, Some(contentType))
         }
@@ -61,10 +63,11 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
       val options = CopyOptions(overwriteTarget = false, Some(contentType))
       givenFilesInABucket(bucket, fileContents, anotherContent) { case (sourceKey, existingTargetKey) =>
         for {
-          _    <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
-          head <- s3StorageClient.headObject(bucket, existingTargetKey)
+          result <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
+          head   <- s3StorageClient.headObject(bucket, existingTargetKey)
         } yield {
           val clue = "The file should not have been overwritten"
+          assertEquals(result, CopyResult.AlreadyExists)
           assertEquals(head.fileSize, anotherContentLength, clue)
           assertEquals(head.contentType, Some(expectedContentType), clue)
         }
@@ -77,12 +80,26 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
       val options = CopyOptions(overwriteTarget = true, Some(contentType))
       givenFilesInABucket(bucket, fileContents, anotherContent) { case (sourceKey, existingTargetKey) =>
         for {
-          _    <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
-          head <- s3StorageClient.headObject(bucket, existingTargetKey)
+          result <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
+          head   <- s3StorageClient.headObject(bucket, existingTargetKey)
         } yield {
           val clue = "The file should have been overwritten"
+          assertEquals(result, CopyResult.Success)
           assertEquals(head.fileSize, contentLength, clue)
           assertEquals(head.contentType, Some(contentType), clue)
+        }
+      }
+    }
+  }
+
+  test("Update the content type of an existing object") {
+    givenAnS3Bucket { bucket =>
+      givenAFileInABucket(bucket, fileContents) { key =>
+        for {
+          _    <- s3StorageClient.updateContentType(bucket, key, contentType)
+          head <- s3StorageClient.headObject(bucket, key)
+        } yield {
+          assertEquals(head.contentType, Some(contentType))
         }
       }
     }
