@@ -67,24 +67,24 @@ class FileProcessor private (
 
     event match {
       case e: FileCreated               =>
-        val attrs          = e.attributes
+        val newMediaType   = patchMediaType(e.attributes.filename, e.attributes.mediaType)
+        val attrs          = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
-            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
-            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
+            val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .linkFile(Some(event.id), project, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
           case CopySkipped          => IO.pure(ImportStatus.Dropped)
         }
       case e: FileUpdated               =>
-        val attrs          = e.attributes
+        val newMediaType   = patchMediaType(e.attributes.filename, e.attributes.mediaType)
+        val attrs          = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(attrs))
         fileCopier.copyFile(e.project, attrs).flatMap {
           case CopySuccess(newPath) =>
-            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
-            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
+            val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .updateLinkedFile(fileId, cRev, None, linkRequest, e.tag)
               .as(ImportStatus.Success)

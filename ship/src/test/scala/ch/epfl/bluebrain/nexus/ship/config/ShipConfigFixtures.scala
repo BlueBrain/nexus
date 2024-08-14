@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.ship.config
 
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.MediaType.NotCompressible
+import akka.http.scaladsl.model.{MediaType, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files
@@ -63,7 +64,9 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         targetBucket,
         Some(Uri.Path("/prefix")),
         skipFileEvents = false,
-        MediaTypeDetectorConfig()
+        MediaTypeDetectorConfig(
+          "nwb" -> MediaType.applicationBinary("nwb", NotCompressible)
+        )
       ),
       IriPatcherConfig(enabled = false, iri"https://bbp.epfl.ch/", iri"https:/openbrainplatform.com/"),
       Set.empty
