@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
-import ch.epfl.bluebrain.nexus.ship.files.FileCopier.CopyResult.{CopySkipped, CopySuccess}
+import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
 import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{logger, patchMediaType}
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
@@ -68,27 +68,29 @@ class FileProcessor private (
     event match {
       case e: FileCreated               =>
         val attrs          = e.attributes
-        val customMetadata = Some(getCustomMetadata(attrs))
-        fileCopier.copyFile(e.project, attrs).flatMap {
-          case CopySuccess(newPath) =>
-            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
-            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
+        val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
+        val newAttrs       = e.attributes.copy(mediaType = newMediaType)
+        val customMetadata = Some(getCustomMetadata(newAttrs))
+        fileCopier.copyFile(e.project, newAttrs, attrs.mediaType != newMediaType).flatMap {
+          case FileCopySuccess(newPath) =>
+            val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .linkFile(Some(event.id), project, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
-          case CopySkipped          => IO.pure(ImportStatus.Dropped)
+          case FileCopySkipped          => IO.pure(ImportStatus.Dropped)
         }
       case e: FileUpdated               =>
         val attrs          = e.attributes
-        val customMetadata = Some(getCustomMetadata(attrs))
-        fileCopier.copyFile(e.project, attrs).flatMap {
-          case CopySuccess(newPath) =>
-            val newMediaType = patchMediaType(attrs.filename, attrs.mediaType)
-            val linkRequest  = FileLinkRequest(newPath, newMediaType, customMetadata)
+        val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
+        val newAttrs       = e.attributes.copy(mediaType = newMediaType)
+        val customMetadata = Some(getCustomMetadata(newAttrs))
+        fileCopier.copyFile(e.project, newAttrs, attrs.mediaType != newMediaType).flatMap {
+          case FileCopySuccess(newPath) =>
+            val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
               .updateLinkedFile(fileId, cRev, None, linkRequest, e.tag)
               .as(ImportStatus.Success)
-          case CopySkipped          => IO.pure(ImportStatus.Dropped)
+          case FileCopySkipped          => IO.pure(ImportStatus.Dropped)
         }
       case e: FileCustomMetadataUpdated =>
         files.updateMetadata(fileId, cRev, e.metadata, e.tag).as(ImportStatus.Success)

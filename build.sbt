@@ -741,7 +741,8 @@ lazy val ship = project
   .settings(
     name                     := "nexus-ship",
     moduleName               := "nexus-ship",
-    Test / parallelExecution := false
+    Test / parallelExecution := false,
+    addCompilerPlugin(betterMonadicFor)
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, coverage, release)

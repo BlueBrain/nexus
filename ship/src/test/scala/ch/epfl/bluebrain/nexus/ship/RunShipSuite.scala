@@ -148,19 +148,23 @@ class RunShipSuite
       _                    <- checkFor("file", oldPathFileId, xas).assertEquals(3)
       _                    <- assertS3Object(oldPathLocationRev1, oldPathContentType)
       _                    <- assertS3Object(oldPathLocationRev2, oldPathContentType)
-      _                    <- assertFileAttributes(project, oldPathFileId)(oldPathLocationRev2, "002_160120B3_OH_updated.nwb")
+      _                    <- assertFileAttributes(project, oldPathFileId)(
+                                oldPathLocationRev2,
+                                "002_160120B3_OH_updated.nwb",
+                                oldPathContentType
+                              )
       // File with a blank filename
       blankFilenameId       = iri"https://bbp.epfl.ch/neurosciencegraph/data/empty-filename"
       blankFilenameLocation = "/prefix/public/sscx/files/2/b/3/9/7/9/3/0/file"
       _                    <- checkFor("file", blankFilenameId, xas).assertEquals(1)
       _                    <- assertS3Object(blankFilenameLocation, Some(textPlain))
-      _                    <- assertFileAttributes(project, blankFilenameId)(blankFilenameLocation, "file")
+      _                    <- assertFileAttributes(project, blankFilenameId)(blankFilenameLocation, "file", Some(textPlain))
       // File with special characters in the filename
       specialCharsId        = iri"https://bbp.epfl.ch/neurosciencegraph/data/special-chars-filename"
       specialCharsLocation  = "/prefix/public/sscx/files/1/2/3/4/5/6/7/8/special [file].json"
       _                    <- checkFor("file", specialCharsId, xas).assertEquals(1)
       _                    <- assertS3Object(specialCharsLocation, Some(textPlain))
-      _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json")
+      _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json", Some(textPlain))
       // Directory, should be skipped
       directoryId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/directory"
       _                    <- checkFor("file", directoryId, xas).assertEquals(0)
@@ -172,11 +176,15 @@ class RunShipSuite
     } yield ()
   }
 
-  private def assertFileAttributes(project: ProjectRef, id: Iri)(expectedLocation: String, expectedFileName: String) =
+  private def assertFileAttributes(
+      project: ProjectRef,
+      id: Iri
+  )(expectedLocation: String, expectedFileName: String, expectedContentType: Option[ContentType]) =
     fetchFileAttributes(project, id, xas).map { attributes =>
       assertEquals(UrlUtils.decode(attributes.location), expectedLocation)
       assertEquals(UrlUtils.decode(attributes.path), expectedLocation)
       assertEquals(attributes.filename, expectedFileName)
+      assertEquals(attributes.mediaType, expectedContentType)
     }
 
   private def assertS3Object(key: String, contentType: Option[ContentType])(implicit location: Location): IO[Unit] =

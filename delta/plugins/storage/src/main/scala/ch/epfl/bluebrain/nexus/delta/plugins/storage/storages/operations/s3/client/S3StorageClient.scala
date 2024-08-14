@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
+import akka.http.scaladsl.model.ContentType
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, CopyResult, HeadObject, PutObjectRequest}
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
@@ -34,7 +35,7 @@ trait S3StorageClient {
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[Unit]
+  ): IO[CopyResult]
 
   def copyObjectMultiPart(
       sourceBucket: String,
@@ -42,12 +43,14 @@ trait S3StorageClient {
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[Unit]
+  ): IO[CopyResult]
 
   def uploadFile(
       put: PutObjectRequest,
       fileData: Stream[IO, ByteBuffer]
   ): IO[Unit]
+
+  def updateContentType(bucket: String, key: String, contentType: ContentType): IO[Unit]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
   def bucketExists(bucket: String): IO[Boolean]
