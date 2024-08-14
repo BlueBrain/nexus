@@ -78,6 +78,7 @@ object FileCopier {
           case CopyResult.AlreadyExists =>
             IO.whenA(forceContentType) {
               attributes.mediaType.traverse { mediaType =>
+                logger.info(s"Patching to content type $mediaType for file $patchedFileName")
                 s3StorageClient.updateContentType(targetBucket, targetKey, mediaType)
               }.void
             }
