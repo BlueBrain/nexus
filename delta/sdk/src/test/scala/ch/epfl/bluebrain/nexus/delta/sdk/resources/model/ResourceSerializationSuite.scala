@@ -25,7 +25,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val realm: Label     = Label.unsafe("myrealm")
   val subject: Subject = User("username", realm)
   val tag: UserTag     = UserTag.unsafe("mytag")
-  val jsonld           = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
+  private val jsonld   = JsonLdAssembly(myId, source, compacted, expanded, graph, remoteContexts)
 
   // format: off
   private val schemaRev = Revision(schemas.resources, 1)
@@ -41,15 +41,15 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   // format: on
 
   private val resourcesMapping = List(
-    (created, loadEvents("resources", "resource-created.json"), Created),
-    (createdWithTag, loadEvents("resources", "resource-created-tagged.json"), Created),
-    (updated, loadEvents("resources", "resource-updated.json"), Updated),
-    (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
-    (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
-    (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
-    (undeprecated, loadEvents("resources", "resource-undeprecated.json"), Undeprecated),
-    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted),
-    (schemaUpdated, loadEvents("resources", "resource-schema-updated.json"), Updated)
+    (created, loadEvents("resources", "resource-created.json"), Set(Created)),
+    (createdWithTag, loadEvents("resources", "resource-created-tagged.json"), Set(Created, Tagged)),
+    (updated, loadEvents("resources", "resource-updated.json"), Set(Updated, Tagged)),
+    (refreshed, loadEvents("resources", "resource-refreshed.json"), Set(Refreshed)),
+    (tagged, loadEvents("resources", "resource-tagged.json"), Set(Tagged)),
+    (deprecated, loadEvents("resources", "resource-deprecated.json"), Set(Deprecated)),
+    (undeprecated, loadEvents("resources", "resource-undeprecated.json"), Set(Undeprecated)),
+    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), Set(TagDeleted)),
+    (schemaUpdated, loadEvents("resources", "resource-schema-updated.json"), Set(Updated, Tagged))
   )
 
   resourcesMapping.foreach { case (event, (database, sse), action) =>

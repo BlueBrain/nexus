@@ -41,7 +41,7 @@ class EventMetricSpec extends BaseSpec with CirceLiteral {
         Instant.EPOCH,
         Anonymous,
         2,
-        EventMetric.Created,
+        Set(EventMetric.Created),
         event.project,
         event.project.organization,
         id,
@@ -54,7 +54,7 @@ class EventMetricSpec extends BaseSpec with CirceLiteral {
                                         "subject" : {
                                           "@type" : "Anonymous"
                                         },
-                                        "action" : "Created",
+                                        "action" : ["Created"],
                                         "@id" : "https://bluebrain.github.io/nexus/vocabulary/id",
                                         "@type" : [
                                           {

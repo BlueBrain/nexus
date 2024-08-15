@@ -102,77 +102,77 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       "FileCreated",
       created,
       loadEvents("files", "file-created.json"),
-      Created,
+      Set(Created),
       expectedExtraFields(created, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with metadata",
       createdWithMetadata,
       loadEvents("files", "file-created-with-metadata.json"),
-      Created,
+      Set(Created),
       expectedExtraFields(created, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with tags",
       createdTagged,
       loadEvents("files", "file-created-tagged.json"),
-      Created,
+      Set(Created, Tagged),
       expectedExtraFields(createdTagged, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with tags and keywords",
       createdTaggedWithMetadata,
       loadEvents("files", "file-created-tagged-with-metadata.json"),
-      Created,
+      Set(Created, Tagged),
       expectedExtraFields(createdTaggedWithMetadata, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileUpdated",
       updated,
       loadEvents("files", "file-updated.json"),
-      Updated,
+      Set(Updated, Tagged),
       expectedExtraFields(updated, Some(1), Some(12), textContent, Some("txt"), clientOrigin)
     ),
     (
       "FileAttributesUpdated",
       updatedAttr,
       loadEvents("files", "file-attributes-created-updated.json"),
-      Updated,
+      Set(Updated),
       expectedExtraFields(updatedAttr, None, Some(12), textContent, None, storageOrigin)
     ),
     (
       "FileCustomMetadataUpdated",
       updatedMetadata,
       loadEvents("files", "file-custom-metadata-updated.json"),
-      Updated,
+      Set(Updated),
       expectedExtraFields(updatedMetadata, None, None, None, None, None)
     ),
     (
       "FileTagAdded",
       tagged,
       loadEvents("files", "file-tag-added.json"),
-      Tagged,
+      Set(Tagged),
       expectedExtraFields(tagged, None, None, None, None, None)
     ),
     (
       "FileTagDeleted",
       tagDeleted,
       loadEvents("files", "file-tag-deleted.json"),
-      TagDeleted,
+      Set(TagDeleted),
       expectedExtraFields(tagDeleted, None, None, None, None, None)
     ),
     (
       "FileDeprecated",
       deprecated,
       loadEvents("files", "file-deprecated.json"),
-      Deprecated,
+      Set(Deprecated),
       expectedExtraFields(deprecated, None, None, None, None, None)
     ),
     (
       "FileUndeprecated",
       undeprecated,
       loadEvents("files", "file-undeprecated.json"),
-      Undeprecated,
+      Set(Undeprecated),
       expectedExtraFields(undeprecated, None, None, None, None, None)
     )
   )

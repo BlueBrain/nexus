@@ -196,7 +196,7 @@ class ResolverSerializationSuite extends SerializationSuite {
           instant,
           subject,
           event.rev,
-          action,
+          Set(action),
           ProjectRef(org, proj),
           org,
           event.id,

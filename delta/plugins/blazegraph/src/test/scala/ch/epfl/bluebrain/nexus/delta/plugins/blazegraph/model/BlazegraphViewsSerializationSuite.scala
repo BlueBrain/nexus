@@ -95,7 +95,7 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
           instant,
           subject,
           event.rev,
-          action,
+          Set(action),
           projectRef,
           Label.unsafe("myorg"),
           event.id,

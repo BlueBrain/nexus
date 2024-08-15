@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
+import cats.syntax.all._
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -384,15 +385,15 @@ object FileEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: FileCreated               => Created
-            case _: FileUpdated               => Updated
-            case _: FileAttributesUpdated     => Updated
-            case _: FileCustomMetadataUpdated => Updated
-            case _: FileTagAdded              => Tagged
-            case _: FileTagDeleted            => TagDeleted
-            case _: FileDeprecated            => Deprecated
-            case _: FileUndeprecated          => Undeprecated
-            case _: FileCancelledEvent        => Cancelled
+            case c: FileCreated               => Set(Created) ++ c.tag.as(Tagged)
+            case u: FileUpdated               => Set(Updated) ++ u.tag.as(Tagged)
+            case _: FileAttributesUpdated     => Set(Updated)
+            case _: FileCustomMetadataUpdated => Set(Updated)
+            case _: FileTagAdded              => Set(Tagged)
+            case _: FileTagDeleted            => Set(TagDeleted)
+            case _: FileDeprecated            => Set(Deprecated)
+            case _: FileUndeprecated          => Set(Undeprecated)
+            case _: FileCancelledEvent        => Set(Cancelled)
           },
           event.id,
           Set(nxvFile),

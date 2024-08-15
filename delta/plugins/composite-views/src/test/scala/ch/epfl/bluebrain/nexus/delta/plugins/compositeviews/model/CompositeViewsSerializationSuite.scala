@@ -59,13 +59,15 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
           Instant.EPOCH,
           subject,
           event.rev,
-          event match {
-            case _: CompositeViewCreated      => Created
-            case _: CompositeViewUpdated      => Updated
-            case _: CompositeViewTagAdded     => Tagged
-            case _: CompositeViewDeprecated   => Deprecated
-            case _: CompositeViewUndeprecated => Undeprecated
-          },
+          Set(
+            event match {
+              case _: CompositeViewCreated      => Created
+              case _: CompositeViewUpdated      => Updated
+              case _: CompositeViewTagAdded     => Tagged
+              case _: CompositeViewDeprecated   => Deprecated
+              case _: CompositeViewUndeprecated => Undeprecated
+            }
+          ),
           projectRef,
           Label.unsafe("myorg"),
           event.id,
