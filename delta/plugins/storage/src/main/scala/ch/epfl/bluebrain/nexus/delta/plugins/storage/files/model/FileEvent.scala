@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
@@ -477,6 +478,7 @@ object FileEvent {
       newFileWritten: Option[Int],
       bytes: Option[Long],
       mediaType: Option[ContentType],
+      extension: Option[String],
       origin: Option[FileAttributesOrigin]
   )
 
@@ -490,6 +492,7 @@ object FileEvent {
             Some(1),
             Some(c.attributes.bytes),
             c.attributes.mediaType,
+            FileUtils.extension(c.attributes.filename),
             Some(c.attributes.origin)
           )
         case c: FileCreated                                 =>
@@ -497,6 +500,7 @@ object FileEvent {
             c.storage.iri,
             c.storageType,
             Some(1),
+            None,
             None,
             None,
             Some(c.attributes.origin)
@@ -508,6 +512,7 @@ object FileEvent {
             Some(1),
             Some(u.attributes.bytes),
             u.attributes.mediaType,
+            FileUtils.extension(u.attributes.filename),
             Some(u.attributes.origin)
           )
         case u: FileUpdated                                 =>
@@ -515,6 +520,7 @@ object FileEvent {
             u.storage.iri,
             u.storageType,
             Some(1),
+            None,
             None,
             None,
             Some(u.attributes.origin)
@@ -526,20 +532,21 @@ object FileEvent {
             None,
             Some(fau.bytes),
             fau.mediaType,
+            None,
             Some(FileAttributesOrigin.Storage)
           )
         case fcmu: FileCustomMetadataUpdated                =>
-          FileExtraFields(fcmu.storage.iri, fcmu.storageType, None, None, None, None)
+          FileExtraFields(fcmu.storage.iri, fcmu.storageType, None, None, None, None, None)
         case fta: FileTagAdded                              =>
-          FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None)
+          FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None, None)
         case ftd: FileTagDeleted                            =>
-          FileExtraFields(ftd.storage.iri, ftd.storageType, None, None, None, None)
+          FileExtraFields(ftd.storage.iri, ftd.storageType, None, None, None, None, None)
         case fd: FileDeprecated                             =>
-          FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None)
+          FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None, None)
         case fud: FileUndeprecated                          =>
-          FileExtraFields(fud.storage.iri, fud.storageType, None, None, None, None)
+          FileExtraFields(fud.storage.iri, fud.storageType, None, None, None, None, None)
         case fce: FileCancelledEvent                        =>
-          FileExtraFields(fce.storage.iri, fce.storageType, None, None, None, None)
+          FileExtraFields(fce.storage.iri, fce.storageType, None, None, None, None, None)
       }
 
     implicit val fileExtraFieldsEncoder: Encoder.AsObject[FileExtraFields] =
