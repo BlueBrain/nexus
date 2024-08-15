@@ -45,7 +45,7 @@ sealed trait EventMetric extends Product with Serializable {
     * @return
     *   the action performed
     */
-  def action: Label
+  def action: Set[Label]
 
   /**
     * @return
@@ -76,6 +76,7 @@ object EventMetric {
   val Deprecated: Label   = Label.unsafe("Deprecated")
   val Undeprecated: Label = Label.unsafe("Undeprecated")
   val Cancelled: Label    = Label.unsafe("Cancelled")
+  val Deleted: Label      = Label.unsafe("Deleted")
 
   /**
     * Metric extracted from an event independent from an org/project
@@ -84,7 +85,7 @@ object EventMetric {
       instant: Instant,
       subject: Subject,
       rev: Int,
-      action: Label,
+      action: Set[Label],
       resourceId: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
@@ -99,7 +100,7 @@ object EventMetric {
       instant: Instant,
       subject: Subject,
       rev: Int,
-      action: Label,
+      action: Set[Label],
       organization: Label,
       resourceId: Iri,
       types: Set[Iri],
@@ -115,7 +116,7 @@ object EventMetric {
       instant: Instant,
       subject: Subject,
       rev: Int,
-      action: Label,
+      action: Set[Label],
       project: ProjectRef,
       organization: Label,
       resourceId: Iri,
@@ -128,7 +129,7 @@ object EventMetric {
   object ProjectScopedMetric {
     def from[E <: ScopedEvent](
         event: E,
-        action: Label,
+        action: Set[Label],
         id: Iri,
         types: Set[Iri],
         additionalFields: JsonObject
@@ -138,6 +139,25 @@ object EventMetric {
         event.subject,
         event.rev,
         action,
+        event.project,
+        event.project.organization,
+        id,
+        types,
+        additionalFields
+      )
+
+    def from[E <: ScopedEvent](
+        event: E,
+        action: Label,
+        id: Iri,
+        types: Set[Iri],
+        additionalFields: JsonObject
+    ): ProjectScopedMetric =
+      ProjectScopedMetric(
+        event.instant,
+        event.subject,
+        event.rev,
+        Set(action),
         event.project,
         event.project.organization,
         id,

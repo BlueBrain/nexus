@@ -114,7 +114,7 @@ class ProjectSerializationSuite extends SerializationSuite {
           instant,
           subject,
           rev,
-          action,
+          Set(action),
           ProjectRef(org, proj),
           org,
           iri"http://localhost/v1/projects/myorg/myproj",

@@ -72,7 +72,7 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
           instant,
           subject,
           event.rev,
-          action,
+          Set(action),
           projectRef,
           Label.unsafe("myorg"),
           event.id,

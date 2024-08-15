@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -437,14 +438,14 @@ object ResourceEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: ResourceCreated       => Created
-            case _: ResourceUpdated       => Updated
-            case _: ResourceRefreshed     => Refreshed
-            case _: ResourceTagAdded      => Tagged
-            case _: ResourceTagDeleted    => TagDeleted
-            case _: ResourceDeprecated    => Deprecated
-            case _: ResourceUndeprecated  => Undeprecated
-            case _: ResourceSchemaUpdated => Updated
+            case c: ResourceCreated        => Set(Created) ++ c.tag.as(Tagged)
+            case u: ResourceUpdated        => Set(Updated) ++ u.tag.as(Tagged)
+            case _: ResourceRefreshed      => Set(Refreshed)
+            case _: ResourceTagAdded       => Set(Tagged)
+            case _: ResourceTagDeleted     => Set(TagDeleted)
+            case _: ResourceDeprecated     => Set(Deprecated)
+            case _: ResourceUndeprecated   => Set(Undeprecated)
+            case su: ResourceSchemaUpdated => Set(Updated) ++ su.tag.as(Tagged)
           },
           event.id,
           event.types,
