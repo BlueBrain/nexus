@@ -549,7 +549,6 @@ object FileEvent {
           FileExtraFields(fce.storage.iri, fce.storageType, None, None, None, None, None)
       }
 
-    implicit val fileExtraFieldsEncoder: Encoder.AsObject[FileExtraFields] =
-      deriveEncoder[FileExtraFields]
+    implicit val fileExtraFieldsEncoder: Encoder.AsObject[FileExtraFields] = deriveEncoder[FileExtraFields]
   }
 }

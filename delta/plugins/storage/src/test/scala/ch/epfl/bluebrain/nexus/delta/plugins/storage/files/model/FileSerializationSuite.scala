@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ContentType, ContentTypes, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
@@ -19,7 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import io.circe.{Json, JsonObject}
+import io.circe.JsonObject
+import io.circe.syntax.KeyOps
 
 import java.time.Instant
 import java.util.UUID
@@ -72,14 +75,26 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val undeprecated = FileUndeprecated(fileId, projectRef, storageRef, DiskStorageType, 6, instant, subject)
   // format: on
 
-  private def expected(event: FileEvent, newFileWritten: Json, bytes: Json, mediaType: Json, origin: Json) =
+  private val clientOrigin  = Some(FileAttributesOrigin.Client)
+  private val storageOrigin = Some(FileAttributesOrigin.Storage)
+  private val textContent   = Some(ContentTypes.`text/plain(UTF-8)`)
+
+  private def expectedExtraFields(
+      event: FileEvent,
+      newFileWritten: Option[Int],
+      bytes: Option[Long],
+      mediaType: Option[ContentType],
+      extension: Option[String],
+      origin: Option[FileAttributesOrigin]
+  ) =
     JsonObject(
-      "storage"        -> Json.fromString(event.storage.iri.toString),
-      "storageType"    -> Json.fromString(event.storageType.toString),
-      "newFileWritten" -> newFileWritten,
-      "bytes"          -> bytes,
-      "mediaType"      -> mediaType,
-      "origin"         -> origin
+      "storage"        := event.storage.iri,
+      "storageType"    := event.storageType,
+      "newFileWritten" := newFileWritten,
+      "bytes"          := bytes,
+      "mediaType"      := mediaType,
+      "extension"      := extension,
+      "origin"         := origin
     )
 
   private val filesMapping = List(
@@ -88,95 +103,77 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       created,
       loadEvents("files", "file-created.json"),
       Created,
-      expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+      expectedExtraFields(created, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with metadata",
       createdWithMetadata,
       loadEvents("files", "file-created-with-metadata.json"),
       Created,
-      expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+      expectedExtraFields(created, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with tags",
       createdTagged,
       loadEvents("files", "file-created-tagged.json"),
       Created,
-      expected(createdTagged, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+      expectedExtraFields(createdTagged, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileCreated with tags and keywords",
       createdTaggedWithMetadata,
       loadEvents("files", "file-created-tagged-with-metadata.json"),
       Created,
-      expected(createdTaggedWithMetadata, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+      expectedExtraFields(createdTaggedWithMetadata, Some(1), None, None, None, clientOrigin)
     ),
     (
       "FileUpdated",
       updated,
       loadEvents("files", "file-updated.json"),
       Updated,
-      expected(
-        updated,
-        Json.fromInt(1),
-        Json.fromInt(12),
-        Json.fromString("text/plain; charset=UTF-8"),
-        Json.fromString("Client")
-      )
+      expectedExtraFields(updated, Some(1), Some(12), textContent, Some("txt"), clientOrigin)
     ),
     (
       "FileAttributesUpdated",
       updatedAttr,
       loadEvents("files", "file-attributes-created-updated.json"),
       Updated,
-      expected(
-        updatedAttr,
-        Json.Null,
-        Json.fromInt(12),
-        Json.fromString("text/plain; charset=UTF-8"),
-        Json.fromString("Storage")
-      )
+      expectedExtraFields(updatedAttr, None, Some(12), textContent, None, storageOrigin)
     ),
     (
       "FileCustomMetadataUpdated",
       updatedMetadata,
       loadEvents("files", "file-custom-metadata-updated.json"),
       Updated,
-      expected(
-        updatedMetadata,
-        Json.Null,
-        Json.Null,
-        Json.Null,
-        Json.Null
-      )
+      expectedExtraFields(updatedMetadata, None, None, None, None, None)
     ),
     (
       "FileTagAdded",
       tagged,
       loadEvents("files", "file-tag-added.json"),
       Tagged,
-      expected(tagged, Json.Null, Json.Null, Json.Null, Json.Null)
+      expectedExtraFields(tagged, None, None, None, None, None)
     ),
     (
       "FileTagDeleted",
       tagDeleted,
       loadEvents("files", "file-tag-deleted.json"),
       TagDeleted,
-      expected(tagDeleted, Json.Null, Json.Null, Json.Null, Json.Null)
+      expectedExtraFields(tagDeleted, None, None, None, None, None)
     ),
     (
       "FileDeprecated",
       deprecated,
       loadEvents("files", "file-deprecated.json"),
       Deprecated,
-      expected(deprecated, Json.Null, Json.Null, Json.Null, Json.Null)
+      expectedExtraFields(deprecated, None, None, None, None, None)
     ),
     (
       "FileUndeprecated",
       undeprecated,
       loadEvents("files", "file-undeprecated.json"),
       Undeprecated,
-      expected(undeprecated, Json.Null, Json.Null, Json.Null, Json.Null)
+      expectedExtraFields(undeprecated, None, None, None, None, None)
     )
   )
 
