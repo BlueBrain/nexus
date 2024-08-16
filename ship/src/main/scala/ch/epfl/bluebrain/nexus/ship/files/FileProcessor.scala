@@ -25,10 +25,12 @@ import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
-import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{logger, patchMediaType}
+import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{forceMediaType, logger, patchMediaType}
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
+
+import java.time.Instant
 
 class FileProcessor private (
     files: Files,
@@ -71,7 +73,8 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        fileCopier.copyFile(e.project, newAttrs, attrs.mediaType != newMediaType).flatMap {
+        val fct            = forceMediaType(attrs.mediaType, e.instant, newMediaType)
+        fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
@@ -84,7 +87,8 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        fileCopier.copyFile(e.project, newAttrs, attrs.mediaType != newMediaType).flatMap {
+        val fct            = forceMediaType(attrs.mediaType, e.instant, newMediaType)
+        fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
@@ -134,6 +138,22 @@ object FileProcessor {
       .flatMap(mediaTypeDetector.find)
       .map(ContentType(_, () => HttpCharsets.`UTF-8`))
       .orElse(original)
+
+  private val pngMediaType  = Some("image/png")
+  private val tiffMediaType = Some("image/tiff")
+  private val instant       = Instant.parse("2021-04-11T19:19:16.579Z")
+
+  def forceMediaType(
+      originalMediaType: Option[ContentType],
+      eventInstant: Instant,
+      newMediaType: Option[ContentType]
+  ) = {
+    val originalMediaTypeAsString = originalMediaType.map(_.toString())
+    (originalMediaType != newMediaType) ||
+    eventInstant.isBefore(instant) &&
+    (originalMediaTypeAsString == pngMediaType ||
+      originalMediaTypeAsString == tiffMediaType)
+  }
 
   private val noop = new EventProcessor[FileEvent] {
     override def resourceType: EntityType = Files.entityType
