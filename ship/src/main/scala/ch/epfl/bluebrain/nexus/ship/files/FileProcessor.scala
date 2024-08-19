@@ -30,8 +30,6 @@ import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import io.circe.Decoder
 
-import java.time.Instant
-
 class FileProcessor private (
     files: Files,
     projectMapper: ProjectMapper,
@@ -73,7 +71,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        val fct            = forceMediaType(attrs.mediaType, e.instant, newMediaType)
+        val fct            = forceMediaType(attrs.mediaType, newMediaType)
         fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
@@ -87,7 +85,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        val fct            = forceMediaType(attrs.mediaType, e.instant, newMediaType)
+        val fct            = forceMediaType(attrs.mediaType, newMediaType)
         fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
@@ -139,21 +137,10 @@ object FileProcessor {
       .map(ContentType(_, () => HttpCharsets.`UTF-8`))
       .orElse(original)
 
-  private val pngMediaType  = Some("image/png")
-  private val tiffMediaType = Some("image/tiff")
-  private val instant       = Instant.parse("2021-04-11T19:19:16.579Z")
-
   def forceMediaType(
       originalMediaType: Option[ContentType],
-      eventInstant: Instant,
       newMediaType: Option[ContentType]
-  ) = {
-    val originalMediaTypeAsString = originalMediaType.map(_.toString())
-    (originalMediaType != newMediaType) ||
-    eventInstant.isBefore(instant) &&
-    (originalMediaTypeAsString == pngMediaType ||
-      originalMediaTypeAsString == tiffMediaType)
-  }
+  ): Boolean = originalMediaType != newMediaType
 
   private val noop = new EventProcessor[FileEvent] {
     override def resourceType: EntityType = Files.entityType
