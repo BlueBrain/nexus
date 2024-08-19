@@ -43,7 +43,7 @@ services:
       POSTGRES_PASSWORD: "postgres"
 
   blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.6-RC
+    image: bluebrain/blazegraph-nexus:2.1.6-RC-21-jre
     environment:
       JAVA_OPTS: "-Djava.awt.headless=true  -XX:MaxDirectMemorySize=64m -Xmx512m -XX:+UseG1GC"
     ports:
