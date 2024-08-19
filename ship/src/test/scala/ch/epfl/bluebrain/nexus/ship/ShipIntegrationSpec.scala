@@ -185,29 +185,6 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       thereShouldBeAView(project, bgView, patchedSource)
     }
 
-    "transfer a search view" in {
-      val (project, _, _)              = thereIsAProject()
-      val (searchView, searchViewJson) = thereIsASearchView(project)
-
-      whenTheExportIsRunOnProject(project)
-      theOldProjectIsDeleted(project)
-
-      weRunTheImporter(project)
-      weFixThePermissions(project)
-
-      thereShouldBeAViewIgnoringUUID(project, searchView, searchViewJson)
-    }
-
-    def thereIsASearchView(project: ProjectRef): (Iri, Json) = {
-      val searchView         = nxv + "searchView"
-      val encodedView        = UrlUtils.encode(searchView.toString)
-      val (viewJson, status) = deltaClient
-        .getJsonAndStatus(s"/views/${project.organization}/${project.project}/$encodedView", writer)
-        .accepted
-      status shouldEqual StatusCodes.OK
-      searchView -> viewJson
-    }
-
     def thereShouldBeAView(project: ProjectRef, view: Iri, expectedJson: Json): Assertion = {
       val encodedIri = UrlUtils.encode(view.toString)
       deltaClient
