@@ -197,28 +197,6 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
         .accepted
     }
 
-    def thereShouldBeAViewIgnoringUUID(project: ProjectRef, view: Iri, originalJson: Json): Assertion = {
-      val encodedIri = UrlUtils.encode(view.toString)
-
-      import io.circe.optics.JsonPath.root
-      val ignoreSourceUUID     = root.sources.each.at("_uuid").replace(None)
-      val ignoreProjectionUUID = root.projections.each.at("_uuid").replace(None)
-      val ignoreUUID           = root.at("_uuid").replace(None)
-
-      val filter = ignoreUUID andThen ignoreSourceUUID andThen ignoreProjectionUUID
-
-      root.sources.`null`
-
-      deltaClient
-        .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (json, response) =>
-          {
-            response.status shouldEqual StatusCodes.OK
-            filter(json) shouldEqual filter(originalJson)
-          }
-        }
-        .accepted
-    }
-
     def thereIsABlazegraphView(project: ProjectRef): (Iri, Json) = {
       val simpleBgView = json"""{
         "@type": "SparqlView",
