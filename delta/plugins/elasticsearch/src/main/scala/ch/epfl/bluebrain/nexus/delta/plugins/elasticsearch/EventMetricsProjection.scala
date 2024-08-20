@@ -81,11 +81,12 @@ object EventMetricsProjection {
 
     for {
       shouldRestart     <- Env[IO].get("RESET_EVENT_METRICS").map(_.getOrElse("false").toBoolean)
-      _                 <- IO.whenA(shouldRestart)(
-                             logger.warn("Resetting event metrics as the env RESET_EVENT_METRICS is set") >> projections.reset(
-                               projectionMetadata.name
-                             )
-                           )
+      _                 <- IO.whenA(shouldRestart) {
+                             client.deleteIndex(index) >>
+                               logger.warn("Resetting event metrics as the env RESET_EVENT_METRICS is set") >> projections.reset(
+                                 projectionMetadata.name
+                               )
+                           }
       metricsProjection <- apply(sink, supervisor, metrics, createIndex)
     } yield (metricsProjection)
 
