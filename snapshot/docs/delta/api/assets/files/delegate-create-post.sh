@@ -1,8 +1,0 @@
-curl -X POST \
-   -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/delegate/files/myorg/myproject?storage=mys3storage" -d \
-   '{
-      "protected" : "eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0",
-      "payload" : "eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ",
-      "signature" : "htQLymfQIrks7MejErb4v3mnhQT2W6iPZdkd7LVBPJ0Ksybj8XG8dbTJH5pjZJF7-HXi848R14tquZ6iSeXpEqFGiZYge8obPQRLpJA0qbc9Mmhlq-CTbIdsy5OFpdzcDadSj6_k_kzuU2PR-Fli9GtH-34z2d4C9dWsBmnUo_IA3dvSFCF_PaQuajo7cJYa_0yc4VVGKG-xYi9yV4ylD5D2cxMUDFun78NOKDD_2upF-kuf9t5E-NjCl0DffkelbqYuH6nMop2zmwfu-cwHnChaDwKM7HLJGLomD5duU5sq-mVsunnMy58NgzMecLGDbER-27zk7w0TwxkXTKfxWg"
-    }'

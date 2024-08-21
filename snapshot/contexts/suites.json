@@ -1,10 +1,7 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "name": "https://schema.org/name",
-    "projects": {
-      "@container": "@list"
-    }
+    "name": "https://schema.org/name"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/suites.json"
 }
