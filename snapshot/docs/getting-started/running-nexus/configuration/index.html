@@ -444,24 +444,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   token: &quot;long-living-auth-token&quot;
 }
 </code></pre>
-<h4><a href="#s3-storage-configuration" name="s3-storage-configuration" class="anchor"><span class="anchor-link"></span></a>S3 storage configuration</h4>
-<p>Delta&rsquo;s S3 storage integration supports users uploading files to S3 independently and then registering them within Delta.</p>
-<p>However, Delta is still responsible for the structure of the bucket so it issues a path to clients via the delegation validation endpoint (TODO link). This involves signing and later verifying a payload using JWS.</p>
-<p>To support this functionality Delta must be configured with an RSA private key:</p>
-<pre class="prettyprint"><code class="language-hocon">      amazon {
-        enabled = true
-        default-endpoint = &quot;http://s3.localhost.localstack.cloud:4566&quot;
-        default-access-key = &quot;MY_ACCESS_KEY&quot;
-        default-secret-key = &quot;CHUTCHUT&quot;
-        default-bucket = &quot;mydefaultbucket&quot;
-        prefix = &quot;myprefix&quot;
-        delegation {
-            private-key = &quot;${rsa-private-key-new-lines-removed}&quot;
-            token-duration = &quot;3 days&quot;
-        }
-      }
-</code></pre>
-<p>To generate such a key in the correct format follow these steps: 1. Generate RSA key: <code>openssl genrsa -out private_key.pem 2048</code> 2. Convert to PKCS#8 format: <code>openssl pkcs8 -topk8 -inform PEM -outform PEM -in private_key.pem -out private_key_pkcs8.pem -nocrypt</code> 3. Remove line breaks, copy secret: <code>cat private_key_pkcs8.pem | tr -d &#39;\n&#39; | pbcopy</code></p>
 <h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
 <p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <h3><a href="#jira-plugin-configuration" name="jira-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Jira plugin configuration</h3>
