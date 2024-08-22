@@ -77,7 +77,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "protocol.json",
     "person.json",
     "emodel/emodel-workflow.json",
-    "emodel/emodel-configuration.json"
+    "emodel/emodel-configuration.json",
+    "morphology-quality-annotation.json"
   )
   private val allResources   = otherResources ++ mainResources
 
