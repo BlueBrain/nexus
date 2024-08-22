@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
+set -e
+
 mkdir -p target
 rm -rf target/*
 
 # Build product page
+alias docker-compose='docker compose'
 (cd product-page/src && make install && make build)
 cp -R ./product-page/src/site/* ./target
 
