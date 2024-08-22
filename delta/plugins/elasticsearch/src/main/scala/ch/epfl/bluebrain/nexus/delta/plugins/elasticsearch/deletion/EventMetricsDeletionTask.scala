@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
@@ -17,7 +17,7 @@ import io.circe.parser.parse
   */
 final class EventMetricsDeletionTask(client: ElasticSearchClient, prefix: String) extends ProjectDeletionTask {
 
-  private val index = EventMetricsProjection.eventMetricsIndex(prefix)
+  private val index = eventMetricsIndex(prefix)
 
   override def apply(project: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectDeletionReport.Stage] =
     searchByProject(project).flatMap { search =>

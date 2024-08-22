@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.eventMetricsIndex
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -23,7 +24,7 @@ class EventMetricsDeletionTaskSuite
 
   test("Delete all entries for a given project") {
     val prefix          = "test"
-    val index           = EventMetricsProjection.eventMetricsIndex(prefix)
+    val index           = eventMetricsIndex(prefix)
     val projectToDelete = ProjectRef.unsafe("org", "marked-for-deletion")
     val anotherProject  = ProjectRef.unsafe("org", "another")
 

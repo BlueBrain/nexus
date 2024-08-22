@@ -17,6 +17,7 @@
 * @ref:[Practice](trial.md)
 * @ref:[Multi-fetch](multi-fetch.md)
 * @ref:[Id Resolution](id-resolution.md)
+* @ref:[History](history.md)
 * @ref:[Resolvers](resolvers-api.md)
 * @ref:[Views](views/index.md)
 * @ref:[Storages](storages-api.md)

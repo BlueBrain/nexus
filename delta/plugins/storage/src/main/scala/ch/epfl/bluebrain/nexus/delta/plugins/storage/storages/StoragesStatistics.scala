@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -64,7 +65,7 @@ object StoragesStatistics {
           "query": {
             "bool": {
               "filter": [
-                { "term": { "@type.short": "File" } },
+                { "term": { "@type": $nxvFile } },
                 { "term": { "project": $projectRef } },
                 { "term": { "storage": $storageId } }
               ]

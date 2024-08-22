@@ -14,6 +14,7 @@ import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
@@ -130,7 +131,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     val storageParam                               = storage.map { s => s"storage=nxv:$s" }
     val revParam                                   = rev.map { r => s"&rev=$r" }
     val params                                     = (storageParam ++ revParam).mkString("?", "&", "")
-    val requestPath                                = s"/files/$project/${file.fileId}$params"
+    val requestPath                                = s"/files/$project/${UrlUtils.encode(file.fileId)}$params"
     def buildClue(a: Json, response: HttpResponse) =
       s"""
          |Endpoint: PUT $requestPath
