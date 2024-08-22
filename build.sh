@@ -5,10 +5,10 @@ set -e
 mkdir -p target
 rm -rf target/*
 
-which docker
 
 # Build product page
-echo "alias docker-compose='docker compose'" >> ~/.bashrc
+echo 'docker compose --compatibility "$@"' >> /usr/bin/docker-compose
+chmod +x /usr/bin/docker-compose
 
 (cd product-page/src && make install && make build)
 cp -R ./product-page/src/site/* ./target
