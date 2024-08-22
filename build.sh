@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
+set -e
+
 mkdir -p target
 rm -rf target/*
 
+
 # Build product page
+echo 'docker compose --compatibility "$@"' >> /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
 (cd product-page/src && make install && make build)
 cp -R ./product-page/src/site/* ./target
 
