@@ -349,13 +349,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#run-nexus-locally-with-docker" name="run-nexus-locally-with-docker" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker</h2>
 <h3><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h3>
 <h4><a href="#docker" name="docker" class="anchor"><span class="anchor-link"></span></a>Docker</h4>
-<p>Regardless of your OS, make sure to run a recent version of the Docker Engine. This was tested with version <strong>20.10.23</strong>. The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the <a href="https://docs.docker.com/desktop/" title="official Docker Desktop documentation">official Docker Desktop documentation</a> for detailed installation steps.</p>
+<p>Regardless of your OS, make sure to run a recent version of the Docker Engine. This was tested with version <strong>26.0.0</strong>. The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the <a href="https://docs.docker.com/desktop/" title="official Docker Desktop documentation">official Docker Desktop documentation</a> for detailed installation steps.</p>
 <p>Command :</p>
 <pre class="prettyprint"><code class="language-shell">docker --version
 </code></pre>
 <p>Example :</p>
 <pre class="prettyprint"><code class="language-shell">$ docker --version
-Docker version 20.10.23, build 7155243
+Docker version 26.0.0, build 2ae903e86c
 </code></pre>
 <h4><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h4>
 <p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Settings</em> &gt; <em>Resources</em>.</p>
@@ -421,8 +421,8 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
   &quot;delta&quot;: &quot;1.10.0&quot;,
   &quot;dependencies&quot;: {
     &quot;blazegraph&quot;: &quot;2.1.6-SNAPSHOT&quot;,
-    &quot;elasticsearch&quot;: &quot;8.13.3&quot;,
-    &quot;postgres&quot;: &quot;15.7&quot;
+    &quot;elasticsearch&quot;: &quot;8.14.1&quot;,
+    &quot;postgres&quot;: &quot;16.3&quot;
   },
   &quot;environment&quot;: &quot;dev&quot;,
   &quot;plugins&quot;: {
