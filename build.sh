@@ -5,8 +5,11 @@ set -e
 mkdir -p target
 rm -rf target/*
 
+which docker
+
 # Build product page
-alias docker-compose='docker compose'
+echo "alias docker-compose='docker compose'" >> ~/.bashrc
+
 (cd product-page/src && make install && make build)
 cp -R ./product-page/src/site/* ./target
 
