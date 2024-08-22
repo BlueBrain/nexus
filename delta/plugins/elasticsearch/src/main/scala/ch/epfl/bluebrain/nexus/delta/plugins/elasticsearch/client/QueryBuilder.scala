@@ -199,6 +199,8 @@ object QueryBuilder {
     */
   val empty: QueryBuilder = QueryBuilder(JsonObject.empty)
 
+  def unsafe(jsonObject: JsonObject): QueryBuilder = QueryBuilder(jsonObject)
+
   /**
     * A [[QueryBuilder]] using the filter ''params''.
     */

@@ -120,7 +120,7 @@ class S3DelegationFileSpec extends BaseIntegrationSpec with S3ClientFixtures {
       val fileId            = s"https://bluebrain.github.io/nexus/vocabulary/${genId()}"
       val filename          = genString()
       val updatedFilename   = genString()
-      val originalFile      = FileInput(UrlUtils.encode(fileId), filename, ContentTypes.`text/plain(UTF-8)`, "test")
+      val originalFile      = FileInput(fileId, filename, ContentTypes.`text/plain(UTF-8)`, "test")
       val delegationPayload = Json.obj("filename" := updatedFilename, "mediaType" := "image/png")
       for {
         _               <- deltaClient.uploadFile(projectRef, "defaultS3Storage", originalFile, None) { expectCreated }(Coyote)

@@ -7,9 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchDefaultViewsResetter}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchHistoryRoutes, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -305,6 +306,21 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[EventMetricsQuery].from { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
+    EventMetricsQuery(client, config.prefix)
+  }
+
+  make[ElasticSearchHistoryRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        metricsQuery: EventMetricsQuery,
+        rcr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      new ElasticSearchHistoryRoutes(identities, aclCheck, metricsQuery)(rcr, ordering)
+  }
+
   make[ElasticSearchScopeInitialization]
     .from { (views: ElasticSearchViews, serviceAccount: ServiceAccount, config: ElasticSearchViewsConfig) =>
       new ElasticSearchScopeInitialization(views, serviceAccount, config.defaults)
@@ -372,6 +388,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         query: ElasticSearchQueryRoutes,
         indexing: ElasticSearchIndexingRoutes,
         idResolutionRoute: IdResolutionRoutes,
+        historyRoutes: ElasticSearchHistoryRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
@@ -382,7 +399,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           es.routes,
           query.routes,
           indexing.routes,
-          idResolutionRoute.routes
+          idResolutionRoute.routes,
+          historyRoutes.routes
         )(baseUri),
         requiresStrictEntity = true
       )

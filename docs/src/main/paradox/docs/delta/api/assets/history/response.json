@@ -1,0 +1,40 @@
+{
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "https://example.com/Alice",
+      "@type": [
+        "http://schema.org/Person"
+      ],
+      "action": [
+        "Created"
+      ],
+      "organization": "org",
+      "project": "org/project",
+      "rev": 1,
+      "subject": {
+        "@type": "User",
+        "realm": "realm",
+        "subject": "user"
+      }
+    },
+    {
+      "@id": "https://example.com/Alice",
+      "@type": [
+        "http://schema.org/Person"
+      ],
+      "action": [
+        "Tagged"
+      ],
+      "instant": "1970-01-01T00:00:00Z",
+      "organization": "org",
+      "project": "org/project",
+      "rev": 2,
+      "subject": {
+        "@type": "User",
+        "realm": "realm",
+        "subject": "user"
+      }
+    }
+  ]
+}

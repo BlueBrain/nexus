@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
 import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.effect.std.Env
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{MetricsMapping, MetricsSettings}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -25,8 +25,7 @@ trait EventMetricsProjection
 object EventMetricsProjection {
   private val logger = Logger[EventMetricsProjection]
 
-  val projectionMetadata: ProjectionMetadata  = ProjectionMetadata("system", "event-metrics", None, None)
-  val eventMetricsIndex: String => IndexLabel = prefix => IndexLabel.unsafe(s"${prefix}_project_metrics")
+  val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
 
   // We need a value to return to Distage
   private val dummy = new EventMetricsProjection {}
@@ -81,14 +80,13 @@ object EventMetricsProjection {
 
     for {
       shouldRestart     <- Env[IO].get("RESET_EVENT_METRICS").map(_.getOrElse("false").toBoolean)
-      _                 <- IO.whenA(shouldRestart) {
-                             client.deleteIndex(index) >>
-                               logger.warn("Resetting event metrics as the env RESET_EVENT_METRICS is set") >> projections.reset(
-                                 projectionMetadata.name
-                               )
-                           }
+      _                 <- IO.whenA(shouldRestart)(
+                             logger.warn("Resetting event metrics as the env RESET_EVENT_METRICS is set...") >>
+                               client.deleteIndex(index) >>
+                               projections.reset(projectionMetadata.name)
+                           )
       metricsProjection <- apply(sink, supervisor, metrics, createIndex)
-    } yield (metricsProjection)
+    } yield metricsProjection
 
   } else IO.pure(dummy)
 

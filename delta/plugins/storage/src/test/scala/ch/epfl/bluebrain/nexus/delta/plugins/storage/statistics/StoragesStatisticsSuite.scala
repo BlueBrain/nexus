@@ -1,21 +1,30 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream.{metricsStream, projectRef1, projectRef2}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{eventMetricsIndex, EventMetricsProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics.StoragesStatisticsSuite.{metricsStream, projectRef1, projectRef2}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.metrics.ProjectScopedMetricStream
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{Created, Deprecated, ProjectScopedMetric, TagDeleted, Tagged, Updated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
+import io.circe.JsonObject
+import io.circe.syntax.KeyOps
 import munit.AnyFixture
 
+import java.time.Instant
 import scala.concurrent.duration.DurationInt
 
 class StoragesStatisticsSuite
@@ -55,5 +64,101 @@ class StoragesStatisticsSuite
   test("Zero stats for non-existing storage") {
     stats(client).get("none", projectRef1).assertEquals(StorageStatEntry(0L, 0L)).eventually
   }
+
+}
+
+object StoragesStatisticsSuite {
+  private val org             = Label.unsafe("org")
+  private val proj1           = Label.unsafe("proj1")
+  private val proj2           = Label.unsafe("proj2")
+  val projectRef1: ProjectRef = ProjectRef(org, proj1)
+  val projectRef2: ProjectRef = ProjectRef(org, proj2)
+
+  private val metric1 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    1,
+    Set(Created),
+    projectRef1,
+    org,
+    iri"http://bbp.epfl.ch/file1",
+    Set(nxvFile),
+    JsonObject(
+      "storage"        := "storageId",
+      "newFileWritten" := 1,
+      "bytes"          := 10L
+    )
+  )
+
+  private val metric2 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    2,
+    Set(Updated),
+    projectRef1,
+    org,
+    iri"http://bbp.epfl.ch/file1",
+    Set(nxvFile),
+    JsonObject(
+      "storage"        := "storageId",
+      "newFileWritten" := 1,
+      "bytes"          := 20L
+    )
+  )
+
+  private val metric3 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    3,
+    Set(Tagged),
+    projectRef1,
+    org,
+    iri"http://bbp.epfl.ch/file1",
+    Set(nxvFile),
+    JsonObject("storage" := "storageId")
+  )
+
+  private val metric4 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    4,
+    Set(TagDeleted),
+    projectRef1,
+    org,
+    iri"http://bbp.epfl.ch/file1",
+    Set(nxvFile),
+    JsonObject("storage" := "storageId")
+  )
+
+  private val metric5 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    1,
+    Set(Created),
+    projectRef2,
+    org,
+    iri"http://bbp.epfl.ch/file2",
+    Set(nxvFile),
+    JsonObject(
+      "storage"        := "storageId",
+      "newFileWritten" := 1,
+      "bytes"          := 20L
+    )
+  )
+
+  private val metric6 = ProjectScopedMetric(
+    Instant.EPOCH,
+    Anonymous,
+    2,
+    Set(Deprecated),
+    projectRef2,
+    org,
+    iri"http://bbp.epfl.ch/file2",
+    Set(nxvFile),
+    JsonObject("storage" := "storageId")
+  )
+
+  private val metricsStream =
+    ProjectScopedMetricStream(EntityType("entity"), metric1, metric2, metric3, metric4, metric5, metric6)
 
 }
