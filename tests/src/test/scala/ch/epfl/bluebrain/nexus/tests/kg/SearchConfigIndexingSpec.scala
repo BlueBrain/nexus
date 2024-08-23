@@ -39,6 +39,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val memodelId                         = "https://bbp.epfl.ch/data/memodel"
   private val analysisSuitablememodelId         = "https://bbp.epfl.ch/data/analysis-suitable-memodel"
   private val singleNeuronSimulationId          = "https://bbp.epfl.ch/data/synapse/single-neuron-simulation"
+  private val singleNeuronSynaptomeId           = "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome"
+  private val synaptomeSimulationId             = "https://bbp.epfl.ch/data/synapse/synaptome-simulation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -67,7 +69,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "simulations/simulation-campaign.json",
     "simulations/simulation.json",
     "simulations/analysis-report-simulation.json",
-    "single-neuron-simulation.json"
+    "single-neuron-simulation.json",
+    "single-neuron-synaptome.json",
+    "synaptome-simulation.json"
   )
   private val otherResources = List(
     "article.json",
@@ -1118,6 +1122,35 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                 }"""
 
     assertOneSource(queryField(singleNeuronSimulationId, "singleNeuronSimulation")) { json =>
+      json should equalIgnoreArrayOrder(expected)
+    }
+  }
+
+  "have the correct single neuron synaptome information" in {
+    val expected =
+      json"""{
+                 "singleNeuronSynaptome": {
+                    "seed": 100,
+                    "memodel": { "@id" : "https://bbp.epfl.ch/data/memodel", "name" : "me-model with status"}
+                  }
+                }"""
+
+    assertOneSource(queryField(singleNeuronSynaptomeId, "singleNeuronSynaptome")) { json =>
+      json should equalIgnoreArrayOrder(expected)
+    }
+  }
+
+  "have the correct synaptome simulation information" in {
+    val expected =
+      json"""{
+                 "synaptomeSimulation": {
+                    "injectionLocation": "soma[0]",
+                    "recordingLocation": ["soma[0]_0.5", "dend[38]_0.5", "dend[1]_0.4", "apic[53]_0.3"],
+                    "synaptome": { "@id" : "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome", "name" : "synaptome-model-04"}
+                  }
+                }"""
+
+    assertOneSource(queryField(synaptomeSimulationId, "synaptomeSimulation")) { json =>
       json should equalIgnoreArrayOrder(expected)
     }
   }
