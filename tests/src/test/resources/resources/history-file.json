@@ -1,0 +1,48 @@
+{
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "https://bbp.epfl.ch/data/my-file",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/File"
+      ],
+      "action": [
+        "Created"
+      ],
+      "bytes": 28,
+      "extension": "json",
+      "mediaType": "application/json",
+      "newFileWritten": 1,
+      "organization": "{{org}}",
+      "origin": "Client",
+      "project": "{{org}}/{{project}}",
+      "rev": 1,
+      "storage": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "storageType": "DiskStorage",
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/my-file",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/File"
+      ],
+      "action": [
+        "Tagged"
+      ],
+      "organization": "{{org}}",
+      "project": "{{org}}/{{project}}",
+      "rev": 2,
+      "storage": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "storageType": "DiskStorage",
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    }
+  ]
+}

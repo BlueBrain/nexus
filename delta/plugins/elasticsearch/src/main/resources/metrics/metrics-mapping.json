@@ -8,5 +8,10 @@
         }
       }
     }
-  ]
+  ],
+  "properties": {
+    "rev": {
+      "type": "integer"
+    }
+  }
 }

@@ -56,15 +56,10 @@ class EventMetricSpec extends BaseSpec with CirceLiteral {
                                         },
                                         "action" : ["Created"],
                                         "@id" : "https://bluebrain.github.io/nexus/vocabulary/id",
+                                        "rev": 2,
                                         "@type" : [
-                                          {
-                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Type1",
-                                            "short": "Type1"
-                                          },
-                                          {
-                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Type1#Type2",
-                                            "short": "Type2"
-                                          }
+                                          "https://bluebrain.github.io/nexus/vocabulary/Type1",
+                                          "https://bluebrain.github.io/nexus/vocabulary/Type1#Type2"
                                         ],
                                         "project" : "org/proj",
                                         "organization" : "org",

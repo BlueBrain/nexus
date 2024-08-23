@@ -1,0 +1,73 @@
+{
+  "_total": 4,
+  "_results": [
+    {
+      "@id": "https://bbp.epfl.ch/data/my-resource",
+      "@type": [
+        "http://schema.org/TestResource"
+      ],
+      "action": [
+        "Created"
+      ],
+      "organization": "{{org}}",
+      "project": "{{org}}/{{project}}",
+      "rev": 1,
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/my-resource",
+      "@type": [
+        "http://schema.org/TestResource"
+      ],
+      "action": [
+        "Updated"
+      ],
+      "organization": "{{org}}",
+      "project": "{{org}}/{{project}}",
+      "rev": 2,
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/my-resource",
+      "@type": [
+        "http://schema.org/TestResource"
+      ],
+      "action": [
+        "Tagged"
+      ],
+      "organization": "{{org}}",
+      "project": "{{org}}/{{project}}",
+      "rev": 3,
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    },
+    {
+      "@id": "https://bbp.epfl.ch/data/my-resource",
+      "@type": [
+        "http://schema.org/TestResource"
+      ],
+      "action": [
+        "Deprecated"
+      ],
+      "organization": "{{org}}",
+      "project": "{{org}}/{{project}}",
+      "rev": 4,
+      "subject": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    }
+  ]
+}

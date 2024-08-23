@@ -2,14 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.{Encoder, JsonObject}
 
 import java.time.Instant
 
@@ -51,7 +50,7 @@ sealed trait EventMetric extends Product with Serializable {
     * @return
     *   the id of the underlying resource
     */
-  def resourceId: Iri
+  def id: Iri
 
   /**
     * @return
@@ -86,11 +85,11 @@ object EventMetric {
       subject: Subject,
       rev: Int,
       action: Set[Label],
-      resourceId: Iri,
+      id: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def eventId: String = s"$resourceId-$rev"
+    def eventId: String = s"$id-$rev"
   }
 
   /**
@@ -102,11 +101,11 @@ object EventMetric {
       rev: Int,
       action: Set[Label],
       organization: Label,
-      resourceId: Iri,
+      id: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def eventId: String = s"$organization-$resourceId-$rev"
+    def eventId: String = s"$organization-$id-$rev"
   }
 
   /**
@@ -119,11 +118,11 @@ object EventMetric {
       action: Set[Label],
       project: ProjectRef,
       organization: Label,
-      resourceId: Iri,
+      id: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def eventId: String = s"$project-$resourceId-$rev"
+    def eventId: String = s"$project/$id:$rev"
   }
 
   object ProjectScopedMetric {
@@ -172,16 +171,12 @@ object EventMetric {
     implicit val subjectCodec: Encoder[Subject] = deriveConfiguredEncoder[Subject]
     Encoder.AsObject.instance { e =>
       val common = JsonObject(
-        "instant" -> e.instant.asJson,
-        "subject" -> e.subject.asJson,
-        "action"  -> e.action.asJson,
-        "@id"     -> e.resourceId.asJson,
-        "@type"   -> e.types.map { tpe =>
-          Json.obj(
-            "raw"   -> tpe.asJson,
-            "short" -> tpe.toUri.toOption.flatMap { uri => uri.fragment.orElse(uri.path.lastSegment) }.asJson
-          )
-        }.asJson
+        "instant" := e.instant,
+        "subject" := e.subject,
+        "action"  := e.action,
+        "@id"     := e.id,
+        "rev"     := e.rev,
+        "@type"   := e.types
       )
 
       val scoped = e match {
