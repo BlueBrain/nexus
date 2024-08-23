@@ -150,6 +150,7 @@ CONSTRUCT {
 
   # MEModels and Synaptome
   ?alias  :seed                 ?seed                     .
+  ?alias  :validated            ?validated                .
 
   # Single cell simulations
   ?alias  :injectionLocation    ?injectionLocation        ;
@@ -236,7 +237,6 @@ CONSTRUCT {
                                                                  ?memodelEModelId     :name ?memodelEModelName     .
                                ?memodel  :neuronMorphology       ?memodelMorphologyId .
                                                                  ?memodelMorphologyId :name ?memodelMorphologyName .
-                               ?memodel  :validated              ?memodelValidated .
 
   ## SingleNeuronSimulations
   ?alias :singleNeuronSimulation  ?singleNeuronSimulation  .
@@ -812,7 +812,7 @@ CONSTRUCT {
                                     schema:name ?memodelEModelName .
        } .
 
-       OPTIONAL { ?id  bmo:validated ?memodelValidated   . } .
+       OPTIONAL { GRAPH ?g {?id  bmo:validated ?memodelValidated . }. } .
    }
 
   # SingleNeuronSimulation

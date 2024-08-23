@@ -1092,8 +1092,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       json"""{
                  "memodel": {
                     "neuronMorphology": { "@id" : "https://bbp.epfl.ch/data/neuron-morphology", "name" : "sm080522a1-5_idA" },
-                    "emodelResource": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"},
-                    "validated": false
+                    "emodelResource": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"}
                   }
                 }"""
 
@@ -1101,6 +1100,15 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       json shouldEqual expected
     }
   }
+
+  "have validated field true in memodel" in {
+    val query = queryField(memodelId, "validated")
+
+    assertOneSource(query) { json =>
+      json shouldBe json"""{ "validated": true }"""
+    }
+  }
+
 
   "have analysisSuitable field true if annotation is present" in {
     val query = queryField(analysisSuitablememodelId, "analysisSuitable")
