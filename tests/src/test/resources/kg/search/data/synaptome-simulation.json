@@ -1,0 +1,48 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@id": "https://bbp.epfl.ch/data/synapse/synaptome-simulation",
+    "@type": [
+      "Entity",
+      "SynaptomeSimulation"
+    ],
+    "brainLocation": {
+      "@type": "BrainLocation",
+      "brainRegion": {
+        "@id": "mba:322",
+        "label": "Primary somatosensory area"
+      },
+      "layer": {
+        "@id": "uberon:0005394",
+        "label": "layer 5"
+      }
+    },
+    "description": "sim",
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "contentSize": {
+          "unitCode": "bytes",
+          "value": 15776294
+        },
+        "contentUrl": "https://openbluebrain.com/api/nexus/v1/files/7fa6efce-8809-407f-b4a2-ff8b67e24c59/e582af75-0778-4970-b5a7-1b5bfa30448c/https%3A%2F%2Fopenbluebrain.com%2Fdata%2F7fa6efce-8809-407f-b4a2-ff8b67e24c59%2Fe582af75-0778-4970-b5a7-1b5bfa30448c%2F9af6a672-aa28-4caa-9c20-9e09410e5800?rev=1",
+        "digest": {
+          "algorithm": "SHA-256",
+          "value": "09a2e5708c7f053b1f36584c5555920e5def11b0753f87cc7690445e36bafd79"
+        },
+        "encodingFormat": "application/json",
+        "name": "simulation-config-synaptome.json"
+      }
+    ],
+    "injectionLocation": "soma[0]",
+    "name": "synatome-sim-05",
+    "recordingLocation": [
+      "soma[0]_0.5",
+      "dend[38]_0.5",
+      "dend[1]_0.4",
+      "apic[53]_0.3"
+    ],
+    "used": {
+      "@id": "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome",
+      "@type": "SingleNeuronSynaptome"
+    }
+  }

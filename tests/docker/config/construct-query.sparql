@@ -143,16 +143,23 @@ CONSTRUCT {
 
 
   # Object of study
-  ?alias :objectOfStudy     ?objectOfStudyId        .
+  ?alias  :objectOfStudy    ?objectOfStudyId        .
                             ?objectOfStudyId        :identifier  ?objectOfStudyId      ;
                                                     :label       ?objectOfStudyLabel   .
   # Properties specific to types
 
+  # MEModels and Synaptome
+  ?alias  :seed                 ?seed                     .
+
+  # Single cell simulations
+  ?alias  :injectionLocation    ?injectionLocation        ;
+          :recordingLocation    ?recordingLocation        .
+
   ## Bouton density
-  ?alias  :boutonDensity   ?boutonDensityBN          .
-                           ?boutonDensityBN          :value       ?boutonDensityValue  ;
-                                                     :unit        ?boutonDensityUnit   ;
-                                                     :label       ?boutonDensityLabel  .
+  ?alias  :boutonDensity        ?boutonDensityBN          .
+                                ?boutonDensityBN          :value       ?boutonDensityValue  ;
+                                                          :unit        ?boutonDensityUnit   ;
+                                                          :label       ?boutonDensityLabel  .
 
   ## Circuit
   ?alias  :circuitType          ?circuitType              ;
@@ -237,6 +244,19 @@ CONSTRUCT {
                                   ?singleNeuronSimulation  :recordingLocation                ?recordingLocation .
                                   ?singleNeuronSimulation  :emodel                           ?singleNeuronSimulationEmodelId .
                                                            ?singleNeuronSimulationEmodelId   :name ?singleNeuronSimulationEmodelName .
+  ## SingleNeuronSynaptome
+  ?alias :singleNeuronSynaptome   ?singleNeuronSynaptome   .
+                                  ?singleNeuronSynaptome   :seed                             ?seed .
+                                  ?singleNeuronSynaptome   :memodel                          ?singleNeuronSynaptomeMEModelId .
+                                                           ?singleNeuronSynaptomeMEModelId   :name ?singleNeuronSynaptomeMEModelName . 
+
+  ## SynaptomeSimulation
+  ?alias :synaptomeSimulation     ?synaptomeSimulation     .
+                                  ?synaptomeSimulation     :injectionLocation                ?injectionLocation .
+                                  ?synaptomeSimulation     :recordingLocation                ?recordingLocation .
+                                  ?synaptomeSimulation     :synaptome                        ?synaptomeId .
+                                                           ?synaptomeId                      :name ?synaptomeName . 
+
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -537,6 +557,13 @@ CONSTRUCT {
       ) .
   } .
 
+  # MEModels and Synaptome
+  OPTIONAL { ?id  bmo:seed ?seed . } .
+
+  # Simulations
+  OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
+  OPTIONAL { ?id  nsg:recordingLocation ?recordingLocation  . } .
+
   # Bouton density
   OPTIONAL {
     ?id  a             nsg:BoutonDensity   ;
@@ -788,18 +815,39 @@ CONSTRUCT {
        OPTIONAL { ?id  bmo:validated ?memodelValidated   . } .
    }
 
-   # SingleNeuronSimulation
+  # SingleNeuronSimulation
   OPTIONAL {
       ?id a bmo:SingleNeuronSimulation .
 
       BIND(BNODE(CONCAT(STR(?id), '/singleNeuronSimulation')) as ?singleNeuronSimulation ) .
 
-      OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
-      OPTIONAL { ?id  nsg:recordingLocation ?recordingLocation  . } .
-
       OPTIONAL {
         ?id                                 prov:used    ?singleNeuronSimulationEmodelId .
         ?singleNeuronSimulationEmodelId     schema:name  ?singleNeuronSimulationEmodelName .
+      } .
+  }
+
+  # SingleNeuronSynaptome
+  OPTIONAL {
+      ?id a bmo:SingleNeuronSynaptome .
+
+      BIND(BNODE(CONCAT(STR(?id), '/singleNeuronSynaptome')) as ?singleNeuronSynaptome ) .
+
+      OPTIONAL {
+        ?id                                   prov:used    ?singleNeuronSynaptomeMEModelId   .
+        ?singleNeuronSynaptomeMEModelId       schema:name  ?singleNeuronSynaptomeMEModelName .
+      } .
+  }
+
+  # SynaptomeSimulation
+  OPTIONAL {
+      ?id a bmo:SynaptomeSimulation .
+
+      BIND(BNODE(CONCAT(STR(?id), '/synaptomeSimulation')) as ?synaptomeSimulation ) .
+
+      OPTIONAL {
+        ?id                prov:used    ?synaptomeId   .
+        ?synaptomeId       schema:name  ?synaptomeName .
       } .
   }
 }
