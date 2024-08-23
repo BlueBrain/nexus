@@ -649,39 +649,36 @@ CONSTRUCT {
   OPTIONAL {
     ?id  a  nsg:NeuronMorphology ;
       ^nsg:hasSource / ^nsg:hasTarget ?qualityMeasurementAnnotation .
-    
-        ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  ;
-                                      nsg:hasBody   ?canBeLoadedBody                            .
-                                                    ?canBeLoadedBody  nsg:isMeasurementOf       bmo:CanBeLoadedWithMorphioMetric ;
-                                                                      schema:value              ?canBeLoaded                     .
 
-        ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  ;
-                                      nsg:hasBody   ?neuriteHasDiffDiameterBody                 .
-                                                    ?neuriteHasDiffDiameterBody                 nsg:isMeasurementOf   bmo:NeuriteHasDifferentDiametersMetric ;
-                                                                                                schema:value          ?neuriteHasDiffDiameter                .
+    ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  .
 
-        ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  ;
-                                      nsg:hasBody   ?hasNonZeroNeuriteRadiiBody                 .
-                                                    ?hasNonZeroNeuriteRadiiBody                 nsg:isMeasurementOf   bmo:HasAllNonZeroNeuriteRadiiMetric ;
-                                                                                                schema:value          ?hasNonZeroNeuriteRadii             .
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?canBeLoadedBody                            .
+                                                  ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:CanBeLoadedWithMorphioMetric ;
+                                                                                              schema:value          ?canBeLoaded                     .
 
-        ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  ;
-                                      nsg:hasBody   ?hasNonZeroSecitonLengthBody                .
-                                                    ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:HasAllNonZeroSectionLengthsMetric ;
-                                                                                                schema:value          ?hasNonZeroSecitonLength              .
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?neuriteHasDiffDiameterBody                 .
+                                                  ?neuriteHasDiffDiameterBody                 nsg:isMeasurementOf   bmo:NeuriteHasDifferentDiametersMetric ;
+                                                                                              schema:value          ?neuriteHasDiffDiameter                .
 
-        ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  ;
-                                      nsg:hasBody   ?hasNonZeroSomaBody                         .
-                                                    ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:HasNoZeroSomaRadiusMetric ;
-                                                                                                schema:value          ?hasNonZeroSoma               .
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroNeuriteRadiiBody                 .
+                                                  ?hasNonZeroNeuriteRadiiBody                 nsg:isMeasurementOf   bmo:HasAllNonZeroNeuriteRadiiMetric ;
+                                                                                              schema:value          ?hasNonZeroNeuriteRadii             .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroSectionLengthBody                .
+                                                  ?hasNonZeroSectionLengthBody                nsg:isMeasurementOf   bmo:HasAllNonZeroSectionLengthsMetric ;
+                                                                                              schema:value          ?hasNonZeroSectionLength              .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroSomaBody                         .
+                                                  ?hasNonZeroSomaBody                         nsg:isMeasurementOf   bmo:HasNoZeroSomaRadiusMetric ;
+                                                                                              schema:value          ?hasNonZeroSoma               .
     BIND(
       IF (?canBeLoaded              && 
           ?neuriteHasDiffDiameter   && 
           ?hasNonZeroNeuriteRadii   && 
           ?hasNonZeroSecitonLength  &&
           ?hasNonZeroSoma,
-        true,
-        false
+          true,
+          false
       ) AS ?simulationReady
     ) 
   }
