@@ -650,7 +650,7 @@ CONSTRUCT {
     ?id  a  nsg:NeuronMorphology ;
       ^nsg:hasSource / ^nsg:hasTarget ?qualityMeasurementAnnotation .
 
-    ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotationAnnotation  .
+    ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotation  .
 
     ?qualityMeasurementAnnotation   nsg:hasBody   ?canBeLoadedBody                            .
                                                   ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:CanBeLoadedWithMorphioMetric ;
