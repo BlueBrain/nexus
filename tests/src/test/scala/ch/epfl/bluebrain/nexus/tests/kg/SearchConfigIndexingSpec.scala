@@ -1149,7 +1149,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                   }
                 }"""
 
-    assertOneSource(queryField(synaptomeSimulationId, "singleNeuronSimulation")) { json =>
+    assertOneSource(queryField(synaptomeSimulationId, "synaptomeSimulation")) { json =>
       json should equalIgnoreArrayOrder(expected)
     }
   }
