@@ -560,6 +560,8 @@ CONSTRUCT {
   # MEModels and Synaptome
   OPTIONAL { ?id  bmo:seed ?seed . } .
 
+  OPTIONAL { GRAPH ?g {?id  bmo:validated ?validated . }. } .
+
   # Simulations
   OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
   OPTIONAL { ?id  nsg:recordingLocation ?recordingLocation  . } .
@@ -812,7 +814,6 @@ CONSTRUCT {
                                     schema:name ?memodelEModelName .
        } .
 
-       OPTIONAL { GRAPH ?g {?id  bmo:validated ?memodelValidated . }. } .
    }
 
   # SingleNeuronSimulation
