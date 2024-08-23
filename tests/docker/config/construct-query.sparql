@@ -152,7 +152,7 @@ CONSTRUCT {
   ?alias  :seed                 ?seed                     .
 
   # Single cell simulations
-  ?alias  :injectionLocation    ?injectionLocation        .
+  ?alias  :injectionLocation    ?injectionLocation        ;
           :recordingLocation    ?recordingLocation        .
 
   ## Bouton density
