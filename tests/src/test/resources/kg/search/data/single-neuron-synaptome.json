@@ -1,0 +1,47 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@type": "SingleNeuronSynaptome",
+    "@id": "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome",
+    "brainLocation": {
+      "@type": "BrainLocation",
+      "brainRegion": {
+        "@id": "mba:322",
+        "label": "Primary somatosensory area"
+      },
+      "layer": {
+        "@id": "uberon:0005394",
+        "label": "layer 5"
+      }
+    },
+    "description": "desc",
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "contentSize": {
+          "unitCode": "bytes",
+          "value": 837
+        },
+        "contentUrl": "https://openbluebrain.com/api/nexus/v1/files/7fa6efce-8809-407f-b4a2-ff8b67e24c59/e582af75-0778-4970-b5a7-1b5bfa30448c/https:%2F%2Fopenbluebrain.com%2Fdata%2F7fa6efce-8809-407f-b4a2-ff8b67e24c59%2Fe582af75-0778-4970-b5a7-1b5bfa30448c%2F1fb96ceb-315a-4e40-ab06-3f689aaf824c",
+        "digest": {
+          "algorithm": "SHA-256",
+          "value": "2420a0025da673991ada98fe6f12bd74d51d77aa4720ea1d1f869f49a582a030"
+        },
+        "encodingFormat": "application/json",
+        "name": "synaptome_config.json"
+      }
+    ],
+    "name": "syanptome-model-04",
+    "objectOfStudy": {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+      "@type": "nsg:ObjectOfStudy",
+      "label": "Single Cell"
+    },
+    "seed": 100,
+    "used": {
+      "@id": "https://bbp.epfl.ch/data/bbp/mmb-point-neuron-framework-model/eeeeac3c-6bf1-47ed-ab97-460668eba2d2",
+      "@type": [
+        "Entity",
+        "MEModel"
+      ]
+    }
+  }
