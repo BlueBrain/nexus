@@ -1105,7 +1105,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     val query = queryField(memodelId, "validated")
 
     assertOneSource(query) { json =>
-      json shouldBe json"""{ "validated": true }"""
+      json shouldBe json"""{ "validated": false }"""
     }
   }
 
