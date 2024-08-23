@@ -558,9 +558,8 @@ CONSTRUCT {
   } .
 
   # MEModels and Synaptome
-  OPTIONAL { ?id  bmo:seed ?seed . } .
-
-  OPTIONAL { GRAPH ?g {?id  bmo:validated ?validated . }. } .
+  OPTIONAL { GRAPH ?g0 {?id  bmo:seed ?seed . } . } .
+  OPTIONAL { GRAPH ?g1 {?id  bmo:validated ?validated . }. } .
 
   # Simulations
   OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
