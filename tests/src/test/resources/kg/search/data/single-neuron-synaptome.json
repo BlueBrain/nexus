@@ -30,7 +30,7 @@
         "name": "synaptome_config.json"
       }
     ],
-    "name": "syanptome-model-04",
+    "name": "synaptome-model-04",
     "objectOfStudy": {
       "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
       "@type": "nsg:ObjectOfStudy",

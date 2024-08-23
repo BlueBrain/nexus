@@ -1144,8 +1144,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       json"""{
                  "synaptomeSimulation": {
                     "injectionLocation": "soma[0]",
-                    "recordingLocation": ["soma[0]_0.5", "dend[38]_0.5", "dend[1]_0.4", "apic[53]_0.3"dendrite.01A", "dendrite.01B"],
-                    "synaptome": { "@id" : "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome", "name" : "syanptome-model-04"}
+                    "recordingLocation": ["soma[0]_0.5", "dend[38]_0.5", "dend[1]_0.4", "apic[53]_0.3", "dendrite.01A", "dendrite.01B"],
+                    "synaptome": { "@id" : "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome", "name" : "synaptome-model-04"}
                   }
                 }"""
 

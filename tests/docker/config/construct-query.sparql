@@ -829,13 +829,13 @@ CONSTRUCT {
 
   # SingleNeuronSynaptome
   OPTIONAL {
-      ?id a bmo:SingleNeuronSynaptome.
+      ?id a bmo:SingleNeuronSynaptome .
 
       BIND(BNODE(CONCAT(STR(?id), '/singleNeuronSynaptome')) as ?singleNeuronSynaptome ) .
 
       OPTIONAL {
-        ?id                          prov:used    ?singleNeuronSynaptomeMEModelId   .
-        ?singleNeuronSynaptome       schema:name  ?singleNeuronSynaptomeMEModelName .
+        ?id                                   prov:used    ?singleNeuronSynaptomeMEModelId   .
+        ?singleNeuronSynaptomeMEModelId       schema:name  ?singleNeuronSynaptomeMEModelName .
       } .
   }
 
