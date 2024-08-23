@@ -38,7 +38,7 @@
     },
     "seed": 100,
     "used": {
-      "@id": "https://bbp.epfl.ch/data/bbp/mmb-point-neuron-framework-model/eeeeac3c-6bf1-47ed-ab97-460668eba2d2",
+      "@id": "https://bbp.epfl.ch/data/memodel",
       "@type": [
         "Entity",
         "MEModel"
