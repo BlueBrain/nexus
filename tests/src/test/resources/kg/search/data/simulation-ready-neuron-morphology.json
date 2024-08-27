@@ -35,26 +35,6 @@
           "@type": "ScholarlyArticle"
         }
       }
-    },
-    {
-      "@type": [
-        "QualityAnnotation",
-        "Annotation"
-      ],
-      "hasBody": {
-        "@id": "https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady",
-        "@type": [
-          "AnnotationBody",
-          "DataScope"
-        ],
-        "label": "Simulation Ready"
-      },
-      "motivatedBy": {
-        "@id": "quality:Assessment",
-        "@type": "Motivation"
-      },
-      "name": "Data usage scope annotation",
-      "note": "Dataset can be used to simulate single cell MEModels."
     }
   ],
   "brainLocation": {

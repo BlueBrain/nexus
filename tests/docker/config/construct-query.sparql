@@ -356,16 +356,6 @@ CONSTRUCT {
   OPTIONAL {
     BIND(
       IF(
-         EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/SimulationReady> .},
-         true,
-         false
-      ) AS ?simulationReady
-    )
-  }
-
-  OPTIONAL {
-    BIND(
-      IF(
          EXISTS {?id nsg:annotation / nsg:hasBody <https://bbp.epfl.ch/ontologies/core/bmo/AnalysisSuitable> .},
          true,
          false
@@ -654,6 +644,44 @@ CONSTRUCT {
 
     BIND( BNODE((CONCAT(STR(?id), '/neuronDensity'))) as ?neuronDensityBN ) .
   } .
+
+  # NeuronMorphologies
+  OPTIONAL {
+    ?id  a  nsg:NeuronMorphology ;
+      ^nsg:hasSource / ^nsg:hasTarget ?qualityMeasurementAnnotation .
+
+    ?qualityMeasurementAnnotation     a         nsg:QualityMeasurementAnnotation  .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?canBeLoadedBody                            .
+                                                  ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:CanBeLoadedWithMorphioMetric ;
+                                                                                              schema:value          ?canBeLoaded                     .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?neuriteHasDiffDiameterBody                 .
+                                                  ?neuriteHasDiffDiameterBody                 nsg:isMeasurementOf   bmo:NeuriteHasDifferentDiametersMetric ;
+                                                                                              schema:value          ?neuriteHasDiffDiameter                .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroNeuriteRadiiBody                 .
+                                                  ?hasNonZeroNeuriteRadiiBody                 nsg:isMeasurementOf   bmo:HasAllNonZeroNeuriteRadiiMetric ;
+                                                                                              schema:value          ?hasNonZeroNeuriteRadii             .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroSectionLengthBody                .
+                                                  ?hasNonZeroSectionLengthBody                nsg:isMeasurementOf   bmo:HasAllNonZeroSectionLengthsMetric ;
+                                                                                              schema:value          ?hasNonZeroSectionLength              .
+
+    ?qualityMeasurementAnnotation   nsg:hasBody   ?hasNonZeroSomaBody                         .
+                                                  ?hasNonZeroSomaBody                         nsg:isMeasurementOf   bmo:HasNoZeroSomaRadiusMetric ;
+                                                                                              schema:value          ?hasNonZeroSoma               .
+    BIND(
+      IF (?canBeLoaded              && 
+          ?neuriteHasDiffDiameter   && 
+          ?hasNonZeroNeuriteRadii   && 
+          ?hasNonZeroSectionLength  &&
+          ?hasNonZeroSoma,
+          true,
+          false
+      ) AS ?simulationReady
+    ) 
+  }
 
   # Simulation campaign configuration
   OPTIONAL {

@@ -1,0 +1,356 @@
+{
+    "@context": "https://bbp.neuroshapes.org",
+    "@id": "https://bbp.epfl.ch/data/morphology-quality-annotation",
+    "@type": [
+      "Annotation",
+      "QualityMeasurementAnnotation"
+    ],
+    "description": "This resources contains quality measurement annotations of the neuron morphology 18869_00253",
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "atLocation": {
+          "@type": "Location",
+          "location": "file:///gpfs/bbp.cscs.ch/data/project/proj94/nexus/bbp-external/seu/8/1/d/7/9/6/3/2/18869_00253.json",
+          "store": {
+            "@id": "https://bbp.epfl.ch/neurosciencegraph/data/86b26915-1c4a-41ab-8865-0d6f4dfbdf72",
+            "@type": "RemoteDiskStorage",
+            "_rev": 1
+          }
+        },
+        "contentSize": {
+          "unitCode": "bytes",
+          "value": 1449
+        },
+        "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp-external/seu/https%3A%2F%2Fbbp.epfl.ch%2Fdata%2Fbbp-external%2Fseu%2Fab54853c-c3af-4993-b59e-c506d5d28767",
+        "digest": {
+          "algorithm": "SHA-256",
+          "value": "7c8c3cecd0da792fcb94c48ad2d54fae3f314ce8582847dfd4ea8c666c7b49d4"
+        },
+        "encodingFormat": "application/json",
+        "name": "18869_00253.json"
+      },
+      {
+        "@type": "DataDownload",
+        "atLocation": {
+          "@type": "Location",
+          "location": "file:///gpfs/bbp.cscs.ch/data/project/proj94/nexus/bbp-external/seu/d/1/6/5/5/4/b/d/18869_00253.tsv",
+          "store": {
+            "@id": "https://bbp.epfl.ch/neurosciencegraph/data/86b26915-1c4a-41ab-8865-0d6f4dfbdf72",
+            "@type": "RemoteDiskStorage",
+            "_rev": 1
+          }
+        },
+        "contentSize": {
+          "unitCode": "bytes",
+          "value": 958
+        },
+        "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/bbp-external/seu/https%3A%2F%2Fbbp.epfl.ch%2Fdata%2Fbbp-external%2Fseu%2F117cd4c5-0d49-447c-b5a0-ec8368a3bd8a",
+        "digest": {
+          "algorithm": "SHA-256",
+          "value": "f9b9006c28519947fba6c75ce5c53266d4636e51f4884a0ef1078fa981da8715"
+        },
+        "encodingFormat": "application/tsv",
+        "name": "18869_00253.tsv"
+      }
+    ],
+    "hasBody": [
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/CanBeLoadedWithMorphioMetric",
+          "@type": "Metric",
+          "label": "Can be loaded with Morphio Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/ZThicknessMetric",
+          "@type": "Metric",
+          "label": "Z Thickness Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/NeuriteHasDifferentDiametersMetric",
+          "@type": "Metric",
+          "label": "Neurite Has Different Diameters Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/danglingBranchMetric",
+          "@type": "Metric",
+          "label": "Dangling Branch Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/rootNodeJumpMetric",
+          "@type": "Metric",
+          "label": "Root Node Jump Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/zJumpMetric",
+          "@type": "Metric",
+          "label": "Z Jump Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/narrowStartMetric",
+          "@type": "Metric",
+          "label": "Narrow Start Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/fatEndMetric",
+          "@type": "Metric",
+          "label": "Fat End Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/zeroLengthSegmentMetric",
+          "@type": "Metric",
+          "label": "Zero Length Segment Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasAllNonZeroNeuriteRadiiMetric",
+          "@type": "Metric",
+          "label": "Has all non-zero neurite radii Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasAllNonZeroSectionLengthsMetric",
+          "@type": "Metric",
+          "label": "Has all non-zero section lengths Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/narrowNeuriteSectionMetric",
+          "@type": "Metric",
+          "label": "Narrow Neurite Section Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasNoFlatNeuritesMetric",
+          "@type": "Metric",
+          "label": "Has no flat neurites Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasUnifurcationMetric",
+          "@type": "Metric",
+          "label": "Has Unifurcation Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasMultifurcationMetric",
+          "@type": "Metric",
+          "label": "Has Multifurcation Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasNoZeroSomaRadiusMetric",
+          "@type": "Metric",
+          "label": "Has non-zero soma radius Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasApicalDendriteMetric",
+          "@type": "Metric",
+          "label": "Has Apical Dendrite Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasBasalDendrite",
+          "@type": "Metric",
+          "label": "Has Basal Dendrite Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://bbp.epfl.ch/ontologies/core/bmo/HasAxonMetric",
+          "@type": "Metric",
+          "label": "Has Axon Metric"
+        },
+        "value": true
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/dendriteStemmingFromSomaMetric",
+          "@type": "Metric",
+          "label": "Dendrite Stemming From Soma Metric"
+        },
+        "value": "5"
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/axonMetric",
+          "@type": "Metric",
+          "label": "Axon Metric"
+        },
+        "value": "1"
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/maximumBranchOrderMetric",
+          "@type": "Metric",
+          "label": "Maximum Branch Order Metric"
+        },
+        "value": "22"
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/totalSectionLengthMetric",
+          "@type": "Metric",
+          "label": "Total Section Length Metric"
+        },
+        "value": "38094.47402250767"
+      },
+      {
+        "@type": [
+          "QualityMeasurement",
+          "AnnotationBody"
+        ],
+        "isMeasurementOf": {
+          "@id": "https://neuroshapes.org/maximumSectionLengthMetric",
+          "@type": "Metric",
+          "label": "Maximum Section Length Metric"
+        },
+        "value": "4363.8212890625"
+      }
+    ],
+    "hasTarget": {
+      "@type": "AnnotationTarget",
+      "hasSource": {
+        "@id": "https://bbp.epfl.ch/data/simulation-ready-neuron-morphology",
+        "@type": "NeuronMorphology",
+        "_rev": 9
+      }
+    },
+    "name": "Quality Measurement Annotation of 18869_00253"
+  }
