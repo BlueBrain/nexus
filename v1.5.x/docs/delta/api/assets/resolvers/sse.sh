@@ -1,1 +1,0 @@
-curl "https://localhost:8080/v1/resolvers/events"

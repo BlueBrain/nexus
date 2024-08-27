@@ -1,6 +1,0 @@
-{
-  "@type": "Append",
-  "permissions": [
-    "newpermission/create"
-  ]
-}

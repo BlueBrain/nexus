@@ -163,8 +163,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -276,8 +274,6 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
-    <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#older-releases" class="header">Older releases</a></li>
   </ul></li>
 </ul>
@@ -335,8 +331,6 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
-    <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#older-releases" class="header">Older releases</a></li>
   </ul></li>
 </ul>
@@ -543,8 +537,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#1-7-0-14-03-2022-" name="1-7-0-14-03-2022-" class="anchor"><span class="anchor-link"></span></a>1.7.0 (14.03.2022)</h2>
 <h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
 <ul>
-  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli" title="Removal of the Nexus cli">Removal of the Nexus cli</a></li>
-  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems" title="Removal of the docker based client">Removal of the docker based client</a></li>
+  <li>Removal of the Nexus cli</li>
+  <li>Removal of the docker based client</li>
 </ul>
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
 <p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
@@ -604,42 +598,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>View passivation</li>
 </ul>
 <p>A detailed list of changes included in the release can be found in the <a href="v1.6-release-notes.html">release notes</a>.</p>
-<h2><a href="#v1-5-1-04-06-2021-" name="v1-5-1-04-06-2021-" class="anchor"><span class="anchor-link"></span></a>v1.5.1 (04.06.2021)</h2>
-<p>This release contains bugfixes and minor improvements:</p>
-<ul>
-  <li>File paths now respect tar spec, added n-quads format option to archives  <a href="https://github.com/BlueBrain/nexus/pull/2459" title="#2459">#2459</a></li>
-  <li>Use service account to unset previous default storage <a href="https://github.com/BlueBrain/nexus/pull/2465" title="#2465">#2465</a></li>
-  <li>Support type query exclusion on listings <a href="https://github.com/BlueBrain/nexus/pull/2468" title="#2468">#2468</a></li>
-  <li>Added organization events to SSEs <a href="https://github.com/BlueBrain/nexus/pull/2477" title="#2477">#2477</a></li>
-  <li>Allow the deletion of some persistence ids at startup <a href="https://github.com/BlueBrain/nexus/pull/2480" title="#2480">#2480</a></li>
-  <li>Prevent creating schemas starting with <code>schemas.base</code> <a href="https://github.com/BlueBrain/nexus/pull/2481" title="#2481">#2481</a></li>
-  <li>Updated the default number of shards value to 50 (prev =&gt; 1000)  <a href="https://github.com/BlueBrain/nexus/pull/2490" title="#2490">#2490</a></li>
-  <li>Expose indexing metrics <a href="https://github.com/BlueBrain/nexus/pull/2485" title="#2485">#2485</a></li>
-  <li>Clean up error messages <a href="https://github.com/BlueBrain/nexus/pull/2497" title="#2497">#2497</a></li>
-  <li>Allow plugins to be disabled via configuration <a href="https://github.com/BlueBrain/nexus/pull/2498" title="#2498">#2498</a></li>
-  <li>Consume the entire base URI path in the routes <a href="https://github.com/BlueBrain/nexus/pull/2502" title="#2502">#2502</a></li>
-  <li>Update progress cache on stream start. <a href="https://github.com/BlueBrain/nexus/pull/2505" title="#2505">#2505</a></li>
-  <li>Fetch org/project events from their creation time if none is provided  <a href="https://github.com/BlueBrain/nexus/pull/2500" title="#2500">#2500</a></li>
-  <li>Count view statistics deterministically. <a href="https://github.com/BlueBrain/nexus/pull/2509" title="#2509">#2509</a></li>
-  <li>Add SHACL context to resource/schemas errors including SHACL report  <a href="https://github.com/BlueBrain/nexus/pull/2508" title="#2508">#2508</a></li>
-</ul>
-<h2><a href="#v1-5-0-19-05-2021-" name="v1-5-0-19-05-2021-" class="anchor"><span class="anchor-link"></span></a>v1.5.0 (19.05.2021)</h2>
-<p>The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected - please see the <a href="v1.5-release-notes.html">release notes</a> for the exact changes). If you&rsquo;re upgrading from v1.4.x please visit the <a href="v1.4-to-v1.5-migration.html">migration instructions</a>.</p>
-<p>Summary of the significant changes:</p>
-<ul>
-  <li>Introduced the ability to define workflows in Fusion;</li>
-  <li>Introduced support for plugins in Delta;</li>
-  <li>Remote context and <code>owl:imports</code> resolution is executed during creation and update providing full resource  immutability;</li>
-  <li>Consistent JSON-LD support across all endpoints and resource types;</li>
-  <li>Support for named graphs;</li>
-  <li>Specific SSE endpoints for Delta managed resource types (schemas, resolvers, storages, files and views);</li>
-  <li>Views can be configured with the required permission for querying;</li>
-  <li>CrossProject resolvers can be configured with <code>useCurrentCaller</code> that enables resource resolution with the caller  identities instead of a fixed identity set;</li>
-  <li>ElasticSearch views can be configured with <code>settings</code> (this allows the customization of ElasticSearch index with  number of shards and replicas, tokenizers, filters etc.).</li>
-</ul>
-<p>A detailed list of changes included in the release can be found in the <a href="v1.5-release-notes.html">release notes</a>.</p>
 <h2><a href="#older-releases" name="older-releases" class="anchor"><span class="anchor-link"></span></a>Older releases</h2>
-<p>The release notes of older versions are available <a href="https://bluebrainnexus.io/v1.5.x/docs/releases/index.html" title="here">here</a>.</p>
+<p>The release notes of older versions are available <a href="https://bluebrainnexus.io/v1.6.x/docs/releases/index.html" title="here">here</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/index.md" title="Edit this page" class="md-source-file md-edit">

@@ -163,8 +163,6 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -394,7 +392,34 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <p>Please note that for retro-compatibility purposes, omitting the pipeline will apply a default one including <a href="pipes.html#filter-deprecated">filtering deprecated resources</a>, <a href="pipes.html#discard-metadata">discarding metadata</a> and <a href="pipes.html#select-predicates">selecting default label predicates</a></p>
 <h2><a href="#legacy-payload" name="legacy-payload" class="anchor"><span class="anchor-link"></span></a>Legacy payload</h2>
-<p>Retro-compatibility is ensured with the legacy payload as defined <a href="https://bluebrainnexus.io/v1.5.x/docs/delta/api/views/elasticsearch-view-api.html" title="here">here</a></p>
+<p>Retro-compatibility is ensured with the legacy payload as defined:</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@id&quot;: &quot;{someid}&quot;,
+  &quot;@type&quot;: &quot;ElasticSearchView&quot;,
+  &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
+  &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
+  &quot;resourceTag&quot;: &quot;{tag}&quot;,
+  &quot;sourceAsText&quot;: {sourceAsText},
+  &quot;includeMetadata&quot;: {includeMetadata},
+  &quot;includeDeprecated&quot;: {includeDeprecated},
+  &quot;mapping&quot;: _elasticsearch mapping_,
+  &quot;settings&quot;: _elasticsearch settings_,
+  &quot;permission&quot;: &quot;{permission}&quot;
+}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is  optional.</li>
+  <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri. This field is optional.</li>
+  <li><code>{tag}</code>: String - Selects only resources with the provided tag. This field is optional.</li>
+  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping" title="ElasticSearch mapping documentation" target="_blank" rel="noopener noreferrer">ElasticSearch mapping documentation</a>.</li>
+  <li><code>_elasticssearch settings_</code>: Json object - defines Elasticsearch  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings" title="index settings" target="_blank" rel="noopener noreferrer">index settings</a> for the underlying Elasticsearch index. Default settings are applied, if not specified.</li>
+  <li><code>{sourceAsText}</code>: Boolean - If true, the resource&rsquo;s payload will be stored in the ElasticSearch document as a single  escaped string value under the key <code>_original_source</code>. If false, the resource&rsquo;s payload will be stored normally in the  ElasticSearch document. The default value is <code>false</code>.</li>
+  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
+  <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
+  <li><code>{someid}</code>: Iri - The @id value for this view.</li>
+  <li><code>{permission}</code>: String - permission required to query this view. Defaults to <code>views/query</code>.</li>
+</ul>
 <p>The legacy payload is now deprecated and will be removed in an upcoming version.</p>
 <h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><strong>Example</strong></h2>
 <p>The following example creates an ElasticSearch view that will index resources validated against the schema with id <code>https://bluebrain.github.io/nexus/schemas/myschema</code>. If a resource is deprecated, it won&rsquo;t be selected for indexing.</p>
